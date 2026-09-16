@@ -11,6 +11,7 @@
 쓰는 것과 **같은 무늬**다 — 새 Port 를 세우지 않아도 되는 이유가 이것이다.
 """
 from __future__ import annotations
+from ..access import dataset_access
 
 import datetime as dt
 import re
@@ -240,7 +241,7 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
     summaries = d4_lineage.LineageSummaryAdapter(db).summaries(ids)
     # ⭑ **⟨PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다** (카탈로그 목록과 같은 규율).
     unknown = d4_lineage.unknown_dataset_ids(db, ids)
-    access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    access = dataset_access(db).dataset_access(ids)
 
     out: dict[str, dict] = {}
     for dataset_id in dataset_ids:
@@ -293,6 +294,8 @@ def list_projects(subject: Subject = Depends(current_subject),
         raise errors.bad_request(f"sort 는 {list(_SORTS)} 중 하나다.")
 
     records = d6_project.list_projects(db)
+    if db.info.get("explicit_target_lab"):
+        records = [r for r in records if r.lab_id == db.info["explicit_target_lab"]]
     if status not in (None, _ALL):
         records = [r for r in records if r.status == status]
     if type not in (None, _ALL):
@@ -381,7 +384,7 @@ def get_project(projectId: str, subject: Subject = Depends(current_subject),
         # 내리면 화면이 남의 연구실 프로젝트에 `수정`·`상태 바꾸기`·`데이터셋 연결` 을
         # 세우고, 누르면 서버가 거절한다 — 「읽기 전용」이라 적고 고치는 길을 여는 것이다.
         "canManage": _can_manage(db, subject)
-                     and record.lab_id == str(subject.lab_id),
+                     and (subject.operator or record.lab_id == str(subject.lab_id)),
     }
 
 

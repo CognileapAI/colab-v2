@@ -5,6 +5,7 @@
 // **여기에 픽스처 폴백을 두지 않는다.** 카탈로그·상세와 다른 점이고, 의도한 차이다 —
 // 등록 전 파일의 미리보기를 가짜로 그리면 **사람이 그 그림을 보고 등록을 판단한다.**
 // 그릴 수 없으면 그릴 수 없다고 말하는 것이 이 화면의 일이다 (정본 §9).
+import { requestMessage } from './requestError';
 import { api } from '../../api/client';
 import {
   NotRenderableError,
@@ -41,10 +42,20 @@ function messageOf(body: unknown, fallback: string | undefined): string | undefi
   return fallback;
 }
 
-export function apiPreviewSource(uploadId: string): PreviewSource {
+export function apiPreviewSource(uploadId: string, systemAdministrator = false): PreviewSource {
+  let targetLabId: string | undefined;
+  async function targetHeaders(): Promise<Record<string, string>> {
+    if (!systemAdministrator) return {};
+    if (!targetLabId) {
+      const response = await api.GET('/uploads/{uploadId}', { params: { path: { uploadId } } });
+      targetLabId = response.data?.labId;
+      if (!targetLabId) throw new PreviewUnavailable(requestMessage(response.response.status, response.error, '업로드의 연구실을 확인하지 못했어요. 다시 시도해 주세요.'));
+    }
+    return { 'X-CoLAB-Target-Lab': targetLabId };
+  }
   return {
     async get(renderId) {
-      const r = await api.GET('/previews/{renderId}', { params: { path: { renderId } } });
+      const r = await api.GET('/previews/{renderId}', { headers: await targetHeaders(), params: { path: { renderId } } });
       // 수명이 지나면 **없는 것으로 답한다** (`〈67〉`-ⓐ 규칙 ③ — 404 의 정본 근거)
       if (r.response.status === 404 || r.response.status === 410) throw new PreviewGone();
       if (r.response.status === 415) {
@@ -55,12 +66,12 @@ export function apiPreviewSource(uploadId: string): PreviewSource {
       }
       if (r.response.status === 503) {
         throw new PreviewUnavailable(
-          messageOf(r.error, '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.'),
+          requestMessage(r.response.status, r.error, '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.'),
         );
       }
       // **실패는 여기가 아니다** — `200 + failure` 로 온다. 비-200 을 실패 경로로 삼으면
       // 진짜 실패를 전부 놓친다 (`P2-viz-report §13`-④)
-      if (!r.data) throw new PreviewUnavailable('지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.');
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.'));
       return r.data as RenderJob;
     },
 
@@ -91,7 +102,7 @@ export function apiPreviewSource(uploadId: string): PreviewSource {
       }
       if (!r.data) {
         throw new PreviewUnavailable(
-          messageOf(r.error, '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.'),
+          requestMessage(r.response.status, r.error, '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.'),
         );
       }
       return r.data as RenderJob;
@@ -100,7 +111,7 @@ export function apiPreviewSource(uploadId: string): PreviewSource {
     /** WU-C3 — 등록 전 업로드의 조각 목록. 원장이 `UploadStatus.files` 로 이미 말한다. */
     async files(): Promise<PreviewPiece[]> {
       const r = await api.GET('/uploads/{uploadId}', { params: { path: { uploadId } } });
-      if (!r.data) throw new PreviewUnavailable('조각 목록을 받지 못했어요.');
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, '조각 목록을 받지 못했어요.'));
       return (r.data.files ?? []).map(pieceOfUploadFile);
     },
 
@@ -112,7 +123,7 @@ export function apiPreviewSource(uploadId: string): PreviewSource {
       if (isRenderTooLarge(r.response.status, r.error)) {
         throw new RenderTooLarge(messageOf(r.error, undefined));
       }
-      if (!r.data) throw new PreviewUnavailable('고를 수 있는 값을 받지 못했어요.');
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, '고를 수 있는 값을 받지 못했어요.'));
       return r.data as TargetDescription;
     },
 

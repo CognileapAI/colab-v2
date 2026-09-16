@@ -133,7 +133,7 @@ def list_members(session: Session,
 def member_exists(session: Session, account_id: Ulid) -> bool:
     """경계 밖이면 RLS 가 행을 지우므로 False 가 되고, 호출자는 404 를 낸다 (P-9·P-10)."""
     return session.execute(
-        text("SELECT 1 FROM d1_account WHERE id = :account_id"),
+        text("SELECT 1 FROM d1_account WHERE id = :account_id AND lab_id = current_lab_id()"),
         {"account_id": str(account_id)},
     ).first() is not None
 

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from conftest import DS_A1, DS_A2, TOKEN_PROF, auth
+from conftest import DS_A1, DS_A2, TOKEN_PROF, TOKEN_RES, auth
 
 from colab_core.app.main import API_PREFIX
 
@@ -27,7 +27,7 @@ DS_A2_BODY = 1
 
 
 def _catalog_row(client: TestClient, dataset_id: str) -> dict:
-    r = client.get(f"{API_PREFIX}/datasets", headers=auth(TOKEN_PROF))
+    r = client.get(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     return next(x for x in r.json()["items"] if x["datasetId"] == dataset_id)
 
@@ -44,7 +44,7 @@ def test_a_dataset_without_a_grid_file_is_unchanged(live_client: TestClient) -> 
 
 def test_detail_files_count_counts_bodies_only(live_client: TestClient) -> None:
     """상세 `기본 정보`의 조각 수도 같은 규칙을 쓴다 — 두 화면이 갈리지 않는다."""
-    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}", headers=auth(TOKEN_PROF))
+    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}", headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     info = r.json()["basicInfo"]
     assert info["files"]["count"] == DS_A1_BODY
@@ -54,7 +54,7 @@ def test_detail_files_count_counts_bodies_only(live_client: TestClient) -> None:
 
 def test_catalog_and_detail_never_disagree(live_client: TestClient) -> None:
     """같은 데이터셋을 두 화면이 다른 수로 그리지 않는다 — 읽는 지점이 하나이기 때문이다."""
-    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}", headers=auth(TOKEN_PROF))
+    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}", headers=auth(TOKEN_RES))
     assert r.status_code == 200
     assert (_catalog_row(live_client, DS_A1)["fileCount"]
             == r.json()["basicInfo"]["files"]["count"] == DS_A1_BODY)
@@ -63,7 +63,7 @@ def test_catalog_and_detail_never_disagree(live_client: TestClient) -> None:
 # ── 음성 ────────────────────────────────────────────────────────────────────
 def test_the_file_list_still_carries_the_grid_file(live_client: TestClient) -> None:
     """**목록은 줄지 않는다.** 요약 숫자만 본체 기준이다."""
-    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}/files", headers=auth(TOKEN_PROF))
+    r = live_client.get(f"{API_PREFIX}/datasets/{DS_A1}/files", headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     items = r.json()["items"]
     assert len(items) == DS_A1_STORED

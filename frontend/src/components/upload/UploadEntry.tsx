@@ -91,6 +91,8 @@ export function UploadEntry(props: {
       {open && (
         <UploadModal
           sources={sources}
+          apiSources={!props.sources}
+          initialLabId={props.openRequest?.targetLabId}
           lineageStep={props.lineageStep}
           resumeRequest={resumeRequest ?? undefined}
           registerRequest={registerRequest ?? undefined}

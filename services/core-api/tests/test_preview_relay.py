@@ -40,7 +40,7 @@ RECLAIM_FILE_IDS = ["01ARZ3NDEKTSV4RRFFQ69G5FB1", "01ARZ3NDEKTSV4RRFFQ69G5FB2"]
 RECLAIM_RESULT = {"targetId": RECLAIM_TARGET, "stale": 2, "kept": 1, "unindexed": 1,
                   "removed": ["abc.webp", "abc.png"]}
 JOB_DONE = {
-    "renderId": RENDER_ID, "status": "완료",
+    "renderId": RENDER_ID, "status": "완료", "target": {"datasetId": DS_A1},
     "result": {"tileUrlTemplate": "https://tiles.example/{z}/{x}/{y}.png",
                "bounds": {"west": 124.0, "south": 33.0, "east": 132.0, "north": 43.0},
                "legend": {"unit": "mm", "breaks": [0, 1, 2, 3, 4, 5]}},
@@ -391,3 +391,12 @@ def test_reclaim_previews_raises_when_viz_cannot_answer(fake_viz) -> None:
                                       account_id="0000000000000000000000000B",
                                       target_id=UNREACHABLE_TARGET,
                                       file_ids=RECLAIM_FILE_IDS)
+
+
+def test_poll_rechecks_current_access_to_original_target(p2_client, fake_viz, monkeypatch):
+    from conftest import DS_A2
+    base, _ = fake_viz
+    monkeypatch.setitem(JOB_DONE, "target", {"datasetId": DS_A2})
+    response = p2_client(viz_base_url=base).get(
+        f"{API_PREFIX}/previews/{RENDER_ID}", headers=auth(TOKEN_RES))
+    assert response.status_code == 403, response.text

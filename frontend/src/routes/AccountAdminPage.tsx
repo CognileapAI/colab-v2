@@ -83,21 +83,21 @@ function StatusDialog(props: { row: Row; next: 'active' | 'inactive'; busy: bool
   );
 }
 
-/** 관리자 지정·해제 확인. 무엇이 달라지는지를 확인 문구보다 먼저 말한다. */
+/** 시스템 관리자 지정·해제 확인. 무엇이 달라지는지를 확인 문구보다 먼저 말한다. */
 function OperatorDialog(props: { row: Row; next: boolean; busy: boolean; onClose(): void; onConfirm(): void }) {
   const titleId = useId();
   const dialogRef = useDialogFocus(props.onClose, props.busy);
-  const title = props.next ? '관리자 지정' : '관리자 해제';
+  const title = props.next ? '시스템 관리자 지정' : '시스템 관리자 해제';
   return (
     <div className="account-modal-back">
       <div ref={dialogRef} tabIndex={-1} className="account-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <h3 id={titleId}>{title}</h3>
         <p className="account-modal-lead">
-          <b>{props.row.email}</b> 을(를) {props.next ? '관리자로 지정해요.' : '관리자에서 해제해요.'}
+          <b>{props.row.email}</b> 을(를) {props.next ? '시스템 관리자로 지정해요.' : '시스템 관리자에서 해제해요.'}
         </p>
         <p className="account-modal-help">
           {props.next
-            ? '관리자는 계정을 추가·재설정·비활성화할 수 있고, 모든 연구실의 자료를 읽기 전용으로 볼 수 있어요. 고치거나 지우는 건 자기 연구실에서만 할 수 있어요.'
+            ? '시스템 관리자는 계정을 추가·재설정·비활성화할 수 있고, 모든 연구실의 자료와 구성원을 조회·등록·수정·삭제할 수 있어요.'
             : '해제하면 계정 관리 화면과 다른 연구실 자료를 더는 볼 수 없어요. 자기 연구실 권한은 그대로예요.'}
         </p>
         <p className="account-modal-help">이 사람의 열려 있던 로그인은 모든 기기에서 끝나요.</p>
@@ -188,14 +188,14 @@ export function AccountAdminPage() {
         </button>
         <button type="button" role="tab" aria-selected={tab === 'create'}
                 className={`st${tab === 'create' ? ' on' : ''}`} onClick={() => setTab('create')}>
-          관리자 등록
+          시스템 관리자 등록
         </button>
       </div>
       <div hidden={tab !== 'create'}>
       <section className="login-card account-card" data-testid="account-create">
         <span className="login-brand">Co-Lab</span>
-        <h2 className="login-title">관리자 등록</h2>
-        <p className="login-lead">소속이 있으면 연구실과 역할을 함께 지정하세요. 둘 다 비우면 무소속 관리자로 등록돼요.</p>
+        <h2 className="login-title">시스템 관리자 등록</h2>
+        <p className="login-lead">소속이 있으면 연구실과 역할을 함께 지정하세요. 둘 다 비우면 무소속 시스템 관리자로 등록돼요.</p>
         <form ref={formRef} className="account-form" onInput={() => setDirty(true)} onSubmit={async e => {
           e.preventDefault();
           if (busy) return;
@@ -227,15 +227,15 @@ export function AccountAdminPage() {
           <label className="login-label">이름<input className="login-input" name="name" required /></label>
           <label className="login-label">이메일<input className="login-input" name="email" type="email" required /></label>
           <label className="login-label">연구실<select className="login-input" name="labId"><option value="">소속 없음</option>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
-          <label className="login-label">역할<select className="login-input" name="role"><option value="">신분 없음</option>{options?.roles.map(r => <option key={r}>{r}</option>)}</select></label>
+          <label className="login-label">역할<select className="login-input" name="role"><option value="">신분 없음</option>{options?.roles.map(r => <option key={r} value={r}>{r === '교수' ? '교수 관리자' : r}</option>)}</select></label>
           <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" autoComplete="new-password" required /></label>
           <label className="login-label account-operator-check">
             <input type="checkbox" name="operator" checked={createOperator}
-                   onChange={e => setCreateOperator(e.target.checked)} /> 관리자로 등록
+                   onChange={e => setCreateOperator(e.target.checked)} /> 시스템 관리자로 등록
           </label>
-          <p className="login-label">관리자는 계정을 관리하고 모든 연구실 자료를 읽기 전용으로 볼 수 있어요.</p>
+          <p className="login-label">시스템 관리자는 계정을 관리하고 모든 연구실 자료와 구성원을 관리할 수 있어요.</p>
           <p id="initial-password-help" className="login-label">10~512자로 입력하세요. 영문·숫자·특수문자 조합은 필수가 아니에요. 사용자는 첫 로그인 때 비밀번호를 변경해야 해요.</p>
-          <button className="login-submit" type="submit" disabled={busy}>{busy ? '등록하는 중…' : (createOperator ? '관리자 등록' : '사용자 등록')}</button>
+          <button className="login-submit" type="submit" disabled={busy}>{busy ? '등록하는 중…' : (createOperator ? '시스템 관리자 등록' : '사용자 등록')}</button>
         </form>
       </section>
       </div>
@@ -260,7 +260,7 @@ export function AccountAdminPage() {
           <label className="login-label">역할
             <select className="login-input" value={filters.role} onChange={pick('role')}>
               <option value="">전체</option>
-              {options?.roles.map(r => <option key={r} value={r}>{r}</option>)}
+              {options?.roles.map(r => <option key={r} value={r}>{r === '교수' ? '교수 관리자' : r}</option>)}
             </select>
           </label>
           <label className="login-label">이메일
@@ -278,7 +278,7 @@ export function AccountAdminPage() {
             <thead>
               <tr>
                 <th scope="col">이메일</th><th scope="col">이름</th><th scope="col">역할</th>
-                <th scope="col">연구실</th><th scope="col">상태</th><th scope="col">관리자</th>
+                <th scope="col">연구실</th><th scope="col">상태</th><th scope="col">시스템 관리자</th>
                 <th scope="col">최근 로그인</th>
                 <th scope="col" aria-label="행 동작" />
               </tr>
@@ -290,10 +290,10 @@ export function AccountAdminPage() {
                 <tr key={row.accountId}>
                   <td>{row.email}</td>
                   <td>{row.name}</td>
-                  <td>{row.role ?? '없음'}</td>
+                  <td>{row.role === '교수' ? '교수 관리자' : row.role ?? '없음'}</td>
                   <td>{row.labName ?? '없음'}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
-                  <td>{row.operator ? '관리자' : '아니요'}</td>
+                  <td>{row.operator ? '시스템 관리자' : '아니요'}</td>
                   <td>{day(row.lastLoginAt)}</td>
                   <td className="account-row-actions">
                     {/* 자기 자신 해제는 화면에서 막는다 — 되살릴 사람이 없어지는 자리라
@@ -303,11 +303,11 @@ export function AccountAdminPage() {
                     <button type="button" className="btn btn-secondary"
                             disabled={rowBusy || self}
                             onClick={() => setOperatorRow(row)}>
-                      {row.operator ? '관리자 해제' : '관리자 지정'}
+                      {row.operator ? '시스템 관리자 해제' : '시스템 관리자 지정'}
                     </button>
                     <button type="button" className="btn btn-secondary" disabled={rowBusy}
                             onClick={() => setResetRow(row)}>비밀번호 재설정</button>
-                    {/* 자기 줄 비활성화도 관리자 해제와 같은 꼴로 막는다 — 서버가 거절하는 것을
+                    {/* 자기 줄 비활성화도 시스템 관리자 해제와 같은 꼴로 막는다 — 서버가 거절하는 것을
                         눌리게 두면 그 거절이 사고처럼 보인다. 서버 가드(`accounts.py`)는 그대로 둔다. */}
                     <button type="button" className="btn btn-secondary" disabled={rowBusy || self}
                             onClick={() => setStatusRow(row)}>
@@ -342,7 +342,7 @@ export function AccountAdminPage() {
             const target = operatorRow;
             const next = !target.operator;
             void send('/admin/accounts/{accountId}/operator', target.accountId, { operator: next } as never,
-                      next ? `${target.email} 을 관리자로 지정했어요.` : `${target.email} 의 관리자 권한을 해제했어요.`)
+                      next ? `${target.email} 을 시스템 관리자로 지정했어요.` : `${target.email} 의 시스템 관리자 권한을 해제했어요.`)
               .then(ok => { if (ok) setOperatorRow(null); });
           }} />
       ) : null}

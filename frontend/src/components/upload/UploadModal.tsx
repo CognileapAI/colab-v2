@@ -10,6 +10,10 @@
 //  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
 //  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
+import { TargetLabSelect } from '../common/TargetLabSelect';
+import { apiLineageSource } from '../lineage/lineageSource';
+import { apiPreviewSource } from './previewSource';
+import { apiProjectSource } from './projectSource';
 import { useWorkProtection } from '../../auth/useWorkProtection';
 import { getSessionEpoch, subscribe } from '../../auth/store';
 import { useNavigate } from 'react-router-dom';
@@ -152,6 +156,8 @@ export interface GridAttachTarget {
 
 export function UploadModal(props: {
   sources: UploadSources;
+  apiSources?: boolean | undefined;
+  initialLabId?: string | undefined;
   lineageStep?: LineageStepRender | undefined;
   attach?: GridAttachTarget | undefined;
   /**
@@ -165,6 +171,11 @@ export function UploadModal(props: {
   const account = useAccount();
   const navigate = useNavigate();
   const { upload } = props.sources;
+  const operator = account?.canManageServiceAccounts === true;
+  const [targetLabId, setTargetLabId] = useState(props.initialLabId ?? '');
+  const requestLabId = operator ? targetLabId || undefined : undefined;
+  const scopedSources = useMemo(() => props.apiSources ? { ...props.sources, preview: apiPreviewSource(requestLabId), projects: apiProjectSource(requestLabId), lineage: apiLineageSource(requestLabId) } : props.sources, [props.sources, props.apiSources, requestLabId]);
+  const pendingLabId = targetLabId || account?.labId || '';
 
   const [picked, setPicked] = useState<PickedFile[]>([]);
   const [uploadId, setUploadId] = useState<string | null>(null);
@@ -332,7 +343,7 @@ export function UploadModal(props: {
     intervalUnit || projects.length || lineageCards.length || representativeFile);
   // ⭑ ⟨#34⟩ 지울 「이 브라우저의 기억」이 실제로 있을 때만 세 번째 선택지를 낸다 —
   //   접수 전에는 기억할 것이 없어 그 버튼이 아무것도 하지 않는 빈 선택지가 된다.
-  const canForgetPending = Boolean(uploadId && account?.labId);
+  const canForgetPending = Boolean(uploadId && pendingLabId);
   useWorkProtection('upload-modal', {
     dirty: hasDraft,
     inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
@@ -388,8 +399,9 @@ export function UploadModal(props: {
     void upload.status(registerRequestId).then((s) => {
       if (!alive) return;
       setRegisterRestoring(false);
+      if (s.labId) setTargetLabId(s.labId);
       if (s.registered === true) {
-        if (account?.labId) forgetPending(account.labId, registerRequestId);
+        if (pendingLabId) forgetPending(pendingLabId, registerRequestId);
         setStatusIssue({ message: '이미 등록된 업로드예요.', retrying: false });
         return;
       }
@@ -406,7 +418,7 @@ export function UploadModal(props: {
     }).catch((e) => {
       if (!alive) return;
       setRegisterRestoring(false);
-      if (e instanceof UploadGone && account?.labId) forgetPending(account.labId, registerRequestId);
+      if (e instanceof UploadGone && pendingLabId) forgetPending(pendingLabId, registerRequestId);
       setStatusIssue({
         message: e instanceof UploadGone ? '이 파일은 더 이상 없어요. 다시 올려 주세요.' : '업로드 상태를 읽지 못했어요.',
         retrying: false,
@@ -442,6 +454,7 @@ export function UploadModal(props: {
       restoredRegistrationRef.current = false;
       return;
     }
+    if (operator && !targetLabId && !resumeRef.current) return;
     let alive = true;
     // 새 접수 동안 이전 파일의 ready·그림을 등록 근거로 쓰지 않는다.
     setUploadId(null);
@@ -472,10 +485,12 @@ export function UploadModal(props: {
     let earlySeen = false;
     void upload
       .create(picked, { sourceLabel: label,
+                        ...(requestLabId ? { targetLabId: requestLabId } : {}),
                         ...(resume ? { resumeUploadId: resume } : {}),
                         onEarlyReceipt: (receipt) => {
                           if (!alive) return;
                           earlySeen = true;
+                          if (receipt.labId) setTargetLabId(receipt.labId);
                           setStatus(null);
                           setEarlyUploadId(receipt.uploadId);
                         },
@@ -494,9 +509,10 @@ export function UploadModal(props: {
         if (!resume) recordDuration('전송', performance.now() - transferStarted);
         setStatus(null);
         setUploadId(receipt.uploadId);
+        if (receipt.labId) setTargetLabId(receipt.labId);
         if (earlySeen) setPreviewFinalNotice(true);
         // **접수는 됐고 등록은 안 됐다** — 새로고침해도 이 업로드로 돌아올 수 있게 적어 둔다.
-        if (account?.labId) rememberPending(account.labId, receipt.uploadId);
+        if (receipt.labId || pendingLabId) rememberPending(receipt.labId || pendingLabId, receipt.uploadId);
         if (resume) {                      // 이어올리기가 접수까지 갔다 — 배너 항목이 사라진다
           resumeRef.current = null;
           resumeFromRef.current = null;
@@ -536,7 +552,7 @@ export function UploadModal(props: {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, upload, resumeArm, retryArm]);
+  }, [signature, upload, resumeArm, retryArm, operator && !props.resumeRequest ? Boolean(targetLabId) : false]);
 
   const previewUploadId = uploadId ?? earlyUploadId;
   const showingEarlyPreview = Boolean(earlyUploadId && !uploadId);
@@ -778,7 +794,7 @@ export function UploadModal(props: {
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
   // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
   const lineageStep: LineageStepRender =
-    props.lineageStep ?? ((c) => <LineageStep source={props.sources.lineage} ctx={c} />);
+    props.lineageStep ?? ((c) => <LineageStep source={scopedSources.lineage} ctx={c} />);
 
   const lineageCtx: LineageStepContext = useMemo(
     () => ({
@@ -1195,13 +1211,13 @@ export function UploadModal(props: {
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
         ...humanMetadata(),
         observationInterval: { value: Number(intervalValue.trim()), unit: intervalUnit },
-      });
+      }, requestLabId);
       if (lifecycle !== mutationLifecycle.current) return;
       // 데이터셋은 이 시점에 이미 생겼다. 뒤의 그림 PUT이 실패해도 같은 ID를 재사용한다.
       committedDatasetIdRef.current = made.datasetId;
       setCreatedDatasetId(made.datasetId);
       // 등록까지 끝난 임시 업로드는 그림 저장 성공 여부와 무관하게 정리한다.
-      if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+      if (uploadId && pendingLabId) forgetPending(pendingLabId, uploadId);
       if (representativeFile) {
         try {
           if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
@@ -1269,12 +1285,13 @@ export function UploadModal(props: {
           <h3>{attach ? '기준 격자 추가' : picked.length === 0 ? '파일 올리기' : '업로드'}</h3>
           {/* 상단 메뉴가 가려져도 **어느 연구실에 올리는지**가 보인다 (§8) */}
           <span className="mh-lab" data-testid="upload-lab">
-            <b>{account?.labName ?? ''}</b>에 올려요
+            <b>{operator ? '선택한 연구실' : (account?.labName ?? '')}</b>에 올려요
           </span>
           <button type="button" className="x" data-testid="upload-close" aria-label="업로드 닫기" onClick={requestClose}>
             ×
           </button>
         </div>
+        {operator ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId} disabled={Boolean(picked.length > 0 && targetLabId) || Boolean(uploadId) || Boolean(props.initialLabId) || Boolean(props.resumeRequest) || Boolean(props.registerRequest)}/> : null}
 
         <div className="modal-b up-body" ref={bodyRef}>
           {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈338〉) */}
@@ -1291,6 +1308,7 @@ export function UploadModal(props: {
                     className={resumeId === item.uploadId ? 'ub-btn is-armed' : 'ub-btn'}
                     data-testid={`up-resume-${item.uploadId}`}
                     onClick={() => {
+                      if (item.labId) setTargetLabId(item.labId);
                       resumeRef.current = item.uploadId;
                       resumeFromRef.current = 'banner';
                       setResumeId(item.uploadId);
@@ -1304,7 +1322,7 @@ export function UploadModal(props: {
                     className="ub-btn"
                     data-testid={`up-discard-${item.uploadId}`}
                     onClick={() => {
-                      if (account?.labId) forgetPending(account.labId, item.uploadId);
+                      if (pendingLabId) forgetPending(pendingLabId, item.uploadId);
                       void upload.abortTransfer?.(item.uploadId).then(refreshIncomplete);
                       if (resumeId === item.uploadId) {
                         resumeRef.current = null;
@@ -1471,8 +1489,8 @@ export function UploadModal(props: {
                 </p>
               ) : null}
               <PreviewPanel
-                key={`${signature}:${previewUploadId ?? ''}:${gridRevision}`}
-                source={props.sources.preview}
+                key={`${requestLabId ?? ''}:${signature}:${previewUploadId ?? ''}:${gridRevision}`}
+                source={scopedSources.preview}
                 autoPreview={(registerOpen || showingEarlyPreview || previewFinalNotice) && Boolean(status?.renderable)}
                 renderable={status?.ready ? status.renderable ?? undefined : undefined}
                 uploadId={previewUploadId}
@@ -1616,7 +1634,7 @@ export function UploadModal(props: {
                 onRemoveFiles={() => removeFile(null)}
                 lineage={lineage}
                 status={status}
-                projectSource={props.sources.projects}
+                projectSource={scopedSources.projects}
                 name={name}
                 onName={(value) => editRegistration(() => setName(value))}
                 summary={summary}
@@ -1764,7 +1782,7 @@ export function UploadModal(props: {
                   className="btn btn-secondary"
                   data-testid="upload-close-forget"
                   onClick={() => {
-                    if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+                    if (uploadId && pendingLabId) forgetPending(pendingLabId, uploadId);
                     props.onClose();
                   }}
                 >

@@ -67,7 +67,7 @@ def test_list_datasets_never_crosses_the_boundary(client: TestClient) -> None:
 
 def test_derived_values_are_computed(client: TestClient) -> None:
     rows = {r["datasetId"]: r for r in
-            client.get(f"{API_PREFIX}/datasets", headers=auth("a1-prof-token")).json()["items"]}
+            client.get(f"{API_PREFIX}/datasets", headers=auth("a1-res-token")).json()["items"]}
     assert rows[DS_A1]["processingLevel"] == 0        # 원자료
     assert rows[DS_A2]["processingLevel"] == 1        # 주입력 부모의 최대 + 1
     assert rows[DS_A1]["lineageState"] == "원천"       # 부모 없음 + 원천 표기
@@ -85,11 +85,11 @@ def test_locked_dataset_stays_in_the_list(client: TestClient) -> None:
 
 
 def test_list_files_open_and_locked(client: TestClient) -> None:
-    ok = client.get(f"{API_PREFIX}/datasets/{DS_A1}/files", headers=auth("a1-prof-token"))
+    ok = client.get(f"{API_PREFIX}/datasets/{DS_A1}/files", headers=auth("a1-res-token"))
     assert ok.status_code == 200
     assert {i["kind"] for i in ok.json()["items"]} == {"본체", "기준 격자 파일"}
 
-    locked = client.get(f"{API_PREFIX}/datasets/{DS_A2}/files", headers=auth("a1-prof-token"))
+    locked = client.get(f"{API_PREFIX}/datasets/{DS_A2}/files", headers=auth("a1-res-token"))
     assert locked.status_code == 403, "본체는 두 번째 층(body_access)이 막는다 (P-34)."
 
 

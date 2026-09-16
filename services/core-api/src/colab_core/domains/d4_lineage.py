@@ -122,9 +122,10 @@ _CLEAR_UNKNOWN = text("DELETE FROM d4_lineage_unknown WHERE dataset_id = :datase
 
 _EDGES_OF = text("""
     SELECT e.child_dataset_id, e.parent_dataset_id, e.parent_role, e.method, e.origin,
-           e.confirmed_at, e.confirmed_by_account_id, a.name AS confirmed_by_name
+           e.confirmed_at, e.confirmed_by_account_id,
+           COALESCE(a.name, e.confirmed_by_account_id::text) AS confirmed_by_name
       FROM d4_lineage_edge e
-      JOIN d1_account a ON a.id = e.confirmed_by_account_id
+      LEFT JOIN d1_account a ON a.id = e.confirmed_by_account_id
      WHERE e.child_dataset_id = :dataset_id OR e.parent_dataset_id = :dataset_id
      ORDER BY e.confirmed_at, e.id
 """)

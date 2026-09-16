@@ -9,6 +9,7 @@
  * 미리보기를 그대로 이어서 보여준다」). 그래서 S-08 은 도착하자마자 다시 그리지 않고,
  * S-04 가 넘긴 `renderId` 를 **조회**한다.
  */
+import { useAccount } from '../permission/session';
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -37,6 +38,7 @@ import '../components/preview/preview.css';
 const BACK = { label: '데이터셋 목록', to: '/datasets' };
 
 export function UnregisteredPreviewPage(props: { source?: PreviewSource; pollMs?: number } = {}) {
+  const account = useAccount();
   const { uploadId = '' } = useParams();
   const [params] = useSearchParams();
   const location = useLocation();
@@ -47,8 +49,8 @@ export function UnregisteredPreviewPage(props: { source?: PreviewSource; pollMs?
   const renderId = params.get(RENDER_QUERY_KEY) ?? handoff?.renderId;
 
   const source = useMemo(
-    () => props.source ?? apiPreviewSource(uploadId),
-    [props.source, uploadId],
+    () => props.source ?? apiPreviewSource(uploadId, account?.canManageServiceAccounts === true),
+    [props.source, uploadId, account?.canManageServiceAccounts],
   );
   const { state, rerender, resume } = usePreviewRender({
     source,

@@ -19,6 +19,7 @@ export interface TransferProgress {
 }
 
 export interface TransferOptions {
+  targetLabId?: string;
   sourceLabel?: string;
   /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
   resumeUploadId?: string;
@@ -64,8 +65,9 @@ function identity(name: string, relativePath?: string | null): string {
   return normalizeName(relativePath ?? name);
 }
 
-async function initiate(picked: PickedFile[], sourceLabel?: string) {
+async function initiate(picked: PickedFile[], sourceLabel?: string, targetLabId?: string) {
   const r = await api.POST('/uploads/transfers', {
+    headers: targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {},
     body: {
       ...(sourceLabel ? { sourceLabel } : {}),
       files: picked.map((p) => ({
@@ -156,7 +158,7 @@ export async function presignedCreate(picked: PickedFile[],
     assertOwner(ownedOpts);
     const plan = opts.resumeUploadId
       ? await resumePlan(opts.resumeUploadId, picked)
-      : await initiate(picked, opts.sourceLabel);
+      : await initiate(picked, opts.sourceLabel, opts.targetLabId);
     const uploadId = plan.uploadId as string;
     try {
       return await runTransfer(plan, picked, ownedOpts);

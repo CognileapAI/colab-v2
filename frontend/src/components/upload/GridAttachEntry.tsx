@@ -30,6 +30,7 @@ function defaultSources(): UploadSources {
 
 export function GridAttachEntry(props: {
   datasetId: string;
+  targetLabId?: string | undefined;
   datasetName?: string | undefined;
   /** 반영이 끝난 뒤 상세를 다시 읽는 자리. */
   onAttached?: (() => void) | undefined;
@@ -51,6 +52,8 @@ export function GridAttachEntry(props: {
       {open && (
         <UploadModal
           sources={sources}
+          apiSources={!props.sources}
+          initialLabId={props.targetLabId}
           attach={{
             datasetId: props.datasetId,
             datasetName: props.datasetName,

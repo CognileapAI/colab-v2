@@ -287,3 +287,16 @@ class DatabaseCredentialStore:
             """), {"status": status, "account_id": account_id}).mappings().one()
             db.execute(text(REVOKE_ACCOUNT_SESSIONS), {"account_id": account_id})
         return changed["status"]
+
+
+def current_download_subject(factory, account_id: Ulid) -> Subject | None:
+    """Re-read affiliation/status/operator at ticket consumption, including planted accounts."""
+    with factory() as db:
+        row = db.execute(text("""SELECT a.lab_id, c.status,
+            EXISTS(SELECT 1 FROM account_admin.service_operator o WHERE o.account_id=a.id) AS operator
+            FROM d1_account a LEFT JOIN account_admin.login_credential c ON c.account_id=a.id
+            WHERE a.id=:id"""), {"id": str(account_id)}).mappings().first()
+    if row is None or row['status'] not in (None, 'active'):
+        return None
+    return Subject(account_id=account_id, lab_id=Ulid(row['lab_id']) if row['lab_id'] else None,
+                   operator=bool(row['operator']))

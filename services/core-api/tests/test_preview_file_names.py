@@ -10,7 +10,7 @@ from colab_core.app.main import API_PREFIX
 
 
 def partial(file_id):
-    return {"renderId": upstream.RENDER_ID, "status": "완료",
+    return {"renderId": upstream.RENDER_ID, "status": "완료", "target": {"datasetId": DS_A1},
             "partialFailure": {"totalParts": 2, "renderedParts": 1,
                 "missingParts": [{"fileId": file_id, "fileName": "internal/storage/key"}]}}
 
@@ -31,6 +31,7 @@ def test_partial_names_use_original_ledger_name(p2_client, fake_viz, monkeypatch
         target = {"datasetId": DS_A1}
         file_id, expected = "00000000000000000000000FA1", "a1-body.csv"
     job = partial(file_id)
+    job["target"] = target
     original = deepcopy(job)
     monkeypatch.setattr(upstream, "JOB_RUNNING", job)
     monkeypatch.setattr(upstream, "JOB_DONE", job)

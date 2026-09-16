@@ -17,10 +17,11 @@ import datetime as dt
 from fastapi import APIRouter, Body, Depends, Path, Request, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d5_ingestion
+from ...domains import d2_access, d5_ingestion
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
+from ...kernel.scope import target_lab
 from ...kernel.objectpath import normalize_relative_path
 from ...kernel.s3 import Part, S3Client, S3Error
 from ...ports.ingestion import TransferFileRecord, UploadFileRecord
@@ -101,7 +102,7 @@ def _open_transfer(ledger: d5_ingestion.UploadTransferAdapter, transfer_id: str,
     return record
 
 
-def _maintain(request: Request, subject: Subject, s3: S3Client) -> None:
+def _maintain(request: Request, subject: Subject, s3: S3Client, db: Session) -> None:
     """사용자 요청과 분리된 트랜잭션에서 지연 정리를 끝낸다.
 
     요청 본문이 뒤에서 400을 내도 S3 삭제와 원장 삭제가 함께 commit돼 반쪽 정리가 남지 않는다.
@@ -110,7 +111,7 @@ def _maintain(request: Request, subject: Subject, s3: S3Client) -> None:
         request.app.state.session_factory, subject, s3=s3,
         # 요청에는 검토된 exact-target 계획과 SHA를 전달할 표면이 없다. 전역 apply 설정이
         # 켜져도 사용자 요청은 관측만 하고, 삭제는 별도 CLI에서만 실행한다.
-        mode="observe")
+        mode="observe", target_lab_id=db.info.get("target_lab"))
     print(
         "storage-maintenance "
         f"mode={report.mode} candidates={report.candidates} "
@@ -140,7 +141,7 @@ def initiate_upload_transfer(request: Request, body: dict = Body(...),
     s3 = _s3(request)
     _require_upload_edit(db, subject)
     ledger = _ledger(db)
-    _maintain(request, subject, s3)  # 별도 크론 없이, 요청과 독립된 트랜잭션에서 치운다
+    _maintain(request, subject, s3, db)  # 별도 크론 없이, 요청과 독립된 트랜잭션에서 치운다
 
     unknown = set(body) - {"sourceLabel", "files"}
     if unknown:
@@ -225,6 +226,7 @@ def initiate_upload_transfer(request: Request, body: dict = Body(...),
                 files=planned)
     return {
         "uploadId": str(transfer_id),
+        "labId": target_lab(db),
         "expiresAt": _iso(expires_at),
         "files": [{
             "fileId": f.file_id, "fileName": f.file_name, "kind": f.kind,
@@ -245,10 +247,11 @@ def list_incomplete_upload_transfers(request: Request,
                                      db: Session = Depends(scoped_db)) -> dict:
     s3 = _s3(request)
     ledger = _ledger(db)
-    _maintain(request, subject, s3)
+    _maintain(request, subject, s3, db)
     rows = ledger.incomplete_for(subject.account_id)
     return {"items": [{
         "uploadId": r["record"].transfer_id,
+        "labId": d5_ingestion.upload_lab(db, r["record"].transfer_id, transfer=True),
         "sourceLabel": r["record"].source_label,
         "uploadedFiles": r["uploaded_files"], "plannedFiles": r["planned_files"],
         "uploadedBytes": r["uploaded_bytes"], "plannedBytes": r["planned_bytes"],
@@ -283,7 +286,7 @@ def get_upload_transfer(request: Request, upload_id: str = Path(alias="uploadId"
             "outcome": f.outcome,
             "uploadedParts": uploaded_parts,
         })
-    return {"uploadId": upload_id, "expiresAt": _iso(record.expires_at), "files": files}
+    return {"labId": target_lab(db), "uploadId": upload_id, "expiresAt": _iso(record.expires_at), "files": files}
 
 
 # ═══════════════════════════════ URL 발급 ═══════════════════════════════════
@@ -415,7 +418,7 @@ def create_early_preview_upload(request: Request,
     _s3(request)
     transfer = _ledger(db)
     record = _open_transfer(transfer, upload_id)
-    if str(record.uploader_account_id) != str(subject.account_id):
+    if str(record.uploader_account_id) != str(subject.account_id) and not d2_access.is_manager(db, subject.account_id):
         raise errors.not_found("없는 전송이거나 이어올리기 창(72시간)이 지났다.")
 
     transfer_id = Ulid(upload_id)
@@ -423,7 +426,7 @@ def create_early_preview_upload(request: Request,
     accept = _accept_ledger(db)
     if existing is not None:
         files = accept.files(Ulid(existing))
-        return {"uploadId": existing, "files": _file_records(files)}
+        return {"labId": target_lab(db), "uploadId": existing, "files": _file_records(files)}
 
     first_body = next((f for f in transfer.files(upload_id)
                        if f.kind == "본체" and f.outcome == "올라감"), None)
@@ -449,7 +452,7 @@ def create_early_preview_upload(request: Request,
     accept.publish_accepted(upload_id=preview_id,
                             actor_account_id=subject.account_id, files=[preview_file])
     transfer.set_early_preview(transfer_id=transfer_id, preview_id=preview_id)
-    return {"uploadId": str(preview_id), "files": _file_records([preview_file])}
+    return {"labId": target_lab(db), "uploadId": str(preview_id), "files": _file_records([preview_file])}
 
 
 # ═══════════════════════════ 완결 = 접수 승계 ═══════════════════════════════
@@ -486,7 +489,7 @@ def complete_upload_transfer(request: Request,
                             actor_account_id=subject.account_id, files=records)
     # `UploadReceipt` 조립은 form-data 입구와 **같은 함수**다 — `relativePath` 가 어느 입구로
     # 왔든 같은 자리에 같은 값으로 선다 (계약 `UploadFileRef` 산문 · `〈339〉-(나)`).
-    return {"uploadId": upload_id, "files": _file_records(records)}
+    return {"labId": target_lab(db), "uploadId": upload_id, "files": _file_records(records)}
 
 
 # ═══════════════════════════════ 중단 ═══════════════════════════════════════

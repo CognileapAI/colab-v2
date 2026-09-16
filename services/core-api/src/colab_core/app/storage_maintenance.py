@@ -1,5 +1,6 @@
 """S3 원본 회수의 조립 경계 — D5 후보 + D2 가시성 + D3 소유권 + exact-key 삭제."""
 from __future__ import annotations
+from .access import dataset_access
 
 import collections
 import dataclasses
@@ -16,7 +17,7 @@ from ..kernel import storage_layout
 from ..kernel.auth import Subject
 from ..kernel.ids import Ulid
 from ..kernel.s3 import S3Error
-from ..kernel.scope import apply_scope
+from ..kernel.scope import apply_scope, select_target_lab
 
 RECLAIM_MODES = ("observe", "apply")
 COMPLETED_TRANSFER_RETENTION_DAYS = 7
@@ -254,7 +255,7 @@ def _d3_ownership(session: Session) -> tuple[bool, set[str], set[str], set[str]]
     snapshot = d3_catalog.reclaim_ownership_snapshot(session)
     dataset_ids = list(snapshot.dataset_file_counts)
     try:
-        access = d2_access.DatasetAccessAdapter(session).dataset_access(
+        access = dataset_access(session).dataset_access(
             [Ulid(dataset_id) for dataset_id in dataset_ids])
     except Exception:  # DB/Port 실패는 소유권 없음이 아니라 unknown이다.
         return False, set(), set(), set()
@@ -429,16 +430,19 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
 def run_storage_maintenance(factory: sessionmaker[Session], subject: Subject, *, s3,
                             mode: str = "observe", now: dt.datetime | None = None,
                             approval: StorageReclaimApproval | None = None,
+                            target_lab_id: str | None = None,
                             ) -> StorageMaintenanceReport:
     """요청과 독립된 REPEATABLE READ 트랜잭션에서 유지보수를 commit한다."""
     session = factory()
     try:
         session.begin()
         session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        apply_scope(session, subject)
+        apply_scope(session, subject, operator_read=subject.operator)
+        if target_lab_id is not None and subject.operator:
+            select_target_lab(session, subject, str(target_lab_id))
         report = maintain_storage(
             session, s3=s3, mode=mode, now=now, include_open_transfers=True,
-            lab_id=str(subject.lab_id), approval=approval)
+            lab_id=target_lab_id or subject.lab_id, approval=approval)
         session.commit()
         return report
     except BaseException:

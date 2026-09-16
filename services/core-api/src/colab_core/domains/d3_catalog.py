@@ -31,7 +31,7 @@ _ROWS = text("""
            -- ⚠ 응답에는 안 나간다 — `DatasetRow` 는 `additionalProperties: false` 이고
            --   표 8열이 이 값을 안 그린다. 조립 층이 밑줄 열쇠로 들고 조건만 건다.
            dd.category, dd.data_type,
-           u.name AS uploader_name,
+           COALESCE(u.name, d.uploader_account_id::text) AS uploader_name,
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
            -- `body_access` RESTRICTIVE 아래서 본체 테이블을 세면 잠긴 행이 0 을 낸다(실측).
            -- 트리거가 이 열을 유지하고, `tests/test_file_count_drift.py` 가 드리프트를 잡는다.
@@ -47,7 +47,7 @@ _ROWS = text("""
          WHERE f.dataset_id = d.id AND f.kind = '기준 격자 파일'
       ) AS _grid ON true
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
-      JOIN d1_account u ON u.id = d.uploader_account_id
+      LEFT JOIN d1_account u ON u.id = d.uploader_account_id
      WHERE d.deleted_at IS NULL
 """)
 
@@ -60,11 +60,11 @@ _LINEAGE_CANDIDATE_PAGE = text("""
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            d.file_count, d.processing_level_user_set,
            dd.name, dd.topic, dd.summary, dd.category, dd.data_type,
-           u.name AS uploader_name
+           COALESCE(u.name, d.uploader_account_id::text) AS uploader_name
       FROM d3_dataset d
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
       LEFT JOIN d3_dataset_autometa am ON am.dataset_id = d.id
-      JOIN d1_account u ON u.id = d.uploader_account_id
+      LEFT JOIN d1_account u ON u.id = d.uploader_account_id
      WHERE d.deleted_at IS NULL
        AND (CAST(:exclude_id AS text) IS NULL OR d.id <> CAST(:exclude_id AS ulid))
        AND (CAST(:category AS text) IS NULL OR dd.category = CAST(:category AS text))
@@ -157,16 +157,16 @@ _ONE = text("""
            -- (`DatasetRow`)에는 이 칸이 계약에도 화면에도 없다.
            -- ⛔ `d.source_label` 은 위에 그대로 있다 — Lv 무관 상시 노출이다(미결-11 ⓐ).
            d.source_url, d.source_downloaded_on,
-           u.name AS uploader_name,
-           o.name AS owner_name
+           COALESCE(u.name, d.uploader_account_id::text) AS uploader_name,
+           COALESCE(o.name, d.owner_account_id::text) AS owner_name
       FROM d3_dataset d
       LEFT JOIN LATERAL (
         SELECT count(*) AS n FROM d3_file f
          WHERE f.dataset_id = d.id AND f.kind = '기준 격자 파일'
       ) AS _grid ON true
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
-      JOIN d1_account u ON u.id = d.uploader_account_id
-      JOIN d1_account o ON o.id = d.owner_account_id
+      LEFT JOIN d1_account u ON u.id = d.uploader_account_id
+      LEFT JOIN d1_account o ON o.id = d.owner_account_id
      WHERE d.id = :dataset_id AND d.deleted_at IS NULL
 """)
 
@@ -1655,3 +1655,9 @@ def find_tombstone(session: Session, dataset_id: Ulid) -> TombstoneMark | None:
         return None
     return TombstoneMark(deleted_at=row["deleted_at"],
                          deleted_by_account_id=row["deleted_by_account_id"])
+
+
+def dataset_labs(session: Session, ids: list[Ulid]) -> dict[str, str]:
+    rows = session.execute(text("SELECT id,lab_id FROM d3_dataset WHERE id=ANY(:ids)"),
+                           {"ids": [str(i) for i in ids]})
+    return {str(row.id).strip(): str(row.lab_id).strip() for row in rows}

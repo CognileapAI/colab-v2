@@ -1467,9 +1467,17 @@ CREATE POLICY lab_boundary ON d3_file FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 -- 허용자 목록 + 만료일. 데이터셋이 값을 정했으면 그쪽이, 아니면 연구실 기본값이 적용된다 (P-27 · ㉗).
 -- 만료된 줄은 조건에서 저절로 빠진다 — 만료를 애플리케이션이 지우러 다니지 않아도 DB 가 거부한다 (P-25).
+CREATE FUNCTION is_dataset_manager(target_lab char(26)) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+  SELECT COALESCE(current_setting('app.operator_manage', true), '') = 'on' OR EXISTS (
+    SELECT 1 FROM d2_member_role r WHERE r.account_id = current_account_id()
+      AND r.lab_id = target_lab AND r.role = '교수'
+  )
+$$;
+
 CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
   USING (
-    COALESCE(
+    is_dataset_manager(d3_file.lab_id) OR COALESCE(
       (SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),
       (SELECT p.default_visibility FROM d1_lab_profile p WHERE p.lab_id = d3_file.lab_id)
     ) = '열림'
@@ -1481,7 +1489,7 @@ CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
     )
   )
   WITH CHECK (
-    COALESCE(
+    is_dataset_manager(d3_file.lab_id) OR COALESCE(
       (SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),
       (SELECT p.default_visibility FROM d1_lab_profile p WHERE p.lab_id = d3_file.lab_id)
     ) = '열림'
@@ -1617,9 +1625,9 @@ CREATE POLICY lab_boundary ON d8_operator_export FOR ALL USING(lab_id=current_la
 --   INSERT·UPDATE·DELETE 는 `lab_boundary` 의 USING·WITH CHECK 을 그대로 통과해야 한다.
 --   UPDATE·DELETE 가 행을 고를 때 SELECT 정책도 함께 적용되지만, **고른 뒤의 쓰기 판정은
 --   여전히 `lab_boundary`** 다 — 그래서 남의 연구실 행은 보이되 고쳐지지 않는다.
---   `d3_file` 의 RESTRICTIVE `body_access` 는 그대로 남는다: 운영자라도 잠긴 본체는 못 연다.
+--   RESTRICTIVE body_access는 시스템 관리자와 해당 연구실 교수 관리자를 허용한다.
 --
---   스위치(`app.operator_read`)는 커널이 **운영자의 읽기 요청에만** 켠다. 요청이 그것을
+--   스위치(`app.operator_read`)는 커널이 인증된 시스템 관리자 요청에만 켠다. 요청이 그것을
 --   보내는 경로는 없다 — 경계는 여전히 주체에서만 나온다 (CLAUDE.md §3-5 · P-9·P-10).
 CREATE POLICY operator_read ON d1_lab_profile                  FOR SELECT USING (is_operator_read());
 CREATE POLICY operator_read ON d1_account                      FOR SELECT USING (is_operator_read());

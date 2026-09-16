@@ -3,16 +3,17 @@
 import { api } from '../../api/client';
 import { NotImplemented, type ProjectCreate, type ProjectSource } from './types';
 
-export function apiProjectSource(): ProjectSource {
+export function apiProjectSource(targetLabId?: string): ProjectSource {
+  const headers = targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {};
   return {
     async list() {
-      const r = await api.GET('/projects', { params: { query: {} } });
+      const r = await api.GET('/projects', { headers, params: { query: {} } });
       if (r.response.status === 501) throw new NotImplemented();
       return r.data?.items ?? [];
     },
 
     async create(body: ProjectCreate) {
-      const r = await api.POST('/projects', { body });
+      const r = await api.POST('/projects', { headers, body });
       if (r.response.status === 501) throw new NotImplemented();
       // ⭑ **⟨WU-A7R · PRD-42⟩ 서버가 적어 보낸 거절 문면을 그대로 올린다.** 이름 중복은
       // 400 ＋ 축자 문면으로 오고, 화면이 그것을 띄운다 — 같은 문장을 화면에서 다시 지으면

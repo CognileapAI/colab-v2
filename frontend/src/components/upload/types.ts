@@ -82,6 +82,7 @@ export class NoResolvedGrid extends Error {}
 
 /** `create` 의 선택 인자. sourceLabel·resumeUploadId는 프리사인드 전송 전용이고 진행률은 폴백도 쓴다. */
 export interface UploadCreateOptions {
+  targetLabId?: string;
   /** 배너·목록에 보일 묶음 이름. */
   sourceLabel?: string;
   /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
@@ -93,6 +94,7 @@ export interface UploadCreateOptions {
 
 /** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈338〉). */
 export interface IncompleteTransferItem {
+  labId?: string;
   uploadId: string;
   sourceLabel: string;
   uploadedFiles: number;
@@ -116,7 +118,7 @@ export interface UploadSource {
   gridOptions?(uploadId: string): Promise<GridOptions>;
   reuseGrid?(uploadId: string, sourceDatasetId: string): Promise<UploadFileRef[]>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
-  register(body: DatasetCreate): Promise<{ datasetId: string }>;
+  register(body: DatasetCreate, targetLabId?: string): Promise<{ datasetId: string }>;
   /** 등록된 데이터셋에 사용자 대표 그림을 별도 저장한다. 등록 재시도와 수명을 섞지 않는다. */
   putRepresentativeImage?(
     datasetId: string,

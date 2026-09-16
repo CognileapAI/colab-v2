@@ -90,12 +90,12 @@ def test_locked_body_and_cross_lab_dataset_do_not_expose_or_accept_image_bytes(p
     """메타 RLS만 보고 본체 접근 검사를 빼는 회귀를 잡는다."""
     client = p2_client()
     locked_get = client.get(
-        f"{API_PREFIX}/datasets/{DS_A2}/representative-image", headers=auth(TOKEN_PROF))
-    assert _put(client, DS_A2, token=TOKEN_PROF).status_code == 403
+        f"{API_PREFIX}/datasets/{DS_A2}/representative-image", headers=auth(TOKEN_RES))
+    assert _put(client, DS_A2, token=TOKEN_RES).status_code == 403
     assert locked_get.status_code == 403, locked_get.text
     foreign_get = client.get(
-        f"{API_PREFIX}/datasets/{DS_B1}/representative-image", headers=auth(TOKEN_PROF))
-    assert _put(client, DS_B1, token=TOKEN_PROF).status_code == 404
+        f"{API_PREFIX}/datasets/{DS_B1}/representative-image", headers=auth(TOKEN_RES))
+    assert _put(client, DS_B1, token=TOKEN_RES).status_code == 404
     assert foreign_get.status_code == 404, foreign_get.text
 
 

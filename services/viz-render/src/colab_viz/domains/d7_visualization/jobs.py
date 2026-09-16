@@ -156,9 +156,10 @@ class RenderJob:
 
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
+        target = {"uploadId" if self.spec.target.is_upload else "datasetId": self.spec.target.target_id}
         if self.persisted_body is not None:
-            return self.persisted_body
-        body: dict = {"renderId": self.render_id, "status": self.status}
+            return {**self.persisted_body, "target": target}
+        body: dict = {"renderId": self.render_id, "status": self.status, "target": target}
         if self.status == STATUS_DRAWING and self.stage:
             body["stage"] = self.stage
         if self.expires_at is not None:

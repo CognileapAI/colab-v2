@@ -312,7 +312,10 @@ export interface paths {
     "/lab": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -338,7 +341,10 @@ export interface paths {
     "/lab/default-grid": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -361,7 +367,10 @@ export interface paths {
     "/lab/members": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -384,7 +393,10 @@ export interface paths {
     "/lab/members/permissions": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -407,7 +419,10 @@ export interface paths {
     "/uploads": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -443,7 +458,10 @@ export interface paths {
     "/uploads/transfers": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -470,7 +488,10 @@ export interface paths {
     "/uploads/transfers/incomplete": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -492,7 +513,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -523,7 +547,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/put-urls": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -547,7 +574,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/files/{fileId}/multipart": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -576,7 +606,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/files/{fileId}/part-urls": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -605,7 +638,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/files/{fileId}/complete": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -635,7 +671,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/complete": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -663,7 +702,10 @@ export interface paths {
     "/uploads/transfers/{uploadId}/early-preview": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -689,7 +731,10 @@ export interface paths {
     "/uploads/{uploadId}/files": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -730,7 +775,10 @@ export interface paths {
     "/uploads/{uploadId}/files/{fileId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -777,7 +825,10 @@ export interface paths {
     "/uploads/{uploadId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -802,7 +853,10 @@ export interface paths {
     "/uploads/{uploadId}/grid-options": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -828,7 +882,10 @@ export interface paths {
     "/uploads/{uploadId}/grid-reuse": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -854,7 +911,10 @@ export interface paths {
     "/uploads/{uploadId}/lineage-suggestions": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -884,7 +944,10 @@ export interface paths {
     "/datasets": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -919,7 +982,10 @@ export interface paths {
     "/datasets/facets": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1025,7 +1091,10 @@ export interface paths {
     "/datasets/{datasetId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1074,7 +1143,10 @@ export interface paths {
     "/datasets/{datasetId}/representative-image": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1142,7 +1214,10 @@ export interface paths {
     "/datasets/{datasetId}/deletion-impact": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1166,7 +1241,10 @@ export interface paths {
     "/datasets/{datasetId}/files": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1225,7 +1303,10 @@ export interface paths {
     "/datasets/{datasetId}/search-evidence": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1249,7 +1330,10 @@ export interface paths {
     "/datasets/{datasetId}/files/{fileId}/search-evidence": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -1279,7 +1363,10 @@ export interface paths {
     "/datasets/{datasetId}/grid-files": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1330,7 +1417,10 @@ export interface paths {
     "/datasets/{datasetId}/files/{fileId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -1393,7 +1483,10 @@ export interface paths {
     "/datasets/{datasetId}/files/{fileId}/download": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -1432,7 +1525,10 @@ export interface paths {
     "/datasets/{datasetId}/download": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1506,7 +1602,10 @@ export interface paths {
     "/datasets/{datasetId}/lineage": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1531,7 +1630,10 @@ export interface paths {
     "/datasets/{datasetId}/lineage/parents": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1556,7 +1658,10 @@ export interface paths {
     "/datasets/{datasetId}/lineage/parents/{parentDatasetId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 parentDatasetId: components["schemas"]["Ulid"];
@@ -1599,7 +1704,10 @@ export interface paths {
     "/datasets/{datasetId}/lineage/confirmation": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1623,7 +1731,10 @@ export interface paths {
     "/datasets/{datasetId}/lineage/unknown-declaration": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1665,7 +1776,10 @@ export interface paths {
     "/datasets/{datasetId}/access-requests": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1689,7 +1803,10 @@ export interface paths {
     "/access-requests/pending": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1711,7 +1828,10 @@ export interface paths {
     "/access-requests/{requestId}/approval": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 requestId: components["parameters"]["RequestId"];
             };
@@ -1735,7 +1855,10 @@ export interface paths {
     "/access-requests/{requestId}/rejection": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 requestId: components["parameters"]["RequestId"];
             };
@@ -1757,7 +1880,10 @@ export interface paths {
     "/datasets/{datasetId}/verification-request": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1780,7 +1906,10 @@ export interface paths {
     "/verification-requests/pending": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1802,7 +1931,10 @@ export interface paths {
     "/datasets/{datasetId}/verification": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1825,7 +1957,10 @@ export interface paths {
     "/datasets/{datasetId}/verification-cancellation": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -1850,7 +1985,10 @@ export interface paths {
     "/projects": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1878,7 +2016,10 @@ export interface paths {
     "/projects/{projectId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -1912,7 +2053,10 @@ export interface paths {
     "/projects/{projectId}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -1936,7 +2080,10 @@ export interface paths {
     "/projects/{projectId}/datasets/{datasetId}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
                 datasetId: components["parameters"]["DatasetId"];
@@ -1971,7 +2118,10 @@ export interface paths {
     "/preview-palettes": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2016,7 +2166,10 @@ export interface paths {
     "/preview-target-descriptions": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2121,7 +2274,10 @@ export interface paths {
     "/preview-screenshots": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2166,7 +2322,10 @@ export interface paths {
     "/datasets/{datasetId}/value-lookup": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -2884,6 +3043,7 @@ export interface components {
          *     조용히 빼지 않는다.
          */
         UploadTransferPlan: {
+            labId?: components["schemas"]["Ulid"];
             uploadId: components["schemas"]["Ulid"];
             /** Format: date-time */
             expiresAt: string;
@@ -2913,6 +3073,7 @@ export interface components {
          *     서버가 S3 ListParts 로 실측한 값이다 — 파트의 정본은 S3 다.
          */
         UploadTransferStatus: {
+            labId?: components["schemas"]["Ulid"];
             uploadId: components["schemas"]["Ulid"];
             /** Format: date-time */
             expiresAt: string;
@@ -2929,6 +3090,7 @@ export interface components {
          */
         IncompleteUploadTransfers: {
             items: {
+                labId?: components["schemas"]["Ulid"];
                 uploadId: components["schemas"]["Ulid"];
                 sourceLabel: string;
                 uploadedFiles: number;
@@ -2977,6 +3139,7 @@ export interface components {
          *     (`../events/envelope.json`), `core-viz` 의 `RenderTarget.uploadId`(S-08)도 같은 값을 쓴다.
          */
         UploadReceipt: {
+            labId?: components["schemas"]["Ulid"];
             uploadId: components["schemas"]["Ulid"];
             files: components["schemas"]["UploadFileRef"][];
         };
@@ -2986,6 +3149,7 @@ export interface components {
          *     조각(part) 단위 상태는 없다 — 정본이 이어올리기를 범위 밖으로 뒀다 (`Policy §9`).
          */
         UploadStatus: {
+            labId?: components["schemas"]["Ulid"];
             uploadId: components["schemas"]["Ulid"];
             files: components["schemas"]["UploadFileRef"][];
             /** @description `upload.ready`(⑥) 가 왔는가 — 등록 결정 게이트를 볼 수 있는 상태 (`Policy §7.1`·`§8`). */
@@ -3789,16 +3953,8 @@ export interface components {
              * @description ⭑ **⟨증보 2026-09-13 · 승인 intent `dev-package/intent/2026-09-12-operator-designation.md`
              *     「영향 범위 · 계약: 추가만 · 계약 파괴 여부: 아니오」⟩ 이 데이터셋을 가진 연구실.**
              *
-             *     **왜 있는가** — 관리자(운영자)는 모든 연구실을 **읽기 전용**으로 열람하고 쓰기는
-             *     소속 연구실 그대로다(같은 intent 「원한 결과」). 화면이 그 둘을 갈라 그리려면
-             *     「이 데이터셋이 내 연구실 것인가」를 물을 자리가 필요하고, 그 자리가 여기다.
-             *     없으면 화면은 남의 연구실 상세에도 `수정`·`파일 추가`·`기준 격자 추가`·
-             *     `계보 수정 · 추가` 진입점을 그대로 세운다 — 실측 기록은
-             *     `dev-package/reports/r-login-backoffice/task8-realuse/results.md §1-7` 이다.
-             *
-             *     ⚠ **존재의 누설이 아니다** — 이 값이 내려가는 상세는 이미 200 인 상세뿐이고,
-             *     경계 밖 데이터셋은 애초에 404 다(P-9·P-10). 비운영자에게 이 값은 언제나
-             *     `CurrentAccount.labId` 와 같다.
+             *     시스템 관리자는 기존 자료의 실제 연구실을 미리보기 후속 조회 등에 전달한다.
+             *     일반 구성원의 연구실 경계는 유지하며, 클라이언트가 권한을 이 값만으로 부여하지 않는다.
              */
             labId: components["schemas"]["Ulid"];
             /** @description 제목 = 사람이 붙인 이름 (`Policy_데이터셋_상세 §8` 상세 헤더). */
@@ -4163,7 +4319,7 @@ export interface components {
             link: string | null;
             /** @description **전부** 담는다. 자르지 않는다 (`Policy_프로젝트 §5`). */
             datasets: components["schemas"]["ProjectDatasetRow"][];
-            /** @description `프로젝트 생성` 스위치. 꺼졌으면 만들기·수정·닫기 버튼을 숨긴다 (§6·P-12). */
+            /** @description 서버의 프로젝트 관리 판정. 시스템 관리자는 전체 연구실, 교수 관리자는 자기 연구실에서 관리한다. 일반 구성원은 기존 프로젝트 생성 스위치를 따른다. */
             canManage: boolean;
         };
         /**
@@ -4813,6 +4969,7 @@ export interface components {
             fileName?: string;
         };
         RenderJob: {
+            target: components["schemas"]["RenderTarget"];
             renderId: components["schemas"]["Ulid"];
             status: components["schemas"]["RenderStatus"];
             /** @description `status` 가 `그리는 중` 일 때만 있다. */
@@ -5053,6 +5210,8 @@ export interface components {
         };
     };
     parameters: {
+        /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+        TargetLab: components["schemas"]["Ulid"];
         DatasetId: components["schemas"]["Ulid"];
         AccountId: components["schemas"]["Ulid"];
         ProjectId: components["schemas"]["Ulid"];
@@ -5569,7 +5728,10 @@ export interface operations {
     getLab: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5591,7 +5753,10 @@ export interface operations {
     updateLab: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5619,7 +5784,10 @@ export interface operations {
     setLabDefaultGrid: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5652,7 +5820,10 @@ export interface operations {
     listLabMembers: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5677,7 +5848,10 @@ export interface operations {
     saveLabMemberPermissions: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5708,7 +5882,10 @@ export interface operations {
     createUpload: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5760,7 +5937,10 @@ export interface operations {
     initiateUploadTransfer: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5788,7 +5968,10 @@ export interface operations {
     listIncompleteUploadTransfers: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -5810,7 +5993,10 @@ export interface operations {
     getUploadTransfer: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -5836,7 +6022,10 @@ export interface operations {
     abortUploadTransfer: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -5861,7 +6050,10 @@ export interface operations {
     issueUploadUrls: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -5896,7 +6088,10 @@ export interface operations {
     initUploadFileMultipart: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -5932,7 +6127,10 @@ export interface operations {
     issueUploadPartUrls: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -5972,7 +6170,10 @@ export interface operations {
     completeUploadFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6004,7 +6205,10 @@ export interface operations {
     completeUploadTransfer: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6031,7 +6235,10 @@ export interface operations {
     createEarlyPreviewUpload: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6058,7 +6265,10 @@ export interface operations {
     addUploadFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6098,7 +6308,10 @@ export interface operations {
     replaceUploadGridFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6150,7 +6363,10 @@ export interface operations {
     getUploadStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6184,7 +6400,10 @@ export interface operations {
     getUploadGridOptions: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6211,7 +6430,10 @@ export interface operations {
     reuseDatasetGrid: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6254,7 +6476,10 @@ export interface operations {
                 /** @description 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`). */
                 subject?: string;
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
                 uploadId: components["parameters"]["UploadId"];
@@ -6350,7 +6575,10 @@ export interface operations {
                  */
                 mapState?: components["parameters"]["FilterMapState"];
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6375,7 +6603,10 @@ export interface operations {
     createDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6476,7 +6707,10 @@ export interface operations {
                  */
                 verified?: components["parameters"]["FilterVerified"];
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6577,7 +6811,10 @@ export interface operations {
     getDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6603,7 +6840,10 @@ export interface operations {
     deleteDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6627,7 +6867,10 @@ export interface operations {
     updateDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6658,7 +6901,10 @@ export interface operations {
     getDatasetRepresentativeImage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6686,7 +6932,10 @@ export interface operations {
     putDatasetRepresentativeImage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6738,7 +6987,10 @@ export interface operations {
     deleteDatasetRepresentativeImage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6794,7 +7046,10 @@ export interface operations {
     getDatasetDeletionImpact: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6820,7 +7075,10 @@ export interface operations {
     listDatasetFiles: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6856,7 +7114,10 @@ export interface operations {
     addDatasetFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6899,7 +7160,10 @@ export interface operations {
     listDatasetSearchEvidence: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6925,7 +7189,10 @@ export interface operations {
     saveDatasetFileSearchEvidence: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -6962,7 +7229,10 @@ export interface operations {
     attachUploadGridFiles: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -6998,7 +7268,10 @@ export interface operations {
     replaceDatasetGridFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -7047,7 +7320,10 @@ export interface operations {
     deleteDatasetGridFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -7088,7 +7364,10 @@ export interface operations {
     downloadDatasetFile: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 /**
@@ -7119,7 +7398,10 @@ export interface operations {
     downloadDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7178,7 +7460,10 @@ export interface operations {
     getDatasetLineage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7203,7 +7488,10 @@ export interface operations {
     addLineageParent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7235,7 +7523,10 @@ export interface operations {
     removeLineageParent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 parentDatasetId: components["schemas"]["Ulid"];
@@ -7260,7 +7551,10 @@ export interface operations {
     updateLineageParentMethod: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
                 parentDatasetId: components["schemas"]["Ulid"];
@@ -7292,7 +7586,10 @@ export interface operations {
     confirmLineage: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7318,7 +7615,10 @@ export interface operations {
     declareLineageUnknown: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7353,7 +7653,10 @@ export interface operations {
     createAccessRequest: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7398,7 +7701,10 @@ export interface operations {
                  */
                 cursor?: components["parameters"]["Cursor"];
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7423,7 +7729,10 @@ export interface operations {
     approveAccessRequest: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 requestId: components["parameters"]["RequestId"];
             };
@@ -7458,7 +7767,10 @@ export interface operations {
     rejectAccessRequest: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 requestId: components["parameters"]["RequestId"];
             };
@@ -7496,7 +7808,10 @@ export interface operations {
     requestVerification: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7537,7 +7852,10 @@ export interface operations {
                  */
                 cursor?: components["parameters"]["Cursor"];
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7562,7 +7880,10 @@ export interface operations {
     approveVerification: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7597,7 +7918,10 @@ export interface operations {
     cancelVerification: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };
@@ -7639,7 +7963,10 @@ export interface operations {
                 type?: components["schemas"]["ProjectType"];
                 sort?: components["schemas"]["ProjectSort"];
             };
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7664,7 +7991,10 @@ export interface operations {
     createProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7692,7 +8022,10 @@ export interface operations {
     getProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -7717,7 +8050,10 @@ export interface operations {
     deleteProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -7750,7 +8086,10 @@ export interface operations {
     updateProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -7781,7 +8120,10 @@ export interface operations {
     setProjectStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -7812,7 +8154,10 @@ export interface operations {
     linkProjectDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
                 datasetId: components["parameters"]["DatasetId"];
@@ -7842,7 +8187,10 @@ export interface operations {
     unlinkProjectDataset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
                 datasetId: components["parameters"]["DatasetId"];
@@ -7867,7 +8215,10 @@ export interface operations {
     listPalettes: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -7904,7 +8255,10 @@ export interface operations {
     describeTarget: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -8126,7 +8480,10 @@ export interface operations {
     createPreviewScreenshot: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -8195,7 +8552,10 @@ export interface operations {
     lookupDatasetValue: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */
+                "X-CoLAB-Target-Lab"?: components["parameters"]["TargetLab"];
+            };
             path: {
                 datasetId: components["parameters"]["DatasetId"];
             };

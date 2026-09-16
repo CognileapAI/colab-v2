@@ -4,24 +4,33 @@
 //
 // 이 파일은 **탭 자리만** 정한다. `구성원 · 권한` 본체는 components/members 가,
 // `연구실 정보` 본체는 components/lab/LabInfoPanel 이 든다.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LabInfoPanel } from '../components/lab/LabInfoPanel';
-import type { LabSource } from '../components/lab/labSource';
+import { apiLabSource, type LabSource } from '../components/lab/labSource';
 import { MemberPermissionGrid } from '../components/members/MemberPermissionGrid';
-import { livePort, type MembersPort } from '../components/members/port';
+import { apiMembersPort, type MembersPort } from '../components/members/port';
+
+import { useAccount } from '../permission/session';
+import { TargetLabSelect } from '../components/common/TargetLabSelect';
 
 type SettingsTab = 'info' | 'member';
 
 export function LabSettingsPage(props: { port?: MembersPort; labSource?: LabSource }) {
   // 첫 탭은 `연구실 정보` 다 — 목업 순서 그대로. 연구실이 무엇인지가 정해져야 누구를 부를지가 정해진다.
   const [tab, setTab] = useState<SettingsTab>('info');
-  const port = props.port ?? livePort;
+  const account = useAccount();
+  const [targetLabId, setTargetLabId] = useState('');
+  const operator = account?.canManageServiceAccounts === true;
+  const requestLabId = operator ? targetLabId || undefined : undefined;
+  const port = useMemo(() => props.port ?? apiMembersPort(requestLabId), [props.port, requestLabId]);
+  const labSource = useMemo(() => props.labSource ?? apiLabSource(requestLabId), [props.labSource, requestLabId]);
 
   return (
     <div className="settings-page" data-screen="S-07">
       {/* 화면당 `h1` 하나 — 그 화면의 이름이다 (대표 제목 규약 · frontend/README `## 규칙`).
           탭 이름은 제목이 아니라 조작이라 `h1` 이 탭 위에 선다. 탭 본체 제목이 `h2` 다. */}
       <h1>연구실 설정</h1>
+      {operator ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId}/> : null}
       <div className="settabs" role="tablist" aria-label="연구실 설정 탭">
         <button
           type="button"
@@ -43,8 +52,8 @@ export function LabSettingsPage(props: { port?: MembersPort; labSource?: LabSour
         </button>
       </div>
 
-      {tab === 'info' && <LabInfoPanel source={props.labSource} />}
-      {tab === 'member' && <MemberPermissionGrid port={port} />}
+      {(!operator || targetLabId) && tab === 'info' && <LabInfoPanel key={targetLabId} source={labSource} />}
+      {(!operator || targetLabId) && tab === 'member' && <MemberPermissionGrid key={targetLabId} port={port} />}
     </div>
   );
 }
