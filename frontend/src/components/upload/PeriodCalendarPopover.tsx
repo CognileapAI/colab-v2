@@ -79,11 +79,13 @@ export function PeriodCalendarPopover(props: {
     granularity: string;
     startParts: PeriodParts;
     endParts: PeriodParts;
+    granularityChanged: boolean;
   }) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
   const [unit, setUnit] = useState(props.granularity || '일');
+  const [granularityChanged, setGranularityChanged] = useState(false);
   const [start, setStart] = useState<PeriodParts>({ ...props.startParts });
   const [end, setEnd] = useState<PeriodParts>({ ...props.endParts });
   const [shown, setShown] = useState(() => initialMonth(props.startParts));
@@ -136,7 +138,7 @@ export function PeriodCalendarPopover(props: {
               className={g === unit ? 'on' : ''}
               data-testid={`reg-period-unit-${g}`}
               aria-pressed={g === unit}
-              onClick={() => setUnit(g)}
+              onClick={() => { setUnit(g); setGranularityChanged(g !== props.granularity); }}
             >
               {g}
             </button>
@@ -273,6 +275,7 @@ export function PeriodCalendarPopover(props: {
               granularity: unit,
               startParts: trim(start),
               endParts: trim(end),
+              granularityChanged,
             });
             props.onClose();
           }}

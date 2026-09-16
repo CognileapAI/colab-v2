@@ -15,8 +15,17 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from colab_viz.domains.d7_visualization.preview import warp_to_3857
+from colab_viz.domains.d7_visualization import cache, colormap, scale
+from colab_viz.domains.d7_visualization.preview import (
+    BakeOwner,
+    BboxSanityError,
+    _reproject_regular_grid,
+    build_map_layer,
+    sidecar_document,
+    warp_to_3857,
+)
 
 #: D-04 `GK-2A_NDVI_20240615_bilinear_1km.tif` 의 실측 경계와 같은 자리(충청권).
 BOUNDS = (126.70, 36.08, 127.96, 37.36)
@@ -127,3 +136,106 @@ def test_곡선_격자의_발자국_밖은_채우지_않는다():
         assert np.isnan(corner).all(), "마름모 격자의 bbox 모서리가 채워졌다"
     inner = out[h // 2 - h // 8:h // 2 + h // 8, w // 2 - w // 8:w // 2 + w // 8]
     assert float(np.isfinite(inner).mean()) >= 0.95, "발자국 안쪽에 구멍이 남았다"
+
+
+def test_전지구_극점은_mercator_범위에서_제외하고_위도별_값_위치를_보존한다():
+    """±90°가 y 범위를 폭증시켜 유효 위도를 파란 띠로 누르던 회귀를 잡는다."""
+    lat_axis = np.linspace(90.0, -90.0, 512)
+    lon_axis = np.linspace(-180.0, 180.0, 1024)
+    lat = np.repeat(lat_axis[:, None], lon_axis.size, axis=1)
+    lon = np.repeat(lon_axis[None, :], lat_axis.size, axis=0)
+    values = np.repeat(lat_axis[:, None], lon_axis.size, axis=1).astype("f4")
+
+    out, geom = warp_to_3857(values, lat, lon, max_side=1024)
+
+    assert out.shape == (geom.height, geom.width)
+    assert geom.width == 1024
+    assert geom.height > 500
+    assert -85.051129 <= geom.bbox_4326[1] < geom.bbox_4326[3] <= 85.051129
+    assert np.nanmedian(out[:20]) > 70.0
+    assert abs(float(np.nanmedian(out[out.shape[0] // 2 - 5:out.shape[0] // 2 + 5]))) < 5.0
+    assert np.nanmedian(out[-20:]) < -70.0
+    assert np.isfinite(out).any(axis=1).all(), "유효한 전지구 규칙 격자에 투명 가로줄이 생겼다"
+    assert np.isfinite(out).all(axis=0).all(), "유효한 전지구 규칙 격자에 투명 세로줄이 생겼다"
+
+    sidecar = sidecar_document(
+        name="map.png", layer="지도형", source="surface.grib", sources=["surface.grib"],
+        owner=BakeOwner(target_id="01JYZ9K7WQ3N8V4M2X6C5B0DS1", is_upload=False), geom=geom,
+    )
+    assert sidecar["width"] == out.shape[1] and sidecar["height"] == out.shape[0]
+    assert sidecar["bbox_4326"] == list(geom.bbox_4326)
+    assert sidecar["bbox_3857"] == [round(v, 3) for v in geom.bbox_3857]
+
+
+def test_모든_좌표가_mercator_범위_밖이면_명시적으로_실패한다():
+    values = np.ones((2, 2), dtype="f4")
+    lat = np.array([[89.0, 89.0], [-89.0, -89.0]])
+    lon = np.array([[126.0, 127.0], [126.0, 127.0]])
+
+    with pytest.raises(BboxSanityError, match="Mercator"):
+        warp_to_3857(values, lat, lon, max_side=32)
+
+
+def test_축소전에_mercator_범위밖_값을_빼서_경계값에_섞지_않는다():
+    """극점 sentinel이 블록평균에 먼저 들어가 유효 경계색을 오염시키는 회귀를 잡는다."""
+    lat_axis = np.linspace(90.0, -90.0, 2048)
+    lon_axis = np.linspace(-180.0, 180.0, 1024)
+    lat = np.repeat(lat_axis[:, None], lon_axis.size, axis=1)
+    lon = np.repeat(lon_axis[None, :], lat_axis.size, axis=0)
+    values = np.full(lat.shape, 7.0, dtype="f4")
+    values[np.abs(lat) > 85.0511287798066] = 1_000_000.0
+
+    out, _ = warp_to_3857(values, lat, lon, max_side=1024)
+
+    finite = out[np.isfinite(out)]
+    assert finite.size > 0
+    assert np.allclose(finite, 7.0), (float(finite.min()), float(finite.max()))
+
+
+def test_지도형_재투영_변경은_이전_캐시_URL을_재사용하지_않는다(tmp_path):
+    values = np.arange(16, dtype="f4").reshape(4, 4)
+    lat, lon = _mesh(values)
+    color_range = scale.for_dataset("01JYZ9K7WQ3N8V4M2X6C5B0DS1", [values])
+    params = dict(source_digest="surface-grib-sha256", fills=(), palette="viridis",
+                  selection="grib:15:STR", instant="2025-09-01T04:00:00Z")
+
+    image, _, _, _ = build_map_layer(
+        values, lat, lon, color_range=color_range,
+        lut=colormap.lut256(colormap.VIRIDIS_ANCHORS), out_dir=tmp_path,
+        url_base="/previews", key_params=params, grid_digest="grid-sha256",
+        source="surface.grib", sources=["surface.grib"],
+        owner=BakeOwner(target_id="01JYZ9K7WQ3N8V4M2X6C5B0DS1", is_upload=False),
+    )
+    old_key = cache.render_cache_key(
+        long_side=1024, downsample="warp+nearest", crs=cache.MAP_CRS,
+        color_range=color_range, grid_digest="grid-sha256", **params,
+    )
+
+    assert image.cache_key != old_key
+
+
+def test_rasterio_빠른경로는_등간격_북에서남_서에서동_격자만_받는다():
+    values = np.arange(12, dtype="f4").reshape(3, 4)
+    bbox = (0.0, 0.0, 1000.0, 1000.0)
+
+    irregular_lat = np.repeat(np.array([80.0, 10.0, -20.0])[:, None], 4, axis=1)
+    eastward_lon = np.repeat(np.linspace(120.0, 123.0, 4)[None, :], 3, axis=0)
+    assert _reproject_regular_grid(
+        values, irregular_lat, eastward_lon, bbox_3857=bbox, width=4, height=3) is None
+
+    ascending_lat = irregular_lat[::-1]
+    descending_lon = eastward_lon[:, ::-1]
+    assert _reproject_regular_grid(
+        values, ascending_lat, eastward_lon, bbox_3857=bbox, width=4, height=3) is None
+    assert _reproject_regular_grid(
+        values, irregular_lat, descending_lon, bbox_3857=bbox, width=4, height=3) is None
+
+    slightly_curved_lon = eastward_lon + np.array([0.0, 0.0005, 0.001])[:, None]
+    assert _reproject_regular_grid(
+        values, np.repeat(np.array([20.0, 10.0, 0.0])[:, None], 4, axis=1),
+        slightly_curved_lon, bbox_3857=bbox, width=4, height=3) is None
+
+    one_row = np.ones((1, 4), dtype="f8")
+    assert _reproject_regular_grid(
+        np.ones((1, 4), dtype="f4"), one_row, eastward_lon[:1],
+        bbox_3857=bbox, width=4, height=1) is None

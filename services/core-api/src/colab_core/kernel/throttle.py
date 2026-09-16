@@ -17,8 +17,10 @@
 """
 from __future__ import annotations
 
+import math
 import time
 from collections import deque
+from collections.abc import Iterable
 
 
 class AttemptLimiter:
@@ -30,6 +32,12 @@ class AttemptLimiter:
         self._max = max_failures
         self._window = window_seconds
         self._failures: dict[str, deque[float]] = {}
+
+    @property
+    def window_seconds(self) -> int:
+        """창 길이. **밖에서 읽을 수 있어야 한다** — 429 가 대기 시간을 말할 때의 대체값이고,
+        그 값을 부르는 쪽이 따로 적어 두면 두 숫자가 갈라진다."""
+        return self._window
 
     def _prune(self, key: str, now: float) -> deque[float]:
         bucket = self._failures.setdefault(key, deque())
@@ -68,5 +76,41 @@ class AttemptLimiter:
         self._drop_expired(now)
         self._prune(key, now).append(now)
 
+    def retry_after(self, key: str, *, now: float | None = None) -> int:
+        """이 버킷이 **몇 초 뒤에 풀리는가**. 막히지 않았으면 0 이다.
+
+        기준은 창을 **가장 먼저 벗어나는** 실패다 — 정확히는 `max` 번째로 새로운 실패이고,
+        그것이 빠져야 창 안의 셈이 한계 아래로 내려간다. 마지막 실패를 기준으로 재면
+        아직 세고 있지도 않은 시간을 기다리게 하고, 첫 실패를 기준으로 재면 실패가 한계보다
+        많을 때 **아직 막혀 있는 시각**을 알려 준다.
+
+        ⚠ **막혀 있는 동안 0 을 돌려주지 않는다** — 화면은 0 을 「지금 다시 불러도 된다」로
+        읽고, 그 요청은 다시 429 다. 최소 1 초다.
+        """
+        bucket = self._failures.get(key)
+        if not bucket:
+            return 0
+        now = now if now is not None else time.monotonic()
+        cutoff = now - self._window
+        live = [at for at in bucket if at > cutoff]
+        if len(live) < self._max:
+            return 0
+        first_out = live[len(live) - self._max]
+        return max(1, math.ceil(first_out + self._window - now))
+
     def clear(self, key: str) -> None:
         self._failures.pop(key, None)
+
+    def clear_many(self, keys: Iterable[str]) -> int:
+        """열쇠 여럿을 한 번에 지우고 **실제로 지워진 버킷 수**를 돌려준다.
+
+        열쇠의 종류를 가리지 않는다 — 자격 버킷(`name:`·`code:`)이든 클라이언트 버킷
+        (`client:`)이든 같은 dict 의 항목이고, 운영자의 잠금 해제는 그중 지목된 것만 지운다.
+        **지워진 수를 돌려주되 호출자가 그것을 응답에 싣지 않는다** — 「그 열쇠가 잠겨 있었다」는
+        사실 자체가 계정의 존재를 가른다.
+        """
+        removed = 0
+        for key in keys:
+            if self._failures.pop(key, None) is not None:
+                removed += 1
+        return removed
