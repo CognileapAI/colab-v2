@@ -192,10 +192,18 @@ test('운영자가 전 연구실 계정 목록을 일곱 열로 본다',async()=
 });
 
 test('목록 필터 네 가지가 서버 질의 인자로 전달된다',async()=>{
- const fetch=routedFetch();
+ let releaseOptions!:()=>void;
+ const optionsResponse=new Response(new ReadableStream({start(controller){
+  releaseOptions=()=>{controller.enqueue(new TextEncoder().encode(JSON.stringify(OPTIONS)));controller.close();};
+ }}),{headers:{'content-type':'application/json'}});
+ const fetch=routedFetch(url=>url.pathname.endsWith('/admin/account-options')?optionsResponse:undefined);
  renderAdmin();
  await screen.findByRole('table',{name:'계정 목록'});
  const filters=screen.getByRole('group',{name:'계정 목록 필터'});
+ // 표가 먼저 보이고 선택지 응답이 나중에 도착하는 순서를 보장한다.
+ expect(within(filters).queryByRole('option',{name:'B 연구실'})).toBeNull();
+ releaseOptions();
+ await within(within(filters).getByLabelText('연구실')).findByRole('option',{name:'B 연구실'});
  fireEvent.change(within(filters).getByLabelText('연구실'),{target:{value:LAB_B}});
  await waitFor(()=>expect(listUrls(fetch).at(-1)!.searchParams.get('labId')).toBe(LAB_B));
  fireEvent.change(within(filters).getByLabelText('상태'),{target:{value:'inactive'}});
