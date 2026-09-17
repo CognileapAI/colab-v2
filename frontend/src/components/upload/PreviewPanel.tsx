@@ -327,6 +327,19 @@ export function PreviewPanel(props: {
         : props.renderable === false ? 'failed' : 'idle';
 
   /**
+   * ⭑ **⟨2026-09-17 · #92⟩ 지도용 선택지를 보이는가.**
+   *
+   * 계약 필드 `renderable` 은 **참·거짓·없음 3상태**다. 판정은 **거짓으로 확정된
+   * 경우에만 숨김**이다 — 판정 전(값 없음)은 지금과 같이 노출한다. 그래야 값이
+   * 도착해도 화면이 흔들리지 않는다(참·값 없음 → 참인 경로).
+   * ⚠ 화면 단에서는 「모달이 준비 완료가 아니다」와 「계약상 값 없음」이 같은
+   *   `undefined` 로 합쳐져 들어온다(`UploadModal` 의 `status?.ready ? … : undefined`).
+   *   이번 판정은 두 경우를 모두 노출로 다루므로 그 합침이 결과를 바꾸지 않는다.
+   * ⛔ 등록은 막지 않는다 — 그릴 수 없는 것과 등록할 수 없는 것은 다르다(§8·§9).
+   */
+  const mapOptionsVisible = props.renderable !== false;
+
+  /**
    * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
    * 사람이 고른 그림이 있으면 그것, 없으면 **자동 생성된 미리보기 축소본**이 기본이다.
    * `pickedThumb` 는 모달이 보관한 File의 수명에 맞춰 만든 화면 주소다.
@@ -502,14 +515,19 @@ export function PreviewPanel(props: {
           팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
         </p>
       ) : null}
+      {/* ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 접기 묶음째 서지 않는다. */}
+      {mapOptionsVisible && (
       <details className="up-preview-options" data-testid="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
       </details>
+      )}
 
-      {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9) */}
-      {!props.hasReferenceGrid && (
+      {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9)
+          ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 이 안내도 서지 않는다 — 그 안의
+             `짝 파일 없이 그려 보기` 가 할 수 없는 조작을 권하는 자리가 된다. */}
+      {mapOptionsVisible && !props.hasReferenceGrid && (
         <div className="companion" data-testid="up-nogrid">
           <span className="cw">위경도를 담은 짝 파일이 없어요.</span>
           <span className="cw">파일 안에 위경도가 들어 있으면 그려져요. 등록은 막지 않아요.</span>
@@ -547,7 +565,7 @@ export function PreviewPanel(props: {
              근거 = 기획서 rev2(업로드 좌측은 「첫 변수·기간 평균 한 장」). 아래 확장보기
              오버레이와 데이터셋 상세는 이 값을 넘기지 않는다 — 그 두 자리는 무변이다. */
           hideSingleChoice
-        />{vizSetup}</>}
+        />{mapOptionsVisible ? vizSetup : null}</>}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
@@ -677,7 +695,10 @@ export function PreviewPanel(props: {
           {props.renderable === false ? (
             <div data-testid="up-preview-unsupported" role="status">
               <div className="pt">지도로 그릴 수 없는 파일이에요</div>
-              <div className="pd">파일은 그대로 등록할 수 있어요. 미리보기 설정을 열어 직접 그리기를 시도할 수도 있어요.</div>
+              {/* ⭑ ⟨2026-09-17 · #92⟩ 「미리보기 설정을 열어 직접 그리기를 시도할 수도
+                  있어요」 절을 지웠다 — 이 경우 지도용 선택지가 화면에 없다. 없는 조작을
+                  안내하지 않는다. */}
+              <div className="pd">파일은 그대로 등록할 수 있어요.</div>
             </div>
           ) : (
             <>
@@ -691,8 +712,10 @@ export function PreviewPanel(props: {
       )}
       </PreviewSlot>
 
-      {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다 */}
-      {grid && (gridBlock || grid.options) ? (
+      {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다
+          ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 격자를 올려도 그려지지 않는다 —
+             올리라고 권하지 않는다. 등록 자체는 그대로 진행된다. */}
+      {mapOptionsVisible && grid && (gridBlock || grid.options) ? (
         <GridUploadBlock
           state={gridBlock}
           transfer={grid.transfer ?? null}
