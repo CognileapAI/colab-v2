@@ -75,6 +75,27 @@ $(printf '%s\n' "$OUT" | sed 's/^/     /')"
   exit 1
 fi
 if [ "$rc" -ne 0 ]; then
+  # ⭑ ⟨2026-09-17 · 이슈 #55⟩ **무엇이 깨졌는지 이름으로 남긴다.**
+  #   종전에는 실패한 시험의 파일·이름이 요약 어디에도 없어 사람이 1300줄 출력을 뒤졌고,
+  #   `gate-summary.json` 에는 그 값을 적을 열 자체가 없었다. 회차를 넘어 간헐 실패를 누적하려면
+  #   값으로 남아야 한다. 표식은 공용이다 — 실행기가 집어 게이트 행의 5번째 열로 싣는다
+  #   (`gates/run.sh` `summary_failure_marks()` · 형식은 `gates/README.md`).
+  #
+  #   vitest 4.1.11 기본 리포터의 실패 머리줄 축자 형태(이 워크트리의 실물 출력에서 확인):
+  #       ` FAIL  test/zz-fail.test.ts > outer group > fails on purpose`
+  #   = 선행 공백 ＋ `FAIL` ＋ 공백 ＋ 파일 경로 ＋ ` > ` ＋ (suite 사슬 ＋ 시험 이름).
+  #   파일 적재 자체가 깨지면 ` > ` 없이 파일만 오는 줄도 있으므로 그때는 이름을 비운다.
+  printf '%s\n' "$OUT" | awk '
+    /^[[:space:]]*FAIL[[:space:]]/ {
+      line = $0
+      sub(/^[[:space:]]*FAIL[[:space:]]+/, "", line)
+      if (line in seen) next
+      seen[line] = 1
+      idx = index(line, " > ")
+      if (idx > 0) { file = substr(line, 1, idx - 1); name = substr(line, idx + 3) }
+      else         { file = line; name = "" }
+      printf "::gate-failure::gate=frontend-test|file=%s|test=%s\n", file, name
+    }'
   echo "::error::frontend-test red — vitest run 이 실패로 종료했다(코드 $rc).
 $(printf '%s\n' "$OUT" | sed 's/^/     /')"
   exit 1

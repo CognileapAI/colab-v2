@@ -44,9 +44,11 @@ describe('selftest fixture', () => { it('passes', () => { expect(1 + 1).toBe(2);
 T
 }
 
+LAST_OUT=""
 expect_case() { # $1=기대(red|red-ready|green) $2=이름 $3=트리
   local want="$1" name="$2" dir="$3" out ec
   out="$(COLAB_FRONTEND_DIR="$dir" "$GATE" 2>&1)"; ec=$?
+  LAST_OUT="$out"
   case "$want" in
     green)     [ "$ec" -eq 0 ]  && { echo "  ✓ $name — green"; return; } ;;
     red-ready) [ "$ec" -eq 78 ] && { echo "  ✓ $name — red(준비 · 78)"; return; } ;;
@@ -57,17 +59,29 @@ expect_case() { # $1=기대(red|red-ready|green) $2=이름 $3=트리
   rc=1
 }
 
+# 종료 코드만 맞으면 「무엇이 깨졌는지」는 여전히 사라질 수 있다. 직전 케이스가 실제로
+# 그 표식 줄을 찍었는지 본다 — 표식이 없으면 게이트 행의 `failures` 열이 빈 채로 선다.
+expect_last_output() { # $1=이름 $2=있어야 하는 축자 문자열
+  case "$LAST_OUT" in
+    *"$2"*) echo "  ✓ $1" ;;
+    *) echo "::error::frontend-test-selftest red — $1: 출력에 「$2」가 없다."
+       printf '%s\n' "$LAST_OUT" | sed 's/^/     /'; rc=1 ;;
+  esac
+}
+
 # ⓐ 깨끗한 트리 → green (이것이 green 이 아니면 아래 red 들은 의미가 없다)
 d="$TMP/clean/fe"; mk_tree "$d"; pass_test "$d"
 expect_case green "ⓐ 깨끗한 트리(통과 시험 1건)" "$d"
 
-# ⓑ 시험 1건이 실패 → red
+# ⓑ 시험 1건이 실패 → red  ＋ **실패한 시험의 파일·이름이 표식으로 선다**
 d="$TMP/failing/fe"; mk_tree "$d"; pass_test "$d"
 cat > "$d/test/zz-selftest-fail.test.ts" <<'T'
 import { describe, expect, it } from 'vitest';
 describe('selftest fixture', () => { it('fails on purpose', () => { expect(1 + 1).toBe(3); }); });
 T
 expect_case red "ⓑ 시험 1건 실패" "$d"
+expect_last_output 'ⓑ′ 실패 시험명이 ::gate-failure:: 표식으로 선다' \
+  '::gate-failure::gate=frontend-test|file=test/zz-selftest-fail.test.ts|test=selftest fixture > fails on purpose'
 
 # ⓒ ⭑ 수집된 시험 0건 → red. **통과 0·실패 0 은 「전부 통과」가 아니다** (CLAUDE.md §4)
 d="$TMP/notests/fe"; mk_tree "$d"
