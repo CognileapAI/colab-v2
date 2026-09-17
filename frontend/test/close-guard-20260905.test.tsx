@@ -163,17 +163,19 @@ async function openRegisterWithFile(opts: {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
   // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
   await click(screen.getByRole('button', { name: /^② / }));
 }
 
 describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 묻는다', () => {
-  it('파일만 올리고 아무것도 안 적으면 되묻지 않고 닫힌다', async () => {
+  it('분류를 고른 뒤 닫으면 확인한다', async () => {
     await openRegisterWithFile();
     await click(screen.getByTestId('upload-close'));
-    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   it('파일명에서 자동으로 만든 이름 초안은 입력으로 세지 않는다', async () => {
@@ -181,7 +183,7 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
     // 자동 초안이 실제로 칸에 들어 있다 — 그런데도 묻지 않는 것이 이 시험의 값이다.
     expect(screen.getByTestId('reg-name')).toHaveValue('nakdong_precip_2025_Lv2');
     await click(screen.getByTestId('upload-close'));
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   it('설명을 한 글자 적으면 확인 모달이 뜬다 — 문면은 「입력 있음」 갈래다', async () => {
@@ -211,11 +213,10 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
 
   // ⭑ ⟨advisor ② · F3⟩ 세 축은 **사람이 고를 수 있는 칸**이다. 기본값에서 바꾼 뒤
   //   Esc·배경 클릭으로 닫으면 확인 없이 사라지던 자리(A9R F2 와 같은 증상).
-  it('세 축 기본값 그대로면 묻지 않는다', async () => {
+  it('세 축을 고른 것은 사람 입력으로 센다', async () => {
     await openRegisterWithFile();
     await click(screen.getByTestId('upload-close'));
-    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   it('분류·유형·가공 단계 중 하나라도 기본값에서 바꾸면 묻는다', async () => {
@@ -262,8 +263,7 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
       ctx!.onLineageParentsChange([]);
     });
     await click(screen.getByTestId('upload-close'));
-    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   it('③ 에서 프로젝트를 담으면 묻는다', async () => {

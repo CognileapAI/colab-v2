@@ -226,7 +226,12 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
     for (const step of [1, 2] as const) {
       // 지금 서 있는 단계가 맞는지 먼저 확인한다 — 단계를 건너뛴 통과를 막는다.
       expect(screen.getByTestId(`reg-s${step}`)).toBeTruthy();
-      // ② 에서만 필수 칸 하나(설명)를 채운다 — 나머지는 기본값이 서 있다.
+      if (step === 1) {
+        await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+        await change(screen.getByTestId('reg-datatype'), '재분석자료');
+        await change(screen.getByTestId('reg-level'), 'Lv0');
+      }
+      // ② 에서만 필수 메타데이터를 채운다.
       if (step === 2) {
         await change(screen.getByTestId('reg-summary'), '분석 실패 자료 설명 한 줄');
         await click(screen.getByTestId('reg-period-open'));

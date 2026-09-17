@@ -5,7 +5,7 @@
  *
  *   ㈎ `주제` 칸이 없다 — 폼·요청 본문 양쪽에서.
  *   ㈏ 필수/선택 표시는 **배지 하나**로 통일한다 — 라벨 텍스트의 `(선택)` 괄호가 사라진다.
- *   ㈐ 관측 간격 단위 표시 라벨이 `연·월·일·시간·분·초` 다(저장값은 무변).
+ *   ㈐ 관측 간격 단위 표시 라벨이 `년·개월·일·시간·분·초` 다(저장값은 무변).
  *   ㈑ 원천 블록 = 제목 `원천 · 연구실 밖 출처` · 칸 `출처 이름`/`출처 주소`/`내려받은 날` ·
  *      **Lv0 이거나 연결 0건일 때만** 보이고, Lv0 이면 `출처 주소`·`내려받은 날` 이 필수다.
  *   ㈒ `데이터셋 만들기` 검증이 한 곳에 모여 순서대로 돈다 — 첫 실패에 토스트 ＋ 단계 이동.
@@ -186,6 +186,9 @@ async function openRegister(sources: UploadSources): Promise<Mounted> {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), LV0);
   return m;
 }
 
@@ -202,7 +205,15 @@ async function setPeriod(start = '2025-06-01') {
 }
 
 /** 필수 다섯(이름은 파일명에서 기본값) 을 다 채운 상태 — 검증 순서 시험의 기준선이다. */
-async function fillRequired() {
+async function setClassification(level = LV0) {
+  await click(stepBtn('①'));
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), level);
+}
+
+async function fillRequired(level = LV0) {
+  await setClassification(level);
   await click(stepBtn('②'));
   await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
   await setPeriod();
@@ -292,7 +303,7 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
 
 // ═══════════ ㈐ 관측 간격 단위 표시 라벨 ═══════════
 describe('rev2 등록 폼 — 관측 간격 단위 라벨', () => {
-  it('표시 라벨이 `연·월·일·시간·분·초` 이고 **저장값은 무변**이다', async () => {
+  it('표시 라벨이 `년·개월·일·시간·분·초` 이고 **저장값은 무변**이다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
@@ -302,9 +313,37 @@ describe('rev2 등록 폼 — 관측 간격 단위 라벨', () => {
     // 저장값 = 종전 그대로(계약·DB 무변).
     expect(real.map((o) => o.value)).toEqual(['초', '분', '시', '일', '월', '년']);
     // 표시 라벨 = 기획서 축자.
-    expect(real.map((o) => o.textContent)).toEqual(['초', '분', '시간', '일', '월', '연']);
+    expect(real.map((o) => o.textContent)).toEqual(['초', '분', '시간', '일', '개월', '년']);
     expect(INTERVAL_UNIT_LABEL['시']).toBe('시간');
-    expect(INTERVAL_UNIT_LABEL['년']).toBe('연');
+    expect(INTERVAL_UNIT_LABEL['년']).toBe('년');
+  });
+});
+
+describe('#95 메타데이터 입력 문구', () => {
+  it('입력 라벨을 말하고 기간 미리보기와 설명 힌트를 보이지 않는다', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    expect(document.querySelector('label[for="reg-interval-value"]')?.textContent).toContain('관측 간격 입력');
+    expect(document.querySelector('label[for="reg-crs"]')?.textContent).toContain('좌표계 입력');
+    expect(document.querySelector('label[for="reg-grid-description"]')?.textContent).toContain('격자 입력');
+    expect(screen.queryByTestId('reg-period-preview')).toBeNull();
+    expect(screen.queryByTestId('reg-summary-hint')).toBeNull();
+  });
+});
+
+describe('#98 설명 길이', () => {
+  it('3,000자를 입력해 등록 요청에 그대로 싣는다', async () => {
+    const { sources, calls } = fakes();
+    await openRegister(sources);
+    await fillRequired();
+    const summary = '가'.repeat(3_000);
+    const input = screen.getByTestId('reg-summary');
+    expect(input).toHaveAttribute('maxlength', '3000');
+    await change(input, summary);
+    await submit();
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    expect(calls.registered[0]?.summary).toBe(summary);
   });
 });
 
@@ -358,6 +397,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
   it('기본 Lv0을 유지한 채 같은 단계 부모를 연결하면 원천 블록과 적어 둔 값을 유지한다', async () => {
     const { sources, calls } = fakes();
     const m = await openRegister(sources);
+    await setClassification();
     await click(stepBtn('③'));
     await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
     await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
@@ -406,7 +446,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
       }]);
     });
     expect(screen.queryByTestId('reg-source-block')).toBeNull();
-    await fillRequired();
+    await fillRequired('Lv1');
     await submit();
     await waitFor(() => expect(calls.registered).toHaveLength(1));
     const body = calls.registered[0] as Record<string, unknown>;
@@ -442,6 +482,7 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
   it('기간 시작을 안 고르면 세 번째로 잡힌다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await setClassification();
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await change(screen.getByTestId('reg-interval-value'), '1');
@@ -455,6 +496,7 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
   it('#78 관측 간격 누락은 등록하지 않고 입력 단계로 돌아간다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await setClassification();
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await setPeriod();

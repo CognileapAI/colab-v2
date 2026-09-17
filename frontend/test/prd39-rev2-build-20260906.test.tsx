@@ -202,6 +202,9 @@ describe('PRD-39 ① — 파일 분석 3단계 표시와 완료 전 `다음` 비
     await dropFiles([makeFile('a.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     expect(screen.getByTestId('reg-next')).not.toBeDisabled();
   });
 });
@@ -273,6 +276,9 @@ describe('PRD-39 ③ — 파일을 빼면 즉시 반영되고 초기화를 알�
     await dropFiles([makeFile('a.nc'), makeFile('c.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     // ⭑ ⟨WU-B3⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다(PRD-12).
     fireEvent.click(screen.getByRole('button', { name: /^③/ }));
     await act(async () => {});
@@ -423,6 +429,9 @@ describe('PRD-39 ⑫ — 행동 줄이 바닥에 고정되고 할 일을 말한�
     await dropFiles([makeFile('a.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     expect(screen.getByTestId('reg-foot-hint')).toHaveTextContent(FOOT_HINTS[1]);
     fireEvent.click(screen.getByTestId('reg-next'));
     await act(async () => {});

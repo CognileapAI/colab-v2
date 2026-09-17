@@ -122,7 +122,7 @@ async function fillRequiredPeriod() {
   await change(screen.getByTestId('reg-interval-unit'), '시');
 }
 
-/** 등록을 열고 **가공 단계를 건드리지 않은 채** ③ 연결 단계까지 간다. */
+/** 등록을 열고 세 필수 분류값을 명시적으로 고른 뒤 ③ 연결 단계까지 간다. */
 async function openLineageUntouched(sources: UploadSources) {
   render(
     <MemoryRouter initialEntries={['/datasets']}>
@@ -138,6 +138,9 @@ async function openLineageUntouched(sources: UploadSources) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   await click(stepBtn('③'));
   await screen.findByTestId('lin-step');
 }
