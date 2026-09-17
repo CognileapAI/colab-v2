@@ -1,0 +1,34 @@
+{
+  "issue": "#84 (2)",
+  "claim": "viewport height does not move the submit button vertically",
+  "route": "http://127.0.0.1:5199/account-admin",
+  "tab": "사용자 생성",
+  "selector": "[data-testid=ac-submit]",
+  "method": "agent-browser get box (Chrome getBoundingClientRect). Page never scrolled after set viewport, so scrollY=0 and viewport y equals document y.",
+  "command": "python3 scripts/agent-bridge.py run-tool browser -- --session acct4 get box [data-testid=ac-submit]",
+  "measurements": [
+    {
+      "viewport_w": 1280,
+      "viewport_h": 700,
+      "y": 929.546875,
+      "x": 401.5,
+      "w": 462,
+      "h": 40
+    },
+    {
+      "viewport_w": 1280,
+      "viewport_h": 1400,
+      "y": 929.546875,
+      "x": 409,
+      "w": 462,
+      "h": 40
+    }
+  ],
+  "delta_y": 0,
+  "verdict": "pass",
+  "note": "x differs 7.5px because the 700 viewport shows a scrollbar; y is identical.",
+  "screenshots": [
+    "84-account-create-vh700.png",
+    "84-account-create-vh1400.png"
+  ]
+}

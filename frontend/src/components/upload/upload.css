@@ -617,7 +617,9 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .up-preview-options { order:2; border-top:1px solid var(--up-line); padding-top:12px; font-size:13px; }
 .up-preview-options > summary { cursor:pointer; color:var(--up-muted); }
 .up-preview-options[open] > summary { margin-bottom:12px; }
-.up-preview-options .vizsetup { margin-top:12px; }
+/* ⭑ ⟨2026-09-17 · #93⟩ 종전 `.up-preview-options .vizsetup { margin-top:12px }` 을 지웠다 —
+   묶음이 접기 밖(`.pv-frame-wrap`)으로 나가 조상 전제가 깨진 죽은 규칙이 된다. 줄 간격은
+   컨테이너가 소유한다(자식은 margin 을 지지 않는다 · WU-C11 판정 49와 같은 규율). */
 
 .modal-takeover[data-scene="register"] .regsteps .rs-f { display:inline-flex; align-items:center; gap:6px; }
 .regsteps .rs-fn { overflow:hidden; text-overflow:ellipsis; }

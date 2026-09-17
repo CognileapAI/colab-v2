@@ -2589,13 +2589,89 @@ it('변수 행을 추가하면 새 행의 이름 칸으로 초점을 옮긴다',
  expect(screen.getByTestId(`vt-name-${index}`)).toHaveFocus();
 });
 
-it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보이고 수동 그리기는 유지한다', async () => {
+// ⭑ ⟨개정 2026-09-17 · #92⟩ ／ 종전 ~~「…수동 그리기는 유지한다」~~ — 그릴 수 없다고
+//    **확정된** 파일에서 지도용 선택지를 그대로 두면 **할 수 없는 조작을 시도하게 된다**.
+//    승인 intent 가 그 노출을 거둔다. 안내와 자리 선점 상태 판정은 그대로다.
+it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보인다', async () => {
  const { sources } = fakes({ status: { ready: true, renderable: false } });
  await openModal(sources); await dropFiles([makeFile('a.grib')]); await click(screen.getByTestId('reg-open'));
  expect(screen.getByTestId('up-preview-unsupported')).toHaveTextContent('지도로 그릴 수 없는');
  expect(screen.getByTestId('up-preview-slot')).toHaveAttribute('data-preview-slot-state', 'failed');
  expect(screen.queryByText('아직 그리지 않았어요')).toBeNull();
- expect(screen.getByRole('button', { name: '미리보기 그리기' })).toBeInTheDocument();
+ expect(screen.queryByRole('button', { name: '미리보기 그리기' })).toBeNull();
+});
+
+/**
+ * ⭑ **⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정된 파일에서는 지도용 선택지를 숨긴다.**
+ *
+ * 계약 필드 `renderable` 은 **참·거짓·없음 3상태**다. 판정은 **거짓으로 확정된
+ * 경우에만 숨김**이고, 판정 전(값 없음)은 지금과 같이 노출한다 — 숨겼다가 다시
+ * 나타나는 화면 흔들림을 만들지 않는다. 세 경우를 각각 돌려 **존재/부재를 모두**
+ * 단언한다(값 없음·참은 양성 단언이라 조회 실패로 통과할 수 없다).
+ */
+describe('#92 지도용 선택지는 그릴 수 없음이 확정된 경우에만 사라진다', () => {
+ /** 지도용 선택지 네 자리 — 팔레트·구간 수·그리기(#93 으로 접기 밖) ＋ 접기 묶음. */
+ const MAP_OPTIONS = ['up-style-palette', 'up-style-classcount', 'up-preview-draw', 'up-preview-options'] as const;
+
+ it('⑴ 거짓으로 확정되면 지도용 선택지·짝 파일 안내가 모두 없고 등록은 남는다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await openRegister();
+  expect(MAP_OPTIONS).toHaveLength(4);
+  for (const id of MAP_OPTIONS) expect(screen.queryByTestId(id)).toBeNull();
+  expect(screen.queryByTestId('up-nogrid')).toBeNull();
+  expect(screen.queryByTestId('up-preview-without-grid')).toBeNull();
+  // ⛔ 화면 전체가 비어 통과하는 형태를 막는다 — 등록 폼과 등록 버튼은 **여전히 있다**.
+  expect(screen.getByTestId('reg-steps')).toBeInTheDocument();
+  expect(screen.getByTestId('up-preview-unsupported')).toBeInTheDocument();
+  await click(screen.getByRole('button', { name: /^③ / }));
+  expect(screen.getByTestId('reg-done')).toBeInTheDocument();
+ });
+
+ it('⑵ 그 화면의 안내가 없는 설정을 열라고 말하지 않는다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await click(screen.getByTestId('reg-open'));
+  const notice = screen.getByTestId('up-preview-unsupported');
+  expect(notice).toHaveTextContent('파일은 그대로 등록할 수 있어요');
+  expect(notice.textContent).not.toContain('미리보기 설정을 열어');
+  expect(notice.textContent).not.toContain('직접 그리기를 시도할 수도 있어요');
+ });
+
+ it('⑶ 거짓으로 확정돼도 등록이 끝까지 진행된다', async () => {
+  const { sources, calls } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await openRegister();
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+  await click(screen.getByRole('button', { name: /^③ / }));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2026-08-20');
+  await click(screen.getByTestId('reg-done'));
+  await waitFor(() => expect(calls.register).toBe(1));
+ });
+
+ it('⑷ 판정 전(값 없음)에는 지도용 선택지가 그대로 보인다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: null } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await click(screen.getByTestId('reg-open'));
+  for (const id of MAP_OPTIONS) expect(screen.getByTestId(id)).toBeInTheDocument();
+  expect(screen.getByTestId('up-nogrid')).toBeInTheDocument();
+ });
+
+ it('⑸ 그릴 수 있음으로 확정되면 지도용 선택지가 그대로 보인다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: true } });
+  await openModal(sources); await dropFiles([makeFile('a.nc')]);
+  await click(screen.getByTestId('reg-open'));
+  for (const id of MAP_OPTIONS) expect(screen.getByTestId(id)).toBeInTheDocument();
+  expect(screen.getByTestId('up-nogrid')).toBeInTheDocument();
+ });
 });
 
 

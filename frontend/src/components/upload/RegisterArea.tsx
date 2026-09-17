@@ -979,11 +979,13 @@ function StepThree(props: {
 }) {
   const lv0 = props.ctx.processingLevelUserSet === LV0;
   /**
-   * ⭑ **⟨개정 2026-09-14⟩ 원천 블록이 서는 조건 — 직접 상류가 연구실 밖일 때.**
-   * `Lv0`(원시 수집) **또는** 연결 0건. 부모가 붙어 있으면 원천은 부모 쪽 계보가 말한다.
+   * ⭑ **⟨개정 2026-09-17 · #97⟩ 원천 블록이 서는 조건 — 연결 0건 하나다.**
+   * ／ 종전 ~~`Lv0` **또는** 연결 0건~~ — Lv0 에 상위를 붙여도 블록이 남아 **계보가 이미
+   * 말한 출처를 다시 적으라**고 읽혔다. 부모가 붙어 있으면 원천은 부모 쪽 계보가 말한다.
+   * Lv0 이 연결할 수 있는 상위는 Lv0 뿐이라 이 단일 조건이 「Lv0 에 상위 연결」과 동치다.
    * ⛔ 숨은 동안의 값은 전송되지 않는다 — 그 판정은 `UploadModal` 이 **같은 식**으로 한다.
    */
-  const sourceVisible = lv0 || props.ctx.parents.length === 0;
+  const sourceVisible = props.ctx.parents.length === 0;
   return (
     <div data-testid="reg-s3">
     <div className="card is-on">
