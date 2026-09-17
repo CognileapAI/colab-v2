@@ -168,6 +168,24 @@ _CLEANUP: tuple[str, ...] = (
     "d3_dataset_autometa",
     "d3_dataset_description",
     "d3_dataset",
+    # ⭑ **⟨2026-09-17 · 이슈 #47⟩ 계정 계열은 여기서 끝이어야 한다.** 계정을 만드는 시험이
+    # 되돌리기를 `try/finally` 로 손수 적고 있었고(`test_lab_members.py` 의 `_purge_member`),
+    # 생성이 중간에 실패하면 그 `finally` 가 아예 서지 않아 A 연구실에 계정이 영구히 남았다.
+    # 남은 한 행은 `memberCount`(= `count(*) FROM d1_account`) 를 세는 **다음 파일**의 오라클을
+    # 틀리게 하고, 내부 worker 수가 바뀌면 오염원과 피해자의 동거 여부가 바뀌어 판정이 흔들린다.
+    #
+    # ⚠ **순서가 전부다.** `d2_permission_switch`·`d2_member_role` 은 `d1_account` 를 CASCADE
+    # 없이 참조하므로(`db/platform/schema.sql` 앵커 `CREATE TABLE d2_permission_switch`) 먼저
+    # 지워야 하고, `d1_account` 를 참조하는 다른 표(`d3_dataset`·`d4_lineage_edge`·`d5_upload`
+    # …)는 전부 위에 있으므로 **`d1_account` 가 이 튜플의 마지막 원소여야 한다.** 한 건이라도
+    # 막히면 되돌리기 **트랜잭션 전체**가 무효가 된다 — 삭제도 `_RESTORE` 도 함께 사라진다.
+    #
+    # 여기 없는 표가 A 연구실 안에서 **새 계정을 행위자로 남기면** 그날부터 되돌리기가 통째로
+    # 죽는다 — `d2_permission_change`(append-only 트리거가 DELETE 를 거부한다)·`d2_verified`·
+    # `d5_upload_transfer`·`d8_activity`·`d8_download` 다. 게이트 요약의 `errors` 계수가 그 신호다.
+    "d2_permission_switch",
+    "d2_member_role",
+    "d1_account",
 )
 
 #: 표의 **기본키 열은 DB 에게 묻는다.** 여기에 손으로 적어 두면 스키마가 바뀔 때 조용히
