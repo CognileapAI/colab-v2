@@ -162,6 +162,10 @@ GATE_MUTEX_M=0          # 면제(parallel 선언) 건수
 GATE_MUTEX_WAIT=0       # 대기 누계(초)
 if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ "$GATE" != "task" ] \
    && [ -z "${COLAB_GATE_MUTEX_HELD:-}" ]; then
+  # ⚠ 표는 **명령 치환 밖에서** 읽는다. `$(gate_mode_of …)` 는 서브셸이라 거기서 읽으면
+  #   `GATE_MODE` 도 `GATE_PLAN_NOTES` 도 부모로 돌아오지 않는다 — 잠금 판정은 맞게 나오는데
+  #   「표를 못 읽었다」는 메모만 조용히 사라진다. 아래 요약이 그 메모를 찍으려면 여기가 먼저다.
+  gate_mode_read
   if [ "$(gate_mode_of "$GATE")" = "serial" ]; then
     if gate_host_mutex_acquire "$GATE"; then
       GATE_MUTEX_N=1
@@ -221,6 +225,11 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
   echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
   # 면제를 **건수로** 드러낸다 — 말 없는 면제는 면제가 아니라 구멍이다(`AGENTS.md:46`).
   echo "  ── 호스트 뮤텍스 : 잠금 ${GATE_MUTEX_N}건 · 면제(parallel 선언) ${GATE_MUTEX_M}건 · 대기 누계 ${GATE_MUTEX_WAIT}s"
+  # 표 파손·값 이상 메모는 `all` 만의 것이 아니다. 단독 호출도 이제 같은 표를 읽고 그 결과로
+  # 잠금 여부를 정하는데, 여기가 침묵하면 **「왜 잠갔나」의 근거가 사라진다** — 표를 못 읽어
+  # 안전한 쪽(단독)으로 접었다는 사실이 실행기 안에만 남고 읽는 사람에게 가지 않는다.
+  # 「실행기가 아는 사실은 무의미하거나 판정이거나」(ADR-0005 개정)의 출력판이다.
+  for n in ${GATE_PLAN_NOTES[@]+"${GATE_PLAN_NOTES[@]}"}; do echo "  $n"; done
   mapfile -t SUMMARY_OUTS < <(summary_out_paths "${COLAB_GATE_OUTDIR:-}")
   { summary_head "$GATE" "$one_started" "$one_finished" 1 \
       "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"

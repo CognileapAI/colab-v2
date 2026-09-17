@@ -85,6 +85,8 @@
 - [x] ⓔ 면제는 둘뿐 — `parallel` 선언(＋ 요약의 면제 건수 ≥ 1) · `COLAB_GATE_MUTEX_HELD=1`.
       **`COLAB_GATE_SUMMARY_CHILD=1` 만 있는 호출은 점유 중이면 기다린다**(`task` 경로의 모양).
 - [x] ⓕ 배출처를 선언한 레인 경로에서도 `::gate-waiting::` 이 **부모** 출력에 있고 78
+- [x] ⓖ 선언표를 못 읽으면 단독 호출도 그 메모를 stdout 에 찍고 **안전한 쪽(잠근다)** 으로 접는다
+      (커밋 4 · 어드바이저 ② 조건부 수용의 정정 항목)
 - [x] 등록 5곳 — 어댑터 · `run.sh` case · `ALL_GATES` · `parallelism.toml`(**`parallel`**) ·
       README 표 한 행 ＋ 인덱스 실행비트 100755(`git update-index --chmod=+x`).
 - [x] green-by-skip 방지 — **표식 문자열만 grep 하는 케이스를 두지 않았다.** ⓐ 의 실경과와 ⓑ 의
@@ -94,7 +96,7 @@
 - [x] 대상 게이트는 `exec-bit`(인덱스 조회 한 줄)이고 픽스처 toml 로 `serial` 선언한다. 실제
       `parallelism.toml` 에서 `exec-bit` 은 `parallel` 이므로 **green 이면 실행기가 표를 실제로 읽은 것**이다.
 
-### 3. 문서 (이 커밋)
+### 3. 문서 (`7ad972ba`)
 
 **Files:** `gates/README.md` · `gates/config/parallelism.toml` · `docs/decisions/0005-…md`
 · `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md` · 이 파일
@@ -106,13 +108,29 @@
 - [x] ADR-0005 후속 **② 행만** 완료로 갱신(PR 번호 대신 「이 브랜치」). ③④ 행은 형제 몫이라 무변경.
 - [x] `.agents/rules/colab-rules.md §3-1` 은 **건드리지 않았다** — 원본 규칙은 그대로이고 강제 수단이 생긴 것.
 
+### 4. 정정 — 단독 호출이 「표를 못 읽었다」를 삼키던 자리
+
+**Files:** `gates/run.sh` · `gates/tools/gate-host-mutex-selftest.sh` · `gates/README.md` · 이 파일
+
+어드바이저 ② 검토에서 드러났다. 단독 호출이 선언표를 읽게 된 순간 **표를 못 읽었다는 사실도
+단독 호출의 것**이 되는데, `GATE_PLAN_NOTES` 를 찍는 자리가 `all)` 안에만 있었다.
+
+- [x] ⓖ 케이스를 먼저 써서 red 확인 — `[selftest] ⓖ 표를 못 읽었는데 단독 호출이 침묵했다 …✗`(exit 1).
+- [x] **실제 원인은 출력 누락 하나가 아니었다** — 잠금 판정을 `[ "$(gate_mode_of "$GATE")" = serial ]`
+      로 물었는데 **명령 치환은 서브셸**이라 `GATE_MODE` 도 `GATE_PLAN_NOTES` 도 부모로 돌아오지
+      않았다. 잠금은 맞게 걸렸고 메모만 조용히 사라지는 모양이었다. 치환 밖에서 `gate_mode_read`
+      를 먼저 부르도록 고쳤다(부모가 표를 쥐고, 서브셸은 이미 채워진 것을 읽는다).
+- [x] 요약의 「호스트 뮤텍스 :」 줄 뒤에 `GATE_PLAN_NOTES` 를 그대로 출력해 닫는다.
+- [x] ⓖ 는 메모 문자열만 보지 않는다 — **잠금 1건**(표 파손 = 미선언 = 안전한 쪽)을 함께 단언해
+      메모가 장식이 아니라 실제 결정이었음을 값으로 받는다.
+
 ## 검증 결과
 
 ### ① 단독 게이트로 증명한 것
 
 | 게이트 | 판정 | 값 증거 |
 |---|---|---|
-| `gate-host-mutex-selftest` | green | ⓐ 실경과 **2초** ≥ 상한 2초 · ⓑ **`waited=3`** ≥ 1 · ⓔ1 면제 건수 1 · ⓔ3 exit 78 · 2초 |
+| `gate-host-mutex-selftest` | green | 케이스 **7건**(ⓐ~ⓖ). ⓐ 실경과 **2초** ≥ 상한 2초 · ⓑ **`waited=3`** ≥ 1 · ⓔ1 면제 건수 1 · ⓔ3 exit 78 · 2초 · ⓖ 표 파손 메모 ＋ 잠금 1건 |
 | `harness-contract` | green | `parallel-safety declarations 72`(신설 selftest 가 선언표에 있다) |
 | `harness-contract-selftest` | green | — |
 | `db-selftest` | green | `_lock.sh` 의 기존 78 케이스 회귀 |

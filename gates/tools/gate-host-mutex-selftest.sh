@@ -23,6 +23,7 @@
 # ⓐ 점유 중 대기 → 78 (실경과 ≥ 상한)      ⓓ `flock` 부재 → 78
 # ⓑ 점유 해제 뒤 green (`waited` ≥ 1)       ⓔ 면제 셋 — parallel 선언 · `MUTEX_HELD` · CHILD 는 면제가 아니다
 # ⓒ 잠금 디렉터리 쓰기 불가 → 78            ⓕ 레인 경로(배출처 선언)에서 `::gate-waiting::` 이 부모 출력에
+#                                           ⓖ 표를 못 읽으면 단독 호출도 메모를 찍고 안전한 쪽으로 잠근다
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -198,7 +199,24 @@ h="$(held_of)"
 if [ -z "$h" ] || [ "$h" = 0 ]; then ok "ⓕ 획득 실패는 요약 이전에 78 로 끝난다"
 else fail "ⓕ 잠금 ${h}건이 찍혔다 — 획득에 실패했는데 잡았다고 적었다"; fi
 
+echo "══ ⓖ 표를 못 읽으면 단독 호출도 그 사실을 말한다 ════════════════"
+# 단독 호출이 선언표를 읽게 된 순간, **표를 못 읽었다는 사실**도 단독 호출의 것이 된다.
+# 종전에는 그 메모를 `all` 만 찍었다 — 실행기가 안전한 쪽으로 접은 근거가 자기 안에만 남고
+# 읽는 사람에게 가지 않는 자리였다. 침묵은 세 상태 중 무엇도 아니다(ADR-0005 개정).
+BROKEN="$TD/broken.toml"; printf 'this is not toml = = =\n' > "$BROKEN"
+GATE_MANIFEST="$BROKEN" gate exec-bit COLAB_GATE_OUTDIR="$TD/out-g" COLAB_GATE_MUTEX_WAIT=5
+case "$OUT" in
+  *'병렬 선언표를 읽지 못했다'*) ok "ⓖ 표 파손 메모가 단독 호출 stdout 에 있다" ;;
+  *) fail "ⓖ 표를 못 읽었는데 단독 호출이 침묵했다 — 안전한 쪽으로 접은 근거가 드러나지 않는다"
+     printf '%s\n' "$OUT" | tail -8 | sed 's/^/           /' ;;
+esac
+# ⭑ **값 증거** — 메모가 장식이 아니라 실제 결정이었음을 잠금 건수로 받는다.
+#   표를 못 읽었으면 미선언이고, 미선언은 `parallel` 이 아니라 **안전한 쪽(잠근다)** 이다.
+h="$(held_of)"
+if [ "$h" = 1 ]; then ok "ⓖ 표 파손은 미선언이고 미선언은 잠근다 (잠금 ${h}건)"
+else fail "ⓖ 표를 못 읽었는데 잠금 ${h:-표식 없음}건 — 미선언이 조용히 병렬 안전으로 접혔다"; fi
+
 echo "── gate-host-mutex-selftest 요약 ───────────────────────────────"
-echo "  케이스 6건(ⓐ~ⓕ) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
+echo "  케이스 7건(ⓐ~ⓖ) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
 expect_readiness_verdict "gate-host-mutex-selftest" "호스트 뮤텍스 케이스의 실행 환경"
-echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제된다(ⓐ~ⓕ)."
+echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제된다(ⓐ~ⓖ)."
