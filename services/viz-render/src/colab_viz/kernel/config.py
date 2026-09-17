@@ -154,6 +154,8 @@ class Settings:
     #: 「비밀이 없으니 서명 검사를 건너뛴다」는 곧 타일을 아무나 여는 것이다.
     tile_signing_secret: str | None = None
     execution: str = "thread"                  # thread | inline | manual
+    render_queue_size: int = 8
+    journal_enabled: bool = False
     max_render_bytes: int = DEFAULT_MAX_RENDER_BYTES
     result_ttl_seconds: int = DEFAULT_RESULT_TTL_SECONDS
     render_deadline_seconds: float = DEFAULT_RENDER_DEADLINE_SECONDS
@@ -288,6 +290,9 @@ def load_settings() -> Settings:
         tile_signing_secret=resolve_env_or_file(os.environ,
                                                 "COLAB_VIZ_TILE_SIGNING_SECRET"),
         execution=os.environ.get("COLAB_VIZ_EXECUTION", "thread"),
+        render_queue_size=_positive_int_from_env(
+            os.environ.get("COLAB_VIZ_RENDER_QUEUE_SIZE"), 8),
+        journal_enabled=True,
         # **선언이 없으면 한 장이다.** 배포가 아무것도 안 적으면 정본 문면대로 나간다.
         tile_branch_enabled=_tile_branch_from_env(os.environ.get("COLAB_VIZ_TILE_BRANCH")),
         preview_dir=Path(os.environ.get("COLAB_VIZ_PREVIEW_DIR") or DEFAULT_PREVIEW_DIR),

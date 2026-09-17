@@ -34,6 +34,8 @@ Codex 연결 문서는 제품 요구사항이나 승인된 결정을 변경하�
   Claude의 paths 메타데이터가 Codex에서 자동 적용된다고 가정하지 않는다.
 - 브라우저 작업은 `.agents/skills/agent-browser/SKILL.md`를 읽고 agent-browser를 사용한다.
   `frontend-visual`의 읽기 전용 시각 검사는 사용자 여정 E2E를 대신하지 않는다.
+  UI 변경은 실제 브라우저에서 관련 동작을 검증하고, 미검증을 성공으로 보고하지 않는다.
+  환경·계정·방법 선택은 `.agents/skills/verification-before-completion/SKILL.md`를 따른다.
 - `.claude/settings.json`의 훅과 `.claude/agents`의 권한·모델·격리는 Codex에서 자동 적용되지 않는다.
   변경 전 guard와 완료 전 검증은 `docs/development/dual-agent.md`의 명령을 실행한다.
   명시적 guard 호출은 자동 보안 경계가 아니다. 생략했으면 검사했다고 보고하지 않는다.

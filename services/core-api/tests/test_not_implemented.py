@@ -113,6 +113,13 @@ C22_REAL = {
     "createServiceAccount": "tests/test_admin_account_flow.py",
     "changeOwnPassword": "tests/test_admin_account_flow.py",
 }
+#: **핫픽스 HF-B 가 신설과 동시에 구현한 하나.** 표는 **늘지 않는다** —
+#: `searchDatasets`·`listPalettes` 때 세운 규칙 그대로다: **여는 회차에 만든다**
+#: (`X2-FREEZE-PROTOCOL §5-㉰-4` 「집행 없는 신설」 금지). 잠금 해제를 501 로 열어 두면
+#: 잠긴 사람을 푸는 길이 **웹 서버 재시작**뿐인 상태가 그대로 남는다.
+HFB_REAL = {
+    "clearLoginThrottle": "tests/test_login_throttle_clear.py",
+}
 #: **`DL-1` 이 표에서 뺀 둘** (4 → 2 · 2026-09-06). 두 op 은 `NOT_IMPLEMENTED_P1`(= v2 밖)
 #: 이었고 그 배정이 **계약 실물과 어긋나 있었다** — 계약은 처음부터 둘을 들었고(204 묘비 ·
 #: `DeletionImpact` 세 칸) 서버는 이미 `actions.canDelete` 를 판정해 내려보내고 있었다
@@ -126,7 +133,7 @@ DL_REAL = {
     "getDatasetDeletionImpact":   "tests/test_dataset_deletion.py",
 }
 P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL,
-           **C21_REAL, **C22_REAL, **DL_REAL}
+           **C21_REAL, **C22_REAL, **DL_REAL, **HFB_REAL}
 REAL = P1_REAL | set(P2_REAL)
 #: **비었다 — 그리고 그것이 사실이다.**
 #: ⭑ 승인 요청 여섯이 빠졌다 (`P6` · 마이그레이션 `0010` 이 저장처를 만들었다).

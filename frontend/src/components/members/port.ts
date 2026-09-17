@@ -25,13 +25,18 @@ function unwrap(
 }
 
 /** 생성된 클라이언트만 쓴다. 경로·메서드를 손으로 적지 않는다. */
-export const livePort: MembersPort = {
+export function apiMembersPort(targetLabId?: string): MembersPort {
+ const headers = targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {};
+ return {
   async list() {
-    const { data, error } = await api.GET('/lab/members');
+    const { data, error } = await api.GET('/lab/members', { headers });
     return unwrap(data, error as Schemas['ErrorEnvelope'] | undefined);
   },
   async save(request) {
-    const { data, error } = await api.PUT('/lab/members/permissions', { body: request });
+    const { data, error } = await api.PUT('/lab/members/permissions', { headers, body: request });
     return unwrap(data, error as Schemas['ErrorEnvelope'] | undefined);
   },
 };
+
+}
+export const livePort = apiMembersPort();

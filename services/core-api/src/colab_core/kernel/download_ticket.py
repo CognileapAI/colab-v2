@@ -91,12 +91,12 @@ class DownloadTicketSigner:
         return _b64(hmac.new(self._secret, payload.encode("ascii"), hashlib.sha256).digest())
 
     def issue(self, *, dataset_id: Ulid, file_id: Ulid | None, subject: Subject,
-              now: dt.datetime | None = None) -> IssuedTicket:
+              now: dt.datetime | None = None, target_lab_id: str | None = None) -> IssuedTicket:
         now = now or dt.datetime.now(dt.timezone.utc)
         expires_at = (now + dt.timedelta(seconds=TTL_SECONDS)).replace(microsecond=0)
         body = json.dumps(
             {"ds": str(dataset_id), "f": None if file_id is None else str(file_id),
-             "lab": str(subject.lab_id), "sub": str(subject.account_id),
+             "lab": target_lab_id or str(subject.lab_id), "sub": str(subject.account_id),
              "exp": int(expires_at.timestamp()),
              "scope": SCOPE_BUNDLE if file_id is None else SCOPE_FILE},
             separators=(",", ":"), sort_keys=True, ensure_ascii=False,

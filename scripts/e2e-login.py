@@ -212,7 +212,7 @@ def main():
                 logged_in = command("snapshot", "-i")
             if args.inspect:
                 print(logged_in)
-            if args.inspect_upload or args.upload:
+            if not args.journey and (args.inspect_upload or args.upload):
                 upload = re.search(r'button "업로드" \[ref=(e\d+)\]', logged_in)
                 if not upload:
                     raise RuntimeError("Upload action missing")
@@ -349,7 +349,7 @@ def main():
             if cleanup_error:
                 raise RuntimeError("E2E browser cleanup failed") from cleanup_error
     print("PASS: empty login disabled; invalid login rejected; real login; reload persists session; logout returns to login; app/browser/temp cleanup completed")
-    if args.upload:
+    if not args.journey and args.upload:
         print("PASS: real supported-format upload and worker processing; missing description rejected; registration and metadata persist after reload.")
         print("PASS: rendered preview image loads before and after reload" if args.viz_python else "Map rendering not tested.")
 
@@ -365,8 +365,9 @@ if __name__ == "__main__":
             port = int(os.environ.get("COLAB_E2E_CORE_PORT", "8000"))
         app = create_app()
         if sys.argv[1] == "--serve-viz":
-            from fastapi.staticfiles import StaticFiles
-            app.mount("/previews", StaticFiles(directory=os.environ["COLAB_VIZ_PREVIEW_DIR"]), name="e2e-previews")
+            from e2e_preview_static import PreviewStaticFiles
+            app.mount("/previews", PreviewStaticFiles(
+                directory=os.environ["COLAB_VIZ_PREVIEW_DIR"]), name="e2e-previews")
 
         @app.middleware("http")
         async def identify_run(request, call_next):

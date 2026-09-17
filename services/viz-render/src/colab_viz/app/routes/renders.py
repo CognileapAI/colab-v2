@@ -11,15 +11,10 @@ from fastapi import APIRouter, Depends, Path, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ...domains.d7_visualization import jobs, palettes, tiles
-from ...domains.d7_visualization.failures import (
-    NOT_RENDERABLE_MESSAGE, TOO_LARGE_MESSAGE,
-)
-from ...domains.d7_visualization.readers import (
-    SUPPORTED_FORMATS, FieldReadError, NotRenderableError, detect_format,
-)
+from ...domains.d7_visualization.failures import TOO_LARGE_MESSAGE
 from ...kernel import errors
 from ...kernel.ids import new_ulid
-from ...ports.source import SizeMismatch, TargetNotFound, WorkspaceExceeded
+from ...ports.source import TargetNotFound
 from .. import deps
 from ..deps import require_caller, require_caller_or_tile_signature
 
@@ -80,12 +75,6 @@ class RenderRequest(BaseModel):
     withoutReferenceGrid: bool = False
 
 
-def _renderable_details() -> dict:
-    # 안 되는 것만 말하면 무엇을 올려야 하는지 모른 채 떠난다 (정본 §8 · 개정 v2.1-③).
-    # ⚠ 목록을 **계약에 박지 않는다** (`NB-3`) — 여기서 서빙한다.
-    return {"renderableFormats": list(SUPPORTED_FORMATS)}
-
-
 @router.post("/renders", status_code=202)
 def create_render(body: RenderRequest, request: Request) -> dict:
     # **경계를 가장 먼저 읽는다** — 대상을 해석한 뒤에 읽으면 헤더 없는 요청이 「그 대상이
@@ -102,30 +91,15 @@ def create_render(body: RenderRequest, request: Request) -> dict:
 
     total = sum(p.size_bytes for p in target.parts)
     if total > settings.max_render_bytes:
+        target_key = "uploadId" if body.target.uploadId else "datasetId"
+        jobs.log.warning(
+            "render_rejected lab=%s account=%s %s=%s reason=declared_size "
+            "limitBytes=%s targetBytes=%s", lab, account, target_key,
+            body.target.uploadId or body.target.datasetId,
+            settings.max_render_bytes, total)
         raise errors.ApiError(413, errors.RENDER_TOO_LARGE, TOO_LARGE_MESSAGE,
                               {"limitBytes": settings.max_render_bytes,
                                "targetBytes": total})
-
-    # 413 판정은 목록 크기로 했다 — 여기서 바이트를 실제로 놓는다(파일시스템은 항등, s3 는 내려받기).
-    # `detect_format` 이 파일 전체를 요구하므로 요청 스레드에서 한다 — 지연은 `〈340〉` 전환 조건의 실측 항목.
-    try:
-        target = source.materialize(target)
-    except (SizeMismatch, WorkspaceExceeded) as e:
-        raise errors.ApiError(413, errors.RENDER_TOO_LARGE, TOO_LARGE_MESSAGE,
-                              {"limitBytes": settings.max_render_bytes, "reason": str(e)}) from e
-
-    # 어느 조각도 그릴 수 없으면 415 다. **한 조각이라도 그릴 수 있으면 415 가 아니다** —
-    # 그것은 부분 실패이고 읽힌 조각으로 그린다.
-    drawable = 0
-    for part in target.parts:
-        try:
-            detect_format(part.path)
-            drawable += 1
-        except (NotRenderableError, FieldReadError):
-            continue
-    if drawable == 0:
-        raise errors.ApiError(415, errors.NOT_RENDERABLE, NOT_RENDERABLE_MESSAGE,
-                              _renderable_details())
 
     if body.style.palette not in {p.key for p in palettes.PALETTES}:
         raise errors.bad_request(
@@ -140,13 +114,19 @@ def create_render(body: RenderRequest, request: Request) -> dict:
         without_reference_grid=body.withoutReferenceGrid,
         max_preview_side=settings.max_preview_side,
         deadline_seconds=settings.render_deadline_seconds,
+        max_render_bytes=settings.max_render_bytes,
         preview_dir=settings.preview_dir,
         preview_url_base=settings.preview_url_base,
+        materialize=source.materialize,
         preview_sink=request.app.state.preview_sink,
     )
-    job = request.app.state.jobs.submit(new_ulid(), spec,
-                                        temporary=body.target.uploadId is not None,
-                                        lab=lab, account=account)
+    try:
+        job = request.app.state.jobs.submit(new_ulid(), spec,
+                                            temporary=body.target.uploadId is not None,
+                                            lab=lab, account=account)
+    except jobs.QueueFull as e:
+        raise errors.ApiError(503, errors.PREVIEW_QUEUE_FULL,
+                              "미리보기 요청이 많아요. 잠시 뒤 다시 시도해 주세요.") from e
     return job.to_dict()
 
 

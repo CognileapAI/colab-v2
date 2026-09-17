@@ -30,6 +30,7 @@ export type PreviewState =
   | { phase: '실패'; code: string; message: string; salvage: Salvage | null }
   | { phase: '그릴 수 없음'; message: string; renderableFormats: string[] }
   | { phase: '만료됨' }
+  | { phase: '결과 불명'; message: string }
   | { phase: '만들 수 없음'; message: string };
 
 export interface UsePreviewRenderInput {
@@ -41,6 +42,7 @@ export interface UsePreviewRenderInput {
 export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderInput): {
   state: PreviewState;
   rerender: (input: RerenderInput) => void;
+  resume: () => void;
   /** WU-C3 — 500MB 폴백이 **실제로 그린 조각**. 없으면 폴백이 돌지 않았다는 뜻이다. */
   fallbackPiece: PreviewPiece | undefined;
 } {
@@ -60,6 +62,8 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     if (!current) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const unavailableDeadline = Date.now() + 30_000;
+    let unavailableAttempts = 0;
 
     const step = async () => {
       try {
@@ -111,13 +115,13 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
             message: e.message,
             renderableFormats: e.renderableFormats,
           });
-        else if (e instanceof PreviewUnavailable)
-          setState({ phase: '만들 수 없음', message: e.message });
-        else
-          setState({
-            phase: '만들 수 없음',
-            message: '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.',
-          });
+        else if (Date.now() < unavailableDeadline) {
+          // 중계 503은 배포·재기동 중 잠깐 생길 수 있다. 같은 renderId를 다시 조회하면
+          // 서버 작업을 중복 생성하지 않고 최종 상태를 그대로 받을 수 있다.
+          const delay = Math.min(pollMs * 2 ** unavailableAttempts++, 2_000);
+          timer = setTimeout(step, delay);
+        } else
+          setState({ phase: '결과 불명', message: e instanceof PreviewUnavailable ? e.message : '요청 결과를 확인할 수 없어요. 작업 상태를 다시 확인해 주세요.' });
       }
     };
 
@@ -167,5 +171,10 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     [source],
   );
 
-  return { state, rerender, fallbackPiece };
+  const resume = useCallback(() => {
+    setState({ phase: '그리는 중' });
+    setCurrent((prev) => prev ? { id: prev.id, nonce: prev.nonce + 1 } : prev);
+  }, []);
+
+  return { state, rerender, resume, fallbackPiece };
 }

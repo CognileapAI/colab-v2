@@ -46,7 +46,9 @@ def _centers(ul: float, lr: float, n: int) -> np.ndarray:
     return ul + (np.arange(n) + 0.5) * step
 
 
-def from_struct_metadata(text: str) -> tuple[np.ndarray, np.ndarray] | None:
+def from_struct_metadata(text: str, *, row_indices: np.ndarray | None = None,
+                         col_indices: np.ndarray | None = None
+                         ) -> tuple[np.ndarray, np.ndarray] | None:
     """HDF4-EOS `StructMetadata.0` → (위도, 경도) 2차원. 못 읽으면 `None`."""
     def _num(pattern: str):
         m = re.search(pattern, text)
@@ -66,12 +68,16 @@ def from_struct_metadata(text: str) -> tuple[np.ndarray, np.ndarray] | None:
     ulx, uly = float(ul.group(1)), float(ul.group(2))
     lrx, lry = float(lr.group(1)), float(lr.group(2))
     radius = float(params.group(1))
-    xs = np.repeat(_centers(ulx, lrx, nx)[None, :], ny, axis=0)
-    ys = np.repeat(_centers(uly, lry, ny)[:, None], nx, axis=1)
+    rows = np.arange(ny) if row_indices is None else row_indices
+    cols = np.arange(nx) if col_indices is None else col_indices
+    xs = np.repeat(_centers(ulx, lrx, nx)[cols][None, :], len(rows), axis=0)
+    ys = np.repeat(_centers(uly, lry, ny)[rows, None], len(cols), axis=1)
     return _to_lonlat(_SINU_TEMPLATE.format(radius=radius), xs, ys)
 
 
-def from_cf_projection(attrs: dict, shape: tuple[int, int]
+def from_cf_projection(attrs: dict, shape: tuple[int, int], *,
+                       row_indices: np.ndarray | None = None,
+                       col_indices: np.ndarray | None = None
                        ) -> tuple[np.ndarray, np.ndarray] | None:
     """CF 투영 속성(LCC) → (위도, 경도) 2차원. 못 읽으면 `None`.
 
@@ -93,8 +99,10 @@ def from_cf_projection(attrs: dict, shape: tuple[int, int]
     size = float(attrs["pixel_size"])
     ulx = float(attrs["upper_left_easting"])
     uly = float(attrs["upper_left_northing"])
-    xs = np.repeat((ulx + np.arange(nx) * size)[None, :], ny, axis=0)
-    ys = np.repeat((uly - np.arange(ny) * size)[:, None], nx, axis=1)
+    rows = np.arange(ny) if row_indices is None else row_indices
+    cols = np.arange(nx) if col_indices is None else col_indices
+    xs = np.repeat((ulx + cols * size)[None, :], len(rows), axis=0)
+    ys = np.repeat((uly - rows * size)[:, None], len(cols), axis=1)
     proj4 = _LCC_TEMPLATE.format(
         sp1=float(attrs["standard_parallel1"]), sp2=float(attrs["standard_parallel2"]),
         lat0=float(attrs["origin_latitude"]), lon0=float(attrs["central_meridian"]),

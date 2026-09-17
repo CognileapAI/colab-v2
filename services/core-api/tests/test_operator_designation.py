@@ -1,13 +1,12 @@
-"""운영자 지정·해제와 운영자의 전 연구실 **읽기** 스코프.
+"""시스템 관리자 지정·해제와 전 연구실 관리 스코프.
 
-승인 intent = `dev-package/intent/2026-09-12-operator-designation.md`.
+승인 intent = `dev-package/intent/2026-09-16-admin-full-access.md`.
 
 세 가지를 못 박는다 —
   ㈎ 지정·해제는 운영자 누구나 하고, **자기 해제**와 **마지막 한 명 해제**는 거절된다.
   ㈏ 지정·해제는 그 계정의 기존 로그인을 전부 끝낸다(자격 버전 +1 ＋ 원장 revoke).
-  ㈐ 운영자는 모든 연구실을 **읽기만** 한다. 쓰기는 소속 연구실 그대로이고, 그 사실은
-     경계가 열린 채(`app.operator_read='on'`) 도는 DB 층 시험이 증명한다 — HTTP 404 하나로는
-     「정책이 막았다」와 「질의가 그 행을 안 골랐다」가 갈리지 않는다.
+  ㈐ 시스템 관리자는 모든 연구실을 관리한다. 쓰기는 서버가 확정한 대상 연구실 안에서만
+     한다. 전역 발견용 `app.operator_read='on'` 자체는 DB 쓰기 권한을 넓히지 않는다.
 """
 from __future__ import annotations
 
@@ -152,8 +151,8 @@ def test_labless_operator_full_login_cycle_and_demotion_guard(
     assert row["labId"] is None and row["labName"] is None and row["role"] is None
 
     write = client.post("/api/v1/projects", headers=auth(token),
-                        json={"type": "논문", "name": "무소속 쓰기 거부"})
-    assert write.status_code in (403, 404), write.text
+                        json={"type": "논문", "name": "대상 연구실 미선택 거부"})
+    assert write.status_code == 400, write.text
 
     refused = _set_operator(client, TOKEN_PROF, made.json()["accountId"], False)
     assert refused.status_code == 400
@@ -399,9 +398,8 @@ def test_a_non_operator_still_sees_only_its_own_lab(p2_client) -> None:
 def test_the_detail_names_the_lab_that_owns_the_dataset(p2_client) -> None:
     """상세가 **어느 연구실 것인지**를 말한다 — 화면이 「내 것인가」를 물을 유일한 자리다.
 
-    운영자의 읽기는 전 연구실이지만 쓰기는 소속 연구실 그대로다(승인 intent 2026-09-12).
-    화면이 그 둘을 갈라 그리려면 상세에 연구실이 실려야 한다 — 없으면 화면은 남의 연구실
-    데이터에도 편집 진입점을 그대로 세운다(`task8-realuse/results.md §1-7` 실측).
+    시스템 관리자가 타 연구실 자료를 조작해도 소속은 바뀌지 않는다. 상세의 연구실 값은
+    미리보기 후속 요청과 화면의 대상 문맥을 유지한다.
     ⚠ 비운영자에게는 **자기 연구실 값 하나**다 — 남의 연구실 상세는 애초에 404 다.
     """
     client = p2_client(session_secret=SECRET)
@@ -413,23 +411,18 @@ def test_the_detail_names_the_lab_that_owns_the_dataset(p2_client) -> None:
             f"{dataset} 의 상세가 연구실을 말하지 않는다: {detail.json().get('labId')!r}"
 
 
-def test_a_foreign_project_does_not_say_the_operator_may_manage_it(p2_client) -> None:
-    """`ProjectDetail.canManage` 는 **남의 연구실에서 꺼진다** (P-7 · P-12).
-
-    화면은 이 칸 하나로 `수정`·`상태 바꾸기`·`데이터셋 연결` 을 세운다. 서버가 참을 내리면
-    화면은 그 버튼들을 그리고, 누르면 거절된다 — 「읽기 전용」이라 적어 두고 고치는 길을
-    열어 둔 것과 같다(`task8-realuse/results.md §1-7` 이 데이터셋 쪽에서 본 그 어긋남).
-    """
+def test_a_foreign_project_allows_system_administrator_management(p2_client) -> None:
+    """시스템 관리자의 프로젝트 관리 권한은 자기 연구실과 타 연구실 모두 열린다."""
     client = p2_client(session_secret=SECRET)
     token = _operator_token(client)
 
     foreign = client.get(f"/api/v1/projects/{PRJ_B}", headers=auth(token))
     assert foreign.status_code == 200, foreign.text
-    assert foreign.json()["canManage"] is False, \
-        "남의 연구실 프로젝트가 「관리할 수 있다」고 내려왔다."
+    assert foreign.json()["canManage"] is True, \
+        "시스템 관리자가 타 연구실 프로젝트를 관리할 수 없다고 내려왔다."
 
-    # 소속 연구실은 그대로다 — 좁힌 것은 경계 밖뿐이다.
-    mine = client.post("/api/v1/projects", headers=auth(token),
+    # 새 프로젝트는 소속 관리자도 대상 연구실을 명시한다.
+    mine = client.post("/api/v1/projects", headers={**auth(token), "X-CoLAB-Target-Lab": LAB_C},
                        json={"type": "논문", "name": "운영자 자기 연구실 프로젝트"})
     assert mine.status_code == 201, mine.text
     own = client.get(f"/api/v1/projects/{mine.json()['projectId']}", headers=auth(token))
@@ -442,12 +435,12 @@ def test_a_foreign_project_does_not_say_the_operator_may_manage_it(p2_client) ->
     ("delete", f"/api/v1/datasets/{DS_B1}/representative-image"),
     ("delete", f"/api/v1/datasets/{DS_B1}/files/{FILE_B1}"),
 ])
-def test_an_operator_cannot_write_into_another_lab(p2_client, method: str, path: str) -> None:
-    """읽기가 열려도 **고치는 op 은 남의 연구실 행을 찾지 못한다** — 쓰기 스코프는 안 켜진다."""
+def test_operator_access_keeps_data_validity_checks(p2_client, method: str, path: str) -> None:
+    """관리자는 타 연구실을 수정하지만 마지막 본체 파일 삭제 규칙은 유지한다."""
     client = p2_client(session_secret=SECRET)
     token = _operator_token(client)
     response = client.request(method.upper(), path, headers=auth(token))
-    assert response.status_code in (403, 404), f"{method.upper()} {path} → {response.status_code}"
+    assert response.status_code == (200 if method == "patch" else 204 if path.endswith("representative-image") else 409), response.text
 
 
 def test_the_read_scope_never_opens_a_write(session_factory) -> None:
@@ -502,11 +495,11 @@ def test_lab_info_stays_whole_for_an_operator(p2_client) -> None:
     client = p2_client(session_secret=SECRET)
     token = _operator_token(client)
 
-    lab = client.get("/api/v1/lab", headers=auth(token))
+    lab = client.get("/api/v1/lab", headers={**auth(token), "X-CoLAB-Target-Lab": LAB_C})
     assert lab.status_code == 200, lab.text
     assert lab.json()["labId"] == LAB_C, "운영자의 연구실 정보가 자기 연구실이 아니다."
 
-    grid = client.get("/api/v1/lab/members", headers=auth(token))
+    grid = client.get("/api/v1/lab/members", headers={**auth(token), "X-CoLAB-Target-Lab": LAB_C})
     assert grid.status_code == 200, grid.text
     assert lab.json()["memberCount"] == grid.json()["totalCount"], \
         "연구실 정보의 구성원 수와 구성원 격자의 길이가 갈린다 — 두 값의 범위가 다르다."
@@ -520,7 +513,7 @@ def test_lab_info_stays_whole_for_an_operator(p2_client) -> None:
         f"구성원 격자가 자기 연구실({in_lab_c}명) 밖까지 담았다: {grid.json()['totalCount']}명"
 
 
-# ═══════════════════════ ㈑ 읽기는 넓어도 **반출은 자기 연구실** ═══════════════════════
+# ═══════════════════════ ㈑ 모든 연구실의 반출과 이력 ═══════════════════════
 
 def _download_rows(session_factory) -> int:
     """`d8_download` 를 **전 연구실로** 센다 — `0029` 가 이 표에도 읽기 정책을 걸었다.
@@ -579,13 +572,8 @@ def _own_lab_dataset(session_factory, account_id: str):
             "DELETE FROM d3_dataset WHERE id = :id")
 
 
-def test_an_operator_cannot_download_another_labs_dataset(p2_client, session_factory) -> None:
-    """전 연구실 **읽기**가 반출까지 열지 않는다 — 바이트는 자기 연구실 것만이다.
-
-    두 발급 op(`downloadDataset`·`downloadDatasetFile`)이 남의 연구실 데이터셋에 대해
-    **없는 것과 같은 봉투**(404 · `NOT_FOUND`)를 내고, `d8_download` 에 한 줄도 안 적는다.
-    이력이 적히면 「반출을 거절했다」와 「반출했다」가 원장에서 갈리지 않는다.
-    """
+def test_system_administrator_downloads_foreign_and_own_lab_datasets(p2_client, session_factory) -> None:
+    """두 다운로드 발급 op은 타 연구실에서도 성공하고 각각 이력을 남긴다."""
     client = p2_client(session_secret=SECRET)
     account_id, token = _operator_identity(client)
 
@@ -594,31 +582,19 @@ def test_an_operator_cannot_download_another_labs_dataset(p2_client, session_fac
         for path in (f"/api/v1/datasets/{DS_B1}/download",
                      f"/api/v1/datasets/{DS_B1}/files/{FILE_B1}/download"):
             refused = client.get(path, headers=auth(token))
-            assert refused.status_code == 404, f"{path} → {refused.status_code}: {refused.text}"
-            assert refused.json()["code"] == "NOT_FOUND", refused.text
-        assert _download_rows(session_factory) == before, \
-            "거절된 반출이 다운로드 이력에 남았다."
+            assert refused.status_code == 200, refused.text
+        assert _download_rows(session_factory) == before + 2, \
+            "성공한 타 연구실 반출이 다운로드 이력에 남지 않았다."
 
-        # 자기 연구실은 그대로 열린다 — 좁힌 것은 경계 밖뿐이다.
+        # 자기 연구실 반출도 같은 방식으로 기록한다.
         ok = client.get(f"/api/v1/datasets/{mine}/download", headers=auth(token))
         assert ok.status_code == 200, ok.text
-        assert _download_rows(session_factory) == before + 1, \
+        assert _download_rows(session_factory) == before + 3, \
             "자기 연구실 반출이 이력에 안 남았다."
 
 
-# ═══════ ㈒ 상세 화면의 편집 진입점은 남의 연구실에서 전부 거절된다 ═══════
-#
-# `dev-package/reports/r-login-backoffice/task8-realuse/results.md §1-7` 실측 — 운영자가
-# 연구실 B 데이터셋 상세를 열면 `수정` · `기준 격자 추가` · `파일 관리` · `파일 추가` ·
-# `계보 수정 · 추가` · `계보 채우기` 가 **전부 보이고 활성**이었다. 화면을 고치기 전에
-# **서버가 실제로 거절하는지**부터 잰다 — 같은 보고의 「[미확인] 서버가 그 편집을 실제로
-# 거절하는지는 재지 않았다」를 닫는 자리다.
-#
-# 판정 기준 셋 —
-#   ⑴ 코드가 403·404 다(권한 거절이거나 없는 것과 같은 봉투).
-#   ⑵ **같은 요청을 비회원(운영자 아님 · 같은 역할 · 같은 스위치)이 보냈을 때와 코드가 같다.**
-#      운영자라서 더 열리는 칸이 하나도 없다는 뜻이고, 코드 하나만 보는 것보다 강하다.
-#   ⑶ **행이 안 바뀐다.** 코드만 보면 「막았다」와 「막았는데 이미 썼다」가 갈리지 않는다.
+# ═══════ ㈒ 교수 관리자는 다른 연구실의 상세 편집을 할 수 없다 ═══════
+# 거절 응답뿐 아니라 반복 요청 뒤에도 대상 행이 보존되는지 확인한다.
 
 #: (화면의 진입점 이름, 메서드, 경로, 요청 인자). 이름은 `results.md §1-7` 축자다.
 _FOREIGN_LAB_WRITES = [
@@ -671,25 +647,24 @@ def _lab_b_state(session_factory) -> dict[str, object]:
 
 @pytest.mark.parametrize("control,method,path,payload", _FOREIGN_LAB_WRITES,
                          ids=[row[0] for row in _FOREIGN_LAB_WRITES])
-def test_an_operator_is_refused_every_detail_edit_of_another_lab(
+def test_professor_is_refused_every_detail_edit_of_another_lab(
     p2_client, session_factory, control: str, method: str, path: str, payload: dict,
 ) -> None:
     client = p2_client(session_secret=SECRET)
-    operator_token = _operator_token(client)
-    # 대조군 — 같은 역할(`교수` · `업로드·편집` 켜짐)이고 운영자만 아니다.
+    # 교수 역할이며 시스템 관리자 자격은 없는 계정이다.
     outsider = _email("outsider-write")
     _create(client, outsider)
     outsider_token = _normal_token(client, outsider)
 
     before = _lab_b_state(session_factory)
-    refused = client.request(method, path, headers=auth(operator_token), **payload)
+    refused = client.request(method, path, headers=auth(outsider_token), **payload)
     assert refused.status_code in (403, 404), \
-        f"운영자가 남의 연구실의 「{control}」 를 통과했다: {refused.status_code} {refused.text}"
+        f"교수 관리자가 타 연구실의 「{control}」 를 통과했다: {refused.status_code} {refused.text}"
 
     same = client.request(method, path, headers=auth(outsider_token), **payload)
     assert refused.status_code == same.status_code, (
-        f"「{control}」 가 운영자에게만 다른 답을 냈다 — "
-        f"운영자 {refused.status_code} · 비회원 {same.status_code}")
+        f"「{control}」 반복 요청의 거절 코드가 바뀌었다: "
+        f"첫 요청 {refused.status_code} · 재요청 {same.status_code}")
 
     assert _lab_b_state(session_factory) == before, \
         f"거절됐다는 「{control}」 가 연구실 B 의 행을 바꿨다."

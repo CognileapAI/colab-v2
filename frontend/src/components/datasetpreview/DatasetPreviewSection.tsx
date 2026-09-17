@@ -26,7 +26,8 @@
 //    않는다(조건 ⑹) · 한계는 **데이터가 가진 해상도**다(조건 ⑷ · `useZoomPan`).
 //  · **스크린샷** — 중계 op `createPreviewScreenshot`(11차 동결 해제 `〈231〉`)에 닿는다.
 //    정본 `§6` 이 **편집 권한자 컨트롤**로 두므로 보기 전용에는 자리째 없다(`§3.2`).
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PreviewRequestRejected } from '../preview/requestError';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { CLASS_COUNTS } from '../preview/PreviewControls';
 import {
@@ -52,8 +53,10 @@ import '../preview/preview.css';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 import { PreviewPickRow } from '../preview/PreviewPickRow';
 import {
-  createWithPieceFallback,
   onceFiles,
+  renderablePieces,
+  shownInstant,
+  shownVariable,
   type PickSelection,
   type PreviewPiece,
   type TargetDescription,
@@ -67,13 +70,16 @@ export const DEFAULT_CLASS_COUNT = 6;
 
 /** 렌더 시작 전 단계. 시작한 뒤는 `usePreviewRender` 가 상태를 맡는다. */
 type StartState =
+  | { phase: '고르는 중' }
   | { phase: '시작하는 중' }
   | { phase: '시작함'; renderId: string }
   | { phase: '그릴 수 없음'; message: string; renderableFormats: string[] }
+  | { phase: '결과 불명'; message: string }
   | { phase: '만들 수 없음'; message: string };
 
 export function DatasetPreviewSection(props: {
   datasetId: string;
+  targetLabId?: string | undefined;
   source?: DatasetPreviewSource | undefined;
   pollMs?: number | undefined;
   /**
@@ -92,10 +98,10 @@ export function DatasetPreviewSection(props: {
   gridResolution?: string | null | undefined;
 }) {
   const source = useMemo(
-    () => props.source ?? apiDatasetPreviewSource(props.datasetId),
-    [props.source, props.datasetId],
+    () => props.source ?? apiDatasetPreviewSource(props.datasetId, props.targetLabId),
+    [props.source, props.datasetId, props.targetLabId],
   );
-  const [start, setStart] = useState<StartState>({ phase: '시작하는 중' });
+  const [start, setStart] = useState<StartState>({ phase: '고르는 중' });
   const [palettes, setPalettes] = useState<PaletteOption[]>([]);
   const [chosenPalette, setChosenPalette] = useState('');
   const [classCount, setClassCount] = useState<number>(DEFAULT_CLASS_COUNT);
@@ -106,16 +112,36 @@ export function DatasetPreviewSection(props: {
   const [nativeSize, setNativeSize] = useState<{ width: number; height: number } | undefined>(
     undefined,
   );
-  // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영 · 판정 축자). 바꾸면 다시 그린다.
+  // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영). 선택만 바꿀 때는 그리지 않는다.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [describing, setDescribing] = useState(false);
   const [pieces, setPieces] = useState<PreviewPiece[]>([]);
+  const [selectionOwner, setSelectionOwner] = useState({ source, datasetId: props.datasetId });
   const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
   const [pick, setPick] = useState<PickSelection>({});
-  const [fallbackPiece, setFallbackPiece] = useState<PreviewPiece | undefined>(undefined);
-  // 고르개 후보와 413 폴백이 **같은 한 번의 조회**를 쓴다 (수용 기준 「files 조회 1회」).
+  const [totalMs, setTotalMs] = useState<number | undefined>(undefined);
+  const requestGeneration = useRef(0);
+  const activeRequest = useRef<{ generation: number; started: number; fileId: string; renderId?: string; variable?: string; instant?: string } | undefined>(undefined);
+  // 파일 후보는 같은 상세 화면 안에서 한 번만 조회한다.
   const loadFiles = useMemo(
     () => (source.files ? onceFiles(() => source.files!()) : undefined),
-    [source],
+    [source, loadAttempt],
   );
+
+  useEffect(() => {
+    requestGeneration.current += 1;
+    activeRequest.current = undefined;
+    setStart({ phase: '고르는 중' });
+    setStartedSlot('drawing');
+    setTotalMs(undefined);
+    setPieces([]);
+    setDescription(undefined);
+    setPick({});
+    setPalettes([]);
+    setChosenPalette('');
+    setSelectionOwner({ source, datasetId: props.datasetId });
+  }, [source, props.datasetId]);
 
   // 후보는 **서버가 준 값뿐이다.** 못 받으면 그 고르개만 잠긴다 — 지어내지 않는다.
   useEffect(() => {
@@ -124,21 +150,37 @@ export function DatasetPreviewSection(props: {
     void (async () => {
       try {
         const list = await loadFiles?.();
-        if (alive && list) setPieces(list);
-      } catch {
-        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 보기·다운로드는 그대로다. */
-      }
-      try {
-        const desc = await source.describe?.();
-        if (alive && desc) setDescription(desc);
-      } catch {
-        /* 변수·시각 후보가 없으면 그 둘이 잠긴다. 기본값은 서버가 고른다. */
+        if (alive && list) {
+          setPieces(list);
+          if (renderablePieces(list).length === 0)
+            setStart({ phase: '그릴 수 없음', message: '미리보기를 지원하는 파일이 없어요.', renderableFormats: [] });
+        }
+      } catch (e) {
+        if (alive) setLoadError(e instanceof Error ? e.message : '파일 목록을 불러오지 못했어요.');
       }
     })();
     return () => {
       alive = false;
     };
   }, [source, props.datasetId, loadFiles]);
+
+  const selectionIsCurrent = selectionOwner.source === source && selectionOwner.datasetId === props.datasetId;
+  const selectedFileId = selectionIsCurrent ? (pick.fileId ?? renderablePieces(pieces)[0]?.fileId) : undefined;
+  useEffect(() => {
+    if (!selectedFileId) {
+      setDescription(undefined);
+      return;
+    }
+    let alive = true;
+    setDescription(undefined);
+    setLoadError(null);
+    setDescribing(true);
+    setPick((current) => ({ fileId: current.fileId ?? selectedFileId }));
+    void source.describe?.(selectedFileId).then((desc) => {
+      if (alive) { setDescription(desc); setDescribing(false); }
+    }).catch((e) => { if (alive) { setDescribing(false); setLoadError(e instanceof Error ? e.message : '변수·시각을 불러오지 못했어요.'); } });
+    return () => { alive = false; };
+  }, [source, selectedFileId, loadAttempt]);
 
   useEffect(() => {
     if (!props.datasetId) return;
@@ -155,23 +197,7 @@ export function DatasetPreviewSection(props: {
           setStart({ phase: '만들 수 없음', message: UNAVAILABLE_MESSAGE });
           return;
         }
-        // ⑴ 500MB 폴백 — 413 이면 조각 목록을 묻고 **첫 renderable 조각으로 다시 부른다.**
-        //    두 화면이 같은 함수를 지난다(`preview/pick.ts` — 한 자리 규약).
-        const { job, piece } = await createWithPieceFallback({
-          create: (fileIds) =>
-            source.create({
-              datasetId: props.datasetId,
-              palette,
-              classCount,
-              ...(fileIds ? { fileIds } : pick.fileId ? { fileIds: [pick.fileId] } : {}),
-              ...(pick.variable ? { variable: pick.variable } : {}),
-              ...(pick.instant ? { instant: pick.instant } : {}),
-            }),
-          files: loadFiles,
-        });
-        if (!alive) return;
-        if (piece) setFallbackPiece(piece);
-        setStart({ phase: '시작함', renderId: job.renderId });
+        setChosenPalette((current) => current || palette);
       } catch (e) {
         if (!alive) return;
         if (e instanceof NotRenderableError)
@@ -192,9 +218,50 @@ export function DatasetPreviewSection(props: {
     return () => {
       alive = false;
     };
-    // ⚠ `pick` 이 바뀌면 이 효과가 **다시 돈다** — 그것이 바꿔 그리기다. 앞 회차의 응답은
-    //   `alive` 가 끊어 버린다(겹쳐 그리기 0 · 한 번에 하나).
-  }, [source, props.datasetId, pick, loadFiles, chosenPalette, classCount]);
+  }, [source, props.datasetId, loadAttempt]);
+
+  const drawing = start.phase === '시작하는 중' || start.phase === '결과 불명' || (start.phase === '시작함' && startedSlot === 'drawing');
+  const draw = useCallback(() => {
+    if (drawing || !selectedFileId || !description || palettes.length === 0) return;
+    const variable = shownVariable(pick, description) || undefined;
+    const instant = shownInstant(pick, description) || undefined;
+    const palette = chosenPalette || palettes[0]!.palette;
+    const generation = ++requestGeneration.current;
+    activeRequest.current = {
+      generation, started: performance.now(), fileId: selectedFileId,
+      ...(variable ? { variable } : {}), ...(instant ? { instant } : {}),
+    };
+    setTotalMs(undefined);
+    setStartedSlot('drawing');
+    setStart({ phase: '시작하는 중' });
+    void source.create({
+      datasetId: props.datasetId, palette, classCount, fileIds: [selectedFileId],
+      ...(variable ? { variable } : {}), ...(instant ? { instant } : {}),
+    }).then((job) => {
+      if (requestGeneration.current !== generation) return;
+      const request = activeRequest.current;
+      if (request?.generation === generation) request.renderId = job.renderId;
+      setStart({ phase: '시작함', renderId: job.renderId });
+    }).catch((e) => {
+      if (requestGeneration.current !== generation) return;
+      if (e instanceof NotRenderableError) setStart({ phase: '그릴 수 없음', message: e.message, renderableFormats: e.renderableFormats });
+      else if (e instanceof PreviewGone) setStart({ phase: '만들 수 없음', message: UNAVAILABLE_MESSAGE });
+      else if (e instanceof PreviewRequestRejected) setStart({ phase: '만들 수 없음', message: e.message });
+      else setStart({ phase: '결과 불명', message: '요청 결과를 확인할 수 없어요. 다시 실행하기 전에 작업 상태를 확인해 주세요.' });
+    });
+  }, [drawing, selectedFileId, description, palettes, chosenPalette, pick, source, props.datasetId, classCount]);
+
+  const displayed = useCallback((renderId: string) => {
+    const request = activeRequest.current;
+    if (!request || request.renderId !== renderId) return;
+    const elapsed = performance.now() - request.started;
+    setTotalMs(elapsed);
+    window.dispatchEvent(new CustomEvent('colab-preview-timing', { detail: {
+      event: 'render.display_timing', render_id: renderId, file_ids: [request.fileId],
+      variable: request.variable, instant: request.instant, total_ms: elapsed,
+    } }));
+    activeRequest.current = undefined;
+  }, []);
 
   // 렌더 경로 소비 규약(실패는 200+`failure` · 단계 · 부분 실패 · 만료)은 **한 자리에만 둔다** —
   // S-08 과 두 벌로 두면 두 화면의 판정이 갈린다.
@@ -212,15 +279,15 @@ export function DatasetPreviewSection(props: {
           ...(input.variable ? { variable: input.variable } : {}),
           ...(input.instant ? { instant: input.instant } : {}),
         }),
-      // 폴백은 **훅 안에서도** 돈다(`usePreviewRender`) — 같은 조각 목록을 건넨다.
-      ...(loadFiles ? { files: loadFiles } : {}),
     }),
     [source, props.datasetId],
   );
 
   // 틀 안쪽 상태. **시작 단계는 여기서 정하고**, `시작함` 뒤로는 렌더가 알려 준다.
   const slotState: PreviewSlotState =
-    start.phase === '시작하는 중'
+    start.phase === '고르는 중'
+      ? 'idle'
+      : start.phase === '시작하는 중'
       ? 'drawing'
       : start.phase === '시작함'
         ? startedSlot
@@ -269,26 +336,38 @@ export function DatasetPreviewSection(props: {
            ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 업로드 화면과 **같은 이음매**(`PreviewSlot` 의 `controls`)로
               올렸다. `.dt-preview` 에는 CSS 규칙이 없어 이 화면의 줄 간격을 줄 주체가 없으므로,
               여백은 이음매가 만드는 컨테이너가 gap 으로 갖는다(spec v2 §5-2). */
-        controls={<PreviewPickRow
+        controls={<>{describing ? <p role="status">변수·시각을 불러오는 중이에요…</p> : null}
+        {loadError ? <div role="alert"><p>{loadError}</p><button type="button" className="btn" onClick={() => { setLoadError(null); setLoadAttempt(n => n + 1); }}>다시 불러오기</button></div> : null}
+        <PreviewPickRow
           idPrefix="dt"
           pieces={pieces}
           description={description}
           selection={pick}
-          disabled={start.phase === '시작하는 중'}
-          fallbackPiece={fallbackPiece}
-          onPick={(next) => setPick((prev) => ({ ...prev, ...next }))}
-        />}
+          disabled={drawing}
+          onPick={(next) => {
+            if (next.fileId) {
+              setDescription(undefined);
+              setPick({ fileId: next.fileId });
+            } else setPick((prev) => ({ ...prev, ...next }));
+          }}
+        />
+        <button type="button" className="btn" data-testid="dt-preview-draw"
+          disabled={drawing || !selectedFileId || !description || palettes.length === 0}
+          onClick={draw}>보기</button>
+        {totalMs === undefined ? null : <p className="pv-muted" data-testid="dt-preview-total">총 {(totalMs / 1000).toFixed(1)}초</p>}
+        </>}
       >
       {start.phase === '시작하는 중' ? <RenderStageNotice /> : null}
 
       {start.phase === '그릴 수 없음' ? (
-        <NotRenderableNotice
+        <div data-testid="dt-preview-unsupported"><NotRenderableNotice
           message={start.message}
           renderableFormats={start.renderableFormats}
-        />
+        /></div>
       ) : null}
 
-      {start.phase === '만들 수 없음' ? <UnavailableNotice message={start.message} /> : null}
+      {start.phase === '만들 수 없음' ? <><UnavailableNotice message={start.message} /><button type="button" className="btn" onClick={() => { setStart({ phase: '고르는 중' }); setLoadAttempt(n => n + 1); }}>다시 불러오기</button></> : null}
+      {start.phase === '결과 불명' ? <UnavailableNotice message={start.message} /> : null}
 
       {/* **렌더가 시작된 뒤에야 마운트한다.** `usePreviewRender` 는 `renderId` 를 마운트 시점에
           한 번 읽으므로(S-08 은 이어받은 id 를 들고 들어온다) 나중에 건네면 조회가 시작되지 않는다.
@@ -304,6 +383,7 @@ export function DatasetPreviewSection(props: {
           pollMs={props.pollMs ?? 1000}
           onNativeSize={setNativeSize}
           onSlotState={setStartedSlot}
+          onDisplayed={displayed}
         />
       ) : null}
       </PreviewSlot>
@@ -342,7 +422,7 @@ function UnavailableNotice(props: { message: string }) {
  * 전부 `failed` 다 — 문면은 각자의 정본 문구를 그대로 쓴다(신설 0).
  */
 function slotStateOfRender(phase: string): PreviewSlotState {
-  if (phase === '그리는 중') return 'drawing';
+  if (phase === '그리는 중' || phase === '결과 불명') return 'drawing';
   if (phase === '완료') return 'done';
   return 'failed';
 }
@@ -356,8 +436,9 @@ function StartedPreview(props: {
   onNativeSize?: ((size: { width: number; height: number }) => void) | undefined;
   /** WU-C1 — 안쪽 상태를 틀(부모)에게 알린다. **틀의 치수는 이 값과 무관하다.** */
   onSlotState?: ((slot: PreviewSlotState) => void) | undefined;
+  onDisplayed?: ((renderId: string) => void) | undefined;
 }) {
-  const { state } = usePreviewRender({
+  const { state, resume } = usePreviewRender({
     source: props.source,
     renderId: props.renderId,
     pollMs: props.pollMs,
@@ -419,6 +500,12 @@ function StartedPreview(props: {
     return <>{state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />}
       {remaining !== null ? <p role="status">이 단계 약 {Math.ceil(remaining / 1000)}초 남음</p> : null}</>;
 
+  if (state.phase === '결과 불명')
+    return <div className="pv-failure" data-testid="preview-unavailable" role="alert">
+      <p>{state.message}</p>
+      <button type="button" className="btn" data-testid="dt-preview-resume" onClick={resume}>상태 다시 확인</button>
+    </div>;
+
   if (state.phase === '완료')
     return (
       <>
@@ -438,6 +525,7 @@ function StartedPreview(props: {
               zoom={zoom}
             />
           }
+          onDisplayed={() => props.onDisplayed?.(props.renderId)}
         />
       </>
     );

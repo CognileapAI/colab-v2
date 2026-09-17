@@ -547,9 +547,9 @@ def test_a_designated_dataset_is_restored_with_its_grant_intact(p2_client, plant
     before = sql("SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :id",
                  {"id": dataset_id})[0]
     assert before["state"] == "지정 공개"
-    # 전제 — 소유자(교수)에게도 파일은 0행이다 (허용 줄은 연구원 것이다).
+    # 전제 — 교수 관리자는 허용 줄 없이도 파일 1행을 관리한다 (허용 줄은 연구원 것이다).
     assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
-               {"id": dataset_id}, account_id=ACC_A_PROF)[0]["n"] == 0
+               {"id": dataset_id}, account_id=ACC_A_PROF)[0]["n"] == 1
 
     assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
                          headers=auth(TOKEN_PROF)).status_code == 204

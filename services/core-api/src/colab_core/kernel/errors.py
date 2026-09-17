@@ -19,11 +19,22 @@ def envelope(code: str, message: str, details: dict[str, Any] | None = None) -> 
 
 
 class ApiError(HTTPException):
-    """상태코드 + 봉투를 한 자리에서 묶는다."""
+    """상태코드 + 봉투를 한 자리에서 묶는다.
+
+    `headers` 는 HTTP 로만 말할 수 있는 것을 위한 자리다(지금은 `Retry-After` 하나).
+    `extra` 는 봉투에 **얹는** 칸이고, 계약이 그 응답에 따로 열어 둔 필드만 온다 —
+    공통 봉투(`ErrorEnvelope`)는 `additionalProperties: false` 라서 아무 코드나 칸을 늘리면
+    계약과 갈라진다.
+    """
 
     def __init__(self, status_code: int, code: str, message: str,
-                 details: dict[str, Any] | None = None) -> None:
-        super().__init__(status_code=status_code, detail=envelope(code, message, details))
+                 details: dict[str, Any] | None = None, *,
+                 headers: dict[str, str] | None = None,
+                 extra: dict[str, Any] | None = None) -> None:
+        body = envelope(code, message, details)
+        if extra:
+            body.update(extra)
+        super().__init__(status_code=status_code, detail=body, headers=headers)
 
 
 def unauthorized(message: str = "인증 주체가 없다.") -> ApiError:
@@ -83,13 +94,24 @@ def payload_too_large(message: str) -> ApiError:
     return ApiError(413, "PAYLOAD_TOO_LARGE", message)
 
 
-def too_many_attempts(message: str) -> ApiError:
+def too_many_attempts(message: str, *,
+                      retry_after_seconds: int | None = None) -> ApiError:
     """429 — 창 안의 실패가 한계를 넘었다 (`PLAN-SoT §9 〈108〉-㉰`).
 
     401(자격이 틀림)과 갈라 쓴다. 같은 코드로 합치면 「막힌 것」과 「틀린 것」이 구분되지 않아
     사람이 자기 비밀번호를 계속 의심한다.
+
+    ⭑ **대기 시간을 함께 말한다.** 「잠시 뒤」가 몇 초인지 서버만 알고 있으면 화면은 그 값을
+    지어내고 사람은 새로고침을 반복한다. `Retry-After`(표준 헤더)와 본문 `retryAfterSeconds`
+    **둘 다** 싣는다 — 헤더는 프록시·클라이언트가 이미 아는 규약이고, 본문은 화면이 그
+    값으로 초읽기를 그리기 위해 읽는 자리다. **어느 버킷이 걸렸는지는 여전히 말하지 않는다.**
     """
-    return ApiError(429, "TOO_MANY_ATTEMPTS", message)
+    if retry_after_seconds is None:
+        return ApiError(429, "TOO_MANY_ATTEMPTS", message)
+    seconds = max(1, int(retry_after_seconds))
+    return ApiError(429, "TOO_MANY_ATTEMPTS", message,
+                    headers={"Retry-After": str(seconds)},
+                    extra={"retryAfterSeconds": seconds})
 
 
 class InputError(Exception):
@@ -137,10 +159,15 @@ def integrity_error_response() -> JSONResponse:
 
 
 def error_response(exc: HTTPException) -> JSONResponse:
+    """⚠ **헤더를 함께 옮긴다.** 종전에는 봉투만 옮겨 실었고, 그래서 `Retry-After` 를 단
+    오류가 이 한 줄에서 조용히 헤더를 잃었다 — 예외는 맞는데 응답에는 없는 모양이다.
+    """
     detail = exc.detail
+    headers = getattr(exc, "headers", None) or None
     if isinstance(detail, dict) and "code" in detail and "message" in detail:
-        return JSONResponse(status_code=exc.status_code, content=detail)
+        return JSONResponse(status_code=exc.status_code, content=detail, headers=headers)
     return JSONResponse(
         status_code=exc.status_code,
         content=envelope(f"HTTP_{exc.status_code}", str(detail)),
+        headers=headers,
     )

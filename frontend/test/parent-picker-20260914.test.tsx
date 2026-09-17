@@ -377,6 +377,8 @@ async function openLineage() {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+  fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
   fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv2' } });
   await act(async () => {});
   await click(screen.getByRole('button', { name: /^③/ }));

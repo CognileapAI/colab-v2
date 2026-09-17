@@ -1,3 +1,4 @@
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 /**
  * S-05 데이터셋 상세 미리보기 — **원본 격자 간격·크기 표기** (버그 13 · Ted 판정).
  *
@@ -72,6 +73,8 @@ const IMAGE_DONE: RenderJob = {
 function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => TILED_DONE),
     get: vi.fn(async () => TILED_DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -88,6 +91,7 @@ function renderDetail(
   previewSource: DatasetPreviewSource,
   details: Record<string, (typeof FIXTURE_DETAILS)[string]> = FIXTURE_DETAILS,
 ) {
+  drawDatasetPreviewWhenReady();
   return render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>

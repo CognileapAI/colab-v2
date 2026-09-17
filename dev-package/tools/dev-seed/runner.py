@@ -58,7 +58,7 @@ def set_work_dir(work_dir, plan=None):
     NEW_PW_PATH = WORK_DIR / "new-password.txt"
 
 
-# 주소는 자리값을 코드에 두지 않는다 — `--base-url` 또는 `COLAB_DEV_URL`.
+# 주소는 자리값을 코드에 두지 않는다 — CLI > COLAB_DEV_WEB_URL > 호환 COLAB_DEV_URL.
 # dev 주소의 원본은 `docs/DEPLOY.md` · `.claude/rules/deploy.md` 다.
 DEFAULT_URL = None
 DEFAULT_SESSION = "colab-dev"
@@ -85,6 +85,18 @@ PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32}
 # 기대지 않는다. 선택지가 빈 값으로 시작하도록 바뀌어도 같은 동작이 선다.
 LEVEL_CSS = '[data-testid="reg-level"]'
 PROCESSING_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+PERIOD_PARTS = ("year", "month", "day", "hour", "minute", "second")
+PERIOD_UNITS = ("년", "월", "일", "시", "분", "초")
+PERIOD_PATTERNS = {
+    "년": r"(\d{4})", "월": r"(\d{4})-(0[1-9]|1[0-2])",
+    "일": r"(\d{4})-(0[1-9]|1[0-2])-([0-2]\d|3[01])",
+    "시": r"(\d{4})-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3])",
+    "분": r"(\d{4})-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):([0-5]\d)",
+    "초": r"(\d{4})-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)",
+}
+PERIOD_FORMATS = {"년": "%Y", "월": "%Y-%m", "일": "%Y-%m-%d",
+                  "시": "%Y-%m-%dT%H", "분": "%Y-%m-%dT%H:%M",
+                  "초": "%Y-%m-%dT%H:%M:%S"}
 
 # 등록이 성립한 상태값. `done` 은 옛 상태 파일의 값이라 그대로 센다(하위 호환).
 REGISTERED_STATUSES = ("done", "registered", "registered_no_preview")
@@ -105,7 +117,7 @@ ACCOUNT_CSS = {
     "password": ACCOUNT_SECTION_CSS + ' input[name="initialPassword"]',
     "admin": ACCOUNT_SECTION_CSS + ' input[name="operator"]',
     "submit": ACCOUNT_SECTION_CSS + ' button[type="submit"]',
-    "status": ACCOUNT_SECTION_CSS + ' [role="status"]',
+    "status": ACCOUNT_SECTION_CSS + ' [role="status"], .login > [role="status"]',
 }
 ACCOUNT_ROLES = ("교수", "연구원")
 
@@ -264,12 +276,13 @@ def load_accounts_file(path):
         if "initialPassword" in item or "password" in item:
             raise Fail("계정 파일에 비밀번호를 두지 않는다(별도 0600 파일 · 표준입력): " + who)
         entry = dict()
-        for key in ["email", "name", "role"]:
+        for key in ["email", "name"]:
             val = str(item.get(key) or "").strip()
             if not val:
                 raise Fail("계정 항목에 " + key + " 가 없다: " + who)
             entry[key] = val
-        if entry["role"] not in ACCOUNT_ROLES:
+        entry["role"] = str(item.get("role") or "").strip()
+        if entry["role"] and entry["role"] not in ACCOUNT_ROLES:
             raise Fail("계정 역할이 정본 2값 밖이다: " + who + " · " + entry["role"])
         admin = item.get("admin")
         if not isinstance(admin, bool):
@@ -278,6 +291,10 @@ def load_accounts_file(path):
         lab = item.get("lab")
         if lab:
             entry["lab"] = str(lab).strip()
+        if bool(entry.get("lab")) != bool(entry["role"]):
+            raise Fail("연구실과 역할을 함께 지정하거나 함께 비운다: " + who)
+        if not admin and not entry.get("lab"):
+            raise Fail("일반 사용자는 연구실과 역할이 필요하다: " + who)
         out.append(entry)
     return out
 
@@ -296,8 +313,7 @@ def account_form_actions(entry):
     ]
     if entry.get("lab"):
         actions.append(["select-label", ACCOUNT_CSS["lab"], entry["lab"]])
-    if entry.get("admin"):
-        actions.append(["check", ACCOUNT_CSS["admin"]])
+    actions.append(["check", ACCOUNT_CSS["admin"], entry["admin"]])
     actions.append(["secret", ACCOUNT_CSS["password"]])
     actions.append(["activate", ACCOUNT_CSS["submit"]])
     return actions
@@ -404,6 +420,13 @@ def enabled(css):
             if key in data:
                 return bool(data[key])
     return True
+
+
+def checked(css):
+    if CFG and CFG.dry_run:
+        return True
+    rc, data, _ = ab(["is", "checked", css], expect_ok=False, quiet=True)
+    return rc == 0 and isinstance(data, dict) and bool(data.get("checked"))
 
 
 def cur_url():
@@ -981,6 +1004,48 @@ def level_state():
     return None
 
 
+def period_form_actions(ds):
+    """Turn a canonical period into visible period-popover actions."""
+    period = ds.get("period")
+    name = str(ds.get("name") or ds.get("seq") or "자료")
+    if not isinstance(period, dict):
+        raise Fail("기간이 없는 계획 행: " + name)
+    unit = period.get("granularity")
+    pattern = PERIOD_PATTERNS.get(unit)
+    values = {}
+    for side in ("start", "end"):
+        raw = period.get(side)
+        match = re.fullmatch(pattern or r"(?!)", raw if isinstance(raw, str) else "")
+        try:
+            calendar_valid = datetime.strptime(raw, PERIOD_FORMATS[unit]).strftime(PERIOD_FORMATS[unit]) == raw
+        except (KeyError, TypeError, ValueError):
+            calendar_valid = False
+        if not match or not calendar_valid:
+            raise Fail("기간 정밀도가 잘못됐다: " + name + " · " + str(unit) + " · " + str(raw))
+        values[side] = match.groups()
+    if period["end"] < period["start"]:
+        raise Fail("기간 끝이 시작보다 앞선다: " + name)
+    actions = [["click", '[data-testid="reg-period-open"]'],
+               ["click", '[data-testid="reg-period-unit-' + str(unit) + '"]']]
+    count_parts = PERIOD_UNITS.index(unit) + 1
+    for side in ("start", "end"):
+        for part, value in zip(PERIOD_PARTS[:count_parts], values[side]):
+            actions.append(["fill", '[data-testid="reg-period-pop-' + side + '-' + part + '"]', value])
+    actions.append(["click", '[data-testid="reg-period-apply"]'])
+    return actions
+
+
+def fill_period(ds):
+    actions = period_form_actions(ds)
+    ab(actions[0])
+    if not wait_css('[data-testid="reg-period-pop"]', 10, "기간 고르기"):
+        raise Fail("기간 고르기가 열리지 않았다: " + str(ds.get("name")))
+    for action in actions[1:]:
+        ab(action)
+    log("  · 기간 = " + ds["period"]["start"] + " ~ " + ds["period"]["end"]
+        + " (" + ds["period"]["granularity"] + ")")
+
+
 def select_level(st, ds):
     """「가공 단계」를 **계획값으로 명시 지정**한다. 반환 = 넣은 값.
 
@@ -1121,13 +1186,12 @@ def do_grid(st, ds):
 def do_lineage(st, ds):
     """6 절 — 부모를 사람이 직접 고른다. AI 제안(lin-ask)은 누르지 않는다.
 
-    화면 순서가 네 계단이다(LineageStep.tsx · ParentPicker.tsx 실물) —
+    화면 순서가 세 계단이다(LineageStep.tsx · ParentPicker.tsx 실물) —
       ① `lin-add`            「앞 데이터 직접 추가」 → `lin-picker` 개방
-      ② `lin-pick-<id>`      행을 고를 뿐 — **이것만으로는 부모가 붙지 않는다**
-      ③ 「이 데이터로 연결」   고르개의 확정 단추(testid 없음 · 역할+이름으로 지목)
-      ④ `lin-confirm`        카드의 「확인」 — **확인된 것만 서버로 간다**
+      ② `lin-pick-<id>`      radio를 고르고 실제 checked 상태를 확인
+      ③ 「이 데이터로 연결」   `confirmed: true` 카드를 만드는 확정 단추
     """
-    parents = ds.get("parents") or []
+    parents, _ = split_lineage_parents(ds)
     if not parents:
         log("  · 부모 없음 — 계보 미설정")
         return
@@ -1151,18 +1215,129 @@ def do_lineage(st, ds):
                 raise Fail("부모 행 미발견: lin-pick-" + str(pid) + " (" + pname + ")")
         if not enabled(row_css):
             raise Fail("부모 행이 비활성(자기 Lv 를 넘는 부모): " + pname)
-        activate(row_css, "부모 행 " + str(pid))
-        # ③ 고르개는 모달이라 행 클릭이 곧 부모 추가가 아니다(ParentPicker.tsx `onClose` 분기).
+        ab(["check", row_css])
+        if not checked(row_css):
+            raise Fail("부모 행 선택이 반영되지 않았다: " + pname)
+        # ③ 고르개 확정이 confirmed 카드를 바로 만든다(LineageStep.tsx `addParent`).
         activate(".lin-find .modal-f .btn-primary", "이 데이터로 연결")
         card_css = ".lin-cards .lin-card:nth-child(" + str(idx + 1) + ")"
         if not wait_css(card_css, 30, "계보 카드 " + str(idx + 1)):
             raise Fail("계보 카드가 붙지 않았다: " + pname)
-        # ④ 확인된 관계만 서버로 간다(LineageStep.tsx `confirmed` 거르개).
-        activate(card_css + ' [data-testid="lin-confirm"]', "계보 확인 " + str(idx + 1))
     made = count(".lin-cards .lin-card")
     log("  · 계보 카드 " + str(made) + "건 · 계획 " + str(len(parents)) + "건")
     if made < len(parents):
         raise Fail("계보 카드 수 미달: " + str(made) + " / " + str(len(parents)))
+
+
+def split_lineage_parents(ds):
+    roles = ds.get("parent_roles") or {}
+    parents = list(ds.get("parents") or [])
+    auxiliary = [p for p in parents if roles.get(p) == "보조입력"]
+    unknown = {p: role for p, role in roles.items()
+               if p not in parents or role != "보조입력"}
+    if unknown:
+        raise Fail("계보 역할 계획이 잘못됐다: " + str(ds.get("name")) + " · " + str(unknown))
+    return [p for p in parents if p not in auxiliary], auxiliary
+
+
+def missing_auxiliary_links(desired, graph, child_id):
+    current = {str(e.get("parentDatasetId")): e.get("parentRole")
+               for e in (graph.get("edges") or [])
+               if str(e.get("childDatasetId")) == str(child_id) and e.get("parentDatasetId")}
+    missing = []
+    for parent_id, role in desired:
+        if parent_id in current and current[parent_id] != role:
+            raise Fail("이미 연결된 부모 역할이 다르다: " + parent_id + " · " + str(current[parent_id]))
+        if parent_id not in current:
+            missing.append((parent_id, role))
+    return missing
+
+
+def lineage_edge_present(graph, child_id, parent_id, role):
+    return any(str(e.get("childDatasetId")) == str(child_id)
+               and str(e.get("parentDatasetId")) == str(parent_id)
+               and e.get("parentRole") == role
+               for e in graph.get("edges") or [])
+
+
+def authenticated_api(method, path, body=None):
+    if CFG.dry_run:
+        return {}
+    script = """(async () => {
+      let session = null;
+      try { session = JSON.parse(localStorage.getItem('colab.browser-session.v1') || 'null'); }
+      catch (_) { return JSON.stringify({ok:false,status:401}); }
+      if (!session || !session.token) return JSON.stringify({ok:false,status:401});
+      const response = await fetch(__PATH__, {
+        method: __METHOD__,
+        headers: {'Authorization': 'Bearer ' + session.token, 'Content-Type': 'application/json'},
+        body: __BODY__
+      });
+      let body = null;
+      try { body = await response.json(); } catch (_) {}
+      return JSON.stringify({ok:response.ok,status:response.status,body});
+    })()"""
+    script = script.replace("__PATH__", json.dumps(path))
+    script = script.replace("__METHOD__", json.dumps(method))
+    script = script.replace("__BODY__", "undefined" if body is None else json.dumps(json.dumps(body, ensure_ascii=False)))
+    result = js(script, default={"ok": False, "status": 0}, secret=True) or {}
+    if not result.get("ok") or not isinstance(result.get("body"), dict):
+        raise Fail("공식 계보 API 실패: " + method + " · HTTP " + str(result.get("status")))
+    return result["body"]
+
+
+def lineage_api(method, child_id, parent_id=None, role=None):
+    path = "/api/v1/datasets/" + str(child_id) + "/lineage"
+    body = None
+    if method == "POST":
+        path += "/parents"
+        body = {"parentDatasetId": str(parent_id), "parentRole": str(role)}
+    result = authenticated_api(method, path, body)
+    return {"edges": []} if CFG.dry_run else result
+
+
+def canonical_period_timestamp(value, granularity):
+    parsed = datetime.strptime(value, PERIOD_FORMATS[granularity])
+    return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def stored_period_matches(expected, stored):
+    if not isinstance(expected, dict) or not isinstance(stored, dict):
+        return False
+    try:
+        start = canonical_period_timestamp(expected["start"], expected["granularity"])
+        end = canonical_period_timestamp(expected["end"], expected["granularity"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    def instant(value):
+        if not isinstance(value, str):
+            return None
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            return None
+    return (stored.get("granularity") == expected.get("granularity")
+            and instant(stored.get("start")) == instant(start)
+            and instant(stored.get("end")) == instant(end))
+
+
+def reconcile_auxiliary_lineage(st, ds, child_id):
+    _, auxiliary = split_lineage_parents(ds)
+    if not auxiliary:
+        return 0
+    desired = []
+    for name in auxiliary:
+        parent = find_dataset_row(st, name) or {}
+        if not parent.get("dataset_id"):
+            raise Fail("보조입력 부모 데이터셋 id 미확보: " + name)
+        desired.append((str(parent["dataset_id"]), "보조입력"))
+    graph = lineage_api("GET", child_id)
+    for parent_id, role in missing_auxiliary_links(desired, graph, child_id):
+        lineage_api("POST", child_id, parent_id, role)
+    final = lineage_api("GET", child_id)
+    if missing_auxiliary_links(desired, final, child_id):
+        raise Fail("보조입력 관계 저장 검증 미달: " + str(ds.get("name")))
+    return len(desired)
 
 
 def handle_analysis_failure(st, ds, outcome):
@@ -1224,6 +1399,16 @@ def do_dataset(st, ds):
         + format(total_bytes, ",") + " B")
     started = time.time()
     prev = st["datasets"].get(seq) or dict()
+    if prev.get("status") in ("registered_pending_auxiliary", "failed") \
+            and prev.get("dataset_id") and split_lineage_parents(ds)[1]:
+        count_aux = reconcile_auxiliary_lineage(st, ds, prev["dataset_id"])
+        prev["status"] = "done"
+        prev["auxiliary_verified"] = count_aux
+        prev["finished"] = now()
+        st["datasets"][seq] = prev
+        save_state(st)
+        log("  + seq " + seq + " 보조입력 재개 완료 · " + str(count_aux) + "건")
+        return
     row = dict()
     row["seq"] = ds["seq"]
     row["name"] = name
@@ -1267,6 +1452,7 @@ def do_dataset(st, ds):
          action="fill", text=name)
     spot(st, "reg-summary", [("testid", "reg-summary"), ("label", "설명")],
          action="fill", text=ds["summary"])
+    fill_period(ds)
 
     goto_step(st, "③ 연결", "reg-step-3", '[data-testid="reg-proj-select"]')
     # option 의 value 는 projectId 다(RegisterArea.tsx `value={r.projectId}`) — 이름이 아니라 id 로 고른다.
@@ -1301,6 +1487,13 @@ def do_dataset(st, ds):
     did = ("DRYID" + seq) if CFG.dry_run else capture_dataset_id(name)
     if not did:
         raise Fail("데이터셋 id 를 회수하지 못했다(URL · 목록 링크 모두 실패).")
+    _, auxiliary = split_lineage_parents(ds)
+    auxiliary_verified = 0
+    if auxiliary:
+        st["datasets"][seq]["dataset_id"] = did
+        st["datasets"][seq]["status"] = "registered_pending_auxiliary"
+        save_state(st)
+        auxiliary_verified = reconcile_auxiliary_lineage(st, ds, did)
     elapsed = round(time.time() - started, 1)
     SHOT_DIR.mkdir(parents=True, exist_ok=True)
     ab(["screenshot", str(SHOT_DIR / (seq.zfill(2) + ".png"))], expect_ok=False)
@@ -1308,6 +1501,7 @@ def do_dataset(st, ds):
     if no_preview:
         st["datasets"][seq]["analysis_failure_reason"] = no_preview
     st["datasets"][seq]["dataset_id"] = did
+    st["datasets"][seq]["auxiliary_verified"] = auxiliary_verified
     st["datasets"][seq]["finished"] = now()
     st["datasets"][seq]["elapsed_s"] = elapsed
     save_state(st)
@@ -1421,8 +1615,24 @@ def account_initial_password():
     return value
 
 
+def open_account_form():
+    """목록 기본 탭에서 등록 탭으로 이동하고 실제 표시를 확인한다."""
+    tab = '[role="tablist"][aria-label="계정 관리 탭"] [role="tab"]:last-child'
+    if not wait_css(tab, 60, "계정 관리 탭"):
+        raise Fail("계정 관리 탭이 열리지 않았다")
+    activate(tab, "관리자 등록 탭")
+    if not CFG.dry_run:
+        def visible():
+            return js("JSON.stringify((() => { const e = document.querySelector("
+                     + json.dumps(ACCOUNT_SECTION_CSS)
+                     + "); return !!e && e.getClientRects().length > 0; })())")
+        if wait_any([["visible", visible]], 60, label="계정 등록 양식 표시") != "visible":
+            raise Fail("계정 등록 양식이 보이지 않는다")
+
+
 def create_account(st, entry, secret):
     """계정 한 건을 **계정 관리 화면으로** 만든다. API·DB 직접 쓰기 없음."""
+    open_account_form()
     for action in account_form_actions(entry):
         kind = action[0]
         css = action[1]
@@ -1431,7 +1641,7 @@ def create_account(st, entry, secret):
         elif kind == "activate":
             activate(css, "계정 추가")
         elif kind == "check":
-            set_checkbox(css, True, "관리자로 등록")
+            set_checkbox(css, action[2], "관리자로 등록")
         elif kind == "select-label":
             select_by_label(css, action[2], "연구실")
         else:
@@ -1485,6 +1695,8 @@ def phase_accounts(st, plan):
             log("  + " + entry["email"] + " 추가됨")
         else:
             log("  x " + entry["email"] + " 추가 실패: " + str(message))
+            mark_step(st, "accounts", "partial", made=made, planned=len(entries))
+            raise Fail("계정 생성 실패로 후속 단계를 중단한다: " + entry["email"])
         open_url(ACCOUNT_PATH)
         wait_css(ACCOUNT_SECTION_CSS, 60, "계정 추가 화면")
     mark_step(st, "accounts", "done" if made >= len(entries) else "partial",
@@ -1519,6 +1731,80 @@ def catalog_total():
     return rows, "table.catalog tbody tr.clk (쪽 잘림 가능)", rows
 
 
+def classify_preview_measurement(slot_state, image_count, decoded_count, unavailable, total_text):
+    """상자 존재가 아니라 terminal 상태와 실제 decode된 주 영상을 판정한다."""
+    if slot_state == "failed" or unavailable:
+        return "안 그려짐", "미리보기 실패"
+    if slot_state != "done":
+        return "미확인", "terminal 상태에 도달하지 않음"
+    if image_count < 1:
+        return "안 그려짐", "완료 슬롯에 주 이미지가 없음"
+    if decoded_count < 1:
+        return "안 그려짐", "완료 슬롯의 주 이미지가 아직 decode되지 않음"
+    if decoded_count < image_count:
+        return "안 그려짐", "완료 슬롯의 표시 이미지가 모두 decode되지 않음"
+    if not str(total_text or "").strip():
+        return "안 그려짐", "화면 표시 시간 관측이 끝나지 않음"
+    return "그려짐", ""
+
+
+def _preview_measurement():
+    return js("""(() => {
+      const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+      const images = Array.from(document.querySelectorAll(
+        '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
+          const box = img.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0
+            && box.top < window.innerHeight && box.left < window.innerWidth;
+        });
+      return {
+        slotState: slot?.getAttribute('data-preview-slot-state') || '',
+        imageCount: images.length,
+        decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
+        unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
+        totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
+      };
+    })()""", default={}) or {}
+
+
+def request_selected_preview():
+    """현재 파일을 명시 선택한 뒤 사용자와 같은 `보기` 요청 한 건을 만든다."""
+    deadline = time.time() + 30
+    selected = {}
+    while time.time() < deadline:
+        selected = js("""(() => {
+          const picker = document.querySelector('[data-testid="dt-pick-file"]');
+          const draw = document.querySelector('[data-testid="dt-preview-draw"]');
+          return {fileId: picker?.value || '', drawEnabled: !!draw && !draw.disabled};
+        })()""", default={"fileId": "dry-run-file", "drawEnabled": True}) or {}
+        if str(selected.get("fileId") or "").strip() and selected.get("drawEnabled") is True:
+            break
+        time.sleep(0.1)
+    file_id = str(selected.get("fileId") or "").strip()
+    if not file_id or selected.get("drawEnabled") is not True:
+        raise Fail("미리보기 파일 후보 또는 보기 버튼이 준비되지 않았다")
+    ab(["select", '[data-testid="dt-pick-file"]', file_id])
+    ab(["click", '[data-testid="dt-preview-draw"]'])
+    return file_id
+
+
+def require_preview_outcome(outcome):
+    if outcome is None:
+        raise Fail("미리보기 terminal/display 시간 초과 — 후속 요청을 중단한다")
+    return outcome
+
+
+def verify_result_passes(result):
+    passed = result.get("dataset_count_ui") == result.get("dataset_count_expected")
+    passed = passed and result.get("periods_ok") == result.get("periods_expected")
+    passed = passed and not result.get("periods_missing")
+    passed = passed and result.get("model_input_descriptions_ok") == 2
+    passed = passed and not result.get("model_input_descriptions_missing")
+    passed = passed and result.get("edges_ok") == result.get("edges_expected")
+    passed = passed and not result.get("edges_missing")
+    return passed and all(p.get("render") == "그려짐" for p in result.get("previews", []))
+
+
 def phase_verify(st, plan):
     """7 절 — 데이터셋 계수 · 계보 간선 · 미리보기 렌더 5포맷."""
     result = dict()
@@ -1545,24 +1831,65 @@ def phase_verify(st, plan):
     log("· 데이터셋 계수 화면 " + str(result["dataset_count_ui"])
         + " / 계획 " + str(result["dataset_count_expected"]))
 
+    periods_ok = 0
+    periods_missing = []
+    descriptions_ok = 0
+    descriptions_missing = []
+    for ds in plan["datasets"]:
+        state_row = st["datasets"].get(str(ds["seq"])) or {}
+        did = state_row.get("dataset_id")
+        if not did:
+            periods_missing.append({"name": ds["name"], "reason": "dataset id missing"})
+            continue
+        detail = {} if CFG.dry_run else authenticated_api(
+            "GET", "/api/v1/datasets/" + str(did))
+        stored = ds["period"] if CFG.dry_run else ((detail.get("basicInfo") or {}).get("period"))
+        if stored_period_matches(ds["period"], stored):
+            periods_ok += 1
+        else:
+            periods_missing.append({"name": ds["name"], "expected": ds["period"],
+                                    "stored": stored})
+        if ds["name"] in ("DEM", "Aspect"):
+            stored_summary = ds["summary"] if CFG.dry_run else detail.get("summary")
+            if stored_summary == ds["summary"] and "파일 내부 날짜 정보는 없음" in stored_summary:
+                descriptions_ok += 1
+            else:
+                descriptions_missing.append({"name": ds["name"], "stored": stored_summary})
+    result["periods_ok"] = periods_ok
+    result["periods_expected"] = len(plan["datasets"])
+    result["periods_missing"] = periods_missing
+    result["model_input_descriptions_ok"] = descriptions_ok
+    result["model_input_descriptions_missing"] = descriptions_missing
+    log("· 저장 기간 " + str(periods_ok) + " / " + str(len(plan["datasets"])))
+
     edges_ok = 0
     edges_missing = []
+    graphs = {}
+    plan_by_name = {d["name"]: d for d in plan["datasets"]}
     for edge in plan["edges"]:
         child = find_dataset_row(st, edge["child"])
+        parent = find_dataset_row(st, edge["parent"])
         cid = (child or dict()).get("dataset_id")
+        pid = (parent or dict()).get("dataset_id")
         miss = dict()
         miss["child"] = edge["child"]
         miss["parent"] = edge["parent"]
-        if not cid:
-            miss["reason"] = "자식 데이터셋 id 미확보"
+        if not cid or not pid:
+            miss["reason"] = "자식 또는 부모 데이터셋 id 미확보"
             edges_missing.append(miss)
             continue
+        if cid not in graphs:
+            graphs[cid] = {"edges": []} if CFG.dry_run else lineage_api("GET", cid)
+        expected_role = (plan_by_name[edge["child"]].get("parent_roles") or {}).get(
+            edge["parent"], "주입력")
+        api_match = lineage_edge_present(graphs[cid], cid, pid, expected_role)
         open_url("/datasets/" + str(cid))
         text = body_text()
-        if CFG.dry_run or (edge["parent"] in text):
+        if CFG.dry_run or (edge["parent"] in text and api_match):
             edges_ok = edges_ok + 1
         else:
-            miss["reason"] = "자식 상세 화면에 부모 이름 미노출"
+            miss["reason"] = "상세 부모 이름 또는 API 부모 역할 불일치"
+            miss["expected_role"] = expected_role
             edges_missing.append(miss)
     result["edges_ok"] = edges_ok
     result["edges_expected"] = len(plan["edges"])
@@ -1585,19 +1912,37 @@ def phase_verify(st, plan):
             previews.append(entry)
             continue
         open_url("/datasets/" + str(did))
-        ok = wait_css('[data-testid="dataset-preview"]', 120, "미리보기")
-        time.sleep(6)
-        bad = count('[data-testid="preview-unavailable"]')
-        imgs = count('[data-testid="dataset-preview"] img')
-        entry["preview_section"] = 1 if ok else 0
+        wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+        entry["file_id"] = request_selected_preview()
+        outcome = wait_any([
+            ["displayed", lambda: (lambda m: m.get("slotState") == "done"
+             and int(m.get("imageCount") or 0) > 0
+             and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
+             and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
+            ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
+        ], 120, label="미리보기 terminal/display")
+        require_preview_outcome(outcome)
+        measured = _preview_measurement()
+        slot_state = measured.get("slotState") or outcome or ""
+        bad = int(measured.get("unavailable") or 0)
+        imgs = int(measured.get("imageCount") or 0)
+        decoded = int(measured.get("decodedCount") or 0)
+        total_text = str(measured.get("totalText") or "")
+        entry["preview_section"] = count('[data-testid="dataset-preview"]')
+        entry["slot_state"] = slot_state
         entry["unavailable"] = bad
         entry["images"] = imgs
+        entry["decoded_images"] = decoded
+        entry["display_total"] = total_text
         entry["status_text"] = ""
         if bad > 0:
             rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
                              expect_ok=False, quiet=True)
             entry["status_text"] = ((data or dict()).get("text") or "")[:400]
-        entry["render"] = "그려짐" if (ok and bad == 0 and imgs > 0) else "안 그려짐"
+        entry["render"], measured_reason = classify_preview_measurement(
+            slot_state, imgs, decoded, bad, total_text)
+        if measured_reason and not entry["status_text"]:
+            entry["status_text"] = measured_reason
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
         shot = SHOT_DIR / ("verify-preview-" + str(seq).zfill(2) + "-" + fmt + ".png")
         ab(["screenshot", str(shot)], expect_ok=False)
@@ -1613,13 +1958,11 @@ def phase_verify(st, plan):
 
     if not CFG.dry_run:
         VERIFY_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
-    passed = result["dataset_count_ui"] == result["dataset_count_expected"]
-    passed = passed and edges_ok == len(plan["edges"])
-    for p in previews:
-        if p.get("render") != "그려짐":
-            passed = False
+    passed = verify_result_passes(result)
     mark_step(st, "verify", "done" if passed else "partial")
     log("· verify.json 기록 · 판정 = " + ("전건 통과" if passed else "미달 있음"))
+    if not passed:
+        raise Fail("저장 기간·모델 입력 설명·계보 역할·미리보기 검증 중 미달이 있다")
 
 
 def phase_report(st, plan):
@@ -1684,8 +2027,8 @@ def main():
     ap.add_argument("--phase", required=True,
                     choices=["login", "accounts", "projects", "datasets",
                              "verify", "report", "all"])
-    ap.add_argument("--base-url", default=os.environ.get("COLAB_DEV_URL", DEFAULT_URL),
-                    help="대상 주소. 환경변수 COLAB_DEV_URL 로도 준다. 기본값 없음")
+    ap.add_argument("--base-url", default=os.environ.get("COLAB_DEV_WEB_URL") or os.environ.get("COLAB_DEV_URL") or DEFAULT_URL,
+                    help="대상 주소. CLI > COLAB_DEV_WEB_URL > legacy COLAB_DEV_URL. 기본값 없음")
     ap.add_argument("--work-dir", default=os.environ.get("COLAB_SEED_WORK_DIR"),
                     help="상태·로그·갈무리·자격 파일 자리. 기본값 = 이 폴더의 .work/")
     ap.add_argument("--plan", default=None,
@@ -1710,7 +2053,7 @@ def main():
     CFG = ap.parse_args()
     set_work_dir(CFG.work_dir or DEFAULT_WORK_DIR, CFG.plan)
     if not CFG.base_url:
-        print("대상 주소가 없다 — --base-url 또는 COLAB_DEV_URL 을 준다"
+        print("대상 주소가 없다 — --base-url 또는 COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)을 준다"
               "(dev 주소의 원본 = docs/DEPLOY.md).", file=sys.stderr)
         return 2
     CFG.base_url = CFG.base_url.rstrip("/")

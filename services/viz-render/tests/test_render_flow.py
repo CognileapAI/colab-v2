@@ -23,8 +23,9 @@ def test_createRender_는_202_와_RenderJob_을_돌려준다(client, put_target,
     r = _create(client, {"datasetId": tid})
     assert r.status_code == 202
     job = r.json()
-    assert set(job) <= {"renderId", "status", "stage", "expiresAt", "result",
+    assert set(job) <= {"target", "renderId", "status", "stage", "expiresAt", "result",
                         "failure", "partialFailure"}
+    assert job["target"] == {"datasetId": tid}
     assert len(job["renderId"]) == 26
     assert job["status"] in ("그리는 중", "완료", "실패")
 

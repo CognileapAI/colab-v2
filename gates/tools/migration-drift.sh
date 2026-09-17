@@ -8,13 +8,13 @@
 #   아무도 돌리지 않는 오라클은 깨진 채로 조용히 늙는다.
 #
 # 판정 (전부 red · skip 은 하나도 없다)
-#   ⓐ 오라클 하나라도 비영 종료          → red(판정) — 실패한 오라클을 **이름으로** 낸다
+#   ⓐ 오라클 종료 78은 red(준비), 그 외 비영 종료는 red(판정) — 파일명을 낸다
 #   ⓑ 실측 건수 < `gates/config/migration-drift.toml` 의 `min` → red(판정)
 #      («줄었다»를 스크립트 수정으로 위장할 수 없게 기대 건수는 파일에 선언된다)
 #   ⓒ 대상 0건                           → red(판정) — 통과가 아니라 조회가 빗나간 것이다
 #   ⓓ `alembic` 부재                     → red(준비 · 78) — skip 아님
 #   ⓔ `docker` 부재                      → red(준비 · 78) — skip 아님
-#   요약줄이 **센 수를 드러낸다**: `오라클 N · 실행 N · 실패 M` (체인별 ＋ 합계).
+#   요약줄이 **센 수를 드러낸다**: `오라클 N · 실행 N · 실패 M · 준비 실패 K` (체인별 ＋ 합계).
 #
 # 환경변수
 #   COLAB_MIGRATION_DRIFT_CONFIG  기대 건수 정본 (기본 gates/config/migration-drift.toml)
@@ -76,8 +76,8 @@ else
 fi
 
 # ── 2. 세고 → 돌린다 ────────────────────────────────────────────────────────
-TOTAL=0; RAN=0; FAILED=0
-FAILURES=(); LINES=()
+TOTAL=0; RAN=0; FAILED=0; UNREADY=0
+FAILURES=(); READINESS=(); LINES=()
 for i in "${!DIRS[@]}"; do
   dir="${DIRS[$i]}"; min="${MINS[$i]}"
   case "$dir" in /*) abs="$dir";; *) abs="$REPO_ROOT/$dir";; esac
@@ -91,28 +91,45 @@ for i in "${!DIRS[@]}"; do
    기대 건수의 정본은 gates/config/migration-drift.toml 이다. 오라클이 사라진 것을
    기대값 인하로 덮지 않는다(통과시키려 보는 범위를 줄이는 것은 수정이 아니다 · CLAUDE.md §3)."
 
-  d_fail=0
+  d_fail=0; d_ready=0
   for o in "${ORACLES[@]}"; do
     name="$dir/$(basename "$o")"
     echo "── $name ──────────────────────────────────────────"
-    if bash "$o"; then
-      echo "[$GATE] $name → green"
-    else
-      echo "[$GATE] $name → red ✗"
-      FAILURES+=("$name"); d_fail=$((d_fail+1))
-    fi
+    out="$(bash "$o" 2>&1)"; ec=$?
+    # 자식 준비 표식은 진단으로 보존한다. 최종 집계만 실행기의 분류를 정한다.
+    printf '%s\n' "$out" | sed 's/^::gate-readiness-failure::/[oracle] ::gate-readiness-failure::/'
+    case "$ec" in
+      0) echo "[$GATE] $name → green" ;;
+      78)
+        echo "[$GATE] $name → red(준비)"
+        READINESS+=("$name"); d_ready=$((d_ready+1)) ;;
+      *)
+        echo "[$GATE] $name → red(판정 · exit $ec)"
+        FAILURES+=("$name"); d_fail=$((d_fail+1)) ;;
+    esac
     RAN=$((RAN+1))
   done
-  TOTAL=$((TOTAL+n)); FAILED=$((FAILED+d_fail))
-  LINES+=("[$GATE] $dir — 오라클 $n · 실행 $n · 실패 $d_fail (선언 최소 $min)")
+  TOTAL=$((TOTAL+n)); FAILED=$((FAILED+d_fail)); UNREADY=$((UNREADY+d_ready))
+  LINES+=("[$GATE] $dir — 오라클 $n · 실행 $n · 실패 $d_fail · 준비 실패 $d_ready (선언 최소 $min)")
 done
 
 printf '%s\n' "${LINES[@]}"
 [ "$RAN" -eq "$TOTAL" ] || red "센 것 $TOTAL 벌 중 $RAN 벌만 돌았다 — 안 돈 것을 통과로 세지 않는다."
 
+echo "[$GATE] 합계 — 오라클 $TOTAL · 실행 $RAN · 실패 $FAILED · 준비 실패 $UNREADY"
 if [ "$FAILED" -gt 0 ]; then
-  printf '::error::%s red — 오라클 %d · 실행 %d · 실패 %d:\n' "$GATE" "$TOTAL" "$RAN" "$FAILED"
+  printf '::error::%s red(판정) — 실패한 오라클:\n' "$GATE"
   printf '     - %s\n' "${FAILURES[@]}"
-  exit 1
 fi
-echo "$GATE green — 오라클 $TOTAL · 실행 $RAN · 실패 0."
+if [ "$UNREADY" -gt 0 ]; then
+  echo "[$GATE] 준비 실패 오라클:"
+  printf '     - %s\n' "${READINESS[@]}"
+fi
+# 둘이 섞이면 관측된 판정 실패를 보존한다. 준비 실패만 있을 때 78이다.
+[ "$FAILED" -eq 0 ] || exit 1
+if [ "$UNREADY" -gt 0 ]; then
+  pg_detail="오라클 $TOTAL · 실행 $RAN · 실패 0 · 준비 실패 $UNREADY"
+  printf '::gate-readiness-failure::gate=%s|cause=준비실패 집계|detail=%s · 개별 원인은 위 오라클 로그 참조\n' "$GATE" "$pg_detail"
+  exit "$READINESS_EXIT"
+fi
+echo "$GATE green — 오라클 $TOTAL · 실행 $RAN · 실패 0 · 준비 실패 0."

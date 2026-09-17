@@ -38,7 +38,7 @@ export type DatasetEditDraft = {
   crs: string;
   /** 사람이 적은 격자 설명. 자동 분석값과 별도다. */
   gridDescription: string;
-  /** 기간은 두 칸이 한 값이다 (`DataPeriod`). 날짜 칸이라 `YYYY-MM-DD` 다. */
+  /** 기간은 두 칸이 한 값이다 (`DataPeriod`). 원래 시각을 잃지 않도록 전체 ISO 문자열로 쥔다. */
   periodStart: string;
   periodEnd: string;
   /**
@@ -134,14 +134,9 @@ function orBlank(v: string | null | undefined): string {
   return v ?? '';
 }
 
-/** 시각값 → 날짜 칸. 저장은 시각값 그대로다 (미결-18 — 화면이 조립한다). */
-function toDateInput(v: string | null | undefined): string {
-  return v ? v.slice(0, 10) : '';
-}
-
-/** 날짜 칸 → 시각값. 자정 UTC 로 세운다 — 화면이 고른 값이고 계약은 `date-time` 이다. */
+/** 날짜만 들어온 기존 호출은 자정 UTC로, 팝오버가 만든 전체 ISO는 그대로 보낸다. */
 function toTimestamp(v: string): string {
-  return `${v}T00:00:00Z`;
+  return v.includes('T') ? v : `${v}T00:00:00Z`;
 }
 
 export function toDraft(detail: DatasetDetail): DatasetEditDraft {
@@ -154,8 +149,8 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
     sourceDownloadedOn: orBlank(b?.sourceDownloadedOn),
     crs: orBlank(b?.crs),
     gridDescription: orBlank(b?.gridDescription),
-    periodStart: toDateInput(b?.period?.start),
-    periodEnd: toDateInput(b?.period?.end),
+    periodStart: orBlank(b?.period?.start),
+    periodEnd: orBlank(b?.period?.end),
     periodGranularity: b?.period?.granularity ?? '',
     intervalValue:
       b?.observationInterval?.value === null || b?.observationInterval?.value === undefined

@@ -18,10 +18,10 @@ import {
   type ProjectUpdate,
 } from './types';
 
-export function apiProjectSource(): ProjectSource {
+export function apiProjectSource(targetLabId?: string): ProjectSource {
   return {
     async list(query) {
-      const r = await api.GET('/projects', {
+      const r = await api.GET('/projects', { headers: targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {},
         params: {
           query: {
             // 「전체」는 **조건을 빼는 것**이다 — 계약에 그런 값이 없다.
@@ -48,8 +48,8 @@ export function apiProjectSource(): ProjectSource {
     //
     // **폴백하지 않는다.** 픽스처로 성공을 흉내 내는 순간 **저장되지 않은 것을 저장됐다고**
     // 말하게 된다. 2026-09-03 부터는 읽기도 같다 — 이 파일에 픽스처가 없다.
-    async create(input: ProjectCreate) {
-      const r = await api.POST('/projects', { body: input });
+    async create(input: ProjectCreate, targetLabId?: string) {
+      const r = await api.POST('/projects', { body: input, headers: targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {} });
       if (!r.data) throw new Error('프로젝트를 만들지 못했어요.');
       return r.data as ProjectDetail;
     },
@@ -87,10 +87,18 @@ export function apiProjectSource(): ProjectSource {
       if (r.response.status === 404) throw new ProjectGone();
       if (r.response.status !== 204) throw new Error('소속을 해제하지 못했어요.');
     },
+    async link(projectId, datasetId) {
+      const r = await api.PUT('/projects/{projectId}/datasets/{datasetId}', {
+        params: { path: { projectId, datasetId } },
+        body: { usageNote: null },
+      });
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status !== 204) throw new Error('프로젝트에 담지 못했어요.');
+    },
   };
 }
 
 /** 화면이 쓰는 출처. **대역이 없다** — 읽기 둘도 쓰기 다섯과 같은 규칙을 따른다. */
-export function defaultProjectSource(): ProjectSource {
-  return apiProjectSource();
+export function defaultProjectSource(targetLabId?: string): ProjectSource {
+  return apiProjectSource(targetLabId);
 }

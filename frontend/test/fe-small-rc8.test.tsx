@@ -229,6 +229,9 @@ async function openRegister(sources: UploadSources) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   await click(screen.getByRole('button', { name: /^② / }));
 }
 
@@ -249,6 +252,8 @@ async function submitRegister(opts: { period?: boolean } = {}) {
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
   await click(screen.getByTestId('reg-next'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
   await click(screen.getByTestId('reg-done'));
 }
 

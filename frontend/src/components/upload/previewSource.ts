@@ -4,6 +4,7 @@
 // ⑴ 실패는 4xx 가 아니라 **200 + `failure`** 다 — 여기서 status 로 실패를 판정하지 않는다.
 // ⑵ `tileUrlTemplate` 은 **불투명 문자열**이다(`〈68〉` 서명 포함). 뜯거나 다시 조립하지 않는다.
 // ⑶ 만료된 렌더의 타일은 FE 에 **401** 로 온다 — 사람 권한 문제가 아니라 만료다.
+import { requestMessage } from '../preview/requestError';
 import { api } from '../../api/client';
 import { NotImplemented, type PaletteOption, type PreviewSource, type RenderRequest } from './types';
 import {
@@ -31,10 +32,11 @@ import {
  */
 export class PalettesUnreachable extends Error {}
 
-export function apiPreviewSource(): PreviewSource {
+export function apiPreviewSource(targetLabId?: string): PreviewSource {
+  const headers = targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {};
   return {
     async palettes(): Promise<PaletteOption[]> {
-      const r = await api.GET('/preview-palettes');
+      const r = await api.GET('/preview-palettes', { headers });
       if (r.response.status === 501) throw new NotImplemented();
       // 503 = `RENDER_UNAVAILABLE`. **빈 배열로 접지 않는다** — 화면이 「팔레트가 없다」고
       // 말하는데 사실은 「그리는 서버에 못 닿았다」가 된다 (`〈87〉-㉯` 가 검색에서 금지한 접기).
@@ -47,7 +49,7 @@ export function apiPreviewSource(): PreviewSource {
       if (r.response.status === 501) throw new NotImplemented();
       // WU-C3 — **413 은 조각 하나로 다시 그릴 수 있다는 사실이다.** 일반 실패로 접지 않는다.
       if (isRenderTooLarge(r.response.status, r.error)) throw new RenderTooLarge(TOO_LARGE_MESSAGE);
-      if (!r.data) throw new Error('미리보기를 시작하지 못했어요.');
+      if (!r.data) throw new Error(requestMessage(r.response.status, r.error, '미리보기를 시작하지 못했어요.'));
       return r.data;
     },
 
@@ -64,14 +66,14 @@ export function apiPreviewSource(): PreviewSource {
       const r = await api.POST('/preview-target-descriptions', { body: { uploadId } as never });
       if (r.response.status === 501) throw new NotImplemented();
       if (isRenderTooLarge(r.response.status, r.error)) throw new RenderTooLarge(TOO_LARGE_MESSAGE);
-      if (!r.data) throw new Error('고를 수 있는 값을 받지 못했어요.');
+      if (!r.data) throw new Error(requestMessage(r.response.status, r.error, '고를 수 있는 값을 받지 못했어요.'));
       return r.data as TargetDescription;
     },
 
     async getRender(renderId: string) {
-      const r = await api.GET('/previews/{renderId}', { params: { path: { renderId } } });
+      const r = await api.GET('/previews/{renderId}', { headers, params: { path: { renderId } } });
       if (r.response.status === 501) throw new NotImplemented();
-      if (!r.data) throw new Error('미리보기 상태를 읽지 못했어요.');
+      if (!r.data) throw new Error(requestMessage(r.response.status, r.error, '미리보기 상태를 읽지 못했어요.'));
       return r.data;
     },
   };

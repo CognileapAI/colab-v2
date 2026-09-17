@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "colab-viz-render"
-version = "0.1.0"
+version = "1.0.0"
 description = "CoLAB v2 viz-render — D7 Visualization"
 requires-python = "==3.12.*"
 # 버전 핀의 정본은 requirements.in(직접) · requirements.txt(닫힘)다.

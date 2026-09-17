@@ -20,6 +20,7 @@ import type { DatasetPreviewSource, ValueLookupResult } from '../src/components/
 import { pointFromViewport } from '../src/components/preview/PreviewPanels';
 import { baseScaleFor } from '../src/components/preview/scaleLadder';
 import type { RenderJob } from '../src/components/preview/types';
+import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
 
 const RENDER_ID = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const DATASET_ID = '0000000000000000000000DSA1';
@@ -88,7 +89,8 @@ function sizeViewport(el: Element, width = VIEW_PX, height = VIEW_PX) {
 }
 
 async function mountMapped(source: DatasetPreviewSource) {
-  render(<DatasetPreviewSection datasetId={DATASET_ID} source={source} pollMs={5} />);
+  render(<DatasetPreviewSection datasetId={DATASET_ID} source={withDatasetPreviewFixture(source)} pollMs={5} />);
+  drawDatasetPreviewWhenReady();
   await waitFor(() => expect(screen.getByTestId('preview-map')).toBeTruthy());
   return screen.getByTestId('preview-viewport');
 }
@@ -204,7 +206,8 @@ describe('값 조회 — 지도의 한 점', () => {
 
   it('⑹ 좌표가 없는 자료에는 조회 자리가 없다', async () => {
     const source = makeSource(UNMAPPED, HIT);
-    render(<DatasetPreviewSection datasetId={DATASET_ID} source={source} pollMs={5} />);
+    render(<DatasetPreviewSection datasetId={DATASET_ID} source={withDatasetPreviewFixture(source)} pollMs={5} />);
+    drawDatasetPreviewWhenReady();
     await waitFor(() => expect(screen.getByTestId('preview-map')).toBeTruthy());
 
     expect(screen.queryByTestId('value-lookup')).toBeNull();

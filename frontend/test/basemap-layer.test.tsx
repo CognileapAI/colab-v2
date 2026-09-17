@@ -25,6 +25,7 @@ import { basemapPathData } from '../src/components/preview/BasemapLayer';
 import { lonFractionOf, latFractionOf } from '../src/components/preview/projection';
 import { pvLonOf, pvLatOf } from '../src/components/preview/PreviewPanels';
 import type { GeoBounds } from '../src/components/preview/scaleLadder';
+import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
 import coastline from '../src/assets/basemap/ne_110m_coastline.json';
 import boundaries from '../src/assets/basemap/ne_110m_admin_0_boundary_lines_land.json';
 
@@ -69,18 +70,20 @@ function makeSource(bounds?: GeoBounds): DatasetPreviewSource {
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
-  return render(
+  const view = render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>
         <Route
           path="/datasets/:datasetId"
           element={
-            <DatasetDetailPage source={fixtureDetailSource()} previewSource={previewSource} />
+            <DatasetDetailPage source={fixtureDetailSource()} previewSource={withDatasetPreviewFixture(previewSource)} />
           }
         />
       </Routes>
     </MemoryRouter>,
   );
+  drawDatasetPreviewWhenReady();
+  return view;
 }
 
 afterEach(() => {

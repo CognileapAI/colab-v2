@@ -10,22 +10,16 @@
 //  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
 //  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
+import { TargetLabSelect } from '../common/TargetLabSelect';
+import { apiLineageSource } from '../lineage/lineageSource';
+import { apiPreviewSource } from './previewSource';
+import { apiProjectSource } from './projectSource';
 import { useWorkProtection } from '../../auth/useWorkProtection';
 import { getSessionEpoch, subscribe } from '../../auth/store';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import type { ParentCard } from '../lineage/types';
-// ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 기본값이 ③ 미리보기와 **같은 식**을 쓴다.
-import { derivedLevelFromParents } from '../common/processingLevel';
-
-/**
- * 계산값 → ① 기본 선택 코드. 계산값이 없으면(부모 Lv 미상) `Lv2` 유지(spec §6 ㉱).
- * 부모 0건은 계산값 `0` 이라 `Lv0` 이다(카드 ⑩ ⓐ).
- */
-function autoLevelCode(derived: number | null): string {
-  return derived === null ? DEFAULT_PROCESSING_LEVEL : `Lv${derived}`;
-}
 import { Toast } from '../common/Toast';
 import { type AccessState } from '../common/accessState';
 import {
@@ -35,6 +29,8 @@ import {
   analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
+  REGISTER_INTERVAL_REQUIRED,
+  REGISTER_LV0_SOURCE_REQUIRED,
   REGISTER_NAME_REQUIRED,
   REGISTER_PERIOD_REQUIRED,
   REGISTER_SUMMARY_REQUIRED,
@@ -52,9 +48,6 @@ import { FileDropCard, keepOneExtension, MIXED_EXTENSION_NOTICE } from './FileDr
 import { PreviewPanel } from './PreviewPanel';
 import { LV0, RegisterArea, type Step } from './RegisterArea';
 import {
-  DEFAULT_CATEGORY,
-  DEFAULT_DATA_TYPE,
-  DEFAULT_PROCESSING_LEVEL,
   MISSING_CATEGORY_MESSAGE,
 } from './axisDict';
 import {
@@ -63,7 +56,6 @@ import {
   type VariableRow,
 } from '../common/VariableTable';
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
-import { previewNavigation } from '../preview/handoff';
 import { durationMedian, recordDuration } from '../preview/durationSamples';
 import { forgetPending, rememberPending } from './pendingStore';
 import { RepresentativeImageUploadError } from './uploadSource';
@@ -85,6 +77,10 @@ import {
   type UploadSources,
   type UploadStatus,
 } from './types';
+
+export function missingClassificationId(category: string, dataType: string, level: string): string | null {
+  return !category ? 'reg-category' : !dataType ? 'reg-datatype' : !level ? 'reg-level' : null;
+}
 
 /**
  * 닫기 확인보다 **위에 있는 층**이 스스로 붙이는 표식 (PRD-39 ⑭ · 확장보기 · 찾기 · 계보 수정).
@@ -162,6 +158,8 @@ export interface GridAttachTarget {
 
 export function UploadModal(props: {
   sources: UploadSources;
+  apiSources?: boolean | undefined;
+  initialLabId?: string | undefined;
   lineageStep?: LineageStepRender | undefined;
   attach?: GridAttachTarget | undefined;
   /**
@@ -169,11 +167,17 @@ export function UploadModal(props: {
    * `seq` 는 진입 컴포넌트의 기존 규약 그대로다 — 그 값이 바뀔 때만 다시 무장한다.
    */
   resumeRequest?: { seq: number; uploadId: string } | undefined;
+  registerRequest?: { seq: number; uploadId: string } | undefined;
   onClose: () => void;
 }) {
   const account = useAccount();
   const navigate = useNavigate();
   const { upload } = props.sources;
+  const operator = account?.canManageServiceAccounts === true;
+  const [targetLabId, setTargetLabId] = useState(props.initialLabId ?? '');
+  const requestLabId = operator ? targetLabId || undefined : undefined;
+  const scopedSources = useMemo(() => props.apiSources ? { ...props.sources, preview: apiPreviewSource(requestLabId), projects: apiProjectSource(requestLabId), lineage: apiLineageSource(requestLabId) } : props.sources, [props.sources, props.apiSources, requestLabId]);
+  const pendingLabId = targetLabId || account?.labId || '';
 
   const [picked, setPicked] = useState<PickedFile[]>([]);
   const [uploadId, setUploadId] = useState<string | null>(null);
@@ -194,6 +198,7 @@ export function UploadModal(props: {
   const gridReuseGeneration = useRef(0);
   const [gridRevision, setGridRevision] = useState(0);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerRestoring, setRegisterRestoring] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
   /** 실제 그림은 데이터셋 등록 뒤 별도 PUT할 때까지 모달이 보존한다. */
@@ -209,22 +214,11 @@ export function UploadModal(props: {
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
   // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
   const [nameDraft, setNameDraft] = useState('');
-  // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — 기본 선택값이 있고 그대로 실려 나간다.**
-  // 계약 `DatasetCreate.required` 에 `category`·`dataType` 이 올라(20차 ㉯) 서버가 400
-  // 「분류를 골라 주세요」를 내므로, 화면은 **늘 값을 실어 보낸다**.
-  // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 셋을 세지 않는다.
-  const [category, setCategory] = useState(DEFAULT_CATEGORY);
-  const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
-  // ⭑ ⟨카드 ⑩ ⓐ⟩ 첫 값도 계산값이다 — 부모 0건이면 `Lv0`(한 프레임이라도 `Lv2` 를 그리지 않는다).
-  const [level, setLevel] = useState(() => autoLevelCode(derivedLevelFromParents([])));
-  /**
-   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 가공 단계를 사람이 한 번이라도 골랐는가.**
-   *
-   * 기본 선택값은 ③ 에서 확정한 부모의 **계산값을 따라간다**. 다만 사람이 고른 값은
-   * **덮지 않는다** — 고른 값이 사라지면 선택 칸이 무의미해진다(㉱ 축자).
-   * ⛔ 이것은 「사람이 적은 값」 계수(`hasHumanInput`)와 다른 축이다 — 추종은 자동 채움이다.
-   */
-  const [levelTouched, setLevelTouched] = useState(false);
+  // 분류 3축은 빈 상태에서 시작해 사람이 모두 고른 뒤에만 다음 단계로 간다.
+  // `DatasetCreate.required` 의 `category`·`dataType`에 빈 값을 싣지 않도록 화면에서 먼저 막는다.
+  const [category, setCategory] = useState('');
+  const [dataType, setDataType] = useState('');
+  const [level, setLevel] = useState('');
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** `sourceLabel` 옆에 두되 **다른 축**이다 —
@@ -319,13 +313,9 @@ export function UploadModal(props: {
 
   function editRegistration(action: () => void) {
     if (submitLock.current || committedDatasetIdRef.current) return;
+    setRegisterError(null);
     action();
   }
-  // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
-  const [rendered, setRendered] = useState<{
-    renderId: string;
-    withoutReferenceGrid: boolean;
-  } | null>(null);
   // 미완결 프리사인드 전송 (〈338〉) — 저장 모드 s3 에서만 값이 온다 (local 은 빈 배열)
   const [incomplete, setIncomplete] = useState<IncompleteTransferItem[]>([]);
   // 재개 대상: 표시용 상태 + 접수 effect 가 읽는 ref. **성공 시에만 비운다** — 상태를
@@ -339,6 +329,7 @@ export function UploadModal(props: {
   const resumeFromRef = useRef<'banner' | 'failure' | null>(null);
   /** 실패로 재개를 무장한 시점의 파일 서명 — 이것과 달라지면 그 무장은 무효다. */
   const armedSignatureRef = useRef<string>('');
+  const restoredRegistrationRef = useRef(false);
   // ⭑ ⟨advisor ② · F3⟩ 배경 클릭의 **눌린 자리**. 모달 안에서 눌러 배경에서 뗀 드래그는
   //   click.target 이 공통 조상(배경)이 되므로, 눌린 자리까지 배경일 때만 닫는다.
   const downOnBackdrop = useRef(false);
@@ -351,7 +342,7 @@ export function UploadModal(props: {
     intervalUnit || projects.length || lineageCards.length || representativeFile);
   // ⭑ ⟨#34⟩ 지울 「이 브라우저의 기억」이 실제로 있을 때만 세 번째 선택지를 낸다 —
   //   접수 전에는 기억할 것이 없어 그 버튼이 아무것도 하지 않는 빈 선택지가 된다.
-  const canForgetPending = Boolean(uploadId && account?.labId);
+  const canForgetPending = Boolean(uploadId && pendingLabId);
   useWorkProtection('upload-modal', {
     dirty: hasDraft,
     inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
@@ -398,6 +389,49 @@ export function UploadModal(props: {
     setResumeArm((n) => n + 1);
   }, [resumeRequestSeq, resumeRequestId]);
 
+  const registerRequestSeq = props.registerRequest?.seq ?? 0;
+  const registerRequestId = props.registerRequest?.uploadId ?? '';
+  useEffect(() => {
+    if (registerRequestSeq <= 0 || !registerRequestId) return;
+    let alive = true;
+    setRegisterRestoring(true);
+    void upload.status(registerRequestId).then((s) => {
+      if (!alive) return;
+      setRegisterRestoring(false);
+      if (s.labId) setTargetLabId(s.labId);
+      if (s.registered === true) {
+        if (pendingLabId) forgetPending(pendingLabId, registerRequestId);
+        setStatusIssue({ message: '이미 등록된 업로드예요.', retrying: false });
+        return;
+      }
+      const files = s.files.map((f) => ({
+        file: new File([''], f.fileName),
+        kind: f.kind,
+      })) as PickedFile[];
+      restoredRegistrationRef.current = true;
+      setPicked(files);
+      setUploadId(registerRequestId);
+      setStatus(s);
+      setName((current) => current || (files[0]?.file.name.replace(/\.[^.]+$/, '') ?? ''));
+      if (s.ready || s.failure) setRegisterOpen(true);
+    }).catch((e) => {
+      if (!alive) return;
+      setRegisterRestoring(false);
+      if (e instanceof UploadGone && pendingLabId) forgetPending(pendingLabId, registerRequestId);
+      setStatusIssue({
+        message: e instanceof UploadGone ? '이 파일은 더 이상 없어요. 다시 올려 주세요.' : '업로드 상태를 읽지 못했어요.',
+        retrying: false,
+        ...(e instanceof UploadGone ? { gone: true } : {}),
+      });
+    });
+    return () => { alive = false; };
+  }, [registerRequestSeq, registerRequestId, upload, account?.labId]);
+  useEffect(() => {
+    if (registerRequestId && uploadId === registerRequestId && (status?.ready || status?.failure)) {
+      setRegisterOpen(true);
+    }
+  }, [registerRequestId, uploadId, status?.ready, status?.failure]);
+
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
   // 폴더 드롭에서는 다른 폴더의 같은 이름·같은 크기가 실재하므로 상대 경로가 정체성에 든다
@@ -415,6 +449,11 @@ export function UploadModal(props: {
       setStatus(null);
       return;
     }
+    if (restoredRegistrationRef.current) {
+      restoredRegistrationRef.current = false;
+      return;
+    }
+    if (operator && !targetLabId && !resumeRef.current) return;
     let alive = true;
     // 새 접수 동안 이전 파일의 ready·그림을 등록 근거로 쓰지 않는다.
     setUploadId(null);
@@ -424,7 +463,6 @@ export function UploadModal(props: {
     earlyBounds.current = null;
     convergenceReported.current = false;
     setStatus(null);
-    setRendered(null);
     setIntakeError(null);
     // ⚠ **실패로 무장한 재개는 파일이 바뀌면 버린다.** 안 버리면 파일을 바꿔 다시 하려는
     //    사람에게 「이어올리려면 같은 파일을 다시 골라야 해요」가 뜬다 — 그는 바꾸려던 것이다.
@@ -446,10 +484,12 @@ export function UploadModal(props: {
     let earlySeen = false;
     void upload
       .create(picked, { sourceLabel: label,
+                        ...(requestLabId ? { targetLabId: requestLabId } : {}),
                         ...(resume ? { resumeUploadId: resume } : {}),
                         onEarlyReceipt: (receipt) => {
                           if (!alive) return;
                           earlySeen = true;
+                          if (receipt.labId) setTargetLabId(receipt.labId);
                           setStatus(null);
                           setEarlyUploadId(receipt.uploadId);
                         },
@@ -468,9 +508,10 @@ export function UploadModal(props: {
         if (!resume) recordDuration('전송', performance.now() - transferStarted);
         setStatus(null);
         setUploadId(receipt.uploadId);
+        if (receipt.labId) setTargetLabId(receipt.labId);
         if (earlySeen) setPreviewFinalNotice(true);
         // **접수는 됐고 등록은 안 됐다** — 새로고침해도 이 업로드로 돌아올 수 있게 적어 둔다.
-        if (account?.labId) rememberPending(account.labId, receipt.uploadId);
+        if (receipt.labId || pendingLabId) rememberPending(receipt.labId || pendingLabId, receipt.uploadId);
         if (resume) {                      // 이어올리기가 접수까지 갔다 — 배너 항목이 사라진다
           resumeRef.current = null;
           resumeFromRef.current = null;
@@ -510,7 +551,7 @@ export function UploadModal(props: {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, upload, resumeArm, retryArm]);
+  }, [signature, upload, resumeArm, retryArm, operator && !props.resumeRequest ? Boolean(targetLabId) : false]);
 
   const previewUploadId = uploadId ?? earlyUploadId;
   const showingEarlyPreview = Boolean(earlyUploadId && !uploadId);
@@ -656,8 +697,6 @@ export function UploadModal(props: {
   const gridRejection = status?.gridRejections?.[0] ?? null;
   const bodyName =
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
-  // 헤더에서 읽은 값 중 FE 표면이 실제로 실어 주는 것은 `byteSize` 하나다 (`preview/types.ts`)
-  const bodyByteSize = (status?.files.find((f) => f.kind === '본체') ?? status?.files[0])?.byteSize;
 
   /**
    * **사람이 입력한 값이 하나라도 있나** — 종료 확인의 판정식이다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
@@ -669,19 +708,8 @@ export function UploadModal(props: {
    *  - ② 관측 간격 값·단위 · 기간 최소 단위
    *
    * 세지 않는 것 = **자동으로 채워진 값**. 파일명에서 만든 이름 초안 · 확장자 · 용량 ·
-   * 읽기 전용 가공 단계 칸 · (R-B 가 더할) 기본 선택값 `Lv2`·`연구실 구성원 전체`.
-   * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
-   * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
+   * 읽기 전용으로 자동 채워진 확장자·용량.
    */
-  /**
-   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱ · 카드 ⑩ ⓐ⟩ ① 가공 단계 기본값 = ③ 의 계산값.**
-   *
-   * 식은 ③ 미리보기와 **같은 함수**다(`derivedLevelFromParents`). 확정 부모 0건이면 `Lv0`,
-   * 부모 Lv 를 하나라도 모르면 `null` → 기본값 `Lv2` 유지(`autoLevelCode`).
-   * `hasHumanInput` 이 이 값을 기준으로 세므로 그보다 먼저 선언한다.
-   */
-  const derivedFromParents = derivedLevelFromParents(lineageCards);
-  const autoLevel = autoLevelCode(derivedFromParents);
   const hasHumanInput =
     (name.trim() !== '' && name !== nameDraft) ||
     summary.trim() !== '' ||
@@ -699,16 +727,13 @@ export function UploadModal(props: {
     granularity.trim() !== '' ||
     projects.length > 0 ||
     // ⭑ ⟨WU-A9R · PRD-14 증분⟩ 담은 프로젝트 건수와 **대표 그림 교체 여부**를 함께 센다.
-    //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
-    //   확장자·용량)은 여전히 세지 않는다.
+    //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(확장자·용량)은 세지 않는다.
     representativeFile !== null ||
     gridDescription.trim() !== '' ||
-    // ⭑ ⟨advisor ② · F3⟩ 세 축도 **사람이 고르는 칸**이다. 기본값 그대로면 세지 않고
-    //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
-    category !== DEFAULT_CATEGORY ||
-    dataType !== DEFAULT_DATA_TYPE ||
-    // ⭑ ⟨카드 ⑩ ⓐ⟩ 기준은 계산값 기본값이다 — 파일만 올린 사람의 자동 `Lv0` 을 세지 않는다.
-    level !== autoLevel ||
+    // 세 축도 사람이 고르는 칸이므로 하나라도 고르면 「잃을 것」이 된다.
+    category !== '' ||
+    dataType !== '' ||
+    level !== '' ||
     // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
     accessState !== null ||
     lineageParents.length > 0 ||
@@ -751,19 +776,6 @@ export function UploadModal(props: {
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
   /**
-   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 가공 단계 기본값이 ③ 의 계산값을 따라간다.**
-   *
-   * 값은 위 `autoLevel` 이다 — 확정 부모 0건이면 `Lv0`(카드 ⑩ ⓐ), 부모 Lv 미상이면 `Lv2`.
-   * ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ ／ 종전 ~~부모 0건을 Lv0 으로 보지 않는다~~.
-   * ⛔ 사람이 한 번 고른 뒤에는 추종을 멈춘다(`levelTouched`).
-   */
-  useEffect(() => {
-    // 보낸 뒤에는 화면 값을 움직이지 않는다 — 다른 등록 입력과 같은 규율(`editRegistration`).
-    if (submitLock.current || committedDatasetIdRef.current) return;
-    if (levelTouched) return;
-    setLevel(autoLevel);
-  }, [levelTouched, autoLevel]);
-  /**
    * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 원천 블록이 서는가.**
    * `RegisterArea.StepThree` 와 **같은 식**이다 — `Lv0` 또는 연결 0건. 화면이 숨긴 값을
    * 요청에 싣지 않으려면 표시 조건과 전송 조건이 한 식이어야 한다(WU-B6 이 세운 규율).
@@ -777,7 +789,7 @@ export function UploadModal(props: {
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
   // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
   const lineageStep: LineageStepRender =
-    props.lineageStep ?? ((c) => <LineageStep source={props.sources.lineage} ctx={c} />);
+    props.lineageStep ?? ((c) => <LineageStep source={scopedSources.lineage} ctx={c} />);
 
   const lineageCtx: LineageStepContext = useMemo(
     () => ({
@@ -787,9 +799,6 @@ export function UploadModal(props: {
       topic: null,
       // ⭑ **⟨WU-B5 · PRD-07⟩ ① 이 고른 자기 Lv 가 연결 규칙의 기준값이다.**
       processingLevelUserSet: level,
-      // ⭑ ⟨카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 추종 중에는 ③ 이 부모 선택 상한을 걸지 않는다.
-      //   부모 Lv 미상(계산값 없음 · 기본값 `Lv2`)은 추종이 아니므로 상한이 선다.
-      processingLevelFollowsDerived: !levelTouched && derivedFromParents !== null,
       onGoToClassify,
       onLineageProgress,
       onLineageParentsChange,
@@ -799,7 +808,7 @@ export function UploadModal(props: {
       lineageUnknown,
       onLineageUnknownChange,
     }),
-    [uploadId, name, level, levelTouched, derivedFromParents, lineageCards, lineageUnknown, onGoToClassify,
+    [uploadId, name, level, lineageCards, lineageUnknown, onGoToClassify,
      onLineageProgress, onLineageParentsChange, onLineageConflictChange, onLineageCardsChange,
      onLineageUnknownChange],
   );
@@ -875,19 +884,14 @@ export function UploadModal(props: {
     setStep(1);
     setRegisterError(null);
     setIntakeError(null);
-    setRendered(null);
     setGridSkipped(false);
     setRepresentativeFile(null);
     setRepresentativeRetryBlocked(false);
     // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
-    setCategory(DEFAULT_CATEGORY);
-    setDataType(DEFAULT_DATA_TYPE);
-    // ⭑ ⟨카드 ⑩ ⓐ⟩ 연결도 함께 내리므로 되돌릴 값은 부모 0건의 계산값(`Lv0`)이다.
-    setLevel(autoLevelCode(derivedLevelFromParents([])));
-    // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 「사람이 고른 적 있다」도 함께 내린다 — 안 내리면 새 파일의
-    //   계산값 추종이 옛 손길 때문에 멈춘다.
-    setLevelTouched(false);
+    setCategory('');
+    setDataType('');
+    setLevel('');
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -933,30 +937,6 @@ export function UploadModal(props: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultKind, picked]);
-
-  /**
-   * 「보기만 할게요」 — **등록하지 않겠다는 선택**이고, 정본 §7.2 전이표가 이 선택의 도착지를
-   * `미등록 파일 미리보기(S-08)` 로 못 박았다. 모달만 닫으면 파일이 그냥 버려져 그 전이가
-   * 제품에 없는 것이 된다(Ted 2026-08-28 완료 정의 ①). 여기서 만드는 사실은 **없다** —
-   * `createDataset` 을 부르지 않고, 이미 접수된 업로드의 주소로 이동할 뿐이다.
-   */
-  function viewOnly() {
-    if (!uploadId) {
-      // 접수가 아직/못 됐으면 보낼 주소가 없다. **주소를 지어내지 않는다** — 닫기만 한다.
-      props.onClose();
-      return;
-    }
-    const nav = previewNavigation({
-      uploadId,
-      ...(rendered ? { renderId: rendered.renderId } : {}),
-      ...(rendered ? { withoutReferenceGrid: rendered.withoutReferenceGrid } : {}),
-      // 헤더에서 읽은 값만 넘긴다 — 사람이 붙인 이름·주제는 등록 전이라 자리 자체가 없다
-      basicInfo: { ...(bodyByteSize !== undefined ? { byteSize: bodyByteSize } : {}) },
-      files: status?.files ?? [],
-    });
-    props.onClose();
-    navigate(nav.to, { state: nav.state });
-  }
 
   function requestClose() {
     // 생성 전에는 사람이 적거나 확인한 것이 있을 때만 묻는다(WU-A9 · PRD-14).
@@ -1057,16 +1037,6 @@ export function UploadModal(props: {
         granularity: granularity || null,
       };
     }
-    // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 두 칸이 **다 차야** 싣는다.**
-    // 반쪽이면 아예 안 실어 보내는 것이 아니라 **그대로 보내 서버 400 을 받는다** —
-    // 화면이 조용히 버리면 사용자는 적었다고 믿고 떠난다(문구의 정본은 서버 봉투다).
-    const rawInterval = intervalValue.trim();
-    if (rawInterval || intervalUnit) {
-      out.observationInterval = {
-        value: rawInterval ? Number(rawInterval) : null,
-        unit: intervalUnit || null,
-      };
-    }
     // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 세 축은 늘 실린다.** 계약 `required` 가 앞의 둘을
     // 잡았고(20차 ㉯), 기본 선택값이 있어 빈 값으로 나갈 자리가 없다.
     // ⚠ `category`·`dataType` 은 여기서 싣지 않는다 — 계약 `required` 라 `register()`
@@ -1155,11 +1125,12 @@ export function UploadModal(props: {
     // ⭑ ⟨advisor ② · F3⟩ 분류·유형은 계약 `DatasetCreate.required` 다 — 화면이 먼저 막는다.
     //   막기만 하고 세워 두면 사람은 ③ 에서 ① 의 빈 칸을 못 본다. 이름·설명 경로와 같은
     //   규율로 **적을 칸이 있는 단계로 데려가고 그 칸에 초점을 준다.**
-    if (!category || !dataType) {
+    const missingClassification = missingClassificationId(category, dataType, level);
+    if (missingClassification) {
       setStep(1);
       setRegisterError(MISSING_CATEGORY_MESSAGE);
       setRegisterToast(MISSING_CATEGORY_MESSAGE);
-      window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
+      window.setTimeout(() => document.getElementById(missingClassification)?.focus(), 0);
       return;
     }
     // ⑷ 기간 — **시작 시점이 있어야 성립한다.** 종료는 없어도 「그 시점 하나」로 읽힌다
@@ -1170,12 +1141,24 @@ export function UploadModal(props: {
       window.setTimeout(() => document.getElementById('reg-period-open')?.focus(), 0);
       return;
     }
-    // 관측 간격과 Lv0 출처 두 칸은 선택 입력이다. 비어 있으면 요청에서 빠지고,
-    // 반쪽 관측 간격과 제공된 날짜의 형상 오류만 아래 조립·검증 경로에서 거절된다.
-    // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 여기서 막는다 — 서버 400 이 화면에 닿지 않고
-    //   일반 실패 문구(`catch`)로 덮이던 자리다(재시도로 해소되지 않는 원인을 재시도하라는
-    //   안내가 되므로 사용자를 막다른 길로 보낸다). 값이 있고(칸이 비었으면 선택이라 넘어간다)
-    //   형상이 틀렸을 때만 막는다 — `humanMetadata()` 와 같은 조건(`level === LV0`)이다.
+    // #78: 신규 등록은 관측 간격과 Lv0 출처를 필수로 받는다. 기존 데이터 수정에는 적용하지 않는다.
+    if (!intervalValue.trim() || !intervalUnit) {
+      setStep(2);
+      setRegisterError(REGISTER_INTERVAL_REQUIRED);
+      setRegisterToast(REGISTER_INTERVAL_REQUIRED);
+      window.setTimeout(() => document.querySelector<HTMLElement>(intervalValue.trim()
+        ? '[data-testid="reg-interval-unit"]' : '#reg-interval-value')?.focus(), 0);
+      return;
+    }
+    if (level === LV0 && (!sourceUrl.trim() || !sourceDownloadedOn.trim())) {
+      setStep(3);
+      setRegisterError(REGISTER_LV0_SOURCE_REQUIRED);
+      setRegisterToast(REGISTER_LV0_SOURCE_REQUIRED);
+      window.setTimeout(() => document.getElementById(sourceUrl.trim()
+        ? 'reg-source-downloaded-on' : 'reg-source-url')?.focus(), 0);
+      return;
+    }
+    // 제공된 날짜는 기존 형식 검사로 거절하고 칸 옆에 원인을 표시한다.
     if (
       level === LV0 &&
       sourceDownloadedOn.trim() &&
@@ -1223,13 +1206,14 @@ export function UploadModal(props: {
         // **빈 칸은 싣지 않는다** — 폼 기본값이 지나간 것을 「사람이 적었다」로 저장하면
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
         ...humanMetadata(),
-      });
+        observationInterval: { value: Number(intervalValue.trim()), unit: intervalUnit },
+      }, requestLabId);
       if (lifecycle !== mutationLifecycle.current) return;
       // 데이터셋은 이 시점에 이미 생겼다. 뒤의 그림 PUT이 실패해도 같은 ID를 재사용한다.
       committedDatasetIdRef.current = made.datasetId;
       setCreatedDatasetId(made.datasetId);
       // 등록까지 끝난 임시 업로드는 그림 저장 성공 여부와 무관하게 정리한다.
-      if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+      if (uploadId && pendingLabId) forgetPending(pendingLabId, uploadId);
       if (representativeFile) {
         try {
           if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
@@ -1297,12 +1281,13 @@ export function UploadModal(props: {
           <h3>{attach ? '기준 격자 추가' : picked.length === 0 ? '파일 올리기' : '업로드'}</h3>
           {/* 상단 메뉴가 가려져도 **어느 연구실에 올리는지**가 보인다 (§8) */}
           <span className="mh-lab" data-testid="upload-lab">
-            <b>{account?.labName ?? ''}</b>에 올려요
+            <b>{operator ? '선택한 연구실' : (account?.labName ?? '')}</b>에 올려요
           </span>
           <button type="button" className="x" data-testid="upload-close" aria-label="업로드 닫기" onClick={requestClose}>
             ×
           </button>
         </div>
+        {operator ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId} disabled={Boolean(picked.length > 0 && targetLabId) || Boolean(uploadId) || Boolean(props.initialLabId) || Boolean(props.resumeRequest) || Boolean(props.registerRequest)}/> : null}
 
         <div className="modal-b up-body" ref={bodyRef}>
           {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈338〉) */}
@@ -1319,6 +1304,7 @@ export function UploadModal(props: {
                     className={resumeId === item.uploadId ? 'ub-btn is-armed' : 'ub-btn'}
                     data-testid={`up-resume-${item.uploadId}`}
                     onClick={() => {
+                      if (item.labId) setTargetLabId(item.labId);
                       resumeRef.current = item.uploadId;
                       resumeFromRef.current = 'banner';
                       setResumeId(item.uploadId);
@@ -1332,7 +1318,7 @@ export function UploadModal(props: {
                     className="ub-btn"
                     data-testid={`up-discard-${item.uploadId}`}
                     onClick={() => {
-                      if (account?.labId) forgetPending(account.labId, item.uploadId);
+                      if (pendingLabId) forgetPending(pendingLabId, item.uploadId);
                       void upload.abortTransfer?.(item.uploadId).then(refreshIncomplete);
                       if (resumeId === item.uploadId) {
                         resumeRef.current = null;
@@ -1352,7 +1338,9 @@ export function UploadModal(props: {
             </aside>
           )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
-          {!registerOpen && <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />}
+          {!registerOpen && (registerRestoring ? (
+            <div data-testid="up-register-restoring" aria-busy="true">등록 정보를 불러오는 중</div>
+          ) : <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />)}
 
 
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.
@@ -1497,13 +1485,12 @@ export function UploadModal(props: {
                 </p>
               ) : null}
               <PreviewPanel
-                key={`${signature}:${previewUploadId ?? ''}:${gridRevision}`}
-                source={props.sources.preview}
+                key={`${requestLabId ?? ''}:${signature}:${previewUploadId ?? ''}:${gridRevision}`}
+                source={scopedSources.preview}
                 autoPreview={(registerOpen || showingEarlyPreview || previewFinalNotice) && Boolean(status?.renderable)}
                 renderable={status?.ready ? status.renderable ?? undefined : undefined}
                 uploadId={previewUploadId}
                 hasReferenceGrid={hasReferenceGrid}
-                onRender={setRendered}
                 onResult={onPreviewResult}
                 representativeFile={representativeFile}
                 representativeOnly={Boolean(createdDatasetId)}
@@ -1593,7 +1580,7 @@ export function UploadModal(props: {
                 </p>
               ) : null}
 
-              {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
+              {/* #79: 보기 전용 선택은 제거하고 기존 등록 진입을 유지한다 */}
               {!attach && !registerOpen ? (
               <div className="reggate" data-testid="reg-gate">
                 <div>
@@ -1608,18 +1595,6 @@ export function UploadModal(props: {
                   ) : null}
                 </div>
                 <div className="rg-a">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    data-testid="reg-viewonly"
-                    // **등록하지 않겠다는 선택**이다 — 여기서 `submit()` 을 부르면 등록을
-                    // 거절한 사람에게 데이터셋이 생긴다. `submit()` 이 `onClose()` 도 부르는 탓에
-                    // 모달이 정상으로 닫혀 눈에 안 띄었다 (`S1-PLAN §5.2` — `S1-fe` 가 닫는다).
-                    // 모달을 닫고 **S-08 로 보낸다** — 정본 §7.2 전이표의 도착지다.
-                    onClick={viewOnly}
-                  >
-                    보기만 할게요
-                  </button>
                   <button
                     type="button"
                     className="btn btn-strong"
@@ -1655,7 +1630,7 @@ export function UploadModal(props: {
                 onRemoveFiles={() => removeFile(null)}
                 lineage={lineage}
                 status={status}
-                projectSource={props.sources.projects}
+                projectSource={scopedSources.projects}
                 name={name}
                 onName={(value) => editRegistration(() => setName(value))}
                 summary={summary}
@@ -1697,8 +1672,6 @@ export function UploadModal(props: {
                 onDataType={(value) => editRegistration(() => setDataType(value))}
                 level={level}
                 onLevel={(value) => editRegistration(() => {
-                  // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 사람이 고른 순간부터 계산값 추종을 멈춘다.
-                  setLevelTouched(true);
                   setLevel(value);
                 })}
                 accessState={accessState}
@@ -1805,7 +1778,7 @@ export function UploadModal(props: {
                   className="btn btn-secondary"
                   data-testid="upload-close-forget"
                   onClick={() => {
-                    if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+                    if (uploadId && pendingLabId) forgetPending(pendingLabId, uploadId);
                     props.onClose();
                   }}
                 >

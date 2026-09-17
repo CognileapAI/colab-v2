@@ -132,7 +132,7 @@ describe('WU-A8 — 구역 메뉴가 화면 위에 남는다', () => {
       .find((block) => block.includes('.dsec-menu') && block.includes('position'));
     expect(rule, '.dsec-menu 에 position 선언이 없다').toBeDefined();
     expect(rule).toMatch(/position:\s*sticky/);
-    expect(rule).toMatch(/top:/);
+    expect(rule).toMatch(/top:\s*var\(--shell-gnb-offset\)/);
   });
 });
 

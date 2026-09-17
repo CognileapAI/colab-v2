@@ -51,7 +51,7 @@ export function accessLabel(state: AccessState | null | undefined): string {
 }
 
 export function accessNote(state: AccessState | null | undefined): string {
-  return state ? (ACCESS_NOTE[state] ?? '') : ACCESS_NOTE[DEFAULT_ACCESS_STATE];
+  return `${state ? (ACCESS_NOTE[state] ?? '') : ACCESS_NOTE[DEFAULT_ACCESS_STATE]}. 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.`;
 }
 
 /**

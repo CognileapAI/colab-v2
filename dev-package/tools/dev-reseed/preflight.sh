@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# preflight — 10 항목 판정. 하나라도 어긋나면 **이름을 대고** 비영 종료한다.
+# preflight — 환경 10 항목과 계정 입력 판정. 하나라도 어긋나면 **이름을 대고** 비영 종료한다.
 #
 # 성격 = 거부가 올바른 동작이다(라운드 §7). 부분 실행으로 넘어가지 않는다.
 # 근거 = R-DATA-CANON §2 판정 ㈔ ⓐ(6항목) ＋ 이슈 #48(QEMU · AWS 자격) ＋ 지시 4항목 추가.
@@ -68,7 +68,7 @@ pf_dev_sha() {
 # ⑶ AWS 자격 사슬 — 계정 식별자는 **끝 4자리만** 찍는다.
 #    갈래 둘을 따로 잰다.
 #      ⓐ 환경변수 키 — 배포 9단계 `services/core-api/ops/deploy_web.py` 가 자작 SigV4 라
-#         `AWS_PROFILE`·`~/.aws/credentials` 를 해석하는 분기가 **없다**(이슈 #48 ⑵).
+#         `deploy_web.py`는 명시 AWS_PROFILE의 정적/session 자격도 지원한다. 이 preflight는 기존 환경 자격 검사 정책을 유지한다.
 #         deploy 단계를 켰으면 이 갈래가 필수다.
 #      ⓑ `aws sts get-caller-identity` — 있으면 사슬이 실제로 풀리는지 확인한다.
 pf_aws() {
@@ -82,7 +82,7 @@ pf_aws() {
   if [ "$env_ok" = 1 ]; then
     pf_pass aws "환경변수 갈래 성립${sts_acct:+ · 계정 …${sts_acct: -4}}"
   elif stage_enabled deploy; then
-    pf_fail aws "AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 부재 — deploy_web.py 는 AWS_PROFILE 을 해석하지 않는다(이슈 #48 ⑵)"
+    pf_fail aws "AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 부재 — 이 preflight는 환경 자격을 요구한다(deploy_web.py의 profile 지원과 별도 정책)"
   elif [ -n "$sts_acct" ]; then
     pf_pass aws "sts 갈래 성립 · 계정 …${sts_acct: -4}(deploy 단계 없음 — 환경변수 갈래 불요)"
   else
@@ -211,17 +211,28 @@ pf_secrets() {
 #      계산에서 뺀다.
 #    값은 `COLAB_RESEED_MIN_MEM_MIB`·`COLAB_RESEED_MIN_DISK_GIB` 로 바꾼다.
 pf_resources() {
-  pf_dry resources "MemAvailable ≥ ${MIN_MEM_MIB} MiB · $REPO_ROOT 여유 ≥ ${MIN_DISK_GIB} GiB" && return
+  pf_dry resources "MemAvailable ≥ ${MIN_MEM_MIB} MiB · $REPO_ROOT 여유 ≥ ${MIN_DISK_GIB} GiB · EC2 $DEV_STATE_DIR/images 여유 ≥ 2 GiB" && return
   local mem_mib disk_gib
   mem_mib="$(awk '/^MemAvailable:/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
   disk_gib="$(df -BG --output=avail "$REPO_ROOT" 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)"
   local bad=()
   [ "${mem_mib:-0}" -ge "$MIN_MEM_MIB" ] || bad+=("메모리 ${mem_mib} MiB < ${MIN_MEM_MIB}")
   [ "${disk_gib:-0}" -ge "$MIN_DISK_GIB" ] || bad+=("디스크 ${disk_gib} GiB < ${MIN_DISK_GIB}")
+  # DR-4 5회차 §2: ship 전 정지선 2 GiB (load 후 1.5 GiB와 구분).
+  # 실제 앱 state/이미지 경로의 파일시스템을 SSH로 측정한다. df -BG 반올림은 쓰지 않는다.
+  pf_need_ssh resources && return
+  local remote_disk remote_rc=0
+  remote_disk="$(ssh_dev_capture "df -B1 --output=avail '$DEV_STATE_DIR/images'")" || remote_rc=$?
+  remote_disk="$(printf '%s\n' "$remote_disk" | tail -1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [ "$remote_rc" -ne 0 ] || [[ ! "$remote_disk" =~ ^[0-9]{1,18}$ ]]; then
+    bad+=("EC2 디스크 준비 실패 — 측정 불가 (SSH/df 종료 $remote_rc)")
+  elif [ "$remote_disk" -lt 2147483648 ]; then
+    bad+=("EC2 디스크 $remote_disk B < 2147483648 B (2 GiB)")
+  fi
   if [ "${#bad[@]}" -gt 0 ]; then
     pf_fail resources "${bad[*]}"
   else
-    pf_pass resources "메모리 ${mem_mib} MiB · 디스크 ${disk_gib} GiB"
+    pf_pass resources "메모리 ${mem_mib} MiB · 로컬 디스크 ${disk_gib} GiB · EC2 디스크 $remote_disk B"
   fi
 }
 
@@ -267,6 +278,61 @@ pf_announce() {
   fi
 }
 
+# 비밀번호 값은 stdout/상태/명령 인자로 내보내지 않는다.
+validate_seed_inputs() {
+  [ "${ACCOUNT_PROFILE_INVALID:-0}" = 0 ] || { echo '실행 계정 프로필이 승인 기준과 일치하지 않거나 안전하지 않습니다' >&2; return 1; }
+  [ "${ACCOUNT_OVERRIDE_INVALID:-0}" = 0 ] || { echo '계정 신원 override가 실행 후보와 다릅니다' >&2; return 1; }
+  [ -z "${ACCOUNTS_PASSWORD_FILE:-}" ] || { echo '공통 비밀번호는 사용할 수 없습니다: 각 이메일 초기값 정책' >&2; return 1; }
+  python3 "$RESEED_DIR/accounts.py" validate --profile "$ACCOUNTS_FILE" || return 1
+  python3 "$RESEED_DIR/accounts.py" sql --profile "$ACCOUNTS_FILE" --sql "$PROVISION_LAB_SQL" >/dev/null || return 1
+  python3 - "${OPERATOR_PASSWORD_OVERRIDE:-}" "$RESEED_ACCOUNT_EMAIL" "$SEED_WORK_DIR" "${1:-0}" <<'PYINPUT'
+import pathlib,sys
+password,email,work,reset=sys.argv[1:]
+if password:
+ p=pathlib.Path(password)
+ if p.is_symlink() or not p.is_file() or p.stat().st_mode&0o777!=0o600 or p.read_text().strip()!=email:
+  raise SystemExit('교수 초기 비밀번호 파일이 지정 이메일 정책과 다릅니다')
+if reset=='1' and any((pathlib.Path(work)/n).exists() for n in ('state.json','new-password.txt','initial-password.txt','accounts')):
+ raise SystemExit('새 초기화에는 새 seed 작업 폴더가 필요합니다')
+PYINPUT
+}
+
+prepare_seed_password() {
+  [ "$DRY_RUN" != 1 ] || return 0
+  python3 "$RESEED_DIR/accounts.py" prepare --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+  python3 - "$OPERATOR_PASSWORD_FILE" "$SEED_WORK_DIR" <<'PYPREP'
+import os, pathlib, sys
+source, work = map(pathlib.Path, sys.argv[1:])
+work.mkdir(parents=True, exist_ok=True, mode=0o700)
+path = work / 'initial-password.txt'
+try:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+except FileExistsError:
+    if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o777 != 0o600 or not path.read_text().strip():
+        sys.exit('기존 초기 비밀번호 파일이 안전한 0600 일반 파일이 아니다')
+else:
+    with os.fdopen(fd, 'wb') as output:
+        output.write(source.read_bytes())
+PYPREP
+}
+
+pf_seed_inputs() {
+  pf_dry seed-inputs '계정·비밀번호 파일 검증 (값 미기록)' && return
+  if [ "${PREFLIGHT_ONLY:-0}" = 1 ] || [ "${REHEARSE:-0}" = 1 ]; then
+    if [ -z "${OPERATOR_PASSWORD_FILE:-}${ACCOUNTS_FILE:-}${ACCOUNTS_PASSWORD_FILE:-}" ]; then
+      pf_note seed-inputs '읽기 전용 실행 · 계정 입력 미지정 · 초기화 입력 판정 제외'
+      return
+    fi
+  fi
+  local reset=0
+  stage_enabled reset && reset=1
+  if validate_seed_inputs "$reset"; then
+    pf_pass seed-inputs '계정·비밀번호 입력 검증 완료 (값 미기록)'
+  else
+    pf_fail seed-inputs '계정·비밀번호 입력이 유효하지 않다'
+  fi
+}
+
 stage_preflight() {
   PF_PASS=(); PF_FAIL=(); PF_NOTE=()
   pf_announce
@@ -280,6 +346,11 @@ stage_preflight() {
   pf_secrets
   pf_resources
   pf_build_plan
+  pf_seed_inputs
+  if [ "$DRY_RUN" != 1 ] && [ "${#PF_FAIL[@]}" = 0 ] &&
+      [ "${PREFLIGHT_ONLY:-0}" != 1 ] && [ "${REHEARSE:-0}" != 1 ]; then
+    prepare_seed_password || pf_fail seed-password-preparation '초기 비밀번호 파일 준비 실패 (기존 파일 덮어쓰기 없음)'
+  fi
 
   python3 - "$RUN_DIR/preflight.json" "$DRY_RUN" "${#PF_PASS[@]}" "${#PF_FAIL[@]}" \
       "$(printf '%s,' "${PF_PASS[@]}")" "$(printf '%s,' "${PF_FAIL[@]}")" <<'PY'
@@ -292,7 +363,7 @@ json.dump({"dryRun": dry == "1", "passed": split(passed), "failed": split(failed
 PY
 
   if [ "$DRY_RUN" = 1 ]; then
-    log "preflight — dry-run · 10 항목 판정 없음"
+    log "preflight — dry-run · 11 항목 판정 없음"
     return 0
   fi
   log "preflight — 통과 ${#PF_PASS[@]} · 미달 ${#PF_FAIL[@]}"

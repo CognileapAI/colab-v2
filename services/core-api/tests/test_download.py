@@ -68,7 +68,8 @@ def _dataset(client, *, name="다운로드 시험", paths=("기상/a.csv", "기�
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": receipt["uploadId"], "name": name,
                           "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(token))
     assert r.status_code == 201, r.text
     return r.json()["datasetId"], {f["fileName"]: f for f in receipt["files"]}
@@ -178,7 +179,8 @@ def test_getDownloadBytes_bundle_is_a_zip_named_by_relative_path_and_grid_dir(
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "격자 묶음",
                           "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     dataset_id = r.json()["datasetId"]
@@ -216,7 +218,8 @@ def test_bundle_entry_name_collisions_get_a_file_id_suffix(p2_client) -> None:
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": receipt["uploadId"], "name": "중복",
                           "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(TOKEN_RES))
     dataset_id = r.json()["datasetId"]
     url = _ticket(client, dataset_id).json()["url"]

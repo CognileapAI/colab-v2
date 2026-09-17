@@ -5,7 +5,7 @@
  *
  *   ㈎ `주제` 칸이 없다 — 폼·요청 본문 양쪽에서.
  *   ㈏ 필수/선택 표시는 **배지 하나**로 통일한다 — 라벨 텍스트의 `(선택)` 괄호가 사라진다.
- *   ㈐ 관측 간격 단위 표시 라벨이 `연·월·일·시간·분·초` 다(저장값은 무변).
+ *   ㈐ 관측 간격 단위 표시 라벨이 `년·개월·일·시간·분·초` 다(저장값은 무변).
  *   ㈑ 원천 블록 = 제목 `원천 · 연구실 밖 출처` · 칸 `출처 이름`/`출처 주소`/`내려받은 날` ·
  *      **Lv0 이거나 연결 0건일 때만** 보이고, Lv0 이면 `출처 주소`·`내려받은 날` 이 필수다.
  *   ㈒ `데이터셋 만들기` 검증이 한 곳에 모여 순서대로 돈다 — 첫 실패에 토스트 ＋ 단계 이동.
@@ -28,6 +28,8 @@ import {
   SOURCE_BLOCK_TITLE,
 } from '../src/components/upload/RegisterArea';
 import {
+  REGISTER_INTERVAL_REQUIRED,
+  REGISTER_LV0_SOURCE_REQUIRED,
   REGISTER_NAME_REQUIRED,
   REGISTER_PERIOD_REQUIRED,
   REGISTER_SUMMARY_REQUIRED,
@@ -184,6 +186,9 @@ async function openRegister(sources: UploadSources): Promise<Mounted> {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), LV0);
   return m;
 }
 
@@ -200,12 +205,26 @@ async function setPeriod(start = '2025-06-01') {
 }
 
 /** 필수 다섯(이름은 파일명에서 기본값) 을 다 채운 상태 — 검증 순서 시험의 기준선이다. */
-async function fillRequired() {
+async function setClassification(level = LV0) {
+  await click(stepBtn('①'));
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), level);
+}
+
+async function fillRequired(level = LV0) {
+  await setClassification(level);
   await click(stepBtn('②'));
   await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
   await setPeriod();
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  if (screen.queryByTestId('reg-source-downloaded-on')) {
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  }
+  await click(stepBtn('②'));
 }
 
 async function submit() {
@@ -245,12 +264,12 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
     for (const l of labels) expect(l.textContent ?? '').not.toContain('(선택)');
   });
 
-  it('이름·기간·설명에 `필수` 배지가 선다', async () => {
+  it('이름·기간·설명·관측 간격에 `필수` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
-    const required = ['reg-name', 'reg-period-open', 'reg-summary'];
-    expect(required).toHaveLength(3);
+    const required = ['reg-name', 'reg-period-open', 'reg-summary', 'reg-interval-value'];
+    expect(required).toHaveLength(4);
     for (const id of required) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
@@ -259,12 +278,12 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
     }
   });
 
-  it('관측 간격·좌표계·격자 설명·공개 범위에 `선택` 배지가 선다', async () => {
+  it('좌표계·격자 설명·공개 범위에 `선택` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
-    const optional = ['reg-interval-value', 'reg-crs', 'reg-grid-description', 'reg-visibility'];
-    expect(optional).toHaveLength(4);
+    const optional = ['reg-crs', 'reg-grid-description', 'reg-visibility'];
+    expect(optional).toHaveLength(3);
     for (const id of optional) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
@@ -284,7 +303,7 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
 
 // ═══════════ ㈐ 관측 간격 단위 표시 라벨 ═══════════
 describe('rev2 등록 폼 — 관측 간격 단위 라벨', () => {
-  it('표시 라벨이 `연·월·일·시간·분·초` 이고 **저장값은 무변**이다', async () => {
+  it('표시 라벨이 `년·개월·일·시간·분·초` 이고 **저장값은 무변**이다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
@@ -294,9 +313,37 @@ describe('rev2 등록 폼 — 관측 간격 단위 라벨', () => {
     // 저장값 = 종전 그대로(계약·DB 무변).
     expect(real.map((o) => o.value)).toEqual(['초', '분', '시', '일', '월', '년']);
     // 표시 라벨 = 기획서 축자.
-    expect(real.map((o) => o.textContent)).toEqual(['초', '분', '시간', '일', '월', '연']);
+    expect(real.map((o) => o.textContent)).toEqual(['초', '분', '시간', '일', '개월', '년']);
     expect(INTERVAL_UNIT_LABEL['시']).toBe('시간');
-    expect(INTERVAL_UNIT_LABEL['년']).toBe('연');
+    expect(INTERVAL_UNIT_LABEL['년']).toBe('년');
+  });
+});
+
+describe('#95 메타데이터 입력 문구', () => {
+  it('입력 라벨을 말하고 기간 미리보기와 설명 힌트를 보이지 않는다', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    expect(document.querySelector('label[for="reg-interval-value"]')?.textContent).toContain('관측 간격 입력');
+    expect(document.querySelector('label[for="reg-crs"]')?.textContent).toContain('좌표계 입력');
+    expect(document.querySelector('label[for="reg-grid-description"]')?.textContent).toContain('격자 입력');
+    expect(screen.queryByTestId('reg-period-preview')).toBeNull();
+    expect(screen.queryByTestId('reg-summary-hint')).toBeNull();
+  });
+});
+
+describe('#98 설명 길이', () => {
+  it('3,000자를 입력해 등록 요청에 그대로 싣는다', async () => {
+    const { sources, calls } = fakes();
+    await openRegister(sources);
+    await fillRequired();
+    const summary = '가'.repeat(3_000);
+    const input = screen.getByTestId('reg-summary');
+    expect(input).toHaveAttribute('maxlength', '3000');
+    await change(input, summary);
+    await submit();
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    expect(calls.registered[0]?.summary).toBe(summary);
   });
 });
 
@@ -329,7 +376,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     expect(screen.getByTestId('reg-source-block').querySelectorAll('.reqtag')).toHaveLength(0);
   });
 
-  it('Lv0 이면 `출처 주소`·`내려받은 날` 두 칸에 `선택` 배지가 선다', async () => {
+  it('Lv0 이면 `출처 주소`·`내려받은 날` 두 칸에 `필수` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('①'));
@@ -338,17 +385,19 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     const block = screen.getByTestId('reg-source-block');
     expect(within(block).getByTestId('reg-source-url')).toBeTruthy();
     expect(within(block).getByTestId('reg-source-downloaded-on')).toBeTruthy();
-    expect(block.querySelectorAll('.opttag')).toHaveLength(2);
+    expect(block.querySelectorAll('.reqtag')).toHaveLength(2);
+    expect(block.querySelectorAll('.opttag')).toHaveLength(1);
     for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
-      expect(within(label!).getByText('선택')).toBeInTheDocument();
+      expect(within(label!).getByText('필수')).toBeInTheDocument();
     }
   });
 
-  it('연결이 1건 이상이면 블록이 사라지고 적어 둔 값이 전송되지 않는다', async () => {
+  it('기본 Lv0을 유지한 채 같은 단계 부모를 연결하면 원천 블록과 적어 둔 값을 유지한다', async () => {
     const { sources, calls } = fakes();
     const m = await openRegister(sources);
+    await setClassification();
     await click(stepBtn('③'));
     await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
     await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
@@ -364,15 +413,40 @@ describe('rev2 등록 폼 — 원천 블록', () => {
       method: '절단',
       confirmedMethodText: null,
       picking: false,
-      parentLevel: 1,
+      parentLevel: 0,
     };
     await act(async () => {
       m.ctx().onParentsChange([parent]);
     });
-    expect(screen.queryByTestId('reg-source-block')).toBeNull();
-    expect(screen.queryByTestId('reg-source')).toBeNull();
+    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
+    expect(screen.getByTestId('reg-source')).toHaveValue('ERA5 · 유럽중기예보센터');
 
     await fillRequired();
+    await submit();
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    const body = calls.registered[0] as Record<string, unknown>;
+    expect(body.sourceLabel).toBe('ERA5 · 유럽중기예보센터');
+    expect(body.sourceUrl).toBe('https://example.org/era5');
+  });
+
+  it('Lv1을 고른 뒤 유효한 부모를 연결하면 원천 블록이 사라지고 적어 둔 값이 전송되지 않는다', async () => {
+    const { sources, calls } = fakes();
+    const m = await openRegister(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv1');
+    await click(stepBtn('③'));
+    await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await act(async () => {
+      m.ctx().onParentsChange([{
+        key: 'k2', parentDatasetId: '01JYZ9K7WQ3N8V4M2X6C5B0PA2',
+        parentDatasetName: 'Lv0 부모', confidence: null, rationale: null,
+        origin: 'manual', confirmed: true, method: '절단', confirmedMethodText: null,
+        picking: false, parentLevel: 0,
+      }]);
+    });
+    expect(screen.queryByTestId('reg-source-block')).toBeNull();
+    await fillRequired('Lv1');
     await submit();
     await waitFor(() => expect(calls.registered).toHaveLength(1));
     const body = calls.registered[0] as Record<string, unknown>;
@@ -408,6 +482,7 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
   it('기간 시작을 안 고르면 세 번째로 잡힌다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await setClassification();
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await change(screen.getByTestId('reg-interval-value'), '1');
@@ -418,27 +493,32 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
     expect(calls.registered).toHaveLength(0);
   });
 
-  it('관측 간격을 비워도 등록되고 요청에서 선택 필드가 빠진다', async () => {
+  it('#78 관측 간격 누락은 등록하지 않고 입력 단계로 돌아간다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await setClassification();
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await setPeriod();
     await submit();
-    await waitFor(() => expect(calls.registered).toHaveLength(1));
-    expect('observationInterval' in (calls.registered[0] as Record<string, unknown>)).toBe(false);
+    expect(calls.registered).toHaveLength(0);
+    expect(screen.getByTestId('up-register-toast')).toHaveTextContent(REGISTER_INTERVAL_REQUIRED);
+    expect(stepBtn('②')).toHaveAttribute('aria-current', 'step');
+    await waitFor(() => expect(screen.getByTestId('reg-interval-value')).toHaveFocus());
   });
 
-  it('Lv0 출처 주소·내려받은 날을 비워도 등록되고 요청에서 두 선택 필드가 빠진다', async () => {
+  it('#78 Lv0 출처 누락은 등록하지 않고 연결 단계에서 알린다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await fillRequired();
+    await click(stepBtn('③'));
+    await change(screen.getByTestId('reg-source-url'), '');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '');
     await submit();
-    await waitFor(() => expect(calls.registered).toHaveLength(1));
-    const body = calls.registered[0] as Record<string, unknown>;
-    expect(body.processingLevelUserSet).toBe(LV0);
-    expect('sourceUrl' in body).toBe(false);
-    expect('sourceDownloadedOn' in body).toBe(false);
+    expect(calls.registered).toHaveLength(0);
+    expect(screen.getByTestId('up-register-toast')).toHaveTextContent(REGISTER_LV0_SOURCE_REQUIRED);
+    expect(stepBtn('③')).toHaveAttribute('aria-current', 'step');
+    await waitFor(() => expect(screen.getByTestId('reg-source-url')).toHaveFocus());
   });
 
   it('필수를 다 채우면 등록이 성립하고 기간·관측 간격이 계약 형상으로 실린다', async () => {
@@ -456,4 +536,22 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
     expect(body.observationInterval).toEqual({ value: 1, unit: '시' });
     expect(screen.queryByTestId('up-register-toast')).toBeNull();
   });
+});
+
+
+it('#78 기획 예시는 빈 입력의 안내이고 저장할 기본값이 아니다', async () => {
+  const { sources } = fakes();
+  await openRegister(sources);
+  await click(stepBtn('②'));
+  for (const [id, placeholder] of [
+    ['reg-interval-value', '예: 10'], ['reg-crs', '예: EPSG:5179'],
+    ['vt-name-0', '예: tp'], ['vt-unit-0', 'mm'],
+    ['vt-valueRange-0', '0 ~ 240'], ['vt-missingRate-0', '2.4 %'],
+  ]) {
+    const input = screen.getByTestId(id!);
+    expect(input).toHaveAttribute('placeholder', placeholder!);
+    expect((input as HTMLInputElement).value).toBe('');
+  }
+  expect(screen.getByText('숫자를 입력하고 단위를 선택해주세요')).toBeInTheDocument();
+  expect(screen.queryByText('사람이 적어요')).toBeNull();
 });

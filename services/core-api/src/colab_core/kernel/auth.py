@@ -4,9 +4,8 @@
 v2 1차에서는 **개발자가 계정을 심어 제공한다**(P-17). 그래서 여기서 로그인 흐름을 만들지 않고,
 심어 둔 토큰 표를 읽기만 한다. 실제 수단은 P1 이 정한다.
 
-**`labId` 를 요청에서 받지 않는다.** 연구실 경계는 오직 이 주체에서 나온다
-(CLAUDE.md §3-5 · P-9·P-10). 헤더로 lab_id 를 주입하는 임시 경로를 두지 않는다 —
-그런 경로가 하나라도 있으면 경계 증명이 전부 무의미해진다.
+인증 주체의 소속은 서버 자격에서만 나온다. 시스템 관리자의 작업 대상 연구실은
+인증 주체를 바꾸지 않고 요청의 데이터베이스 스코프에서 별도로 검증한다.
 """
 from __future__ import annotations
 
@@ -23,10 +22,8 @@ class Subject:
     lab_id: Ulid | None
     must_change_password: bool = False
     credential_version: int | None = None
-    #: 서비스 운영자인가. **권한이 아니라 사실 하나**다 — 이 값이 하는 일은 전 연구실
-    #: **읽기** 스코프를 여는 것뿐이고(`kernel/scope.py`), 쓰기 경계는 `lab_id` 가 그대로 쥔다.
-    #: 원본은 `account_admin.service_operator` 행이며 **매 요청 다시 도출된다**
-    #: (`kernel/login_sessions.py::authenticate`) — 토큰의 주장을 그대로 믿지 않는다.
+    #: 시스템 관리자 자격. 원본은 account_admin.service_operator이며 매 요청 다시 확인한다.
+    #: 원소속 lab_id는 작업 대상 연구실을 선택해도 바꾸지 않는다.
     operator: bool = False
 
 

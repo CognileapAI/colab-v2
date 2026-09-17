@@ -19,7 +19,7 @@
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
-#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
 #
@@ -83,7 +83,7 @@ IFS=$'\t' read -r PROVISION_LAB_ACCOUNT_ID _sql_lab_id _sql_account_name _sql_ac
   <<<"${_lab_account_row:-$'\t\t\t\t'}"
 RESEED_ACCOUNT_ID="${RESEED_ACCOUNT_ID:-$PROVISION_LAB_ACCOUNT_ID}"
 RESEED_ACCOUNT_NAME="${RESEED_ACCOUNT_NAME:-$_sql_account_name}"
-RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-$_sql_account_email}"
+RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-}"
 RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-${_sql_account_role:-연구원}}"
 
 EXPECT_DATASETS="${COLAB_RESEED_EXPECT_DATASETS:-28}"
@@ -120,9 +120,11 @@ REHEARSE=0
 RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/develop}"
 TARGET_SHA=""
-ACCOUNTS_FILE=""
+ACCOUNTS_FILE="${COLAB_RESEED_ACCOUNTS_PROFILE:-$HOME/.config/colab-platform/dev-reseed-accounts-approved.json}"
+ACCOUNTS_PASSWORD_FILE=""
 OPERATOR_PASSWORD_FILE="${COLAB_RESEED_OPERATOR_PASSWORD_FILE:-}"
-DEV_URL="${COLAB_DEV_URL:-}"
+DEV_URL="${COLAB_DEV_WEB_URL:-${COLAB_DEV_URL:-}}"
+RELEASE_PLAN=""
 MD_ROOT=""
 SEED_WORK_DIR=""
 
@@ -161,9 +163,13 @@ usage() {
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
   --target-ref <ref>            배포 대상(기본 origin/develop).
-  --accounts-file <파일>        러너에 넘길 계정 파일(러너가 그 인자를 받을 때만 넘긴다).
-  --operator-password-file <파일>  prelude ③ 의 초기 비밀번호(0600 · 10자 이상).
-  --base-url <주소>             dev 주소(기본 $COLAB_DEV_URL).
+  --accounts-file <파일>        지정 5계정 프로필(기본 비공개 dev-reseed-accounts-approved.json).
+  --accounts-password-file <파일> 사용 불가: 각 계정의 이메일을 초기 비밀번호로 설정한다.
+  --operator-password-file <파일>  선택 입력. 교수 이메일과 같은 내용의 0600 파일만 허용.
+  --base-url <주소>             CLI > COLAB_DEV_WEB_URL > legacy COLAB_DEV_URL 순서.
+  --release-plan <파일>         deploy/--rehearse의 필수 dev 후보 계획.
+                                --rehearse는 --check만, deploy는 같은 보호 사본을 check한 뒤
+                                기존 executor run 1회로 배포·검증한다. --dry-run은 실행하지 않는다.
   --md-root <자리>              정본 md 뿌리(기본 = 참조자료 뿌리).
 USAGE
 }
@@ -177,8 +183,10 @@ while [ $# -gt 0 ]; do
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
     --accounts-file) ACCOUNTS_FILE="$2"; shift 2 ;;
+    --accounts-password-file) ACCOUNTS_PASSWORD_FILE="$2"; shift 2 ;;
     --operator-password-file) OPERATOR_PASSWORD_FILE="$2"; shift 2 ;;
     --base-url) DEV_URL="$2"; shift 2 ;;
+    --release-plan) RELEASE_PLAN="$2"; shift 2 ;;
     --md-root) MD_ROOT="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "모르는 인자: $1" >&2; usage >&2; exit 2 ;;
@@ -238,6 +246,25 @@ print(p if r.startswith("..") else r)' "$1" "$REPO_ROOT"
 MD_ROOT="${MD_ROOT:-${COLAB_REF_ROOT:-}}"
 SEED_WORK_DIR="${COLAB_SEED_WORK_DIR:-$REPO_ROOT/dev-package/tools/dev-seed/.work}"
 
+# Exact account profile is a required input; explicit identity overrides must match.
+ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
+ACCOUNT_PROFILE_INVALID=0
+ACCOUNT_OVERRIDE_INVALID=0
+_profile_row="$(python3 "$RESEED_DIR/accounts.py" professor --profile "$ACCOUNTS_FILE")" || ACCOUNT_PROFILE_INVALID=1
+IFS=$'\t' read -r _profile_id _profile_email _profile_name _profile_role _profile_lab <<<"$_profile_row"
+for value in "$_profile_id" "$_profile_email" "$_profile_name" "$_profile_role" "$_profile_lab"; do
+  [ -n "$value" ] || ACCOUNT_PROFILE_INVALID=1
+done
+if [ "$ACCOUNT_PROFILE_INVALID" = 0 ]; then
+  for field in ID EMAIL NAME ROLE; do
+    var="RESEED_ACCOUNT_$field"; lower="_profile_$(printf '%s' "$field" | tr '[:upper:]' '[:lower:]')"
+    if [ -n "${!var:-}" ] && [ "${!var}" != "${!lower}" ]; then ACCOUNT_OVERRIDE_INVALID=1; fi
+    printf -v "$var" '%s' "${!lower}"
+  done
+fi
+OPERATOR_PASSWORD_OVERRIDE="$OPERATOR_PASSWORD_FILE"
+OPERATOR_PASSWORD_FILE="$ACCOUNTS_WORK_DIR/initial-4.txt"
+
 # shellcheck source=lib.sh
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=preflight.sh
@@ -260,13 +287,13 @@ if [ "$DRY_RUN" != 1 ]; then
   # dev 주소는 **화면을 여는 단계**(seed·verify)만 쓴다. preflight 는 쓰지 않으므로
   # `--preflight-only` 는 이 값 없이도 끝까지 검사한다.
   if stage_enabled seed || stage_enabled verify || stage_enabled rehearse; then
-    : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다 (seed·verify 가 화면을 연다)}"
+    : "${DEV_URL:?--base-url 또는 COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)이 필요하다 (seed·verify 가 화면을 연다)}"
   fi
 else
   # dry-run 은 값이 하나도 없어도 끝까지 간다 — 빈 자리는 **이름 그대로** 찍어 무엇을 줘야 하는지 보인다.
   COLAB_DEV_SSH="${COLAB_DEV_SSH:-<COLAB_DEV_SSH>}"
   COLAB_DEV_KEY_FILE="${COLAB_DEV_KEY_FILE:-<COLAB_DEV_KEY_FILE>}"
-  DEV_URL="${DEV_URL:-<COLAB_DEV_URL>}"
+  DEV_URL="${DEV_URL:-<COLAB_DEV_WEB_URL>}"
   COLAB_REF_ROOT="${COLAB_REF_ROOT:-<COLAB_REF_ROOT>}"
   MD_ROOT="${MD_ROOT:-<COLAB_REF_ROOT>}"
   TARGET_SHA="${TARGET_SHA:-<대상 sha · preflight 가 해석>}"

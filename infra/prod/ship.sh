@@ -29,6 +29,7 @@ SHA="$(cat "$DIST/colab-v2-prod.sha")"
 # ⭑ 운영 소스 번들 사슬도 dev 와 한 벌이다 (`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
+. "$REPO/infra/_lib/repo-bundle.sh"
 ship_gate_source_ancestor "$REPO" "$SHA" prod
 ship_gate_require_prod_tag "$REPO" "$SHA"
 SOURCE_REF="$SHIP_GATE_SOURCE_REF"
@@ -38,34 +39,7 @@ ANCESTOR="$SHIP_GATE_ANCESTOR"
 TAR="$DIST/colab-v2-prod-$SHA.tar"
 [ -f "$TAR" ] || { echo "tar 가 없다: $TAR — build.sh 먼저" >&2; exit 2; }
 
-# ── 판정 레포 tar — `/opt/colab-repo` 가 `deploy_doctor` ⑥⑦⑧ 의 **정답표**다 ──────
-# 낡으면 ⑥ 이 옛 alembic head 를 정답으로 삼아 **조용히 틀린다**(dev 에서 2회 실측 ·
-# `dev-package/reports/r-login-backoffice/task5/deploy-3-verify.md`). 종전에 이 동기화를
-# 강제하는 자리가 **게이트에도 `ship.sh` 에도 없었고** `infra/dev/README.md` 산문뿐이었다.
-# ⚠ **`git ls-files` 를 쓰지 않는다.** 이 스크립트는 배포 대상 sha 를 체크아웃한 워크트리에
-#    `infra/prod` 가 **미추적 파일로만** 놓인 상태에서도 돈다(빌드 sha = 그 워크트리 HEAD).
-#    판정 기준은 **실제 파일 존재**이고, 하나라도 없으면 조용히 적게 싣지 않고 거절한다.
-REPO_SYNC_PATHS=(db gates services/core-api/ops infra contracts)
-MISSING=()
-for p in "${REPO_SYNC_PATHS[@]}"; do [ -e "$REPO/$p" ] || MISSING+=("$p"); done
-if [ "${#MISSING[@]}" -gt 0 ]; then
-  echo "레포 tar 대상이 없다: ${MISSING[*]} — 판정 레포(/opt/colab-repo)가 불완전해진다" >&2
-  exit 2
-fi
-REPO_TGZ="$DIST/colab-repo-$SHA.tgz"
-mkdir -p "$DIST"
-# macOS 에서 만든 tar 에는 AppleDouble(`._*`·xattr) 이 섞인다 — 원격 `deploy_doctor` ⑥⑦ 이 `._0031_….py` 를
-# 파싱하다 「null bytes」 로 죽었다(2026-09-13 prod 실측 · 15,353 파일). 만들 때 빼고, 받는 쪽도 지운다.
-git -C "$REPO" archive --format=tar "$FULL_SHA" "${REPO_SYNC_PATHS[@]}" | gzip -n > "$REPO_TGZ"
-REPO_MANIFEST="$DIST/colab-repo-$SHA.manifest"
-REPO_STAGE="$(mktemp -d)"
-trap 'rm -rf "$REPO_STAGE"' EXIT
-tar xzf "$REPO_TGZ" -C "$REPO_STAGE"
-{
-  echo "# source_sha=$SHA"; echo "# source_full_sha=$FULL_SHA"
-  (cd "$REPO_STAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum)
-} > "$REPO_MANIFEST"
-chmod 0600 "$REPO_MANIFEST"
+repo_bundle_build "$REPO" "$SHA" "$FULL_SHA" "$DIST"
 
 # ── `prod.env` 의 `COLAB_IMAGE_TAG` 갱신기 — **원격 스크립트 파일**이다 ─────────────
 # 종전에는 사람이 손으로 고쳤고, 빠뜨리면 **옛 migrator 이미지로 마이그레이션이 돈다**
@@ -116,9 +90,7 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh /opt/colab-v2/deploy-doctor.sh /opt/colab-v2/set-image-tag.sh /opt/colab-v2/publish-ownership-hourly.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
-  sudo mkdir -p /opt/colab-repo-releases/$FULL_SHA && \
-  sudo tar xzf /opt/colab-v2/images/$(basename "$REPO_TGZ") -C /opt/colab-repo-releases/$FULL_SHA --overwrite && \
-  sudo install -m 0600 /opt/colab-v2/images/$(basename "$REPO_MANIFEST") /opt/colab-repo-releases/$FULL_SHA/OPS_SOURCE_MANIFEST && \
+  $(repo_bundle_remote_snippet "$FULL_SHA" "$(basename "$REPO_TGZ")" "$(basename "$REPO_MANIFEST")") && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:prod-$SHA colab-v2/\$u:prod; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
   echo $FULL_SHA > /opt/colab-v2/CURRENT_FULL_SHA && \
@@ -127,6 +99,6 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 # ⚠ `COLAB_IMAGE_TAG` 는 **불변 태그**로 적는다 — 움직이는 `:prod` 를 적으면 되돌리기 세대가 사라진다.
 "${SSH[@]}" "bash /opt/colab-v2/set-image-tag.sh prod-$SHA"
 echo "── 실었다: prod-$SHA"
-echo "   · /opt/colab-repo = 이 sha 의 판정 레포(deploy_doctor ⑥⑦⑧ 정답표)"
+echo "   · /opt/colab-repo-releases/$FULL_SHA = 이 sha 의 판정 레포(deploy_doctor ⑥⑦⑧ 정답표)"
 echo "   · /opt/colab-v2/prod.env COLAB_IMAGE_TAG=prod-$SHA"
 echo "   · 다음 = EC2 에서 /opt/colab-v2/up.sh (마이그레이션 → 기동 → healthy 4)"

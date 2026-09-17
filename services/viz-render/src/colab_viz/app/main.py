@@ -16,7 +16,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
 from ..domains.d7_visualization import tile_reclaim
-from ..domains.d7_visualization.jobs import JobStore
+from ..domains.d7_visualization.jobs import JobStore, RenderSpec
 from ..kernel import errors
 from ..kernel.config import Settings, load_settings, validate
 from ..kernel.health import healthz_body
@@ -105,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # **스레드를 남기지 않는다** — 남기면 SIGTERM 에 컨테이너가 매달린다.
             if loop is not None:
                 loop.stop()
+            app.state.jobs.close()
 
     app = FastAPI(
         lifespan=lifespan,
@@ -133,7 +134,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                               ttl_seconds=settings.result_ttl_seconds,
                               tile_signing_secret=settings.tile_signing_secret,
                               signature_ttl_seconds=settings.tile_signature_ttl_seconds,
-                              tile_branch_enabled=settings.tile_branch_enabled)
+                              tile_branch_enabled=settings.tile_branch_enabled,
+                              queue_size=settings.render_queue_size,
+                              journal_dir=settings.preview_dir if settings.journal_enabled else None)
+    def restore_spec(record: dict):
+        target = app.state.source.resolve(
+            dataset_id=record["targetId"] if record["targetKind"] == "datasetId" else None,
+            upload_id=record["targetId"] if record["targetKind"] == "uploadId" else None,
+            file_ids=record.get("fileIds"))
+        return RenderSpec(
+            target=target, palette=record["palette"], class_count=record["classCount"],
+            variable=record.get("variable"), instant=record.get("instant"),
+            without_reference_grid=record.get("withoutReferenceGrid", False),
+            max_preview_side=settings.max_preview_side,
+            deadline_seconds=settings.render_deadline_seconds,
+            preview_dir=settings.preview_dir, preview_url_base=settings.preview_url_base,
+            max_render_bytes=settings.max_render_bytes,
+            materialize=app.state.source.materialize, preview_sink=app.state.preview_sink)
+    if settings.journal_enabled:
+        app.state.jobs.restore(restore_spec)
     # **받는 자리를 앱이 들고 선다**(`〈253〉` · `Y-1`). 배포가 자리를 안 주면 `None` 이고
     # 트리거는 오지 않는다 — **자리를 지어내지 않는다.** 이 연결이 코드에 있는 것이
     # 요점이다: 배포 설정에만 있는 연결은 조용히 끊어져도 아무도 모른다(RULING ㉗ 근거).

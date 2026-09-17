@@ -31,6 +31,7 @@ GUC_ACCOUNT = "app.current_account"
 #: 켜지면 `operator_read` 정책(FOR SELECT · PERMISSIVE)이 열리고 **읽기만** 넓어진다 —
 #: INSERT·UPDATE·DELETE 는 `lab_boundary` 를 그대로 통과해야 한다.
 GUC_OPERATOR_READ = "app.operator_read"
+GUC_OPERATOR_MANAGE = "app.operator_manage"
 
 # is_local => true 가 `SET LOCAL` 이다. 값을 문자열 보간하지 않고 바인딩한다 —
 # GUC 이름은 상수이고 값만 주체에서 온다.
@@ -38,15 +39,10 @@ _SET_LOCAL = text("SELECT set_config(:name, :value, true)")
 
 
 def apply_scope(session: Session, subject: Subject, *, operator_read: bool = False) -> None:
-    """열려 있는 트랜잭션에 경계를 심는다. 주체 밖의 값은 받지 않는다.
+    """Authenticated actor scope. SELECT discovery may span labs for a system admin.
 
-    `operator_read` 는 **경계 해제가 아니라 읽기 스코프 하나를 더 여는 것**이다
-    (승인 intent `dev-package/intent/2026-09-12-operator-designation.md`). 조건 둘을 다 만족할
-    때만 켠다 — ⑴ 주체가 `service_operator` 다 ⑵ 이 트랜잭션이 읽기 자리다. 판정은 부르는
-    쪽(`app/deps.py`)이 하고, 여기서는 **운영자가 아닌 주체의 요구를 거절한다.**
-
-    ⚠ 요청은 이 값을 보낼 수 없다. 헤더·쿼리·바디 어디에도 통로가 없고, 이 함수의 인자는
-    서버가 주체에서 도출한 값뿐이다 (CLAUDE.md §3-5 · P-9·P-10).
+    Writes remain bound to current_lab; app.target_scope validates object ownership
+    or the administrator's explicit destination before selecting that lab.
     """
     if not Ulid.is_valid(subject.account_id):
         raise ValueError("주체의 ID 가 정규 ID 가 아니다 — 경계를 심지 않는다.")
@@ -56,9 +52,14 @@ def apply_scope(session: Session, subject: Subject, *, operator_read: bool = Fal
         raise ValueError("주체의 연구실 ID 가 정규 ID 가 아니다 — 경계를 심지 않는다.")
     if operator_read and not subject.operator:
         raise ValueError("운영자가 아닌 주체에 전 연구실 읽기 스코프를 심지 않는다.")
+    session.info["subject"] = subject
+    session.info["target_lab"] = subject.lab_id
+    session.info["target_selected"] = False
     session.execute(_SET_LOCAL, {"name": GUC_LAB,
                                  "value": "" if subject.lab_id is None else str(subject.lab_id)})
     session.execute(_SET_LOCAL, {"name": GUC_ACCOUNT, "value": str(subject.account_id)})
+    session.execute(_SET_LOCAL, {"name": GUC_OPERATOR_MANAGE,
+                                 "value": "on" if subject.operator else ""})
     # 끄는 값도 **명시적으로** 쓴다. 안 쓰면 앞 트랜잭션의 값이 남을 자리가 생긴다.
     session.execute(_SET_LOCAL, {"name": GUC_OPERATOR_READ,
                                  "value": "on" if operator_read else ""})
@@ -121,3 +122,27 @@ def require_operator_role(session: Session) -> None:
         FROM pg_roles r WHERE r.rolname=current_user""")).mappings().one()
     if role['rolsuper'] or role['rolbypassrls'] or not role['exporter'] or role['app']:
         raise ValueError("dedicated NOBYPASSRLS operator exporter role required")
+
+
+def select_target_lab(session: Session, subject: Subject, lab_id: str) -> None:
+    """Server-verified object/creation destination; never replace the actor's affiliation."""
+    if not subject.operator or not Ulid.is_valid(lab_id):
+        raise ValueError("Only a system administrator may select a target lab")
+    session.execute(_SET_LOCAL, {"name": GUC_LAB, "value": lab_id})
+    session.execute(_SET_LOCAL, {"name": GUC_OPERATOR_READ, "value": ""})
+    session.info["target_lab"] = Ulid(lab_id)
+    session.info["target_selected"] = True
+
+
+def target_lab(session: Session) -> str:
+    lab = session.info.get("target_lab")
+    return str(lab) if lab else require_lab_scope(session)
+
+
+def reapply_scope(session: Session, subject: Subject) -> None:
+    """Keep the verified destination when a request starts a follow-up transaction."""
+    lab = session.info.get("target_lab")
+    selected = session.info.get("target_selected", False)
+    apply_scope(session, subject, operator_read=subject.operator)
+    if subject.operator and selected and lab is not None:
+        select_target_lab(session, subject, str(lab))

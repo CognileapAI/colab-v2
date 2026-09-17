@@ -14,7 +14,7 @@
     "durationSec": { "type": "integer", "minimum": 0 },
     "dryRun": { "type": "boolean" },
     "targetSha": { "type": "string", "description": "배포 대상 sha 12자리. dry-run 에서는 빈 문자열일 수 있다." },
-    "runDir": { "type": "string", "description": "실행 자리 — 레포 뿌리 기준 상대경로 또는 레포 밖 자리 이름." },
+    "runDir": { "type": "string", "description": "result.json 파일 위치 기준 실행 폴더 상대경로. 통상 같은 폴더이므로 '.'이다. 실제 --run-dir 입력 경로는 직렬화하지 않는다." },
     "stages": {
       "type": "array",
       "description": "고정 순서 10단계 ＋ 읽기 전용 리허설. 실행하지 않은 단계는 status 가 skipped 다.",

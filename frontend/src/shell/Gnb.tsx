@@ -1,7 +1,7 @@
 // 하나의 셸 · GNB (전원 공통, 항상 노출)
 // 정본: Policy_공통_기반 v1.4 §1 · IA_사이트맵 §3 · mockups/제품_260817.html (.gnb)
 // 목업을 임의로 변형하지 않는다 — 요소·순서·클래스 이름을 목업에서 그대로 가져왔다.
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { MAIN_NAV, LAB_SETTINGS_PATH, ownerTabOf } from './nav';
 import { useAccount } from '../permission/session';
@@ -10,6 +10,7 @@ import { UploadEntry } from '../components/upload/UploadEntry';
 import { useLogout } from '../auth/AuthGate';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { GnbMoreMenu } from './GnbMoreMenu';
+import type { SequencedOpenUploadRequest } from '../components/upload/openUpload';
 
 // 좁은 화면에서는 라벨을 감추고 이 아이콘만 남긴다 (shell.css `@media (max-width: 640px)`).
 // 인라인 SVG 만 쓴다 — 아이콘 라이브러리를 들이지 않는다. 모양은 카탈로그 표의 인라인 SVG 와 같은 결이다.
@@ -58,7 +59,8 @@ const LAB_SETTINGS_ICON = (
   </>
 );
 
-export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: string } | undefined } = {}) {
+export function Gnb(props: { openRequest?: SequencedOpenUploadRequest | undefined } = {}) {
+  const rootRef = useRef<HTMLElement>(null);
   const account = useAccount();
   // 관리자는 전 연구실을 읽는다 — 표기가 그 사실을 따라간다(승인 intent 2026-09-12).
   const operator = account?.canManageServiceAccounts === true;
@@ -70,8 +72,20 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
   const canLabSettings = useHasPermission('연구실 설정');
   const hasMoreItems = canUpload || operator || canLabSettings;
 
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    const syncHeight = () => {
+      document.documentElement.style.setProperty('--shell-gnb-offset', `${Math.ceil(root.getBoundingClientRect().height)}px`);
+    };
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <header className="gnb">
+    <header ref={rootRef} className="gnb">
       {/* 브랜드 마크 — 누르면 연구실 화면으로 */}
       <Link className="brand" to="/lab" aria-label="Co-Lab">
         <span className="logo" aria-hidden="true" />
@@ -85,12 +99,7 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
           전환이라는 동작 자체가 없다 — 전환기가 돌아오는 회차에 `▾` 도 같이 돌아온다(백로그).
           ⚠ 정본 `Policy_공통_기반 §1` 의 GNB 도식은 `[연구실 전환기 ▾]` 로 적혀 있다.
              **그 도식은 고치지 않았다** — 델타는 `notes/SPEC-DELTA-PENDING.md` 에 등재돼 있다. */}
-      {/* ⭑ 관리자는 **모든 연구실을 읽기 전용으로** 본다(승인 intent 2026-09-12 운영자 지정).
-          그래서 이 자리가 「어느 연구실로 보는 중」에 답할 때 소속 이름 하나를 쓰면 거짓말이 된다 —
-          목록·상세가 이미 전 연구실을 담고 있기 때문이다. 표기를 실제 범위에 맞춘다.
-          ⚠ **특정 연구실 하나로 좁히는 동작은 아직 없다.** 좁히려면 읽기 op 들이 연구실 인자를
-             받아야 하고, 그것은 「경계는 요청에서 오지 않는다」(CLAUDE.md §3-5)를 건드리는
-             계약 판정이다 — 그래서 여기서 `▾` 를 달지 않는다. 달면 없는 동작을 약속하게 된다. */}
+      {/* 시스템 관리자는 모든 연구실의 자료와 구성원을 관리한다. */}
       {/* ⭑ **⟨개정 2026-09-13 · 이태헌 1차 검증 `D-1` · 카드 ① ⓐ⟩ `button` 을 걷는다.**
           종전에는 `onClick` 이 없는 `button` 이라 **눌리는데 아무 일도 일어나지 않았다** —
           키보드 초점까지 받아 「여기서 무언가 할 수 있다」를 두 번 약속했다. 지금 이 자리가
@@ -98,15 +107,11 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
           상태 표시로 둔다. 전환 동작이 돌아오는 회차에 `button` 도 같이 돌아온다. */}
       <div className="labswitch" data-testid="lab-switcher"
            aria-label={operator
-             ? '연구실 전환 · 전체 연구실 (읽기 전용)'
+             ? '전체 연구실'
              : `연구실 전환 · ${account?.labName ?? ''}`}>
         <Icon><path d="M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 12h6v9h-6" /></Icon>
-        {/* ⭑ **⟨개정 2026-09-13⟩ 「(읽기 전용)」을 눈에 보이는 글자로 적는다.**
-            종전에는 그 다섯 글자가 `aria-label` 안에만 있어 **화면에는 `전체 연구실` 만** 보였다
-            (`task8-realuse/results.md §1-7` 실측 「(읽기 전용)」은 눈에 보이지 않는다). 읽기 전용은
-            보조기술 전용 사실이 아니라 **모든 사람이 알아야 하는 범위 표기**다. */}
         <span className="ln">{operator ? '전체 연구실' : (account?.labName ?? '')}</span>
-        {operator ? <span className="ln-ro">(읽기 전용)</span> : null}
+
       </div>
 
       {/* 주 내비 3개 — 전원 공통. 남는 가로 여백은 여기서 먹는다 (Policy §1) */}

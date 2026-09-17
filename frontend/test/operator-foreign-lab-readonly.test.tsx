@@ -1,20 +1,3 @@
-/**
- * 관리자(운영자)가 **다른 연구실** 데이터셋 상세를 열면 쓰기 진입점이 하나도 없다.
- *
- * 오라클 = 승인 intent `dev-package/intent/2026-09-12-operator-designation.md`
- *          「관리자는 모든 연구실의 데이터를 **읽기 전용**으로 열람한다 …
- *           쓰기(수정·삭제·업로드·권한 변경)는 소속 연구실 범위 그대로다」.
- *
- * 왜 이 파일이 생겼나 — dev 실사용 검증(`dev-package/reports/r-login-backoffice/
- * task8-realuse/results.md §1-7`)에서 연구실 B 데이터셋 상세에 `수정` · `기준 격자 추가` ·
- * `파일 추가` · `계보 수정 · 추가` · `계보 채우기` 가 **전부 보이고 활성**이었다. 서버는 그
- * 전부를 403·404 로 거절한다(`services/core-api/tests/test_operator_designation.py` ㈒) —
- * 어긋난 것은 화면뿐이고, **그 어긋남을 잡는 검사가 어디에도 없었다**(게이트에도
- * `deploy_doctor` 에도). 이 파일이 그 자리다.
- *
- * **빈 집합 위에서 통과하지 않는다** — 「없다」를 재기 전에 **같은 장면의 자기 연구실 판이
- * 그것을 실제로 그린다**는 것을 먼저 잰다. 그게 없으면 선택자 오타도 green 이 된다.
- */
 import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -24,6 +7,7 @@ import { FIXTURE_DETAILS, FIXTURE_LAB_ID } from '../src/components/detail/fixtur
 import type { CurrentAccount, PermissionSwitchSet } from '../src/api/client';
 import type { DatasetDetail, DetailSource } from '../src/components/detail/types';
 import type { LineageGraph, LineageGraphSource } from '../src/components/lineage/graphTypes';
+import type { ProjectSource } from '../src/components/project/types';
 
 const OPEN_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1'; // 목업 기본 장면 — 열린 데이터 · 기본 정보 전부
 const BASE = FIXTURE_DETAILS[OPEN_ID] as DatasetDetail;
@@ -88,6 +72,7 @@ async function mount(opts: { labId: string; operator: boolean }) {
               <DatasetDetailPage
                 source={staticSource({ ...BASE, labId: opts.labId })}
                 lineageSource={graphSource(editableGraph())}
+                projectSource={{ list: async () => ({ items: [{ projectId: 'P1', name: '후보', type: '국가과제' }], totalCount: 1 }), link: async () => {} } as unknown as ProjectSource}
               />
             }
           />
@@ -109,25 +94,25 @@ const WRITE_CONTROLS: readonly [string, string][] = [
   ['대표 그림 고르기', 'detail-representative-input'],
   ['계보 수정 · 추가', 'lin-edit'],
   ['계보 채우기', 'lin-fill'],
+  ['프로젝트 연결', 'usage-project-add'],
 ];
 
-describe('관리자 전 연구실 열람 — 남의 연구실 상세는 읽기 전용 (승인 intent 2026-09-12)', () => {
+describe('관리자 전 연구실 열람 — 타 연구실 전체 관리 (승인 intent 2026-09-16)', () => {
   it('자기 연구실이면 쓰기 진입점 6개가 **전부 있다** — 비교 기준을 먼저 세운다', async () => {
     await mount({ labId: FIXTURE_LAB_ID, operator: true });
     const found = WRITE_CONTROLS.filter(([, id]) => screen.queryAllByTestId(id).length > 0);
     expect(found.map(([label]) => label)).toEqual(WRITE_CONTROLS.map(([label]) => label));
   });
 
-  it('남의 연구실이면 그 6개가 **DOM 에서 사라진다** — 비활성이 아니라 부재다 (P-12)', async () => {
+  it('타 연구실에도 쓰기 진입점이 있다', async () => {
     await mount({ labId: OTHER_LAB, operator: true });
     const left = WRITE_CONTROLS.filter(([, id]) => screen.queryAllByTestId(id).length > 0);
-    expect(left.map(([label]) => label)).toEqual([]);
+    expect(left.map(([label]) => label)).toEqual(WRITE_CONTROLS.map(([label]) => label));
   });
 
-  it('남의 연구실이면 제목 위에 「다른 연구실 데이터 — 읽기 전용」 한 줄이 선다', async () => {
+  it('타 연구실 읽기 전용 안내가 없다', async () => {
     await mount({ labId: OTHER_LAB, operator: true });
-    const note = screen.getByTestId('detail-foreign-readonly');
-    expect(note).toHaveTextContent('다른 연구실 데이터 — 읽기 전용');
+    expect(screen.queryByTestId('detail-foreign-readonly')).toBeNull();
   });
 
   it('자기 연구실에는 그 한 줄이 없다 — 늘 붙어 있는 문구가 아니다', async () => {
@@ -140,9 +125,9 @@ describe('관리자 전 연구실 열람 — 남의 연구실 상세는 읽기 �
     expect(screen.queryAllByTestId('dt-download')).toHaveLength(1);
   });
 
-  it('남의 연구실 상세의 `다운로드` 는 DOM 에 없다 — 서버가 404 로 거절하는 길이다', async () => {
+  it('타 연구실 상세도 다운로드할 수 있다', async () => {
     await mount({ labId: OTHER_LAB, operator: true });
-    expect(screen.queryAllByTestId('dt-download')).toHaveLength(0);
+    expect(screen.queryAllByTestId('dt-download')).toHaveLength(1);
   });
 
   it('**읽기는 그대로다** — 남의 연구실에서도 제목·기본 정보·파일 목록 열기가 남는다', async () => {

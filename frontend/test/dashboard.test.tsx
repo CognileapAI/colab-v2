@@ -304,11 +304,16 @@ describe('§6 — 할 일 함의 권한 훅은 그룹 각각에 걸린다', () =
 
 describe('§6 — 연구실 정보는 읽기만 전 구성원에게 연다', () => {
   it('`우리 연구실` 라벨을 누르면 읽기 모달이 열린다', async () => {
-    const { container } = renderLab(fullSource());
+    const lab = await fullSource().lab();
+    let resolveLab!: (value: typeof lab) => void;
+    const response = new Promise<typeof lab>((resolve) => { resolveLab = resolve; });
+    const { container } = renderLab(fullSource({ lab: () => response }));
     await click(sectionLabel(container));
-    await waitFor(() => expect(screen.getByRole('dialog', { name: '연구실 정보' })).toBeTruthy());
-    expect(screen.getByText('수자원순환연구실')).toBeTruthy();
-    expect(screen.getByText('7명')).toBeTruthy();
+    const dialog = await screen.findByRole('dialog', { name: '연구실 정보' });
+    expect(within(dialog).queryByText('수자원순환연구실')).toBeNull();
+    resolveLab(lab);
+    expect(await within(dialog).findByText('수자원순환연구실')).toBeTruthy();
+    expect(within(dialog).getByText('7명')).toBeTruthy();
   });
 
   it('**편집 버튼만 권한자에게** 보인다 — 스위치가 꺼진 사람에게는 없다 (§6 · P-12)', async () => {

@@ -94,6 +94,9 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
   // 조각이 하나뿐이면 **고를 것이 없다** — 자리는 그대로 두고 잠근다(건수를 함께 말한다).
   const singleFile = files.length <= 1;
   const shownFile = props.selection.fileId ?? files[0]?.fileId ?? '';
+  const shownFileName = files.find((file) => file.fileId === shownFile)?.fileName ?? '';
+  const shownVariableId = shownVariable(props.selection, props.description);
+  const shownInstantId = shownInstant(props.selection, props.description);
   // 업로드 예외의 판정 — **후보 수**로 가른다. 시각은 목록이 아니라 범위라 `count` 가 원본이다
   // (`instantChoicesOf` 는 처음·마지막 둘만 세우므로 건수 판정에 쓰지 않는다).
   const hideSingle = props.hideSingleChoice ?? false;
@@ -116,11 +119,12 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
           id={`${props.idPrefix}-pick-file`}
           data-testid={`${props.idPrefix}-pick-file`}
           value={shownFile}
+          title={shownFileName}
           disabled={disabled || singleFile}
           onChange={(e) => props.onPick({ fileId: e.currentTarget.value })}
         >
           {files.map((f) => (
-            <option key={f.fileId} value={f.fileId}>
+            <option key={f.fileId} value={f.fileId} title={f.fileName}>
               {f.fileName}
             </option>
           ))}
@@ -140,12 +144,13 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
           className="sel"
           id={`${props.idPrefix}-pick-variable`}
           data-testid={`${props.idPrefix}-pick-variable`}
-          value={shownVariable(props.selection, props.description)}
+          value={shownVariableId}
+          title={variableLabel(shownVariableId)}
           disabled={disabled || variables.length === 0}
           onChange={(e) => props.onPick({ variable: e.currentTarget.value })}
         >
           {variables.map((v) => (
-            <option key={v} value={v}>
+            <option key={v} value={v} title={variableLabel(v)}>
               {variableLabel(v)}
             </option>
           ))}
@@ -160,18 +165,28 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
           className="sel"
           id={`${props.idPrefix}-pick-instant`}
           data-testid={`${props.idPrefix}-pick-instant`}
-          value={shownInstant(props.selection, props.description)}
+          value={shownInstantId}
+          title={shownInstantId}
           disabled={disabled || instants.length === 0}
           onChange={(e) => props.onPick({ instant: e.currentTarget.value })}
         >
           {instants.map((t) => (
-            <option key={t} value={t}>
+            <option key={t} value={t} title={t}>
               {t}
             </option>
           ))}
         </select>
       </label>
       ) : null}
+
+      <details className="pv-pick-values" data-testid={`${props.idPrefix}-pick-values`}>
+        <summary>선택값 전체 보기</summary>
+        <dl>
+          <div><dt>파일</dt><dd>{shownFileName}</dd></div>
+          <div><dt>변수</dt><dd>{variableLabel(shownVariableId)}</dd></div>
+          <div><dt>시각</dt><dd>{shownInstantId}</dd></div>
+        </dl>
+      </details>
     </div>
   );
 }

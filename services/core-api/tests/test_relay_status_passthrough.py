@@ -244,7 +244,7 @@ def test_the_scope_headers_ride_on_every_one_of_the_five_relay_calls(
     """
     base, fake = fake_viz
     fake.status = 200
-    fake.body = {"renderId": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "status": "그리는 중",
+    fake.body = {"target": {"datasetId": DS_A1}, "renderId": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "status": "그리는 중",
                  "palettes": [], "available": False, "value": None, "unit": None,
                  "variable": None, "exactness": "원본과 같은 칸", "cell": None,
                  "unavailableReason": "자리에 산출물이 없다"}

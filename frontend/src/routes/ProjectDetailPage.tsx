@@ -20,6 +20,25 @@ import {
 } from '../components/project/types';
 import '../components/project/project.css';
 
+function projectLinkHref(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed || /[\s\u0000-\u001f\u007f\\]/.test(trimmed)) return undefined;
+  const href = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : trimmed.startsWith('//')
+      ? `https:${trimmed}`
+      : /^[^./:@?#]+(?:\.[^./:@?#]+)+(?::\d+)?(?:[/?#]|$)/.test(trimmed)
+        ? `https://${trimmed}`
+        : undefined;
+  if (!href) return undefined;
+  try {
+    const url = new URL(href);
+    return (url.protocol === 'https:' || url.protocol === 'http:') && url.hostname ? href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function ProjectDetailPage(props: { source?: ProjectSource } = {}) {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
@@ -162,11 +181,11 @@ function Ready(props: {
           <span className="chip chip--lineage">계보</span>
         </div>
         {detail.link ? (
-          // 받아 적은 값을 **그대로** 링크로 보여준다. 형식·생존 여부를 확인하지 않는다 (§1.3-3)
+          // 표시값은 그대로 두고, 이동 주소만 안전한 외부 HTTP(S) 주소로 보완한다.
           <a
             data-testid="project-link-url"
             className="pd-linkurl"
-            href={detail.link}
+            href={projectLinkHref(detail.link)}
             rel="noreferrer"
           >
             {detail.link}

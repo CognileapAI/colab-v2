@@ -276,6 +276,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px. `.qproj` 는 이 줄 아래로 접히므로 row-gap 8px 이 그 자리다 */
 .projpick { display: flex; flex-wrap: wrap; gap: 8px; }
+.projpick .sel { flex: 1; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; }
 .qproj .qnote { color: var(--up-muted); font-size:13px; }

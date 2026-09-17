@@ -23,6 +23,7 @@ Bearer 를 못 실어 도달 불가라 기각됐다(계약 산문). 흐름은 �
 이미 압축돼 있거나 커서, CPU 를 태워 얻는 것이 없고 스트리밍 크기를 미리 알 수도 없다.
 """
 from __future__ import annotations
+from ..access import dataset_access
 
 import datetime as dt
 import io
@@ -42,7 +43,8 @@ from ...kernel.auth import Subject
 from ...kernel.download_ticket import (SCOPE_BUNDLE, SCOPE_FILE, TTL_SECONDS, DownloadClaims,
                                        DownloadTicketSigner, TicketExpired, TicketInvalid)
 from ...kernel.ids import Ulid
-from ...kernel.scope import read_only_scope
+from ...kernel.scope import read_only_scope, target_lab, select_target_lab
+from ...kernel.db_credentials import current_download_subject
 from ...kernel.storage_backends import content_disposition
 from ...ports.storage import UploadStoragePort
 from ..deps import current_subject, scoped_db
@@ -85,7 +87,7 @@ def _accessible_dataset(db: Session, dataset_id: Ulid) -> d3_catalog.DatasetCore
     if core is None:
         # 경계 밖이면 RLS 가 이미 행을 지웠고(P-9·P-10), 묘비면 상세 화면이 없다(§7).
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(str(dataset_id))
+    access = dataset_access(db).dataset_access([dataset_id]).get(str(dataset_id))
     if access is not None and not access.body_accessible:
         # 메타는 상세에서 보이지만 바이트는 본체 쪽이라 막힌다 (P-34). 그 자리가 `접근 요청` 이다.
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
@@ -101,7 +103,7 @@ def _issue(request: Request, db: Session, subject: Subject, *, dataset_id: Ulid,
     d8_insight.record_download(db, account_id=subject.account_id, dataset_id=dataset_id,
                                file_id=file_id)
     now = _now()
-    issued = signer.issue(dataset_id=dataset_id, file_id=file_id, subject=subject, now=now)
+    issued = signer.issue(dataset_id=dataset_id, file_id=file_id, subject=subject, now=now, target_lab_id=target_lab(db))
     expires_at = issued.expires_at
     if row is None:
         file_name = f"{core.name}.zip"
@@ -111,7 +113,7 @@ def _issue(request: Request, db: Session, subject: Subject, *, dataset_id: Ulid,
         file_name = row.file_name
         byte_size = row.size_bytes
         # s3 모드 = 프리사인드 GET 절대 URL. local 은 None 을 돌려주므로 아래로 떨어진다.
-        presigned = _storage(request).presign_get(
+        presigned = None if d2_access.is_manager(db, subject.account_id) else _storage(request).presign_get(
             key=row.storage_key, file_name=file_name, expires_seconds=TTL_SECONDS, now=now)
         if presigned is not None:
             url, expires_at = presigned.url, presigned.expires_at
@@ -181,7 +183,20 @@ def get_download_bytes(request: Request, ticket: str = Path(min_length=1, max_le
     스트리밍한다 — 긴 다운로드가 커넥션을 붙들지 않는다."""
     claims = _claims(request, ticket)
     storage = _storage(request)
-    with read_only_scope(request.app.state.session_factory, claims.subject) as db:
+    factory = request.app.state.account_admin_factory
+    current = current_download_subject(factory, claims.account_id) if factory else claims.subject
+    if current is None or (not current.operator and current.lab_id != claims.lab_id):
+        raise errors.not_found()
+    with read_only_scope(request.app.state.session_factory, current,
+                         operator_read=current.operator) as db:
+        if current.operator:
+            select_target_lab(db, current, str(claims.lab_id))
+        try:
+            _accessible_dataset(db, claims.dataset_id)
+        except errors.ApiError as exc:
+            if exc.status_code in (403, 404):
+                raise errors.not_found() from None
+            raise
         core = d3_catalog.find_dataset_core(db, claims.dataset_id)
         if core is None:
             raise errors.not_found()

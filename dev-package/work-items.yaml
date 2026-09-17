@@ -2941,10 +2941,13 @@ items:
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)"]
     depends_on: ["WU-B1", "WU-B3"]
     completion_def: "스키마 변경 0. d3_catalog.py lineage_state() 를 PRD-27 의 6항 판정식으로 대체하고 ingestion.py 의 자동 mark_unknown 을 걷는다. 부모 0건·체크 안 함·Lv1↑ = 확인 필요 · 체크함 = 기록 없음 · Lv0 = 원천(제외 조항). 부모 1건이면 체크박스 비활성 ＋ 사유 한 줄. 라벨 축자 = 가공 전 데이터를 못 찾았어요 — 기록 없이 등록할게요 이고 종전 문면 문자열이 코드에 없다. 부모 ≥1 경로의 판정이 종전과 같음을 회귀로 증명한다. 홈 대시보드 모수 불일치도 같이 닫는다"
-    evidence: "dev-package/sessions/p3-lineage-unknown-20260907.md"
+    evidence: "dev-package/sessions/p3-lineage-unknown-20260907.md (과거 완료 근거). 2026-09-16 표시 정책 개정은 dev-package/intent/2026-09-16-issue-82-lineage-help.md 및 R-ISSUE-73-82-PREVIEW-LINEAGE.md의 task runtime 근거를 따른다."
     deadline: null
     note: "2026-09-07 done — 레인 p3-lineage-unknown c11efa2 ＋ advisor ② 5b3b2f2(목록 lineageState 다중값 · sourceLabel 공백 · docstring) · 판정식 6항 · lineageUnknown 계약 1키(breaking green) · 자동 mark_unknown 철거 · 홈 모수 2값 통일 · 게이트 7종 record · core-api 929 · FE 967 · 배포 전 staging/prod 「부모0∧unknown없음∧source_label NULL」 실측 필요 · 저장 플래그는 이미 있는 d4_lineage_unknown 행이고 바뀌는 것은 그 행을 언제 쓰는가다. 계약은 lineageUnknown 만 연다. 레인 p3-lineage-unknown"
-    sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-27"]
+    # 2026-09-16 Ted 승인: 위 completion_def의 '부모 1건이면 비활성＋사유'만
+    # '확정 부모 >=1이면 선언 행 숨김, 모두 해제하면 기존 체크 상태로 복원'으로 대체한다.
+    # 종전 완료 정의/상태는 이력으로 보존하며 신규 수정의 검증 성공을 뜻하지 않는다.
+    sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-27", "dev-package/intent/2026-09-16-issue-82-lineage-help.md"]
 
   - id: WU-B10
     name: 상세 계보 수정·추가 (PRD-31)
@@ -3557,6 +3560,7 @@ items:
       ⑹ `frontend/test/processing-level-default-20260913.test.tsx` · `lv-mismatch-reason-20260913.test.tsx` · `catalog-level-mismatch-20260913.test.tsx` 신설 ＋ `detail-edit.test.tsx` 확장이 red 선실측 뒤 green
       ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
       ⟨증보 2026-09-14⟩ 계산값 추종 중에는 부모 선택 상한 미적용 · 사람이 단계를 고른 뒤에만 적용(카드 ⑩ ⓐ 「차단은 늘지 않는다」)
+      ⟨개정 2026-09-16 · issue #80 승인 intent⟩ 위 자동 추종·추종 중 상한 해제·부모 Lv 미상 시 Lv2 복귀 결정은 `dev-package/intent/2026-09-16-issue-80-preserve-selected-level.md`로 개정한다. 처음 Lv0부터 선택값을 유지하고 부모 상한을 즉시 적용한다. 같은 단계 연결과 계산값 불일치 안내는 유지하며, 연결 후 하향 충돌은 연결 보존·등록 차단으로 처리한다. 이 항목의 status/evidence는 종전 구현의 역사 기록이며 이번 변경의 완료 근거가 아니다. 이번 구현·검증 상태는 `dev-package/prd/rounds/R-ISSUE-80-76-PRESERVE-VALUES.md`에서 관리한다.
     evidence: "2026-09-14 커밋 `09876f24`(기본값 계산값 추종 ＋ 사유 한 줄 ＋ 상세 편집 칸) · `1eb8715d`(부모 0건 기본값 계산값 Lv0 ＋ 등록 화면 불일치 줄 · 스펙 오기 정정) · `14d3e063`(추종 중 부모 선택 상한 해제) · `a07e87a4`(추종 중 상한 안내 줄 숨김) · 문서 `e85f38f0`·`b936c1b5`·`5604fec3`·`de030f33` · 목록 표식 `0427ac91`. red 선실측 = `AssertionError: expected 'Lv2' to be 'Lv0'` · `Unable to find an element by: [data-testid=\"lin-lv-mismatch\"]` · 상한 해제 `Tests 2 failed | 11 passed` · 안내 줄 `expected <p class=\"lin-scope-lv\" …> to be null`. 개정 표시 PRD `미결-2` 행 ＋ `기본 선택값 = **Lv2**` 문장 ＋ `〈194〉`. 게이트 = 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2(`frontend-test`·`frontend-typecheck` green 포함) → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
     deadline: null
     note: "라운드 R-LTH-REVIEW-1 Task 3 ＋ Task 5(목록 표식). 범위 밖 = 불일치 상태에서 등록·저장을 차단하는 동작(판정이 금지) · 사유 입력 ＋ 한 번 더 확인 절차와 사유 저장 칸 ＋ 마이그레이션 1건(카드 ⑩ ⓑ · 다음 회차 판정 · 후속) · 파생값·불일치 결과를 테이블에 저장하는 구조 변경 · 분류 3축 편집 칸 신설 · 검색 결과 카드의 불일치 표기 · 프로젝트 상세 표·계보 노드의 `level_pair` → `level_view` 확장 · 「CoLAB에서 가공됨」 표식과 계보 삭제 시 부모 이름 보존(`stage: after_stage2` 별 항목). ⚠ 사유 한 줄 문면은 Ted 확정 대기 — 레인은 제안 축자로 구현한다. ⚠ `[미확인]` = 사례 데이터셋 `TEST Stage12 Preview HDF5 20260911` 의 실제 저장값(dev DB 조회로 닫는다)."
@@ -3749,11 +3753,11 @@ items:
     owner: "frontend ＋ core-api(D4 계보) — 착수 시점은 Ted"
     entry_conditions:
       - "부모 후붙임 흐름의 확인 2회 문제 설계 선행(A4)"
-      - "추종 중 안내 문구와 「분류에서 바꾸기」 링크 배치는 Ted 문면 판정 대상"
+      - "종전 ~~추종 중 안내 문구와 「분류에서 바꾸기」 링크 배치는 Ted 문면 판정 대상~~ — 2026-09-16 issue #80 승인 intent로 자동 추종 관련 슬롯 폐기. 사유 입력·확인 절차는 유지한다."
     depends_on: []
     completion_def: >-
       ⑴ 계산값과 다른 가공 단계를 유지할 때 사유가 저장 칸에 기록된다(마이그레이션 1건 ＋ 계약 열쇠).
-      추종 중 안내·링크·부모 Lv 미상 처리의 완료 정의 미작성 — 착수 intent 에서 정한다.
+      종전 ~~추종 중 안내·링크·부모 Lv 미상 처리의 완료 정의 미작성 — 착수 intent 에서 정한다.~~ — `dev-package/intent/2026-09-16-issue-80-preserve-selected-level.md`로 자동 추종 관련 슬롯 폐기. 이 항목은 사유 입력·확인 절차만 남으며 기존 status/evidence는 이번 변경의 완료 판정이 아니다.
     evidence: null
     deadline: null
     note: "출처 = A4(사유 입력 ＋ 한 번 더 확인 절차 · 카드 ⑩ ⓑ · L) · 추가 3건(Task 3b 보고) — 추종 중 안내 줄 문면 · 「분류에서 바꾸기」 링크(`lin-goto-classify`)가 제한 안내 줄과 함께 숨음(`c10acf6a`) · 확정 부모 중 Lv 미상이 있으면 기본 Lv2 로 돌아가고 상한 재적용되는 것의 의도 여부."
@@ -3916,7 +3920,7 @@ items:
     completion_def: "일곱 각각이 fail-closed 픽스처 또는 실측 1건으로 닫힌다 — ⑴ dev-seed README 에 종료코드 4·5 문서화 ⑵ 계정 생성 폼 칸별 `data-testid` 신설 ⑶ `COLAB_DEV_URL` 이름 통일 ⑷ verify 세션 이름을 agent-browser 가 읽는 `--session` 으로 전달(4회차 로그인 27건 green-by-skip) ⑸ `lib.sh` 로그 `tee` 이중 기록 잔존분 점검 ⑹ `.work/new-password.txt` custody 규약 확정(Ted 판정) ⑺ 실행 산출물(gitignored 상태 파일 · 회전 비밀번호)을 워크트리 밖(`$COLAB_JOB_DIR/tmp` 또는 홈)에 두도록 실행 자리 변경 ＋ 보존 규약을 `dev-seed/README.md §3` 에 등재."
     evidence: "미착수 — 2026-09-14 등재만 · 출처 R-DATA-CANON §13"
     deadline: null
-    note: "출처 = 이슈 #49 · #50 ＋ 5회차 유실(⑺ · `dev-package/sessions/DR-4-run-20260914T050442Z.md §4·§11-3`). 게이트 자리 = `dev-reseed-selftest`(현 픽스처 6). 실행 산출물 유실 교훈은 `CLAUDE.md §5-b` 에도 한 줄. ⭑ ⟨GitHub 등재 2026-09-14⟩ 이슈 #53. ⑷ verify `--session` 전달은 이미 고침(픽스처 `dev-package/tools/dev-reseed/tests/verify-session.sh` · 커밋 `e959a011`) — 남은 것은 ⑴⑵⑶⑸⑹⑺."
+    note: "출처 = 이슈 #49 · #50 ＋ 5회차 유실(⑺ · `dev-package/sessions/DR-4-run-20260914T050442Z.md §4·§11-3`). 게이트 자리 = `dev-reseed-selftest`(현 픽스처 7). 실행 산출물 유실 교훈은 `CLAUDE.md §5-b` 에도 한 줄. ⭑ ⟨GitHub 등재 2026-09-14⟩ 이슈 #53. ⑷ verify `--session` 전달은 이미 고침(픽스처 `dev-package/tools/dev-reseed/tests/verify-session.sh` · 커밋 `e959a011`) — 남은 것은 ⑴⑵⑶⑸⑹⑺. 2026-09-15: 별도 GitHub #53 번호의 ⑴ EC2 사전 디스크 검사·⑵ 주소 변수 우선순위 통일·⑷ 로그 중복 제거·⑹ 정지 전 트랜잭션 차단·⑺ 보고서 실행 경로의 상대/portable 표기를 부분 반영. 이 대장의 위 일곱 항목과 번호가 다르므로 기존 완료 정의·open 유지. GitHub 번호 ⑸은 동일 보호 계획의 check→executor run 연결과 격리 성공/실패 fixture를 반영; 실제 운영 재생성과 28/4/18 완주는 #52 별도이며 이번 미수행, ⑶⑻ 기존 해결. 검증 근거는 해당 task runtime과 로컬 PR 요약에 둔다."
     sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md", "GitHub #53"]
   - id: OPS-PI-PW
     name: "PI 계정 비밀번호 재설정 — 유일 사본 유실 복구"

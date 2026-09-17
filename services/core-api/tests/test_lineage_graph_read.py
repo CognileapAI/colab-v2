@@ -128,7 +128,8 @@ def test_a_dataset_without_lineage_still_returns_itself(live_client, p2_client) 
                     json={"uploadId": receipt["uploadId"], "name": "계보 없는 데이터",
                           "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"})
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}})
     assert r.status_code == 201, r.text
     orphan = r.json()["datasetId"]
 

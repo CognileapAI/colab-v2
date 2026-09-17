@@ -4,13 +4,14 @@ import datetime as dt
 import re
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from ...kernel import errors
 from ...kernel.auth import Subject
+from ...kernel.authn import LoginAttempt
 from ...kernel.db_credentials import (
     OperatorChangeRefused, ServiceAccountRow, normalize_login_name)
 from ...kernel.ids import Ulid
@@ -47,6 +48,16 @@ class OperatorChange(BaseModel):
     """관리자 지정·해제. 켜고 끄는 것 하나뿐이라 값도 하나다."""
     model_config = ConfigDict(extra="forbid")
     operator: bool
+
+class LoginThrottleClear(BaseModel):
+    """잠금을 풀 **계정 하나**. 지울 열쇠를 호출자가 지어내지 못한다.
+
+    ⚠ 원시 버킷 열쇠를 받지 않는다 — 받는 순간 운영자 한 명이 클라이언트 버킷을 포함한
+    아무 열쇠나 지울 수 있고, 그것은 제한을 끄는 스위치다. 열쇠는 **로그인이 쓰는 함수**가
+    이 이메일에서 만든다.
+    """
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=320)
 
 def _admin(request: Request):
     factory = request.app.state.account_admin_factory
@@ -243,6 +254,42 @@ def set_account_operator(accountId: str, body: OperatorChange, request: Request,
     if changed is None:
         raise errors.not_found("계정을 찾지 못했다.")
     return {"accountId": accountId, "operator": changed}
+
+
+@router.post("/admin/login-throttle/clear", name="clearLoginThrottle",
+             status_code=204, response_class=Response)
+def clear_login_throttle(body: LoginThrottleClear, request: Request,
+                         subject: Subject = Depends(current_subject)) -> Response:
+    """잠긴 계정의 로그인 시도 셈을 운영자가 지운다.
+
+    **이 엔드포인트가 유일한 길이다.** 시도 제한은 프로세스 메모리에 있고
+    (`kernel/throttle.py` — 분산 저장처는 이 회차 범위 밖이다), 그래서 프로세스 밖의
+    스크립트·SQL 로는 그 dict 에 닿지 못한다. 종전에 잠긴 사람을 풀어 주는 조치는
+    **웹 서버 재시작**뿐이었고, 그것은 다른 모든 사용자의 셈까지 지운다.
+
+    ⚠ **열쇠를 여기서 지어내지 않는다** — 로그인이 세는 자리(`IssuerChain.rate_limit_key`)와
+    같은 함수로 만든다. 두 곳이 각자 만들면 해제가 조용히 아무것도 안 지우고 204 만 낸다.
+
+    ⚠ **없는 계정도 204** 다. 「그 계정은 없다」·「그 계정은 잠겨 있지 않았다」를 가르면
+    이 자리가 계정 열거 통로가 된다 — 로그인이 401 하나로 접어 둔 것을 옆문으로 여는 셈이다.
+
+    ⓝ 여러 워커로 뜨면 셈도 해제도 **그 프로세스 안에서만** 유효하다. 한계의 자리는
+    `kernel/throttle.py` 이고, 이 op 이 그 한계를 새로 만들지 않는다.
+    """
+    _require_operator(request, subject)
+    limiter = request.app.state.login_limiter
+    keys = {f"name:{normalize_login_name(body.email)}"}
+    issuer = request.app.state.session_issuer
+    key_for = getattr(issuer, "rate_limit_key", None)
+    if key_for is not None:
+        try:
+            keys.add(key_for(LoginAttempt(account_name=body.email, password="")))
+        except SQLAlchemyError:
+            raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
+                                  "세션 저장소에 연결할 수 없다.") from None
+    # **지워진 수를 응답에 싣지 않는다** — 그 수가 곧 「그 계정이 잠겨 있었다」는 사실이다.
+    limiter.clear_many(keys)
+    return Response(status_code=204)
 
 
 @router.put("/me/password", name="changeOwnPassword")

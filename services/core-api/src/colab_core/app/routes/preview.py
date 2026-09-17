@@ -27,6 +27,7 @@ from . import catalog
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
+from ...kernel.scope import target_lab
 from ..deps import current_subject, scoped_db
 from ..relay import RelayRefused, RelayUnavailable
 
@@ -77,9 +78,23 @@ def _require_target_access(db: Session, subject: Subject, target: dict) -> None:
     if not Ulid.is_valid(upload_ref):
         raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
     record = d5_ingestion.UploadLedgerAdapter(db).find(Ulid(upload_ref))
-    if record is None or str(record.uploader_account_id) != str(subject.account_id):
+    if record is None or (str(record.uploader_account_id) != str(subject.account_id)
+                         and not d2_access.is_manager(db, subject.account_id)):
         raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
 
+
+
+def _require_job_access(db: Session, subject: Subject, job: dict) -> None:
+    target = job.get("target")
+    if not isinstance(target, dict):
+        raise errors.ApiError(503, RENDER_UNAVAILABLE, "미리보기 대상 정보를 확인하지 못했어요. 다시 그려 주세요.")
+    _require_target_access(db, subject, target)
+    if subject.operator:
+        dataset = target.get("datasetId")
+        lab = (d3_catalog.find_dataset_core(db, Ulid(dataset)).lab_id if dataset else
+               d5_ingestion.upload_lab(db, target.get("uploadId")))
+        if lab != target_lab(db):
+            raise errors.not_found()
 
 def _display_file_names(db: Session, target: dict) -> list[dict]:
     """대상 조각의 **원래 파일 이름** — `core-viz.yaml#RenderTarget.fileNames` 를 채운다.
@@ -155,7 +170,8 @@ def _with_original_file_names(db: Session, subject: Subject, job: dict) -> dict:
 
 @router.get("/preview-palettes", name="listPalettes")
 def list_palettes(request: Request,
-                  subject: Subject = Depends(current_subject)) -> dict:
+                  subject: Subject = Depends(current_subject),
+                  db: Session = Depends(scoped_db)) -> dict:
     """`RenderStyle.palette` 값의 **유일한 출처** — 중계만 한다 (`〈88〉` 묶음 4).
 
     ⚠ **이 op 이 없어서 실서버에서 미리보기 렌더가 단 한 번도 시작되지 않았다.**
@@ -171,7 +187,7 @@ def list_palettes(request: Request,
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
-        return relay.palettes(lab_id=str(subject.lab_id), account_id=str(subject.account_id))
+        return relay.palettes(lab_id=target_lab(db), account_id=str(subject.account_id))
     except RelayRefused as e:
         return _refused(e)
     except RelayUnavailable as e:
@@ -211,7 +227,7 @@ def describe_target(request: Request, body: dict = Body(...),
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
-        return relay.describe_target(lab_id=str(subject.lab_id),
+        return relay.describe_target(lab_id=target_lab(db),
                                      account_id=str(subject.account_id),
                                      request=_target_with_file_names(db, body))
     except RelayRefused as e:
@@ -256,7 +272,7 @@ def create_preview_render(request: Request, response: Response, body: dict = Bod
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
         # **표시용 이름만 덧붙인다** — 나머지 요청은 한 글자도 고치지 않는다.
-        job = relay.create(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+        job = relay.create(lab_id=target_lab(db), account_id=str(subject.account_id),
                            request={**body, "target": _target_with_file_names(db, target)})
         return _with_original_file_names(db, subject, job)
     except RelayRefused as e:
@@ -281,13 +297,14 @@ def get_preview_render(request: Request, renderId: str,
     if relay is None:
         raise errors.ApiError(503, RENDER_UNAVAILABLE, "그리는 서버에 연결하지 못했다.")
     try:
-        job = relay.get(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+        job = relay.get(lab_id=target_lab(db), account_id=str(subject.account_id),
                         render_id=renderId)
     except RelayUnavailable as e:
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
                               f"그리는 서버에 연결하지 못했다: {e}") from None
     if job is None:
         raise errors.not_found("그런 렌더 작업이 없다.")
+    _require_job_access(db, subject, job)
     return _with_original_file_names(db, subject, job)
 
 
@@ -339,7 +356,7 @@ def create_preview_screenshot(request: Request, body: dict = Body(...),
     # 그쪽에 경계 헤더를 실어 물어보는 것이 이 경계의 유일한 정직한 확인이다.
     for render_ref in render_ids:
         try:
-            job = relay.get(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+            job = relay.get(lab_id=target_lab(db), account_id=str(subject.account_id),
                             render_id=render_ref)
         except RelayUnavailable as e:
             raise errors.ApiError(503, RENDER_UNAVAILABLE,
@@ -347,10 +364,11 @@ def create_preview_screenshot(request: Request, body: dict = Body(...),
         if job is None:
             # **경계 밖은 존재를 알리지 않는다** — 403 이 아니라 404 다 (`fe-core.yaml` NotFound).
             raise errors.not_found("장면에 담긴 렌더가 없거나 연구실 경계 밖이다.")
+        _require_job_access(db, subject, job)
 
     try:
         status, payload, content_type = relay.screenshot(
-            lab_id=str(subject.lab_id), account_id=str(subject.account_id), request=body)
+            lab_id=target_lab(db), account_id=str(subject.account_id), request=body)
     except RelayUnavailable as e:
         # **빈 이미지를 만들지 않는다** — 0바이트 PNG 는 「장면이 비었다」로 읽힌다.
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
@@ -427,7 +445,7 @@ def lookup_dataset_value(request: Request, response: Response, datasetId: str,
     t_access = time.perf_counter()
     try:
         result, upstream = relay.lookup_value_timed(
-            lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+            lab_id=target_lab(db), account_id=str(subject.account_id),
             request={"datasetId": datasetId, "fileId": str(pieces[0]["id"]),
                      "point": {"lat": float(lat), "lon": float(lon)}})
         t_relayed = time.perf_counter()

@@ -42,8 +42,8 @@ def test_list_projects_returns_the_contract_envelope(client) -> None:
     assert set(row) == {"projectId", "name", "type", "status", "period", "description",
                         "datasetCount", "verifiedCount", "unknownLineageCount"}
     assert row["name"] == "A 논문" and row["type"] == "논문" and row["status"] == "진행 중"
-    assert row["period"] == {"start": "2026-03", "end": None}, \
-        "기간은 연·월까지이고 진행 중이면 종료가 비어 있다 (Policy_프로젝트 §5)."
+    assert row["period"] == {"start": "2026-03-01", "end": None}, \
+        "기존 연·월 자료는 해당 달 1일로 읽고 진행 중이면 종료가 비어 있다."
 
 
 def test_list_project_metrics_are_counted_from_the_linked_datasets(client) -> None:
