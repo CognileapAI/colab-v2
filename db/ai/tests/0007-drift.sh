@@ -7,7 +7,8 @@
 #   ㈎ dev 순서   0005 → 0006_topic_vocab_six      → head  → pg_dump
 #   ㈏ staging 순서 0005 → 0006_rc7_synonym_category → head  → pg_dump
 #   ㈐ ㈎ = ㈏  (두 순서 수렴 — 이것이 머지 리비전의 성립 조건이다)
-#   ㈑ 선언 정본(`db/ai/schema.sql`) = ㈎ = ㈏  (schema-diff 가 보는 것과 같은 사실)
+#   ㈑ 선언 정본(`db/ai/schema.sql`) = **체인 head**  (schema-diff 가 보는 것과 같은 사실)
+#      ⚠ 이 회차 판(㈎·㈏)이 아니라 체인 head 를 견준다 — 아래 ㈑ 블록의 주석이 그 이유다.
 #   ㈒ 행 수준 수렴 — 동의어 13행의 `category` 가 양쪽 다 NULL 이고 이관 3쌍이 양쪽 다 산다
 #
 # ⚠ **dev 는 `0006_topic_vocab_six` 를 이미 적용했다.** 그래서 dev 가 받을 것은 ㈏ 가 아니라
@@ -127,18 +128,42 @@ else
   FAILURES+=("㈐ 두 순서 수렴")
 fi
 
-# ㈑ 선언 정본 ↔ 적용 결과 (schema-diff 가 보는 것과 같은 사실).
-mkdb decl_db; psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
-norm decl_db
-for db in dev_db stg_db; do
-  if diff -u "$TMP/decl_db.norm" "$TMP/$db.norm" > "$TMP/decl-$db.diff"; then
-    echo "[0007-drift] ㈑ 선언 정본 schema.sql = $db → OK"
-  else
-    echo "[0007-drift] ㈑ schema.sql 과 $db 가 갈렸다 ✗"
-    sed 's/^/           /' "$TMP/decl-$db.diff" | head -60
-    FAILURES+=("㈑ schema.sql ↔ $db")
-  fi
-done
+# ㈑ 선언 정본 ↔ **체인 head** (schema-diff 가 보는 것과 같은 사실).
+#
+# ⚠ 견주는 상대는 **체인 head 이지 이 회차가 아니다.** `schema.sql` 은 체인 전체의 선언
+#   정본이라 뒤 회차가 서면 이 회차 판과는 **반드시** 갈린다. 형제 오라클이 처음부터
+#   그렇게 적혀 있었다 — `db/ai/tests/0006-drift.sh:121`(`render "upgrade head"`) ·
+#   `db/platform/tests/0031-drift.sh` 머리말 축자 「㈑ 이 견주는 상대는 체인 head 이지
+#   이 회차가 아니다」. 이 파일만 `dev_db`·`stg_db`(0007 판)를 견주고 있었고, 그래서
+#   `0008_dataset_knowledge` 가 `knowledge` 스키마를 선언에 더한 순간 red 가 났다 —
+#   **드리프트가 아니라 오라클이 뒤 회차를 못 따라간 것**이다.
+#   이 회차의 성립 조건(두 순서 수렴)은 ㈐ 와 ㈒ 가 그대로 잰다.
+render "upgrade head" "$TMP/chain_head.sql"
+
+# 음성 대조 ⓐ — head 가 하나인가. 갈래가 둘이면 아래 렌더가 어느 쪽인지 말할 수 없다.
+HEADS="$( cd "$CHAIN_DIR" && "$ALEMBIC" heads 2>"$TMP/heads.err" )" \
+  || { sed 's/^/     /' "$TMP/heads.err"; red "alembic heads 를 읽지 못했다."; }
+HEAD_COUNT="$(printf '%s\n' "$HEADS" | grep -c '[^[:space:]]')"
+[ "$HEAD_COUNT" = "1" ] || red "체인 head 가 $HEAD_COUNT 개다 — 머지 리비전이 필요하다:
+$HEADS"
+CHAIN_HEAD_REV="$(printf '%s\n' "$HEADS" | awk 'NF{print $1; exit}')"
+
+# 음성 대조 ⓑ — 렌더가 **정말 head 까지** 갔는가. alembic 의 offline 렌더는 마지막에
+#   `alembic_version_ai` 를 head 리비전으로 적는다. 그 글자가 없으면 렌더가 도중에 멈춘
+#   것이고, 그 판을 선언과 견주면 **차이 0 을 통과로 읽는 공회전**이 된다.
+grep -q "$CHAIN_HEAD_REV" "$TMP/chain_head.sql" \
+  || red "체인 head 렌더에 head 리비전($CHAIN_HEAD_REV)이 없다 — 렌더가 도중에 멈췄다."
+
+mkdb chain_db; psql_f chain_db "$TMP/chain_head.sql" || red "체인 head 를 적용하지 못했다."
+mkdb decl_db;  psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
+norm chain_db; norm decl_db
+if diff -u "$TMP/decl_db.norm" "$TMP/chain_db.norm" > "$TMP/decl.diff"; then
+  echo "[0007-drift] ㈑ 선언 정본 schema.sql = 체인 head($CHAIN_HEAD_REV) → OK"
+else
+  echo "[0007-drift] ㈑ schema.sql 과 체인 head 가 갈렸다 ✗"
+  sed 's/^/           /' "$TMP/decl.diff" | head -60
+  FAILURES+=("㈑ schema.sql ↔ 체인 head")
+fi
 
 # ㈒ **행 수준 수렴** — 스키마가 같아도 값이 갈리면 순서가 결과를 바꾼 것이다.
 #    창 9 의 13행은 rc7 의 UPDATE 대상(강우·강수·식생·NDVI·토지피복·LULC)이 아니라
