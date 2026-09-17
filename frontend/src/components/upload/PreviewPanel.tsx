@@ -403,6 +403,61 @@ export function PreviewPanel(props: {
     </div>
   );
 
+  /**
+   * ⭑ **⟨2026-09-17 · #93⟩ 팔레트·구간 수·미리보기 그리기 — 접힌 메뉴 밖에 선다.**
+   * 기본 닫힘 `<details>` 안에 있던 동안은 **접기를 펼치기 전까지 지도 표현을 바꾸는
+   * 수단의 존재가 화면에 없었다.** 서는 자리는 틀 위 줄 컨테이너(`.pv-frame-wrap`) 안,
+   * 파일·변수 고르개 줄 **바로 아래** — 「무엇을 그릴지 → 어떻게 그릴지」 순서다.
+   * ⚠ 상태는 전부 이 패널의 지역 상태다 — 자리를 옮길 뿐 배선은 그대로다.
+   * 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약).
+   */
+  const vizSetup = (
+    <div className="vizsetup">
+      <label className="vs-f">
+        <span>팔레트</span>
+        <select
+          className="sel"
+          data-testid="up-style-palette"
+          value={palette}
+          onChange={(e) => setPalette(e.target.value)}
+        >
+          {(palettes ?? []).map((p) => (
+            <option key={p.palette} value={p.palette}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="vs-f">
+        <span>구간 수</span>
+        <input
+          className="inp"
+          type="number"
+          min={3}
+          max={9}
+          data-testid="up-style-classcount"
+          value={classCount}
+          /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
+             그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
+             기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
+          onChange={(e) => setClassCount(classCountOf(e.target.value))}
+        />
+      </label>
+      <div className="vs-act">
+        {uploadId && (
+          <button
+            type="button"
+            className="btn btn-strong btn-sm"
+            data-testid="up-preview-draw"
+            onClick={() => void draw(false)}
+          >
+            미리보기 그리기
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   if (props.representativeOnly) {
     return (
       <section
@@ -451,53 +506,6 @@ export function PreviewPanel(props: {
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
-
-      {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}
-      <div className="vizsetup">
-        <label className="vs-f">
-          <span>팔레트</span>
-          <select
-            className="sel"
-            data-testid="up-style-palette"
-            value={palette}
-            onChange={(e) => setPalette(e.target.value)}
-          >
-            {(palettes ?? []).map((p) => (
-              <option key={p.palette} value={p.palette}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="vs-f">
-          <span>구간 수</span>
-          <input
-            className="inp"
-            type="number"
-            min={3}
-            max={9}
-            data-testid="up-style-classcount"
-            value={classCount}
-            /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
-               그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
-               기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
-            onChange={(e) => setClassCount(classCountOf(e.target.value))}
-          />
-        </label>
-        <div className="vs-act">
-          {uploadId && (
-            <button
-              type="button"
-              className="btn btn-strong btn-sm"
-              data-testid="up-preview-draw"
-              onClick={() => void draw(false)}
-            >
-              미리보기 그리기
-            </button>
-          )}
-        </div>
-      </div>
-
       </details>
 
       {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9) */}
@@ -539,7 +547,7 @@ export function PreviewPanel(props: {
              근거 = 기획서 rev2(업로드 좌측은 「첫 변수·기간 평균 한 장」). 아래 확장보기
              오버레이와 데이터셋 상세는 이 값을 넘기지 않는다 — 그 두 자리는 무변이다. */
           hideSingleChoice
-        /></>}
+        />{vizSetup}</>}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
@@ -674,7 +682,9 @@ export function PreviewPanel(props: {
           ) : (
             <>
               <div className="pt">아직 그리지 않았어요</div>
-              <div className="pd">미리보기 설정을 열어 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
+              {/* ⭑ ⟨2026-09-17 · #93⟩ 「설정을 열어」 절을 뺀다 — 팔레트·구간 수가 접기
+                  밖으로 나와 **열 설정이 없다**. 없는 조작을 안내하지 않는다. */}
+              <div className="pd">팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
             </>
           )}
         </div>
