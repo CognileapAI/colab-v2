@@ -180,6 +180,18 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ "$GATE" != "task" ] \
   else
     GATE_MUTEX_M=1
   fi
+  # ⭑ ⟨2026-09-18 정정 · 전수 측정에서 값으로 드러났다⟩ **결정이 난 그 자리에서 찍는다.**
+  #   종전에는 이 줄이 아래 요약 래퍼 안에 있었는데, 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 비었을
+  #   때만 돈다. 그런데 `task` 경로(`lifecycle_contract.py run_gates`)는 게이트마다 `CHILD=1` 자식을
+  #   부르므로 **잠금은 걸렸는데 71게이트 로그 어디에도 그 사실이 0건**이었다 — 실행기가 아는 사실을
+  #   삼킨 자리다(ADR-0005 개정 「무의미하거나 판정이거나」). 자식 stdout 은 게이트별 로그로 가므로
+  #   여기서 찍으면 `task` 경로에도 남는다.
+  # ⚠ **인쇄 자리는 여기 하나뿐이다.** 래퍼는 이 줄을 다시 찍지 않는다(같은 프로세스의 같은 사실).
+  #   `all` 의 부모는 자기 집계 줄을 따로 찍고, 그 solo 자식들은 `HELD=1` 이라 이 블록에 오지 않는다.
+  echo "  ── 호스트 뮤텍스 : 잠금 ${GATE_MUTEX_N}건 · 면제(parallel 선언) ${GATE_MUTEX_M}건 · 대기 누계 ${GATE_MUTEX_WAIT}s"
+  # 표 파손·값 이상 메모도 같은 자리에서 닫는다. 표를 못 읽어 안전한 쪽(단독)으로 접었다는 사실이
+  # 실행기 안에만 남으면 「왜 잠갔나」의 근거가 사라진다.
+  for n in ${GATE_PLAN_NOTES[@]+"${GATE_PLAN_NOTES[@]}"}; do echo "  $n"; done
 fi
 
 # ── 단독 게이트도 요약과 JSON 을 낸다 ────────────────────────────────────────
@@ -223,13 +235,9 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
       grep '^::gate-failure::' "$one_out" 2>/dev/null | sed 's/^::gate-failure::/     · /' || true ;;
   esac
   echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
-  # 면제를 **건수로** 드러낸다 — 말 없는 면제는 면제가 아니라 구멍이다(`AGENTS.md:46`).
-  echo "  ── 호스트 뮤텍스 : 잠금 ${GATE_MUTEX_N}건 · 면제(parallel 선언) ${GATE_MUTEX_M}건 · 대기 누계 ${GATE_MUTEX_WAIT}s"
-  # 표 파손·값 이상 메모는 `all` 만의 것이 아니다. 단독 호출도 이제 같은 표를 읽고 그 결과로
-  # 잠금 여부를 정하는데, 여기가 침묵하면 **「왜 잠갔나」의 근거가 사라진다** — 표를 못 읽어
-  # 안전한 쪽(단독)으로 접었다는 사실이 실행기 안에만 남고 읽는 사람에게 가지 않는다.
-  # 「실행기가 아는 사실은 무의미하거나 판정이거나」(ADR-0005 개정)의 출력판이다.
-  for n in ${GATE_PLAN_NOTES[@]+"${GATE_PLAN_NOTES[@]}"}; do echo "  $n"; done
+  # ⚠ 호스트 뮤텍스 줄과 선언표 메모는 **여기서 찍지 않는다.** 결정이 난 자리(위 획득 블록)가
+  #   유일한 인쇄 자리다 — 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 빈 실행에서만 돌기 때문에
+  #   여기에 두면 `task` 경로에서 그 사실이 통째로 사라진다(2026-09-18 전수 측정 실측).
   mapfile -t SUMMARY_OUTS < <(summary_out_paths "${COLAB_GATE_OUTDIR:-}")
   { summary_head "$GATE" "$one_started" "$one_finished" 1 \
       "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"

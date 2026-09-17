@@ -124,13 +124,31 @@
 - [x] ⓖ 는 메모 문자열만 보지 않는다 — **잠금 1건**(표 파손 = 미선언 = 안전한 쪽)을 함께 단언해
       메모가 장식이 아니라 실제 결정이었음을 값으로 받는다.
 
+### 5. 정정 2 — `task` 경로 71게이트가 잠금 사실을 통째로 삼키던 자리
+
+**Files:** `gates/run.sh` · `gates/tools/gate-host-mutex-selftest.sh` · `gates/README.md` · 이 파일
+
+측정 레인의 전수 회차에서 **값으로** 드러났다. 「호스트 뮤텍스 : 잠금 N건 …」 줄이 요약 래퍼
+블록 안에 있었는데, 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 빈 실행에서만 돈다. `task` 경로
+(`lifecycle_contract.py` `run_gates`)는 게이트마다 `CHILD=1` 자식을 부르므로 **잠금은 걸렸는데
+71게이트 로그 어디에도 그 사실이 0건**이었다. 잠금이 섰다는 것과 그 사실이 남았다는 것은
+다른 사실이고, 후자를 삼킨 것이 ADR-0005 개정의 「무의미하거나 판정이거나」에 걸린다.
+
+- [x] ⓗ 케이스를 먼저 써서 red 확인 — `[selftest] ⓗ CHILD=1 자식 stdout 에 호스트 뮤텍스 줄이
+      없다 (표식 없음) — task 경로 71게이트가 통째로 침묵한다 ✗` · `줄이 0회` (exit 1).
+- [x] 인쇄 자리를 **잠금 여부가 결정된 그 블록**으로 옮겼다. `CHILD` 와 무관하게 찍히고,
+      자식 stdout 은 게이트별 로그로 가므로 `task` 경로에도 남는다. 선언표 메모도 같이 옮겼다.
+- [x] 래퍼 블록의 기존 줄은 **삭제**했다 — 인쇄 자리는 하나다. ⓗ 가 「정확히 1회」를 단언한다.
+- [x] `all` 의 부모 집계 줄은 그대로다. 그 solo 자식들은 `HELD=1` 이라 이 블록에 오지 않아
+      중복되지 않는다.
+
 ## 검증 결과
 
 ### ① 단독 게이트로 증명한 것
 
 | 게이트 | 판정 | 값 증거 |
 |---|---|---|
-| `gate-host-mutex-selftest` | green | 케이스 **7건**(ⓐ~ⓖ). ⓐ 실경과 **2초** ≥ 상한 2초 · ⓑ **`waited=3`** ≥ 1 · ⓔ1 면제 건수 1 · ⓔ3 exit 78 · 2초 · ⓖ 표 파손 메모 ＋ 잠금 1건 |
+| `gate-host-mutex-selftest` | green | 케이스 **8건**(ⓐ~ⓗ). ⓐ 실경과 **2초** ≥ 상한 2초 · ⓑ **`waited=3`** ≥ 1 · ⓔ1 면제 건수 1 · ⓔ3 exit 78 · 2초 · ⓖ 표 파손 메모 ＋ 잠금 1건 · ⓗ CHILD=1 stdout 에 잠금 1건이 정확히 1회 |
 | `harness-contract` | green | `parallel-safety declarations 72`(신설 selftest 가 선언표에 있다) |
 | `harness-contract-selftest` | green | — |
 | `db-selftest` | green | `_lock.sh` 의 기존 78 케이스 회귀 |

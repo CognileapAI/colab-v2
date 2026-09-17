@@ -8,7 +8,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `agent-bridge` | Codex/Claude 연결, 완료 훅 및 배포 자동 알림의 진입점·상태·중복 방지 |
 | `harness-contract` | `.agents/harness.yaml`의 공통 원본·adapter·필수 gate·0/1/78 계약 누락과 경로 이탈 |
 | `harness-contract-selftest` | malformed config·빈 필수 gate·누락 adapter를 조용히 통과시키는 회귀 |
-| **`gate-host-mutex-selftest`** ⭑신설 | **호스트 뮤텍스가 `serial` 선언을 프로세스 경계 너머로 집행함을 증명한다** — **ⓐ 점유 중 호출은 기다리다 red(준비 · 78)** 이고 **실경과가 상한 이상**이다(표식만 grep 하지 않는다) · **ⓑ 점유가 풀리면 green 이고 `waited` ≥ 1** — 이 두 시간값이 「잠금이 실제로 걸렸다」의 값 증거다 · ⓒ 잠금 파일을 열 수 없으면 78 · ⓓ `flock` 부재면 78(PATH 수술 · 면제 변수가 없으므로 주입 훅이 없다) · **ⓔ 면제는 선언(`parallel`)과 `COLAB_GATE_MUTEX_HELD=1` 둘뿐이다 — `COLAB_GATE_SUMMARY_CHILD=1` 만 있는 호출은 면제되지 않는다**(그것이 면제면 `task` 경로의 `serial` 게이트가 전부 무잠금이다) · ⓕ 배출처를 선언한 레인 경로에서도 **부모**가 잡는다 · **ⓖ 선언표를 못 읽으면 단독 호출도 그 메모를 stdout 에 찍고 안전한 쪽(잠근다)으로 접는다** — 종전에는 그 메모를 `all` 만 찍어 단독 호출이 침묵했고, 접은 근거가 실행기 안에만 남았다. 대상 게이트는 `exec-bit` 이고 선언표는 픽스처 toml(`COLAB_GATE_PARALLELISM_MANIFEST`)을 물린다 — 실제 `parallelism.toml` 에서 `exec-bit` 은 `parallel` 이므로 이 셀프테스트가 green 이면 **실행기가 표를 실제로 읽은 것**이다. `TMPDIR` 을 자기 `mktemp -d` 로 물려 **실제 호스트 잠금을 한 번도 잡지 않는다** |
+| **`gate-host-mutex-selftest`** ⭑신설 | **호스트 뮤텍스가 `serial` 선언을 프로세스 경계 너머로 집행함을 증명한다** — **ⓐ 점유 중 호출은 기다리다 red(준비 · 78)** 이고 **실경과가 상한 이상**이다(표식만 grep 하지 않는다) · **ⓑ 점유가 풀리면 green 이고 `waited` ≥ 1** — 이 두 시간값이 「잠금이 실제로 걸렸다」의 값 증거다 · ⓒ 잠금 파일을 열 수 없으면 78 · ⓓ `flock` 부재면 78(PATH 수술 · 면제 변수가 없으므로 주입 훅이 없다) · **ⓔ 면제는 선언(`parallel`)과 `COLAB_GATE_MUTEX_HELD=1` 둘뿐이다 — `COLAB_GATE_SUMMARY_CHILD=1` 만 있는 호출은 면제되지 않는다**(그것이 면제면 `task` 경로의 `serial` 게이트가 전부 무잠금이다) · ⓕ 배출처를 선언한 레인 경로에서도 **부모**가 잡는다 · **ⓖ 선언표를 못 읽으면 단독 호출도 그 메모를 stdout 에 찍고 안전한 쪽(잠근다)으로 접는다** — 종전에는 그 메모를 `all` 만 찍어 단독 호출이 침묵했고, 접은 근거가 실행기 안에만 남았다. · **ⓗ `task` 경로의 모양(`COLAB_GATE_SUMMARY_CHILD=1`)에서도 잠금 사실이 stdout 에 남고 줄은 정확히 1회다** — 요약 줄이 래퍼 블록 안에 있던 동안 전수 회차의 71게이트 로그 어디에도 잠금 건수가 0건이었다(2026-09-18 실측). 대상 게이트는 `exec-bit` 이고 선언표는 픽스처 toml(`COLAB_GATE_PARALLELISM_MANIFEST`)을 물린다 — 실제 `parallelism.toml` 에서 `exec-bit` 은 `parallel` 이므로 이 셀프테스트가 green 이면 **실행기가 표를 실제로 읽은 것**이다. `TMPDIR` 을 자기 `mktemp -d` 로 물려 **실제 호스트 잠금을 한 번도 잡지 않는다** |
 | `operator-notifications` | 운영자 사건 20개 선언과 영속 전달·일일 보고·AWS 정규화·두 loopback Slack 수신처 검증 |
 | `operator-notifications-selftest` | 필수 사건 manifest 누락을 판정 실패로 거부하는 음성 검사 |
 | `contract-breaking` | emit된 스펙이 frozen seam과 충돌 |
@@ -108,7 +108,9 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
     재시도해서 green 을 만들지 않는다** — 78 이 나면 그 값이 곧 실측이다.
   - ⚠ **`serial` 이 잡은 동안 다른 프로세스의 `parallel` 게이트는 돈다.** 의도된 형태다 —
     `serial` 이 보장하는 것은 「다른 `serial` 과 겹치지 않는다」이지 「혼자 돌았다」가 아니다.
-  - 요약에 한 줄이 선다: `── 호스트 뮤텍스 : 잠금 N건 · 면제(parallel 선언) M건 · 대기 누계 Xs`.
+  - **잠금 여부가 결정된 그 자리에서** 한 줄이 선다: `── 호스트 뮤텍스 : 잠금 N건 · 면제(parallel 선언) M건 · 대기 누계 Xs`.
+    ⚠ 요약 래퍼 안이 아니다 — 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 빈 실행에서만 돌아서, 거기 두면
+    `task` 경로(게이트마다 `CHILD=1` 자식)의 로그에서 잠금 사실이 **통째로 사라진다**(2026-09-18 실측).
     N ＋ M = 실행 건수이고 N 은 `serial` 선언 건수와 같아야 한다. 증명 = `gate-host-mutex-selftest`.
 - `gates/run.sh all` 은 시작할 때 **실행 계획**(단독 N · 병렬 M · 미선언 K)을 찍고, 요약에도 미선언 건수를
   다시 적는다. `COLAB_GATE_OUTDIR=<경로>` 를 주면 게이트별 실행 구간(`*.span`)이 남아 **「단독으로 돌았다」를

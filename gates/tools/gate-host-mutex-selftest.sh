@@ -24,6 +24,7 @@
 # ⓑ 점유 해제 뒤 green (`waited` ≥ 1)       ⓔ 면제 셋 — parallel 선언 · `MUTEX_HELD` · CHILD 는 면제가 아니다
 # ⓒ 잠금 디렉터리 쓰기 불가 → 78            ⓕ 레인 경로(배출처 선언)에서 `::gate-waiting::` 이 부모 출력에
 #                                           ⓖ 표를 못 읽으면 단독 호출도 메모를 찍고 안전한 쪽으로 잠근다
+#                                           ⓗ `task` 경로(CHILD=1)의 stdout 에도 잠금 사실이 남는다(1회)
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -216,7 +217,24 @@ h="$(held_of)"
 if [ "$h" = 1 ]; then ok "ⓖ 표 파손은 미선언이고 미선언은 잠근다 (잠금 ${h}건)"
 else fail "ⓖ 표를 못 읽었는데 잠금 ${h:-표식 없음}건 — 미선언이 조용히 병렬 안전으로 접혔다"; fi
 
+echo "══ ⓗ task 경로(CHILD=1)의 stdout 에도 잠금 사실이 남는다 ═══════"
+# 전수 측정에서 값으로 드러난 공백의 회귀 케이스다. `task` 경로
+# (`lifecycle_contract.py run_gates`)는 게이트마다 `COLAB_GATE_SUMMARY_CHILD=1` 자식을 부르는데,
+# 요약 줄이 「CHILD 가 빈 실행」에서만 도는 래퍼 블록 안에 있었다 — **잠금은 걸렸는데 71게이트
+# 로그 어디에도 그 사실이 0건**이었다. 잠금이 섰다는 것과 그 사실이 남았다는 것은 다른 사실이다.
+gate exec-bit COLAB_GATE_SUMMARY_CHILD=1 COLAB_GATE_MUTEX_WAIT=5
+if [ "$RC" = 0 ]; then ok "ⓗ CHILD=1 단독 호출이 green (점유 없음)"
+else fail "ⓗ CHILD=1 단독 호출이 green 이 아니다 (exit $RC)"; printf '%s\n' "$OUT" | tail -5 | sed 's/^/           /'; fi
+h="$(held_of)"
+if [ "$h" = 1 ]; then ok "ⓗ CHILD=1 자식 stdout 에 「잠금 ${h}건」이 남는다"
+else fail "ⓗ CHILD=1 자식 stdout 에 호스트 뮤텍스 줄이 없다 (${h:-표식 없음}) — task 경로 71게이트가 통째로 침묵한다"
+     printf '%s\n' "$OUT" | tail -6 | sed 's/^/           /'; fi
+# 한 자리에서만 찍는다 — 같은 프로세스의 같은 사실이 두 줄이면 계수를 두 번 세게 된다.
+n_lines="$(printf '%s\n' "$OUT" | grep -c '호스트 뮤텍스 :' || true)"
+if [ "$n_lines" = 1 ]; then ok "ⓗ 호스트 뮤텍스 줄이 정확히 1회"
+else fail "ⓗ 호스트 뮤텍스 줄이 ${n_lines}회 — 인쇄 자리가 둘이다"; fi
+
 echo "── gate-host-mutex-selftest 요약 ───────────────────────────────"
-echo "  케이스 7건(ⓐ~ⓖ) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
+echo "  케이스 8건(ⓐ~ⓗ) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
 expect_readiness_verdict "gate-host-mutex-selftest" "호스트 뮤텍스 케이스의 실행 환경"
-echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제된다(ⓐ~ⓖ)."
+echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제된다(ⓐ~ⓗ)."
