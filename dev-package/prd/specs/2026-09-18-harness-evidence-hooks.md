@@ -41,8 +41,8 @@
 - `lifecycle_contract.py:23` 에 `'dev-package/prd/specs/'` 추가. **한 줄.**
 - 실물 대조 결과, 이 한 줄이 바꾸는 판정은 둘이다. ⑴ researcher `artifacts` 모드(`:308-312`)에서 `prd/specs/` 변경이 「범위 밖」(`:310`)이 아니라 「미인계 산출물」(`:312`)로 분류된다 — colab-task/2 의 `task['artifacts']` 는 런타임 절대경로(`task_state.py:77`)라 트리 경로와 부분집합이 될 수 없으므로 **어느 쪽이든 차단**이고 사유 문장만 달라진다. ⑵ legacy `begin --legacy` 의 산출물 선언(`:189`)이 `prd/specs/` 를 **허용하게 된다.**
 - `read-only`·`draft-return`(`:305-307`)은 `snapshot()`(`:86-92`, `git ls-files --cached --others`)이 트리 전체를 보므로 **오늘도 어떤 변경이든 막는다.** 따라서 intent 의 9/17 관측(researcher 가 spec 을 쓰고 read-only 로 닫았다)은 `WATCH` 로 설명되지 않는다 — 레인이 먼저 재현한다(우려 #2).
-- ⑵ 는 두 Ted 문면이 **서로 어긋나는 자리**다. `docs/development/lifecycle-evidence.md:12-13`(Ted · 2026-09-09 · `3e5be9dc`)은 「researcher 산출물은 sessions/reports/intent 로 제한 · specs 를 추가해 통과시키지 않는다」이고, intent B Q4(Ted · 2026-09-18)는 「기존 `prd/specs/**` 를 고치는 researcher 도 task 선언을 해야 한다 — 그것이 원하는 바다」로 researcher 의 spec 선언을 **전제**한다. 나중 문면이 이기는 것이 원칙이나 intent B 는 `:12-13` 을 폐기한다고 적지 않았다. **Ted 판정(우려 #3)** 전까지 레인은 `:189` 를 건드리지 않고 `WATCH` 한 줄만 넣는다.
-- 문서: `lifecycle-evidence.md` 에 「`prd/specs/` 는 WATCH 안의 산출물이다」 한 문장을 더하고, `:12-13` 은 우려 #3 판정에 따라 ⓐ 그대로 두거나 ⓑ 「researcher 는 legacy 선언으로만 spec 을 쓴다」로 고친다. `.agents/roles/researcher.md:27` 도 같은 판정을 따른다. intent B 의 「소급 비용」 문장은 실물대로 적는다 — 훅이 도는 것은 researcher 종료뿐이며 사람·부모의 spec 편집은 훅 대상이 아니다.
+- ⑵ 는 두 Ted 문면이 **서로 어긋나는 자리**다. `docs/development/lifecycle-evidence.md:12-13`(Ted · 2026-09-09 · `3e5be9dc`)은 「researcher 산출물은 sessions/reports/intent 로 제한 · specs 를 추가해 통과시키지 않는다」이고, intent B Q4(Ted · 2026-09-18)는 「기존 `prd/specs/**` 를 고치는 researcher 도 task 선언을 해야 한다 — 그것이 원하는 바다」로 researcher 의 spec 선언을 **전제**한다. **Ted 판정(우려 #3 · 2026-09-18) = ⓑ.** `:189` 에 역할 조건 한 줄을 더해 researcher 의 legacy 선언에서 `prd/specs/` 를 거절한다. 규칙 「실행기가 아는 사실(역할＋경로)은 판정이다」의 적용이다.
+- 문서: `lifecycle-evidence.md` 에 「`prd/specs/` 는 WATCH 안의 산출물이다 · 쓰는 주체는 부모다 · researcher 는 어느 schema 에서도 쓰지 않는다」로 `:12-13` 을 고쳐 쓴다. `.agents/roles/researcher.md:27` 에 「`prd/specs/` 는 감시 경로이나 이 역할의 쓰기 범위가 아니다」 한 줄. intent B 의 「소급 비용」 문장은 실물대로 적는다 — 훅이 도는 것은 researcher 종료뿐이며 사람·부모의 spec 편집은 훅 대상이 아니다.
 - `lifecycle-evidence.md:13` 「부모의 spec 인계는 승인 범위·파일 경로·실제 내용 hash 를 확인한다」는 **어디에도 구현돼 있지 않다.** intent B 가 요구하지 않았으므로 범위 밖으로 두고 드러낸다.
 - intent B ⑴ 2단 승격 경로: 승격 함수가 존재하지 않는다(`write-artifact` `:484-490` · `archive_report` `:133-156` 이 가장 가깝다). **범위 밖.**
 
@@ -64,7 +64,7 @@
   - A-ⓒ `lane-worker` 페이로드 ＋ red 1건 → 여전히 exit 2(회귀).
   - A-ⓓ `agent_type` 이 집합 밖(`researcher`)인 페이로드가 이 훅에 오면 `hook role differs` 로 exit 2.
   - B-ⓐ researcher 가 `dev-package/prd/specs/x.md` 를 쓰고 `read-only` → 2. `artifacts`(런타임 산출물 선언) → 2, 사유가 `unhanded output`. **둘 다 오늘도 2 다** — 이 케이스는 WATCH 확장이 「바꾼」 판정이 아니라 「고정하는」 계약 시험이다.
-  - B-ⓑ researcher `begin --legacy` 로 `dev-package/prd/specs/x.md` 선언 → 우려 #3 판정 ⓐ 면 **허용**(WATCH 안이므로), ⓑ 면 거절. lane-worker 의 같은 선언은 기존 동작 유지. 판정 전에는 이 케이스를 쓰지 않는다.
+  - B-ⓑ researcher `begin --legacy` 로 `dev-package/prd/specs/x.md` 선언 → **거절**(우려 #3 판정 ⓑ). lane-worker 의 같은 선언은 기존 동작 유지.
   - C-ⓐ README 의 정본 한 줄을 실제로 실행해 `seed-plan-drift`(실선언) green · `frontend-visual`·`harness-eval`(면제) 이 red(준비) 0 ＋ 각자 출력에 면제 건수 표시.
 - 해당 서비스 단독 게이트 이름: `agent-bridge`(`gates/run.sh:218-220` — `test_harness_lifecycle_contract`·`test_task_runtime`·`test_harness_source_layout`) · `harness-contract`(어댑터·훅 정합) · `harness-contract-selftest`.
 - green-by-skip 방지: A-ⓐ 의 보고에 **red 행이 반드시 1건** 들어간다 — all-green 픽스처만으로는 §A-2 의 분기가 있는지 없는지 구분되지 않는다. B-ⓐ 는 파일을 실제로 쓴다.
@@ -72,13 +72,13 @@
 ## 커밋 순서 (레인이 그대로 따른다)
 1. §A-2 `validate_report` 분기 ＋ `test_task_runtime.py:159-166` 정정 — 판정 본문부터.
 2. §A-1 `stop` 역할 집합 ＋ `lane-gate-summary.sh` ＋ `.claude/settings.json` 매처 ＋ `.codex/hooks.json` 항목 ＋ `test_harness_lifecycle_contract.py` 경로 시험.
-3. §B `WATCH` 한 줄 ＋ 시험 B-ⓐ ＋ `lifecycle-evidence.md` 한 문장. (`:189` 역할 조건·B-ⓑ·`:12-13` 개정은 우려 #3 판정 뒤 같은 커밋에 얹거나 뺀다.)
+3. §B `WATCH` 한 줄 ＋ `:189` 역할 조건 ＋ 시험 B-ⓐⓑ ＋ `lifecycle-evidence.md:12-13`·`researcher.md:27` 문서.
 4. §C README 절 ＋ `dual-agent.md:138` 링크 한 줄 ＋ measurement-lane 역할 한 줄 ＋ ADR-0005 ③④ 갱신 ＋ 라운드 파일.
 
 ## 완료 조건 (레인이 스스로 대조한다)
 1. 측정 레인이 red 를 포함한 정합 보고로 닫히고, 보고 없이는 못 닫는다(A-ⓐⓑ, claude·codex 두 경로).
 2. `lane-worker` 판정 무변경(A-ⓒ).
-3. `prd/specs/` 가 WATCH 안에 있고, researcher 의 colab-task/2 종료는 `prd/specs/` 변경을 어느 모드에서도 통과시키지 않는다(B-ⓐ). legacy 선언의 허용 여부는 우려 #3 판정대로(B-ⓑ).
+3. `prd/specs/` 가 WATCH 안에 있고, researcher 는 colab-task/2 어느 모드에서도(B-ⓐ) legacy 선언으로도(B-ⓑ) `prd/specs/` 변경을 통과시키지 못한다.
 4. README 의 정본 한 줄이 실제로 돌아 세 게이트 red(준비) 0 · 면제 2건 표시(C-ⓐ).
 5. `agent-bridge`·`harness-contract`·`harness-contract-selftest` green.
 
@@ -111,7 +111,7 @@
 |---|---|---|---|---|
 | 1 | 측정 레인의 red 허용(§A-2)은 PR #113 의 시험 단언을 뒤집는다. 승인된 intent A 제약이 근거이지만, #113 spec 우려 #6 은 「의도한 결과」라고 적었다. 둘 중 어느 문면이 결정인가. | intent A 제약대로 — 측정 레인만 red 허용, 구조·트리 증거는 전부 요구 | #113 대로 red 차단 유지 — 그러면 측정 레인은 all-green 회차만 닫을 수 있어 역할이 성립하지 않는다 | ⓐ — intent A 가 나중 승인(9/18)이고 역할 정의와 일치한다 |
 | 2 | 9/17 관측(researcher 가 spec 을 쓰고 read-only 로 닫았다)은 현재 코드로 설명되지 않는다 — `snapshot()` 이 트리 전체를 보므로 read-only 는 어떤 변경이든 막는다. 훅이 발화하지 않았거나 다른 경로였을 개연이 있다. | 레인이 먼저 재현을 시도하고, 재현되면 그 원인을 이 PR 에서 닫는다 · 안 되면 「WATCH 는 선언적 정합」으로 범위를 명시한다 | 재현 없이 WATCH 한 줄만 넣는다 | ⓐ — 「고쳤다」를 재현 없이 적지 않는다 |
-| 3 | **(Ted 판정 필요 — 레인 착수 전)** researcher 가 spec 을 쓸 수 있는가. intent B Q4(9/18)는 「`prd/specs/**` 를 고치는 researcher 도 task 선언을 해야 한다 — 그것이 원하는 바다」로 **전제**하고, `lifecycle-evidence.md:12-13`(9/09)은 「researcher 는 specs 를 추가해 통과시키지 않는다 · 부모가 쓴다」로 **금지**한다. colab-task/2 에서 researcher 는 트리 경로를 선언할 수 없으므로(`task_state.py:66-68`) 「researcher 가 spec 을 쓴다」는 legacy 선언으로만 가능하다. | intent B 대로 — WATCH 안이므로 legacy 선언 허용, `:12-13` 을 「legacy 선언으로만」으로 개정 | `:12-13` 대로 — `:189` 에 역할 조건 한 줄, researcher 는 어느 schema 에서도 `prd/specs/` 를 선언하지 못한다 | ⓑ — 이 spec 자체가 `:12-13` 의 절차(부모가 쓴다)로 만들어졌고, 9/17 관측이 문제였던 이유도 researcher 의 spec 쓰기였다. 그러나 두 문면 모두 Ted 의 것이라 spec 이 고를 수 없다 |
+| 3 | **결정됨 — Ted 2026-09-18 「권고대로할게」 → ⓑ researcher 는 어느 schema 에서도 `prd/specs/` 를 선언하지 못한다. `lifecycle-evidence.md:12-13` 이 결정이고 intent B Q4 의 「researcher 도 선언」 문구는 이 판정으로 좁혀진다.** researcher 가 spec 을 쓸 수 있는가. intent B Q4(9/18)는 「`prd/specs/**` 를 고치는 researcher 도 task 선언을 해야 한다 — 그것이 원하는 바다」로 **전제**하고, `lifecycle-evidence.md:12-13`(9/09)은 「researcher 는 specs 를 추가해 통과시키지 않는다 · 부모가 쓴다」로 **금지**한다. colab-task/2 에서 researcher 는 트리 경로를 선언할 수 없으므로(`task_state.py:66-68`) 「researcher 가 spec 을 쓴다」는 legacy 선언으로만 가능하다. | intent B 대로 — WATCH 안이므로 legacy 선언 허용, `:12-13` 을 「legacy 선언으로만」으로 개정 | `:12-13` 대로 — `:189` 에 역할 조건 한 줄, researcher 는 어느 schema 에서도 `prd/specs/` 를 선언하지 못한다 | ⓑ — 이 spec 자체가 `:12-13` 의 절차(부모가 쓴다)로 만들어졌고, 9/17 관측이 문제였던 이유도 researcher 의 spec 쓰기였다. 그러나 두 문면 모두 Ted 의 것이라 spec 이 고를 수 없다 |
 | 4 | `.agents/roles/measurement-lane.md:34` 가 환경변수를 하나도 이름하지 않는다 — 측정 레인이 78 을 만나는 실제 자리. intent A 는 「역할 본문 변경」을 범위 밖으로 뒀다. | README 절을 가리키는 한 줄만 더한다(intent C 의 문서화 범위로 본다) | 건드리지 않는다 | ⓐ — 한 줄 링크는 역할 정의 변경이 아니다 |
 | 5 | `stop --role` 을 집합으로 받으면 `data['agent_type']` 이 곧 판정 역할이 된다. 페이로드를 위조한 프로세스가 역할을 고를 수 있다. | 그대로 간다 — ADR-0005 「훅은 신뢰 경계가 아니다」. 어차피 `:295` 가 task 기록의 역할·agent_id 와 대조한다 | 어댑터 규약을 바꿔 인자를 허용 | ⓐ — ⓑ 는 `config.py:153`·`agent-bridge.py:67` 두 규약을 흔든다 |
 
