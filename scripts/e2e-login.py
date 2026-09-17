@@ -41,6 +41,8 @@ def main():
     parser.add_argument("--extra-file", type=Path, action="append", default=[])
     parser.add_argument("--grid-file", type=Path, action="append", default=[])
     parser.add_argument("--connections", action="store_true", help="Verify project and lineage persistence")
+    parser.add_argument("--operator-login", action="store_true",
+                        help="Start the isolated browser as the seeded service operator")
     args = parser.parse_args()
     if not 1 <= args.core_port <= 65535:
         parser.error("--core-port must be between 1 and 65535")
@@ -82,8 +84,11 @@ def main():
         if args.upload_file and (not args.upload_file.is_file() or args.upload_file.stat().st_size == 0):
             raise RuntimeError("Upload fixture must exist and contain real bytes")
         credential = temp / "credentials.json"
-        credential.write_text(json.dumps({"e2e-researcher": {
-            "accountId": "000000000000000000000000A1",
+        login_name = "e2e-operator" if args.operator_login else "e2e-researcher"
+        login_account = ("00000000000000000000000AP1" if args.operator_login
+                         else "000000000000000000000000A1")
+        credential.write_text(json.dumps({login_name: {
+            "accountId": login_account,
             "labId": "0000000000000000000000000A",
             **hash_password(password).as_dict(),
         }}))
@@ -180,7 +185,7 @@ def main():
             if 'button "들어가기" [disabled' not in first:
                 raise RuntimeError("Empty login submission is not disabled")
             command("wait", '[data-testid="login-account-name"]')
-            command("fill", '[data-testid="login-account-name"]', "e2e-researcher")
+            command("fill", '[data-testid="login-account-name"]', login_name)
             command("fill", '[data-testid="login-password"]', "invalid-e2e-password", private=True)
             command("click", '[data-testid="login-submit"]')
             command("wait", "--text", "계정 또는 비밀번호가 맞지 않아요.")
@@ -202,11 +207,12 @@ def main():
                 spec = importlib.util.spec_from_file_location("colab_journey", args.journey.resolve())
                 journey = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(journey)
+                args.e2e_password = password
                 journey.run(command, args, session)
                 logged_in = command("snapshot", "-i")
             if args.inspect:
                 print(logged_in)
-            if args.inspect_upload or args.upload:
+            if not args.journey and (args.inspect_upload or args.upload):
                 upload = re.search(r'button "업로드" \[ref=(e\d+)\]', logged_in)
                 if not upload:
                     raise RuntimeError("Upload action missing")
@@ -343,7 +349,7 @@ def main():
             if cleanup_error:
                 raise RuntimeError("E2E browser cleanup failed") from cleanup_error
     print("PASS: empty login disabled; invalid login rejected; real login; reload persists session; logout returns to login; app/browser/temp cleanup completed")
-    if args.upload:
+    if not args.journey and args.upload:
         print("PASS: real supported-format upload and worker processing; missing description rejected; registration and metadata persist after reload.")
         print("PASS: rendered preview image loads before and after reload" if args.viz_python else "Map rendering not tested.")
 
@@ -359,8 +365,9 @@ if __name__ == "__main__":
             port = int(os.environ.get("COLAB_E2E_CORE_PORT", "8000"))
         app = create_app()
         if sys.argv[1] == "--serve-viz":
-            from fastapi.staticfiles import StaticFiles
-            app.mount("/previews", StaticFiles(directory=os.environ["COLAB_VIZ_PREVIEW_DIR"]), name="e2e-previews")
+            from e2e_preview_static import PreviewStaticFiles
+            app.mount("/previews", PreviewStaticFiles(
+                directory=os.environ["COLAB_VIZ_PREVIEW_DIR"]), name="e2e-previews")
 
         @app.middleware("http")
         async def identify_run(request, call_next):

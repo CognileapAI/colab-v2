@@ -717,9 +717,11 @@ components:
 
     RenderJob:
       type: object
-      required: [renderId, status]
+      required: [renderId, status, target]
       additionalProperties: false
       properties:
+        target:
+          $ref: "#/components/schemas/RenderTarget"
         renderId:
           $ref: "../schemas/common.json#/$defs/Ulid"
         status:

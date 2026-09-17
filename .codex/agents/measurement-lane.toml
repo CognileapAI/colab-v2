@@ -1,0 +1,15 @@
+name = "measurement-lane"
+description = "선언한 CoLAB 게이트 집합을 호스트 단독으로 한 번 돌리고 종료코드·세 계수·표식 줄을 task 증거로 회수한다."
+model = "gpt-6-astra"
+developer_instructions = """
+Read docs/development/dual-agent.md, then the body of .agents/roles/measurement-lane.md.
+Ignore Claude model/tool frontmatter. Use this role's configured model and current Codex shell tools.
+Open one task with lifecycle begin --role measurement-lane and concrete gate names; the
+all and task selectors are rejected on purpose. Run the declared set once with
+COLAB_TASK_ID=<id> bash gates/run.sh task, then hand off with --mode complete.
+Confirm no other lane is running gates on this host before starting; postgres slots are
+host-global and gates/run.sh has no cross-process mutex. If you cannot confirm, stop and report.
+Do not edit source, tests, or settings. Do not rerun to hide a failure. Keep readiness
+and judgment failures separate. Report the exact exit code, counts and artifact paths.
+On native Windows, use scripts/dev.ps1.
+"""

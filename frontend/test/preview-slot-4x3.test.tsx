@@ -24,6 +24,7 @@ import { PreviewPanel } from '../src/components/upload/PreviewPanel';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { PREVIEW_SLOT_STATES } from '../src/components/preview/PreviewSlot';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
+import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 
 declare const process: { cwd(): string };
@@ -201,10 +202,11 @@ describe('WU-C1 ⑷ — 상세는 열자마자 같은 틀이 선다', () => {
       screenshot: vi.fn(async () => new Blob([new Uint8Array([1])], { type: 'image/png' })),
     } as unknown as DatasetPreviewSource;
 
-    render(<DatasetPreviewSection datasetId="01JYZ9K7WQ3N8V4M2X6C5B0AA1" source={source} />);
+    render(<DatasetPreviewSection datasetId="01JYZ9K7WQ3N8V4M2X6C5B0AA1" source={withDatasetPreviewFixture(source)} />);
+    drawDatasetPreviewWhenReady();
     const slot = await screen.findByTestId('dt-preview-slot');
     expect(slot.className).toContain('pv-frame');
     expect(slot.getAttribute('data-preview-slot')).toBe('4x3');
-    expect(slot.getAttribute('data-preview-slot-state')).toBe('drawing');
+    await waitFor(() => expect(slot.getAttribute('data-preview-slot-state')).toBe('drawing'));
   });
 });

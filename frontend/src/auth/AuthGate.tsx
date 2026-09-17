@@ -88,7 +88,7 @@ export function AuthGate(props: { children: React.ReactNode }) {
     let alive = true;
     setUnreachable(false);
     void api
-      .GET('/me')
+      .GET('/me-v2')
       .then(({ data, response }) => {
         if (!alive) return;
         if (data) {

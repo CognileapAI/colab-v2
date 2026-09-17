@@ -6,12 +6,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Gnb } from './Gnb';
-import { OpenUploadContext, type OpenUploadRequest } from '../components/upload/openUpload';
+import { OpenUploadContext, type OpenUploadRequest, type SequencedOpenUploadRequest } from '../components/upload/openUpload';
 
 export function AppLayout() {
-  const [request, setRequest] = useState<{ seq: number; resumeUploadId?: string }>({ seq: 0 });
+  const [request, setRequest] = useState<SequencedOpenUploadRequest>({ seq: 0 });
   const open = useCallback((req?: OpenUploadRequest) => {
-    setRequest((cur) => ({ seq: cur.seq + 1, ...(req?.resumeUploadId ? { resumeUploadId: req.resumeUploadId } : {}) }));
+    setRequest((cur) => ({ seq: cur.seq + 1, ...req }));
   }, []);
   const value = useMemo(() => open, [open]);
 

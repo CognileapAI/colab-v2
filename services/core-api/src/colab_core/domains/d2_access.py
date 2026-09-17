@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -68,6 +69,7 @@ _SWITCHES = text("SELECT switch, enabled FROM d2_permission_switch WHERE account
 _ACCESS = text("""
     SELECT d.dataset_id,
            COALESCE(a.state, p.default_visibility, '열림')      AS state,
+           is_dataset_manager(COALESCE(l.value,a.lab_id,current_lab_id())) AS managed,
            COALESCE(v.verified, false)                          AS verified,
            EXISTS (
              SELECT 1 FROM d2_dataset_access_grant g
@@ -76,9 +78,10 @@ _ACCESS = text("""
                 AND g.expires_at > now()
            )                                                    AS granted
       FROM unnest(CAST(:ids AS char(26)[])) AS d(dataset_id)
+      LEFT JOIN jsonb_each_text(CAST(:labs AS jsonb)) l ON l.key = d.dataset_id
       LEFT JOIN d2_dataset_access a ON a.dataset_id = d.dataset_id
       LEFT JOIN d2_verified       v ON v.dataset_id = d.dataset_id
-      LEFT JOIN d1_lab_profile    p ON p.lab_id = current_lab_id()
+      LEFT JOIN d1_lab_profile    p ON p.lab_id = COALESCE(l.value,a.lab_id,current_lab_id())
 """)
 
 
@@ -122,6 +125,10 @@ def role_of(session: Session, account_id: Ulid) -> str | None:
 
 def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict[str, bool]:
     """교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6)."""
+    if is_system_manager(session):
+        return {s: True for s in SWITCHES}
+    if role is None:
+        return {s: False for s in SWITCHES}
     if role == "교수":
         return {s: True for s in SWITCHES}
     stored = {r.switch: r.enabled for r in
@@ -132,9 +139,14 @@ def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict
 class DatasetAccessAdapter:
     """`ports.DatasetAccessPort` 의 D2 쪽 구현. 조립은 app 이 한다."""
 
-    def __init__(self, session: Session, ownership: DatasetOwnershipPort) -> None:
+    #: 두 조립 입력은 **선택**이다 — 어느 하나가 없어도 나머지 판정은 그대로 선다.
+    #: `ownership` 은 비공개 소유자 갈래(`0032_private_owner_access`)를,
+    #: `dataset_labs` 는 관리자 갈래(`0033_admin_body_access`)의 대상 연구실을 준다.
+    def __init__(self, session: Session, ownership: DatasetOwnershipPort | None = None,
+                 dataset_labs=None) -> None:
         self._session = session
         self._ownership = ownership
+        self._dataset_labs = dataset_labs
 
     def verification(self, dataset_ids: list[Ulid]) -> dict[str, DatasetVerification]:
         if not dataset_ids:
@@ -157,8 +169,10 @@ class DatasetAccessAdapter:
     def dataset_access(self, dataset_ids: list[Ulid]) -> dict[str, DatasetAccess]:
         if not dataset_ids:
             return {}
-        rows = self._session.execute(_ACCESS, {"ids": [str(i) for i in dataset_ids]}).mappings()
-        owned = self._ownership.owned_dataset_ids(dataset_ids)
+        labs = self._dataset_labs(dataset_ids) if self._dataset_labs else {}
+        rows = self._session.execute(_ACCESS, {"ids": [str(i) for i in dataset_ids],
+                                               "labs": json.dumps(labs)}).mappings()
+        owned = self._ownership.owned_dataset_ids(dataset_ids) if self._ownership else set()
         out: dict[str, DatasetAccess] = {}
         for r in rows:
             open_ = r["state"] == "열림"
@@ -166,7 +180,9 @@ class DatasetAccessAdapter:
                 access_state=r["state"],
                 verified=bool(r["verified"]),
                 # 잠겨 있어도 허용 목록에 있으면 본체에 닿는다 (P-25 만료 포함).
-                body_accessible=bool(open_ or r["granted"] or r["dataset_id"] in owned),
+                # 관리자(교수·시스템)와 비공개 소유자도 같은 자리에서 본체에 닿는다.
+                body_accessible=bool(open_ or r["granted"] or r["managed"]
+                                     or r["dataset_id"] in owned),
             )
         return out
 
@@ -428,7 +444,7 @@ def can_decide_verification(session: Session, account_id: Ulid) -> bool:
     `승인 위임` 스위치를 보지 않는 것이 이 함수의 요점이다. 위의 것과 같은 판정으로
     묶으면 위임 연구원에게 배지 권한이 새고, 그건 화면에서 조용하다.
     """
-    return role_of(session, account_id) == "교수"
+    return is_manager(session, account_id)
 
 
 def pending_access_request_of(session: Session, dataset_id: Ulid, requester_id: Ulid) -> str | None:
@@ -682,7 +698,7 @@ def can_delete_dataset(session: Session, *, account_id: Ulid, owner_id: str | No
     """
     if owner_id is not None and str(owner_id).strip() == str(account_id):
         return True
-    return role_of(session, account_id) == "교수"
+    return is_manager(session, account_id)
 
 
 def count_pending_access_requests(session: Session, dataset_id: Ulid) -> int:
@@ -739,3 +755,17 @@ def restore_access(session: Session, dataset_id: Ulid, snapshot: AccessRow | Non
         "dataset_id": str(dataset_id), "state": snapshot.state,
         "updated_at": snapshot.updated_at,
     })
+
+
+def is_system_manager(session: Session) -> bool:
+    subject = session.info.get("subject")
+    return bool(subject and subject.operator)
+
+
+def is_manager(session: Session, account_id: Ulid) -> bool:
+    return is_system_manager(session) or role_of(session, account_id) == "교수"
+
+
+def access_request_lab(session: Session, request_id: str) -> str | None:
+    return session.execute(text("SELECT lab_id FROM d2_dataset_access_request WHERE id=:id"),
+                           {"id": request_id}).scalar_one_or_none()

@@ -11,7 +11,7 @@
   ⑴ `searchedCount` = **결과와 같은 유효 스코프**에서 센 값. 판정은 라우트가 쓰는 것과
      같은 스코프(`read_only_scope(..., operator_read=subject.operator)`)를 시험이 직접 열어
      센 값과 대조한다 — 상수 2·3 을 시험에 박으면 시드가 바뀔 때 오라클이 거짓이 된다.
-  ⑵ `labName` = **유효 연구실 집합의 표기**. 운영자는 상단 칩과 같은 말(「전체 연구실 (읽기 전용)」),
+  ⑵ `labName` = **유효 연구실 집합의 표기**. 운영자는 상단 칩과 같은 말(「전체 연구실」),
      일반 구성원은 소속 연구실 이름.
 
 green-by-skip 방지(spec §8-6 ⑵) = **연구실 2개 ＋ 양쪽에 데이터셋**이 전제다. 한 연구실만 심으면
@@ -31,9 +31,9 @@ from colab_core.app.main import API_PREFIX
 SEARCH = f"{API_PREFIX}/dataset-searches"
 TERMS = ["강우"]
 
-#: 운영자 범위 표기 — 상단 셸 칩(`frontend/src/shell/Gnb.tsx` 앵커 `연구실 전환 · 전체 연구실 (읽기 전용)`)과
+#: 운영자 범위 표기 — 상단 셸 칩(`frontend/src/shell/Gnb.tsx` 앵커 `연구실 전환 · 전체 연구실`)과
 #: **같은 말**이다. 두 자리가 다른 말을 하면 사용자가 같은 범위를 두 이름으로 읽는다.
-OPERATOR_SCOPE_LABEL = "전체 연구실 (읽기 전용)"
+OPERATOR_SCOPE_LABEL = "전체 연구실"
 OPERATOR_TOKEN = "lth-operator-token"
 
 

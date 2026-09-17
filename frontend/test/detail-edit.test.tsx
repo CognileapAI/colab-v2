@@ -169,6 +169,76 @@ describe('§2 WU-A3 — `수정` 진입점은 `업로드·편집` 이 켜진 사
 // ── 수용 기준 ② 이름만 바꾸면 이름만 간다 ─────────────────────────────────────
 
 describe('§2 WU-A3 — 부분 수정: 보내지 않은 열쇠는 안 건드린다', () => {
+  const PRECISE: DatasetDetail = {
+    ...BASE,
+    basicInfo: {
+      ...BASE.basicInfo!,
+      period: {
+        start: '2025-06-01T23:30:45Z',
+        end: '2025-09-30T04:05:06Z',
+        granularity: '분',
+      },
+    },
+  };
+
+  it('분 단위 기간 draft와 낙관 갱신은 원래 시각을 보존한다', () => {
+    const draft = toDraft(PRECISE);
+    expect(draft.periodStart).toBe('2025-06-01T23:30:45Z');
+    expect(draft.periodEnd).toBe('2025-09-30T04:05:06Z');
+    expect(toPatch(PRECISE, draft)).toEqual({});
+    expect(toPatch(PRECISE, { ...draft, summary: '다른 칸' })).toEqual({ summary: '다른 칸' });
+    expect(applyDraft(PRECISE, draft).basicInfo!.period).toEqual(PRECISE.basicInfo!.period);
+  });
+
+  it('분 단위 기간은 기존 팝오버에서 시·분까지 확인하고 수정한다', async () => {
+    const form = await openForm({ detail: PRECISE });
+    await click(within(form).getByTestId('edit-period-open'));
+    expect(screen.getByTestId('reg-period-pop-start-hour')).toHaveValue('23');
+    expect(screen.getByTestId('reg-period-pop-start-minute')).toHaveValue('30');
+    expect(screen.queryByTestId('reg-period-pop-start-second')).toBeNull();
+  });
+
+  it('팝오버를 열어 그대로 적용하면 숨은 초를 보존하고 period를 보내지 않는다', async () => {
+    const dep = deferredUpdateSource();
+    const form = await openForm({ detail: PRECISE, updateSource: dep.source });
+    await click(within(form).getByTestId('edit-period-open'));
+    await click(screen.getByTestId('reg-period-unit-분'));
+    await click(screen.getByTestId('reg-period-apply'));
+    await click(screen.getByTestId('detail-edit-save'));
+    expect(dep.calls[0]!.patch).toEqual({});
+  });
+
+  it('분을 바꿔 적용하면 등록 화면 규칙대로 초를 00으로 정리한다', async () => {
+    const dep = deferredUpdateSource();
+    const form = await openForm({ detail: PRECISE, updateSource: dep.source });
+    await click(within(form).getByTestId('edit-period-open'));
+    await type(screen.getByTestId('reg-period-pop-start-minute') as HTMLInputElement, '35');
+    await click(screen.getByTestId('reg-period-apply'));
+    await click(screen.getByTestId('detail-edit-save'));
+    expect(dep.calls[0]!.patch.period).toEqual({
+      start: '2025-06-01T23:35:00Z',
+      end: '2025-09-30T04:05:00Z',
+      granularity: '분',
+    });
+  });
+
+  it('단위 미지정·끝 없음 기간도 무수정 적용 뒤 다른 칸만 보낸다', async () => {
+    const detail: DatasetDetail = {
+      ...PRECISE,
+      basicInfo: {
+        ...PRECISE.basicInfo!,
+        period: { start: '2025-06-01T23:30:45Z', end: null, granularity: null },
+      },
+    };
+    const dep = deferredUpdateSource();
+    const form = await openForm({ detail, updateSource: dep.source });
+    await click(within(form).getByTestId('edit-period-open'));
+    await click(screen.getByTestId('reg-period-apply'));
+    await type(field(form, 'edit-summary'), '다른 칸');
+    await click(screen.getByTestId('detail-edit-save'));
+    expect(dep.calls[0]!.patch).toEqual({ summary: '다른 칸' });
+  });
+
   it('이름만 고쳐 저장하면 요청 몸통의 열쇠가 `name` **하나**다', async () => {
     const up = deferredUpdateSource();
     const form = await openForm({ updateSource: up.source });
@@ -214,21 +284,21 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
   //   주세요」로 안내하므로 그 안내가 실행 가능하려면 두 칸이 이 폼에 있어야 한다.
   //   ⛔ 두 칸은 **Lv 로 가리지 않는다** — 서버가 Lv 를 안 보므로(PRD-19) 가리면 Lv1 이상
   //      행의 저장된 값을 고칠 길이 사라진다. 그래서 이 수가 장면마다 흔들리지 않는다.
-  it('폼의 입력 칸은 이름·설명·원천 표기·출처 주소·내려받은 날·좌표계·격자 설명·기간(시작·끝)·관측 간격 **열 개**다', async () => {
+  it('폼의 텍스트 입력 여덟 칸과 기간 팝오버 진입이 선다', async () => {
     const form = await openForm();
     const inputs = within(form).getAllByRole('textbox');
     const dates = form.querySelectorAll('input[type="date"]');
-    expect(inputs.length + dates.length).toBe(10);
+    expect(inputs.length + dates.length).toBe(8);
     for (const id of ['edit-name', 'edit-summary', 'edit-sourceLabel',
                       'edit-sourceUrl', 'edit-sourceDownloadedOn', 'edit-crs',
-                      'edit-gridDescription',
-                      'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
+                      'edit-gridDescription', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }
+    expect(within(form).getByTestId('edit-period-open')).toBeTruthy();
     // 셀렉트는 **넷**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17) ·
     // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 ·
     // ⭑ ⟨정정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉴⟩ 가공 단계 ／ 종전 ~~셋~~.
-    expect(form.querySelectorAll('.de-inline select')).toHaveLength(4);
+    expect(form.querySelectorAll('.de-inline select')).toHaveLength(3);
   });
 
   it('`주제` 는 상세에 **표시되지만** 편집 칸이 없다', async () => {
@@ -262,9 +332,8 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
 describe('§2 WU-A3 — NULL 인 칸은 빈 칸으로 열린다', () => {
   it('설명·원천 표기·좌표계·기간이 NULL 이면 전부 빈 문자열이다', async () => {
     const form = await openForm({ detail: NULLED });
-    const empties = ['edit-summary', 'edit-sourceLabel', 'edit-crs',
-                     'edit-period-start', 'edit-period-end'];
-    expect(empties).toHaveLength(5);
+    const empties = ['edit-summary', 'edit-sourceLabel', 'edit-crs'];
+    expect(empties).toHaveLength(3);
     for (const id of empties) expect(field(form, id).value).toBe('');
     // 이름은 NULL 이 될 수 없다 — 그대로 찬다
     expect(field(form, 'edit-name').value).toBe(NULLED.name);
@@ -275,8 +344,7 @@ describe('§2 WU-A3 — NULL 인 칸은 빈 칸으로 열린다', () => {
     expect(field(form, 'edit-summary').value).toBe(BASE.summary);
     expect(field(form, 'edit-sourceLabel').value).toBe(BASE.basicInfo!.sourceLabel);
     expect(field(form, 'edit-crs').value).toBe(BASE.basicInfo!.crs);
-    expect(field(form, 'edit-period-start').value).toBe('2025-06-01');
-    expect(field(form, 'edit-period-end').value).toBe('2025-09-30');
+    expect(within(form).getByTestId('edit-period-open')).toHaveTextContent('2025-06 ~ 09');
   });
 });
 

@@ -32,6 +32,7 @@ SHA="$(cat "$DIST/colab-v2-dev.sha")"
 # ⭑ 운영 소스 번들 사슬도 한 벌이다 — prod 가 같은 함수를 부른다(`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
+. "$REPO/infra/_lib/repo-bundle.sh"
 ship_gate_source_ancestor "$REPO" "$SHA" dev
 SOURCE_REF="$SHIP_GATE_SOURCE_REF"
 SOURCE_SHA="$SHIP_GATE_SOURCE_SHA"
@@ -39,6 +40,7 @@ ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-dev-$SHA.tar"
 [ -f "$TAR" ] || { echo "tar 가 없다: $TAR — build.sh 먼저" >&2; exit 2; }
+repo_bundle_build "$REPO" "$SHA" "$FULL_SHA" "$DIST"
 ops_bundle_build "$REPO" "$SHA" "$DIST"
 OPS_TAR="$OPS_BUNDLE_TAR"
 OPS_MANIFEST="$OPS_BUNDLE_MANIFEST"
@@ -48,6 +50,7 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" "$(ops_bundle_prepare_cmd)"
 "${SCP[@]}" "$TAR" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$OPS_TAR" "$OPS_MANIFEST" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
+"${SCP[@]}" "$REPO_TGZ" "$REPO_MANIFEST" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$COLAB_RELEASE_PRE_EVIDENCE" "$COLAB_DEV_SSH:/opt/colab-v2/RELEASE_PRE.json"
 "${SSH[@]}" 'chmod 0600 /opt/colab-v2/RELEASE_PRE.json'
 # ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈400〉`-㉳-⑶).
@@ -60,6 +63,7 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
+  $(repo_bundle_remote_snippet "$FULL_SHA" "$(basename "$REPO_TGZ")" "$(basename "$REPO_MANIFEST")") && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:dev-$SHA colab-v2/\$u:dev; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
   echo $FULL_SHA > /opt/colab-v2/CURRENT_FULL_SHA && \

@@ -108,7 +108,7 @@ def test_create_project_writes_into_the_own_lab_only(client: TestClient, sql) ->
                     json={"type": "논문", "name": "a1 가 만든 논문", "period": {"start": "2026-03", "end": None}})
     assert r.status_code == 201
     body = r.json()
-    assert body["status"] == "진행 중" and body["period"]["start"] == "2026-03"
+    assert body["status"] == "진행 중" and body["period"]["start"] == "2026-03-01"
     listed = client.get(f"{API_PREFIX}/datasets", headers=auth("b1-prof-token")).json()
     assert listed["totalCount"] == 1, "쓴 것이 다른 연구실로 새지 않았는지 함께 본다."
     # 「응답이 그럴듯한가」와 「행이 남았는가」는 다른 질문이다 (`conftest.sql` 주석).

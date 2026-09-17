@@ -43,11 +43,26 @@ def test_selected_file_concept_reaches_real_search_and_revoked_body_disappears(s
     assert response.status_code==200,response.text
     hit=next((i for i in response.json()['items'] if i['datasetId']==sources[0]),None)
     assert hit is not None and '온톨로지' in hit['rationale'] and '강수' in hit['rationale'],response.json()
+    # ⭑ **⟨2026-09-18 · 어드바이저 지적⟩ 이 시험의 `TOKEN_B` 음성은 「회수」의 증거가 아니다.**
+    #   실측으로 확인했다 — **잠그기 전에도** `TOKEN_B` 의 검색 결과는 빈 집합이다. `sources` 는
+    #   A 연구실 자료이고 `TOKEN_B` 는 B 연구실 교수라 **연구실 경계**가 먼저 지운다.
+    #   따라서 잠근 뒤의 `TOKEN_B` 음성은 **처음부터 공허**했다(이 병합이 만든 결함은 아니다).
+    #   아래 한 줄이 그 사실을 실행 가능한 형태로 못박는다 — 경계 음성을 회수 음성으로 읽지 않는다.
+    assert search(client,TOKEN_B).json()['items']==[], '잠그기 전에도 타 연구실에는 0건이다'
     sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,current_lab_id(),'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'",{'id':sources[0]})
-    assert sources[0] not in {i['datasetId'] for i in search(client,TOKEN_PROF).json()['items']}
-    # Owner still has body access; an unrelated same-lab user does not inherit it.
+    # ⭑ ⟨2026-09-18 develop 동기화⟩ 잠근 뒤 검색에 남는 주체가 둘이다 —
+    #   소유자(연구원 · `0032_private_owner_access`)와 자기 연구실 관리자(교수 · `0033_admin_body_access`).
+    assert sources[0] in {i['datasetId'] for i in search(client,TOKEN_PROF).json()['items']}
     assert sources[0] in {i['datasetId'] for i in search(client).json()['items']}
-    assert sources[0] not in {i['datasetId'] for i in search(client,TOKEN_B).json()['items']}
+    # 경계는 잠금과 **무관하게** 그대로다 — 위 잠금 전 단언과 같은 값이어야 한다.
+    assert search(client,TOKEN_B).json()['items']==[]
+    # ⚠ **열린 질문 — 이 시험에는 「회수 음성」이 없다.** 이 병합에서 `TOKEN_PROF` 음성을
+    #   양성으로 바꾸면서(교수 = 연구실 관리자) HTTP 층에 남은 음성은 위의 **경계** 하나뿐이다.
+    #   「회수되면 검색에서 사라진다」를 여기서 재려면 관리자도 소유자도 아닌 **같은 연구실**
+    #   주체의 토큰이 필요한데 시드에 그런 계정이 없다(`conftest.ACC_A_OUTSIDER` 는 SQL 층 전용).
+    #   갈래 = ⑴ 픽스처에 일반 구성원 토큰을 신설해 이 자리를 그 주체로 다시 세운다,
+    #   ⑵ 이 시험의 회수 판정을 걷고 `test_search_facts`·`test_search_ontology` 의 SQL 층에 맡긴다.
+    #   임의로 고르지 않는다 — 보고서 「후속 커밋」 절과 인계 요약에 올려 사람에게 넘겼다.
 
 
 def test_changed_source_is_not_searchable_through_old_selection(sources,sql,session_factory,p2_client):

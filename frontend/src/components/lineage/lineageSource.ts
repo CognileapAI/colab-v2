@@ -33,7 +33,7 @@ function candidateQuery(input: LineageCandidateQuery): LineageCandidateQuery {
   };
 }
 
-export function apiLineageSource(): LineageSource {
+export function apiLineageSource(targetLabId?: string): LineageSource {
   return {
     async suggestions(uploadId, q): Promise<LineageSuggestionResponse> {
       const r = await api.GET('/uploads/{uploadId}/lineage-suggestions', {
@@ -54,7 +54,7 @@ export function apiLineageSource(): LineageSource {
       const query: LineageCandidateQuery = typeof input === 'number'
         ? { processingLevel: input }
         : input ?? {};
-      const r = await api.GET('/lineage-candidates', { params: { query: candidateQuery(query) } });
+      const r = await api.GET('/lineage-candidates', { headers: targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {}, params: { query: candidateQuery(query) } });
       if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
       return r.data;
     },

@@ -54,6 +54,7 @@ dev-package/reports/dev-reseed-runs/
 .claude/worktrees/
 /.codex/worktrees/
 /.codex/upload-preview-audit/
+/.codex/artifacts/
 
 # headroom 의 세션·머신 전용 상태(래핑 표식·소유자·lock). 한 번 커밋되면 체크아웃마다
 # 남의 세션 상태가 따라와 서로 덮어쓴다. 사용자 글로벌 ignore 에만 두면 다른 머신에서

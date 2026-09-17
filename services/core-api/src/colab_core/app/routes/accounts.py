@@ -4,13 +4,14 @@ import datetime as dt
 import re
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from ...kernel import errors
 from ...kernel.auth import Subject
+from ...kernel.authn import LoginAttempt
 from ...kernel.db_credentials import (
     OperatorChangeRefused, ServiceAccountRow, normalize_login_name)
 from ...kernel.ids import Ulid
@@ -23,8 +24,8 @@ router = APIRouter()
 class AccountCreate(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     name: str = Field(min_length=1, max_length=128)
-    labId: str
-    role: str
+    labId: str | None = None
+    role: str | None = None
     initialPassword: str = Field(min_length=10, max_length=512)
     #: 발급과 동시에 관리자로 등록할지. **생략하면 아니다** — 기본값이 관대한 쪽으로
     #: 떨어지지 않게 한다. 기존 호출자는 이 칸을 몰라도 그대로 돈다(추가만).
@@ -47,6 +48,16 @@ class OperatorChange(BaseModel):
     """관리자 지정·해제. 켜고 끄는 것 하나뿐이라 값도 하나다."""
     model_config = ConfigDict(extra="forbid")
     operator: bool
+
+class LoginThrottleClear(BaseModel):
+    """잠금을 풀 **계정 하나**. 지울 열쇠를 호출자가 지어내지 못한다.
+
+    ⚠ 원시 버킷 열쇠를 받지 않는다 — 받는 순간 운영자 한 명이 클라이언트 버킷을 포함한
+    아무 열쇠나 지울 수 있고, 그것은 제한을 끄는 스위치다. 열쇠는 **로그인이 쓰는 함수**가
+    이 이메일에서 만든다.
+    """
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=320)
 
 def _admin(request: Request):
     factory = request.app.state.account_admin_factory
@@ -92,13 +103,31 @@ def account_options(request: Request, subject: Subject = Depends(current_subject
 @router.post("/admin/accounts", name="createServiceAccount", status_code=201)
 def create_account(body: AccountCreate, request: Request,
                    subject: Subject = Depends(current_subject)) -> dict:
+    return _create_account(body, request, subject, allow_labless=False)
+
+
+@router.post("/admin/accounts-v2", name="createServiceAccountV2", status_code=201)
+def create_account_v2(body: AccountCreate, request: Request,
+                      subject: Subject = Depends(current_subject)) -> dict:
+    return _create_account(body, request, subject, allow_labless=True)
+
+
+def _create_account(body: AccountCreate, request: Request, subject: Subject,
+                    *, allow_labless: bool) -> dict:
     _require_operator(request, subject)
     email = normalize_login_name(body.email)
     if re.fullmatch(r"[^@\s]+@(?:[^@\s.]+\.)+[^@\s.]+", email) is None:
         raise errors.bad_request("이메일 형식이 맞지 않는다.")
-    if not Ulid.is_valid(body.labId):
+    affiliated = body.labId is not None or body.role is not None
+    if not allow_labless and not affiliated:
+        raise errors.bad_request("이 API에서는 연구실과 역할이 필요하다. 무소속 관리자는 v2 API를 사용한다.")
+    if not body.operator and not affiliated:
+        raise errors.bad_request("일반 계정은 연구실과 역할이 필요하다.")
+    if (body.labId is None) != (body.role is None):
+        raise errors.bad_request("연구실과 역할은 함께 지정하거나 함께 비워야 한다.")
+    if body.labId is not None and not Ulid.is_valid(body.labId):
         raise errors.bad_request("연구실 ID가 정규 ID가 아니다.")
-    if body.role not in ("교수", "연구원"):
+    if body.role is not None and body.role not in ("교수", "연구원"):
         raise errors.bad_request("역할은 교수 또는 연구원이다.")
     account_id = Ulid.generate()
     made = hash_password(body.initialPassword)
@@ -107,7 +136,7 @@ def create_account(body: AccountCreate, request: Request,
     try:
         with _admin(request).begin() as db:
             db.execute(text("SELECT pg_advisory_xact_lock(1131379081)"))
-            if db.execute(text("SELECT 1 FROM d1_lab WHERE id=:id"),
+            if body.labId is not None and db.execute(text("SELECT 1 FROM d1_lab WHERE id=:id"),
                           {"id": body.labId}).first() is None:
                 raise errors.not_found("연구실을 찾지 못했다.")
             if db.execute(text("SELECT 1 FROM d1_account WHERE lower(btrim(email))=:email"),
@@ -116,8 +145,9 @@ def create_account(body: AccountCreate, request: Request,
             db.execute(text("INSERT INTO d1_account(id,lab_id,name,email) VALUES (:id,:lab,:name,:email)"),
                        {"id": str(account_id), "lab": body.labId,
                         "name": body.name.strip(), "email": email})
-            db.execute(text("INSERT INTO d2_member_role(account_id,lab_id,role) VALUES (:id,:lab,:role)"),
-                       {"id": str(account_id), "lab": body.labId, "role": body.role})
+            if body.labId is not None:
+                db.execute(text("INSERT INTO d2_member_role(account_id,lab_id,role) VALUES (:id,:lab,:role)"),
+                           {"id": str(account_id), "lab": body.labId, "role": body.role})
             db.execute(text("""
                 INSERT INTO account_admin.login_credential
                   (account_id,login_name,kdf,salt,password_hash,n,r,p)
@@ -143,15 +173,33 @@ def list_accounts(request: Request,
     """전 연구실 한 목록. **운영자 전용 경로의 등재된 경계 예외**다 — 이 목록이 연구실로
     좁혀지면 운영자가 다른 연구실 계정을 되살릴 길이 없다.
     """
+    return _list_accounts(request, labId, status, role, email, subject, allow_labless=False)
+
+
+@router.get("/admin/accounts-v2", name="listServiceAccountsV2")
+def list_accounts_v2(request: Request,
+                     labId: str | None = Query(default=None),
+                     status: str | None = Query(default=None),
+                     role: str | None = Query(default=None),
+                     email: str | None = Query(default=None, max_length=320),
+                     subject: Subject = Depends(current_subject)) -> dict:
+    return _list_accounts(request, labId, status, role, email, subject, allow_labless=True)
+
+
+def _list_accounts(request: Request, lab_id: str | None, status: str | None,
+                   role: str | None, email: str | None, subject: Subject,
+                   *, allow_labless: bool) -> dict:
     _require_operator(request, subject)
-    if labId is not None and not Ulid.is_valid(labId):
+    if lab_id is not None and not Ulid.is_valid(lab_id):
         raise errors.bad_request("연구실 ID가 정규 ID가 아니다.")
     if status is not None and status not in ("active", "inactive"):
         raise errors.bad_request("상태는 active 또는 inactive 다.")
     if role is not None and role not in ("교수", "연구원"):
         raise errors.bad_request("역할은 교수 또는 연구원이다.")
     rows = _credentials(request).list_accounts(
-        lab_id=labId, status=status, role=role, email=email)
+        lab_id=lab_id, status=status, role=role, email=email)
+    if not allow_labless and any(row.lab_id is None or row.lab_name is None for row in rows):
+        raise errors.conflict("조회 결과에 무소속 관리자가 있다. v2 API를 사용한다.")
     return {"accounts": [_as_json(row) for row in rows]}
 
 
@@ -206,6 +254,42 @@ def set_account_operator(accountId: str, body: OperatorChange, request: Request,
     if changed is None:
         raise errors.not_found("계정을 찾지 못했다.")
     return {"accountId": accountId, "operator": changed}
+
+
+@router.post("/admin/login-throttle/clear", name="clearLoginThrottle",
+             status_code=204, response_class=Response)
+def clear_login_throttle(body: LoginThrottleClear, request: Request,
+                         subject: Subject = Depends(current_subject)) -> Response:
+    """잠긴 계정의 로그인 시도 셈을 운영자가 지운다.
+
+    **이 엔드포인트가 유일한 길이다.** 시도 제한은 프로세스 메모리에 있고
+    (`kernel/throttle.py` — 분산 저장처는 이 회차 범위 밖이다), 그래서 프로세스 밖의
+    스크립트·SQL 로는 그 dict 에 닿지 못한다. 종전에 잠긴 사람을 풀어 주는 조치는
+    **웹 서버 재시작**뿐이었고, 그것은 다른 모든 사용자의 셈까지 지운다.
+
+    ⚠ **열쇠를 여기서 지어내지 않는다** — 로그인이 세는 자리(`IssuerChain.rate_limit_key`)와
+    같은 함수로 만든다. 두 곳이 각자 만들면 해제가 조용히 아무것도 안 지우고 204 만 낸다.
+
+    ⚠ **없는 계정도 204** 다. 「그 계정은 없다」·「그 계정은 잠겨 있지 않았다」를 가르면
+    이 자리가 계정 열거 통로가 된다 — 로그인이 401 하나로 접어 둔 것을 옆문으로 여는 셈이다.
+
+    ⓝ 여러 워커로 뜨면 셈도 해제도 **그 프로세스 안에서만** 유효하다. 한계의 자리는
+    `kernel/throttle.py` 이고, 이 op 이 그 한계를 새로 만들지 않는다.
+    """
+    _require_operator(request, subject)
+    limiter = request.app.state.login_limiter
+    keys = {f"name:{normalize_login_name(body.email)}"}
+    issuer = request.app.state.session_issuer
+    key_for = getattr(issuer, "rate_limit_key", None)
+    if key_for is not None:
+        try:
+            keys.add(key_for(LoginAttempt(account_name=body.email, password="")))
+        except SQLAlchemyError:
+            raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
+                                  "세션 저장소에 연결할 수 없다.") from None
+    # **지워진 수를 응답에 싣지 않는다** — 그 수가 곧 「그 계정이 잠겨 있었다」는 사실이다.
+    limiter.clear_many(keys)
+    return Response(status_code=204)
 
 
 @router.put("/me/password", name="changeOwnPassword")

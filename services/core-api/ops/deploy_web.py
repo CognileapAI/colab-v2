@@ -3,7 +3,8 @@
 
 AWS CLI 를 쓰지 않는다 — `kernel/s3.py`(자작 SigV4) 가 이미 있고 신규 런타임 의존 0 이 규율이다.
 제품 패키지 밖(`ops/`)이라 배포 이미지에 실리지 않는다. 자격증명은 `kernel/aws_credentials.py` 사슬
-(env → ECS → IMDS) — 운영자 키(`S3.md §1` 2)로 로컬에서 돌린다.
+(env → 명시 AWS_PROFILE 정적/session 자격 → ECS → IMDS). 명시 profile 실패 시 다른 자격으로
+넘어가지 않는다. SSO·assume-role은 지원하지 않는다. profile을 지정하지 않으면 기존 사슬을 쓴다.
 
 규칙
   · 확장자별 `Content-Type` — 모르는 확장자는 **거부**한다(`application/octet-stream` 으로 접지 않는다 —
@@ -17,6 +18,7 @@ AWS CLI 를 쓰지 않는다 — `kernel/s3.py`(자작 SigV4) 가 이미 있고 
 from __future__ import annotations
 
 import argparse
+import configparser
 import os
 import pathlib
 import sys
@@ -82,6 +84,39 @@ def sync(items: list[Upload], client: Any) -> int:
     return total
 
 
+def deployment_credentials():
+    """배포 도구만 명시 profile을 읽는다. None은 기존 런타임 공급자 사슬을 유지한다."""
+    from colab_core.kernel.sigv4 import Credentials
+
+    access = os.environ.get("AWS_ACCESS_KEY_ID")
+    secret = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if access and secret:
+        return Credentials(access, secret, os.environ.get("AWS_SESSION_TOKEN") or None)
+    profile = os.environ.get("AWS_PROFILE")
+    if profile is None:
+        return None
+    try:
+        path = pathlib.Path(os.environ.get("AWS_SHARED_CREDENTIALS_FILE") or pathlib.Path.home() / ".aws" / "credentials").expanduser()
+        config = configparser.ConfigParser(interpolation=None)
+        with path.open(encoding="utf-8") as stream:
+            config.read_file(stream)
+        # AWS profiles do not inherit missing credentials from ConfigParser's DEFAULT identity.
+        config.defaults().clear()
+        if not profile or not config.has_section(profile):
+            raise ValueError
+        section = config[profile]
+        if any(key.startswith("sso_") or key in {"role_arn", "source_profile", "credential_source", "credential_process"}
+               for key in section):
+            raise ValueError
+        access = section.get("aws_access_key_id")
+        secret = section.get("aws_secret_access_key")
+        if not access or not secret:
+            raise ValueError
+        return Credentials(access, secret, section.get("aws_session_token") or None)
+    except (OSError, UnicodeError, configparser.Error, ValueError):
+        raise ValueError("AWS_PROFILE 자격을 읽지 못했다. credentials 파일의 정적/session 자격만 지원하며 SSO·assume-role은 지원하지 않는다.") from None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dist", required=True, help="빌드 산출물 디렉터리 (frontend/dist)")
@@ -100,7 +135,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     from colab_core.kernel.s3 import S3Client  # noqa: E402
 
-    client = S3Client(bucket=a.bucket, region=a.region)
+    try:
+        creds = deployment_credentials()
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 78
+    client = S3Client(bucket=a.bucket, region=a.region, creds=creds)
     total = sync(items, client)
     print(f"올렸다: {len(items)} 파일 · {total} B → s3://{a.bucket} (index.html 마지막)")
     return 0

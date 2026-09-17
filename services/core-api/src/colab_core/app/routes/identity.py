@@ -17,19 +17,31 @@ router = APIRouter()
 def get_current_account(request: Request,
                         subject: Subject = Depends(current_session_subject),
                         db: Session = Depends(session_scoped_db)) -> dict:
+    return _get_current_account(request, subject, db, allow_labless=False)
+
+
+@router.get("/me-v2", name="getCurrentAccountV2")
+def get_current_account_v2(request: Request,
+                           subject: Subject = Depends(current_session_subject),
+                           db: Session = Depends(session_scoped_db)) -> dict:
+    return _get_current_account(request, subject, db, allow_labless=True)
+
+
+def _get_current_account(request: Request, subject: Subject, db: Session,
+                         *, allow_labless: bool) -> dict:
     account = d1_identity.find_account(db, subject.account_id)
     if account is None:
         # 주체가 가리키는 계정이 이 연구실에 없다 — RLS 가 이미 지운 뒤다.
         raise errors.unauthorized("주체에 해당하는 계정이 경계 안에 없다.")
     role = d2_access.role_of(db, subject.account_id)
-    if role is None:
+    if role is None and (not subject.operator or not allow_labless):
         raise errors.unauthorized("역할이 배정되지 않은 계정이다.")
     return {
         "accountId": account["id"],
         "name": account["name"],
         "email": account["email"],
         "role": role,
-        "permissions": d2_access.permissions_of(db, subject.account_id, role),
+        "permissions": d2_access.permissions_of(db, subject.account_id, role) if role or subject.operator else {},
         "labId": account["lab_id"],
         "labName": account["lab_name"],
         "mustChangePassword": subject.must_change_password,

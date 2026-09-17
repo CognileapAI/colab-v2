@@ -199,7 +199,7 @@ describe('§7 잠김 (허용 안 됨) — 헤더 요약 + 잠김 안내만', () 
     const body = screen.getByTestId('locked-body-slot');
     expect(within(body).getByText('이름과 요약까지만 보여요')).toBeInTheDocument();
     expect(
-      within(body).getByText('요청하면 교수 또는 승인을 맡은 연구원이 검토해요.'),
+      within(body).getByText('요청하면 교수 관리자 또는 승인을 맡은 연구원이 검토해요.'),
     ).toBeInTheDocument();
     // ⭑ **WU-P6 이 접근 요청 버튼의 실물을 채웠다.** 종전 시험은 자리가 비어 있음을
     // 오라클로 삼았다 — 이제 **버튼이 실제로 선다**를 본다 (`Policy_승인_처리 §8` 잠긴 상태 행).

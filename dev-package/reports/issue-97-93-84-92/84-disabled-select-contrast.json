@@ -1,0 +1,36 @@
+{
+  "issue": "#84 / spec 우려 #5",
+  "claim": "disabled 연구실·역할 select text keeps >= 4.5:1 contrast",
+  "route": "http://127.0.0.1:5199/account-admin",
+  "state": "operator checkbox CHECKED (ac-operator) -> ac-lab / ac-role disabled",
+  "method": "agent-browser get styles <selector>; opacity composited over parent card background, then WCAG 2.x relative-luminance ratio",
+  "measured": {
+    "selectors": [
+      "[data-testid=ac-lab]",
+      "[data-testid=ac-role]"
+    ],
+    "both_identical": true,
+    "color": "rgb(18, 22, 25)",
+    "background-color": "rgb(255, 255, 255)",
+    "opacity": 0.7,
+    "parent_card_background": "rgb(255, 255, 255) (.account-card)",
+    "source_of_opacity": "Chrome UA stylesheet select:disabled; no 0.7 opacity rule exists in frontend/src/**/*.css"
+  },
+  "composited": {
+    "effective_text": [
+      89.1,
+      91.9,
+      94.0
+    ],
+    "effective_background": [
+      255.0,
+      255.0,
+      255.0
+    ]
+  },
+  "enabled_ratio": 18.19,
+  "disabled_ratio": 6.74,
+  "threshold": 4.5,
+  "verdict": "pass - no new CSS rule added",
+  "screenshot": "84-operator-checked-selects-disabled.png"
+}

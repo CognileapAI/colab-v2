@@ -5,7 +5,7 @@ import importlib.util
 
 import pytest
 from sqlalchemy import text
-from conftest import LAB_A, LAB_B, ACC_A_RES, ACC_A_PROF, ACC_B_PROF
+from conftest import LAB_A, LAB_B, ACC_A_RES, ACC_A_PROF, ACC_A_OUTSIDER, ACC_B_PROF
 from test_search_changes import sources, scoped
 from test_search_facts import evidence
 from test_search_ontology import manifest
@@ -463,15 +463,18 @@ def test_concurrent_issue_converges_on_one_generation_and_payload(prepared, sess
     assert sql('SELECT count(*) AS n FROM d3_knowledge_source WHERE dataset_id=:id', {'id': prepared.dataset_id})[0]['n'] == 1
 
 
-def test_private_access_revocation_hides_payload_and_denies_issue(prepared, session_factory, sql):
-    actor = principal(ACC_A_PROF)
+def test_private_access_revocation_hides_payload_and_denies_issue(prepared, session_factory, sql,
+                                                                  outsider_account):
+    # ⭑ ⟨2026-09-18 develop 동기화⟩ 교수는 이제 자기 연구실 관리자라 잠금이 그를 막지 않는다.
+    #   회수가 **실제로 가린다**는 이 시험의 요지는 관리자도 소유자도 아닌 주체에서만 선다.
+    actor = principal(ACC_A_OUTSIDER)
     command = issue(session_factory, prepared, actor)
     sql("""INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,:lab,'잠김')
       ON CONFLICT (dataset_id) DO UPDATE SET state='잠김'""", {'id':prepared.dataset_id,'lab':LAB_A})
     assert validate(session_factory, command, actor) == 'forbidden'
     with pytest.raises(ValueError):
         issue(session_factory, prepared, actor)
-    with scoped(session_factory, account=ACC_A_PROF) as s:
+    with scoped(session_factory, account=ACC_A_OUTSIDER) as s:
         for table in ('d3_knowledge_source','d3_knowledge_grant'):
             assert s.execute(text(f'SELECT count(*) FROM {table} WHERE dataset_id=:id'), {'id':prepared.dataset_id}).scalar_one() == 0
 

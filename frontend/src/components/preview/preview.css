@@ -362,6 +362,18 @@
   min-width: 0;
 }
 
+/* 타일은 전부 absolute라 내용 높이를 만들지 않는다. 4:3 틀이 이미 가진 높이를 지도 행과
+   열에 전달해 viewport 측정과 최초 타일 선택이 0px에서 멈추지 않게 한다. */
+.pv-frame .pv-map {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pv-frame .pv-mapcol {
+  align-self: stretch;
+  min-height: 0;
+}
+
 /* 확대/이동 자리도 같은 틀 안에서 비율을 지킨다(`useZoomPan` 동작 무변). */
 .pv-frame .pv-viewport {
   flex: 1 1 auto;
@@ -380,14 +392,54 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
 }
 .pv-pick-f {
   display: inline-flex;
+  flex: 0 1 180px;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.pv-pick-f .sel {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pv-pick-f > span {
   font-size: 13px;
+  white-space: nowrap;
+}
+.pv-pick-values {
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: 13px;
+}
+.pv-pick-values summary {
+  cursor: pointer;
+}
+.pv-pick-values dl {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+}
+.pv-pick-values dl > div {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+}
+.pv-pick-values dt {
+  font-weight: 700;
+}
+.pv-pick-values dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── 자립형 벡터 배경 (WU-C5 · 축 ①-⑤b) ────────────────────────────────────

@@ -61,7 +61,8 @@ def _register(client, upload_id: str, *, name: str, token: str = TOKEN_RES) -> s
     response = client.post(
         f"{API_PREFIX}/datasets",
         json={"uploadId": upload_id, "name": name, "summary": "격자 편의 시험 설명",
-              "category": "기상·기후 인자", "dataType": "재분석자료"},
+              "category": "기상·기후 인자", "dataType": "재분석자료",
+              "observationInterval": {"value": 10, "unit": "분"}},
         headers=auth(token),
     )
     assert response.status_code == 201, response.text

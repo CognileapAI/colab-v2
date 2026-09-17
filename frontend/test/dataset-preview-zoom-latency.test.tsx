@@ -1,3 +1,4 @@
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 /**
  * S-05 미리보기 **확대·이동 반응 시간** 합격선 — 정본 `Policy_데이터셋_상세` v2.6 `§8`
  * 「확대(줌)」 조건 ⑺ 축자(`PLAN-SoT §9 〈233〉`).
@@ -48,6 +49,8 @@ const DONE: RenderJob = {
 function makeSource(): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -62,6 +65,7 @@ function makeSource(): DatasetPreviewSource {
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
+  drawDatasetPreviewWhenReady();
   return render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>

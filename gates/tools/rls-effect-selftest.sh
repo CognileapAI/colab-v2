@@ -69,6 +69,14 @@ expect red "rls-effect ①: 둘째 층을 PERMISSIVE 로(두 층이 OR 로 무�
   mut "DROP POLICY body_access ON d3_file;
        CREATE POLICY body_access ON d3_file FOR ALL USING (false);"
 
+# 새 관리자 예외도 정상 동작과 범위 제한을 모두 판정한다.
+expect red "rls-effect: 교수 예외 제거" \
+  mut "CREATE OR REPLACE FUNCTION is_dataset_manager(target_lab char(26)) RETURNS boolean LANGUAGE sql STABLE AS \$fn\$ SELECT COALESCE(current_setting('app.operator_manage',true),'')='on' \$fn\$;"
+expect red "rls-effect: 시스템 관리자 예외 제거" \
+  mut "CREATE OR REPLACE FUNCTION is_dataset_manager(target_lab char(26)) RETURNS boolean LANGUAGE sql STABLE AS \$fn\$ SELECT EXISTS(SELECT 1 FROM d2_member_role WHERE account_id=current_account_id() AND lab_id=target_lab AND role='교수') \$fn\$;"
+expect red "rls-effect: 모든 사용자에게 관리자 예외 확대" \
+  mut "CREATE OR REPLACE FUNCTION is_dataset_manager(target_lab char(26)) RETURNS boolean LANGUAGE sql STABLE AS \$fn\$ SELECT true \$fn\$;"
+
 # ── ② 메타 양성 (P-13 회귀) ─────────────────────────────────────────────────
 expect red "rls-effect ②: 잠김을 메타까지 RLS 로 얹음(P-13 회귀)" \
   mut "CREATE POLICY body_access ON d3_dataset AS RESTRICTIVE FOR ALL USING (

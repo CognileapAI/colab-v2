@@ -12,6 +12,8 @@
 //    「만들기 직전이 이 경계가 필요한 유일한 순간이다」. 목록 설명에 섞지 않는다.
 //  · **연결 주소는 설명·기간과 다른 묶음**이다 (`§1.2`·`§8`). `계보` 표시를 붙인 카드로 뗀다.
 //  · 주소 모양이 아니어도 **막지 않는다** (`§9`) — 논문 고유 번호처럼 주소가 아닌 값도 받는다.
+import { useAccount } from '../../permission/session';
+import { TargetLabSelect } from '../common/TargetLabSelect';
 import { useId, useState } from 'react';
 import { useWorkProtection } from '../../auth/useWorkProtection';
 import { useDialogFocus } from '../common/useDialogFocus';
@@ -19,8 +21,12 @@ import type { ProjectCreate, ProjectDetail, ProjectType, ProjectUpdate } from '.
 
 const TYPES: ProjectType[] = ['국가과제', '논문'];
 
-/** `YYYY-MM` 두 칸. 계약 `ProjectPeriod` 는 연·월까지다 — 일자를 받지 않는다 (`§5`). */
+/** `YYYY-MM-DD` 두 칸. 예전 `YYYY-MM` 응답은 해당 달 1일로 표시한다. */
 type Period = { start: string; end: string };
+
+function dateInput(value: string | null | undefined): string {
+  return value && value.length === 7 ? `${value}-01` : value ?? '';
+}
 
 type PeriodBody = { start: string | null; end: string | null } | null;
 
@@ -35,9 +41,11 @@ export type ProjectFormMode =
 
 export function ProjectFormModal(props: {
   mode: ProjectFormMode;
-  onSubmit(input: ProjectCreate | ProjectUpdate): Promise<void>;
+  onSubmit(input: ProjectCreate | ProjectUpdate, targetLabId?: string): Promise<void>;
   onClose(): void;
 }) {
+  const account = useAccount();
+  const [targetLabId, setTargetLabId] = useState('');
   const editing = props.mode.kind === '정보 수정' ? props.mode.detail : null;
   const titleId = useId();
 
@@ -45,16 +53,16 @@ export function ProjectFormModal(props: {
   const [name, setName] = useState(editing?.name ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
   const [period, setPeriod] = useState<Period>({
-    start: editing?.period?.start ?? '',
-    end: editing?.period?.end ?? '',
+    start: dateInput(editing?.period?.start),
+    end: dateInput(editing?.period?.end),
   });
   const [link, setLink] = useState(editing?.link ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const initial = {
     type: editing?.type ?? '국가과제', name: editing?.name ?? '',
-    description: editing?.description ?? '', start: editing?.period?.start ?? '',
-    end: editing?.period?.end ?? '', link: editing?.link ?? '',
+    description: editing?.description ?? '', start: dateInput(editing?.period?.start),
+    end: dateInput(editing?.period?.end), link: editing?.link ?? '',
   };
   const dirty = type !== initial.type || name !== initial.name || description !== initial.description ||
     period.start !== initial.start || period.end !== initial.end || link !== initial.link;
@@ -75,6 +83,7 @@ export function ProjectFormModal(props: {
       setError('종료가 시작보다 앞서요. 다시 골라 주세요.');
       return;
     }
+    if (!editing && account?.canManageServiceAccounts && !targetLabId) { setError('대상 연구실을 선택해 주세요.'); return; }
     setError(null);
     setBusy(true);
     try {
@@ -86,7 +95,7 @@ export function ProjectFormModal(props: {
       };
       // **`type` 은 수정 본문에 넣지 않는다** — 계약이 그 열쇠를 갖고 있지 않고,
       // 서버는 계약에 없는 필드를 400 으로 되돌린다 (`routes/project.py::update_project`).
-      await props.onSubmit(editing ? common : { ...common, type });
+      await props.onSubmit(editing ? common : { ...common, type }, !editing && account?.canManageServiceAccounts ? targetLabId : undefined);
       props.onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장하지 못했어요.');
@@ -106,6 +115,7 @@ export function ProjectFormModal(props: {
         </div>
 
         <div className="pj-modal-b">
+          {!editing && account?.canManageServiceAccounts ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId} disabled={busy}/> : null}
           {/* F-04 대상 블록 — 무엇을 고치고 있는지가 폼 위에 먼저 보인다 (목업 `target`) */}
           {editing ? (
             <div className="pj-target" data-testid="project-form-target">
@@ -144,6 +154,7 @@ export function ProjectFormModal(props: {
             <label htmlFor={`${titleId}-name`}>이름</label>
             <input
               id={`${titleId}-name`}
+              data-testid="project-name"
               className="pj-inp"
               value={name}
               maxLength={100}
@@ -161,7 +172,7 @@ export function ProjectFormModal(props: {
           )}
 
           <div className="pj-row">
-            <label htmlFor={`${titleId}-desc`}>설명</label>
+            <label htmlFor={`${titleId}-desc`}>설명 (최대 500자)</label>
             <textarea
               id={`${titleId}-desc`}
               className="pj-tarea"
@@ -177,16 +188,18 @@ export function ProjectFormModal(props: {
             <div className="pj-2col">
               <input
                 id={`${titleId}-start`}
+                data-testid="project-period-start"
                 className="pj-inp"
-                type="month"
+                type="date"
                 value={period.start}
                 onChange={(e) => setPeriod((p) => ({ ...p, start: e.target.value }))}
               />
               <span className="pj-tilde">~</span>
               <input
                 className="pj-inp"
-                type="month"
+                type="date"
                 aria-label="종료"
+                data-testid="project-period-end"
                 value={period.end}
                 onChange={(e) => setPeriod((p) => ({ ...p, end: e.target.value }))}
               />

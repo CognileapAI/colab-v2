@@ -29,6 +29,7 @@ datasets:
   summary: 기상청 HSR 합성 반사도 원본
   format: bin(gzip)
   level: Lv0
+  preview_expected: 미측정(판정 5종 밖)
   globs:
   - 01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_*.bin.gz
   expect_files: 10
@@ -43,6 +44,7 @@ datasets:
   summary: 지상 격자 15분 누적강수 원본
   format: NetCDF4
   level: Lv0
+  preview_expected: 미측정
   globs:
   - 01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_*.nc
   expect_files: 10
@@ -57,6 +59,7 @@ datasets:
   summary: WGS84 변환·crop 한 HSR 전처리 자료
   format: npy
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/01.precipitation/01.precipitation/Lv.1/hsr_sample.npy
   expect_files: 1
@@ -72,6 +75,7 @@ datasets:
   summary: WGS84 변환·crop 한 rn15 전처리 자료
   format: npy
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/01.precipitation/01.precipitation/Lv.1/rn15_sample.npy
   expect_files: 1
@@ -87,6 +91,7 @@ datasets:
   summary: U-Net 기반 강수 예측 결과
   format: npy
   level: Lv2
+  preview_expected: 미측정
   globs:
   - 01.level-data/01.precipitation/01.precipitation/Lv.2/pred_sample.npy
   expect_files: 1
@@ -103,6 +108,7 @@ datasets:
   summary: GK-2A AMI 일 단위 식생 원본
   format: NetCDF4
   level: Lv0
+  preview_expected: 미측정(판정 5종 밖)
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_*.nc
   expect_files: 31
@@ -117,6 +123,7 @@ datasets:
   summary: GK-2A 기반 2023-05 월평균 NDVI
   format: GeoTIFF
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.1/GK2A_NDVI_mean_202305.tif
   expect_files: 1
@@ -132,6 +139,7 @@ datasets:
   summary: 검증용 HLS S30 2023-05 월평균 NDVI
   format: GeoTIFF
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/HLS_S30_NDVI_mean_202305.tif
   expect_files: 1
@@ -144,6 +152,7 @@ datasets:
   summary: 100 m 수치표고모형 입력
   format: GeoTIFF
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/DEM.tif
   expect_files: 1
@@ -156,6 +165,7 @@ datasets:
   summary: DEM 에서 산출한 100 m 경사향
   format: GeoTIFF
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/Aspect.tif
   expect_files: 1
@@ -169,6 +179,7 @@ datasets:
   summary: 2023년 연 단위 토지피복지도
   format: GeoTIFF
   level: Lv1
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/LULC_2023.tif
   expect_files: 1
@@ -181,6 +192,7 @@ datasets:
   summary: U-Net 기반 100 m 일 단위 NDVI 예측
   format: npy
   level: Lv2
+  preview_expected: 미측정
   globs:
   - 01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_2023*.npy
   expect_files: 31
@@ -200,6 +212,7 @@ datasets:
   summary: 4주 SPI 유의구간 벡터 (L1 Calibrated)
   format: GeoPackage
   level: Lv1
+  preview_expected: 미성립(포맷 미지원 · 판정 표에 이름으로)
   globs:
   - 01.level-data/03.drought/03.drought/Lv.1/SPI_4weeks_sig_wide.gpkg
   expect_files: 1
@@ -212,6 +225,7 @@ datasets:
   summary: 4주 SPEI 유의구간 벡터 (L1 Calibrated)
   format: GeoPackage
   level: Lv1
+  preview_expected: 미성립(포맷 미지원 · 판정 표에 이름으로)
   globs:
   - 01.level-data/03.drought/03.drought/Lv.1/SPEI_4weeks_sig_wide.gpkg
   expect_files: 1
@@ -224,6 +238,7 @@ datasets:
   summary: ERA5 지표 변수 GRIB 원본
   format: GRIB1
   level: Lv0
+  preview_expected: 렌더 성립(3패스 중 1회)
   globs:
   - 02.File-format/file_format_1_grib/00.Data/surface.grib
   expect_files: 1
@@ -238,6 +253,7 @@ datasets:
   summary: GRIB 에서 변환한 slhf·ssr·str 시각별 배열
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_1_grib/02.Results/slhf/ERA5_*_*.npy
   - 02.File-format/file_format_1_grib/02.Results/ssr/ERA5_*_*.npy
@@ -255,6 +271,7 @@ datasets:
   summary: GK-2A 지표온도 10분 간격 원본
   format: NetCDF4
   level: Lv0
+  preview_expected: 렌더 성립(3패스 중 1회)
   globs:
   - 02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_*.nc
   expect_files: 143
@@ -269,6 +286,7 @@ datasets:
   summary: nc 에서 변환한 지표온도 배열
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_2_nc/02.Results/gk2a_ami_le2_lst_ko_*.npy
   expect_files: 143
@@ -284,6 +302,7 @@ datasets:
   summary: HSR 합성 바이너리 원본
   format: bin(gzip)
   level: Lv0
+  preview_expected: '**렌더 미성립(3패스 전부)**'
   globs:
   - 02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_*.bin.gz
   expect_files: 12
@@ -298,6 +317,7 @@ datasets:
   summary: bin 에서 변환한 합성 반사도 배열
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_*.npy
   expect_files: 12
@@ -313,6 +333,7 @@ datasets:
   summary: HLS S30 T51SYB 타일 밴드 3종
   format: GeoTIFF
   level: Lv0
+  preview_expected: '**렌더 미성립(3패스 전부)**'
   globs:
   - 02.File-format/file_format_4_tif/00.Data/HLS.S30.T51SYB.*.tif
   expect_files: 3
@@ -327,6 +348,7 @@ datasets:
   summary: HLS S30 T52SCE 타일 밴드 3종
   format: GeoTIFF
   level: Lv0
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_4_tif/00.Data/HLS.S30.T52SCE.*.tif
   expect_files: 3
@@ -341,6 +363,7 @@ datasets:
   summary: T51SYB 타일 밴드 3종의 변환 배열
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_4_tif/02.Results/HLS.S30.T51SYB.*.npy
   expect_files: 3
@@ -356,6 +379,7 @@ datasets:
   summary: T52SCE 타일 밴드 3종의 변환 배열
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_4_tif/02.Results/HLS.S30.T52SCE.*.npy
   expect_files: 3
@@ -371,6 +395,7 @@ datasets:
   summary: 폴더명 hdf5 · 실물 HDF4. h27v05 타일 4일치
   format: HDF4
   level: Lv0
+  preview_expected: '**렌더 미성립(3패스 전부)**'
   globs:
   - 02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.*.h27v05.*.hdf
   expect_files: 4
@@ -385,6 +410,7 @@ datasets:
   summary: 폴더명 hdf5 · 실물 HDF4. h28v05 타일 4일치
   format: HDF4
   level: Lv0
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.*.h28v05.*.hdf
   expect_files: 4
@@ -399,6 +425,7 @@ datasets:
   summary: 폴더명 hdf5 · 실물 HDF4. h27v05 변수 6종 × 4일
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.*.h27v05.*.npy
   expect_files: 24
@@ -414,6 +441,7 @@ datasets:
   summary: 폴더명 hdf5 · 실물 HDF4. h28v05 변수 6종 × 4일
   format: npy
   level: Lv1
+  preview_expected: 미판정 대상
   globs:
   - 02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.*.h28v05.*.npy
   expect_files: 24

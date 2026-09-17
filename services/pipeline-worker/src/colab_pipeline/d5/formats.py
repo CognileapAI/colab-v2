@@ -25,9 +25,8 @@ GRIB 이 빠지고 GeoTIFF 가 들어오며, HDF 는 실측상 HDF4 다 (SEED-DA
 이미 독립 포맷으로 들여놨다. **두 목록은 수가 같고 구성이 달랐다.** 합집합으로 적는다.
 **숫자로 세지 말고 목록으로 읽는다** — 여기서 실제로 한 번 틀렸다.
 
-⚠ **GRIB 은 지원하되 그릴 수 없다.** 결정 2-3 이 스스로 적었다 — 「5종이어도 grib 은
-미리보기 대상이 아니다(미리보기는 bin·nc·tif·HDF)」. 따라서 이 포맷이
-`SUPPORTED_FORMATS` 와 `RENDERABLE_FORMATS` 를 **처음으로 가른다**(`renderable.py`).
+GRIB은 지원하며 viz-render의 실제 판독·렌더 경로도 있다. 그릴 수 있는 범위는
+`renderable.py`가 소유한다.
 """
 from __future__ import annotations
 

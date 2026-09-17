@@ -72,7 +72,7 @@ def _require_lab_settings(db: Session, subject: Subject) -> bool:
     permissions = d2_access.permissions_of(db, subject.account_id, role)
     if not permissions.get("연구실 설정", False):
         raise errors.forbidden("`연구실 설정` 권한이 없다 — 구성원·권한은 그 자리 하나다 (P-18).")
-    return role == "교수"
+    return d2_access.is_manager(db, subject.account_id)
 
 
 def _grid(db: Session, *, viewer_is_professor: bool,

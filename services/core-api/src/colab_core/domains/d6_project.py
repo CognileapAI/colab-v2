@@ -46,10 +46,11 @@ _USES = text("""
 #: 데이터셋은 개별 파일이라 업로더·파일명으로 구분된다.
 #:
 #: ⚠ **DB 유니크 제약이 아직 없다** — 넣으려면 마이그레이션이고 기존 행에 중복이 있으면
-#: 실패한다. 지금은 응용 층이 지키고, **경계는 RLS 가 이미 걸어** 남의 연구실 이름은 안 보인다.
+#: 실패한다. 지금은 응용 층이 지키고, **대상 연구실을 명시하여** 전역 목록 권한과 이름 중복 판단을 분리한다.
 _NAME_TAKEN = text("""
     SELECT 1 FROM d6_project
-     WHERE btrim(lower(name)) = btrim(lower(:name))
+     WHERE lab_id = current_lab_id()
+       AND btrim(lower(name)) = btrim(lower(:name))
        AND (CAST(:exclude_id AS char(26)) IS NULL OR id <> CAST(:exclude_id AS char(26)))
      LIMIT 1
 """)

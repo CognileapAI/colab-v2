@@ -123,8 +123,8 @@ def test_draft_evidence_stays_candidate_without_binding(kit,sources,sql):
 
 
 def test_access_revoked_after_read_rejects_completion(kit,sources,sql,session_factory):
-    from conftest import ACC_A_PROF
-    other=make_tools(session_factory,account=ACC_A_PROF)
+    from conftest import ACC_A_OUTSIDER
+    other=make_tools(session_factory,account=ACC_A_OUTSIDER)
     h=next(j['handle'] for j in other.claim() if j['source_kind']=='file')
     other.read(h)
     sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,current_lab_id(),'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'",{'id':sources[0]})

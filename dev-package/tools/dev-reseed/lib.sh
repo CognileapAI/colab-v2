@@ -40,7 +40,8 @@ remote_assign() { printf '%s=$(printf %%s %s | base64 -d)\n' "$1" "$(b64_of "${2
 # ── 로그 ─────────────────────────────────────────────────────────────────
 # 단계마다 자기 로그 파일을 쓴다. 실패 보고에 그 경로를 그대로 싣는다.
 log() {
-  printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | redact | tee -a "${STAGE_LOG:-/dev/null}"
+  # 진단은 stderr, 명령의 stdout은 호출자가 파싱하는 결과다.
+  printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | redact | tee -a "${STAGE_LOG:-/dev/null}" >&2
 }
 
 warn() { log "⚠ $*"; }

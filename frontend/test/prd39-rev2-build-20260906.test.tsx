@@ -11,7 +11,7 @@
  *
  * ⚠ **HUD 는 값 조회를 대체하지 않는다** — 둘이 함께 서고 출처 라벨(`역산값` · `셀값`)이 다르다.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -46,6 +46,7 @@ import type {
   UploadSources,
 } from '../src/components/upload/types';
 import type { LineageSource } from '../src/components/lineage/types';
+import type { ProjectSource as DetailProjectSource } from '../src/components/project/types';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
@@ -201,6 +202,9 @@ describe('PRD-39 ① — 파일 분석 3단계 표시와 완료 전 `다음` 비
     await dropFiles([makeFile('a.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     expect(screen.getByTestId('reg-next')).not.toBeDisabled();
   });
 });
@@ -272,6 +276,9 @@ describe('PRD-39 ③ — 파일을 빼면 즉시 반영되고 초기화를 알�
     await dropFiles([makeFile('a.nc'), makeFile('c.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     // ⭑ ⟨WU-B3⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다(PRD-12).
     fireEvent.click(screen.getByRole('button', { name: /^③/ }));
     await act(async () => {});
@@ -321,6 +328,69 @@ describe('PRD-39 ⑩ — 접근 구역이 값의 출처를 말한다', () => {
     );
   });
 
+  it('상세에서 후보 프로젝트를 붙이고 서버 재조회 신호를 보낸다', async () => {
+    const link = vi.fn().mockResolvedValue(undefined);
+    const changed = vi.fn();
+    const projects = {
+      list: async () => ({ items: [{ projectId: 'P1', name: '홍수 과제', type: '국가과제' }], totalCount: 1 }),
+      link,
+    } as unknown as DetailProjectSource;
+    render(<MemoryRouter><UsageSection detail={DETAIL} projectSource={projects} canManage onChanged={changed} /></MemoryRouter>);
+    fireEvent.click(await screen.findByTestId('usage-project-add'));
+    expect(link).toHaveBeenCalledWith('P1', DATASET_ID);
+    await waitFor(() => expect(changed).toHaveBeenCalledTimes(1));
+  });
+
+  it('종료 프로젝트도 연결 후보로 조회한다', async () => {
+    const list = vi.fn().mockResolvedValue({ items: [], totalCount: 0 });
+    render(<MemoryRouter><UsageSection detail={DETAIL} projectSource={{ list } as unknown as DetailProjectSource} canManage /></MemoryRouter>);
+    await waitFor(() => expect(list).toHaveBeenCalled());
+    expect(list.mock.calls[0]?.[0]).toMatchObject({ status: '전체' });
+  });
+
+  it('연결 실패는 기존 프로젝트 목록을 보존하고 오류를 보인다', async () => {
+    const linked = { ...DETAIL, projects: [{ projectId: 'OLD', name: '기존 과제', type: '국가과제', period: null, usageNote: null }] } as unknown as DatasetDetail;
+    const projects = { list: async () => ({ items: [{ projectId: 'P1', name: '새 과제', type: '국가과제' }], totalCount: 1 }), link: async () => { throw new Error('fail'); } } as unknown as DetailProjectSource;
+    render(<MemoryRouter><UsageSection detail={linked} projectSource={projects} canManage /></MemoryRouter>);
+    fireEvent.click(await screen.findByTestId('usage-project-add'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('연결을 바꾸지 못했어요');
+    expect(screen.getByText('기존 과제')).toBeInTheDocument();
+  });
+
+  it('연결 권한이 없으면 붙이기와 해제 조작을 숨긴다', async () => {
+    const linked = { ...DETAIL, projects: [{ projectId: 'OLD', name: '기존 과제', type: '국가과제', period: null, usageNote: null }] } as unknown as DatasetDetail;
+    render(<MemoryRouter><UsageSection detail={linked} projectSource={{} as DetailProjectSource} canManage={false} /></MemoryRouter>);
+    expect(screen.queryByTestId('usage-project-add')).toBeNull();
+    expect(screen.queryByTestId('usage-project-unlink-OLD')).toBeNull();
+  });
+
+  it('해제 성공은 기존 DELETE를 호출하고 상세 재조회를 요청한다', async () => {
+    const linked = { ...DETAIL, projects: [{ projectId: 'OLD', name: '기존 과제', type: '국가과제', period: null, usageNote: null }] } as unknown as DatasetDetail;
+    const unlink = vi.fn().mockResolvedValue(undefined); const changed = vi.fn();
+    const projects = { list: async () => ({ items: [], totalCount: 0 }), unlink } as unknown as DetailProjectSource;
+    render(<MemoryRouter><UsageSection detail={linked} projectSource={projects} canManage onChanged={changed} /></MemoryRouter>);
+    fireEvent.click(screen.getByTestId('usage-project-unlink-OLD'));
+    await waitFor(() => expect(changed).toHaveBeenCalledTimes(1));
+    expect(unlink).toHaveBeenCalledWith('OLD', DATASET_ID);
+  });
+
+  it('해제 실패는 현재 연결을 보존하고 상세 재조회를 하지 않는다', async () => {
+    const linked = { ...DETAIL, projects: [{ projectId: 'OLD', name: '기존 과제', type: '국가과제', period: null, usageNote: null }] } as unknown as DatasetDetail;
+    const changed = vi.fn();
+    const projects = { list: async () => ({ items: [], totalCount: 0 }), unlink: async () => { throw new Error('fail'); } } as unknown as DetailProjectSource;
+    render(<MemoryRouter><UsageSection detail={linked} projectSource={projects} canManage onChanged={changed} /></MemoryRouter>);
+    fireEvent.click(screen.getByTestId('usage-project-unlink-OLD'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('연결을 바꾸지 못했어요');
+    expect(screen.getByText('기존 과제')).toBeInTheDocument();
+    expect(changed).not.toHaveBeenCalled();
+  });
+
+  it('프로젝트 목록 조회 실패를 빈 목록으로 숨기지 않는다', async () => {
+    const projects = { list: async () => { throw new Error('fail'); } } as unknown as DetailProjectSource;
+    render(<MemoryRouter><UsageSection detail={DETAIL} projectSource={projects} canManage /></MemoryRouter>);
+    expect(await screen.findByRole('alert')).toHaveTextContent('목록을 불러오지 못했어요');
+  });
+
   it('다운로드가 되는 사람에게 출처 문장이 함께 선다', () => {
     render(
       <MemoryRouter>
@@ -359,6 +429,9 @@ describe('PRD-39 ⑫ — 행동 줄이 바닥에 고정되고 할 일을 말한�
     await dropFiles([makeFile('a.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+    fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+    fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
     expect(screen.getByTestId('reg-foot-hint')).toHaveTextContent(FOOT_HINTS[1]);
     fireEvent.click(screen.getByTestId('reg-next'));
     await act(async () => {});

@@ -309,14 +309,15 @@ def _patch_state(client, dataset_id, state, token):
                         headers=auth(token))
 
 
-def test_a_non_owner_cannot_narrow_the_access_state(p2_client) -> None:
+def test_a_non_owner_cannot_narrow_the_access_state(p2_client, sql) -> None:
     """소유자가 아니면 **403** 이다. `업로드·편집` 스위치를 가졌어도 그렇다.
 
     red 만드는 법 — `catalog.require_owner_for_downgrade` 호출 한 줄을 지운다.
     """
     client = p2_client()
     dataset_id = _register_with(client, accessState="열림").json()["datasetId"]
-    r = _patch_state(client, dataset_id, "잠김", TOKEN_PROF)   # 교수 = 스위치 보유 · 비소유자
+    sql("UPDATE d3_dataset SET owner_account_id=:owner WHERE id=:id", {"owner": ACC_A_PROF, "id": dataset_id})
+    r = _patch_state(client, dataset_id, "잠김", TOKEN_RES)   # 교수 = 스위치 보유 · 비소유자
     assert r.status_code == 403, r.text
     assert "소유자" in r.text
 

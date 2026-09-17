@@ -131,6 +131,7 @@ export function VariableTable(props: {
                     aria-label={`변수 ${i + 1}`}
                     data-testid={`vt-name-${i}`}
                     ref={(node) => { nameInputs.current[i] = node; }}
+                    placeholder="예: tp"
                     value={row.name}
                     onChange={(e) => change(i, { name: e.target.value })}
                   />
@@ -145,6 +146,7 @@ export function VariableTable(props: {
                       className="inp"
                       aria-label={`${VARIABLE_COLUMNS[CELL_KEYS.indexOf(key) + 1]} ${i + 1}`}
                       data-testid={`vt-${key}-${i}`}
+                      placeholder={key === 'unit' ? 'mm' : key === 'valueRange' ? '0 ~ 240' : '2.4 %'}
                       value={row[key] ?? ''}
                       onChange={(e) => change(i, { [key]: e.target.value } as Partial<VariableRow>)}
                     />

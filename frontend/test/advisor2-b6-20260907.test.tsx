@@ -175,6 +175,8 @@ async function goStep(n: '①' | '②' | '③') {
 
 async function pickLevel(value: string) {
   await goStep('①');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
   await change(screen.getByTestId('reg-level'), value);
 }
 

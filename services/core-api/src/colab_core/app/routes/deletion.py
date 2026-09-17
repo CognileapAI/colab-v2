@@ -35,6 +35,7 @@ from ...domains import d2_access, d3_audit, d3_catalog, d4_lineage, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
+from ...kernel.scope import target_lab
 from ...kernel.observability import structured_event
 from ..deps import current_subject, scoped_db
 from ..relay import RelayRefused, RelayUnavailable
@@ -264,7 +265,7 @@ def delete_dataset(request: Request, datasetId: str,
               datasetId=str(dataset_id))
     else:
         try:
-            result = previews.reclaim_previews(lab_id=str(subject.lab_id),
+            result = previews.reclaim_previews(lab_id=target_lab(db),
                                                account_id=str(subject.account_id),
                                                target_id=str(dataset_id),
                                                file_ids=file_ids)

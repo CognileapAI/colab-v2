@@ -33,7 +33,13 @@ def test_private_owner_can_read_files_and_save_evidence(p2_client):
     # Independent requests must observe persisted evidence after the write.
     again = client.get(path + "/search-evidence", headers=auth(TOKEN_RES))
     assert again.json()["items"][0]["evidence"]["source"]["text"] == "검증용 합성 파일"
-    for token in (TOKEN_PROF, TOKEN_B):
-        for suffix in ("/files", "/search-evidence", f"/files/{item['fileId']}/download"):
-            response = client.get(path + suffix, headers=auth(token))
-            assert response.status_code in (403, 404), response.text
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 같은 연구실 교수는 이제 막히지 않는다.**
+    #   `0033_admin_body_access` 이후 교수는 자기 연구실의 **관리자**이고, 다른 구성원의
+    #   「나만 보기」 자료까지 관리한다(intent `2026-09-16-admin-full-access` Q7 · Ted 승인).
+    #   종전의 「소유자 말고는 전부 거절」 전제는 그 결정으로 개정됐다 — 그래서 여기서는
+    #   **연구실 경계**(타 연구실 교수)만 음성으로 남기고, 같은 연구실 관리자는 양성으로 적는다.
+    for suffix in ("/files", "/search-evidence", f"/files/{item['fileId']}/download"):
+        allowed = client.get(path + suffix, headers=auth(TOKEN_PROF))
+        assert allowed.status_code == 200, allowed.text
+        denied = client.get(path + suffix, headers=auth(TOKEN_B))
+        assert denied.status_code in (403, 404), denied.text

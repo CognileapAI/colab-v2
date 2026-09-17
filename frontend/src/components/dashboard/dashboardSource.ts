@@ -26,7 +26,7 @@ function fail(body: Envelope, fallback: string): never {
  */
 const UNSETTLED = UNSETTLED_LINEAGE_STATES;
 
-export function apiDashboardSource(): DashboardSource {
+export function apiDashboardSource(targetLabId?: string): DashboardSource {
   return {
     async summary() {
       const r = await api.GET('/dashboard/summary', {});
@@ -46,7 +46,7 @@ export function apiDashboardSource(): DashboardSource {
     },
     // `GET /lab` 배선은 `components/lab/labSource.ts` 한 곳뿐이다 — 연구실 설정 탭이
     // 같은 값을 읽으므로 배선을 두 벌 두면 갈라진다 (계약 `getLab` 산문).
-    lab: apiLabSource().read,
+    lab: apiLabSource(targetLabId).read,
     async lineageTodo() {
       // **카탈로그와 같은 조건으로 묻는다** (`§5` 「묶는 기준은 카탈로그 필터와 같다」).
       // 전용 op 을 새로 열지 않는다 — 계약 개정 없이 되는 일을 계약 개정으로 하지 않는다.

@@ -19,7 +19,7 @@
  * `dataset-preview-screenshot.test.tsx`(`§6`·`§8` · 중계 op `createPreviewScreenshot`).
  * ／ 이전 표기 ~~확대(정본 근거 0건) · 스크린샷 버튼(FE 도달 계약 표면 부재)~~.
  */
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
@@ -59,6 +59,8 @@ const DRAWING: RenderJob = {
 function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -74,7 +76,7 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
-  return render(
+  const rendered = render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>
         <Route
@@ -87,6 +89,11 @@ function renderDetail(previewSource: DatasetPreviewSource) {
       </Routes>
     </MemoryRouter>,
   );
+  void waitFor(() => {
+    const button = screen.getByTestId('dt-preview-draw') as HTMLButtonElement;
+    if (button.disabled) throw new Error('preview draw is disabled');
+  }).then(() => fireEvent.click(screen.getByTestId('dt-preview-draw')));
+  return rendered;
 }
 
 describe('§1.3-1 · §8 — 미리보기 구역은 상세 안에 선다', () => {
@@ -197,7 +204,7 @@ describe('§8 미리보기를 그릴 수 없을 때 — 실패는 종류대로 �
     });
     renderDetail(source);
     const box = await screen.findByTestId('preview-unavailable');
-    expect(box.textContent).toContain('지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.');
+    expect(box.textContent).toContain('요청 결과를 확인할 수 없어요. 다시 실행하기 전에 작업 상태를 확인해 주세요.');
     // 계보 구역은 살아 있다 — 그릴 수 없는 것과 읽을 수 없는 것은 다르다
     expect(screen.queryByTestId('dataset-preview')).toBeTruthy();
   });

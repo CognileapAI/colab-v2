@@ -5,6 +5,7 @@
 //
 // ⛔ **`주제`(`topic`)는 이 폼에 없다** — 표시는 헤더 칩에 남고 편집 진입이 없다.
 //    R-B 가 그 축을 `분류` 로 갈아치우므로, 그 사이 사람이 고친 값은 이관 대조를 흐린다.
+import { useState } from 'react';
 import {
   ACCESS_LABEL,
   ACCESS_NOTE,
@@ -12,8 +13,6 @@ import {
   type AccessState,
 } from '../common/accessState';
 import {
-  GRANULARITIES,
-  GRANULARITY_LABEL,
   INTERVAL_LABEL,
   INTERVAL_UNITS,
   LINEAGE_LINK_ACTION,
@@ -25,6 +24,9 @@ import {
 } from './editFields';
 // ⭑ ⟨R-LTH-REVIEW-1 · ㉴⟩ 값 집합의 집은 Lv 규칙 파일 하나다 — 폼이 따로 적지 않는다.
 import { LV_CODES } from '../common/processingLevel';
+import { formatPeriod } from './format';
+import { PeriodCalendarPopover } from '../upload/PeriodCalendarPopover';
+import { assemble, disassemble, partsFor } from '../upload/periodParts';
 
 /**
  * ⭑ **⟨WU-A3R · PRD-22 각주 2⟩ `취소`/`저장` 은 폼 밖 — 다운로드가 있던 행에 선다.**
@@ -50,6 +52,7 @@ export function DatasetEditForm(props: {
   const fieldErrors = props.fieldErrors ?? {};
   const set = props.onField;
   const visible = (key: string) => !props.fields || props.fields.includes(key);
+  const [periodOpen, setPeriodOpen] = useState(false);
 
   return (
     <div className={`dt-edit${props.fields ? " de-inline" : ""}`} data-testid={props.fields ? undefined : "detail-edit-form"}>
@@ -91,38 +94,50 @@ export function DatasetEditForm(props: {
         {visible('period') ? (
         <div className="de-row" data-testid="edit-period">
           <span className="de-k">{PERIOD_LABEL}</span>
-          <span className="de-v de-period">
+          <div className="daterange">
             {/* ⭑ ⟨19차 해제 · PRD-18⟩ 최소 단위는 **기간 입력 앞**에 선다.
                 `''`(미지정)이 기본이고 그때 표기는 종전 그대로다 — 재선택을 강제하지 않는다. */}
-            <select
-              aria-label={GRANULARITY_LABEL}
-              data-testid="edit-period-granularity"
-              value={draft.periodGranularity}
-              onChange={(e) => set('periodGranularity', e.target.value)}
-            >
-              <option value="">최소 단위 미지정</option>
-              {GRANULARITIES.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              aria-label="기간 시작"
-              data-testid="edit-period-start"
-              value={draft.periodStart}
-              onChange={(e) => set('periodStart', e.target.value)}
-            />
-            <span className="de-tilde">~</span>
-            <input
-              type="date"
-              aria-label="기간 끝"
-              data-testid="edit-period-end"
-              value={draft.periodEnd}
-              onChange={(e) => set('periodEnd', e.target.value)}
-            />
-          </span>
+            <button type="button" className="dr-field" data-testid="edit-period-open"
+                    aria-haspopup="dialog" aria-expanded={periodOpen}
+                    onClick={() => setPeriodOpen((v) => !v)}>
+              <span className="dr-half">{draft.periodStart ? formatPeriod({
+                start: draft.periodStart,
+                end: draft.periodEnd || null,
+                granularity: draft.periodGranularity || null,
+              }) : '기간 고르기'}</span>
+            </button>
+            {periodOpen ? (
+              <PeriodCalendarPopover
+                granularity={draft.periodGranularity}
+                startParts={disassemble(draft.periodStart)}
+                endParts={disassemble(draft.periodEnd)}
+                onApply={(v) => {
+                  const keys = partsFor(draft.periodGranularity || '일').map((part) => part.key);
+                  const sameVisibleParts = (current: string, next: ReturnType<typeof disassemble>) => {
+                    const original = disassemble(current);
+                    return keys.every((key) => original[key] === next[key]);
+                  };
+                  if (!v.granularityChanged
+                    && sameVisibleParts(draft.periodStart, v.startParts)
+                    && sameVisibleParts(draft.periodEnd, v.endParts)) return;
+                  if (!draft.periodGranularity && !v.granularityChanged) {
+                    const mergeDate = (current: string, next: ReturnType<typeof disassemble>) => {
+                      const original = disassemble(current);
+                      return assemble({ ...original, year: next.year, month: next.month, day: next.day }, '초') ?? '';
+                    };
+                    set('periodStart', mergeDate(draft.periodStart, v.startParts));
+                    set('periodEnd', v.endParts.year ? mergeDate(draft.periodEnd, v.endParts) : '');
+                    return;
+                  }
+                  set('periodGranularity', v.granularity);
+                  set('periodStart', assemble(v.startParts, v.granularity) ?? '');
+                  set('periodEnd', assemble(v.endParts, v.granularity) ?? '');
+                }}
+                onClear={() => { set('periodStart', ''); set('periodEnd', ''); }}
+                onClose={() => setPeriodOpen(false)}
+              />
+            ) : null}
+          </div>
         </div>
         ) : null}
         {/* ⭑ ⟨19차 해제 · PRD-17⟩ 관측 간격도 **두 칸이 한 값**이다 — 기간과 같은 모양으로 선다.

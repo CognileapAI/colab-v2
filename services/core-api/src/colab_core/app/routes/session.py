@@ -88,11 +88,17 @@ def create_session(body: SessionCredentials, request: Request) -> dict:
     except SQLAlchemyError:
         raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
                               "세션 저장소에 연결할 수 없다.") from None
-    if any(limiter.blocked(bucket) for bucket in buckets):
+    locked = [bucket for bucket in buckets if limiter.blocked(bucket)]
+    if locked:
         # 사전 추측을 **느리게** 만드는 최소 보완이다 (`〈108〉-㉰`). 한계는 `kernel/throttle.py`.
         # **어느 버킷이 걸렸는지 말하지 않는다** — 말하면 열거 도구가 그 답으로 학습한다.
+        # 다만 **언제 풀리는지는 말한다**: 걸린 버킷들 중 가장 늦게 풀리는 시각이고, 그 수
+        # 하나로는 어느 버킷인지 갈리지 않는다. 셈이 그 사이에 창을 벗어났으면(0) 창 길이를
+        # 쓴다 — 0 을 내려보내면 화면이 곧바로 다시 부른다.
+        wait = max(limiter.retry_after(bucket) for bucket in locked)
         raise errors.too_many_attempts(
-            "로그인 시도가 너무 잦다. 잠시 뒤에 다시 시도한다.")
+            "로그인 시도가 너무 잦다. 잠시 뒤에 다시 시도한다.",
+            retry_after_seconds=wait or limiter.window_seconds)
     try:
         issued = issuer.issue(attempt)
     except AccountInactive:

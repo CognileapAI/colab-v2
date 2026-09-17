@@ -87,3 +87,86 @@ def test_dry_run_은_올리지_않는다(tmp_path, capsys):
     dw = load()
     assert dw.main(["--dist", str(_dist(tmp_path)), "--bucket", "b", "--dry-run"]) == 0
     assert "올리지 않았다" in capsys.readouterr().out
+
+
+@pytest.fixture
+def deploy_credentials(tmp_path, monkeypatch):
+    from colab_core.kernel import s3
+
+    for name in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_PROFILE"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("COLAB_DEPLOY_MANAGED", "1")
+    credentials_file = tmp_path / "credentials"
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(credentials_file))
+    captured = []
+
+    def client(**kwargs):
+        captured.append(kwargs.get("creds"))
+        return StubClient()
+
+    monkeypatch.setattr(s3, "S3Client", client)
+    args = ["--dist", str(_dist(tmp_path)), "--bucket", "b"]
+    return credentials_file, captured, args
+
+
+@pytest.mark.parametrize("token", ["", "aws_session_token=session%token\n"])
+def test_explicit_profile_credentials_reach_s3_client(deploy_credentials, monkeypatch, token):
+    file, captured, args = deploy_credentials
+    file.write_text("[deploy]\naws_access_key_id=profile-key\naws_secret_access_key=secret%value\n" + token)
+    monkeypatch.setenv("AWS_PROFILE", "deploy")
+    assert load().main(args) == 0
+    assert captured[0].access_key == "profile-key"
+    assert captured[0].secret_key == "secret%value"
+    assert captured[0].session_token == ("session%token" if token else None)
+
+
+def test_complete_environment_credentials_take_priority(deploy_credentials, monkeypatch):
+    _, captured, args = deploy_credentials
+    monkeypatch.setenv("AWS_PROFILE", "missing")
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "environment-key")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "environment-secret")
+    monkeypatch.setenv("AWS_SESSION_TOKEN", "environment-token")
+    assert load().main(args) == 0
+    assert captured[0].access_key == "environment-key"
+    assert captured[0].session_token == "environment-token"
+
+
+def test_unset_profile_preserves_existing_provider_chain(deploy_credentials):
+    _, captured, args = deploy_credentials
+    assert load().main(args) == 0
+    assert captured == [None]
+
+
+@pytest.mark.parametrize("content", [
+    None, "[other]\naws_access_key_id=secret-marker\n", "malformed secret-marker",
+    "[DEFAULT]\naws_secret_access_key=secret-marker\n[deploy]\naws_access_key_id=key\n",
+    "[deploy]\nrole_arn=secret-marker\nsource_profile=base\n",
+    "[deploy]\nsso_session=secret-marker\n",
+])
+def test_explicit_profile_failure_never_falls_back_or_leaks(deploy_credentials, monkeypatch, capsys, content):
+    file, captured, args = deploy_credentials
+    if content is not None:
+        file.write_text(content)
+    monkeypatch.setenv("AWS_PROFILE", "deploy")
+    assert load().main(args) == 78
+    assert captured == []
+    err = capsys.readouterr().err
+    assert "AWS_PROFILE" in err
+    assert "secret-marker" not in err
+    assert str(file) not in err
+
+
+def test_default_credentials_path_and_dry_run(deploy_credentials, monkeypatch, tmp_path):
+    _, captured, args = deploy_credentials
+    monkeypatch.delenv("AWS_SHARED_CREDENTIALS_FILE")
+    monkeypatch.setenv("AWS_PROFILE", "deploy")
+    monkeypatch.setattr(pathlib.Path, "home", classmethod(lambda cls: tmp_path))
+    # A missing explicit profile would fail a real deployment; dry-run never reads it.
+    assert load().main(args + ["--dry-run"]) == 0
+    assert captured == []
+    (tmp_path / ".aws").mkdir()
+    (tmp_path / ".aws" / "credentials").write_text(
+        "[deploy]\naws_access_key_id=home-key\naws_secret_access_key=home-secret\n"
+    )
+    assert load().main(args) == 0
+    assert captured[0].access_key == "home-key"

@@ -1,3 +1,4 @@
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 /**
  * S-05 데이터셋 상세 미리보기 — **확대(줌)** 정본 대비 시험 (WU-P3 · 화면 레인).
  *
@@ -53,6 +54,8 @@ const DONE: RenderJob = {
 function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -68,6 +71,7 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
+  drawDatasetPreviewWhenReady();
   return render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>

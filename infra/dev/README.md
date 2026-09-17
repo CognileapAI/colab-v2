@@ -89,20 +89,20 @@ python3 scripts/deploy_release.py run --plan /absolute/reviewed/release.json
 
 ## 확인 — 콘솔 눈이 아니라 `deploy_doctor`
 
-> ⭑ **⟨선행 단계 · 실측 2026-09-06 · `〈361〉`-㉯⟩ `deploy_doctor` 전에 EC2 `/opt/colab-repo` 를 배포 sha 로 맞춘다.**
-> `deploy_doctor` 는 `--repo` 로 받은 트리에서 **`db/<체인>/versions`(스키마 head 대조)** 와 **`gates/tools`** 를 읽는다 —
-> 레포가 낡으면 ⑥⑦ 이 **옛 head 를 정답으로 삼아** 조용히 틀린다.
-> ⛔ **EC2 에 `git` 이 없다**(AL2023 최소 설치). 그래서 개발 기계에서 tar 로 민다:
->
-> ```bash
-> tar czf /tmp/repo.tgz --exclude=__pycache__ --exclude=.venv db gates services/core-api/ops infra
-> scp -i "$COLAB_DEV_KEY_FILE" /tmp/repo.tgz "$COLAB_DEV_SSH":/tmp/
-> ssh -i "$COLAB_DEV_KEY_FILE" "$COLAB_DEV_SSH" 'sudo tar xzf /tmp/repo.tgz -C /opt/colab-repo --overwrite'
-> ```
->
-> ⚠ **`--overwrite` 와 `sudo` 가 둘 다 필요하다** — 기존 파일 일부가 root 소유다.
-> **판정 = 개발 기계와 EC2 의 `services/core-api/ops/deploy_doctor.py` md5 가 같다.**
+`ship.sh`는 반입 후보의 **FULL_SHA 커밋**에서 판정 레포와 hash manifest를 만들어
+`/opt/colab-repo-releases/<FULL_SHA>`에 자동 설치한다. 수동 tar 동기화는 필요 없다.
+`deploy_doctor`의 head·RLS 대조도 이 후보 트리를 사용해야 한다. EC2에서 수동으로 확인할 때:
 
+```bash
+FULL_SHA="$(tr -d '\r\n' < /opt/colab-v2/CURRENT_FULL_SHA)"
+[[ "$FULL_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 78
+REPO="/opt/colab-repo-releases/$FULL_SHA"
+sudo env COLAB_DEV_REPO="$REPO" bash "$REPO/infra/ops/probes/deploy-verification.sh"
+```
+
+정기 점검과 기존 release 호출은 `dispatch-current.sh`가 `CURRENT_SHA`로 고른 **검증된 ops 번들**을
+사용한다. 이 경로는 그대로 유지한다. 판정 레포 snapshot과 ops 번들은 목적과 설치 위치가 다르다.
+아래처럼 개발 기계에서 직접 실행할 때도 반입 후보 커밋의 체크아웃을 사용한다.
 
 ```bash
 cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev \

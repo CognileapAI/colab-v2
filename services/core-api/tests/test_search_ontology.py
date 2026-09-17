@@ -111,8 +111,8 @@ def test_receipt_idempotence_and_source_access_revocation(ready,sql,session_fact
     sql("""INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,current_lab_id(),'잠김')
       ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'""",{'id':dataset})
     # The owner still has access; a different member in the same lab does not.
-    from conftest import ACC_A_PROF
-    with scoped(session_factory,account=ACC_A_PROF) as s:
+    from conftest import ACC_A_OUTSIDER
+    with scoped(session_factory,account=ACC_A_OUTSIDER) as s:
         assert api().current_bindings(s,dataset)==[]
         assert s.execute(text('SELECT count(*) FROM d3_search_ontology_binding')).scalar_one()==0
         assert s.execute(text('SELECT count(*) FROM d3_search_ontology_dependency')).scalar_one()==0

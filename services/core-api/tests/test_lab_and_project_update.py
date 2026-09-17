@@ -177,13 +177,21 @@ def test_a_period_can_be_set_and_read_back(p2_client) -> None:
     client = p2_client()
     pid = _new_project(client, "기간을 적는 프로젝트").json()["projectId"]
 
-    r = _patch_project(client, pid, {"period": {"start": "2026-01", "end": "2026-12"}})
+    r = _patch_project(client, pid, {"period": {"start": "2026-01-02", "end": "2026-12-31"}})
     assert r.status_code == 200, r.text
-    assert r.json()["period"] == {"start": "2026-01", "end": "2026-12"}
+    assert r.json()["period"] == {"start": "2026-01-02", "end": "2026-12-31"}
 
     after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES))
-    assert after.json()["period"] == {"start": "2026-01", "end": "2026-12"}, \
+    assert after.json()["period"] == {"start": "2026-01-02", "end": "2026-12-31"}, \
         "응답에는 있고 저장에는 없다 — 화면이 고쳤다고 믿고 떠난다."
+
+
+def test_a_legacy_year_month_period_is_still_accepted(p2_client) -> None:
+    client = p2_client()
+    pid = _new_project(client, "예전 기간 형식 프로젝트").json()["projectId"]
+    r = _patch_project(client, pid, {"period": {"start": "2026-01", "end": "2026-12"}})
+    assert r.status_code == 200, r.text
+    assert r.json()["period"] == {"start": "2026-01-01", "end": "2026-12-01"}
 
 
 def test_a_period_change_does_not_roll_back_its_neighbours(p2_client) -> None:
@@ -195,7 +203,7 @@ def test_a_period_change_does_not_roll_back_its_neighbours(p2_client) -> None:
     assert r.status_code == 200, r.text
     after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES)).json()
     assert after["name"] == "기간과 함께 바뀐 이름"
-    assert after["period"] == {"start": "2025-03", "end": None}
+    assert after["period"] == {"start": "2025-03-01", "end": None}
 
 
 def test_clearing_the_period_is_null(p2_client) -> None:
@@ -213,4 +221,6 @@ def test_a_malformed_period_is_still_400(p2_client) -> None:
     client = p2_client()
     pid = _new_project(client, "형식이 틀린 기간").json()["projectId"]
     assert _patch_project(client, pid, {"period": {"start": "2026-13"}}).status_code == 400
+    assert _patch_project(client, pid, {"period": {"start": "2026-02-30"}}).status_code == 400
+    assert _patch_project(client, pid, {"period": {"start": "2026-02-02", "end": "2026-02-01"}}).status_code == 400
     assert _patch_project(client, pid, {"period": "2026-01"}).status_code == 400

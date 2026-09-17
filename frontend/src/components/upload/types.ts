@@ -82,6 +82,7 @@ export class NoResolvedGrid extends Error {}
 
 /** `create` 의 선택 인자. sourceLabel·resumeUploadId는 프리사인드 전송 전용이고 진행률은 폴백도 쓴다. */
 export interface UploadCreateOptions {
+  targetLabId?: string;
   /** 배너·목록에 보일 묶음 이름. */
   sourceLabel?: string;
   /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
@@ -93,6 +94,7 @@ export interface UploadCreateOptions {
 
 /** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈338〉). */
 export interface IncompleteTransferItem {
+  labId?: string;
   uploadId: string;
   sourceLabel: string;
   uploadedFiles: number;
@@ -116,7 +118,7 @@ export interface UploadSource {
   gridOptions?(uploadId: string): Promise<GridOptions>;
   reuseGrid?(uploadId: string, sourceDatasetId: string): Promise<UploadFileRef[]>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
-  register(body: DatasetCreate): Promise<{ datasetId: string }>;
+  register(body: DatasetCreate, targetLabId?: string): Promise<{ datasetId: string }>;
   /** 등록된 데이터셋에 사용자 대표 그림을 별도 저장한다. 등록 재시도와 수명을 섞지 않는다. */
   putRepresentativeImage?(
     datasetId: string,
@@ -194,13 +196,6 @@ export interface LineageStepContext {
    * ⛔ 이 화면이 이 값을 바꾸거나 잠그지 않는다 — 바꾸는 자리는 ① 하나뿐이다.
    */
   processingLevelUserSet: string;
-  /**
-   * ⭑ **⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 자기 Lv 가 아직 계산값을 따라가는 중인가.**
-   * 사람이 ① 에서 고르지 않았고(`levelTouched` 거짓) 계산값이 서 있으면 참이다. 참이면 ③ 은
-   * 부모 선택 상한·사후 충돌을 걸지 않는다 — 부모를 확인하는 순간 자기 Lv 가 최대 부모 Lv ＋ 1 로
-   * 따라가므로 계보가 어긋나지 않는다. 생략하면 거짓(상한 적용)이다.
-   */
-  processingLevelFollowsDerived?: boolean;
   /** 안내 줄의 `분류에서 바꾸기` — ① 로 데려간다. 값을 고치지 않고 **자리로 보낸다.** */
   onGoToClassify(): void;
   /**

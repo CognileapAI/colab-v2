@@ -127,10 +127,21 @@ INSERT INTO d8_download (id, lab_id, account_id, dataset_id) VALUES
   ('00000000000000000000000BD1', '0000000000000000000000000B', '00000000000000000000000BP1', '0000000000000000000000DSB1');
 
 -- These exact fixture datasets were inserted directly, not through registration assembly.
-INSERT INTO d4_lineage_revision(lab_id,dataset_id,revision,deleted) VALUES
-  ('0000000000000000000000000A','0000000000000000000000DSA1',1,false),
-  ('0000000000000000000000000A','0000000000000000000000DSA2',1,false),
-  ('0000000000000000000000000B','0000000000000000000000DSB1',1,false);
+-- ⭑ **⟨2026-09-18 develop 동기화⟩ 표가 있을 때만 넣는다.**
+--   `d4_lineage_revision` 은 `0041_lineage_dependencies` 가 만든다. 그런데 이 시드는
+--   마이그레이션 오라클(`db/platform/tests/0033-drift.sh`)이 **`0032_labless_operator` 시점의
+--   스키마**에 그대로 붓는 입력이기도 하다 — 거기엔 이 표가 아직 없어 시드 전체가 죽는다.
+--   정적 `INSERT` 는 표가 없으면 파싱 단계에서 실패하므로 동적 실행으로 감싼다.
+DO $seed_lineage_revision$ BEGIN
+  IF to_regclass('d4_lineage_revision') IS NOT NULL THEN
+    EXECUTE $stmt$
+      INSERT INTO d4_lineage_revision(lab_id,dataset_id,revision,deleted) VALUES
+        ('0000000000000000000000000A','0000000000000000000000DSA1',1,false),
+        ('0000000000000000000000000A','0000000000000000000000DSA2',1,false),
+        ('0000000000000000000000000B','0000000000000000000000DSB1',1,false)
+    $stmt$;
+  END IF;
+END $seed_lineage_revision$;
 COMMIT;
 -- 서비스 운영자 부트스트랩은 연구실 교수 권한과 별개다.
 INSERT INTO account_admin.service_operator(account_id)

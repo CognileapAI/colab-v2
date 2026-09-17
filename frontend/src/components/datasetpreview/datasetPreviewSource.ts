@@ -6,6 +6,7 @@
 // **여기에 픽스처 폴백을 두지 않는다.** 상세 헤더·계보와 다른 점이고 의도한 차이다 —
 // 가짜 지도를 그리면 사람이 그 그림을 보고 **재사용을 판단한다**(정본 §1.2 「재사용 판단」).
 // 그릴 수 없으면 그릴 수 없다고 말하는 것이 이 구역의 일이다 (정본 §8·§9).
+import { PreviewRequestRejected, requestMessage } from '../preview/requestError';
 import { api } from '../../api/client';
 import {
   NotRenderableError,
@@ -49,7 +50,8 @@ function messageOf(body: unknown, fallback: string): string {
 /** 정본 §8 「그리는 서버에 연결 못 함」 행 축자. 여기서 새 한국어를 만들지 않는다. */
 export const UNAVAILABLE_MESSAGE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
 
-export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource {
+export function apiDatasetPreviewSource(datasetId: string, targetLabId?: string): DatasetPreviewSource {
+  const headers = targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {};
   return {
     async lookupValue(point: { lat: number; lon: number }): Promise<ValueLookupResult> {
       // **조각 식별자를 싣지 않는다** — 본체 조각은 원장이 안다(`〈294〉`).
@@ -58,7 +60,7 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
         body: { point } as never,
       });
       // **「없다」는 200 으로 온다** — 여기서 값을 지어내지 않는다.
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return r.data as ValueLookupResult;
     },
 
@@ -67,27 +69,27 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
       const r = await api.GET('/datasets/{datasetId}/files', {
         params: { path: { datasetId } },
       });
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return (r.data.items ?? []).map(pieceOfDatasetFile);
     },
 
     /** WU-C3 — 변수·시각 후보와 서버 기본값. **읽기 전용이다** — 렌더를 만들지 않는다. */
-    async describe(): Promise<TargetDescription> {
+    async describe(fileId?: string): Promise<TargetDescription> {
       const r = await api.POST('/preview-target-descriptions', {
-        body: { datasetId } as never,
+        body: { datasetId, ...(fileId ? { fileIds: [fileId] } : {}) } as never,
       });
       if (isRenderTooLarge(r.response.status, r.error)) {
         throw new RenderTooLarge(messageOf(r.error, TOO_LARGE_MESSAGE));
       }
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return r.data as TargetDescription;
     },
 
     async palettes(): Promise<PaletteOption[]> {
-      const r = await api.GET('/preview-palettes');
+      const r = await api.GET('/preview-palettes', { headers });
       // 503 = `RENDER_UNAVAILABLE`. **빈 배열로 접지 않는다** — 화면이 「팔레트가 없다」고
       // 말하는데 참인 것은 「물어보지 못했다」가 된다 (`〈87〉-㉯` 가 금지한 접기).
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return (r.data.items ?? []) as PaletteOption[];
     },
 
@@ -109,6 +111,7 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
       if (isRenderTooLarge(r.response.status, r.error)) {
         throw new RenderTooLarge(messageOf(r.error, TOO_LARGE_MESSAGE));
       }
+      if (r.response.status === 403) throw new PreviewRequestRejected(requestMessage(403, r.error, UNAVAILABLE_MESSAGE));
       if (r.response.status === 404 || r.response.status === 410) throw new PreviewGone();
       if (r.response.status === 415) {
         throw new NotRenderableError(
@@ -116,12 +119,12 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
           renderableFormatsOf(r.error),
         );
       }
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return r.data as RenderJob;
     },
 
     async get(renderId: string): Promise<RenderJob> {
-      const r = await api.GET('/previews/{renderId}', { params: { path: { renderId } } });
+      const r = await api.GET('/previews/{renderId}', { headers, params: { path: { renderId } } });
       if (r.response.status === 404 || r.response.status === 410) throw new PreviewGone();
       if (r.response.status === 415) {
         throw new NotRenderableError(
@@ -131,18 +134,18 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
       }
       // **실패는 여기가 아니다** — `200 + failure` 로 온다. 비-200 을 실패 경로로 삼으면
       // 진짜 실패를 전부 놓친다 (`P2-viz-report §13`-④).
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return r.data as RenderJob;
     },
 
     async screenshot(request: ScreenshotRequest): Promise<Blob> {
       // **응답이 `image/png` 다** — 생성 클라이언트가 JSON 으로 읽지 않게 `parseAs` 를 준다.
       // 실패는 봉투(JSON)로 오고, **빈 이미지를 지어내지 않는다**(계약 503 설명 축자).
-      const r = await api.POST('/preview-screenshots', {
+      const r = await api.POST('/preview-screenshots', { headers,
         body: request as never,
         parseAs: 'blob',
       });
-      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      if (!r.data) throw new PreviewUnavailable(requestMessage(r.response.status, r.error, UNAVAILABLE_MESSAGE));
       return r.data as unknown as Blob;
     },
 

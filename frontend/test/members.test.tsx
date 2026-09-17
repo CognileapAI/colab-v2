@@ -214,7 +214,7 @@ describe('역할 표기는 받은 위임을 함께 적는다 (§6 · P-23)', () 
     await openGrid(portOf(asProfessor()).port);
     expect(screen.getByText('연구원 · 승인·설정 위임')).toBeInTheDocument();
     expect(screen.getAllByText('연구원').length).toBe(1);
-    expect(screen.getByText('교수')).toBeInTheDocument();
+    expect(screen.getByText('교수 관리자')).toBeInTheDocument();
   });
 });
 

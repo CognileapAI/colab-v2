@@ -73,8 +73,8 @@ def test_legacy_binding_is_selected_once_even_when_selection_is_empty(sources,se
 
 
 def test_revoked_source_is_not_sent_to_concept_lookup(sources,sql,session_factory):
-    from conftest import ACC_A_PROF
-    kit=tools(session_factory);kit._subject=make_tools(session_factory,account=ACC_A_PROF)._subject
+    from conftest import ACC_A_OUTSIDER
+    kit=tools(session_factory);kit._subject=make_tools(session_factory,account=ACC_A_OUTSIDER)._subject
     kit.sync_manifest()
     h=next(j['handle'] for j in kit.claim() if j['source_kind']=='file');kit.read(h)
     sent=[];kit._port.lookup=lambda **kw:sent.append(kw)
@@ -84,9 +84,9 @@ def test_revoked_source_is_not_sent_to_concept_lookup(sources,sql,session_factor
 
 
 def test_private_file_is_not_leased_by_an_unrelated_account(sources,sql,session_factory):
-    from conftest import ACC_A_PROF
+    from conftest import ACC_A_OUTSIDER
     sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,current_lab_id(),'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'",{'id':sources[0]})
-    other=make_tools(session_factory,account=ACC_A_PROF)
+    other=make_tools(session_factory,account=ACC_A_OUTSIDER)
     assert all(j['source_kind']!='file' for j in other.claim())
     assert any(j['source_kind']=='file' for j in tools(session_factory).claim())
 

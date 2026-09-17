@@ -9,7 +9,7 @@ from test_dataset_registration import make_upload, register
 from colab_core.app.main import API_PREFIX
 
 
-def _get(client, *, token=TOKEN_PROF, **params):
+def _get(client, *, token=TOKEN_RES, **params):
     return client.get(f"{API_PREFIX}/lineage-candidates", params=params,
                       headers=auth(token))
 
@@ -61,6 +61,14 @@ def test_locked_candidate_keeps_public_metadata_but_hides_body_names(p2_client) 
     assert item["fileNames"] == [] and item["fileExtensions"] == []
     assert _get(client, token=TOKEN_RES, q="a2-body.nc").json()["items"] == []
     assert all(x["datasetId"] != DS_B1 for x in _get(client).json()["items"])
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 같은 후보를 관리자 눈으로도 한 번 본다.**
+    #   이 파일의 주체를 전부 연구원으로 옮기면서 교수(= 자기 연구실 관리자) 갈래가 이 화면에서
+    #   한 번도 안 걸리게 됐다. `0033_admin_body_access` 의 관리자 갈래가 죽어도 조용하다.
+    #   교수에게는 **같은 후보의 본체가 열리고 파일명이 실린다** — 음성과 양성을 한 자리에 둔다.
+    managed = next(x for x in _get(client, token=TOKEN_PROF, q="A 강우 격자화").json()["items"]
+                   if x["datasetId"] == DS_A2)
+    assert managed["bodyAccessible"] is True
+    assert managed["fileNames"] and managed["fileExtensions"]
 
 
 def test_cursor_is_stable_without_duplicates_and_query_count_is_page_size_independent(

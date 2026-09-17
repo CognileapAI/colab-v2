@@ -1,3 +1,4 @@
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 /**
  * S-05 데이터셋 상세 미리보기 — **지도 화면을 타일 방식으로** (WU-P3 · `#48` · Ted 판정 ⑩).
  *
@@ -74,6 +75,8 @@ const DONE: RenderJob = {
 function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -88,6 +91,7 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
+  drawDatasetPreviewWhenReady();
   return render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>
@@ -152,6 +156,18 @@ describe('타일 전환 — 지도 표면이 단일 PNG 가 아니라 타일 조
     renderDetail(makeSource());
     await drawnMap();
     expect(screen.getByTestId('preview-map').getAttribute('data-tile-template')).toBe(TEMPLATE);
+  });
+
+  it('최초 화면의 모든 타일 decode 뒤에만 총 시간을 확정한다', async () => {
+    renderDetail(makeSource());
+    await drawnMap();
+    const visible = tiles();
+    expect(visible.length).toBeGreaterThan(0);
+    for (const tile of visible) {
+      Object.defineProperty(tile, 'decode', { value: vi.fn(async () => undefined) });
+      fireEvent.load(tile);
+    }
+    expect(await screen.findByTestId('dt-preview-total')).toHaveTextContent('총 ');
   });
 });
 

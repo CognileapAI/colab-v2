@@ -27,8 +27,6 @@ import {
   UPLOAD_CLOSE_LEAVE,
   analyzeElapsed,
 } from '../src/components/common/toastCopy';
-import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
-import type { PreviewHandoff } from '../src/components/preview/types';
 import { TransferInterrupted, UploadGone } from '../src/components/upload/types';
 import type {
   LineageStepContext,
@@ -403,6 +401,9 @@ async function dropFiles(files: File[]) {
 async function openRegister() {
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   // ⭑ ⟨WU-B3 · PRD-12⟩ 등록 카드는 **① 분류**에서 열린다. 이 파일의 시험들이 재는 칸은
   // ② 메타데이터 입력에 있으므로 표시기로 한 단계 옮겨 둔다 — **재는 것은 그대로다**.
   await click(screen.getByRole('button', { name: /^② / }));
@@ -418,6 +419,12 @@ async function openRegister() {
   await setPeriod({ unit: '일', start: '2025-06-01' });
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  if (screen.queryByTestId('reg-source-downloaded-on')) {
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  }
+  await click(stepBtn('②'));
 }
 
 const stepBtn = (n: '①' | '②' | '③') => screen.getByRole('button', { name: new RegExp(`^${n}`) });
@@ -728,13 +735,13 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
   });
 });
 
-describe('§8 등록 결정 게이트 — 등록이 의무가 아님이 화면에서 읽힌다', () => {
-  it('미리보기 아래에 두 행동이 나란히 상시로 있다', async () => {
+describe('#79 등록 결정 게이트 — 다음으로 등록을 이어간다', () => {
+  it('미리보기 아래에 다음만 있고 보기 전용 선택이 없다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     const gate = await screen.findByTestId('reg-gate');
-    expect(within(gate).getByTestId('reg-viewonly')).toHaveTextContent('보기만 할게요');
+    expect(within(gate).queryByTestId('reg-viewonly')).toBeNull();
     expect(within(gate).getByTestId('reg-open')).toBeEnabled();
     expect(
       screen.getByTestId('up-preview').compareDocumentPosition(gate) &
@@ -742,13 +749,14 @@ describe('§8 등록 결정 게이트 — 등록이 의무가 아님이 화면�
     ).toBeTruthy();
   });
 
-  it('`보기만 할게요` 는 아무것도 등록하지 않는다 — `createDataset` 0회', async () => {
+  it('다음을 눌러도 아직 데이터셋을 생성하지 않고 등록 폼을 연다', async () => {
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('reg-viewonly'));
+    await click(await screen.findByTestId('reg-open'));
     expect(calls.register).toBe(0);
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(screen.getByTestId('reg-s1')).toBeInTheDocument();
+    expect(screen.getByTestId('up-preview')).toBeInTheDocument();
   });
 });
 
@@ -766,7 +774,7 @@ describe('§8 등록 3단계 표시기 — ①② 는 이 레인, ③ 은 얹히
     expect(screen.queryByTestId('reg-s3')).toBeNull();
   });
 
-  it('앞 단계를 채웠는지 검사하지 않는다 — 어느 칸이든 눌러서 간다', async () => {
+  it('분류 세 축을 고른 뒤에는 어느 칸이든 눌러서 간다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -963,7 +971,7 @@ describe('§8 ② 메타데이터 입력', () => {
     await openRegister();
     const labels = Array.from(document.querySelectorAll('label[for="reg-crs"]'));
     expect(labels).toHaveLength(1);
-    expect(labels[0]!.textContent).toBe('좌표계선택');
+    expect(labels[0]!.textContent).toBe('좌표계 입력선택');
     expect(labels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
     // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 이름표는 **입력 하나를 가리키지 않는다** — 표 전체의 이름이다.
     // ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 그래서 `label` 이 아니라 섹션 제목(`fieldlbl`)이다** —
@@ -989,10 +997,10 @@ describe('§8 ② 메타데이터 입력', () => {
       expect(l.querySelectorAll('.reqtag, .opttag')).toHaveLength(1);
       expect(l.textContent ?? '').not.toContain('(선택)');
     }
-    // 관측 간격·좌표계·격자는 모두 선택 입력이다. 기간은 제 행에서 필수로 받는다.
+    // 관측 간격은 필수이고 좌표계·격자는 선택 입력이다.
     expect(row.contains(screen.getByTestId('reg-interval-value'))).toBe(true);
-    expect(row.querySelectorAll('.reqtag')).toHaveLength(0);
-    expect(row.querySelectorAll('.opttag')).toHaveLength(3);
+    expect(row.querySelectorAll('.reqtag')).toHaveLength(1);
+    expect(row.querySelectorAll('.opttag')).toHaveLength(2);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));
     expect(auto).toHaveLength(0);
   });
@@ -1593,7 +1601,7 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
       // ⭑ **⟨개정 2026-09-14⟩ `topic` 이 빠지고 `period`·`observationInterval` 이 들어왔다** —
       //   `주제` 칸은 폼에서 사라졌고, 기간·관측 간격은 등록 게이트라 늘 실린다.
       ['category', 'dataType', 'observationInterval', 'period', 'processingLevelUserSet',
-       'lineageParents', 'name', 'projectIds', 'sourceLabel', 'summary', 'uploadId'].sort(),
+       'lineageParents', 'name', 'projectIds', 'sourceLabel', 'sourceUrl', 'sourceDownloadedOn', 'summary', 'uploadId'].sort(),
     );
     expect('accessState' in body).toBe(false);
     expect('topic' in body).toBe(false);
@@ -2222,42 +2230,18 @@ async function openModalWithProbe(sources: UploadSources) {
   return view;
 }
 
-describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => {
-  it('모달이 닫히고 주소가 미등록 미리보기 화면으로 바뀐다', async () => {
+describe('#79 등록 진입은 주소와 미리보기를 유지한다', () => {
+  it('다음은 같은 모달의 분류 입력으로 이동하고 데이터셋을 만들지 않는다', async () => {
     const { sources, calls } = fakes();
     await openModalWithProbe(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
     await screen.findByTestId('up-preview');
-    await click(await screen.findByTestId('reg-viewonly'));
-
-    const loc = screen.getByTestId('loc');
-    expect(loc.getAttribute('data-path')).toBe(previewPath(UPLOAD_ID).split('?')[0]);
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
-    // **아무것도 등록하지 않는다** — 이동은 사실을 만드는 것이 아니다 (§7.1)
+    expect(screen.queryByRole('button', { name: '보기만 할게요' })).toBeNull();
+    await click(await screen.findByTestId('reg-open'));
+    expect(screen.getByTestId('loc').getAttribute('data-path')).toBe('/datasets');
+    expect(screen.getByTestId('reg-s1')).toBeInTheDocument();
+    expect(screen.getByTestId('up-preview')).toBeInTheDocument();
     expect(calls.register).toBe(0);
-  });
-
-  it('그리던 미리보기를 짐으로 넘긴다 — S-08 이 다시 그리지 않고 이어 본다 (§8.1)', async () => {
-    const { sources, calls } = fakes();
-    await openModalWithProbe(sources);
-    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
-    await screen.findByTestId('up-preview');
-    await click(await screen.findByTestId('up-preview-draw'));
-    await waitFor(() => expect(calls.createRender.length).toBeGreaterThan(0));
-    await click(await screen.findByTestId('reg-viewonly'));
-
-    const loc = screen.getByTestId('loc');
-    expect(loc.getAttribute('data-search')).toBe(`?render=${RENDER_ID}`);
-    const state = JSON.parse(loc.getAttribute('data-state') ?? 'null') as Record<
-      string,
-      PreviewHandoff
-    >;
-    const handoff = state[PREVIEW_STATE_KEY]!;
-    expect(handoff.uploadId).toBe(UPLOAD_ID);
-    expect(handoff.renderId).toBe(RENDER_ID);
-    // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
-    expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
-    expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
   });
 });
 
@@ -2471,6 +2455,9 @@ describe('rev2 파일 교체 시 입력 초기화', () => {
     await click(screen.getByRole('button', { name: 'old.nc 빼기' }));
     await dropFiles([makeFile('new.nc')]);
     await click(screen.getByTestId('reg-open'));
+    await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+    await change(screen.getByTestId('reg-datatype'), '재분석자료');
+    await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(stepBtn('②'));
     expect(screen.getByTestId('reg-summary')).toHaveValue('');
   });
@@ -2602,13 +2589,89 @@ it('변수 행을 추가하면 새 행의 이름 칸으로 초점을 옮긴다',
  expect(screen.getByTestId(`vt-name-${index}`)).toHaveFocus();
 });
 
-it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보이고 수동 그리기는 유지한다', async () => {
+// ⭑ ⟨개정 2026-09-17 · #92⟩ ／ 종전 ~~「…수동 그리기는 유지한다」~~ — 그릴 수 없다고
+//    **확정된** 파일에서 지도용 선택지를 그대로 두면 **할 수 없는 조작을 시도하게 된다**.
+//    승인 intent 가 그 노출을 거둔다. 안내와 자리 선점 상태 판정은 그대로다.
+it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보인다', async () => {
  const { sources } = fakes({ status: { ready: true, renderable: false } });
  await openModal(sources); await dropFiles([makeFile('a.grib')]); await click(screen.getByTestId('reg-open'));
  expect(screen.getByTestId('up-preview-unsupported')).toHaveTextContent('지도로 그릴 수 없는');
  expect(screen.getByTestId('up-preview-slot')).toHaveAttribute('data-preview-slot-state', 'failed');
  expect(screen.queryByText('아직 그리지 않았어요')).toBeNull();
- expect(screen.getByRole('button', { name: '미리보기 그리기' })).toBeInTheDocument();
+ expect(screen.queryByRole('button', { name: '미리보기 그리기' })).toBeNull();
+});
+
+/**
+ * ⭑ **⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정된 파일에서는 지도용 선택지를 숨긴다.**
+ *
+ * 계약 필드 `renderable` 은 **참·거짓·없음 3상태**다. 판정은 **거짓으로 확정된
+ * 경우에만 숨김**이고, 판정 전(값 없음)은 지금과 같이 노출한다 — 숨겼다가 다시
+ * 나타나는 화면 흔들림을 만들지 않는다. 세 경우를 각각 돌려 **존재/부재를 모두**
+ * 단언한다(값 없음·참은 양성 단언이라 조회 실패로 통과할 수 없다).
+ */
+describe('#92 지도용 선택지는 그릴 수 없음이 확정된 경우에만 사라진다', () => {
+ /** 지도용 선택지 네 자리 — 팔레트·구간 수·그리기(#93 으로 접기 밖) ＋ 접기 묶음. */
+ const MAP_OPTIONS = ['up-style-palette', 'up-style-classcount', 'up-preview-draw', 'up-preview-options'] as const;
+
+ it('⑴ 거짓으로 확정되면 지도용 선택지·짝 파일 안내가 모두 없고 등록은 남는다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await openRegister();
+  expect(MAP_OPTIONS).toHaveLength(4);
+  for (const id of MAP_OPTIONS) expect(screen.queryByTestId(id)).toBeNull();
+  expect(screen.queryByTestId('up-nogrid')).toBeNull();
+  expect(screen.queryByTestId('up-preview-without-grid')).toBeNull();
+  // ⛔ 화면 전체가 비어 통과하는 형태를 막는다 — 등록 폼과 등록 버튼은 **여전히 있다**.
+  expect(screen.getByTestId('reg-steps')).toBeInTheDocument();
+  expect(screen.getByTestId('up-preview-unsupported')).toBeInTheDocument();
+  await click(screen.getByRole('button', { name: /^③ / }));
+  expect(screen.getByTestId('reg-done')).toBeInTheDocument();
+ });
+
+ it('⑵ 그 화면의 안내가 없는 설정을 열라고 말하지 않는다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await click(screen.getByTestId('reg-open'));
+  const notice = screen.getByTestId('up-preview-unsupported');
+  expect(notice).toHaveTextContent('파일은 그대로 등록할 수 있어요');
+  expect(notice.textContent).not.toContain('미리보기 설정을 열어');
+  expect(notice.textContent).not.toContain('직접 그리기를 시도할 수도 있어요');
+ });
+
+ it('⑶ 거짓으로 확정돼도 등록이 끝까지 진행된다', async () => {
+  const { sources, calls } = fakes({ status: { ready: true, renderable: false } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await openRegister();
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+  await click(screen.getByRole('button', { name: /^③ / }));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2026-08-20');
+  await click(screen.getByTestId('reg-done'));
+  await waitFor(() => expect(calls.register).toBe(1));
+ });
+
+ it('⑷ 판정 전(값 없음)에는 지도용 선택지가 그대로 보인다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: null } });
+  await openModal(sources); await dropFiles([makeFile('a.grib')]);
+  await click(screen.getByTestId('reg-open'));
+  for (const id of MAP_OPTIONS) expect(screen.getByTestId(id)).toBeInTheDocument();
+  expect(screen.getByTestId('up-nogrid')).toBeInTheDocument();
+ });
+
+ it('⑸ 그릴 수 있음으로 확정되면 지도용 선택지가 그대로 보인다', async () => {
+  const { sources } = fakes({ status: { ready: true, renderable: true } });
+  await openModal(sources); await dropFiles([makeFile('a.nc')]);
+  await click(screen.getByTestId('reg-open'));
+  for (const id of MAP_OPTIONS) expect(screen.getByTestId(id)).toBeInTheDocument();
+  expect(screen.getByTestId('up-nogrid')).toBeInTheDocument();
+ });
 });
 
 
