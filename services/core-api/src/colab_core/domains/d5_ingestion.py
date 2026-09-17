@@ -670,3 +670,9 @@ class UploadTransferAdapter:
         return [r[0] for r in self._session.execute(_T_COMPLETED_FOR_PRUNE, {
             "now": now, "retention": f"{days} days", "limit": limit,
         }).all()]
+
+
+def upload_lab(session: Session, upload_id: str, *, transfer: bool = False) -> str | None:
+    table = "d5_upload_transfer" if transfer else "d5_upload"
+    return session.execute(text(f"SELECT lab_id FROM {table} WHERE id=:id"),
+                           {"id": upload_id}).scalar_one_or_none()

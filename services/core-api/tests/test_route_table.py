@@ -38,7 +38,7 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_87() -> None:
+def test_operation_count_is_91() -> None:
     """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → 73 → 81 → **84.**
 
     ⭑ **81 → 84 는 운영자 백오피스 3 op** (`dev-package/intent/2026-09-12-login-backoffice-closeout.md`
@@ -123,7 +123,11 @@ def test_operation_count_is_87() -> None:
     # ⭑ **84 → 85 는 관리자 지정·해제 1 op** (`setServiceAccountOperator` · 승인 intent
     #   `dev-package/intent/2026-09-12-operator-designation.md`). **신설과 동시에 구현했다** —
     #   501 표는 그대로이고, 계약 파괴는 0 이다(추가만 · `contract-breaking` 기준 origin/main green).
-    assert len(contract_operations()) == 87, "계약의 오퍼레이션이 87 개가 아니다 — 발췌가 잘렸다."
+    # ⭑ **90 → 91 은 로그인 잠금 해제 1 op** (`clearLoginThrottle` · 핫픽스 HF-B).
+    #   시도 제한은 프로세스 메모리에 있어 스크립트·SQL 로는 닿지 못한다 — 종전의 해제
+    #   수단은 웹 서버 재시작뿐이었고 그것은 전원의 셈을 지운다. **신설과 동시에
+    #   구현했다**(`routes/accounts.py`) — 501 표는 그대로다. 계약 파괴 0(추가만).
+    assert len(contract_operations()) == 91, "계약의 오퍼레이션이 91 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

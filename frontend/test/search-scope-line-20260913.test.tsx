@@ -18,7 +18,7 @@ import type { SearchResultRow, SearchResults, SearchSource } from '../src/compon
 const LAB_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AHU';
 
 /** 운영자 범위 표기 — 상단 셸 칩(`Gnb.tsx`)·서버 상수(`OPERATOR_SCOPE_LABEL`)와 같은 말. */
-const OPERATOR_SCOPE_LABEL = '전체 연구실 (읽기 전용)';
+const OPERATOR_SCOPE_LABEL = '전체 연구실';
 
 function hit(): SearchResultRow {
   return {
@@ -39,7 +39,7 @@ function hit(): SearchResultRow {
     summary: '한강 유역 지점 강수 관측 원자료',
     period: null,
     relevanceBar: 1,
-    rationale: '전체 연구실 (읽기 전용) 안 26건에서 ‘강수’가 이름에 맞았어요',
+    rationale: '전체 연구실 안 26건에서 ‘강수’가 이름에 맞았어요',
   };
 }
 

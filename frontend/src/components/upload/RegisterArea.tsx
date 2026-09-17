@@ -24,7 +24,7 @@ import {
 } from '../common/accessState';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
-import { formatExtension, formatPeriodWithInterval } from '../detail/format';
+import { formatExtension } from '../detail/format';
 import { extensionOf } from './FileDropCard';
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { PeriodCalendarPopover } from './PeriodCalendarPopover';
@@ -60,8 +60,8 @@ export const INTERVAL_UNIT_LABEL: Record<(typeof INTERVAL_UNITS)[number], string
   분: '분',
   시: '시간',
   일: '일',
-  월: '월',
-  년: '연',
+  월: '개월',
+  년: '년',
 };
 
 /**
@@ -110,8 +110,8 @@ export const STEP_LABELS: Record<Step, string> = {
 };
 
 /** 카드 부제 두 줄 — rev2 `card-h .sub` 축자. */
-export const CLASSIFY_SUBTITLE = '목록 필터가 이 세 축을 그대로 받아요';
-export const METADATA_SUBTITLE = '파일에서 읽는 값은 확장자·용량뿐이에요';
+export const CLASSIFY_SUBTITLE = '어떤 자료인지 고르고, 가공 단계에 맞는 데이터를 연결해요.';
+export const METADATA_SUBTITLE = '확장자·용량을 확인하고 아래 정보를 입력해 주세요.';
 
 /**
  * PRD-40 · 판정 ⓐ — 종료 칸의 안내 한 줄. rev2 `prVe` 자리 문면 축자.
@@ -145,7 +145,6 @@ export const VARIABLES_FIELD_LABEL = `변수 ${VARIABLES_FIELD_HINT}`;
  *    `내려받은 날` 에 `필수` 배지가 선다.** 목업 배지를 채택한다 — 부모가 없는 Lv0 에서는
  *    그 두 칸이 계보를 대신하는 **유일한 출처 기록**이라 비면 원천을 말할 방법이 없다.
  */
-export const LV0_SOURCE_NOTICE = '원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.';
 export const LV0_SOURCE_URL_PLACEHOLDER = '예: https://cds.climate.copernicus.eu/...';
 export const LV0_SOURCE_DATE_PLACEHOLDER = '예: 2026-08-20';
 /** 이 블록이 열리는 유일한 조건 — ① 이 고른 자기 Lv 다. 파생 Lv 가 아니다. */
@@ -182,7 +181,7 @@ function AxisDefLine(props: { value: AxisValue | null; testId: string; withExtra
  * ① 분류 — 세 축(분류·유형·가공 단계)을 고르는 첫 단계 (PRD-12 · 04 · 33 ⑴).
  *
  * 지키는 것
- *  - 셋 다 **필수**이고 셋 다 **기본 선택값**이 있다(`기상·기후 인자`·`재분석자료`·`Lv2`).
+ *  - 셋 다 **필수**이고 처음에는 비어 있다. 사용자가 직접 골라야 다음 단계로 이동한다.
  *  - 옵션 표기는 **국문＋영문 병기**, 저장값은 **국문 단일**이다(미결-13 ⓐ).
  *  - 유형 아래 한 줄 더 — `참고 · {특이사항 및 주의점}` (PRD-33 ⑴). **저장을 막지 않는다.**
  *  - ⛔ 유형↔가공 단계 조합 검증을 만들지 않는다(미결-14 ⓐ).
@@ -219,8 +218,7 @@ function StepClassify(props: {
             value={props.category}
             onChange={(e) => props.onCategory(e.target.value)}
           >
-            {/* 빈 값은 「아직 안 골랐다」이고 그때 `다음` 이 막힌다(수용 기준 2). */}
-            <option value="">아직 고르지 않음</option>
+            <option value="">직접 선택해 주세요</option>
             {CATEGORIES.map((v) => (
               <option key={v.value} value={v.value}>
                 {bilingual(v)}
@@ -242,7 +240,7 @@ function StepClassify(props: {
             value={props.dataType}
             onChange={(e) => props.onDataType(e.target.value)}
           >
-            <option value="">아직 고르지 않음</option>
+            <option value="">직접 선택해 주세요</option>
             {DATA_TYPES.map((v) => (
               <option key={v.value} value={v.value}>
                 {bilingual(v)}
@@ -276,6 +274,7 @@ function StepClassify(props: {
             value={props.level}
             onChange={(e) => props.onLevel(e.target.value)}
           >
+            <option value="">직접 선택해 주세요</option>
             {PROCESSING_LEVELS.map((v) => (
               <option key={v.value} value={v.value}>
                 {v.label}
@@ -365,11 +364,6 @@ function StepMeta(props: {
   //   ⛔ 요청에 실리는 열쇠는 **무변**이다 — `granularity`·`startParts`·`endParts` 그대로이고
   //      팝오버의 `적용` 이 그 셋을 한 번에 채운다(`humanMetadata`).
   const [periodPopOpen, setPeriodPopOpen] = useState(false);
-  // PRD-33 ⑵ — 고른 분류의 `메타데이터 항목` ＋ 고른 가공 단계의 `메타데이터 필수 항목`.
-  // ⛔ **Lv0 은 넣지 않는다** — 그 두 칸은 별도 칸(PRD-19 · WU-B6) 소관이다.
-  const catHint = findAxis(CATEGORIES, props.category);
-  const lvHint = props.level === 'Lv0' ? null : findAxis(PROCESSING_LEVELS, props.level);
-  const summaryHints = [catHint?.extra, lvHint?.extra].filter((t): t is string => !!t);
   // 조각의 확장자는 **데이터셋당 1값**이다 (`P-5` · PRD-32) — 첫 조각이 곧 전체다.
   const extension = extensionOf(bodies[0]?.fileName ?? '');
   const sliced = bodies.length > 1;
@@ -380,17 +374,10 @@ function StepMeta(props: {
   // 관측 간격 — **반쪽인가.** 한쪽만 채워지면 서버가 400 이다(pair 규율).
   const rawValue = props.intervalValue.trim();
   const half = rawValue.length > 0 !== props.intervalUnit.length > 0;
-  const previewInterval =
-    rawValue.length > 0 && props.intervalUnit
-      ? { value: Number(rawValue), unit: props.intervalUnit }
-      : null;
 
   // 미리보기가 쓰는 기간 — 팝오버가 채운 자리 칸에서 조립한다(`humanMetadata` 와 같은 재료).
   const previewStart = props.granularity ? assemble(props.startParts, props.granularity) : '';
   const previewEnd = props.granularity ? assemble(props.endParts, props.granularity) : '';
-  const previewPeriod = previewStart
-    ? { start: previewStart, end: previewEnd || null, granularity: props.granularity || null }
-    : null;
 
   return (
     <div className="card is-on" data-testid="reg-s2">
@@ -401,7 +388,7 @@ function StepMeta(props: {
         </span>
       </div>
       <div className="card-b">
-        <div className="fieldlbl">파일에서 자동으로 읽었어요</div>
+        <div className="fieldlbl">파일 정보</div>
         <div className="form-2" data-testid="reg-auto">
           {/* ⭑ 2026-09-02 · `#62` — 변수·기간·좌표계가 여기서 빠지고 아래 `사람이 적어요`
               로 내려갔다. 정본 `VAL-006` = 「변수·기간·좌표계는 자유 입력 · 선택 입력」이고
@@ -431,7 +418,6 @@ function StepMeta(props: {
           </p>
         )}
 
-        <div className="fieldlbl">사람이 적어요</div>
         <div className="form-row">
           {/* ⭑ ⟨개정 2026-09-14⟩ 이름은 종전부터 등록 게이트였고 표시만 없었다 —
               같은 배지로 그 사실을 화면에 적는다. */}
@@ -546,6 +532,7 @@ function StepMeta(props: {
               </span>
             </span>
           </button>
+          <p className="fieldnote">자료가 다루는 시작과 종료 시점이에요. 한 시점이면 종료는 비워 두세요.</p>
           {periodPopOpen && (
             <PeriodCalendarPopover
               granularity={props.granularity}
@@ -574,14 +561,14 @@ function StepMeta(props: {
           {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격.**
               숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
               접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
-              **등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다. 반쪽 값은
-              서버가 400으로 거절하고 화면은 바로 아래에서 미리 알린다.
+              #78 승인으로 신규 등록에서 필수다. 2026-09-15 선택 입력 판정은 개정됐다.
+              숫자와 단위를 모두 받고 서버에서도 누락을 거절한다.
               ⭑ **⟨2026-09-14 · 레인 A4⟩ 자리는 짧은 값 한 줄의 첫 칸이다** ／ 종전 ~~제 행~~ —
                  rev2 목업이 기간 바로 아래 같은 줄에 좌표계·격자와 함께 둔다. */}
           <div className="form-row">
             <label htmlFor="reg-interval-value">
-              관측 간격
-              <FieldTag />
+              관측 간격 입력
+              <FieldTag required />
             </label>
             {/* 각색(이름만) — rev2 `.itv`. 수 칸이 늘고 단위 셀렉트가 고정 폭이다. */}
             <span className="itv">
@@ -591,7 +578,7 @@ function StepMeta(props: {
                 type="text"
                 inputMode="numeric"
                 data-testid="reg-interval-value"
-                placeholder="예: 10분 · 1시간 · 1일"
+                placeholder="예: 10"
                 value={props.intervalValue}
                 onChange={(e) => props.onIntervalValue(e.target.value)}
               />
@@ -614,20 +601,20 @@ function StepMeta(props: {
                 막지는 않는다(문구의 정본은 서버 봉투다 · WU-A4 가 세운 규율 그대로). */}
             {half ? (
               <p className="warn" data-testid="reg-interval-half">
-                숫자와 단위를 함께 적어 주세요
+                숫자를 입력하고 단위를 선택해주세요
               </p>
-            ) : null}
+            ) : <p className="fieldnote">숫자를 입력하고 단위를 선택해주세요</p>}
           </div>
           <div className="form-row">
             <label htmlFor="reg-crs">
-              좌표계
+              좌표계 입력
               <FieldTag />
             </label>
             <input
               id="reg-crs"
               className="inp"
               data-testid="reg-crs"
-              placeholder="EPSG:5179"
+              placeholder="예: EPSG:5179"
               value={props.crs}
               onChange={(e) => props.onCrs(e.target.value)}
             />
@@ -643,7 +630,7 @@ function StepMeta(props: {
                  **Ted 재판정 대기**로 적어 둔다(레인 보고서 「종전 판정 충돌」 절). */}
           <div className="form-row">
             <label htmlFor="reg-grid-description">
-              격자
+              격자 입력
               <FieldTag />
             </label>
             <input
@@ -658,12 +645,6 @@ function StepMeta(props: {
           </div>
         </div>
 
-        {/* ⭑ **⟨19차 해제 · PRD-35⟩ 등록 미리보기** — 상세·목록과 **같은 함수**로 그린다.
-            사람이 지금 적은 값이 상세에서 어떻게 보일지를 등록 전에 보여 준다.
-            간격이 비면 괄호가 없다 — 빈 괄호를 그리지 않는다. */}
-        <p className="regprev" data-testid="reg-period-preview">
-          {formatPeriodWithInterval(previewPeriod, previewInterval)}
-        </p>
         {/* ⭑ **⟨PRD-15⟩ 설명은 필수이고 칸은 세 줄이다.**
             rev1 축자 = 「필수로 만든 칸이 한 줄이면 **짧게 쓰라는 신호**가 된다」 —
             그래서 `필수` 배지와 `textarea rows=3` 이 한 벌이다.
@@ -678,7 +659,7 @@ function StepMeta(props: {
             className="inp"
             data-testid="reg-summary"
             rows={3}
-            maxLength={300}
+            maxLength={3000}
             value={props.summary}
             onChange={(e) => props.onSummary(e.target.value)}
           />
@@ -688,16 +669,6 @@ function StepMeta(props: {
             </p>
           )}
         </div>
-        {/* ⭑ **⟨PRD-33 ⑵⟩ 설명 칸 **아래** 힌트** — 고른 분류의 `메타데이터 항목` ＋ 고른
-            가공 단계의 `메타데이터 필수 항목`. 문면은 PRD-01·03 표 축자이고 화면이 짓지 않는다.
-            ⛔ Lv0 은 이 줄에 없다(별도 칸 소관 · PRD-19 · WU-B6).
-            ⚠ **칸(`form-row`) 바깥이다** — rev1 이 없앤 「칸 아래 안내 문구」는 설명 칸 자체를
-               해설하던 문단이고, 이 줄은 **고른 분류가 요구하는 항목**이라 성격이 다르다. */}
-        {summaryHints.length > 0 && (
-          <p className="fieldnote" data-testid="reg-summary-hint">
-            {summaryHints.join(' · ')}
-          </p>
-        )}
 
         {/* 변수 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
             형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
@@ -713,6 +684,7 @@ function StepMeta(props: {
         <div className="fieldlbl" data-testid="reg-variables-label">
           변수 <span className="muted">{VARIABLES_FIELD_HINT}</span>
         </div>
+        <p className="fieldnote">변수마다 단위·값 범위·결측률을 적고, 자료를 대표할 변수 하나를 골라요.</p>
         <VariableTable
           rows={props.variables}
           onRows={props.onVariables}
@@ -753,7 +725,7 @@ function StepMeta(props: {
           {/* 고른 값의 **범위**를 한 줄로 적는다 — `지정한 사람만` 은 허용 목록 0건으로
               시작해 사실상 `나만 보기` 와 같다는 사실이 여기서 드러난다(PRD-11 ⚠). */}
           <p className="fieldnote" data-testid="reg-visibility-note">
-            {props.accessState === null ? LAB_DEFAULT_NOTE : ACCESS_NOTE[props.accessState]}
+            {props.accessState === null ? LAB_DEFAULT_NOTE : ACCESS_NOTE[props.accessState]} 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.
           </p>
         </div>
       </div>
@@ -898,7 +870,7 @@ export function StepTwo(props: {
                 </option>
               ))}
             </select>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={add}>
+            <button type="button" className="btn btn-secondary btn-sm" data-testid="reg-proj-add" onClick={add}>
               + 추가
             </button>
           </div>
@@ -1007,11 +979,13 @@ function StepThree(props: {
 }) {
   const lv0 = props.ctx.processingLevelUserSet === LV0;
   /**
-   * ⭑ **⟨개정 2026-09-14⟩ 원천 블록이 서는 조건 — 직접 상류가 연구실 밖일 때.**
-   * `Lv0`(원시 수집) **또는** 연결 0건. 부모가 붙어 있으면 원천은 부모 쪽 계보가 말한다.
+   * ⭑ **⟨개정 2026-09-17 · #97⟩ 원천 블록이 서는 조건 — 연결 0건 하나다.**
+   * ／ 종전 ~~`Lv0` **또는** 연결 0건~~ — Lv0 에 상위를 붙여도 블록이 남아 **계보가 이미
+   * 말한 출처를 다시 적으라**고 읽혔다. 부모가 붙어 있으면 원천은 부모 쪽 계보가 말한다.
+   * Lv0 이 연결할 수 있는 상위는 Lv0 뿐이라 이 단일 조건이 「Lv0 에 상위 연결」과 동치다.
    * ⛔ 숨은 동안의 값은 전송되지 않는다 — 그 판정은 `UploadModal` 이 **같은 식**으로 한다.
    */
-  const sourceVisible = lv0 || props.ctx.parents.length === 0;
+  const sourceVisible = props.ctx.parents.length === 0;
   return (
     <div data-testid="reg-s3">
     <div className="card is-on">
@@ -1034,8 +1008,9 @@ function StepThree(props: {
             <div className="fieldlbl" data-testid="reg-source-block-title">
               {SOURCE_BLOCK_TITLE}
             </div>
+            <p className="fieldnote">연구실의 가공 전 데이터는 위에서 연결하고, 연구실 밖 출처는 아래에 적어요.</p>
             <div className="form-row">
-              <label htmlFor="reg-source">출처 이름</label>
+              <label htmlFor="reg-source">출처 이름<FieldTag /></label>
               <input
                 id="reg-source"
                 className="inp"
@@ -1047,10 +1022,10 @@ function StepThree(props: {
               />
             </div>
             <div className="form-row">
-              {/* 출처 주소는 Lv와 무관하게 선택 입력이다. */}
+              {/* #78: 신규 등록의 Lv0 출처 주소는 필수다. */}
               <label htmlFor="reg-source-url">
-                출처 주소
-                <FieldTag />
+                출처 주소 입력
+                <FieldTag required={lv0} />
               </label>
               <input
                 id="reg-source-url"
@@ -1069,8 +1044,8 @@ function StepThree(props: {
                 <div data-testid="reg-source-lv0">
                   <div className="form-row">
                     <label htmlFor="reg-source-downloaded-on">
-                      내려받은 날
-                      <FieldTag />
+                      다운로드 일자 입력
+                      <FieldTag required />
                     </label>
                     <input
                       id="reg-source-downloaded-on"
@@ -1087,9 +1062,6 @@ function StepThree(props: {
                       </p>
                     ) : null}
                   </div>
-                  <p className="muted" data-testid="reg-source-lv0-notice">
-                    {LV0_SOURCE_NOTICE}
-                  </p>
                 </div>
               ) : null}
             </div>
@@ -1187,14 +1159,9 @@ export function RegisterArea(props: {
    */
   const analyzing = !(props.status?.ready || props.status?.failure);
   /**
-   * ① 의 **분류·유형이 비어 있으면 `다음` 이 막힌다** (수용 기준 2).
-   *
-   * ⚠ **표시기 이동은 막지 않는다** — rev1 `UI-003` 축자 「언제나 · 눌러서 아무 단계로나
-   *    이동」과 병존하는 자리다. 순차 이동(`다음`)만 ① 의 빈 값에서 서고, 임의 이동과
-   *    마지막 게이트(`데이터셋 만들기`)는 종전 그대로다.
-   * ⚠ 가공 단계는 기본값 `Lv2` 가 늘 서 있어 빈 상태가 성립하지 않는다.
+   * ① 의 **분류·유형·가공 단계가 비어 있으면 다음 단계 이동이 막힌다** (수용 기준 2).
    */
-  const classifyBlocked = step === 1 && (!props.category || !props.dataType);
+  const classifyBlocked = step === 1 && (!props.category || !props.dataType || !props.level);
   return (
     <div
       className="regarea"
@@ -1210,6 +1177,7 @@ export function RegisterArea(props: {
             key={s}
             className={s === step ? 'is-active' : ''}
             aria-current={s === step ? 'step' : undefined}
+            disabled={s > 1 && (!props.category || !props.dataType || !props.level)}
             onClick={() => props.onStep(s)}
           >
             {STEP_LABELS[s]}

@@ -102,7 +102,8 @@ class LoginSessionStore:
                     VALUES (:id,:account,:lab,:issued,:expires,1,:kind,:purpose,:version,:digest)
                 """), {
                     "id": str(session_id), "account": str(subject.account_id),
-                    "lab": str(subject.lab_id), "issued": now, "expires": expires_at,
+                    "lab": str(subject.lab_id) if subject.lab_id else None,
+                    "issued": now, "expires": expires_at,
                     "kind": credential_kind, "purpose": purpose,
                     "version": credential_version, "digest": self._digest(capability),
                 })
@@ -147,9 +148,12 @@ class LoginSessionStore:
                 # 응답 시간이 상태를 말한다.
                 if row["status"] != "active":
                     raise AccountInactive
-                subject = Subject(Ulid(row["account_id"]), Ulid(row["lab_id"]))
                 operator = bool(db.execute(
                     text(_IS_OPERATOR), {"account_id": row["account_id"]}).scalar_one())
+                if row["lab_id"] is None and not operator:
+                    return None
+                subject = Subject(Ulid(row["account_id"]),
+                                  Ulid(row["lab_id"]) if row["lab_id"] is not None else None)
                 purpose = "password-change" if row["must_change_password"] else "normal"
                 db.execute(text("""
                     INSERT INTO account_admin.login_session
@@ -158,7 +162,8 @@ class LoginSessionStore:
                     VALUES (:id,:account,:lab,:issued,:expires,1,'database',:purpose,:version,:digest)
                 """), {
                     "id": str(session_id), "account": str(subject.account_id),
-                    "lab": str(subject.lab_id), "issued": now, "expires": expires_at,
+                    "lab": str(subject.lab_id) if subject.lab_id else None,
+                    "issued": now, "expires": expires_at,
                     "purpose": purpose, "version": row["session_version"],
                     "digest": self._digest(capability),
                 })
@@ -199,8 +204,10 @@ class LoginSessionStore:
             return None
         if any((
             str(row["account_id"]) != str(claims.subject.account_id),
-            str(row["lab_id"]) != str(claims.subject.lab_id),
-            str(row["current_lab_id"]) != str(claims.subject.lab_id),
+            (str(row["lab_id"]) if row["lab_id"] is not None else None)
+                != (str(claims.subject.lab_id) if claims.subject.lab_id is not None else None),
+            (str(row["current_lab_id"]) if row["current_lab_id"] is not None else None)
+                != (str(claims.subject.lab_id) if claims.subject.lab_id is not None else None),
             row["expires_at"] != claims.expires_at,
             row["generation"] != claims.generation,
             row["credential_kind"] != claims.credential_kind,

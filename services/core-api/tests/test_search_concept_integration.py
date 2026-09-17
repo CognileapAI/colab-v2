@@ -44,8 +44,11 @@ def test_selected_file_concept_reaches_real_search_and_revoked_body_disappears(s
     hit=next((i for i in response.json()['items'] if i['datasetId']==sources[0]),None)
     assert hit is not None and '온톨로지' in hit['rationale'] and '강수' in hit['rationale'],response.json()
     sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,current_lab_id(),'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'",{'id':sources[0]})
-    assert sources[0] not in {i['datasetId'] for i in search(client,TOKEN_PROF).json()['items']}
-    # Owner still has body access; an unrelated same-lab user does not inherit it.
+    # ⭑ ⟨2026-09-18 develop 동기화⟩ 잠근 뒤 검색에 남는 주체가 둘이다 —
+    #   소유자(연구원 · `0032_private_owner_access`)와 자기 연구실 관리자(교수 · `0033_admin_body_access`).
+    #   경계 밖(다른 연구실)만 사라진다. 권한 없는 같은 연구실 주체의 소멸은 HTTP 토큰이 없어
+    #   `test_search_facts` · `test_search_ontology` 가 `ACC_A_OUTSIDER` 로 SQL 층에서 잡는다.
+    assert sources[0] in {i['datasetId'] for i in search(client,TOKEN_PROF).json()['items']}
     assert sources[0] in {i['datasetId'] for i in search(client).json()['items']}
     assert sources[0] not in {i['datasetId'] for i in search(client,TOKEN_B).json()['items']}
 

@@ -172,7 +172,7 @@ def test_invalid_shapes_and_client_hash_are_rejected(p2_client) -> None:
     assert response.status_code == 400, response.text
 
 
-def test_operator_read_does_not_expand_evidence_lab_or_locked_body_access(p2_client, session_factory, sql):
+def test_operator_body_access_preserves_evidence_lab_boundary(p2_client, session_factory, sql):
     from conftest import ACC_B_PROF, LAB_B
     from colab_core.kernel.auth import Subject
     from colab_core.kernel.ids import Ulid
@@ -190,6 +190,6 @@ def test_operator_read_does_not_expand_evidence_lab_or_locked_body_access(p2_cli
     own_operator = Subject(account_id=Ulid(ACC_A_RES), lab_id=Ulid(LAB_A), operator=True)
     try:
         with read_only_scope(session_factory, own_operator, operator_read=True) as db:
-            assert d3_search_evidence.read_reviewed(db) == []
+            assert len(d3_search_evidence.read_reviewed(db)) == 1
     finally:
         sql("DELETE FROM d2_dataset_access WHERE dataset_id=:id", {'id': DS_A1})

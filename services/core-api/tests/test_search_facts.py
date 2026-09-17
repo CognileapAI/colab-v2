@@ -30,7 +30,8 @@ def test_materialize_metadata_with_provenance(sources, session_factory):
 import hashlib
 import pytest
 from sqlalchemy import text
-from conftest import LAB_A, LAB_B, ACC_A_RES, ACC_A_PROF, ACC_B_PROF
+from conftest import LAB_A, LAB_B, ACC_A_RES, ACC_A_PROF, ACC_A_OUTSIDER, ACC_B_PROF
+
 from colab_core.domains import d3_search_changes as changes
 
 
@@ -123,7 +124,7 @@ def test_delete_and_permission_revocation_hide_raw_facts(sources, sql, session_f
     materialize(session_factory)
     sql("""INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,:lab,'잠김')
       ON CONFLICT (dataset_id) DO UPDATE SET state='잠김'""",{'id':sources[0],'lab':LAB_A})
-    with scoped(session_factory,account=ACC_A_PROF) as s:
+    with scoped(session_factory,account=ACC_A_OUTSIDER) as s:
         assert s.execute(text("SELECT count(*) FROM d3_search_fact_snapshot WHERE source_kind='file'")).scalar_one()==0
         assert not any(r['source_kind']=='file' for r in facts().read_current(s,sources[0]))
     sql('DELETE FROM d3_file WHERE id=:id',{'id':sources[1]})
@@ -138,7 +139,7 @@ def test_delete_and_permission_revocation_hide_raw_facts(sources, sql, session_f
 def test_unavailable_private_source_is_not_treated_as_deleted(sources, sql, session_factory):
     sql("""INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES (:id,:lab,'잠김')
       ON CONFLICT (dataset_id) DO UPDATE SET state='잠김'""",{'id':sources[0],'lab':LAB_A})
-    with scoped(session_factory,account=ACC_A_PROF) as s:
+    with scoped(session_factory,account=ACC_A_OUTSIDER) as s:
         item=next(i for i in changes.claim(s) if i.source_kind=='file')
         assert facts().process(s,item)=='source_unavailable'
     row=sql("SELECT processed_version,deleted,last_error_code FROM d3_search_change WHERE source_kind='file' AND source_id=:id",{'id':sources[1]})[0]

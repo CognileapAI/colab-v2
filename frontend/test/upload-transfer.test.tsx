@@ -323,7 +323,11 @@ describe('첫 파일 임시 미리보기', () => {
     }));
     await openModal(sources);
     fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '작은.nc')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '표준 격자 가져오기' }));
+    // 이 버튼이 서는 데 필요한 것은 **마이크로태스크 한 바퀴**이지 벽시계가 아니다.
+    // `findBy*` 는 해상도가 벽시계인 폴링 대기라 호스트 부하에서 넘쳐 간헐 red 를 냈다.
+    // 판정하는 `expect` 는 그대로다 — 바뀐 것은 기다리는 방식뿐이다(선례 `lineage-unknown-20260907.test.tsx:344`).
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: '표준 격자 가져오기' }));
     await waitFor(() => expect(sources.upload.reuseGrid).toHaveBeenCalledOnce());
     expect(screen.getByTestId('reg-open')).toBeDisabled();
     await act(async () => { finishReuse?.(); });
@@ -345,10 +349,13 @@ describe('첫 파일 임시 미리보기', () => {
     });
     await openModal(sources);
     fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '첫째.nc')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '표준 격자 가져오기' }));
+    // 위와 같은 사유 — 마이크로태스크 한 바퀴면 되는 자리에서 벽시계를 뺀다.
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: '표준 격자 가져오기' }));
     fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['efgh'], '둘째.nc')] } });
     await waitFor(() => expect(created).toHaveBeenCalledTimes(2));
-    await screen.findByRole('button', { name: '표준 격자 가져오기' });
+    await act(async () => {});
+    screen.getByRole('button', { name: '표준 격자 가져오기' });
     await act(async () => { failReuse?.(); });
     expect(screen.queryByText('이전 격자 복사 실패')).toBeNull();
   });

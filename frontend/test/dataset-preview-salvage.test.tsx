@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { renderDatasetPreview } from './datasetPreviewTest';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
@@ -13,7 +14,7 @@ function source(details: Record<string, unknown>): DatasetPreviewSource {
 describe('상세에서 좌표 없는 값 그림 유지', () => {
   it('지도 실패 안내와 실제 값그림을 함께 표시하고 지도 조작은 제공하지 않는다', async () => {
     const s = source({ thumbnailUrl: '/thumb.webp', valuePreviewUrl: '/values.png', precisionBadge: '격자 없음 — 지도형 보류' });
-    render(<DatasetPreviewSection datasetId="data-one" source={s} />);
+    renderDatasetPreview(<DatasetPreviewSection datasetId="data-one" source={s} />);
     const img = await screen.findByRole('img', { name: '데이터 값 미리보기' });
     expect(img).toHaveAttribute('src', '/values.png');
     expect(screen.getByTestId('render-failure')).toHaveTextContent('짝 파일');
@@ -29,7 +30,7 @@ describe('상세에서 좌표 없는 값 그림 유지', () => {
     expect(s.mapGeometry).not.toHaveBeenCalled();
   });
   it('썸네일만 남았으면 그것을 보여주고 이미지 오류 후 재시도한다', async () => {
-    render(<DatasetPreviewSection datasetId="data-one" source={source({ thumbnailUrl: '/thumb.webp' })} />);
+    renderDatasetPreview(<DatasetPreviewSection datasetId="data-one" source={source({ thumbnailUrl: '/thumb.webp' })} />);
     const img = await screen.findByRole('img', { name: '데이터 썸네일' });
     expect(img).toHaveAttribute('src', '/thumb.webp');
     fireEvent.error(img);
@@ -40,7 +41,7 @@ describe('상세에서 좌표 없는 값 그림 유지', () => {
     expect(screen.queryByText('값 그림을 불러오지 못했어요.')).not.toBeInTheDocument();
   });
   it('실패 상세에 이미지 URL이 없으면 그림을 만들어 넣지 않는다', async () => {
-    render(<DatasetPreviewSection datasetId="data-one" source={source({})} />);
+    renderDatasetPreview(<DatasetPreviewSection datasetId="data-one" source={source({})} />);
     await screen.findByTestId('render-failure');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });

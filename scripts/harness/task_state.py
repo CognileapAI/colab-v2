@@ -5,6 +5,12 @@ import json
 import subprocess
 import re
 
+# Roles that run gates and therefore get a bound report path (`bind_paths` below).
+# ⚠ This tuple is the single source — `scripts/harness/hooks/lifecycle_contract.py` reads
+#   it from here rather than keeping a second copy. Two copies of a role list eventually
+#   disagree, and the way they disagree is that a role can open a task but never close one.
+GATE_ROLES = ('lane-worker', 'measurement-lane')
+
 
 def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
@@ -69,7 +75,10 @@ def relative_artifact(value):
 def bind_paths(root, task):
     base = run_directory(root, task)
     task['artifacts'] = [str(confined(base, base / relative_artifact(name))) for name in task['artifact_declarations']]
-    task['report'] = str(base / 'gate-summary.json') if task['role'] == 'lane-worker' else None
+    # Every role that runs gates needs a bound report. Without this, the role's `report`
+    # is None and `verify_task_report` fails on every single handoff — the role would be
+    # able to open a task and never able to close one.
+    task['report'] = str(base / 'gate-summary.json') if task['role'] in GATE_ROLES else None
     task['logs'] = [str(base / 'logs' / f'{index}.log') for index, _ in enumerate(task['gates'])]
     return task
 

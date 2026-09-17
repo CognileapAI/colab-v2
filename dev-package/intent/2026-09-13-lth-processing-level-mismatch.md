@@ -59,6 +59,7 @@
 - 정정 2026-09-14 — 부모 0건 규칙은 카드 ⑩ ⓐ 축자(부모 0건이면 Lv0 · 경고 선다)가 정본이다. 본문의 다른 표기는 이 줄로 대체한다.
 
 ## 참조
+- 개정 intent: `dev-package/intent/2026-09-16-issue-80-preserve-selected-level.md` — 기본값 자동 추종을 제거하고 화면에 표시된 선택 단계를 계보 연결 상한으로 사용한다.
 - 기획 원본: `40 COLAB-기획/10_적용전/`(무수정)
 - 피드백 원문: `dev-package/reports/issues/2026-09-13-lth-review-1-raw.md` `I-1`
 - 조사: `dev-package/reports/issues/2026-09-13-lth-survey-C.md` `I-1` ＋ 「추가 실측」

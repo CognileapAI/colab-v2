@@ -222,6 +222,21 @@
   font-size: 13px;
 }
 
+.pj-table {
+  table-layout: fixed;
+  min-width: 900px;
+}
+
+.pj-table th:first-child { width: 36%; }
+.pj-table th:nth-child(2) { width: 11%; }
+.pj-table th:nth-child(3) { width: 12%; }
+.pj-table th:nth-child(4) { width: 180px; }
+.pj-table th:nth-child(5) { width: 11%; }
+.pj-table th:nth-child(6) { width: 10%; }
+.pj-table th:not(:first-child),
+.pj-table td:not(:first-child) { white-space: nowrap; }
+.pj-table .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .pj-table th,
 .pj-table td,
 .pj-ds th,

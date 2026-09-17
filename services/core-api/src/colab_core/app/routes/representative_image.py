@@ -13,7 +13,7 @@ from ...domains import d3_catalog
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
-from ...kernel.scope import apply_scope
+from ...kernel.scope import reapply_scope
 from ..deps import current_subject, scoped_db
 from .catalog import require_body_access
 from .ingestion import _require_upload_edit, _storage
@@ -66,7 +66,7 @@ def _remember_failed_cleanup(
     """이미 500으로 끝날 작업에서도 orphan 키는 별도 transaction에 남긴다."""
     try:
         if not db.in_transaction():
-            apply_scope(db, subject)
+            reapply_scope(db, subject)
         d3_catalog.queue_representative_image_cleanup(db, dataset_id, storage_key)
         db.commit()
     except Exception:
@@ -88,7 +88,7 @@ def _drain_cleanups(storage, db: Session, subject: Subject, dataset_id: Ulid,
     """확정된 응답을 바꾸지 않는 best-effort drain. 실패한 키 행은 그대로 다음 mutation에 남긴다."""
     try:
         if not db.in_transaction():
-            apply_scope(db, subject)
+            reapply_scope(db, subject)
         for pending in d3_catalog.representative_image_cleanups(db, dataset_id):
             # 이 drain을 시작한 mutation이 보존해야 했던 키가 뒤 mutation에 의해 cleanup으로
             # 등록될 수 있다. backend의 keep no-op 뒤 행까지 끝내면 바이트만 orphan으로 남는다.

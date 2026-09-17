@@ -259,7 +259,7 @@ describe('local multipart 업로드 진행률 배선', () => {
     const xhr = await nextXhr();
     xhr.respond(401, { code: 'UNAUTHORIZED' });
 
-    await expect(created).rejects.toThrow('파일을 올리지 못했어요.');
+    await expect(created).rejects.toThrow('로그인이 만료됐어요. 다시 로그인해 주세요.');
     expect(auth.getToken()).toBeNull();
   });
 

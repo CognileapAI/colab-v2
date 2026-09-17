@@ -37,6 +37,7 @@ class RenderFailure:
     # ⚠ 「알 수 없는 오류」와 섞지 않는다 — 원인도 복구도 분명하다(다시 그리면 된다).
     # 섞으면 사용자가 자기 파일을 의심하고, 운영자는 경합인지 진짜 결함인지 못 가른다.
     ARTIFACT_MISSING: Final = "RENDER_ARTIFACT_MISSING"
+    TOO_LARGE: Final = "RENDER_TOO_LARGE"
 
 
 #: 415 안내 문구. **그릴 수 있는 형식을 함께 적는다** — 안 되는 것만 말하면
@@ -55,6 +56,7 @@ FAILURE_MESSAGES: Final[dict[str, str]] = {
     # 같은 배치다.
     RenderFailure.NOT_RENDERABLE: NOT_RENDERABLE_MESSAGE,
     RenderFailure.ARTIFACT_MISSING: "미리보기 산출물이 사라져 다시 그려야 해요.",
+    RenderFailure.TOO_LARGE: "미리보기는 허용된 작업 공간 크기까지만 그릴 수 있어요.",
 }
 
 #: 정본 「미리보기는 500MB까지 그려요」 [가정] — 복구 경로는 「조각 하나를 골라 그린다」.

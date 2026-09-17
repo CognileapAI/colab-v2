@@ -19,6 +19,23 @@ import { useSyncExternalStore } from 'react';
 import './login.css';
 import { ThemeSwitcher } from '../shell/ThemeSwitcher';
 
+// 서버가 대기 시간을 알려 주지 않을 때 쓰는 값. **여기 한 곳**에만 둔다 — 서버가 헤더나
+// 본문으로 남은 시간을 주기 시작하면 그 값이 이 기본값을 대신한다.
+const lockoutFallbackMinutes = 15;
+
+/** 429 응답에서 남은 잠금 시간을 분으로 읽는다. `Retry-After` 헤더 → 본문 → 기본값 순. */
+function lockoutMinutes(response: Response | undefined, body: unknown): number {
+  const fromHeader = Number(response?.headers.get('Retry-After'));
+  const fromBody = (body as { retryAfterSeconds?: unknown } | null | undefined)?.retryAfterSeconds;
+  const seconds = Number.isFinite(fromHeader) && fromHeader > 0
+    ? fromHeader
+    : typeof fromBody === 'number' && Number.isFinite(fromBody) && fromBody > 0
+      ? fromBody
+      : null;
+  // 잠금이 남아 있는데 「0분」이라 말하지 않는다. 남은 초는 올려서 분으로 말한다.
+  return seconds === null ? lockoutFallbackMinutes : Math.max(1, Math.ceil(seconds / 60));
+}
+
 export function LoginPage() {
   const logoutStatus = useSyncExternalStore(
     subscribeLogoutQueueStatus,
@@ -50,7 +67,7 @@ export function LoginPage() {
       });
       if (data) {
         candidate = data;
-        const verified = await api.GET('/me', {
+        const verified = await api.GET('/me-v2', {
           headers: { Authorization: 'Bearer ' + data.token },
         });
         if (!verified.data) {
@@ -87,8 +104,13 @@ export function LoginPage() {
         setPassword('');
         return;
       }
+      // 잠긴 동안에는 **맞는 비밀번호도 거절된다.** 그 사실과 기다릴 시간을 같이 말하지
+      // 않으면 사람이 비밀번호를 의심하며 계속 눌러 잠금을 연장한다.
       if (response?.status === 429) {
-        setMessage('로그인 시도가 너무 잦아요. 잠시 뒤에 다시 시도해 주세요.');
+        setMessage(
+          `로그인 시도가 너무 잦아요. ${lockoutMinutes(response, error)}분 뒤 다시 시도해 주세요. ` +
+          '그 사이에는 맞는 비밀번호도 거절돼요.',
+        );
         return;
       }
       setMessage(error?.message ?? '로그인하지 못했어요. 잠시 뒤에 다시 시도해 주세요.');

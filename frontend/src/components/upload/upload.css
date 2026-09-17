@@ -276,6 +276,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px. `.qproj` 는 이 줄 아래로 접히므로 row-gap 8px 이 그 자리다 */
 .projpick { display: flex; flex-wrap: wrap; gap: 8px; }
+.projpick .sel { flex: 1; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; }
 .qproj .qnote { color: var(--up-muted); font-size:13px; }
@@ -616,7 +617,9 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .up-preview-options { order:2; border-top:1px solid var(--up-line); padding-top:12px; font-size:13px; }
 .up-preview-options > summary { cursor:pointer; color:var(--up-muted); }
 .up-preview-options[open] > summary { margin-bottom:12px; }
-.up-preview-options .vizsetup { margin-top:12px; }
+/* ⭑ ⟨2026-09-17 · #93⟩ 종전 `.up-preview-options .vizsetup { margin-top:12px }` 을 지웠다 —
+   묶음이 접기 밖(`.pv-frame-wrap`)으로 나가 조상 전제가 깨진 죽은 규칙이 된다. 줄 간격은
+   컨테이너가 소유한다(자식은 margin 을 지지 않는다 · WU-C11 판정 49와 같은 규율). */
 
 .modal-takeover[data-scene="register"] .regsteps .rs-f { display:inline-flex; align-items:center; gap:6px; }
 .regsteps .rs-fn { overflow:hidden; text-overflow:ellipsis; }

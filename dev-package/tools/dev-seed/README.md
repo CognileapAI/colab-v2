@@ -29,7 +29,7 @@
 | 참조자료 뿌리 | `--ref-root` · 환경변수 `COLAB_REF_ROOT` | 본 체크아웃과 나란한 `03 Reference-Data`(워크트리에서도 본 체크아웃 기준) |
 | `DATASETS.md` 뿌리 | `--md-root` | 참조자료 뿌리와 같은 자리 |
 | 작업 자리 | `--work-dir` · 환경변수 `COLAB_SEED_WORK_DIR` | 이 폴더의 `.work/`(레포 `.gitignore` 제외) |
-| 대상 주소 | `--base-url` · 환경변수 `COLAB_DEV_URL` | **없음** — 안 주면 러너가 멈춘다. dev 주소의 원본은 `docs/DEPLOY.md` |
+| 대상 주소 | `--base-url` > `COLAB_DEV_WEB_URL` > 호환 `COLAB_DEV_URL` | **없음** — 빈 환경변수는 다음 값으로 넘어간다. seed/reseed가 같은 우선순위를 쓴다. dev 주소의 원본은 `docs/DEPLOY.md` |
 
 - 작업 자리 아래에 생기는 것 = `upload-plan.json` · `state.json` · `verify.json` · `logs/` · `shots/` ·
   `fail/` · `initial-password.txt` · `new-password.txt`. **전부 추적하지 않는다**(자격·세션·절대경로 포함).
@@ -280,3 +280,22 @@ python3 runner.py --phase datasets --from-seq <실패 순번> --base-url <주소
 확인 단계에서 드러난 것 1 — 목록 표 행을 세면 26건을 넣고도 20 이 나온다(쪽 잘림). 계수는 머리의 「N건」으로 읽는다(§6-2).
 
 미결 1 — 미리보기 4포맷 미렌더의 원인 진단. 이 도구의 결함인지 미리보기 뒷단의 결함인지 아직 가르지 않았다.
+
+### reseed 배포 계획
+
+`dev-package/tools/dev-reseed/reseed.sh --release-plan <계획.json>`의 deploy 단계는
+현재 HEAD/후보 full SHA와 계획의 단일 `dv` 대상이 같은지 확인한 뒤, 보호된 임시 폴더(0700)의
+계획 사본(0600)을 기존 executor `--check`와 `run`에 함께 전달한다. 원본 파일이 바뀌어도
+검증한 사본의 내용으로 실행한다. 직접 build/ship/tree/up/web/doctor 호출은 중복하지 않는다.
+reset/bootstrap 뒤의 `stage_up` 재기동·검증은 유지한다.
+
+계획은 기존 `colab-deploy/1` 계약을 따른다: 단일 dev 대상과 full SHA, 비어 있지 않은 deploy/verify
+argv, 입력 파일 해시, 유효한 pre-evidence와 이번 verify에서 새로 만드는 post-evidence가 필요하다.
+deploy 명령은 build/ship/tree/up/web 등 필요한 배포 작업을 포함해야 하며 `reseed.sh`를 다시
+호출하는 재귀 계획은 거절한다. executor의 managed/pre/post 검사와 알림 정책은 유지한다.
+executor 알림은 배포 결과이며 전체 reseed 완료를 뜻하지 않는다.
+
+계획 부재/검사·실행 실패는 reset 전에 중단한다. 상대 계획 경로는 명령을 시작한 폴더 기준이다.
+`--rehearse`는 같은 계약의 `--check`만 수행하고 기존 원격 읽기 리허설로 이어진다.
+`--dry-run`은 계획 읽기·executor 실행도 하지 않는다.
+로컬 `tests/deploy-rehearsal.sh`는 격리 연결 시험이며 실제 EC2 배포 준비성을 증명하지 않는다.

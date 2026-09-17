@@ -172,7 +172,7 @@ def test_the_pending_list_is_oldest_first_and_only_for_approvers(live_client, sq
     """받은 접근 요청 — **오래된 순**(§1.3 「방치를 막기 위해서다」)이고 처리 권한자만 받는다 (§6)."""
     first = live_client.post(f"{PREFIX}/datasets/{DS_A2}/access-requests",
                              headers=auth(TOKEN_RES)).json()["requestId"]
-    sql("UPDATE d2_dataset_access SET state='잠김' WHERE dataset_id=:id", {"id": DS_A1})
+    sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES(:id,current_lab_id(),'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'", {"id": DS_A1})
     second = live_client.post(f"{PREFIX}/datasets/{DS_A1}/access-requests",
                               headers=auth(TOKEN_RES)).json()["requestId"]
 

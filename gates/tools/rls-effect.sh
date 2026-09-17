@@ -124,6 +124,10 @@ $(sed 's/^/     /' "$TMP/err")"
 # 바꾸지 않고, 이 게이트의 일회용 DB에만 열린 A·잠긴 A·열린 B 근거를 추가한다.
 su_psql -q >"$TMP/err" 2>&1 <<'SQL' || red "검색 근거 RLS 판정 행을 넣지 못했다:
 $(sed 's/^/     /' "$TMP/err")"
+INSERT INTO d1_account(id,lab_id,name,email) VALUES
+ ('000000000000000000000000A2','0000000000000000000000000A','다른 연구원','other@a.example');
+INSERT INTO d2_member_role(account_id,lab_id,role) VALUES
+ ('000000000000000000000000A2','0000000000000000000000000A','연구원');
 INSERT INTO d3_search_evidence
   (file_id, lab_id, dataset_id, file_revision, revision, status, facts,
    source_label, source_locator, source_text, source_sha256) VALUES
@@ -228,7 +232,14 @@ BEGIN
   SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 1 THEN RAISE EXCEPTION '[①-대조] 유효한 허용 줄인데 검색 근거가 %행 (1 이어야 한다).', n; END IF;
 
-  -- 소유자는 본인 grant 없이도 파일과 검색 근거를 읽어야 한다.
+  -- 허용은 **사람마다** 다르다 — 같은 트랜잭션에서 주체만 바꾸면 다시 0.
+  PERFORM set_config('app.current_account', '000000000000000000000000A2', true);
+  SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 본체를 봤다 (%행).', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 검색 근거를 봤다 (%행).', n; END IF;
+
+  -- 소유자는 본인 grant 없이도 파일과 검색 근거를 읽는다 (`0032_private_owner_access`).
   PERFORM set_config('app.current_account', '00000000000000000000000AP1', true);
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 비공개 본체 접근이 막혔다 (%행).', n; END IF;
@@ -236,12 +247,45 @@ BEGIN
   IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 검색 근거 접근이 막혔다 (%행).', n; END IF;
 END $$;
 ROLLBACK;
-\echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)'
+\echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행 · 소유자 1행)'
+
+-- 교수는 자기 연구실, 시스템 관리자는 서버가 확정한 대상 연구실에서 본체를 관리한다.
+BEGIN;
+SELECT set_config('app.current_lab', :'LAB_A', true);
+SELECT set_config('app.current_account', :'A_PROF', true);
+-- ⭑ **⟨2026-09-18 develop 동기화⟩ 소유자 갈래를 먼저 치운다.**
+--   시드의 DSA2 소유자는 **A 교수 자신**이라, `0032_private_owner_access` 의 소유자 갈래가
+--   관리자 갈래를 가린다 — 그대로 두면 `is_dataset_manager` 를 없애도 교수가 계속 보여
+--   selftest 의 「교수 예외 제거」 주입이 red 를 못 낸다(게이트가 fail-closed 가 아니게 된다).
+--   이 트랜잭션은 끝에서 ROLLBACK 하므로 소유자를 연구원으로 돌려 **관리자 갈래만** 남긴다.
+UPDATE d3_dataset SET owner_account_id = :'A_RES' WHERE id = '0000000000000000000000DSA2';
+DO $$ BEGIN
+  IF (SELECT count(*) FROM d3_file WHERE dataset_id='0000000000000000000000DSA2') <> 1
+     OR (SELECT count(*) FROM d3_search_evidence WHERE dataset_id='0000000000000000000000DSA2') <> 1 THEN
+    RAISE EXCEPTION '[①-교수] 자기 연구실 잠긴 본체/검색 근거 접근이 닫혔다';
+  END IF;
+  -- 다른 연구실 교수라는 이유만으로 접근을 허용하지 않는다.
+  PERFORM set_config('app.current_account', '00000000000000000000000BP1', true);
+  IF EXISTS(SELECT 1 FROM d3_file WHERE dataset_id='0000000000000000000000DSA2') THEN
+    RAISE EXCEPTION '[①-외랩교수] 다른 연구실 교수에게 잠긴 본체가 열렸다';
+  END IF;
+  PERFORM set_config('app.operator_manage','on',true);
+  IF (SELECT count(*) FROM d3_file WHERE dataset_id='0000000000000000000000DSA2') <> 1
+     OR (SELECT count(*) FROM d3_search_evidence WHERE dataset_id='0000000000000000000000DSA2') <> 1 THEN
+    RAISE EXCEPTION '[①-시스템] 대상 연구실 관리자 본체/검색 근거 접근이 닫혔다';
+  END IF;
+  -- 관리 권한은 현재 대상 연구실 밖 쓰기 경계를 해제하지 않는다.
+  IF EXISTS(SELECT 1 FROM d3_file WHERE lab_id <> current_lab_id()) THEN
+    RAISE EXCEPTION '[①-시스템] 대상 밖 연구실 경계가 열렸다';
+  END IF;
+END $$;
+ROLLBACK;
+\echo '# ① 관리자 양성 — 교수 자기 연구실 · 시스템 관리자 대상 연구실, 외랩 교수 음성 유지'
 
 -- ═══ ② 메타 양성 — 잠겨도 메타는 보인다 (P-13) ══════════════════════════════
 BEGIN;
 SELECT set_config('app.current_lab',     :'LAB_A',  true);
-SELECT set_config('app.current_account', :'A_PROF', true);
+SELECT set_config('app.current_account', :'A_RES', true);
 
 DO $$
 DECLARE n int; s text;

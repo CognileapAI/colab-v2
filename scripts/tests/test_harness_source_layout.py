@@ -25,7 +25,8 @@ class HarnessSourceLayoutTests(unittest.TestCase):
         shared_names = sorted(
             path.parent.name for path in (ROOT / ".agents/skills").glob("*/SKILL.md")
         )
-        self.assertEqual(len(shared_names), 16)
+        # issue-before / issue-after were added to the shared skills.
+        self.assertEqual(len(shared_names), 18)
         for name in shared_names:
             if name == "slack-completion":
                 continue

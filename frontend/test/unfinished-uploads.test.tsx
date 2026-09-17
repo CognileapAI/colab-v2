@@ -7,15 +7,17 @@
  *
  * ⚠ 이 카드는 P7(할 일 함)의 자리가 아니다 — `TodoInboxSlot` 을 침범하지 않는다.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UnfinishedUploads } from '../src/components/upload/UnfinishedUploads';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
-import { OpenUploadContext } from '../src/components/upload/openUpload';
+import { OpenUploadContext, useOpenUpload } from '../src/components/upload/openUpload';
+import { AppLayout } from '../src/shell/AppLayout';
 import { listPending, rememberPending } from '../src/components/upload/pendingStore';
 import { UPLOAD_CLOSE_FORGET } from '../src/components/common/toastCopy';
+import { UploadGone } from '../src/components/upload/types';
 import type { CurrentAccount } from '../src/api/client';
 import type { LineageSource, LineageSuggestionResponse } from '../src/components/lineage/types';
 import type {
@@ -24,6 +26,7 @@ import type {
   ProjectSource,
   UploadSource,
   UploadSources,
+  UploadStatus,
 } from '../src/components/upload/types';
 
 const LAB = '01JYZ9K7WQ3N8V4M2X6C5B0LB1';
@@ -109,6 +112,16 @@ describe('메인 — 올리다 만 것', () => {
     (await screen.findByTestId(`unfinished-resume-${T1}`)).click();
     expect(onOpen).toHaveBeenCalledWith({ resumeUploadId: T1 });
   });
+
+  it('[이어서 하기]는 전송 재개와 구분해 같은 접수 건의 등록을 연다', async () => {
+    rememberPending(LAB, U2);
+    const onOpen = draw(source({
+      status: async () => ({ uploadId: U2, files: [{ fileId: 'F', fileName: '비.nc', kind: '본체', byteSize: 1 }],
+        ready: true, renderable: null, metadataComplete: null, expiresAt: 'z', failure: null }),
+    }));
+    fireEvent.click(await screen.findByTestId(`unfinished-register-${U2}`));
+    expect(onOpen).toHaveBeenCalledWith({ registerUploadId: U2 });
+  });
 });
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -144,7 +157,7 @@ function modalSources(upload: UploadSource): UploadSources {
   return { upload, preview, projects, lineage };
 }
 
-function drawEntry(upload: UploadSource, openRequest?: { seq: number; resumeUploadId?: string }) {
+function drawEntry(upload: UploadSource, openRequest?: { seq: number; resumeUploadId?: string; registerUploadId?: string }) {
   return render(
     <MemoryRouter initialEntries={['/datasets']}>
       <SessionProvider account={account()}>
@@ -161,6 +174,88 @@ describe('#33 ㉠ — 배너 재개 요청이 모달의 재개 무장까지 간�
     // 무장 표시는 신설하지 않는다 — 모달이 이미 가진 `is-armed` 와 재개 안내가 오라클이다.
     await waitFor(() => expect(screen.getByTestId(`up-resume-${T1}`)).toHaveClass('is-armed'));
     expect(screen.getByTestId('up-resume-hint')).toBeInTheDocument();
+  });
+});
+
+describe('#33 — 접수 완료 건을 같은 uploadId로 등록 복원한다', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  function completed(uploadId: string, failure: boolean): UploadStatus {
+    return { uploadId, files: [{ fileId: 'F', fileName: '복원.nc', kind: '본체', byteSize: 12 }],
+      ready: !failure, renderable: null, metadataComplete: null, expiresAt: 'z',
+      failure: failure ? { reason: '분석 실패' } : null } as UploadStatus;
+  }
+
+  it.each([false, true])('ready/failure 완료 상태를 재전송 없이 등록 ①로 연다 (%s)', async (failure) => {
+    const create = vi.fn();
+    drawEntry(source({ create, status: async () => completed(U2, failure) }), { seq: 2, registerUploadId: U2 });
+    expect(await screen.findByTestId('reg-steps')).toBeInTheDocument();
+    expect(screen.getAllByText('복원.nc')).not.toHaveLength(0);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('이미 등록된 건은 기억을 지우고 안내한다', async () => {
+    rememberPending(LAB, U3);
+    drawEntry(source({ status: async () => ({ ...completed(U3, false), registered: true }) }),
+      { seq: 3, registerUploadId: U3 });
+    expect(await screen.findByTestId('up-status-error')).toHaveTextContent('이미 등록된 업로드');
+    expect(listPending(LAB)).not.toContain(U3);
+  });
+
+  it('만료된 건은 기억을 지우고 다시 올리라고 안내한다', async () => {
+    rememberPending(LAB, U4);
+    drawEntry(source({ status: async () => { throw new UploadGone(); } }), { seq: 4, registerUploadId: U4 });
+    expect(await screen.findByTestId('up-status-error')).toHaveTextContent('더 이상 없어요');
+    expect(listPending(LAB)).not.toContain(U4);
+  });
+
+  it('복원 상태 응답을 기다리는 동안 새 파일 선택 화면을 열지 않는다', async () => {
+    let resolve!: (value: UploadStatus) => void;
+    const pending = new Promise<UploadStatus>((done) => { resolve = done; });
+    drawEntry(source({ status: async () => pending }), { seq: 5, registerUploadId: U5 });
+    expect(await screen.findByTestId('up-register-restoring')).toBeInTheDocument();
+    expect(screen.queryByTestId('up-files')).toBeNull();
+    resolve(completed(U5, false));
+    expect(await screen.findByTestId('reg-steps')).toBeInTheDocument();
+  });
+
+  it('분석 중이면 같은 uploadId를 polling해 완료 뒤 등록 ①을 연다', async () => {
+    let calls = 0;
+    drawEntry(source({ status: async () => ++calls === 1 ? { ...completed(U2, false), ready: false } : completed(U2, false) }),
+      { seq: 6, registerUploadId: U2 });
+    expect(await screen.findByTestId('reg-steps', {}, { timeout: 2500 })).toBeInTheDocument();
+    expect(calls).toBeGreaterThanOrEqual(2);
+  }, 3000);
+
+  it('복원 응답 전에 닫으면 늦은 응답이 화면을 되살리지 않는다', async () => {
+    let resolve!: (value: UploadStatus) => void;
+    const pending = new Promise<UploadStatus>((done) => { resolve = done; });
+    drawEntry(source({ status: async () => pending }), { seq: 7, registerUploadId: U2 });
+    await screen.findByTestId('up-register-restoring');
+    fireEvent.click(screen.getByTestId('upload-close'));
+    resolve(completed(U2, false));
+    await act(async () => {});
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
+  });
+});
+
+describe('#33 — 실제 앱 셸이 등록 복원 요청을 보존한다', () => {
+  it('AppLayout → Gnb → UploadEntry 경로로 registerUploadId가 전달된다', async () => {
+    function Trigger() {
+      const open = useOpenUpload();
+      return <button type="button" onClick={() => open({ registerUploadId: U2 })}>복원 열기</button>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/test']}>
+        <SessionProvider account={account()}>
+          <Routes>
+            <Route element={<AppLayout />}><Route path="/test" element={<Trigger />} /></Route>
+          </Routes>
+        </SessionProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '복원 열기' }));
+    expect(await screen.findByTestId('up-register-restoring')).toBeInTheDocument();
   });
 });
 

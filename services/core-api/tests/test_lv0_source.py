@@ -2,7 +2,7 @@
 
 여기서 재는 것 (`dev-package/prd/rounds/R-B-1-db.md` §2 WU-B6 수용 기준 그대로)
 
-  ⑴ Lv0 이고 출처 주소가 빔 → `createDataset` **성공** (선택 입력)
+  ⑴ Lv0 이고 출처 주소 또는 내려받은 날이 빔 → `createDataset` **400**
   ⑵ Lv1 인데 `sourceUrl` 을 실어 보냄 → **성공하고 값이 저장된다** (거절하지 않는다)
   ⑶ 두 칸을 안 실으면 둘 다 `null` 이고 등록이 성공한다 — 그것이 기존 전 행의 상태다
   ⑷ 두 칸이 상세 `basicInfo` 로 그대로 돌아온다 (Lv 를 안 가린다)
@@ -11,10 +11,8 @@
   ⑺ 날짜가 아닌 문자열은 **400** 이다 — 캐스트에 맡기면 사용자의 오타가 500 이 된다
   ⑻ `sourceLabel` 은 **Lv 무관 상시** 그대로다 (미결-11 ⓐ) — 두 칸이 그 값을 대신하지 않는다
 
-⛔ **여기서 재지 않는 것 — 폐기된 판정**
-  「Lv0 이면 두 칸 필수 · 비면 400」·「Lv1 이상에서 값이 오면 400」은 **폐기됐다**
-  (PRD-19 · 미결-11 ⓐ). 목업 배지를 근거로 400 을 세우지 않는다. 아래 ⑴⑵ 가 그 폐기의
-  회귀 시험이다 — 400 이 되살아나면 두 시험이 red 를 낸다.
+⛔ **여기서 재지 않는 것**
+  「Lv1 이상에서 값이 오면 400」은 만들지 않는다. 비Lv0 출처 값은 계속 저장한다.
 
 ⚠ **여기서 재지 않는 것 — 다른 층**
   · 화면의 Lv0 전용 블록 표시·숨김과 숨은 값 미전송 → `frontend/test/lv0-source-20260907.test.tsx`.
@@ -41,17 +39,19 @@ def _register(client, **extra):
     return register(client, make_upload(client), **extra)
 
 
-# ═══════════════════ 선택 입력이다 — 비어도 등록된다 ═══════════════════
-def test_lv0_with_empty_source_url_registers(p2_client) -> None:
-    """⑴ Lv0 이고 출처 주소가 비어도 **성공**한다.
-
-    ⛔ 종전 완료 판정(「Lv0 이면 두 칸 필수 · 비면 400」)의 **회귀 시험**이다.
-    """
-    r = _register(p2_client(), processingLevelUserSet="Lv0")
-    assert r.status_code == 201, r.text
-    basic = r.json()["basicInfo"]
-    assert basic["sourceUrl"] is None
-    assert basic["sourceDownloadedOn"] is None
+# ═══════════════════ 신규 Lv0 등록은 두 출처 값이 필수다 ═══════════════════
+def test_lv0_requires_both_source_fields_without_side_effects(p2_client, sql) -> None:
+    """⑴ Lv0 출처 누락·공백은 400이고 D3 및 업로드 전환 상태를 바꾸지 않는다."""
+    client = p2_client()
+    for fields in ({}, {"sourceUrl": URL}, {"sourceDownloadedOn": "2026-08-20"},
+                   {"sourceUrl": "   ", "sourceDownloadedOn": "2026-08-20"}):
+        receipt = make_upload(client)
+        before = sql("SELECT count(*) AS n FROM d3_dataset")[0]["n"]
+        r = register(client, receipt, processingLevelUserSet="Lv0", **fields)
+        assert r.status_code == 400, (fields, r.text)
+        assert sql("SELECT count(*) AS n FROM d3_dataset")[0]["n"] == before
+        assert sql("SELECT registered_at FROM d5_upload WHERE id = :u",
+                   {"u": receipt["uploadId"]})[0]["registered_at"] is None
 
 
 def test_lv0_with_both_fields_stores_them(p2_client) -> None:
@@ -95,7 +95,9 @@ def test_every_level_accepts_the_two_fields(p2_client) -> None:
     """⑵-b 네 단계 **전부**에서 저장된다 — 한 단계라도 막히면 Lv 게이팅이 서버에 남은 것이다."""
     client = p2_client()
     for level in ("Lv0", "Lv1", "Lv2", "Lv3"):
-        r = _register(client, processingLevelUserSet=level, sourceUrl=f"{URL}#{level}")
+        extra = {"sourceDownloadedOn": "2026-08-20"} if level == "Lv0" else {}
+        r = _register(client, processingLevelUserSet=level,
+                      sourceUrl=f"{URL}#{level}", **extra)
         assert r.status_code == 201, f"{level}: {r.text}"
         basic = _read(client, r.json()["datasetId"])["basicInfo"]
         assert basic["sourceUrl"] == f"{URL}#{level}", level
@@ -108,7 +110,8 @@ def test_update_accepts_both_fields(p2_client) -> None:
     「Lv0 인데 비어 있어요 — 수정에서 채워 주세요」가 실행 가능한 안내가 되는 자리다.
     """
     client = p2_client()
-    dataset_id = _register(client, processingLevelUserSet="Lv0").json()["datasetId"]
+    dataset_id = _register(client, processingLevelUserSet="Lv0", sourceUrl=URL,
+                           sourceDownloadedOn="2026-08-20").json()["datasetId"]
     r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
                      json={"sourceUrl": URL, "sourceDownloadedOn": "2026-08-20"},
                      headers=auth(TOKEN_RES))
@@ -125,6 +128,21 @@ def test_update_can_clear_both_fields(p2_client) -> None:
                            sourceDownloadedOn="2026-08-20").json()["datasetId"]
     r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
                      json={"sourceUrl": None, "sourceDownloadedOn": None},
+                     headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    basic = _read(client, dataset_id)["basicInfo"]
+    assert basic["sourceUrl"] is None
+    assert basic["sourceDownloadedOn"] is None
+
+
+def test_existing_lv0_without_source_can_edit_unrelated_fields(p2_client, sql) -> None:
+    """기존 Lv0 null 행은 소급 차단하지 않고 이름·설명만 수정할 수 있다."""
+    client = p2_client()
+    dataset_id = _register(client).json()["datasetId"]
+    sql("UPDATE d3_dataset SET processing_level_user_set = 'Lv0' WHERE id = :d",
+        {"d": dataset_id})
+    r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                     json={"name": "기존 Lv0 자료", "summary": "설명만 수정"},
                      headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     basic = _read(client, dataset_id)["basicInfo"]
@@ -167,7 +185,10 @@ def test_source_label_stays_visible_at_every_level(p2_client) -> None:
     """⑻ `sourceLabel` 은 Lv 와 무관하게 상시 그대로다 — 두 칸이 그 값을 대신하지 않는다."""
     client = p2_client()
     for level in ("Lv0", "Lv2"):
-        r = _register(client, processingLevelUserSet=level, sourceLabel="ECMWF ERA5")
+        source = ({"sourceUrl": URL, "sourceDownloadedOn": "2026-08-20"}
+                  if level == "Lv0" else {})
+        r = _register(client, processingLevelUserSet=level,
+                      sourceLabel="ECMWF ERA5", **source)
         assert r.status_code == 201, r.text
         basic = _read(client, r.json()["datasetId"])["basicInfo"]
         assert basic["sourceLabel"] == "ECMWF ERA5", level

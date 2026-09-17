@@ -1,7 +1,7 @@
 {
   "effortLevel": "high",
   "worktree": {
-    "baseRef": "fresh"
+    "baseRef": "head"
   },
   "hooks": {
     "SessionStart": [

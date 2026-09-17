@@ -118,5 +118,81 @@ class TaskRuntimeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 78)
         self.assertEqual(Path(task['artifacts'][0]).read_text(), 'findings')
 
+    def measurement_report(self, evidence, gates):
+        return {'schema': 'colab-gate-summary/1', 'commit': evidence['commit'], 'tree': evidence['tree'],
+                'counts': {'green': len(gates), 'red_판정': 0, 'red_준비': 0},
+                'gates': [{'name': g, 'status': 'green', 'exit': 0} for g in gates],
+                'task_evidence': {'before': evidence, 'after': evidence}}
+
+    def test_measurement_lane_binds_a_report_and_completes_on_its_declared_set(self):
+        """The whole point of the role: a measuring lane can open AND close a task.
+
+        Without the report binding in task_state.bind_paths this role would get
+        report=None and verify_task_report would fail on every handoff.
+        """
+        gates = ['first', 'second', 'third']
+        task = contract.begin(self.root, 'measurement-lane', gates=gates)
+        self.assertEqual(task['schema'], 'colab-task/2')
+        self.assertIsNotNone(task['report'], 'measurement-lane must get a bound report')
+        self.assertIn('/colab-harness/', task['report'])
+        # gate_evidence and gate_start must not reject the role.
+        contract.gate_evidence(self.root, task['task_id'])
+        evidence = contract.gate_start(self.root, task['task_id'])
+        current = contract.load_task(self.root, task['task_id'])
+        path = contract.resolve_task_path(self.root, current, current['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.measurement_report(evidence, gates)))
+        contract.verify_task_report(self.root, current)
+        # stop() has no branch of its own for this role; it falls into the lane branch,
+        # which demands --mode complete plus current gate evidence. Assert that on purpose
+        # rather than leaving it true by accident.
+        handoff = {'task_id': current['task_id'], 'run_id': current['run_id'], 'mode': 'complete',
+                   'summary': 'full declared set measured on an exclusive host', 'artifacts': {}}
+        payload = {'cwd': str(self.root), 'agent_type': 'measurement-lane',
+                   'last_assistant_message': 'done\nCOLAB_HANDOFF ' + json.dumps(handoff)}
+        self.assertEqual(contract.stop(payload, 'measurement-lane'), 'H7')
+        for mode in ('read-only', 'draft-return', 'artifacts'):
+            bad = dict(payload)
+            bad['last_assistant_message'] = 'done\nCOLAB_HANDOFF ' + json.dumps(dict(handoff, mode=mode))
+            with self.assertRaises(ValueError):
+                contract.stop(bad, 'measurement-lane')
+        # A red row is not completion, and a missing declared gate is not completion.
+        partial = self.measurement_report(evidence, gates)
+        partial['gates'][1]['status'] = 'red_판정'
+        partial['gates'][1]['exit'] = 1
+        partial['counts'] = {'green': 2, 'red_판정': 1, 'red_준비': 0}
+        path.write_text(json.dumps(partial))
+        with self.assertRaises(ValueError):
+            contract.stop(payload, 'measurement-lane')
+        path.write_text(json.dumps(self.measurement_report(evidence, gates[:2])))
+        with self.assertRaises(ValueError):
+            contract.stop(payload, 'measurement-lane')
+
+    def test_measurement_lane_still_cannot_use_group_selectors_or_legacy(self):
+        """`--gate all` was rejected on purpose (ADR-0005). Keep it rejected."""
+        for selector in ('all', 'task'):
+            task = contract.begin(self.root, 'measurement-lane', gates=[selector])
+            with self.assertRaises(ValueError) as caught:
+                contract.run_gates(self.root, task['task_id'])
+            self.assertIn('nested group selectors', str(caught.exception))
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'measurement-lane', gates=[])
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'measurement-lane', legacy=True, gates=['check'],
+                           report='dev-package/reports/m/lane/gate-summary.json')
+
+    def test_researcher_still_gets_no_report_and_no_gates(self):
+        """The new role widened two role checks; prove it did not widen them too far."""
+        task = contract.begin(self.root, 'researcher')
+        self.assertIsNone(task['report'])
+        with self.assertRaises(ValueError):
+            contract.gate_evidence(self.root, task['task_id'])
+        with self.assertRaises(ValueError):
+            contract.gate_start(self.root, task['task_id'])
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', gates=['check'])
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'auditor', gates=['check'])
+
 
 if __name__ == '__main__': unittest.main()

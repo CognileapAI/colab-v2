@@ -78,13 +78,6 @@ export function PreviewPanel(props: {
   hasReferenceGrid: boolean;
   /** 격자 업로드 흐름. 없으면 블록을 열지 않는다 — 화면이 사라지는 것이 아니라 안 열린다. */
   grid?: GridFlowProps | undefined;
-  /**
-   * 그리기를 **시작한 사실**을 바깥(S-04 모달)에 알린다.
-   * 「보기만 할게요」로 S-08 에 갈 때 그 화면이 **다시 그리지 않고 이어서 보게** 하려면
-   * `renderId` 가 모달 손에 있어야 한다 (정본 §8.1 미리보기 — 「그대로 이어서 보여준다」).
-   * 짝 파일 없이 그렸는지도 **여기서만 아는 사실**이라 함께 넘긴다.
-   */
-  onRender?: ((info: { renderId: string; withoutReferenceGrid: boolean }) => void) | undefined;
   onResult?: ((result: RenderResult) => void) | undefined;
   /** 대표 그림 실제 파일은 등록 수명과 함께 모달이 쥔다. */
   representativeFile?: File | null | undefined;
@@ -124,6 +117,8 @@ export function PreviewPanel(props: {
   // 색 범위가 **조용히** 바뀌지 않게, 앞서 본 잠정 범위를 들고 있는다 (`§D.4`)
   const seenRange = useRef<{ stage: string; key: string } | null>(null);
   // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영 · 판정 축자).
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [pieces, setPieces] = useState<PreviewPiece[]>([]);
   const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
   const [pick, setPick] = useState<PickSelection>({});
@@ -131,31 +126,29 @@ export function PreviewPanel(props: {
   // 고르개 후보와 413 폴백이 **같은 한 번의 조회**를 쓴다 (수용 기준 「files 조회 1회」).
   const loadFiles = useMemo(
     () => (source.files ? onceFiles(() => source.files!(uploadId ?? '')) : undefined),
-    [source, uploadId],
+    [source, uploadId, loadAttempt],
   );
 
   // 후보는 **서버가 준 값뿐이다.** 못 받으면 자리는 서고 잠긴다 — 지어내지 않는다.
   useEffect(() => {
     if (!uploadId) return;
     let alive = true;
+    setDescription(undefined);
+    setLoadError(null);
     void (async () => {
       try {
         const list = await loadFiles?.();
         if (alive && list) setPieces(list);
-      } catch {
-        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 등록은 막지 않는다. */
-      }
+      } catch (e) { if (alive) setLoadError(e instanceof Error ? e.message : '파일 목록을 불러오지 못했어요.'); }
       try {
         const desc = await source.describe?.(uploadId);
         if (alive && desc) setDescription(desc);
-      } catch {
-        /* 변수·시각 후보가 없으면 그 둘이 잠긴다. 기본값은 서버가 고른다. */
-      }
+      } catch (e) { if (alive) setLoadError(e instanceof Error ? e.message : '변수·시각을 불러오지 못했어요.'); }
     })();
     return () => {
       alive = false;
     };
-  }, [source, uploadId, loadFiles]);
+  }, [source, uploadId, loadFiles, loadAttempt]);
 
   // 팔레트 값의 **유일한 출처는 서버**다. 화면이 목록을 지어내지 않는다.
   useEffect(() => {
@@ -233,7 +226,6 @@ export function PreviewPanel(props: {
       setRequesting(false);
       if (piece) setFallbackPiece(piece);
       setJob(started);
-      props.onRender?.({ renderId: started.renderId, withoutReferenceGrid });
       poll(started.renderId, gen);
     } catch {
       if (pollGen.current !== gen) return;
@@ -335,6 +327,19 @@ export function PreviewPanel(props: {
         : props.renderable === false ? 'failed' : 'idle';
 
   /**
+   * ⭑ **⟨2026-09-17 · #92⟩ 지도용 선택지를 보이는가.**
+   *
+   * 계약 필드 `renderable` 은 **참·거짓·없음 3상태**다. 판정은 **거짓으로 확정된
+   * 경우에만 숨김**이다 — 판정 전(값 없음)은 지금과 같이 노출한다. 그래야 값이
+   * 도착해도 화면이 흔들리지 않는다(참·값 없음 → 참인 경로).
+   * ⚠ 화면 단에서는 「모달이 준비 완료가 아니다」와 「계약상 값 없음」이 같은
+   *   `undefined` 로 합쳐져 들어온다(`UploadModal` 의 `status?.ready ? … : undefined`).
+   *   이번 판정은 두 경우를 모두 노출로 다루므로 그 합침이 결과를 바꾸지 않는다.
+   * ⛔ 등록은 막지 않는다 — 그릴 수 없는 것과 등록할 수 없는 것은 다르다(§8·§9).
+   */
+  const mapOptionsVisible = props.renderable !== false;
+
+  /**
    * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
    * 사람이 고른 그림이 있으면 그것, 없으면 **자동 생성된 미리보기 축소본**이 기본이다.
    * `pickedThumb` 는 모달이 보관한 File의 수명에 맞춰 만든 화면 주소다.
@@ -411,6 +416,61 @@ export function PreviewPanel(props: {
     </div>
   );
 
+  /**
+   * ⭑ **⟨2026-09-17 · #93⟩ 팔레트·구간 수·미리보기 그리기 — 접힌 메뉴 밖에 선다.**
+   * 기본 닫힘 `<details>` 안에 있던 동안은 **접기를 펼치기 전까지 지도 표현을 바꾸는
+   * 수단의 존재가 화면에 없었다.** 서는 자리는 틀 위 줄 컨테이너(`.pv-frame-wrap`) 안,
+   * 파일·변수 고르개 줄 **바로 아래** — 「무엇을 그릴지 → 어떻게 그릴지」 순서다.
+   * ⚠ 상태는 전부 이 패널의 지역 상태다 — 자리를 옮길 뿐 배선은 그대로다.
+   * 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약).
+   */
+  const vizSetup = (
+    <div className="vizsetup">
+      <label className="vs-f">
+        <span>팔레트</span>
+        <select
+          className="sel"
+          data-testid="up-style-palette"
+          value={palette}
+          onChange={(e) => setPalette(e.target.value)}
+        >
+          {(palettes ?? []).map((p) => (
+            <option key={p.palette} value={p.palette}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="vs-f">
+        <span>구간 수</span>
+        <input
+          className="inp"
+          type="number"
+          min={3}
+          max={9}
+          data-testid="up-style-classcount"
+          value={classCount}
+          /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
+             그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
+             기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
+          onChange={(e) => setClassCount(classCountOf(e.target.value))}
+        />
+      </label>
+      <div className="vs-act">
+        {uploadId && (
+          <button
+            type="button"
+            className="btn btn-strong btn-sm"
+            data-testid="up-preview-draw"
+            onClick={() => void draw(false)}
+          >
+            미리보기 그리기
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   if (props.representativeOnly) {
     return (
       <section
@@ -455,61 +515,19 @@ export function PreviewPanel(props: {
           팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
         </p>
       ) : null}
+      {/* ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 접기 묶음째 서지 않는다. */}
+      {mapOptionsVisible && (
       <details className="up-preview-options" data-testid="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
-
-      {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}
-      <div className="vizsetup">
-        <label className="vs-f">
-          <span>팔레트</span>
-          <select
-            className="sel"
-            data-testid="up-style-palette"
-            value={palette}
-            onChange={(e) => setPalette(e.target.value)}
-          >
-            {(palettes ?? []).map((p) => (
-              <option key={p.palette} value={p.palette}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="vs-f">
-          <span>구간 수</span>
-          <input
-            className="inp"
-            type="number"
-            min={3}
-            max={9}
-            data-testid="up-style-classcount"
-            value={classCount}
-            /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
-               그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
-               기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
-            onChange={(e) => setClassCount(classCountOf(e.target.value))}
-          />
-        </label>
-        <div className="vs-act">
-          {uploadId && (
-            <button
-              type="button"
-              className="btn btn-strong btn-sm"
-              data-testid="up-preview-draw"
-              onClick={() => void draw(false)}
-            >
-              미리보기 그리기
-            </button>
-          )}
-        </div>
-      </div>
-
       </details>
+      )}
 
-      {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9) */}
-      {!props.hasReferenceGrid && (
+      {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9)
+          ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 이 안내도 서지 않는다 — 그 안의
+             `짝 파일 없이 그려 보기` 가 할 수 없는 조작을 권하는 자리가 된다. */}
+      {mapOptionsVisible && !props.hasReferenceGrid && (
         <div className="companion" data-testid="up-nogrid">
           <span className="cw">위경도를 담은 짝 파일이 없어요.</span>
           <span className="cw">파일 안에 위경도가 들어 있으면 그려져요. 등록은 막지 않아요.</span>
@@ -535,7 +553,7 @@ export function PreviewPanel(props: {
            한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다.
            ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 틀 안에 있던 자리를 틀 밖으로 올렸다 — 그림이 그려지면
               틀 안 스크롤 위로 밀려 화면에서 빠지던 자리다. */
-        controls={<PreviewPickRow
+        controls={<>{loadError ? <div role="alert"><p>{loadError}</p><button type="button" className="btn" onClick={() => setLoadAttempt(n => n + 1)}>다시 불러오기</button></div> : null}<PreviewPickRow
           idPrefix="up"
           pieces={pieces}
           description={description}
@@ -547,7 +565,7 @@ export function PreviewPanel(props: {
              근거 = 기획서 rev2(업로드 좌측은 「첫 변수·기간 평균 한 장」). 아래 확장보기
              오버레이와 데이터셋 상세는 이 값을 넘기지 않는다 — 그 두 자리는 무변이다. */
           hideSingleChoice
-        />}
+        />{mapOptionsVisible ? vizSetup : null}</>}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
@@ -677,20 +695,27 @@ export function PreviewPanel(props: {
           {props.renderable === false ? (
             <div data-testid="up-preview-unsupported" role="status">
               <div className="pt">지도로 그릴 수 없는 파일이에요</div>
-              <div className="pd">파일은 그대로 등록할 수 있어요. 미리보기 설정을 열어 직접 그리기를 시도할 수도 있어요.</div>
+              {/* ⭑ ⟨2026-09-17 · #92⟩ 「미리보기 설정을 열어 직접 그리기를 시도할 수도
+                  있어요」 절을 지웠다 — 이 경우 지도용 선택지가 화면에 없다. 없는 조작을
+                  안내하지 않는다. */}
+              <div className="pd">파일은 그대로 등록할 수 있어요.</div>
             </div>
           ) : (
             <>
               <div className="pt">아직 그리지 않았어요</div>
-              <div className="pd">미리보기 설정을 열어 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
+              {/* ⭑ ⟨2026-09-17 · #93⟩ 「설정을 열어」 절을 뺀다 — 팔레트·구간 수가 접기
+                  밖으로 나와 **열 설정이 없다**. 없는 조작을 안내하지 않는다. */}
+              <div className="pd">팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
             </>
           )}
         </div>
       )}
       </PreviewSlot>
 
-      {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다 */}
-      {grid && (gridBlock || grid.options) ? (
+      {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다
+          ⭑ ⟨2026-09-17 · #92⟩ 그릴 수 없다고 확정되면 격자를 올려도 그려지지 않는다 —
+             올리라고 권하지 않는다. 등록 자체는 그대로 진행된다. */}
+      {mapOptionsVisible && grid && (gridBlock || grid.options) ? (
         <GridUploadBlock
           state={gridBlock}
           transfer={grid.transfer ?? null}

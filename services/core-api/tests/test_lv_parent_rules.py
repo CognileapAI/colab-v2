@@ -39,6 +39,9 @@ def _make(client, *, level: str | None = None, parents: list[str] | None = None,
     body = dict(extra)
     if level is not None:
         body["processingLevelUserSet"] = level
+    if level == "Lv0":
+        body.setdefault("sourceUrl", "https://example.test/source")
+        body.setdefault("sourceDownloadedOn", "2026-09-16")
     if parents:
         body["lineageParents"] = [{"parentDatasetId": p, "origin": "manual"} for p in parents]
     return register(client, make_upload(client), **body)

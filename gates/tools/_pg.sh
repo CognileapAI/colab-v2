@@ -38,15 +38,10 @@ PGC=""
 . "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
 PG_READINESS_EXIT=78
 
+# 표식을 내는 몸통은 `_readiness.sh` 의 `readiness_env_wait` 하나다 — 여기는 이름만 빌려준다.
+# (`_lock.sh` 도 같은 자리를 부른다. 한 디렉터리가 표식 문자열을 두 벌로 갖지 않는다.)
 pg_readiness_report() { # $1=게이트 $2=기다린 대상 $3=상한 $4=실경과 $5=사유
-  local gate="$1" what="$2" limit="$3" elapsed="$4" detail="$5"
-  printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=%s|elapsed=%s|detail=%s\n' \
-    "$gate" "$what" "$limit" "$elapsed" "$(readiness_oneline "$detail" 400)"
-  echo "::error::$gate red(준비) — **검사기가 돌지 못했다.** 판정 red 가 아니다.
-   기다린 것: $what
-   선언 상한: $limit · 실경과: $elapsed
-   사유: $detail
-   ⚠ 준비 실패도 **red 다.** 상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다."
+  readiness_env_wait "$@"
 }
 
 pg_now() { date +%s; }
@@ -61,21 +56,47 @@ pg_now() { date +%s; }
 # ⚠ 슬롯을 못 얻으면 **red 다.** 기다렸다 건너뛰거나 재시도해서 green 을 만드는 경로는 없다
 #   (`CLAUDE.md §4` — 못 돈 것을 통과로 세지 않는다). 무엇이 없었는지도 함께 적는다.
 #
+# ⭑ ⟨2026-09-18 개정 · ADR-0005 개정 블록⟩ **한도를 걸 수단이 없을 때도 red(준비) 다.**
+#   채택한 규칙 — 「실행기가 아는 사실은 무의미하거나 판정이거나 — 둘 중 하나다」.
+#   종전에는 세 갈래가 `return 0` 이었다: ⑴ `flock` 부재 ⑵ 슬롯 디렉터리 `mkdir` 실패
+#   ⑶ 슬롯 파일 열기 실패. 셋 다 「한도를 걸지 않는다(검사는 그대로 돈다)」로 **조용히** 넘어갔다.
+#   그런데 그 순간 실행기는 **사실을 하나 쥐고 있다** — 「선언한 동시성 한도가 지금 서 있지 않다」.
+#   그 사실을 삼키고 통과시키면, 뒤이어 부하로 나는 red 를 게이트 결함으로 오인하게 된다.
+#   → 이제 셋 다 `pg_readiness_report` ＋ **종료코드 78** 로 나간다. 보고 경로는 슬롯 고갈과 **같은 하나**다.
+#   ⛔ 면제 변수를 두지 않는다. 오늘 이 함대의 모든 호스트에 `flock` 이 있다 —
+#      CI 는 전부 `ubuntu-latest`(`.github/workflows/ci.yml`) · 개발 호스트는 WSL/util-linux.
+#      없는 호스트가 실제로 합류하는 날 그때 3상태 변수를 만든다
+#      (선례 `COLAB_VISUAL_EXEMPT`·`COLAB_HARNESS_EVAL_EXEMPT` — `gates/README.md:39,43`).
+#      쓸 일이 없는 면제 변수를 미리 두면 그것이 곧 green-by-skip 통로가 된다.
+#
 #   COLAB_PG_MAX_CONCURRENT  동시 컨테이너 수 (기본 4)
 #   COLAB_PG_SLOT_WAIT       슬롯 대기 상한 초 (기본 900). 넘기면 red.
 PG_SLOT_FD=""
 PG_SLOT_DIR="${COLAB_PG_SLOT_DIR:-${TMPDIR:-/tmp}/colab-v2-gatepg-slots}"
 
-pg_slot_acquire() { # $1=게이트 이름 → 0=획득 / 1=red
+pg_slot_acquire() { # $1=게이트 이름 → 0=획득 / 78=red(준비)
   local gate="$1"
   local max="${COLAB_PG_MAX_CONCURRENT:-4}" wait_s="${COLAB_PG_SLOT_WAIT:-900}" i
   [ "$max" -ge 1 ] 2>/dev/null || max=1
-  command -v flock >/dev/null 2>&1 || return 0   # flock 이 없으면 한도를 걸지 않는다(검사는 그대로 돈다)
-  mkdir -p "$PG_SLOT_DIR" 2>/dev/null || return 0
+  # ⑴ 한도를 거는 **수단**이 없다. 아는 사실이므로 판정이다 — 면제 변수는 두지 않는다(위 주석).
+  command -v flock >/dev/null 2>&1 || {
+    pg_readiness_report "$gate" "flock 실행 파일(선언된 동시성 한도를 거는 수단)" "대기 없음" "0초" \
+      "flock 이 PATH 에 없다. 한도를 걸 수단이 없으면 **한도 없이 진행하지 않는다** — 종전에는 조용히 통과했고, 그 침묵이 부하에서 난 red 를 게이트 결함으로 오인하게 만들었다. 이 호스트에 util-linux 를 깐다."
+    return "$PG_READINESS_EXIT"; }
+  # ⑵ 슬롯 파일을 둘 **자리**가 없다.
+  mkdir -p "$PG_SLOT_DIR" 2>/dev/null || {
+    pg_readiness_report "$gate" "슬롯 디렉터리 생성(COLAB_PG_SLOT_DIR=$PG_SLOT_DIR)" "대기 없음" "0초" \
+      "mkdir -p 가 실패했다(권한·읽기 전용 파일시스템·같은 이름의 파일). 슬롯 파일을 둘 자리가 없으면 한도가 서지 않는다."
+    return "$PG_READINESS_EXIT"; }
   local deadline=$(( $(date +%s) + wait_s ))
   while :; do
     for (( i = 0; i < max; i++ )); do
-      { exec {PG_SLOT_FD}>"$PG_SLOT_DIR/slot-$i"; } 2>/dev/null || { PG_SLOT_FD=""; return 0; }
+      # ⑶ 잠글 **대상**을 열지 못했다.
+      { exec {PG_SLOT_FD}>"$PG_SLOT_DIR/slot-$i"; } 2>/dev/null || {
+        PG_SLOT_FD=""
+        pg_readiness_report "$gate" "슬롯 파일 열기($PG_SLOT_DIR/slot-$i)" "대기 없음" "0초" \
+          "슬롯 파일을 쓰기로 열지 못했다(권한·fd 고갈·읽기 전용). 잠글 대상이 없으면 한도가 서지 않는다."
+        return "$PG_READINESS_EXIT"; }
       if flock -n "$PG_SLOT_FD"; then return 0; fi
       eval "exec ${PG_SLOT_FD}>&-"; PG_SLOT_FD=""
     done

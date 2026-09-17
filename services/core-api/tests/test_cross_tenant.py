@@ -74,7 +74,7 @@ def test_read_never_returns_another_labs_rows(session_factory) -> None:
 
 
 def test_read_boundary_holds_at_the_http_layer(live_client) -> None:
-    """HTTP 층에서도 같다 — `listDatasets` 는 자기 연구실만 낸다."""
+    """시스템 관리자 자격 저장소가 없는 이 픽스처의 교수는 자기 연구실만 조회한다."""
     from colab_core.app.main import API_PREFIX
     a = live_client.get(f"{API_PREFIX}/datasets",
                         headers={"Authorization": "Bearer a1-prof-token"}).json()
@@ -112,6 +112,14 @@ def test_child_rows_of_another_labs_parent_are_invisible(session_factory) -> Non
         # 조인으로 우회해도 같다. 2 인 이유 = A 의 파일 3건 중 DSA2(잠김)의 1건은
         # 두 번째 층(`body_access`)이 따로 막는다. B 의 1건은 경계가 막는다.
         assert count("SELECT count(*) FROM d3_dataset d JOIN d3_file f ON f.dataset_id = d.id") == 2
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 같은 셈을 주체별로 둘 적는다.**
+    #   두 브랜치가 이 한 줄을 각자 고쳤다 — 한쪽은 주체를 연구원으로 바꿨고(`0032` 소유자 갈래),
+    #   다른 쪽은 교수 기준으로 3 으로 올렸다(`0033` 관리자 갈래). 둘 다 참이므로 둘 다 센다.
+    #   **경계(B 의 1건)는 어느 주체에게도 열리지 않는다** — 이 시험이 지키는 것은 그 자리다.
+    with scoped_ro(session_factory, ACC_A_PROF, LAB_A) as db:
+        # 교수는 DSA2 의 소유자이자 A 연구실 관리자라 잠긴 1건까지 본다 — 그래도 B 의 1건은 아니다.
+        assert db.execute(text(
+            "SELECT count(*) FROM d3_dataset d JOIN d3_file f ON f.dataset_id = d.id")).scalar_one() == 3
     with scoped_ro(session_factory, ACC_B_PROF, LAB_B) as db:
         # A 의 계보 관계도 B 에게는 없다.
         assert db.execute(text("SELECT count(*) FROM d4_lineage_edge")).scalar_one() == 0

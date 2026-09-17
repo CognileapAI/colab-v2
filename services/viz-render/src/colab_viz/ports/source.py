@@ -63,6 +63,12 @@ class SizeMismatch(Exception):
 class WorkspaceExceeded(Exception):
     """대상 하나가 작업 디렉터리 상한보다 크다 — 내려받기 전에 거절한다."""
 
+    def __init__(self, message: str, *, limit_bytes: int | None = None,
+                 target_bytes: int | None = None) -> None:
+        super().__init__(message)
+        self.limit_bytes = limit_bytes
+        self.target_bytes = target_bytes
+
 
 class SourcePort(Protocol):
     def resolve(self, *, dataset_id: str | None, upload_id: str | None,
@@ -225,7 +231,8 @@ class S3SourcePort:
         need = sum(p.size_bytes for p in target.parts) + sum(g.size_bytes for g in target.grid_parts)
         if need > self.max_bytes:
             raise WorkspaceExceeded(
-                f"대상 {target.target_id} 가 {need} B 로 작업 디렉터리 상한 {self.max_bytes} 를 넘는다")
+                f"대상 {target.target_id} 가 {need} B 로 작업 디렉터리 상한 {self.max_bytes} 를 넘는다",
+                limit_bytes=self.max_bytes, target_bytes=need)
         with self._lock:
             parts = tuple(self._fetch(target.target_id, p, is_grid=False) for p in target.parts)
             grids = tuple(self._fetch(target.target_id, g, is_grid=True) for g in target.grid_parts)

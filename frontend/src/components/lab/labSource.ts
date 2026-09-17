@@ -22,16 +22,17 @@ export interface LabSource {
   update(changes: LabUpdate): Promise<Lab>;
 }
 
-export function apiLabSource(): LabSource {
+export function apiLabSource(targetLabId?: string): LabSource {
+  const headers = targetLabId ? { 'X-CoLAB-Target-Lab': targetLabId } : {};
   return {
     async read() {
-      const r = await api.GET('/lab', {});
+      const r = await api.GET('/lab', { headers });
       // 문구를 화면이 지어내지 않는다 — 서버 봉투의 message 를 그대로 올린다.
       if (!r.data) throw new Error((r.error as Envelope)?.message || '연구실 정보를 불러오지 못했어요.');
       return r.data;
     },
     async update(changes) {
-      const r = await api.PATCH('/lab', { body: changes });
+      const r = await api.PATCH('/lab', { headers, body: changes });
       if (!r.data) throw new Error((r.error as Envelope)?.message || '연구실 정보를 저장하지 못했어요.');
       return r.data;
     },

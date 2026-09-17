@@ -20,6 +20,12 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/bin" "$TMP/empty-ref-root" "$TMP/run"
+APPROVED="$TMP/approved.json"
+CANDIDATE="$TMP/candidate.json"
+cp "$HERE/../accounts-profile.example.json" "$APPROVED"
+cp "$HERE/../accounts-profile.example.json" "$CANDIDATE"
+chmod 600 "$APPROVED" "$CANDIDATE"
+export COLAB_RESEED_ACCOUNTS_PROFILE="$APPROVED"
 
 # ── 대역 ─────────────────────────────────────────────────────────────────
 cat > "$TMP/bin/ssh" <<'STUB'
@@ -84,7 +90,7 @@ COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 COLAB_RESEED_MIN_MEM_MIB=99999999 COLAB_RESEED_MIN_DISK_GIB=99999999 \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --target-ref refs/colab-reseed-red-fixture --run-dir "$TMP/run" > "$OUT" 2>&1
+  bash "$RESEED" --accounts-file "$CANDIDATE" --target-ref refs/colab-reseed-red-fixture --run-dir "$TMP/run" > "$OUT" 2>&1
 RC=$?
 
 echo "── 픽스처 출력 (미달 판정 줄)"
@@ -113,8 +119,9 @@ grep -qE '://[^:/@[:space:]]+:[^@[:space:]*]+@' "$OUT" && note "출력에 접속
 #   더 붙는다(`dev-package/tools/dev-seed/build_plan.py`). `grep -qx "datasets 28 edges 18"` 은
 #   뒤 모양을 **한 글자도** 잡지 못하므로 계수가 맞아도 미달로 떨어진다.
 #   여기서는 생성기를 대역으로 바꿔 두 모양과 계수 불일치를 각각 판정한다.
-plan_case() { # $1=대역이 찍을 요약줄 → stdout: 「미달」 또는 「통과」
-  local summary="$1" out="$TMP/plan-out.txt" stub="$TMP/build_plan_stub.py"
+plan_case() { # $1=대역이 찍을 요약줄 → stdout: 미달/통과/판정불가
+  local summary="$1" out="$TMP/plan-out.txt" stub="$TMP/build_plan_stub.py" rc=0
+  rm -rf "$TMP/run-plan"
   cat > "$stub" <<STUB
 import sys
 print("$summary")
@@ -127,9 +134,27 @@ STUB
   COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
   COLAB_RESEED_BUILD_PLAN="$stub" \
   AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-    bash "$RESEED" --target-ref refs/colab-reseed-red-fixture \
-      --run-dir "$TMP/run-plan" > "$out" 2>&1 || true
-  if grep -qE '  ✗ build-plan — ' "$out"; then printf '미달'; else printf '통과'; fi
+    bash "$RESEED" --accounts-file "$CANDIDATE" --target-ref refs/colab-reseed-red-fixture \
+      --run-dir "$TMP/run-plan" > "$out" 2>&1 || rc=$?
+  local passed failed closed=0
+  passed="$(grep -cE '  ✓ build-plan — ' "$out" || true)"
+  failed="$(grep -cE '  ✗ build-plan — ' "$out" || true)"
+  if [ "$rc" = 1 ] && python3 - "$TMP/run-plan" <<'PY'
+import json,pathlib,sys
+run=pathlib.Path(sys.argv[1]);pf=json.loads((run/'preflight.json').read_text())
+assert len(pf['passed'])==len(set(pf['passed']))==pf['passedCount']
+assert len(pf['failed'])==len(set(pf['failed']))==pf['failedCount']
+assert not set(pf['passed'])&set(pf['failed'])
+assert json.loads((run/'stages/preflight.json').read_text())['exitCode']==1
+assert json.loads((run/'stages/report.json').read_text())['exitCode']==0
+r=json.loads((run/'result.json').read_text())
+assert r['outcome']=='failed' and r['failedStage']=='preflight'
+PY
+  then closed=1; fi
+  if [ "$closed" = 1 ] && [ "$failed" = 1 ] && [ "$passed" = 0 ]; then printf '미달'
+  elif [ "$closed" = 1 ] && [ "$passed" = 1 ] && [ "$failed" = 0 ]; then printf '통과'
+  else printf '판정불가'
+  fi
   rm -rf "$TMP/run-plan"
 }
 
@@ -170,7 +195,7 @@ COLAB_DEV_SSH='ec2-user@<대역>' COLAB_DEV_KEY_FILE="$TMP/no-such-key" \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --from reset --target-ref refs/colab-reseed-red-fixture \
+  bash "$RESEED" --accounts-file "$CANDIDATE" --from reset --target-ref refs/colab-reseed-red-fixture \
     --run-dir "$TMP/run-from" > "$FROM_OUT" 2>&1
 FROM_RC=$?
 [ "$FROM_RC" -ne 0 ] || note "ⓚ --from reset 이 0 으로 끝났다 — preflight 미달을 지나쳤다"
@@ -180,7 +205,7 @@ grep -q '단계 reset 시작' "$FROM_OUT" && note "ⓚ″ preflight 미달인데
 # ── `--preflight-only` — 검사만 하고 바꾸는 단계는 하나도 돌지 않는다 ────
 PO_OUT="$TMP/po-out.txt"
 PATH="$TMP/bin:$PATH" \
-  bash "$RESEED" --preflight-only --dry-run --run-dir "$TMP/run-po" > "$PO_OUT" 2>&1
+  bash "$RESEED" --accounts-file "$CANDIDATE" --preflight-only --dry-run --run-dir "$TMP/run-po" > "$PO_OUT" 2>&1
 PO_RC=$?
 [ "$PO_RC" -eq 0 ] || note "ⓛ --preflight-only --dry-run 이 비영으로 끝났다(rc=$PO_RC)"
 grep -q '단계 preflight 시작' "$PO_OUT" || note "ⓛ′ --preflight-only 인데 preflight 가 돌지 않았다"
@@ -200,7 +225,7 @@ PATH="$TMP/bin:$PATH" \
 COLAB_DEV_SSH= COLAB_DEV_KEY_FILE= \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --preflight-only --target-ref refs/colab-reseed-red-fixture \
+  bash "$RESEED" --accounts-file "$CANDIDATE" --preflight-only --target-ref refs/colab-reseed-red-fixture \
     --run-dir "$TMP/run-nossh" > "$NOSSH_OUT" 2>&1
 NOSSH_RC=$?
 [ "$NOSSH_RC" -ne 0 ] || note "ⓞ 접속 값이 없는데 0 으로 끝났다"
@@ -256,10 +281,111 @@ cv_case 2; CV_RC=$?; CV_OUT="$(cat "$TMP/cv-out.txt")"
 [ "$CV_RC" -ne 0 ] || note "ⓠ‴ 계수 칸 [2] 를 통과로 읽었다 — 「미지정」 2건이 통과했다: $CV_OUT"
 printf '%s' "$CV_OUT" | grep -q '미지정' || note "ⓠ⁗ 계수 칸 [2] 판정 줄에 「미지정」이 없다: $CV_OUT"
 
+# EC2 disk는 로컬 자원이 넉넉해도 독립 판정한다. 실제 SSH는 호출하지 않는다.
+disk_case() (
+  . "$HERE/../preflight.sh"
+  DRY_RUN=0 REPO_ROOT="$TMP" MIN_MEM_MIB=0 MIN_DISK_GIB=0
+  DEV_STATE_DIR=/opt/colab-v2 DEV_SSH_MISSING=()
+  log() { :; }; blocked_add() { :; }
+  # Keep stdout and exit status independent, including a valid reading with SSH failure.
+  ssh_dev_capture() {
+    printf '%s' "$1" > "$TMP/disk-command"
+    printf '%s\n' "$DISK_REPLY"
+    return "$DISK_RC"
+  }
+  pf_resources
+  [ "${#PF_FAIL[@]}" = 0 ]
+)
+disk_cases=0
+for DISK_REPLY in 2147483648 2147483649 2147483647 1610612736 0 '' garbage '2147 483648'; do
+  DISK_RC=0
+  disk_case; rc=$?
+  case "$DISK_REPLY" in 2147483648|2147483649) expected=0 ;; *) expected=1 ;; esac
+  [ "$rc" = "$expected" ] || note "EC2 disk [$DISK_REPLY] rc=$rc expected=$expected"
+  disk_cases=$((disk_cases + 1))
+done
+for DISK_RC in 255 1; do
+  DISK_REPLY=2147483648 disk_case && note "EC2 SSH/df 실패 $DISK_RC 를 유효 계수로 통과시켰다"
+  disk_cases=$((disk_cases + 1))
+done
+DISK_REPLY=$'    Avail\n 2147483648' DISK_RC=0 disk_case || note "정상 df 헤더/공백 응답을 거절했다"
+disk_cases=$((disk_cases + 1))
+grep -q '/opt/colab-v2/images' "$TMP/disk-command" 2>/dev/null || note "EC2 실제 image 파일시스템을 측정하지 않았다"
+echo "EC2 disk 경계 $disk_cases 건"
+
+# 실제 CLI가 runner에 넘기는 주소 우선순위 (dry-run, 외부 효과 없음).
+url_cases=0
+for mode in web cli legacy; do
+  extra=(); web=https://web.invalid
+  [ "$mode" != cli ] || extra=(--base-url https://cli.invalid)
+  [ "$mode" != legacy ] || web=''
+  COLAB_DEV_WEB_URL="$web" COLAB_DEV_URL=https://legacy.invalid \
+    bash "$RESEED" --accounts-file "$CANDIDATE" --dry-run --from seed --run-dir "$TMP/url-$mode" "${extra[@]}" > "$TMP/url.out" 2>&1
+  grep -q -- "--base-url https://$mode.invalid" "$TMP/url.out" || note "reseed 주소 우선순위 $mode 실패"
+  url_cases=$((url_cases + 1))
+done
+echo "reseed 주소 우선순위 $url_cases 건"
+
 # ── 픽스처가 레포를 더럽히지 않는가 ──────────────────────────────────────
 # 위 실행들은 전부 preflight 에서 멈췄다(바꾸는 단계 0건) — 회차 기록은 실행 자리에만 선다.
 STRAY="$(find "$HERE/../../../sessions" -maxdepth 1 -name 'DR-4-run-*.md' -newer "$TMP" 2>/dev/null | wc -l | tr -d ' ')"
 [ "$STRAY" = 0 ] || note "ⓟ 픽스처가 dev-package/sessions/ 에 회차 기록 $STRAY 건을 남겼다"
+
+# 입력 검증과 최초 비밀번호 준비는 원격 접촉 없이 실행한다.
+python3 - "$HERE/.." "$TMP" <<'PWTEST'
+import json, os, pathlib, subprocess, sys
+base, tmp = map(pathlib.Path, sys.argv[1:])
+repo = base.resolve().parents[2]
+profile = json.loads((base/'accounts-profile.example.json').read_text())
+email = next(e['email'] for e in profile if not e['admin'])
+pw = tmp / 'operator-pw'; pw.write_text(email); pw.chmod(0o600)
+accounts = tmp/'approved-profile.json'; accounts.write_text(json.dumps(profile)); accounts.chmod(0o600)
+work = tmp/'seed-password-work'
+env = dict(os.environ, COLAB_RESEED_ACCOUNTS_PROFILE=str(accounts), REPO_ROOT=str(repo), RESEED_DIR=str(base), PROVISION_LAB_SQL=str(repo/'infra/staging/provision-lab.sql'), RESEED_ACCOUNT_EMAIL=email, OPERATOR_PASSWORD_OVERRIDE=str(pw), OPERATOR_PASSWORD_FILE=str(work/'accounts/initial-4.txt'), ACCOUNTS_FILE=str(accounts), ACCOUNTS_PASSWORD_FILE='', ACCOUNTS_WORK_DIR=str(work/'accounts'), SEED_WORK_DIR=str(work), DRY_RUN='0')
+def call(command, **overrides):
+    return subprocess.run(['bash', '-c', '. "$1/preflight.sh"; '+command, '_', str(base)], env=dict(env, **overrides), capture_output=True, text=True)
+assert call('validate_seed_inputs 1').returncode == 0
+assert not work.exists(), 'validation must be read-only'
+for overrides in ({'ACCOUNTS_PASSWORD_FILE':str(pw)}, {'ACCOUNTS_FILE':'/missing'}, {'ACCOUNT_PROFILE_INVALID':'1'}, {'ACCOUNT_OVERRIDE_INVALID':'1'}):
+    assert call('validate_seed_inputs', **overrides).returncode != 0
+pw.chmod(0o644); assert call('validate_seed_inputs').returncode != 0; pw.chmod(0o600)
+pw.write_text(''); assert call('validate_seed_inputs').returncode != 0; pw.write_text(email)
+assert call('prepare_seed_password').returncode == 0
+saved=work/'initial-password.txt'
+assert saved.read_text().strip()==email and saved.stat().st_mode&0o777==0o600
+assert call('validate_seed_inputs 1').returncode != 0, 'reset must reject prepared existing run'
+for stale_name in ('state.json','new-password.txt'):
+    stale=work/stale_name;stale.write_text('{}')
+    assert call('validate_seed_inputs 1').returncode != 0
+    assert call('validate_seed_inputs 0').returncode == 0
+    assert stale.exists();stale.unlink()
+saved.write_text('existing-secret-456')
+assert call('prepare_seed_password').returncode == 0 and saved.read_text()=='existing-secret-456'
+other=tmp/'dry-secret-work'
+assert call('prepare_seed_password',DRY_RUN='1',SEED_WORK_DIR=str(other)).returncode==0
+assert not other.exists()
+# 실제 stage_seed argv가 보호 파일 경로를 전달하는지 본다. 프로세스 대역이며 브라우저 접촉 없음.
+script = '. "$1/stages.sh"; run() { printf "%s\n" "$@"; }; stage_seed'
+r = subprocess.run(['bash','-c',script,'_',str(base)], env=dict(env, DEV_URL='https://fixture.invalid', RESEED_ACCOUNT_EMAIL='x@example.org', COLAB_RESEED_BROWSER_SESSION='fixture-reseed-session'), capture_output=True, text=True)
+assert r.returncode == 0 and '--accounts-password-file\n'+str(work/'accounts/initial-0.txt') in r.stdout
+assert '--session\nfixture-reseed-session' in r.stdout
+assert 'fixture-secret-123' not in r.stdout+r.stderr
+# stage_preflight의 읽기 전용 모드는 보호 파일을 만들지 않는다.
+stubs = '; '.join(name+'() { :; }' for name in ['pf_announce','pf_git','pf_dev_sha','pf_aws','pf_qemu','pf_leftovers','pf_ref_root','pf_agent_browser','pf_secrets','pf_resources','pf_build_plan','log','blocked_add']) + '; stage_enabled() { return 1; }'
+for mode in ('PREFLIGHT_ONLY','REHEARSE'):
+    target = tmp / mode
+    r = call(stubs+'; stage_preflight', **{mode:'1', 'RUN_DIR':str(tmp), 'SEED_WORK_DIR':str(target)})
+    assert r.returncode == 0 and not target.exists(), mode
+# 입력 실패는 준비 파일 생성에 이르지 않는다.
+r = call(stubs+'; stage_preflight', RUN_DIR=str(tmp), SEED_WORK_DIR=str(other), ACCOUNTS_PASSWORD_FILE=str(pw))
+assert r.returncode != 0 and not other.exists()
+r = call(stubs+'; prepare_seed_password() { return 1; }; stage_preflight', RUN_DIR=str(tmp), SEED_WORK_DIR=str(other))
+assert r.returncode != 0
+report = json.loads((tmp / 'preflight.json').read_text())
+assert report['failedCount'] == 1 and 'seed-password-preparation' in report['failed']
+print('seed input validation, preservation, read-only modes, and argv: passed')
+PWTEST
+[ "$?" -eq 0 ] || note "비밀번호 입력/준비/전달 회귀 실패"
 
 if [ "$fail" -eq 0 ]; then
   echo "preflight-red — green (미달 10 항목 · 계획 요약줄 4 · result.json · --from 이 preflight 를 돈다 · --preflight-only · die 복귀 · 미리보기 판정불가 · 계수 판정 4 · 레포 무변)"

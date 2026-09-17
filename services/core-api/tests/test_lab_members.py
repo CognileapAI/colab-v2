@@ -242,16 +242,14 @@ def _make_inactive_member(client, *, inactive: bool) -> str:
     return account_id
 
 
-def _purge_member(sql, account_id: str) -> None:
-    sql("DELETE FROM d2_permission_switch WHERE account_id = :id", {"id": account_id},
-        account_id=ACC_A_PROF, lab_id=LAB_A)
-    sql("DELETE FROM d2_member_role WHERE account_id = :id", {"id": account_id},
-        account_id=ACC_A_PROF, lab_id=LAB_A)
-    sql("DELETE FROM d1_account WHERE id = :id", {"id": account_id},
-        account_id=ACC_A_PROF, lab_id=LAB_A)
+#: ⭑ **⟨2026-09-17 · 이슈 #47⟩ 손수 되돌리기 도우미는 여기 없다.** 종전에는 아래 세 시험이
+#: `try/finally` 로 `d2_permission_switch`→`d2_member_role`→`d1_account` 를 직접 지웠는데,
+#: `_make_inactive_member` 호출이 `try:` **밖**이라 그 안의 `assert` 가 깨지면 `finally` 가 아예
+#: 서지 않고 먼저 만든 계정이 A 연구실에 영구히 남았다. 이제 그 세 표는 `conftest._CLEANUP` 에
+#: 있어 autouse 되돌리기가 줍는다 — 손으로 한 번 더 적으면 배선이 도는지를 영영 못 재게 된다.
 
 
-def test_an_inactive_account_is_marked_and_locked(p2_client, sql) -> None:
+def test_an_inactive_account_is_marked_and_locked(p2_client) -> None:
     """비활성 계정 행은 `accountStatus='inactive'` 이고 고칠 수 있는 열이 하나도 없다.
 
     대조군 = **같은 표의 활성 계정 행**. 대상 0건 통과를 가른다(spec §8-6 ⑶).
@@ -259,42 +257,32 @@ def test_an_inactive_account_is_marked_and_locked(p2_client, sql) -> None:
     client = p2_client()
     active_id = _make_inactive_member(client, inactive=False)
     inactive_id = _make_inactive_member(client, inactive=True)
-    try:
-        rows = members(client, "a1-prof-token")
+    rows = members(client, "a1-prof-token")
 
-        active = rows[active_id]
-        assert active["accountStatus"] == "active"
-        assert active["editablePermissions"] == SWITCHES, "활성 행은 그대로 편집 가능하다."
+    active = rows[active_id]
+    assert active["accountStatus"] == "active"
+    assert active["editablePermissions"] == SWITCHES, "활성 행은 그대로 편집 가능하다."
 
-        row = rows[inactive_id]
-        assert row["accountStatus"] == "inactive"
-        assert row["editablePermissions"] == [], "비활성 행은 서버가 편집 가능 열을 안 싣는다."
-        assert list(row["permissions"]) == SWITCHES, "값은 그대로 보인다 — 열을 지우지 않는다."
-    finally:
-        _purge_member(sql, active_id)
-        _purge_member(sql, inactive_id)
+    row = rows[inactive_id]
+    assert row["accountStatus"] == "inactive"
+    assert row["editablePermissions"] == [], "비활성 행은 서버가 편집 가능 열을 안 싣는다."
+    assert list(row["permissions"]) == SWITCHES, "값은 그대로 보인다 — 열을 지우지 않는다."
 
 
-def test_saving_a_permission_of_an_inactive_account_is_refused(p2_client, sql) -> None:
+def test_saving_a_permission_of_an_inactive_account_is_refused(p2_client) -> None:
     """화면 `disabled` 만으로 막지 않는다 — 저장 경로에도 상태 검사가 있다 (P-11 · §8-6 ⑹)."""
     client = p2_client()
     inactive_id = _make_inactive_member(client, inactive=True)
-    try:
-        refused = save(client, "a1-prof-token",
-                       [{"accountId": inactive_id, "changes": {"승인 위임": True}}])
-        assert refused.status_code == 400, refused.text
+    refused = save(client, "a1-prof-token",
+                   [{"accountId": inactive_id, "changes": {"승인 위임": True}}])
+    assert refused.status_code == 400, refused.text
 
-        after = members(client, "a1-prof-token")[inactive_id]
-        assert after["permissions"]["승인 위임"] is False, "거절이면 한 칸도 쓰이지 않는다."
-    finally:
-        _purge_member(sql, inactive_id)
+    after = members(client, "a1-prof-token")[inactive_id]
+    assert after["permissions"]["승인 위임"] is False, "거절이면 한 칸도 쓰이지 않는다."
 
 
-def test_an_inactive_account_never_crosses_the_lab_boundary(p2_client, sql) -> None:
+def test_an_inactive_account_never_crosses_the_lab_boundary(p2_client) -> None:
     """상태 투영이 열려도 연구실 경계는 그대로다 (`CLAUDE.md §3` 규칙 5) — 회귀."""
     client = p2_client()
-    inactive_id = _make_inactive_member(client, inactive=True)
-    try:
-        assert set(members(client, "b1-prof-token")) == {ACC_B_PROF}
-    finally:
-        _purge_member(sql, inactive_id)
+    _make_inactive_member(client, inactive=True)
+    assert set(members(client, "b1-prof-token")) == {ACC_B_PROF}

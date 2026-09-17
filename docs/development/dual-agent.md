@@ -173,6 +173,36 @@ agent-browser 사용자 여정 테스트는 실행 전 다음을 고정한다:
 기존 `frontend-visual`은 읽기 전용 시각 검사이므로 쓰기 E2E로 바꾸지 않는다.
 실행 환경·로그인·필수 도구가 없으면 미실행/준비 실패를 기록한다. 운영 데이터로 대체하지 않는다.
 
+### dev 브라우저 로그인 확인 도구
+
+검증 스킬에서 dev 전용 테스트 관리자를 사용하기로 판단한 경우, 저장소 루트에서
+`python3 scripts/dev-browser-check.py`를 실행해 로그인 상태를 확인할 수 있다.
+환경·계정 선택 기준은 [검증 스킬](../../.agents/skills/verification-before-completion/SKILL.md)에 둔다.
+Windows에서는 기존 WSL 환경에서 실행한다. 이 명령은 기존 agent-bridge와 agent-browser를
+사용해 보호된 자격을 vault에 연결하고 로그인한 다음, 실제 dev 주소·test_admin 계정 표시·
+로그아웃 버튼을 검사한다. 도구의 `Logged in` 문구만으로 통과시키지 않는다.
+기존 로그인이 있으면 로그아웃 후 다시 로그인하므로 세션명은 전용 테스트 세션만 지정한다.
+설정 부재, 자격 파일 권한 오류, 다른 계정/주소, 로그인 실패, 초기 비밀번호 변경 대기는
+준비 실패 78이다. 실패하면 이 인증에 의존하는 검증의 막힌 지점을 보고한다.
+
+| 환경변수 | 기본값 |
+| --- | --- |
+| `COLAB_DEV_TEST_CREDENTIALS_FILE` | `~/.config/colab-platform/dev-test-admin.json` |
+| `COLAB_DEV_BROWSER_SESSION` | `dev-test-admin` |
+| `COLAB_DEV_BROWSER_AUTH_PROFILE` | `dev-test-admin` |
+
+자격 JSON의 필드는 `email`, `password`이며 이메일은 `test_admin@colab.invalid`이다.
+파일은 실행 사용자 소유·0600이어야 하고 저장소 밖에 둔다. 비밀번호를 환경변수·명령 인자·
+로그·커밋에 넣지 않는다. 이 PC의 `~/.config/colab-platform/dev-operator.env`에도 위 설정을
+등록하며 기존 `with-dev-env.sh`를 통해 불러올 수 있다. 다른 PC에는 자격이 자동 이전되지 않는다.
+
+사전검사 성공 후 같은 브라우저 세션에서 요청된 실제 조작과 새로고침 후 지속성을 검증한다.
+임시 계정은 무소속 서비스 관리자라 전체 연구실 데이터는 읽기 전용이다. 연구실 소속 쓰기
+검증은 별도 승인된 테스트 계정·데이터를 사용하며 권한을 임의로 확대하지 않는다.
+계정은 후속 검증을 위해 유지하며 자동 만료는 설정하지 않았다.
+이 절은 선택한 도구의 사용법이다. 로그인 확인이 제품 기능 검증을 대신하거나,
+직접 실행한 모든 브라우저 명령을 OS 수준에서 차단하는 것은 아니다.
+
 ## 자동 훅 전환 조사 — 2026-09-08
 
 공식 근거: https://learn.chatgpt.com/docs/hooks

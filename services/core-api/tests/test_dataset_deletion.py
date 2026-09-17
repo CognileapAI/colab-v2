@@ -549,7 +549,8 @@ def test_a_designated_dataset_is_restored_with_its_grant_intact(p2_client, plant
     before = sql("SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :id",
                  {"id": dataset_id})[0]
     assert before["state"] == "지정 공개"
-    # 전제 — 소유자는 비공개 상태에서도 자기 파일을 볼 수 있다(`0032_private_owner_access`).
+    # 전제 — 소유자(`0032_private_owner_access`)이자 교수 관리자(`0033_admin_body_access`)라
+    #        허용 줄 없이도 파일 1행이 보인다 (허용 줄은 연구원 것이다).
     assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
                {"id": dataset_id}, account_id=ACC_A_PROF)[0]["n"] == 1
 

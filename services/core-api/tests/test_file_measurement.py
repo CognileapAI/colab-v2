@@ -166,6 +166,7 @@ def test_database_failure_preserves_measured_original_and_retry_binding(p2_clien
 
 @pytest.mark.parametrize('outcome',['commit','rollback','reused_root','nested_reservation'])
 def test_registration_cleanup_is_owned_by_exact_outer_transaction(session_factory,monkeypatch,outcome):
+    import asyncio
     from types import SimpleNamespace
     from colab_core.app import deps
     from colab_core.kernel.auth import Subject
@@ -175,34 +176,41 @@ def test_registration_cleanup_is_owned_by_exact_outer_transaction(session_factor
     request=SimpleNamespace(headers={},app=SimpleNamespace(state=SimpleNamespace(session_factory=lambda:session)))
     monkeypatch.setattr(deps,'current_subject',lambda *args:Subject(Ulid(ACC_A_RES),Ulid(LAB_A)))
     called=[]
-    gen=deps.registration_db(request)
-    assert next(gen) is session
-    prepared=PreparedRegistration(frozenset(),lambda:called.append('cleaned'))
-    if outcome=='nested_reservation':
-        with session.begin_nested(),pytest.raises(ValueError,match='root transaction'):
+
+    # ⭑ ⟨2026-09-18 develop 동기화⟩ `registration_db` 는 이제 **async 생성기**다 —
+    #   `scoped_db` 와 같은 대상 연구실 스코프(`await prepare_target_scope`)를 부르기 때문이다.
+    #   한 회차를 **하나의 이벤트 루프 안에서** 몰아 돌린다(생성기를 루프 사이에 걸치지 않는다).
+    async def scenario():
+        gen=deps.registration_db(request)
+        assert await gen.asend(None) is session
+        prepared=PreparedRegistration(frozenset(),lambda:called.append('cleaned'))
+        if outcome=='nested_reservation':
+            with session.begin_nested(),pytest.raises(ValueError,match='root transaction'):
+                deps.defer_registration_cleanup(session,prepared)
+        else:
             deps.defer_registration_cleanup(session,prepared)
-    else:
-        deps.defer_registration_cleanup(session,prepared)
-        with session.begin_nested():
-            pass
-    assert called==[]  # SAVEPOINT success is never registration commit.
-    if outcome=='rollback':
-        with pytest.raises(RuntimeError):
-            gen.throw(RuntimeError('outer rollback'))
-    elif outcome=='reused_root':
-        session.rollback();session.begin()
-        with pytest.raises(ValueError,match='root transaction changed'):
-            next(gen)
-    else:
-        with pytest.raises(StopIteration):
-            next(gen)
-    assert called==(['cleaned'] if outcome=='commit' else [])
-    called.clear()
-    second=deps.registration_db(request)
-    next(second)
-    with pytest.raises(StopIteration):
-        next(second)
-    assert called==[]  # Even deliberate Session-object reuse cannot redeem old cleanup.
+            with session.begin_nested():
+                pass
+        assert called==[]  # SAVEPOINT success is never registration commit.
+        if outcome=='rollback':
+            with pytest.raises(RuntimeError):
+                await gen.athrow(RuntimeError('outer rollback'))
+        elif outcome=='reused_root':
+            session.rollback();session.begin()
+            with pytest.raises(ValueError,match='root transaction changed'):
+                await gen.asend(None)
+        else:
+            with pytest.raises(StopAsyncIteration):
+                await gen.asend(None)
+        assert called==(['cleaned'] if outcome=='commit' else [])
+        called.clear()
+        second=deps.registration_db(request)
+        await second.asend(None)
+        with pytest.raises(StopAsyncIteration):
+            await second.asend(None)
+        assert called==[]  # Even deliberate Session-object reuse cannot redeem old cleanup.
+
+    asyncio.run(scenario())
 
 
 def test_post_commit_cleanup_failure_keeps_success_and_original(p2_client,sql,monkeypatch,caplog):

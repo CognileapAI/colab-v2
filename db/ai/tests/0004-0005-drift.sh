@@ -19,6 +19,8 @@
 #   COLAB_ALEMBIC   alembic 실행 파일 (기본: PATH 의 alembic)
 #   COLAB_PG_IMAGE  기본 postgres:16-alpine
 set -uo pipefail
+# 준비 판정만 재사용하며 컨테이너 생성·cleanup은 이 오라클이 소유한다.
+. "$(dirname "${BASH_SOURCE[0]}")/../../../gates/tools/_pg.sh"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN_DIR="$(cd "$HERE/.." && pwd)"
@@ -29,9 +31,10 @@ MID_REV="0004_k1b_concept_graph"
 PREV_REV="0003_k2_ontology_seed"
 
 red() { echo "::error::0004-0005-drift red — $*"; exit 1; }
+ready() { echo "::error::0004-0005-drift red(준비) — $*"; exit 78; }
 
-command -v docker >/dev/null 2>&1 || red "docker 가 없다. DB 가 필요한 시험을 DB 없이 green 으로 세지 않는다."
-command -v "$ALEMBIC" >/dev/null 2>&1 || red "alembic 을 찾지 못했다($ALEMBIC). COLAB_ALEMBIC 로 지정한다. 못 돈 시험은 통과가 아니다."
+command -v docker >/dev/null 2>&1 || ready "docker 가 없다. DB 가 필요한 시험을 DB 없이 green 으로 세지 않는다."
+command -v "$ALEMBIC" >/dev/null 2>&1 || ready "alembic 을 찾지 못했다($ALEMBIC). COLAB_ALEMBIC 로 지정한다. 못 돈 시험은 통과가 아니다."
 [ -x "$CHAIN_DIR/tools/k2b-graph-check.sh" ] || red "완료 오라클(tools/k2b-graph-check.sh)이 없다."
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" k1bdb-drift-XXXXXX)"
@@ -58,14 +61,13 @@ grep -q "Co-Kriging" "$TMP/head.sql" && grep -q $'m-cokriging\x27,\x27~의 한 �
   && red "렌더된 head SQL 에 F-4d(Co-Kriging → 재격자화)가 들어 있다. Ted 가 ❌ 친 행이다."
 
 docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >/dev/null 2>&1 \
-  || red "이미지 $PG_IMAGE 를 확보하지 못했다. skip 아님."
+  || ready "이미지 $PG_IMAGE 를 확보하지 못했다. skip 아님."
 PGC="k1bdb_drift_$$_${RANDOM}"
 docker run -d --rm --name "$PGC" \
   --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
   -e POSTGRES_PASSWORD=k1bdb -e POSTGRES_HOST_AUTH_METHOD=trust \
-  "$PG_IMAGE" >/dev/null 2>&1 || { PGC=""; red "일회용 postgres 를 띄우지 못했다."; }
-for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || red "postgres 가 60초 안에 뜨지 않았다."
+  "$PG_IMAGE" >/dev/null 2>&1 || { PGC=""; ready "일회용 postgres 를 띄우지 못했다."; }
+pg_wait_ready "$PGC" 60 || ready "postgres 실서버가 60초 안에 준비되지 않았다."
 
 psql_f() { docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" < "$2"; }
 mkdb()   { docker exec "$PGC" createdb -U postgres "$1" >/dev/null; }

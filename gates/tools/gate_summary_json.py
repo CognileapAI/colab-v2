@@ -14,7 +14,7 @@
 # stdin (TSV · 줄 단위):
 #   meta<TAB>요청대상<TAB>tree<TAB>commit<TAB>started<TAB>finished<TAB>병렬도
 #   counts<TAB>green<TAB>red_판정<TAB>red_준비<TAB>red_준비_입력미선언
-#   gate<TAB>이름<TAB>상태<TAB>종료코드<TAB>준비표식(없으면 빈 칸)
+#   gate<TAB>이름<TAB>상태<TAB>종료코드<TAB>준비표식(없으면 빈 칸)<TAB>실패표식(없으면 빈 칸)
 #   target<TAB>이름            (실행기가 고른 대상 목록 — 새 계수 개념이 아니라 이름 나열이다)
 # argv: 배출 경로 1개 이상. 같은 내용을 각 자리에 적는다(원자적 교체).
 import json
@@ -64,7 +64,11 @@ def main() -> int:
                 "red_준비_입력미선언": int(f[3] or 0),
             }
         elif kind == "gate":
-            f = (parts + [""] * 5)[1:5]
+            # ⚠ 위치 규약 — 생산자는 `gates/run.sh` 의 `summary_gate_row()` 하나다.
+            #   2026-09-17 에 4열 → 5열로 옮겼고 **생산자와 이 자리를 같은 커밋에서 함께** 옮겼다.
+            #   앞 4열의 뜻은 한 순간도 어긋나지 않았다. 패딩을 6으로 함께 올리지 않으면
+            #   5열이 없는 **옛 입력**(4필드)에서 IndexError 가 난다 — 옛 입력은 `failures: null` 이다.
+            f = (parts + [""] * 6)[1:6]
             state = f[1] if f[1] in STATES else "red_판정"
             try:
                 code = int(f[2])
@@ -79,6 +83,9 @@ def main() -> int:
                     "state": state,
                     "exit": code,
                     "readiness": f[3] or None,
+                    # 게이트가 찍은 `::gate-failure::` 줄들을 ` || ` 로 이어 붙인 한 값.
+                    # ⛔ 여기서 실패를 **다시 찾지 않는다** — 게이트가 찍고 실행기가 옮긴 것을 적을 뿐이다.
+                    "failures": f[4] or None,
                 }
             )
         elif kind == "target":

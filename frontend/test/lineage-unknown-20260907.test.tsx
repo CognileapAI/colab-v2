@@ -5,7 +5,7 @@
  * 잴 수 있는 넷. 판정식 6항과 400 은 `services/core-api/tests/test_lineage_unknown.py` 가 잰다.
  *
  *   ㈎ ③ 에 체크박스가 있고 라벨이 **축자**다 ＋ 체크하면 `lineageUnknown: true` 가 실린다
- *   ㈏ 확정 부모 ≥1 → **비활성 ＋ 사유가 읽히고 칸이 사라지지 않는다**(연결도 남는다)
+ *   ㈏ 확정 부모 ≥1 → 선언 행을 숨기고, 해제하면 기존 체크 상태가 돌아온다
  *   ㈐ 자기 Lv=`Lv0` → 체크박스가 **보이지 않는다**(판정 ⑷ 가 이미 `원천` 으로 가른다)
  *   ㈑ 종전 문면(rev1 `#unknownChk`)이 코드에 **0건**이다 — 그 문자열은 이 파일에도 적지
  *      않는다(자기 자신이 검색에 걸린다). 아래 `LEGACY_LABEL` 이 조각에서 조립한다.
@@ -16,6 +16,8 @@
 // @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-expect-error — 같은 이유.
+import { Buffer } from 'node:buffer';
+// @ts-expect-error — 같은 이유.
 import { join, resolve } from 'node:path';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -23,7 +25,6 @@ import { describe, expect, it } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import {
-  LINEAGE_UNKNOWN_DISABLED_REASON,
   LINEAGE_UNKNOWN_LABEL,
 } from '../src/components/lineage/LineageStep';
 import {
@@ -153,6 +154,8 @@ async function openLineage(sources: UploadSources, selfLevel: string) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
   await change(screen.getByTestId('reg-level'), selfLevel);
   await click(screen.getByRole('button', { name: /^③/ }));
   await screen.findByTestId('lin-step');
@@ -207,9 +210,9 @@ describe('PRD-27 ③ 에 「기록 없음」 선언 체크박스가 있다', () 
   });
 });
 
-// ═══ ㈏ 확정 부모 ≥1 → 비활성 ＋ 사유 ＋ 칸이 남는다 ═══
-describe('PRD-27 확정 부모가 있으면 비활성이고 칸은 사라지지 않는다', () => {
-  it('부모 1건을 확정하면 체크박스가 비활성이고 사유가 읽히며 연결도 그대로 남는다', async () => {
+// ═══ ㈏ 확정 부모 ≥1 → 선언 숨김, 해제 뒤 상태 복원 ═══
+describe('PRD-27 확정 부모가 있으면 기록 없음 선언을 숨긴다', () => {
+  it('부모 연결 중에는 숨기고, 해제하면 기존 체크 상태를 복원한다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources, 'Lv1');
     // **먼저 체크한 뒤** 부모를 붙인다 — 옛 `true` 가 그대로 실려 서버 400 이 되는 경로를 막는다.
@@ -222,12 +225,19 @@ describe('PRD-27 확정 부모가 있으면 비활성이고 칸은 사라지지 
     // ⭑ ⟨개정 2026-09-14 · 기획서 rev2 목업 `.li-act`⟩ 연결이 곧 확정이다 — `확인` 버튼이 없다.
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
 
-    // **칸이 사라지지 않는다** — 숨기면 왜 못 고르는지가 함께 사라진다.
+    expect(screen.queryByTestId('lin-unknown')).toBeNull();
+
+    await click(screen.getByTestId('lin-del'));
     const box = screen.getByTestId('lin-unknown-check') as HTMLInputElement;
-    expect(box.disabled).toBe(true);
-    expect(box.checked).toBe(false);
-    expect(screen.getByTestId('lin-unknown-why').textContent).toBe(
-      LINEAGE_UNKNOWN_DISABLED_REASON);
+    expect(box.disabled).toBe(false);
+    expect(box.checked).toBe(true);
+
+    // 다시 연결해 등록하면 선언은 숨고 payload 에도 실리지 않는다.
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    await click(screen.getByTestId(`lin-pick-${LV0}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
+    expect(screen.queryByTestId('lin-unknown')).toBeNull();
 
     // **연결을 지우지 않는다** ＋ 요청에 `lineageUnknown` 이 실리지 않는다(서버 400 방지).
     await submit();
@@ -271,7 +281,25 @@ describe('PRD-27 Lv0 이면 체크박스가 보이지 않는다', () => {
 
 // ═══ ㈑ 종전 문면이 코드에 0건 ═══
 describe('PRD-27 종전 문면은 코드에 남지 않는다', () => {
-  it('폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다', () => {
+  // ── 이 시험의 **명시 예산** ────────────────────────────────────────────────
+  // 실측(2026-09-17 · 이 워크트리 · 부하 없는 단독 구간 · 13회 반복):
+  //   대상 = 338 파일 / 3,343,168 바이트(3.19 MiB)  ← 대상 디렉터리·확장자는 바꾸지 않았다
+  //   종전(파일을 UTF-16 문자열로 전문 적재) : min 12.7 · p50 14.1 · max 17.2 ms
+  //   현재(바이트로 읽어 바이트 탐색)        : min  4.9 · p50  5.6 · max  9.3 ms
+  //   vitest 가 이 `it()` 에 적은 소요는 변경 전 14.9 ms 였다.
+  // ⚠ 이 값은 **성능 단언이 아니라 병리 탐지기**다. p50 의 ~350배로 잡았다 —
+  //   근거: 부하에서 흔들리는 눈금을 판정에 넣으면 그 red 는 검사 대상이 아니라 배선이 낸
+  //   red 가 된다(`gates/run.sh` 의 「상한 연장·재시도로 green 을 만들지 않는다」와 같은 규율).
+  //   이 예산이 걸리는 경우는 부하가 아니라 **스캔이 두 자릿수 배로 커졌을 때**다
+  //   (예: 걸러야 할 디렉터리가 새로 생겨 훑기 시작한 경우).
+  // ⚠ 이 숫자를 **근거 없이 올리지 않는다.** 걸리면 먼저 무엇이 커졌는지 본다.
+  //   레포의 관행 예산은 `{ timeout: 4000 }`·`{ timeout: 5000 }` 이고 이 값은 그보다 작다.
+  const LEGACY_SCAN_BUDGET_MS = 2000;
+
+  // ⚠ 예산은 **두 번째 인자**다. `it(name, fn, { timeout })` 3인자 형태는 vitest 3 에서
+  //   폐기되고 4 에서 제거됐다(실측 오류 문면: "Signature \"test(name, fn, { ... })\" was
+  //   deprecated in Vitest 3 and removed in Vitest 4").
+  it('폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다', { timeout: LEGACY_SCAN_BUDGET_MS }, () => {
     // **조각에서 조립한다** — 통째로 적으면 이 시험 파일 자신이 걸려 언제나 red 다.
     const LEGACY_LABEL = ['못 ', '찾은 것이 있어요 (기록 없음)'].join('');
     // 기준은 `process.cwd()`(= `frontend/`) — `__dirname` 은 이 tsconfig 의 타입에 없다
@@ -289,8 +317,11 @@ describe('PRD-27 종전 문면은 코드에 남지 않는다', () => {
     roots.forEach(walk);
     // **대상 건수를 먼저 잰다** — 0건을 훑고 「0건이다」라고 말하지 않는다.
     expect(files.length).toBeGreaterThan(100);
-    const hits = files.filter((f) =>
-      readFileSync(f, 'utf8').includes(LEGACY_LABEL));
+    // 파일을 UTF-16 문자열로 **전문 적재하지 않는다.** 바이트로 한 번 읽어 그 자리에서
+    // 판정하고 즉시 버린다 — 찾는 것이 축자 문자열이므로 UTF-8 바이트 탐색이 같은 답을 낸다.
+    // 검사 **범위는 그대로다**(같은 디렉터리·같은 확장자·같은 338 파일). 대상을 줄이면 green-by-skip 이다.
+    const needle = Buffer.from(LEGACY_LABEL, 'utf8');
+    const hits = files.filter((f) => readFileSync(f).includes(needle));
     expect(hits).toEqual([]);
   });
 });

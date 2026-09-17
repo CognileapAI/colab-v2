@@ -88,5 +88,5 @@ export interface DatasetPreviewSource {
    */
   files?(): Promise<PreviewPiece[]>;
   /** WU-C3 — 변수·시각 후보와 서버 기본값 (`describeTarget` 중계). */
-  describe?(): Promise<TargetDescription>;
+  describe?(fileId?: string): Promise<TargetDescription>;
 }

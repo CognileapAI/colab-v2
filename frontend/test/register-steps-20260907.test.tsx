@@ -11,7 +11,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
-import { ESC_LAYER_ATTR } from '../src/components/upload/UploadModal';
+import { ESC_LAYER_ATTR, missingClassificationId } from '../src/components/upload/UploadModal';
 import { PERIOD_SINGLE_POINT_HINT, STEP_LABELS } from '../src/components/upload/RegisterArea';
 import { MISSING_CATEGORY_MESSAGE } from '../src/components/upload/axisDict';
 import {
@@ -171,11 +171,16 @@ async function dropOne() {
 }
 
 /** 파일 1건 ＋ 등록 카드 열기까지. 등록 카드는 늘 ① 분류에서 시작한다. */
-async function openRegister(sources: UploadSources) {
+async function openRegister(sources: UploadSources, selectAxes = true) {
   await openModal(sources);
   await dropOne();
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  if (selectAxes) {
+    await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
+    await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+    await change(screen.getByTestId('reg-level'), 'Lv0');
+  }
 }
 
 const stepBtn = (n: '①' | '②' | '③') =>
@@ -187,6 +192,11 @@ const stepBtn = (n: '①' | '②' | '③') =>
  * 두 칸 자체의 판정은 `test/upload-form-rev2-20260914.test.tsx` 가 잰다.
  */
 async function fillRegisterGates() {
+  await click(stepBtn('①'));
+  await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
+  await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+  await change(screen.getByTestId('reg-level'), 'Lv0');
+  await click(stepBtn('②'));
   await click(screen.getByTestId('reg-period-open'));
   await click(screen.getByTestId('reg-period-unit-일'));
   await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
@@ -195,13 +205,17 @@ async function fillRegisterGates() {
   await click(screen.getByTestId('reg-period-apply'));
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  await click(stepBtn('②'));
 }
 
 // ═══ 요구 본체 ①~⑥ — 단계 구성과 이동 규칙 (PRD-12 · rev1 UI-003 · PRD-13) ═══
 describe('PRD-12 등록 3단계 재구성', () => {
   it('① 표시기 세 라벨이 `① 분류 · ② 메타데이터 입력 · ③ 연결` 이고 ① 이 열려 있다', async () => {
     const { sources } = fakes();
-    await openRegister(sources);
+    await openRegister(sources, false);
     const steps = within(screen.getByTestId('reg-steps')).getAllByRole('button', { name: /^[①②③]/ });
     expect(steps).toHaveLength(3);
     expect(steps.map((b) => b.textContent)).toEqual([
@@ -214,20 +228,26 @@ describe('PRD-12 등록 3단계 재구성', () => {
     expect(screen.queryByTestId('reg-s2')).toBeNull();
   });
 
-  it('② 분류·유형 중 하나가 비면 `다음` 이 막힌다 (가공 단계는 기본값 Lv2 라 빈 상태가 없다)', async () => {
+  it('② 분류·유형·가공 단계 중 하나가 비면 `다음` 이 막힌다', async () => {
     const { sources } = fakes();
-    await openRegister(sources);
+    await openRegister(sources, false);
     const next = screen.getByTestId('reg-next') as HTMLButtonElement;
-    expect(next.disabled).toBe(false);
+    expect(next.disabled).toBe(true);
+    await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
+    await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+    await change(screen.getByTestId('reg-level'), 'Lv0');
+    expect((screen.getByTestId('reg-next') as HTMLButtonElement).disabled).toBe(false);
     await change(screen.getByTestId('reg-category'), '');
     expect((screen.getByTestId('reg-next') as HTMLButtonElement).disabled).toBe(true);
     await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
     await change(screen.getByTestId('reg-datatype'), '');
     expect((screen.getByTestId('reg-next') as HTMLButtonElement).disabled).toBe(true);
-    // 가공 단계에는 빈 선택지가 없다 — 기본값 `Lv2` 가 늘 서 있다.
+    await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+    await change(screen.getByTestId('reg-level'), '');
+    expect((screen.getByTestId('reg-next') as HTMLButtonElement).disabled).toBe(true);
     const lvOptions = within(screen.getByTestId('reg-level')).getAllByRole('option');
-    expect(lvOptions).toHaveLength(PROCESSING_LEVELS.length);
-    expect(lvOptions.some((o) => (o as HTMLOptionElement).value === '')).toBe(false);
+    expect(lvOptions).toHaveLength(PROCESSING_LEVELS.length + 1);
+    expect(lvOptions.some((o) => (o as HTMLOptionElement).value === '')).toBe(true);
   });
 
   it('③ ③ 진입 시 계보 카드와 연관 프로젝트·논문 카드가 같은 단계 안에 있다', async () => {
@@ -266,6 +286,8 @@ describe('PRD-12 등록 3단계 재구성', () => {
     await click(stepBtn('③'));
     await screen.findByTestId('reg-s3');
     await click(screen.getByTestId('upload-close'));
+    const confirm = await screen.findByTestId('upload-close-confirm');
+    await click(within(confirm).getAllByRole('button').at(-1) ?? null);
     await click(screen.getByTestId('gnb-upload'));
     await screen.findByTestId('upload-modal');
     await dropOne();
@@ -337,34 +359,26 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     }
   });
 
-  it('⑨ 분류 `수문 인자` ＋ `Lv1` 이면 ② 설명 칸 힌트에 두 항목이 함께 보인다', async () => {
+  it('#95 분류와 가공 단계를 골라도 ② 설명 칸 힌트는 보이지 않는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await change(screen.getByTestId('reg-category'), '수문 인자');
     await change(screen.getByTestId('reg-level'), 'Lv1');
     await click(stepBtn('②'));
-    const hint = await screen.findByTestId('reg-summary-hint');
-    expect(hint.textContent).toContain('유역코드, 관측 해상도');
-    expect(hint.textContent).toContain('보간방법, 좌표계 유형');
+    expect(screen.queryByTestId('reg-summary-hint')).toBeNull();
   });
 
-  it('⑩ 가공 단계 `Lv0` 이면 힌트에 `출처(Source URL), 다운로드 일자` 가 없다', async () => {
+  it('#89 세 필수 분류값은 비어 있고 직접 선택 안내가 먼저 보인다', async () => {
     const { sources } = fakes();
-    await openRegister(sources);
-    await change(screen.getByTestId('reg-level'), 'Lv0');
-    await click(stepBtn('②'));
-    const hint = await screen.findByTestId('reg-summary-hint');
-    expect(hint.textContent).not.toContain('출처(Source URL), 다운로드 일자');
-  });
-
-  it('기본 선택값 3개와 국문＋영문 병기 표기 (미결-13 ⓐ)', async () => {
-    const { sources } = fakes();
-    await openRegister(sources);
-    expect((screen.getByTestId('reg-category') as HTMLSelectElement).value).toBe(DEFAULT_CATEGORY);
-    expect((screen.getByTestId('reg-datatype') as HTMLSelectElement).value).toBe(DEFAULT_DATA_TYPE);
-    // ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ 가공 단계 기본값 = 계산값 · 부모 0건이면 `Lv0`
-    //   ／ 종전 ~~`DEFAULT_PROCESSING_LEVEL`(`Lv2`)~~ — 그 상수는 부모 Lv 미상일 때만 선다.
-    expect((screen.getByTestId('reg-level') as HTMLSelectElement).value).toBe('Lv0');
+    await openRegister(sources, false);
+    for (const id of ['reg-category', 'reg-datatype', 'reg-level']) {
+      const select = screen.getByTestId(id) as HTMLSelectElement;
+      expect(select.value).toBe('');
+      expect(within(select).getByRole('option', { name: '직접 선택해 주세요' })).toBeTruthy();
+    }
+    expect(screen.getByRole('button', { name: /다음/ })).toBeDisabled();
+    expect(stepBtn('②')).toBeDisabled();
+    expect(stepBtn('③')).toBeDisabled();
     // 표시는 병기, 저장은 국문 단일.
     const opt = within(screen.getByTestId('reg-datatype')).getByRole('option', {
       name: '재분석자료 (Reanalysis Data)',
@@ -373,21 +387,24 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     expect(bilingual(DATA_TYPES[2]!)).toBe('재분석자료 (Reanalysis Data)');
   });
 
-  it('카드 부제 두 줄이 rev1 축자다', async () => {
+  it('카드 부제가 분류와 입력할 내용을 안내한다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     expect(screen.getByTestId('reg-s1-sub').textContent).toBe(
-      '목록 필터가 이 세 축을 그대로 받아요',
+      '어떤 자료인지 고르고, 가공 단계에 맞는 데이터를 연결해요.',
     );
     await click(stepBtn('②'));
     expect(screen.getByTestId('reg-s2-sub').textContent).toBe(
-      '파일에서 읽는 값은 확장자·용량뿐이에요',
+      '확장자·용량을 확인하고 아래 정보를 입력해 주세요.',
     );
   });
 
-  it('세 축의 기본값이 등록 요청에 실린다 (계약 required 승격의 짝)', async () => {
+  it('세 축을 직접 고르면 선택값이 등록 요청에 실린다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
+    await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+    await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await fillRegisterGates();
@@ -531,7 +548,7 @@ describe('㈑ 모달 2장면', () => {
 
   it('파일 1건이면 장면2 — 좌 미리보기 ＋ 우 ① 분류이고 존치 3종이 도달 가능하다', async () => {
     const { sources } = fakes();
-    await openRegister(sources);
+    await openRegister(sources, false);
     expect(screen.getByTestId('up-split-preview')).toBeTruthy();
     expect(screen.getByTestId('reg-s1')).toBeTruthy();
     // 존치 — 2단 등록 게이트 · 기준 격자 첨부 자리(파일 종류를 `기준 격자 파일` 로 바꾸는 칸).
@@ -596,6 +613,9 @@ describe('㈒ PRD-40 종료 비움', () => {
   it('시작만 적고 종료를 비우면 `period_end = period_start` 로 실린다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
+    await change(screen.getByTestId('reg-category'), DEFAULT_CATEGORY);
+    await change(screen.getByTestId('reg-datatype'), DEFAULT_DATA_TYPE);
+    await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     // ⭑ ⟨R-C · WU-C8 · §5-14⟩ 기간은 달력 팝오버 하나로만 받는다.
@@ -608,6 +628,10 @@ describe('㈒ PRD-40 종료 비움', () => {
     // ⭑ ⟨개정 2026-09-14⟩ 관측 간격도 등록 게이트다 — 여기서 재는 것은 기간뿐이라 채워 둔다.
     await change(screen.getByTestId('reg-interval-value'), '1');
     await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  await click(stepBtn('②'));
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
@@ -619,20 +643,11 @@ describe('㈒ PRD-40 종료 비움', () => {
 
 // ═══ ⭑ ⟨advisor ② · F3⟩ 최종 게이트 — 분류·유형이 비면 ① 로 되돌린다 ══════════
 describe('advisor ② F3 — 등록 최종 게이트', () => {
-  it('분류를 비운 채 `데이터셋 만들기` 를 누르면 ① 로 가고 서버와 같은 문면이 선다', async () => {
-    const { sources, calls } = fakes();
-    await openRegister(sources);
-    await change(screen.getByTestId('reg-category'), '');
-    await click(stepBtn('②'));
-    await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
-    await click(stepBtn('③'));
-    await click(screen.getByTestId('reg-done'));
-    // 서버까지 가지 않는다 — 화면이 먼저 판정한다.
-    expect(calls.registered).toHaveLength(0);
-    // 적을 칸이 있는 단계로 데려간다 (이름·설명 경로와 같은 규율).
-    expect(screen.getByTestId('reg-s1')).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByTestId('reg-category'));
-    expect(screen.getByTestId('reg-area').textContent).toContain(MISSING_CATEGORY_MESSAGE);
+  it('최종 제출 가드는 비어 있는 첫 분류 칸을 순서대로 가리킨다', () => {
+    expect(missingClassificationId('', '재분석자료', 'Lv0')).toBe('reg-category');
+    expect(missingClassificationId('기상·기후 인자', '', 'Lv0')).toBe('reg-datatype');
+    expect(missingClassificationId('기상·기후 인자', '재분석자료', '')).toBe('reg-level');
+    expect(missingClassificationId('기상·기후 인자', '재분석자료', 'Lv0')).toBeNull();
     expect(MISSING_CATEGORY_MESSAGE).toBe('분류를 골라 주세요');
   });
 });
@@ -673,12 +688,12 @@ describe('WU-B4 · PRD-11 공개 범위 3값', () => {
     const select = screen.getByTestId('reg-visibility') as HTMLSelectElement;
     expect(select.value).toBe('');
     expect(screen.getByTestId('reg-visibility-note').textContent)
-      .toBe('연구실 설정의 데이터 공개 범위를 그대로 따른다');
+      .toBe('연구실 설정의 데이터 공개 범위를 그대로 따른다 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.');
     await change(select, '지정 공개');
     expect((screen.getByTestId('reg-visibility') as HTMLSelectElement).value).toBe('지정 공개');
     // `지정한 사람만` 은 허용 목록 0건으로 시작해 사실상 `나만 보기` 와 같다 — 그 사실이 뜬다.
     expect(screen.getByTestId('reg-visibility-note').textContent)
-      .toBe('허용 목록에 오른 사람만. 만료 = 승인일 + 6개월');
+      .toBe('허용 목록에 오른 사람만. 만료 = 승인일 + 6개월 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.');
   });
 
   it('셀렉트를 건드리지 않으면 등록 요청에 `accessState` 열쇠가 **없다**', async () => {

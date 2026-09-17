@@ -46,10 +46,12 @@ jobs:
           python-version: '3.12'
       - name: Validate adapters and shared source links
         run: python scripts/agent-bridge.py check
-      - name: Install workflow parser from shared dependency pins
+      - name: Install test dependencies from shared dependency pins
         run: |
           python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
           python -m pip install "$(grep -iE '^pytest==' services/core-api/requirements-dev.txt)"
+          python -m pip install "$(grep -iE '^fastapi==' services/core-api/requirements.txt)"
+          python -m pip install "$(grep -iE '^httpx==' services/core-api/requirements-dev.txt)"
       - name: Prove the shared harness contract fails closed
         env:
           COLAB_TEST_ENV_SOURCED: '1'

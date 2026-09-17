@@ -33,17 +33,12 @@ from .native_io import serialized_netcdf
 #: ⚠ 같은 이름의 목록이 `pipeline-worker` 의 `d5/formats.py` 에도 있다 — **두 곳에
 #: 적혀 있다는 사실 자체가 갈릴 자리다**(`§D.5b-⑵`).
 #:
-#: ⭑⭑ **그러나 「함께 고친다」가 이제 「같게 만든다」는 뜻이 아니다** (`〈134〉`).
-#: `GRIB` 이 지원 포맷으로 돌아왔지만 **미리보기 대상이 아니다**(결정 2-3 — 「5종이어도
-#: grib 은 미리보기 대상이 아니다」). 그래서 두 목록이 갈라졌다:
+#: GRIB 판독과 렌더 경로가 구현되어 두 목록은 다시 같은 지원 범위를 말한다:
 #:
-#:   pipeline-worker `SUPPORTED_FORMATS` = 6종 (**GRIB 포함**) — 받아서 저장하는 것
-#:   여기 `SUPPORTED_FORMATS`            = 5종 (**GRIB 제외**) — 그려 낼 수 있는 것
+#:   pipeline-worker `SUPPORTED_FORMATS` = 받아서 저장하는 것
+#:   여기 `SUPPORTED_FORMATS`            = 그려 낼 수 있는 것
 #:                                        = pipeline-worker 의 `RENDERABLE_FORMATS`
 #:
-#: **여기에 `GRIB` 을 넣지 마라.** 넣으면 못 그리는 포맷을 그릴 수 있다고 말하게 되고,
-#: `renders.py` 의 `renderableFormats` 가 곧바로 거짓이 된다. 맞춰야 할 상대는
-#: pipeline-worker 의 `SUPPORTED_FORMATS` 가 아니라 **`RENDERABLE_FORMATS`** 다.
 SUPPORTED_FORMATS: list[str] = [
     "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
 
@@ -194,6 +189,19 @@ def _decimate(arr: np.ndarray, steps: tuple[int, int]) -> np.ndarray:
     아니다**(`DR-9` 가 금지한 것은 없는 값을 만드는 것이다).
     """
     return downsample.block_average(np.asarray(arr), steps)
+
+
+def _windowed_block_average(shape: tuple[int, int], steps: tuple[int, int],
+                            read_window) -> np.ndarray:
+    """원본 전체를 적재하지 않고 기존 블록 평균과 같은 결과를 만든다."""
+    sy, sx = steps
+    ny, nx = shape
+    out = np.full((-(-ny // sy), -(-nx // sx)), np.nan, dtype="f4")
+    for oy, y in enumerate(range(0, ny, sy)):
+        strip = np.asarray(read_window(slice(y, min(y + sy, ny)), slice(0, nx)),
+                           dtype="f4")
+        out[oy:oy + 1] = downsample.block_average(strip, (sy, sx))
+    return out
 
 
 def _read_geotiff(path: Path, variable: str | None, max_side: int) -> Field:
@@ -514,40 +522,65 @@ def _read_netcdf(path: Path, variable: str | None, instant: str | None,
         var.set_auto_maskandscale(False)
         # **시각을 먼저 고른다**(코드리뷰 #3) — 자르기 전에 고르지 않으면 고를 자리가 없다.
         t, t_axis = _time_index(ds, var, instant, path)
-        arr = var[:]
-        raw = np.ma.filled(np.asarray(arr, dtype="f8"), np.nan) if np.ma.isMaskedArray(arr) \
-            else np.asarray(arr, dtype="f8")
-        if raw.ndim > 2:
-            # **시각 축에서** 고른 자리를 집는다 — `raw[t]` 가 아니라 `np.take(…, axis=)`
-            # 다(레인 C 수용 검토 #1). 축을 찾아 놓고 0축을 자르면 `(lat, lon, time)`
-            # 에서 위도 한 줄이 그림이 되고, **그것도 2차원이라 아무도 못 잡는다.**
-            raw = np.take(raw, t, axis=t_axis)
-        while raw.ndim > 2:             # 남은 밴드 축 — 한 번에 값 하나만 그린다
-            raw = raw[0]
-        if raw.ndim != 2:
+        selected_time_axis = t_axis if var.ndim > 2 else None
+        remaining = [axis for axis in range(var.ndim) if axis != selected_time_axis]
+        spatial_axes = remaining[-2:]
+        if len(spatial_axes) != 2:
             raise NotRenderableError(f"{path.name}: {name} 이 2차원이 아니다")
+        native = (int(var.shape[spatial_axes[0]]), int(var.shape[spatial_axes[1]]))
+        steps = _steps_for(native, max_side)
 
         fills = []
         for attr in ("_FillValue", "missing_value"):
             if hasattr(var, attr):
                 fills.extend(np.atleast_1d(getattr(var, attr)).astype("f8").tolist())
-        values = _apply_fill_exact(raw, fills)
-        if hasattr(var, "scale_factor"):
-            values = values * float(var.scale_factor)
-        if hasattr(var, "add_offset"):
-            values = values + float(var.add_offset)
+        def read_window(rows, cols):
+            selection = []
+            for axis in range(var.ndim):
+                if axis == selected_time_axis:
+                    selection.append(t)
+                elif axis == spatial_axes[0]:
+                    selection.append(rows)
+                elif axis == spatial_axes[1]:
+                    selection.append(cols)
+                else:
+                    selection.append(0)
+            arr = var[tuple(selection)]
+            raw_block = (np.ma.filled(np.asarray(arr, dtype="f8"), np.nan)
+                         if np.ma.isMaskedArray(arr) else np.asarray(arr, dtype="f8"))
+            block = _apply_fill_exact(raw_block, fills)
+            if hasattr(var, "scale_factor"):
+                block *= float(var.scale_factor)
+            if hasattr(var, "add_offset"):
+                block += float(var.add_offset)
+            return block
+
+        values = _windowed_block_average(native, steps, read_window)
         unit = getattr(var, "units", None)
 
         lat = lon = None
         lower = {n.lower(): n for n in names}
         lat_n = next((lower[k] for k in ("lat", "latitude") if k in lower), None)
         lon_n = next((lower[k] for k in ("lon", "longitude") if k in lower), None)
+        row_idx = np.minimum(np.arange(values.shape[0]) * steps[0] + steps[0] // 2,
+                             native[0] - 1)
+        col_idx = np.minimum(np.arange(values.shape[1]) * steps[1] + steps[1] // 2,
+                             native[1] - 1)
+        row_idx[-1], col_idx[-1] = native[0] - 1, native[1] - 1
         if lat_n and lon_n:
-            la = np.asarray(ds.variables[lat_n][:], dtype="f8")
-            lo = np.asarray(ds.variables[lon_n][:], dtype="f8")
+            lat_var, lon_var = ds.variables[lat_n], ds.variables[lon_n]
+            if lat_var.ndim == 1 and lon_var.ndim == 1:
+                la = np.asarray(lat_var[row_idx], dtype="f8")
+                lo = np.asarray(lon_var[col_idx], dtype="f8")
+            else:
+                # netCDF4 의 고급 인덱싱은 직교곱을 만들므로 미리보기 행만 읽는다.
+                la = np.vstack([np.asarray(lat_var[int(row), col_idx], dtype="f8")
+                                for row in row_idx])
+                lo = np.vstack([np.asarray(lon_var[int(row), col_idx], dtype="f8")
+                                for row in row_idx])
             if la.ndim == 1 and lo.ndim == 1:
                 lo, la = np.meshgrid(lo, la)
-            if la.shape == raw.shape:
+            if la.shape == native or la.shape == values.shape:
                 lat, lon = la, lo
         if lat is None:
             # 좌표 변수가 없으면 **투영 속성에서 계산한다**(`§4` — nc 는 파일이 격자를
@@ -556,20 +589,19 @@ def _read_netcdf(path: Path, variable: str | None, instant: str | None,
                 v = ds.variables[n]
                 if "grid_mapping_name" in v.ncattrs():
                     computed = coords.from_cf_projection(
-                        {a: getattr(v, a) for a in v.ncattrs()}, raw.shape)
+                        {a: getattr(v, a) for a in v.ncattrs()}, native,
+                        row_indices=row_idx, col_indices=col_idx)
                     if computed is not None:
                         lat, lon = computed
                     break
     finally:
         ds.close()
 
-    native = (values.shape[0], values.shape[1])
-    steps = _steps_for(native, max_side)
-    values = _decimate(values, steps).astype("f4")
     if lat is not None:
         # ⚠ 좌표는 **평균하지 않는다** — `downsample.sample_centers` 주석 참조.
-        lat = downsample.sample_centers(lat, steps)
-        lon = downsample.sample_centers(lon, steps)
+        if lat.shape == native:
+            lat = downsample.sample_centers(lat, steps)
+            lon = downsample.sample_centers(lon, steps)
     return Field(values=values, variable=name, unit=unit, lat=lat, lon=lon,
                  native_shape=native, steps=steps, fills=tuple(float(f) for f in fills))
 
@@ -591,26 +623,32 @@ def _read_hdf4(path: Path, variable: str | None, max_side: int) -> Field:
             name = _pick_default(drawable)
         sds = sd.select(name)
         try:
-            raw = np.asarray(sds[:], dtype="f8")
             attrs = sds.attributes()
+            shape = tuple(int(v) for v in infos[name][1])
+            native = (shape[-2], shape[-1])
+            steps = _steps_for(native, max_side)
+            fills = [float(attrs[k]) for k in ("_FillValue", "missing_value") if k in attrs]
+
+            def read_window(rows, cols):
+                start = [0] * len(shape)
+                count = [1] * len(shape)
+                start[-2:] = [rows.start, cols.start]
+                count[-2:] = [rows.stop - rows.start, cols.stop - cols.start]
+                raw_block = np.asarray(sds.get(start=start, count=count), dtype="f8").reshape(
+                    rows.stop - rows.start, cols.stop - cols.start)
+                block = _apply_fill_exact(raw_block, fills)
+                if "valid_range" in attrs:
+                    lo, hi = (float(v) for v in attrs["valid_range"])
+                    block[(raw_block < lo) | (raw_block > hi)] = np.nan
+                if "scale_factor" in attrs:
+                    block *= float(attrs["scale_factor"])
+                if "add_offset" in attrs:
+                    block += float(attrs["add_offset"])
+                return block
+
+            values = _windowed_block_average(native, steps, read_window)
         finally:
             sds.endaccess()
-        while raw.ndim > 2:
-            raw = raw[0]
-
-        fills = [float(attrs[k]) for k in ("_FillValue", "missing_value") if k in attrs]
-        # MODIS 는 유효범위 밖 코드값(구름·물 등)을 값처럼 담는다 — **각각을 정확일치로**
-        # 지운다. `valid_range` 로 범위 비교를 하면 그것이 곧 `>= 249` 버그의 재발이다.
-        values = _apply_fill_exact(raw, fills)
-        if "valid_range" in attrs:
-            lo, hi = (float(v) for v in attrs["valid_range"])
-            for code in np.unique(raw[~np.isnan(raw)]):
-                if code < lo or code > hi:
-                    values[raw == code] = np.nan
-        if "scale_factor" in attrs:
-            values = values * float(attrs["scale_factor"])
-        if "add_offset" in attrs:
-            values = values + float(attrs["add_offset"])
         unit = attrs.get("units")
         # **`C-3`** — 꼬리 `StructMetadata.0` 의 코너좌표 + Sinusoidal + R 로 격자를
         # 계산한다. 옛 코드는 이 경로를 막아 두고 「좌표는 밖에서 받아야 한다」고 적었는데,
@@ -618,16 +656,19 @@ def _read_hdf4(path: Path, variable: str | None, max_side: int) -> Field:
         computed = None
         text = sd.attributes().get("StructMetadata.0")
         if text:
-            computed = coords.from_struct_metadata(text)
+            row_idx = np.minimum(np.arange(values.shape[0]) * steps[0] + steps[0] // 2,
+                                 native[0] - 1)
+            col_idx = np.minimum(np.arange(values.shape[1]) * steps[1] + steps[1] // 2,
+                                 native[1] - 1)
+            row_idx[-1], col_idx[-1] = native[0] - 1, native[1] - 1
+            computed = coords.from_struct_metadata(
+                text, row_indices=row_idx, col_indices=col_idx)
     finally:
         sd.end()
-    native = (values.shape[0], values.shape[1])
-    steps = _steps_for(native, max_side)
     lat = lon = None
-    if computed is not None and computed[0].shape == native:
-        lat = downsample.sample_centers(computed[0], steps)
-        lon = downsample.sample_centers(computed[1], steps)
-    return Field(values=_decimate(values, steps).astype("f4"), variable=name, unit=unit,
+    if computed is not None:
+        lat, lon = computed
+    return Field(values=values.astype("f4"), variable=name, unit=unit,
                  lat=lat, lon=lon,
                  native_shape=native, steps=steps, fills=tuple(float(f) for f in fills))
 

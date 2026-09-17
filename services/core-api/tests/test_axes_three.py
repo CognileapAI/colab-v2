@@ -102,7 +102,9 @@ def test_lv3_is_open(p2_client) -> None:
     """⑹ 상한은 `Lv3` 이다(미결-7 ⓐ) — 4값이 전부 담긴다."""
     client = p2_client()
     for value in PROCESSING_LEVELS:
-        r = _register(client, processingLevelUserSet=value)
+        source = ({"sourceUrl": "https://example.test/source",
+                   "sourceDownloadedOn": "2026-09-16"} if value == "Lv0" else {})
+        r = _register(client, processingLevelUserSet=value, **source)
         assert r.status_code == 201, r.text
         assert _read(client, r.json()["datasetId"])["basicInfo"]["processingLevelUserSet"] == value
 

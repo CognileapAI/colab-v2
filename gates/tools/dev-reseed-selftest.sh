@@ -57,6 +57,7 @@ CASES=(
   "$RESEED_DIR/tests/remote-transport.sh"
   "$RESEED_DIR/tests/s3-review.sh"
   "$RESEED_DIR/tests/verify-session.sh"
+  "$RESEED_DIR/tests/deploy-rehearsal.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"

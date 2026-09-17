@@ -154,6 +154,10 @@ async function openMeta(sources: UploadSources) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+  fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+  fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
+  await act(async () => {});
   await click(stepBtn('②'));
   return screen.getByTestId('reg-s2');
 }
@@ -243,7 +247,7 @@ describe('② 격자 — 한 줄 입력', () => {
     expect(grid.tagName).toBe('INPUT');
     const label = document.querySelector('label[for="reg-grid-description"]');
     expect(label).not.toBeNull();
-    expect((label as HTMLElement).textContent).toBe('격자선택');
+    expect((label as HTMLElement).textContent).toBe('격자 입력선택');
   });
 
   it('칸 아래 안내 문단이 없다 (목업에 그 문단이 없다)', async () => {
@@ -299,13 +303,13 @@ describe('② 변수 — 목업 표 모양', () => {
 
 // ═══════════ ㈓ 필수 표기 ═══════════
 describe('② 필수 표기 — 라벨 옆 `필수` 글자', () => {
-  it('② 안의 `필수` 배지는 이름·기간·설명 세 곳이다', async () => {
+  it('② 안의 `필수` 배지는 이름·기간·설명·관측 간격 네 곳이다', async () => {
     const { sources } = fakes();
     await openMeta(sources);
     const card = screen.getByTestId('reg-s2');
-    expect(card.querySelectorAll('.reqtag')).toHaveLength(3);
-    const owners = ['reg-name', 'reg-period-open', 'reg-summary'];
-    expect(owners).toHaveLength(3);
+    expect(card.querySelectorAll('.reqtag')).toHaveLength(4);
+    const owners = ['reg-name', 'reg-period-open', 'reg-summary', 'reg-interval-value'];
+    expect(owners).toHaveLength(4);
     for (const id of owners) {
       const label = document.querySelector(`label[for="${id}"]`);
       expect(label).not.toBeNull();

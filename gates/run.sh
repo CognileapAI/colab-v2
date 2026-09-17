@@ -74,8 +74,19 @@ summary_out_paths() { # $1=(선택) 산출 디렉터리 → 배출 경로들. �
   return 0
 }
 
-summary_gate_row() { # $1=이름 $2=상태 $3=종료코드 $4=준비 표식 → TSV 한 줄
-  printf '%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4"
+summary_gate_row() { # $1=이름 $2=상태 $3=종료코드 $4=준비 표식 $5=실패 표식 → TSV 한 줄
+  # ⚠ **위치 규약이다.** 자리를 바꾸거나 중간에 끼워 넣지 않는다. 앞 4열의 뜻은 2026-09-17
+  #   5열 전환에서도 한 글자도 바뀌지 않았고, 배출기(`gates/tools/gate_summary_json.py`)와
+  #   **같은 커밋에서** 함께 옮겼다. 한쪽만 옮기면 게이트가 찍은 값이 JSON 에서 조용히 사라진다.
+  printf '%s\t%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4" "$5"
+}
+
+# 게이트가 찍은 `::gate-failure::` 줄을 **전부** 모아 TSV 한 셀로 접는다.
+# 준비 표식과 달리 `-m1` 이 아니다 — 실패한 시험은 여럿이고, 첫 줄만 남기면 나머지를 잃는다.
+# TSV 한 셀이라 줄바꿈을 그대로 넣을 수 없으므로 ` || ` 로 잇는다(형식은 `gates/README.md`).
+summary_failure_marks() { # $1=로그 파일 → 접힌 한 줄(없으면 빈 문자열)
+  [ -f "${1:-}" ] || return 0
+  awk '/^::gate-failure::/ { if (n++) printf " || "; printf "%s", $0 }' "$1" 2>/dev/null || true
 }
 
 summary_head() { # $1=요청대상 $2=시작 $3=끝 $4=병렬도 $5~$8=계수 4개
@@ -115,6 +126,7 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
   fi
   one_finished="$(summary_now)"
   one_mark="$(grep -m1 '^::gate-readiness-failure::' "$one_out" 2>/dev/null || true)"
+  one_fail="$(summary_failure_marks "$one_out")"
   one_state="$(gate_state_of "$one_rc" "$one_mark")"
   n_green=0; n_red_judge=0; n_red_ready=0; n_undeclared_input=0
   echo "── 요약 ────────────────────────────────────────────────────"
@@ -131,13 +143,15 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
           echo "  red(준비)  $GATE (exit $one_rc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${one_mark#::gate-readiness-failure::}" ;;
       esac ;;
     *)
-      echo "  red(판정)  $GATE (exit $one_rc) — 검사 대상이 규율을 어겼다"; n_red_judge=1 ;;
+      echo "  red(판정)  $GATE (exit $one_rc) — 검사 대상이 규율을 어겼다"; n_red_judge=1
+      # 게이트가 실패한 시험의 이름을 찍었으면 요약에도 한 줄씩 세운다 — 1300줄 출력을 뒤지지 않게.
+      grep '^::gate-failure::' "$one_out" 2>/dev/null | sed 's/^::gate-failure::/     · /' || true ;;
   esac
   echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
   mapfile -t SUMMARY_OUTS < <(summary_out_paths "${COLAB_GATE_OUTDIR:-}")
   { summary_head "$GATE" "$one_started" "$one_finished" 1 \
       "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"
-    printf 'gate\t%s\n' "$(summary_gate_row "$GATE" "$one_state" "$one_rc" "$one_mark")"
+    printf 'gate\t%s\n' "$(summary_gate_row "$GATE" "$one_state" "$one_rc" "$one_mark" "$one_fail")"
     printf 'target\t%s\n' "$GATE"
   } | summary_emit ${SUMMARY_OUTS[@]+"${SUMMARY_OUTS[@]}"}
   rm -f "$one_out"
@@ -767,8 +781,9 @@ case "$GATE" in
     for g in "${ALL_GATES[@]}"; do
       grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
       rmark="$(grep -m1 '^::gate-readiness-failure::' "$outdir/$g.out" 2>/dev/null || true)"
-      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1)); json_gates+=("$(summary_gate_row "$g" green "$grc" "")")
-      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
+      gfail="$(summary_failure_marks "$outdir/$g.out")"
+      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1)); json_gates+=("$(summary_gate_row "$g" green "$grc" "" "")")
+      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark" "")")
       elif [ "$grc" = 78 ] || [ -n "$rmark" ]; then
         detail="${rmark#::gate-readiness-failure::}"
         # 원인을 표식에서 읽는다. `cause=` 가 없는 옛 표식은 환경대기다(`_pg.sh`).
@@ -779,8 +794,12 @@ case "$GATE" in
           *)
             echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${detail:-사유 표식 없음}" ;;
         esac
-        n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
-      else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); json_gates+=("$(summary_gate_row "$g" "red_판정" "$grc" "$rmark")"); fi
+        n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark" "")")
+      else
+        echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"
+        # 게이트가 실패한 시험의 이름을 찍었으면 요약에도 한 줄씩 세운다 — 1300줄 출력을 뒤지지 않게.
+        grep '^::gate-failure::' "$outdir/$g.out" 2>/dev/null | sed 's/^::gate-failure::/     · /' || true
+        n_red_judge=$((n_red_judge+1)); json_gates+=("$(summary_gate_row "$g" "red_판정" "$grc" "$rmark" "$gfail")"); fi
     done
     echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
     if [ "$n_red_ready" -gt 0 ]; then

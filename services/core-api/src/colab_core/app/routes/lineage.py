@@ -13,9 +13,9 @@
   ④ **`확인` 은 `마지막 수정` 을 밀지 않는다** — 계보 확정일만 갱신한다.
 """
 from __future__ import annotations
+from ..access import dataset_access
 
 import datetime as dt
-from ..dataset_access import dataset_access_adapter
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Response
@@ -66,7 +66,7 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     child_ids = {e["child_dataset_id"] for e in edges if e["parent_dataset_id"] == datasetId}
     all_ids = [Ulid(i) for i in ({datasetId} | neighbour_ids | child_ids)]
     summaries = d4_lineage.LineageSummaryAdapter(db).summaries(all_ids)
-    access = dataset_access_adapter(db).dataset_access(all_ids)
+    access = dataset_access(db).dataset_access(all_ids)
 
     def node(node_id: str, kind: str) -> dict:
         c = d3_catalog.find_dataset_core(db, Ulid(node_id))

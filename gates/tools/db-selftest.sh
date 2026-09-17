@@ -455,6 +455,30 @@ else
   echo "[selftest] 구분: 슬롯 고갈 — flock 부재로 증명하지 못했다 ✗"
   FAILURES+=("슬롯 고갈 미증명(flock 부재)")
 fi
+
+# ── ⭑ ⟨2026-09-18 · `_pg.sh`·`_lock.sh` 개정 · ADR-0005 개정 블록⟩ ────────────
+# **한도를 걸 수단이 없는 것도 red(준비) 다.** 종전에 이 세 갈래는 `return 0` 이었다 —
+# 실행기가 「선언한 한도가 지금 서 있지 않다」를 **알고도** 조용히 통과시켰다.
+# 규칙 = 「실행기가 아는 사실은 무의미하거나 판정이거나 — 둘 중 하나다」. 그 침묵을 여기서 못 박는다.
+# ⓐ·ⓒ 의 `flock` 부재는 **PATH 에서 지워** 흉내낸다 — 면제 변수를 두지 않기로 했으므로 주입 훅이 없다
+#     (`_pg.sh` 슬롯 주석 참조). 함수 자리에서 직접 부른다: 게이트 앞단의 다른 도구 의존에 걸려
+#     넘어지면 증명하려던 갈래가 아니라 PATH 수술이 red 를 내게 된다.
+NOFLOCK_BIN="$TMP/noflock-bin"; mkdir -p "$NOFLOCK_BIN"
+for _b in bash sh cat cut date dirname grep iconv mkdir sed sleep tr env; do
+  _p="$(command -v "$_b" 2>/dev/null)" && ln -sf "$_p" "$NOFLOCK_BIN/$_b"
+done
+expect_ready_red "구분: flock 부재 = 준비 실패(_pg.sh — 한도를 걸 수단이 없다)" \
+  env -i PATH="$NOFLOCK_BIN" HOME="$HOME" \
+    "$NOFLOCK_BIN/bash" -c '. "$1/gates/tools/_pg.sh"; pg_slot_acquire rls-coverage' _ "$REPO_ROOT"
+expect_ready_red "구분: flock 부재 = 준비 실패(_lock.sh — 잠글 수단이 없다)" \
+  env -i PATH="$NOFLOCK_BIN" HOME="$HOME" TMPDIR="$TMP" \
+    "$NOFLOCK_BIN/bash" -c '. "$1/gates/tools/_lock.sh"; gate_lock_fd "$1/gates/.venv" contract-lint' _ "$REPO_ROOT"
+# ⓑ 슬롯 파일을 둘 **자리**가 없다 — 읽기 전용 디렉터리를 주고 게이트를 그대로 돌린다.
+RO_SLOTS="$TMP/ro-slots"; mkdir -p "$RO_SLOTS"; chmod 500 "$RO_SLOTS"
+expect_ready_red "구분: 슬롯 파일 열기 실패 = 준비 실패" \
+  env COLAB_DB_DIR="$D" COLAB_PG_SLOT_DIR="$RO_SLOTS" "$RC_SH"
+chmod 700 "$RO_SLOTS"
+
 D2="$(mkdb ready-vs-judge-noschema)"
 expect_judge_red "구분: 선언 스키마 0건 = 판정 실패(준비 아님)" \
   env COLAB_DB_DIR="$D2" "$RC_SH"

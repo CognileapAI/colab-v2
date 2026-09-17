@@ -31,7 +31,6 @@ import { UploadEntry } from '../src/components/upload/UploadEntry';
 import {
   LV0,
   LV0_SOURCE_DATE_PLACEHOLDER,
-  LV0_SOURCE_NOTICE,
   LV0_SOURCE_URL_PLACEHOLDER,
 } from '../src/components/upload/RegisterArea';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
@@ -193,6 +192,9 @@ async function openRegister(sources: UploadSources) {
   await dropOne();
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), LV0);
 }
 
 
@@ -224,9 +226,12 @@ async function submitRegister() {
 
 // ═══════════ 수용 기준 ㈎㈏ — 표시·숨김과 `선택` 표기 ═══════════
 describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
-  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`선택` 배지**가 붙는다', async () => {
+  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`필수` 배지**가 붙는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
+    await pickLevel(LV0);
+    await pickLevel(LV0);
+    await pickLevel(LV0);
     await pickLevel(LV0);
     await goStep('③');
 
@@ -240,19 +245,17 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     expect(LV0_SOURCE_URL_PLACEHOLDER).toBe('예: https://cds.climate.copernicus.eu/...');
     expect(LV0_SOURCE_DATE_PLACEHOLDER).toBe('예: 2026-08-20');
 
-    expect(source.querySelectorAll('.opttag')).toHaveLength(2);
+    expect(source.querySelectorAll('.reqtag')).toHaveLength(2);
+    expect(source.querySelectorAll('.opttag')).toHaveLength(1);
     for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
-      expect(within(label!).getByText('선택')).toBeInTheDocument();
+      expect(within(label!).getByText('필수')).toBeInTheDocument();
     }
     // ⛔ 괄호 문구는 남지 않는다 — 표시는 배지 하나다.
     expect(source.textContent).not.toContain('(선택)');
 
-    // 안내 문면은 rev1 축자다.
-    const block = within(source).getByTestId('reg-source-lv0');
-    expect(within(block).getByTestId('reg-source-lv0-notice').textContent).toBe(LV0_SOURCE_NOTICE);
-    expect(LV0_SOURCE_NOTICE).toBe('원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.');
+    expect(within(source).queryByTestId('reg-source-lv0-notice')).toBeNull();
   });
 
   // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈏ Lv1 이면 두 칸이 안 보이고 **원천 표기는 그대로
@@ -281,6 +284,7 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     // ⭑ ⟨카드 ⑩ ⓐ⟩ 부모 0건 기본값이 `Lv0` 이라 흐름이 한 단 늘었다 —
     //   Lv0(기본값) → 열림 → Lv2 → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘.
     //   ／ 종전 ~~Lv2(기본값) → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘~~
+    await pickLevel(LV0);
     await goStep('③');
     expect(screen.getByTestId('reg-source-lv0')).toBeTruthy();
     await pickLevel('Lv2');
@@ -299,16 +303,14 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
 
 // ═══════════ 수용 기준 ㈐㈑㈒ — 무엇이 전송되는가 ═══════════
 describe('WU-B6 · PRD-19 전송 규율', () => {
-  it('㈐ Lv0 이고 두 칸이 비어도 등록되고 선택 필드는 요청에서 빠진다', async () => {
+  it('㈐ Lv0 출처 두 칸이 비면 등록 요청을 보내지 않는다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await submitRegister();
 
-    expect(calls.registered).toHaveLength(1);
-    const body = calls.registered[0] as Record<string, unknown>;
-    expect('sourceUrl' in body).toBe(false);
-    expect('sourceDownloadedOn' in body).toBe(false);
+    expect(calls.registered).toHaveLength(0);
+    expect(screen.getByTestId('reg-source-url')).toHaveFocus();
   });
 
   it('㈐-b Lv0 에서 두 칸을 채우면 그 값이 그대로 실린다', async () => {
@@ -454,7 +456,7 @@ describe('WU-B6 · PRD-19 수정 폼 — 안내가 실행 가능한가', () => {
     const day = TEXT_FIELDS.find((f) => f.key === 'sourceDownloadedOn');
     expect(url?.label).toBe('출처 주소');
     expect(day?.label).toBe('내려받은 날');
-    // ⛔ 두 칸은 선택 입력이다 — 목업 필수 배지를 채택하지 않는다.
+    // #78 신규 등록 필수화와 별개로 기존 데이터 수정의 선택 규칙은 유지한다.
     expect(url?.required).toBeFalsy();
     expect(day?.required).toBeFalsy();
   });

@@ -25,9 +25,19 @@ SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''계정 관리자 롤이 현재 DB 객
 -- 비밀번호는 항상, 나머지 속성은 실제로 어긋났을 때만. 아래 마지막 검사가 fail-closed 를 유지한다.
 SELECT format('ALTER ROLE %I PASSWORD %L', :'admin', :'admin_password')
 \gexec
-SELECT format('ALTER ROLE %I NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS', :'admin')
-  FROM pg_roles WHERE rolname=:'admin'
-   AND (rolcreatedb OR rolcreaterole OR rolinherit OR NOT rolbypassrls)
+-- BYPASSRLS도 같은 값으로 다시 쓰면 실행자의 BYPASSRLS 권한이 필요하다.
+-- 다른 속성만 복구할 때 그 절을 발화하지 않도록 속성별로 나눈다.
+SELECT format('ALTER ROLE %I NOCREATEDB', :'admin')
+  FROM pg_roles WHERE rolname=:'admin' AND rolcreatedb
+\gexec
+SELECT format('ALTER ROLE %I NOCREATEROLE', :'admin')
+  FROM pg_roles WHERE rolname=:'admin' AND rolcreaterole
+\gexec
+SELECT format('ALTER ROLE %I NOINHERIT', :'admin')
+  FROM pg_roles WHERE rolname=:'admin' AND rolinherit
+\gexec
+SELECT format('ALTER ROLE %I BYPASSRLS', :'admin')
+  FROM pg_roles WHERE rolname=:'admin' AND NOT rolbypassrls
 \gexec
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM :"admin";
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA account_admin FROM :"admin";

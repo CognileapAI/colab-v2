@@ -109,41 +109,9 @@ EOF
 }
 
 # ── deploy ───────────────────────────────────────────────────────────────
-# 정본 = `infra/dev/README.md` 「올리기」 ＋ 런북 §1. 사람 입력을 요구하는 자리는 없다.
-# 트리 동기화는 배포 절차 밖의 별도 1회다 — `ship.sh` 가 /opt/colab-repo 를 밀지 않는다(이슈 #48 ⑴).
+# 배포 명령과 검증은 release executor 한 번이 소유한다. reset 이후 stage_up은 별도 단계다.
 stage_deploy() {
-  local head; head="$(run_capture git -C "$REPO_ROOT" rev-parse --short=12 HEAD || true)"
-  if [ "$DRY_RUN" != 1 ] && [ "$head" != "$TARGET_SHA" ]; then
-    die "작업 트리 HEAD $head ≠ 배포 대상 $TARGET_SHA — build.sh 는 HEAD 를 굽는다. 먼저 체크아웃한다."
-    return 1
-  fi
-
-  log "① 이미지 5벌 빌드 (linux/arm64)"
-  run bash "$REPO_ROOT/infra/dev/build.sh" "$REPO_ROOT/dist" || return 1
-
-  log "② 반입 — ship.sh 안의 조상 게이트가 판정한다(비조상 65 · origin 조회 실패 78)"
-  run env COLAB_DEV_SSH="$COLAB_DEV_SSH" COLAB_DEV_KEY_FILE="$COLAB_DEV_KEY_FILE" \
-      bash "$REPO_ROOT/infra/dev/ship.sh" "$REPO_ROOT/dist" || return 1
-
-  log "③ 배포 레포 트리 동기화 — deploy_doctor ⑥⑦ 이 옛 head 를 정답으로 삼는 것을 막는다"
-  local tgz="$RUN_DIR/repo-$TARGET_SHA.tgz"
-  run bash -c "git -C \"$REPO_ROOT\" archive '$TARGET_SHA' -- db gates services/core-api/ops infra | gzip > \"$tgz\"" || return 1
-  run scp -o BatchMode=yes -o IdentitiesOnly=yes -i "$COLAB_DEV_KEY_FILE" \
-      "$tgz" "$COLAB_DEV_SSH:/tmp/repo.tgz" || return 1
-  ssh_dev "sudo tar xzf /tmp/repo.tgz -C $DEV_REPO_DIR --overwrite && rm -f /tmp/repo.tgz" || return 1
-
-  log "④ 기동 — up.sh (마이그레이션 두 체인 → 4 단위 healthy · fail-closed)"
-  ssh_dev "sudo bash $DEV_STATE_DIR/up.sh" || return 1
-
-  log "⑤ 프런트 정적 번들"
-  run bash -c "cd \"$REPO_ROOT/frontend\" && npm ci && npm run build" || return 1
-  # deploy_web.py 는 자작 SigV4 라 AWS_PROFILE 을 해석하지 않는다(이슈 #48 ⑵) —
-  # preflight ⑶ 이 환경변수 갈래를 이미 판정했다.
-  run python3 "$REPO_ROOT/services/core-api/ops/deploy_web.py" \
-      --dist "$REPO_ROOT/frontend/dist" --bucket "$WEB_BUCKET" --region "$S3_REGION" || return 1
-
-  log "⑥ deploy_doctor 기준선 1회"
-  doctor_once || return 1
+  release_plan_execute run
 }
 
 # deploy_doctor 요약줄 파서 — 표준입력에서 **마지막 한 벌**의 요약줄을 뽑는다.
@@ -168,11 +136,11 @@ doctor_summary_full() {
 # 부분 실행 둘을 합쳐 15 라 하지 않는다(완료 정의 · `.claude/rules/deploy.md`).
 doctor_once() {
   # 표준오류를 되받지 않는다 — `run_capture` 가 그쪽으로 DRY 줄과 실행 로그를 낸다.
-  local out; out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE" || true)"
+  local out rc=0; out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE")" || rc=$?
   printf '%s\n' "$out" | redact >> "$STAGE_LOG"
   if [ "$DRY_RUN" = 1 ]; then return 0; fi
+  if [ "$rc" -ne 0 ]; then blocked_add deploy_doctor "비영 종료 $rc"; return "$rc"; fi
   local line; line="$(printf '%s\n' "$out" | doctor_summary_line || true)"
-  log "deploy_doctor 요약줄: ${line:-<없음>}"
   if [ -z "$line" ]; then blocked_add deploy_doctor "요약줄 없음 — 판정 불가"; return 1; fi
   printf '%s\n' "$line" > "$RUN_DIR/doctor-summary.txt"
   if doctor_summary_full "$line"; then
@@ -223,11 +191,11 @@ $(reset_docker_cmd) --phase count --report /out/count-before.json
 test -s $REMOTE_OUT/count-before.json
 EOF
 
-  # ①ᵃ 정지 **전** 관찰. 앱이 아직 도는 중이라 0 이 아닐 수 있으므로 **판정하지 않고 기록만** 한다.
-  #    판정은 정지 뒤 ①″ 가 한다 — 그때 0 이 아니면 「정지가 듣지 않았다」는 뜻이고,
-  #    정지 전에 재면 그 뜻이 서지 않는다(앱 자신의 질의가 그대로 세어진다).
-  log "①ᵃ 활성 트랜잭션 사전 관찰 — 기록만 한다(앱이 아직 돈다 · 읽기 전용)"
-  psql_master_run "$ACTIVE_TX_SQL" >/dev/null || warn "①ᵃ 사전 관찰 질의가 비영 종료했다 — 판정에는 쓰지 않는다"
+  # 사전 질의가 실패하거나 진행 중 작업이 있으면 앱을 내리기 전에 중단한다.
+  # 이후 생긴 작업은 정지 뒤 ①″에서 다시 확인한다.
+  log "①ᵃ 정지 전 활성 트랜잭션 0 확인 — 마스터 롤 · 읽기 전용"
+  psql_master_query "$ACTIVE_TX_SQL" "0" \
+    || { blocked_add reset "정지 전 활성 트랜잭션 0 확인 실패"; return 1; }
 
   # ── 보호 구간 시작 ── 아래에서 실패하면 앱을 **자동으로 되살리고** 돌아온다.
   log "①′ 앱 4 단위 정지 — 되돌릴 수 없는 걸음(② 스키마 DROP) 직전에만 내린다"
@@ -296,7 +264,7 @@ psql_master_query() {
   local sql="$1" expect="$2"
   # ⚠ 출력을 `STAGE_LOG` 에 **다시 적지 않는다** — `ssh_script` 가 이미 `tee` 로 적는다.
   #   두 번 적으면 같은 오류 줄이 두 벌 보여 실행 2회로 오독된다(DR-4 §6 부수 관찰).
-  local out; out="$(psql_master_run "$sql")"
+  local out; out="$(psql_master_run "$sql")" || return 1
   [ "$DRY_RUN" = 1 ] && return 0
   local val; val="$(printf '%s\n' "$out" | grep -E '^[0-9]+$' | tail -1 || true)"
   log "질의 결과 = ${val:-<없음>} (기대 $expect)"
@@ -367,6 +335,9 @@ docker run --rm --network host --user 0 \\
     done
     echo "역할 접속 3/3 ok"'
 EOF
+  log "⑤ 기존 정적 인증 파일 보호 백업 후 비우기 — 앱 기동 전"
+  run python3 "$RESEED_DIR/accounts.py" clear-legacy --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR" || return 1
 }
 
 # ── up ───────────────────────────────────────────────────────────────────
@@ -453,11 +424,19 @@ stage_prelude() {
   fi
 
   log "① 연구실 — provision-lab.sql (파일이 스스로 app.current_lab 을 건다)"
+  local lab_sql
+  lab_sql="$(python3 "$RESEED_DIR/accounts.py" sql --profile "$ACCOUNTS_FILE" --sql "$PROVISION_LAB_SQL")" || return 1
   ssh_script "prelude:lab" <<EOF || return 1
 set -euo pipefail
+umask 077
+lab_sql=\$(mktemp)
+trap 'rm -f "\$lab_sql"' EXIT
+cat > "\$lab_sql" <<'COLAB_CANONICAL_LAB_SQL'
+$lab_sql
+COLAB_CANONICAL_LAB_SQL
 docker run --rm --network host --user 0 \\
   -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
-  -v $DEV_REPO_DIR/infra/staging/provision-lab.sql:/s/lab.sql:ro \\
+  -v "\$lab_sql":/s/lab.sql:ro \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/lab.sql'
 EOF
 
@@ -609,18 +588,22 @@ stage_seed() {
   run python3 "$BUILD_PLAN_PY" \
       --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" --work-dir "$SEED_WORK_DIR" || return 1
 
-  log "② 러너 — 로그인 · 프로젝트 · 데이터셋 · 확인 · 보고"
-  local extra=()
-  # `--accounts-file` 은 러너 레인(WU-C1b)이 붙이는 인자다. 이 기준에는 아직 없으므로
-  # 값이 주어졌을 때만 넘긴다 — 없는 인자를 무조건 넘겨 러너를 죽이지 않는다.
-  if [ -n "$ACCOUNTS_FILE" ]; then extra+=(--accounts-file "$ACCOUNTS_FILE"); fi
-  run python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" \
-      --phase all --base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" \
-      --account "$RESEED_ACCOUNT_EMAIL" "${extra[@]}" || return 1
+  log "② 러너 — 교수 로그인 · 무소속 운영자 4명 · 프로젝트 · 데이터셋 · 확인 · 보고"
+  local runner="$REPO_ROOT/dev-package/tools/dev-seed/runner.py" i phase
+  local args=(--base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" --account "$RESEED_ACCOUNT_EMAIL")
+  run python3 "$runner" --phase login "${args[@]}" || return 1
+  for i in 0 1 2 3; do
+    run python3 "$runner" --phase accounts "${args[@]}" --accounts-file "$ACCOUNTS_WORK_DIR/operator-$i.json" \
+      --accounts-password-file "$ACCOUNTS_WORK_DIR/initial-$i.txt" || return 1
+  done
+  run python3 "$RESEED_DIR/accounts.py" check-created --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+  for phase in projects datasets verify report; do
+    run python3 "$runner" --phase "$phase" "${args[@]}" || return 1
+  done
 }
 
 # ── verify ───────────────────────────────────────────────────────────────
-# 읽기 전용이다. 쓰기는 한 건도 내지 않는다.
+# 자료 상세 검증 후 계정 초기 비밀번호 복원·임시 운영자 해제와 로그인 검증을 수행한다.
 # 한 번의 상세 화면 순회로 넷을 함께 잰다 — 가공 단계 · 「미지정」 · 프로젝트 연결 · 미리보기 판정.
 # 대기 = 45,000 ms. 근거 = DR-3 실측에서 viz-render 실소요가 20,037~38,391 ms 였고
 #        core-api 가 10,02x ms 에 끊어 503 을 냈다(`dev-package/sessions/DR-3-run-2026-09-13.md §6`).
@@ -681,6 +664,31 @@ raise SystemExit(1 if bad else 0)
 CVPY
 }
 
+account_finalize() {
+  local binding
+  binding="$(python3 "$RESEED_DIR/accounts.py" check-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" --target-sha "$TARGET_SHA")" || return 1
+  python3 "$RESEED_DIR/accounts.py" finalize --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --binding "$binding" --base-url "$DEV_URL" --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR"
+}
+
+verify_seed_contract() {
+  python3 - "$1" "$EXPECT_DATASETS" "$EXPECT_EDGES" <<'PY'
+import json, sys
+path, nds, nedge = sys.argv[1:4]
+v = json.load(open(path))
+nds, nedge = int(nds), int(nedge)
+bad = []
+if v.get("dataset_count_state") != nds: bad.append("상태 데이터셋 계수 %s" % v.get("dataset_count_state"))
+if v.get("periods_expected") != nds: bad.append("기간 기대 계수 %s" % v.get("periods_expected"))
+if v.get("periods_ok") != nds or v.get("periods_missing"): bad.append("저장 기간 %s/%s" % (v.get("periods_ok"), nds))
+if v.get("model_input_descriptions_ok") != 2 or v.get("model_input_descriptions_missing"):
+    bad.append("모델 입력 설명 %s/2" % v.get("model_input_descriptions_ok"))
+if v.get("edges_ok") != nedge or v.get("edges_missing"): bad.append("간선·역할 %s/%s" % (v.get("edges_ok"), nedge))
+print("러너 검증 — " + ("기간·설명·간선 전건 일치" if not bad else " · ".join(bad)))
+raise SystemExit(1 if bad else 0)
+PY
+}
+
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 러너 verify.json 계수 대조(데이터셋 $EXPECT_DATASETS · 프로젝트 $EXPECT_PROJECTS · 간선 $EXPECT_EDGES)"
@@ -690,6 +698,20 @@ stage_verify() {
   fi
 
   local state="$SEED_WORK_DIR/state.json" verify="$SEED_WORK_DIR/verify.json"
+  [ -f "$verify" ] || { blocked_add verify "verify.json 부재 — seed 단계 산출물이 없다"; return 1; }
+  verify_seed_contract "$verify" || { blocked_add verify "러너 기간·설명·간선 검증 미달"; return 1; }
+
+  if [ -f "$ACCOUNTS_WORK_DIR/details-verified.json" ]; then
+    log "같은 자료 검증 증거를 확인하고 계정 최종화·로그인 검증만 재개"
+    account_finalize || return 1
+    python3 - "$ACCOUNTS_WORK_DIR/details-verified.json" "$RUN_DIR" <<'ACCOUNT_RESUME'
+import json,pathlib,shutil,sys
+source=pathlib.Path(json.loads(pathlib.Path(sys.argv[1]).read_text())['run_dir']);target=pathlib.Path(sys.argv[2])
+for name in ('counts.json','preview-judgment.tsv'):
+ if source.resolve()!=target.resolve():shutil.copyfile(source/name,target/name)
+ACCOUNT_RESUME
+    return $?
+  fi
   local manifest="$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml"
   for f in "$state" "$verify" "$manifest"; do
     [ -f "$f" ] || { blocked_add verify "$(basename "$f") 부재 — seed 단계 산출물이 없다"; return 1; }
@@ -698,16 +720,20 @@ stage_verify() {
   log "① 상세 화면 순회 — $EXPECT_DATASETS 건 · 한 건당 최대 ${PREVIEW_WAIT_MS}ms · 브라우저 세션 $AB_SESSION"
   # id 가 없는 행은 `-` 로 찍는다 — 탭이 연달아 오면 `read` 가 빈 칸을 접어 **이름이 id 자리로 밀린다**
   # (4회차 `20260914T035058Z` 실측 · seq 13 이 `/datasets/SPI-4weeks` 를 열었다).
-  local ids; ids="$(python3 - "$state" <<'PY'
+  local ids; ids="$(python3 - "$state" "$manifest" <<'PY'
 import json, sys
+import yaml
 st = json.load(open(sys.argv[1]))
+manifest = yaml.safe_load(open(sys.argv[2]))
+expected = {str(row.get("seq")): str(row.get("preview_expected") or "")
+            for row in manifest.get("datasets", [])}
 for seq, row in sorted(st.get("datasets", {}).items(), key=lambda kv: int(kv[0])):
-    print("%s\t%s\t%s" % (seq, row.get("dataset_id") or "-", row.get("name") or "-"))
+    print("%s\t%s\t%s\t%s" % (seq, row.get("dataset_id") or "-", row.get("name") or "-", expected.get(seq, "-")))
 PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
-  local seq did name t0 t1 ms shown level unset_lv usage login_n info_n slot_state
-  while IFS=$'\t' read -r seq did name; do
+  local seq did name expected t0 t1 ms shown level unset_lv usage login_n info_n slot_state preview_file display_total unsupported_n
+  while IFS=$'\t' read -r seq did name expected; do
     [ -n "$seq" ] || continue
     [ "$name" = - ] && name=""
     if [ "$did" = - ] || [ -z "$did" ]; then
@@ -715,23 +741,68 @@ PY
       blocked_add verify "seq=$seq $name — 데이터셋 id 미확보"
       continue
     fi
-    t0="$(date +%s%3N)"
     if ! ab_dev open "$DEV_URL/datasets/$did" >/dev/null 2>&1; then
       printf '%s\t%s\t?\t판정불가\t0\t?\t?\t페이지 이동 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
       blocked_add verify "seq=$seq $name — 페이지 이동 실패 · 이전 화면을 판정하지 않는다"
       continue
     fi
+    if [ "$expected" = "미성립(포맷 미지원 · 판정 표에 이름으로)" ]; then
+      unsupported_n=""; t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+      while [ "$(date +%s%3N)" -lt "$t1" ]; do
+        unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+        [ "$unsupported_n" = 1 ] && break
+        sleep 0.05
+      done
+      login_n="$(ab_dev get count '[data-testid="login-submit"]' 2>/dev/null | tr -d ' \t\r\n')"
+      info_n="$(ab_dev get count '[data-testid="basic-info"]' 2>/dev/null | tr -d ' \t\r\n')"
+      level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
+      unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
+      usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
+      if [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$unsupported_n" = 1 ]; then
+        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원\n' "$seq" "$name" "$level" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+      else
+        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다"
+      fi
+      continue
+    fi
+    preview_file=""; local draw_enabled=""
+    t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+    while [ "$(date +%s%3N)" -lt "$t1" ]; do
+      preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
+      draw_enabled="$(ab_dev is enabled '[data-testid="dt-preview-draw"]' 2>/dev/null | tr -d ' \t\r\n')"
+      [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && break
+      sleep 0.05
+    done
+    if [ -z "$preview_file" ] || [ "$draw_enabled" != true ] \
+      || ! ab_dev select '[data-testid="dt-pick-file"]' "$preview_file" >/dev/null 2>&1; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 미리보기 파일 명시 선택 실패"
+      continue
+    fi
+    t0="$(date +%s%3N)"
+    if ! ab_dev click '[data-testid="dt-preview-draw"]' >/dev/null 2>&1; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 미리보기 보기 명시 실행 실패"
+      continue
+    fi
     # Container presence is not completion: its slot starts in idle/drawing.
     # Poll the existing state attribute, keeping missing values undecidable.
-    slot_state=""
+    slot_state=""; display_total=""
     while :; do
       slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
-      case "$slot_state" in done|failed) break ;; esac
+      display_total="$(ab_dev get text '[data-testid="dt-preview-total"]' 2>/dev/null | tr -d '\r\n')"
+      case "$slot_state" in failed) break ;; done) [ -n "$display_total" ] && break ;; esac
       t1="$(date +%s%3N)"
       [ "$((t1 - t0))" -lt "$PREVIEW_WAIT_MS" ] || break
       sleep 0.05
     done
     t1="$(date +%s%3N)"; ms=$(( t1 - t0 ))
+    if [ "$slot_state" != failed ] && { [ "$slot_state" != done ] || [ -z "$display_total" ]; }; then
+      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t표시 완료 미확인\n' "$seq" "$name" "$ms" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — terminal/display 완료를 확인하지 못해 후속 요청을 중단한다"
+      break
+    fi
     # ⚠ 화면이 **상세 화면인지 먼저** 잰다 — 로그인 화면·빈 화면에서도 `preview-unavailable` 계수는 0 이라
     #   그대로 읽으면 「성립」이 된다(4회차 `20260914T035058Z` 실측 · 27건 전건이 로그인 화면이었다).
     #   로그인 화면(`login-submit` ≥ 1) 이거나 기본 정보 격자(`basic-info`)가 없으면 **판정불가**다.
@@ -781,8 +852,10 @@ m = yaml.safe_load(open(manifest))
 cv = json.load(open(cvpath))
 rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
 want = {}
+preview_expected = {}
 for d in m.get("datasets", []):
     want[str(d.get("seq"))] = str(d.get("processing_level") or d.get("level") or "")
+    preview_expected[str(d.get("seq"))] = str(d.get("preview_expected") or "").strip()
 got = {r[0]: r[2] for r in rows}
 level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
 # 등재표 쪽 가공 단계가 비어 있으면 **대조할 것이 없었던 것**이다.
@@ -795,10 +868,24 @@ count_undecided = cv["countUndecidedSeq"]
 level_undecided = cv["levelUndecidedSeq"]
 undecided = [r[0] for r in rows if r[3] == "판정불가"]
 unestablished = [r[0] for r in rows if r[3] == "미성립"]
+no_preview_text = "미성립(포맷 미지원 · 판정 표에 이름으로)"
+allowed_no_preview_names = {"SPI-4weeks", "SPEI-4weeks"}
+manifest_preview_missing = sorted((s for s, value in preview_expected.items() if not value), key=int)
+invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
+                             if str(d.get("preview_expected") or "").strip() == no_preview_text
+                             and d.get("name") not in allowed_no_preview_names), key=int)
+expected_unestablished = sorted((s for s, value in preview_expected.items()
+                                 if value == no_preview_text), key=int)
+unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
+missing_unestablished = sorted(set(expected_unestablished) - set(unestablished), key=int)
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
     "edges": {"expected": int(nedge), "ok": v.get("edges_ok"), "missing": v.get("edges_missing")},
+    "periods": {"expected": int(nds), "reportedExpected": v.get("periods_expected"),
+                "ok": v.get("periods_ok"), "missing": v.get("periods_missing")},
+    "modelInputDescriptions": {"expected": 2, "ok": v.get("model_input_descriptions_ok"),
+                               "missing": v.get("model_input_descriptions_missing")},
     "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset,
                         "undecidedSeq": level_undecided},
     "usageUndecidedSeq": count_undecided,
@@ -808,12 +895,16 @@ res = {
     "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
     "previewUndecidedSeq": undecided,
     "previewUnestablishedSeq": unestablished,
+    "previewExpectedUnestablishedSeq": expected_unestablished,
 }
 json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
 bad = []
 # 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
 if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
-if unestablished: bad.append("미리보기 미성립 seq %s" % ",".join(unestablished))
+if manifest_preview_missing: bad.append("등재표 미리보기 기대 부재 seq %s" % ",".join(manifest_preview_missing))
+if invalid_no_preview: bad.append("미리보기 없음 기대 대상 오류 seq %s" % ",".join(invalid_no_preview))
+if unexpected_unestablished: bad.append("예상 밖 미리보기 미성립 seq %s" % ",".join(unexpected_unestablished))
+if missing_unestablished: bad.append("기대와 달리 미리보기 성립 seq %s" % ",".join(missing_unestablished))
 # 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
 if count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(count_undecided))
 if level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(level_undecided))
@@ -827,6 +918,10 @@ if len(rows) != int(nds): bad.append("판정 표 %d 행" % len(rows))
 print("대조 결과 — " + ("전건 일치" if not bad else " · ".join(bad)))
 raise SystemExit(1 if bad else 0)
 PY
+  [ "$?" -eq 0 ] || return 1
+  python3 "$RESEED_DIR/accounts.py" record-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --run-dir "$RUN_DIR" --target-sha "$TARGET_SHA" >/dev/null || return 1
+  account_finalize
 }
 
 # ── rehearse ─────────────────────────────────────────────────────────────
@@ -850,18 +945,74 @@ reh() { _reh_judge "$1" "$2" -F "${3-}"; }
 reh_re() { _reh_judge "$1" "$2" -E "${3-}"; }
 
 _reh_judge() {
-  local name="$1" want="$2" mode="$3" got="${4-}" one
-  one="$(printf '%s' "$got" | tr '\n\t' '  ' | sed -E 's/  +/ /g; s/^ //; s/ $//')"
-  one="${one:0:180}"
+  local name="$1" want="$2" mode="$3" got="${4-}"
   if printf '%s\n' "$got" | grep -q "$mode" -- "$want"; then
     REH_OK=$(( REH_OK + 1 ))
-    log "  ✓ $name — 기대 [$want] · 받은 것 [$one]"
+    log "  ✓ $name — 기대 응답과 일치"
   else
     REH_BAD+=("$name")
-    log "  ✗ $name — 기대 [$want] 가 응답에 없다 · 받은 것 [${one:-<빈 응답>}]"
+    log "  ✗ $name — 기대 응답 미검출 (원문은 단계 로그)"
     blocked_add "rehearse:$name" "기대 [$want] 미검출"
   fi
 }
+
+# 같은 보호 사본을 후보 검사·executor --check·실행에 쓴다. 원본 변경은 실행에 섞이지 않는다.
+release_plan_execute() (
+  local mode="$1"
+  if [ "$DRY_RUN" = 1 ]; then
+    log "DRY release executor $mode — plan=${RELEASE_PLAN:-<release-plan>} · 외부 실행 0"
+    return 0
+  fi
+  if [ -z "${RELEASE_PLAN:-}" ] || [ ! -f "$RELEASE_PLAN" ]; then
+    blocked_add release-plan "--release-plan 입력 부재 — 배포 계획 미검증"
+    log "✗ release-plan — 입력 부재·미검증"
+    return 78
+  fi
+  local full head rc=0 out plan source snapshot_dir
+  source="$(python3 -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve())' "$RELEASE_PLAN")" || return 78
+  full="$(run_capture git -C "$REPO_ROOT" rev-parse --verify "$TARGET_SHA^{commit}")" || return 78
+  head="$(run_capture git -C "$REPO_ROOT" rev-parse --verify HEAD)" || return 78
+  if [ "$head" != "$full" ]; then
+    blocked_add release-plan "작업 HEAD와 배포 후보 SHA 불일치"
+    return 1
+  fi
+  snapshot_dir="$(mktemp -d "$(cd "$RUN_DIR" && pwd)/release-plan.XXXXXX")" || return 78
+  plan="$snapshot_dir/plan.json"
+  trap 'rm -f "$plan"; rmdir "$snapshot_dir"' EXIT
+  umask 077
+  cp -- "$source" "$plan" || return 78
+  chmod 600 "$plan" || return 78
+  python3 - "$plan" "$full" <<'PYPLAN' || { blocked_add release-plan "dev 대상/후보 SHA 불일치·재귀 호출 또는 계획 손상"; return 1; }
+import json,sys
+try:
+    plan=json.load(open(sys.argv[1]))
+    targets=plan['targets']
+    if len(targets)!=1 or targets[0]['name']!='dv' or targets[0]['version']!=sys.argv[2]:
+        raise ValueError()
+    # argv에 명시된 reseed.sh 재진입을 거절한다. 임의 shell 코드 전체를 분석하지는 않는다.
+    if any('reseed.sh' in arg for cmd in targets[0].get('deploy',[]) for arg in cmd):
+        raise ValueError()
+except (OSError,ValueError,KeyError,TypeError):
+    print('release-plan: dev 단일 대상/현재 후보 SHA가 일치하고 reseed 재귀 호출이 없어야 한다',file=sys.stderr)
+    raise SystemExit(1)
+PYPLAN
+  out="$(cd "$REPO_ROOT" && run_capture python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan" --check)" || rc=$?
+  printf '%s\n' "$out" | redact >> "$STAGE_LOG"
+  if [ "$rc" -ne 0 ]; then
+    blocked_add release-plan "executor --check 실패 $rc — 배포 계획 미검증"
+    return "$rc"
+  fi
+  if [ "$mode" = check ]; then
+    log "✓ executor --check — 후보 계획·pre-evidence 통과; build/ship/tree 실제 실행 준비성 미측정"
+    return 0
+  fi
+  log "release executor — 검증한 동일 계획으로 배포·검증 1회 (알림 범위는 배포 결과)"
+  (cd "$REPO_ROOT" && run python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan" --notification-off) || rc=$?
+  if [ "$rc" -ne 0 ]; then blocked_add release-plan "executor run 실패 $rc"; fi
+  return "$rc"
+)
+
+rehearse_release_plan() { release_plan_execute check; }
 
 stage_rehearse() {
   REH_OK=0; REH_BAD=()
@@ -875,6 +1026,7 @@ stage_rehearse() {
     return 0
   fi
 
+  rehearse_release_plan || return $?
   local got
 
   # ⑴ psql_master_query 의 전송로 — 작은따옴표가 든 SQL 이 그대로 닿아야 한다.
@@ -937,10 +1089,11 @@ EOF
   reh_re psql_owner_url '^1$' "$got"
 
   # ⑺ deploy_doctor — **한 번** 돌리고 `doctor_summary_line` 으로 읽는다(완료 정의와 같은 파서).
-  local doctor_out
-  doctor_out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE" || true)"
+  local doctor_out doctor_rc=0
+  doctor_out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE")" || doctor_rc=$?
   printf '%s\n' "$doctor_out" | redact >> "$STAGE_LOG"
   got="$(printf '%s\n' "$doctor_out" | doctor_summary_line || true)"
+  [ "$doctor_rc" = 0 ] || got=""
   reh doctor_summary_line '항목 15 — ✓ 15 · ✗ 0 · ─ 0' "$got"
 
   # ⑻ 러너 `--phase report` — 읽기 전용이다. 계획은 **임시 자리**에 새로 만들고 공유 작업 자리를 건드리지 않는다.
@@ -950,11 +1103,13 @@ EOF
       --work-dir "$rw" --out "$rw/upload-plan.json" --manifest-out "$rw/plan-manifest.yaml" >/dev/null 2>&1
   got="$(run_capture python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" \
       --phase report --base-url "$DEV_URL" --work-dir "$rw" 2>&1 || true)"
+  printf '%s\n' "$got" | redact >> "$STAGE_LOG"
   reh_re runner_phase_report "완료 [0-9]+ / $EXPECT_DATASETS" "$got"
 
   # ⑼ agent-browser — dev 첫 화면을 열고 제목을 읽는다(쓰기 0).
   run_capture agent-browser open "$DEV_URL" >/dev/null 2>&1 || true
   got="$(run_capture agent-browser get title 2>/dev/null || true)"
+  printf '%s\n' "$got" | redact >> "$STAGE_LOG"
   reh_re agent_browser_title '[^[:space:]]' "$got"
 
   log "리허설 — 원시동작 $(( REH_OK + ${#REH_BAD[@]} )) · 통과 $REH_OK · 어긋남 ${#REH_BAD[@]}"
@@ -981,6 +1136,7 @@ stage_report() {
   python3 "$RESEED_DIR/report.py" \
     --run-dir "$RUN_DIR" --run-id "$RUN_ID" --target-sha "${TARGET_SHA:-}" \
     --stages "$(printf '%s,' "${STAGES[@]}")" --dry-run "$DRY_RUN" \
+    --accounts-work "$ACCOUNTS_WORK_DIR" --accounts-profile "$ACCOUNTS_FILE" \
     --schema "$RESEED_DIR/result-schema.json" --out "$result" --session-out "$session" || return 1
   log "결과 JSON = $(relpath "$result")"
   log "회차 기록 뼈대 = $(relpath "$session")"

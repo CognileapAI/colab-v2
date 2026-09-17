@@ -19,8 +19,8 @@
 경로에 갖는 것만** 있다. 목록을 몸통으로 받는 자리를 새로 만들지 않는다.
 """
 from __future__ import annotations
+from ..access import dataset_access
 
-from ..dataset_access import dataset_access_adapter
 from fastapi import APIRouter, Body, Depends, Query, Response
 from sqlalchemy.orm import Session
 
@@ -115,7 +115,7 @@ def create_access_request(datasetId: str, body: dict | None = Body(default=None)
     dataset_id = _living_dataset(db, datasetId)
     reason = _optional_reason(body)
 
-    access = dataset_access_adapter(db).dataset_access([dataset_id]).get(datasetId)
+    access = dataset_access(db).dataset_access([dataset_id]).get(datasetId)
     if access is not None and access.body_accessible:
         # 「이미 볼 수 있는 데이터다」 (계약 409). 요청할 자리가 없다.
         raise errors.conflict("이미 볼 수 있는 데이터예요.")
@@ -236,9 +236,9 @@ def request_verification(datasetId: str, subject: Subject = Depends(current_subj
     dataset_id = _living_dataset(db, datasetId)
     core = d3_catalog.find_dataset_core(db, dataset_id)
     account = str(subject.account_id)
-    if account not in (core.owner_id, core.uploader_id):
+    if account not in (core.owner_id, core.uploader_id) and not d2_access.is_manager(db, subject.account_id):
         raise errors.forbidden("올린 사람·소유자만 승인을 요청한다 (Policy_승인_처리 §1.2).")
-    access = dataset_access_adapter(db).dataset_access([dataset_id]).get(datasetId)
+    access = dataset_access(db).dataset_access([dataset_id]).get(datasetId)
     if access is not None and not access.body_accessible:
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
     if d2_access.verified_state(db, dataset_id):
@@ -280,7 +280,7 @@ def list_pending_verification_requests(subject: Subject = Depends(current_subjec
 
 
 def _verification_record(db: Session, dataset_id: Ulid) -> dict:
-    record = dataset_access_adapter(db).verification([dataset_id]).get(str(dataset_id))
+    record = dataset_access(db).verification([dataset_id]).get(str(dataset_id))
     if record is None:
         raise errors.not_found()
     return {

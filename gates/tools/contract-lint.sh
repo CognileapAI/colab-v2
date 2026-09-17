@@ -26,7 +26,9 @@ red() { echo "::error::contract-lint red — $*"; exit 1; }
 if [ ! -x "$SPECTRAL" ]; then
   echo "spectral 미설치 — contracts/package-lock.json 기준으로 설치를 시도한다."
   # 병렬 실행 대비 — 같은 node_modules 를 둘이 동시에 깔면 한쪽이 「도구 없음」 red 를 낸다.
-  . "$REPO_ROOT/gates/tools/_lock.sh"; gate_lock_fd "$CONTRACTS/node_modules"
+  # 잠그지 못하면 red(준비 · 78) 다 — 잠금 없이 설치 구간에 들어가지 않는다(`_lock.sh` 2026-09-18 개정).
+  . "$REPO_ROOT/gates/tools/_lock.sh"
+  gate_lock_fd "$CONTRACTS/node_modules" contract-lint || exit "$GATE_LOCK_READINESS_EXIT"
   [ -x "$SPECTRAL" ] && gate_unlock_fd
 fi
 if [ ! -x "$SPECTRAL" ]; then
