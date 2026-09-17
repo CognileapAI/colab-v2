@@ -56,8 +56,14 @@ Codex 이벤트·matcher다. 원격 브랜치 보호도 별도이며 이 변경�
 
 후속 PR 로 미룬 승격(이 PR 범위 밖):
 - ② `gates/run.sh` 의 호스트 전역 잠금을 Q2 형태로 — `COLAB_GATE_SUMMARY_CHILD=1` 재진입 면제 포함.
-- ③ `WATCH` 를 스펙까지 확장.
-- ④ 측정 레인의 `SubagentStop` 을 일반화한 `lane-gate-summary.sh` 로.
+- ③ `WATCH` 를 스펙까지 확장. — **완료(2026-09-18).** `lifecycle_contract.py` 의 `WATCH` 에
+  `dev-package/prd/specs/` 를 더했고, 같은 자리에서 researcher 의 spec 선언을 거절한다. 역할과 경로는
+  실행기가 이미 쥔 사실이므로 조용한 통과가 아니라 판정으로 나간다. spec
+  `dev-package/prd/specs/2026-09-18-harness-evidence-hooks.md` §B.
+- ④ 측정 레인의 `SubagentStop` 을 일반화한 `lane-gate-summary.sh` 로. — **완료(2026-09-18).**
+  새 훅 파일 없이 `stop --role` 을 역할 집합으로 받고 매처를 `lane-worker|measurement-lane` 으로 넓혔다.
+  측정 레인은 red 를 담은 **정합한** 보고로 닫는다 — red 를 재는 것이 그 역할의 산출물이기 때문이고,
+  구조·계수·선언 집합·트리 증거는 그대로 요구한다. 같은 spec §A.
 
 배제한 승격:
 - `begin()` 의 **산출물 선존재 거부** — 배제. 산출물은 매번 새로 나는 `run_id` uuid 디렉터리 아래에 산다

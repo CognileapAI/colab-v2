@@ -55,6 +55,17 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 
 - **`~/.colab-v2-test.env` 가 없고 `CI`·`GITHUB_ACTIONS` 도 비어 있으면, 게이트 이름을 준 실행은 무엇이든 dispatch 전에 red(준비 · 입력미선언 · 종료코드 78)로 끝난다** — `exec-bit`·`contract-lint`·`work-item-consistency` 처럼 그 값을 안 쓰는 게이트도 예외가 아니다(판정부 = `gates/run.sh` 의 env 블록). 파일이 있으면 실행기가 `set -a; . <파일>; set +a` 를 대신 친다. 자리를 옮기려면 `COLAB_TEST_ENV_FILE=<경로>`, 값이 이미 실려 있으면 `COLAB_TEST_ENV_SOURCED=1`. CI 는 이 파일을 쓰지 않고 게이트가 일회용 DB 를 스스로 세운다. 파일 세우는 법 = `dev-package/RESTART.md §2-④`.
 
+- **전수 회차의 정본 호출문은 아래 한 줄이다.** `seed-plan-drift`·`frontend-visual`·`harness-eval` 세 게이트는 운영자 입력이 없으면 red(준비 · 입력미선언 · 78)이고, 셋 다 **선언이든 명시 면제든 말을 해야** 병합 진입 조건 `red_준비 == 0`(`:137`)을 채운다. 변수를 아무것도 주지 않은 호스트에서는 어떤 브랜치도 그 조건을 만족할 수 없다. **명시 면제도 병합 진입 조건 충족이다**(intent `dev-package/intent/2026-09-17-gate-input-env-vars-block-merge-gate.md` 결정 · 2026-09-18). 면제 건수는 전수 요약 줄이 아니라 **해당 게이트 자신의 출력**에 드러난다 — `frontend-visual` 은 페이지 건수, `harness-eval` 은 과제 건수다.
+
+  ```bash
+  COLAB_REF_ROOT=<참조 데이터 루트> COLAB_VISUAL_EXEMPT=1 COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh all
+  # 측정 레인은 자기 task 의 선언 집합으로 돈다
+  COLAB_REF_ROOT=<참조 데이터 루트> COLAB_VISUAL_EXEMPT=1 COLAB_HARNESS_EVAL_EXEMPT=1 COLAB_TASK_ID=<task_id> bash gates/run.sh task
+  ```
+
+  `seed-plan-drift` 는 **면제가 아니라 실선언**이다 — 참조 데이터 루트의 기본 자리는 `dev-package/tools/dev-seed/README.md` §0 이 적고, 실물이 있는 호스트에서는 `COLAB_SEED_PLAN_NO_FILES=1` 대신 `COLAB_REF_ROOT` 를 준다. 그러므로 명시 면제가 필요한 것은 `frontend-visual`·`harness-eval` **2건**뿐이다.
+  **대신 실행하려면** — `COLAB_VISUAL_URLS=<url…>`(앱 기동이 전제다 · `:39`) · `COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD>`(**실제 모델을 부른다** · 승격 전이므로 로컬 `all` 과 CI 가 면제 모드로 도는 것이 현 규정이다 · `:43`).
+
 ## 빨리 도는 것과 덜 보는 것은 다르다
 
 게이트를 병렬로 돌린다. **검사 대상·기대값·판정 기준은 하나도 바뀌지 않았고, 바뀐 것은 실행 순서뿐이다.**
