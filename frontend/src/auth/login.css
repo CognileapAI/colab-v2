@@ -102,6 +102,11 @@
 .account-form { display: grid; gap: 14px; }
 .account-form .login-label { display: grid; gap: 6px; margin: 0; }
 .account-form .account-operator-check { display: flex; align-items: center; gap: 8px; }
+/* ⭑ ⟨2026-09-17 · #84⑵⟩ 계정 관리 화면만 세로 가운데 정렬을 벗는다.
+   `.login` 은 로그인 화면·비밀번호 변경 화면과 **공유**하므로 직접 고치지 않는다 —
+   덮는 것은 최소 높이와 배치 기준점 둘뿐이고 가로 가운데 정렬은 그대로 둔다.
+   가운데 정렬이면 폼 내용 길이가 바뀔 때마다 제출 버튼이 세로로 튄다. */
+.login.account-admin { min-height: auto; align-items: start; }
 .account-form .login-submit { margin-top: 4px; }
 .account-status { margin: 16px 0 0; color: var(--color-text-body); }
 
