@@ -16,6 +16,8 @@
 // @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-expect-error — 같은 이유.
+import { Buffer } from 'node:buffer';
+// @ts-expect-error — 같은 이유.
 import { join, resolve } from 'node:path';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -279,7 +281,25 @@ describe('PRD-27 Lv0 이면 체크박스가 보이지 않는다', () => {
 
 // ═══ ㈑ 종전 문면이 코드에 0건 ═══
 describe('PRD-27 종전 문면은 코드에 남지 않는다', () => {
-  it('폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다', () => {
+  // ── 이 시험의 **명시 예산** ────────────────────────────────────────────────
+  // 실측(2026-09-17 · 이 워크트리 · 부하 없는 단독 구간 · 13회 반복):
+  //   대상 = 338 파일 / 3,343,168 바이트(3.19 MiB)  ← 대상 디렉터리·확장자는 바꾸지 않았다
+  //   종전(파일을 UTF-16 문자열로 전문 적재) : min 12.7 · p50 14.1 · max 17.2 ms
+  //   현재(바이트로 읽어 바이트 탐색)        : min  4.9 · p50  5.6 · max  9.3 ms
+  //   vitest 가 이 `it()` 에 적은 소요는 변경 전 14.9 ms 였다.
+  // ⚠ 이 값은 **성능 단언이 아니라 병리 탐지기**다. p50 의 ~350배로 잡았다 —
+  //   근거: 부하에서 흔들리는 눈금을 판정에 넣으면 그 red 는 검사 대상이 아니라 배선이 낸
+  //   red 가 된다(`gates/run.sh` 의 「상한 연장·재시도로 green 을 만들지 않는다」와 같은 규율).
+  //   이 예산이 걸리는 경우는 부하가 아니라 **스캔이 두 자릿수 배로 커졌을 때**다
+  //   (예: 걸러야 할 디렉터리가 새로 생겨 훑기 시작한 경우).
+  // ⚠ 이 숫자를 **근거 없이 올리지 않는다.** 걸리면 먼저 무엇이 커졌는지 본다.
+  //   레포의 관행 예산은 `{ timeout: 4000 }`·`{ timeout: 5000 }` 이고 이 값은 그보다 작다.
+  const LEGACY_SCAN_BUDGET_MS = 2000;
+
+  // ⚠ 예산은 **두 번째 인자**다. `it(name, fn, { timeout })` 3인자 형태는 vitest 3 에서
+  //   폐기되고 4 에서 제거됐다(실측 오류 문면: "Signature \"test(name, fn, { ... })\" was
+  //   deprecated in Vitest 3 and removed in Vitest 4").
+  it('폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다', { timeout: LEGACY_SCAN_BUDGET_MS }, () => {
     // **조각에서 조립한다** — 통째로 적으면 이 시험 파일 자신이 걸려 언제나 red 다.
     const LEGACY_LABEL = ['못 ', '찾은 것이 있어요 (기록 없음)'].join('');
     // 기준은 `process.cwd()`(= `frontend/`) — `__dirname` 은 이 tsconfig 의 타입에 없다
@@ -297,8 +317,11 @@ describe('PRD-27 종전 문면은 코드에 남지 않는다', () => {
     roots.forEach(walk);
     // **대상 건수를 먼저 잰다** — 0건을 훑고 「0건이다」라고 말하지 않는다.
     expect(files.length).toBeGreaterThan(100);
-    const hits = files.filter((f) =>
-      readFileSync(f, 'utf8').includes(LEGACY_LABEL));
+    // 파일을 UTF-16 문자열로 **전문 적재하지 않는다.** 바이트로 한 번 읽어 그 자리에서
+    // 판정하고 즉시 버린다 — 찾는 것이 축자 문자열이므로 UTF-8 바이트 탐색이 같은 답을 낸다.
+    // 검사 **범위는 그대로다**(같은 디렉터리·같은 확장자·같은 338 파일). 대상을 줄이면 green-by-skip 이다.
+    const needle = Buffer.from(LEGACY_LABEL, 'utf8');
+    const hits = files.filter((f) => readFileSync(f).includes(needle));
     expect(hits).toEqual([]);
   });
 });
