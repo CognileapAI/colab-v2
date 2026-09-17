@@ -278,10 +278,16 @@ def verify_task_report(root, task, report=None):
 
 
 def stop(data, expected_role):
+    # A `SubagentStop` matcher has nowhere to pass a role argument: the Claude adapter line is
+    # fixed to `exec bash … "$@"` (`scripts/harness/config.py`) and the settings command regex
+    # in `scripts/agent-bridge.py` accepts an argument-free command only. So the hook declares
+    # the set of roles it is allowed to judge and the role itself arrives in the event payload.
     if not isinstance(data, dict):
         raise ValueError('invalid lifecycle payload')
-    if data.get('agent_type') != expected_role:
+    allowed = (expected_role,) if isinstance(expected_role, str) else tuple(expected_role)
+    if data.get('agent_type') not in allowed:
         raise ValueError('hook role differs from event role')
+    expected_role = data['agent_type']
     root = checkout(data['cwd'])
     message = data.get('last_assistant_message')
     if not isinstance(message, str):
@@ -463,7 +469,7 @@ def main():
     finish.add_argument('--mode', required=True, choices=('read-only','draft-return','artifacts','complete'))
     finish.add_argument('--summary', required=True)
     hook = commands.add_parser('stop')
-    hook.add_argument('--role', required=True)
+    hook.add_argument('--role', action='append', required=True)
     args = parser.parse_args()
     try:
         if args.command == 'validate-input':
