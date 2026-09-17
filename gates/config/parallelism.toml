@@ -322,3 +322,11 @@
 #   (`deadline=time.monotonic()+3` · `assert marker.exists()` · `process.wait(timeout=3)`).
 #   경합에서 밀리면 판정이 아니라 배선이 red 를 낸다 — 안전한 쪽을 고른다.
 "product-reseed-selftest"   = "serial"
+
+# `gate-host-mutex-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   호스트 뮤텍스의 잠금 키는 `TMPDIR` 하나이므로(spec §A-b) 이 셀프테스트는 `TMPDIR` 을
+#   자기 `mktemp -d` 로 물려 자식을 부른다 — **실제 호스트 잠금을 한 번도 잡지 않는다.**
+#   대상 게이트는 `exec-bit`(인덱스 조회 한 줄)이고 선언표도 자기 픽스처 toml 을 물린다.
+#   DB 0 · 도커 0 · 포트 0 · pg 슬롯 0 · 레포 쓰기 0. 점유 동기화는 벽시계가 아니라 FIFO 라
+#   **부하가 판정을 바꾸지 않는다**(상한 초과 케이스의 2초는 그 케이스가 재는 값 자체다).
+"gate-host-mutex-selftest"  = "parallel"

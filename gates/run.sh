@@ -284,7 +284,7 @@ ALL_GATES=(
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   frontend-visual-selftest harness-eval-selftest harness-contract-selftest
-  service-tests-selftest
+  service-tests-selftest gate-host-mutex-selftest
 )
 
 case "$GATE" in
@@ -297,6 +297,11 @@ case "$GATE" in
     ;;
   harness-contract-selftest)
     exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py
+    ;;
+  gate-host-mutex-selftest)
+    # 호스트 뮤텍스가 `serial` 선언을 **프로세스 경계 너머로** 집행함을 외부 행위로 증명한다.
+    # 자기 `mktemp -d` 를 TMPDIR 로 물려 부르므로 실제 호스트 잠금을 잡지 않는다.
+    exec "$REPO_ROOT/gates/tools/gate-host-mutex-selftest.sh"
     ;;
   operator-notifications)
     exec "$REPO_ROOT/gates/tools/operator-notifications.sh"
