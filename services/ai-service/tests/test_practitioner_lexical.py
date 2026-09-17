@@ -37,7 +37,10 @@ SEED_DIR = ROOT / "db" / "ai" / "seed"
 FIXTURE = ROOT / "eval" / "k4-search" / "practitioner-lexical.json"
 
 #: `mode` 별로 **요구되는** 상태. blocked 는 「아무것도 넓히지 않는 것」이 정답이다.
-REQUIRED = {"topic": "hit", "place": "hit", "blocked": "none"}
+#: ⭑ 2회차(2026-09-18 · Ted 결정 4·5 채택)에 `graph` 가 붙었다 — 사전이 아니라
+#: `expand_by_graph()` 가 데려온 말을 재는 모드다. 사전 모드(`topic`·`place`)와 갈라 둔 이유는
+#: 어느 층이 일했는지가 섞이면 「그래프가 사는 자리」(§D-2)가 죽어도 green 이 되기 때문이다.
+REQUIRED = {"topic": "hit", "place": "hit", "graph": "hit", "blocked": "none"}
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -231,6 +234,9 @@ def _measure(case: dict) -> str:
         return "hit" if out.topic == case["expectTopic"] else "miss"
     if mode == "place":
         return "hit" if case["expectPlace"] in out.places else "miss"
+    if mode == "graph":
+        # **전부** 나와야 hit 다. 하나만 나와도 hit 로 세면 대칭 엣지가 한쪽만 펴는 것을 못 잡는다.
+        return "hit" if set(case["expectGraph"]) <= set(graph_out.terms) else "miss"
     if mode == "blocked":
         quiet = (out.terms == (term,) and out.topic is None
                  and out.places == () and out.methods == () and graph_out.terms == ())
@@ -247,8 +253,10 @@ def test_적재물을_실제로_읽었다() -> None:
     assert len(SEED.get("d9_method_term", ())) >= 13
     assert len(SEED.get("d9_topic_synonym", ())) >= 18
     assert len(SEED.get("d9_place_alias", ())) >= 4
-    assert len(SEED.get("d9_concept", ())) >= 49
-    assert len(SEED.get("d9_concept_edge", ())) >= 19
+    # ⭑ 2회차 — 원천표기 3(`s-era5`·`s-ecmwf`·`s-ecmwf-ko`) + 주제 2(`t-drought`·`t-fileformat`)
+    #   로 49 → 54, 엣지는 E1-12 하나로 19 → 20 이다. 하한을 올리지 않으면 시드가 빠져도 green 이다.
+    assert len(SEED.get("d9_concept", ())) >= 54
+    assert len(SEED.get("d9_concept_edge", ())) >= 20
 
 
 @pytest.mark.search_golden
@@ -261,6 +269,8 @@ def test_픽스처가_형식을_지킨다() -> None:
         assert case["term"].strip(), case
         if case["mode"] == "blocked":
             assert case.get("reason", "").strip(), f"{case['id']} 에 blocked 사유가 없다"
+        if case["mode"] == "graph":
+            assert case.get("expectGraph"), f"{case['id']} 에 expectGraph 가 비었다 — 0건을 hit 로 세지 않는다"
 
 
 @pytest.mark.search_golden
