@@ -1,5 +1,5 @@
 # Intent: 병렬 안전성을 전 게이트가 선언하고, 전수 측정 레인이 task 증거를 남긴다
-메타 — 발의자: sungwooHa(이슈 #56) · 방향 결정: Ted · 작성 2026-09-17 · 승인: 미승인 — Ted 승인 대기
+메타 — 발의자: sungwooHa(이슈 #56) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(advisor 검토 결과 제시 후 Ted 명시 승인)
 
 ## 문제
 - ⑴ `gates/config/parallelism.toml` 의 선언이 `gates/run.sh:180-201` `ALL_GATES` 를 덮지 못한다. **현재 실물은 `ALL_GATES` 71건 · 선언 61건 · 미선언 10건**이다. 이슈 본문의 「67 ↔ 59 · 8건」은 발견 시점(2026-09-14) 값이며 그 뒤 `product-release-selftest` · `product-reseed-selftest` 2건이 `ALL_GATES` 에 추가되면서 미선언이 10건으로 늘었다. 선언표에만 있고 `ALL_GATES` 에 없는 이름은 0건이다.
@@ -121,3 +121,30 @@
   미선언 10건 이름표도 동일했다.
 - [미검증] `frontend-visual`·`frontend-visual-selftest` 의 serial 판정과 나머지 8건의 parallel 판정,
   `lifecycle_contract.py` 행 인용은 advisor 가 읽어서 확인하지 않았다.
+
+## 승인 (2026-09-17)
+- Ted 확인 문장(원문 그대로): "권고대로  분리해"
+- 수용한 권고 — 이 intent 해당분:
+  - ⑴ **제3안을 채택한다.** `ALL_GATES ⊆ parallelism.toml` 단언을 `harness-contract`
+    (`gates/run.sh:206-208` → `scripts/harness/check.py`)에 넣는다. 판정 대상이 선언표이므로
+    **red(판정)** 이고 이슈 완료 조건 ⑴ 의 문면을 그대로 만족한다.
+    `gates/run.sh` 계수 루프와 `colab-gate-summary/1` 스키마는 **건드리지 않는다.**
+    「red(판정) 이냐 red(준비·78) 이냐」는 판정 대상이 아니게 됐으므로 묻지 않는다.
+  - ⑴ 선언 10건을 `parallelism.toml` 에 근거 한 줄씩 달아 올린다.
+    `frontend-visual`·`frontend-visual-selftest` 는 **serial** 로 못박는다 — 실브라우저 독점이라
+    선택지가 없고, 전수 시간 증가를 받아들인다. 나머지 8건은 parallel.
+    **단, 초안의 parallel 8건 판정은 advisor 가 읽어서 확인하지 않았다.** 레인이 선언 전에
+    각 스크립트를 직접 확인하고 근거 줄을 쓴다. 확인되지 않으면 안전한 쪽(serial)으로 선언한다.
+  - 순서는 **선언 먼저, 승격 나중**이다. ADR-0004 의 「두 red 가 모두 0」 때문에 강제된다.
+    같은 PR 안에서 선언 커밋 → 승격 커밋 순으로 간다.
+  - ⑵ **측정 전용 역할을 신설한다.** `--gate all` 허용은 배제한다 — ADR-0005 가 기계 강제 대상을
+    게이트 종료코드와 작업 증거 계약으로 못박았는데 `--gate all` 은 후자를 깎는다.
+    본문은 ADR-0006 대로 `.agents/roles/` ＋ `scripts/harness/hooks/lifecycle_contract.py` 에 두고
+    `.claude/` 는 어댑터로 남긴다. ADR-0002 의 「게이트 레인은 단독」을 역할 본문에 선언으로 싣는다.
+  - 역할 이름과 `.agents/harness.yaml` `adapters.required_files` 변경은 레인이 정한다.
+    실제로 `required_files` 가 바뀌면 그때 드러내고 ADR-0006 재검토 조건을 확인한다.
+- 드러냄: 어느 형태의 승격이든 `gates/run.sh:653-654`·`:716` 의 「미선언 → 안전한 쪽(단독) ＋
+  출력에 명시」라는 **기존 의도된 설계를 뒤집는다.** Ted 에게 이 성격을 밝힌 뒤 승인받았다.
+- PR 단위: **#55 와 한 묶음**이다. #55 의 `::gate-failure::` 작업과 같은
+  `summary_gate_row()`·`gate_summary_json.py` 표면을 건드리므로 한 레인에서 순차로 간다.
+- 재개봉 금지: 예. 제3안 채택과 `--gate all` 기각을 다시 질문하지 않는다.
