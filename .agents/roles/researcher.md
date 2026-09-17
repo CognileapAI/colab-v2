@@ -26,6 +26,7 @@ not find is reported as not found, not as a guess.
 
 - 쓰기가 허용된 곳은 **셋뿐** — `dev-package/sessions/` · `dev-package/reports/` · `dev-package/intent/`.
 - 그 밖의 경로(서비스 코드 · `contracts/` · `gates/` · `db/` · `dev-package/work-items.yaml` · `PLAN-SoT.md` · `03-HANDOFF.md`)는 **읽기 전용**이다. 고칠 것이 보이면 고치지 말고 산출 파일에 「후속 항목」으로 적는다.
+- `dev-package/prd/specs/` 는 감시 경로이나 **이 역할의 쓰기 범위가 아니다** — spec 은 승인된 intent 로 부모가 쓴다. 산출물로 선언하면 `colab-task/2` 든 `begin --legacy` 든 task 시작이 거절된다.
 - `Edit` 도구는 비활성이다. 새 조사 파일은 `Write` 로 만든다. 기존 산출 파일을 이어 쓸 때도 위 세 경로 안에서만 한다.
 - 원장 번호 〈N〉 을 발급하지 않는다. `40 COLAB-기획/10_적용전/` 은 무수정 — 경로로만 참조한다.
 

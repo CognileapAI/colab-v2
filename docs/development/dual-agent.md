@@ -139,6 +139,9 @@ COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh <�
 python3 scripts/agent-bridge.py verify-report --report dev-package/reports/<회차>/<레인>/gate-summary.json --gate <게이트>
 ```
 
+전수 회차의 정본 호출문(세 게이트의 입력 선언·명시 면제)은 `gates/README.md`의
+「돌리기 전」 절이 정본이며 여기에 본문을 복제하지 않는다.
+
 `guard-command`는 명령을 **실행하지 않고 검사**한다. 성공한 뒤 같은 cwd에서 검사한 명령을 실행한다.
 서브에이전트는 `--worker`를 추가한다. `guard-edit`는 편집 **전** 대상 파일마다 호출한다.
 완료 보고 전에 현재 변경의 관련 게이트를 실행한다. 종료 훅의 최신 파일 탐색을 흉내 내지 않고

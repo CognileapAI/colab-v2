@@ -63,8 +63,11 @@ class LifecycleRedTests(unittest.TestCase):
         return path
 
     def marker(self, task, mode, artifacts=None):
-        return 'Actual findings returned to parent.\nCOLAB_HANDOFF ' + json.dumps(dict(
-            task_id=task['task_id'], mode=mode, summary='Observed current input and result', artifacts=artifacts or {}))
+        handoff = dict(task_id=task['task_id'], mode=mode,
+                       summary='Observed current input and result', artifacts=artifacts or {})
+        if task['schema'] == 'colab-task/2':
+            handoff['run_id'] = task['run_id']
+        return 'Actual findings returned to parent.\nCOLAB_HANDOFF ' + json.dumps(handoff)
 
     def assert_routes(self, role, message, expected):
         hook = 'uncommitted-artifacts.sh' if role == 'researcher' else 'lane-gate-summary.sh'
@@ -222,6 +225,96 @@ class LifecycleRedTests(unittest.TestCase):
                 contract.archive_report(source, destination)
         self.assertTrue(source.exists())
         self.assertFalse(destination.exists())
+
+    def test_researcher_spec_output_is_blocked_and_named_as_unhanded_output(self):
+        """`prd/specs/` is watched evidence the researcher may not hand out.
+
+        Both modes already end in exit 2 today; what the WATCH entry fixes is which
+        sentence the executor gives, and that sentence is the contract being pinned.
+        """
+        subprocess.run(['git', '-C', str(self.root), '-c', 'user.name=Test',
+                        '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty',
+                        '-qm', 'base'], check=True)
+        name = 'dev-package/prd/specs/x.md'
+        read_only = contract.begin(self.root, 'researcher')
+        self.put(name, 'spec written by a researcher')
+        self.assert_routes('researcher', self.marker(read_only, 'read-only'), 2)
+        task = contract.begin(self.root, 'researcher', artifacts=['runtime:artifacts/findings.md'])
+        artifact = Path(task['artifacts'][0])
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text('findings')
+        self.put(name, 'spec changed while the task was open')
+        message = self.marker(task, 'artifacts', {task['artifacts'][0]: contract.digest(artifact)})
+        result = self.hook('uncommitted-artifacts.sh', 'researcher', message)
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn('unhanded output', result.stderr)
+
+    def test_legacy_spec_declaration_is_refused_for_the_researcher_role_only(self):
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', legacy=True,
+                           artifacts=['dev-package/prd/specs/x.md'])
+        lane = contract.begin(self.root, 'lane-worker', legacy=True,
+                              artifacts=['dev-package/prd/specs/x.md'], gates=['contract-lint'],
+                              report='dev-package/reports/spec/lane/gate-summary.json')
+        self.assertEqual(lane['artifacts'], ['dev-package/prd/specs/x.md'])
+        for name in ('dev-package/intent/x.md', 'dev-package/sessions/x.md',
+                     'dev-package/reports/x.md'):
+            task = contract.begin(self.root, 'researcher', legacy=True, artifacts=[name])
+            self.assertEqual(task['artifacts'], [name])
+
+    def measuring(self, gates=('first', 'second')):
+        """A measurement-lane task whose coherent report carries one red row.
+
+        An all-green fixture cannot tell the red branch apart from its absence, so the
+        report this role hands back always contains the thing the role exists to record.
+        """
+        subprocess.run(['git', '-C', str(self.root), '-c', 'user.name=Test',
+                        '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty',
+                        '-qm', 'base'], check=True)
+        self.put('product.py', 'dirty working content')
+        task = contract.begin(self.root, 'measurement-lane', gates=list(gates))
+        evidence = contract.gate_start(self.root, task['task_id'])
+        task = contract.load_task(self.root, task['task_id'])
+        report = dict(schema='colab-gate-summary/1', commit=evidence['commit'], tree=evidence['tree'],
+                      counts={'green': 1, 'red_판정': 1, 'red_준비': 0},
+                      gates=[dict(name=gates[0], status='green', exit=0),
+                             dict(name=gates[1], status='red_판정', exit=1)],
+                      task_evidence={'before': evidence, 'after': evidence})
+        path = contract.resolve_task_path(self.root, task, task['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report))
+        return task, report, path
+
+    def test_measurement_lane_closes_with_a_red_row_on_both_harnesses(self):
+        task, report, path = self.measuring()
+        self.assert_routes('measurement-lane', self.marker(task, 'complete'), 0)
+
+    def test_measurement_lane_without_coherent_evidence_is_blocked(self):
+        task, report, path = self.measuring()
+        message = self.marker(task, 'complete')
+        for mutate in (lambda d: d.update(counts={'green': 2, 'red_판정': 0, 'red_준비': 0}),
+                       lambda d: (d['gates'].pop(),
+                                  d.update(counts={'green': 1, 'red_판정': 0, 'red_준비': 0})),
+                       lambda d: d.update(tree='a' * 40)):
+            broken = copy.deepcopy(report)
+            mutate(broken)
+            path.write_text(json.dumps(broken))
+            self.assert_routes('measurement-lane', message, 2)
+        path.unlink()
+        self.assert_routes('measurement-lane', message, 2)
+
+    def test_lane_worker_red_row_still_blocks_the_shared_hook(self):
+        task, report = self.lane()
+        report['gates'][0].update(status='red_판정', exit=1)
+        report['counts'] = {'green': 0, 'red_판정': 1, 'red_준비': 0}
+        self.put(task['report'], json.dumps(report))
+        self.assert_routes('lane-worker', self.marker(task, 'complete'), 2)
+
+    def test_role_outside_the_declared_set_is_rejected_by_the_lane_hook(self):
+        task = contract.begin(self.root, 'researcher', legacy=True)
+        result = self.hook('lane-gate-summary.sh', 'researcher', self.marker(task, 'read-only'))
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn('hook role differs', result.stderr)
 
     def test_raw_guard_malformed_input_blocks_but_irrelevant_tool_is_allowed(self):
         for name in ('git-guard.sh', 'migration-guard.sh', 'decision-number-guard.sh', 'test-file-guard.sh'):

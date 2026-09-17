@@ -84,6 +84,7 @@ Issue 미게시 상태에서는 compatibility만 허용 가능하며, 신구 상
 | 전환 표·계획·수용 기준 | 완료 | 독립 검토의 필수 누락을 반영 |
 | 구현·검증 | 로컬 구현 마감·전체 수용 미달 | 프런트·schema-diff 실패와 실발화·양방향 인계 미확인, 호환 종료 미완료 |
 | 외부 게시 | 미실행 | PR은 사용자 직접 게시. push·Issue·ruleset은 내용·대상 승인 후 별도 수행 |
+| ADR-0005 후속 ③④ 증거 계약 | 로컬 구현·단독 게이트 완료 | spec `dev-package/prd/specs/2026-09-18-harness-evidence-hooks.md` · 라운드 `dev-package/prd/rounds/R-HARNESS-EVIDENCE-HOOKS.md`. 측정 레인 `SubagentStop` 일반화 · `WATCH` 에 `prd/specs/` · 전수 호출문 정본. 전수 1회 실측과 PR 게시는 미실행 |
 
 ### Task 1: 공통 하네스 선언과 검사기
 

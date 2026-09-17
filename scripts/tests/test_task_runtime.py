@@ -156,17 +156,42 @@ class TaskRuntimeTests(unittest.TestCase):
             bad['last_assistant_message'] = 'done\nCOLAB_HANDOFF ' + json.dumps(dict(handoff, mode=mode))
             with self.assertRaises(ValueError):
                 contract.stop(bad, 'measurement-lane')
-        # A red row is not completion, and a missing declared gate is not completion.
-        partial = self.measurement_report(evidence, gates)
-        partial['gates'][1]['status'] = 'red_판정'
-        partial['gates'][1]['exit'] = 1
-        partial['counts'] = {'green': 2, 'red_판정': 1, 'red_준비': 0}
-        path.write_text(json.dumps(partial))
+        # Recording red IS this role's output, so a coherent report that carries red rows
+        # closes the task. The approved intent constraint wins over the earlier assertion
+        # that red blocks here: a lane that may only close all-green rounds cannot measure.
+        red = self.measurement_report(evidence, gates)
+        red['gates'][1].update(status='red_판정', exit=1)
+        red['gates'][2].update(status='red_준비', exit=78)
+        red['counts'] = {'green': 1, 'red_판정': 1, 'red_준비': 1}
+        path.write_text(json.dumps(red))
+        self.assertEqual(contract.stop(payload, 'measurement-lane'), 'H7')
+        # Only red is allowed through; edited counts are still a broken report.
+        tampered = json.loads(json.dumps(red))
+        tampered['counts'] = {'green': 3, 'red_판정': 0, 'red_준비': 0}
+        path.write_text(json.dumps(tampered))
         with self.assertRaises(ValueError):
             contract.stop(payload, 'measurement-lane')
+        # Measuring less than the declared set is still not completion.
         path.write_text(json.dumps(self.measurement_report(evidence, gates[:2])))
         with self.assertRaises(ValueError):
             contract.stop(payload, 'measurement-lane')
+
+    def test_lane_worker_red_still_blocks_completion(self):
+        """The measurement-lane allowance must not leak into the implementing lane."""
+        task = contract.begin(self.root, 'lane-worker', gates=['check'])
+        evidence = contract.gate_start(self.root, task['task_id'])
+        current = contract.load_task(self.root, task['task_id'])
+        path = contract.resolve_task_path(self.root, current, current['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        report = self.measurement_report(evidence, ['check'])
+        path.write_text(json.dumps(report))
+        contract.verify_task_report(self.root, current)
+        for status, code in (('red_판정', 1), ('red_준비', 78)):
+            report['gates'][0].update(status=status, exit=code)
+            report['counts'] = {'green': 0, 'red_판정': 0, 'red_준비': 0, status: 1}
+            path.write_text(json.dumps(report))
+            with self.assertRaisesRegex(ValueError, 'gate failures remain'):
+                contract.verify_task_report(self.root, current)
 
     def test_measurement_lane_still_cannot_use_group_selectors_or_legacy(self):
         """`--gate all` was rejected on purpose (ADR-0005). Keep it rejected."""

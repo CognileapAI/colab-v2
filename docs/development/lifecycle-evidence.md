@@ -9,8 +9,12 @@ Claude와 Codex는 `scripts/harness/hooks/lifecycle_contract.py`의 같은 판�
 
 `researcher` 또는 `lane-worker` 역할의 작업은 수정 전에 지정 사본 루트에서 시작 기록을 만든다.
 이 역할 계약을 일반 부모 문서 작성자의 권한으로 해석하지 않는다. 부모가 승인된 intent로 spec을
-직접 작성할 때 `researcher`로 가장해 등록하지 않는다. researcher의 산출물 경로는 sessions/reports/intent로
-제한되며 specs를 추가해 통과시키지 않는다. 부모의 spec 인계는 승인 범위·파일 경로·실제 내용 hash를 확인한다.
+직접 작성할 때 `researcher`로 가장해 등록하지 않는다. `dev-package/prd/specs/`는 감시 경로 안의
+산출물이며, 쓰는 주체는 부모다. researcher는 `colab-task/2`에서도 `begin --legacy`에서도 이 경로를
+산출물로 선언하지 못하고, 선언하면 시작 시점에 거절된다. 감시는 신규 추가만이 아니라 수정까지 본다.
+다만 훅이 발화하는 자리는 researcher 종료뿐이므로, 사람이나 부모가 spec을 손으로 고치는 것은 훅 대상이
+아니다. 부모의 spec 인계는 승인 범위·파일 경로·실제 내용 hash를 확인한다 — 이 확인은 현재 사람의
+절차이며 기계 판정으로 구현돼 있지 않다.
 Windows에서는 `scripts/dev.ps1 bridge lifecycle <인자>`로 같은 WSL 경로를 쓴다.
 Linux에서는 `python3 scripts/agent-bridge.py lifecycle <인자>`다.
 신규 `colab-task/2` 기록과 산출물은 Git common 디렉터리의

@@ -34,6 +34,8 @@ task evidence. You measure. You do not fix what you measured.
 2. **돈다** — `COLAB_TASK_ID=<task_id> bash gates/run.sh task` **한 번.**
    선언한 집합을 각각 한 번씩 돌고 한 run_id 아래 결과 한 벌을 낸다. 독립된 부분 실행 둘을
    사후에 합산하지 않는다.
+   세 게이트(`seed-plan-drift`·`frontend-visual`·`harness-eval`)의 운영자 입력을 함께 준다 —
+   정본 호출문은 `gates/README.md` 「돌리기 전」 절에 있다. 말하지 않으면 red(준비 · 78)다.
 3. **인계한다** — `handoff --mode complete`. 그 task 의 증거는 **전수 `gate-summary.json`
    한 벌**이고, 선언한 게이트마다 행이 하나씩 있다. 완료 검사는 그 행들과 3계수를 본다.
 

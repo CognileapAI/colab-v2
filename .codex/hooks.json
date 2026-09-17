@@ -52,7 +52,7 @@
         ]
       },
       {
-        "matcher": "lane-worker",
+        "matcher": "lane-worker|measurement-lane",
         "hooks": [
           {
             "type": "command",
