@@ -9,6 +9,7 @@
 #   ⓑ 시험 1건이 실패                 → red     ← 실패를 못 잡으면 게이트가 아니다
 #   ⓒ ⭑ **수집된 시험 0건**           → red     ← green-by-skip 금지. 이 레포의 대표 실패 유형이다
 #   ⓓ vitest 실행 파일 부재            → red(준비 · 78)  ← 「못 돌았음」은 통과가 아니다
+#   ⓔ vitest 워커 기동 시간초과        → red(준비 · 78)  ← 「돌지 못했다」와 「돌아서 틀렸다」는 다르다
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -91,5 +92,21 @@ expect_case red "ⓒ 수집된 시험 0건 (green-by-skip 금지)" "$d"
 d="$TMP/novitest/fe"; mk_tree "$d"; pass_test "$d"; rm "$d/node_modules"
 mkdir -p "$d/node_modules/.bin"
 expect_case red-ready "ⓓ node_modules/.bin/vitest 부재" "$d"
+
+# ⓔ ⭑ 워커 기동 시간초과 → red(준비 · 78). **판정 red 가 아니다.**
+#   진짜 시간초과를 재현하지 않는다 — 그 자체가 부하 의존 시험이 된다. 대신 ⓓ 와 같은 방식으로
+#   심볼릭 링크를 지우고 `node_modules/.bin/vitest` 자리에 **실물 축자 문면을 찍고 비영으로
+#   끝나는 스텁**을 놓아 분류기를 결정적으로 때린다. 문면 출처는 `gates/tools/frontend-test.sh`
+#   의 주석에 적힌 `vitest/dist/chunks/cli-api.CnMVyzaz.js:3531` 이다.
+d="$TMP/workertimeout/fe"; mk_tree "$d"; pass_test "$d"; rm "$d/node_modules"
+mkdir -p "$d/node_modules/.bin"
+cat > "$d/node_modules/.bin/vitest" <<'STUB'
+#!/usr/bin/env bash
+echo "[vitest-pool]: Timeout starting forks runner."
+exit 1
+STUB
+chmod +x "$d/node_modules/.bin/vitest"
+expect_case red-ready "ⓔ 워커 기동 시간초과" "$d"
+expect_last_output 'ⓔ′ 준비 실패 표식이 선다' '::gate-readiness-failure::gate=frontend-test'
 
 exit $rc
