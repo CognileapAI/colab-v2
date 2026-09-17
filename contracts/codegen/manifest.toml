@@ -1,5 +1,23 @@
 # codegen manifest — 생성물 등기부 (SSoT)
 [[output]]
+id = "ids-ai"
+source = "services/core-api/src/colab_core/kernel/ids.py"
+output = "services/ai-service/src/colab_ai/kernel/ids.py"
+command = "python3 contracts/codegen/gen_knowledge_wire.py --ids {OUT}"
+
+[[output]]
+id = "knowledge-wire-core"
+source = "contracts/schemas/knowledge-lifecycle.json"
+output = "services/core-api/src/colab_core/kernel/knowledge_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_knowledge_wire.py {OUT}"
+
+[[output]]
+id = "knowledge-wire-ai"
+source = "contracts/schemas/knowledge-lifecycle.json"
+output = "services/ai-service/src/colab_ai/kernel/knowledge_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_knowledge_wire.py {OUT}"
+
+[[output]]
 id = "search-semantics-core"
 source = "contracts/search/semantics.json"
 output = "services/core-api/src/colab_core/kernel/search_semantics.py"

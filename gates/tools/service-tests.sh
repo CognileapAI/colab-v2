@@ -93,18 +93,59 @@ if (( JOBS > 1 )); then
   PYTEST_PARALLEL=(-n "$JOBS" --dist loadfile)
 fi
 case "$SERVICE" in
-  core-api)
+  ai-service)
     SETUP="$SVC/tests/fixtures/setup-db.sh"
-    [ -f "$SETUP" ] || red "일회용 DB 구성 재료가 없다: ${SETUP#"$REPO_ROOT"/}."
+    [ -f "$SETUP" ] || red "AI disposable DB fixture is missing."
+    pg_start "$GATE" || exit "$PG_READINESS_EXIT"
+    docker exec "$PGC" createdb -U postgres colab_ai >"$TMP/db.err" 2>&1 \
+      || ready_red "AI disposable database" "대기 없음" "0초" "createdb failed"
+    AI_DB_URL="$(CONTAINER="$PGC" DB=colab_ai bash "$SETUP" 2>"$TMP/db.err")"
+    setup_rc=$?
+    [ "$setup_rc" -eq 0 ] && [ -n "$AI_DB_URL" ] || red "AI schema/roles/seed fixture failed (details withheld)."
+    # setup-db stdout stays backward-compatible: one read-only application URL.
+    # Replace credentials locally without exposing either URL to logs.
+    KNOWLEDGE_DB_URL="$("$PY" -c 'import sys; from sqlalchemy.engine import make_url; print(make_url(sys.stdin.read().strip()).set(username="colab_knowledge_writer", password="knowledge-test-only").render_as_string(hide_password=False))' <<< "$AI_DB_URL")"
+    PYENV=("COLAB_AI_TEST_DICT_DB_URL=$AI_DB_URL" "COLAB_AI_TEST_KNOWLEDGE_DB_URL=$KNOWLEDGE_DB_URL")
+    if (( JOBS > 1 )); then
+      AI_WORKER_DB_DIR="$TMP/ai-worker-db"
+      mkdir -m 700 "$AI_WORKER_DB_DIR"
+      for ((worker=0; worker<JOBS; worker++)); do
+        ai_worker_db="colab_ai_gw${worker}"
+        docker exec "$PGC" createdb -U postgres "$ai_worker_db" >"$TMP/db.err" 2>&1 \
+          || ready_red "AI worker database" "대기 없음" "0초" "createdb failed"
+        if ! CONTAINER="$PGC" DB="$ai_worker_db" bash "$SETUP" >"$AI_WORKER_DB_DIR/gw${worker}" 2>"$TMP/db.err"; then
+          red "AI worker schema/roles/seed fixture failed (details withheld)."
+        fi
+        [ -s "$AI_WORKER_DB_DIR/gw${worker}" ] || red "AI worker database URL missing."
+        chmod 600 "$AI_WORKER_DB_DIR/gw${worker}"
+      done
+      PYENV+=("COLAB_AI_XDIST_DB_DIR=$AI_WORKER_DB_DIR"
+             "PYTHONPATH=$REPO_ROOT/gates/tools${PYTHONPATH:+:$PYTHONPATH}")
+      PYTEST_PLUGIN=(-p xdist_ai_db)
+    fi
+    echo "# AI disposable DB ready — ontology reader and isolated knowledge writer roles (credentials hidden)"
+    ;;
+  core-api|pipeline-worker)
+    SETUP="$SVC/tests/fixtures/setup-db.sh"
+    if [ ! -f "$SETUP" ]; then
+      if [ "$SERVICE" = pipeline-worker ]; then
+        ready_red "platform disposable fixture" "대기 없음" "0초" "DB fixture is missing"
+      fi
+      red "일회용 DB 구성 재료가 없다: ${SETUP#"$REPO_ROOT"/}."
+    fi
     pg_start "$GATE" || exit "$PG_READINESS_EXIT"
     if ! docker exec "$PGC" createdb -U postgres colab_platform >"$TMP/db.err" 2>&1; then
       ready_red "일회용 postgres 안의 DB 생성(createdb colab_platform)" "대기 없음" "0초" \
         "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
     fi
     DB_URL_PAIR="$(CONTAINER="$PGC" DB=colab_platform bash "$SETUP" 2>"$TMP/db.err")"
+    setup_rc=$?
     DB_URL="${DB_URL_PAIR%%$'\t'*}"
     ADMIN_DB_URL="${DB_URL_PAIR#*$'\t'}"
-    if [ -z "$DB_URL" ] || [ "$ADMIN_DB_URL" = "$DB_URL_PAIR" ]; then
+    if [ "$setup_rc" -ne 0 ] || [ -z "$DB_URL" ] || [ "$ADMIN_DB_URL" = "$DB_URL_PAIR" ]; then
+      if [ "$SERVICE" = pipeline-worker ]; then
+        ready_red "pipeline platform fixture" "대기 없음" "0초" "schema/roles/seed setup failed (details withheld)"
+      fi
       DB_ERR="$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-400)"
       if pg_is_readiness_error "$DB_ERR"; then
         ready_red "일회용 postgres 에 스키마·롤·시드 적용(tests/fixtures/setup-db.sh)" \
@@ -119,6 +160,9 @@ case "$SERVICE" in
       "COLAB_CORE_TEST_ADMIN_DATABASE_URL=$ADMIN_DB_URL"
       "COLAB_CORE_TEST_SUBJECTS_FILE=$SVC/tests/fixtures/subjects.json"
     )
+    if [ "$SERVICE" = pipeline-worker ]; then
+      PYENV+=("COLAB_PIPELINE_DB_URL=$DB_URL" "COLAB_SERVICE_DB_MODE=pipeline-worker")
+    fi
     if (( JOBS > 1 )); then
       WORKER_DB_DIR="$TMP/core-worker-db"
       WORKER_ADMIN_DB_DIR="$TMP/core-worker-admin-db"
@@ -144,7 +188,7 @@ case "$SERVICE" in
              "COLAB_CORE_XDIST_ADMIN_DB_DIR=$WORKER_ADMIN_DB_DIR"
              "PYTHONPATH=$REPO_ROOT/gates/tools${PYTHONPATH:+:$PYTHONPATH}")
       PYTEST_PLUGIN=(-p xdist_core_db)
-      echo "# core-api xdist 격리 DB $JOBS개 준비 완료(URL·비밀번호 미출력)"
+      echo "# $SERVICE xdist 격리 DB $JOBS개 준비 완료(URL·비밀번호 미출력)"
     fi
     ;;
 esac

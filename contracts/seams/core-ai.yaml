@@ -61,6 +61,199 @@ security:
   - serviceToken: []
 
 paths:
+  /internal/knowledge/deletion/issue:
+    servers: [{url: /, description: Core deletion authority listener}]
+    post:
+      tags: [search]
+      operationId: issueKnowledgeDeletion
+      summary: 정확한 삭제 revision에서 본문 없는 폐기 권한을 발급한다
+      description: 고정 lab의 별도 capability만 사용하며 사용자 세션, 원본 본문, ontology를 읽지 않는다. missing/access loss는 삭제가 아니다.
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionIssueRequest}
+      responses:
+        '200':
+          description: Hash-only grant로 결합한 삭제 명령. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/InvalidateCommand}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Exact current deletion proof unavailable}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority unavailable}
+  /internal/knowledge/deletion/validate:
+    servers: [{url: /, description: Core deletion authority listener}]
+    post:
+      tags: [search]
+      operationId: validateKnowledgeDeletion
+      summary: 현재 삭제 revision과 영속 fence를 검증한다
+      description: 별도 폐기 grant와 고정 lab을 검사한다. 사람 계정이나 ontology release는 사용하지 않는다.
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateRequest}
+      responses:
+        '200':
+          description: 본문 없는 삭제 판정. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateResponse}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Lab or source unavailable}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority unavailable}
+  /internal/knowledge/invalidate:
+    servers: [{url: /, description: Separate D9 knowledge listener outside D10}]
+    post:
+      tags: [search]
+      operationId: invalidateDatasetKnowledge
+      summary: 소유 도메인 삭제 증명을 확인하고 본문 없는 tombstone을 저장한다
+      description: 첫 삭제도 fence와 receipt를 만든다. callback과 commit의 분산 원자성은 보장하지 않는다.
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateRequest}
+      responses:
+        '200':
+          description: 멱등 invalidated receipt. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/InvalidationReceipt}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Source disposal forbidden}
+        '409': {description: Stale generation or source or conflicting digest}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority or storage unavailable}
+  /internal/knowledge/source/read:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: authorizeKnowledgeRead
+      summary: 현재 viewer와 원본 정본 digest에서 조회 권한을 재검증한다
+      description: 발급 grant 없이 tracked session과 자료 RLS를 검사한다. 세대 증가 및 grant 발급은 하지 않는다.
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceReadRequest}
+      responses:
+        '200':
+          description: 현재 viewer principal과 판정. 본문 없음, Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/read:
+    servers: [{url: /, description: Separate D9 knowledge listener outside D10}]
+    post:
+      tags: [search]
+      operationId: readDatasetKnowledge
+      summary: 현재 viewer에게 허용된 자료별 지식을 조회한다
+      description: 저장 descriptor의 고정 callback 검증과 D9 manifest 및 최종 row 검증 후 grant 없는 본문을 반환한다. callback 이후 원본 변경과의 분산 원자성을 보장하지 않는다.
+      security: [{knowledgeReaderToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReadRequest}
+      responses:
+        '200':
+          description: 정합성 검사된 payload와 receipt. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/AuthorizedKnowledge}
+        '401': {description: Reader token missing or invalid}
+        '403': {description: Knowledge unavailable to current viewer}
+        '409': {description: Stale source generation or release}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source callback or knowledge reader unavailable}
+  /internal/knowledge/source/issue:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: issueKnowledgeSource
+      summary: 현재 로그인 주체가 읽을 수 있는 근거에서 처리 권한을 발급한다
+      description: 전용 callback bearer와 tracked DB 세션을 모두 검증한다. 요청 principal과 임의 source URL은 받지 않는다.
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceIssueRequest}
+      responses:
+        '200':
+          description: 서버 생성 command와 인증된 principal. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceIssueResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '403': {description: Source unavailable to authenticated principal}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/source/validate:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: validateKnowledgeSource
+      summary: 실제 tracked 세션과 현재 원본에서 grant를 재검증한다
+      description: principal은 요청으로 받지 않고 세션에서 생성한다. 읽기 권한이나 분산 commit 원자성을 보장하는 receipt가 아니다.
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateRequest}
+      responses:
+        '200':
+          description: 현재 인증 principal과 source 판정. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/replace:
+    servers: [{url: /, description: Separate D9 knowledge writer listener outside D10}]
+    post:
+      tags: [search]
+      operationId: replaceDatasetKnowledge
+      summary: 고정 source callback으로 권한을 검증한 자료별 지식을 반영한다
+      description: principal은 검증 전 claim이다. callback의 인증 principal과 전체 일치해야 한다. 조회·삭제·공용 ontology 발행 기능은 없다.
+      security: [{knowledgeWriterToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReplaceRequest}
+      responses:
+        '200':
+          description: 원자 반영 receipt. 재조회 권한이 아니며 Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReceipt}
+        '401': {description: Writer token missing or invalid}
+        '403': {description: Principal claim or source authorization rejected}
+        '409': {description: Stale source generation release or idempotency conflict}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Authenticated source callback or writer unavailable}
   /search-concept-proposals:
     post:
       tags: [search]
@@ -206,6 +399,27 @@ paths:
 components:
 
   securitySchemes:
+    knowledgeDeletionToken:
+      type: http
+      scheme: bearer
+      description: 고정 lab 폐기 전용 capability. 일반 source issue/read/replace, callback, ontology token과 분리한다.
+    knowledgeCallbackToken:
+      type: http
+      scheme: bearer
+      description: Source callback 전용 서비스 자격. 기존 read 및 writer와 구분한다.
+    knowledgeWriterToken:
+      type: http
+      scheme: bearer
+      description: 별도 D9 writer 프로세스 전용 서비스 자격. D10에는 제공하지 않는다.
+    knowledgeReaderToken:
+      type: http
+      scheme: bearer
+      description: Knowledge reader 전용 자격. writer, callback 및 기존 ontology token과 모두 구분한다.
+    trackedKnowledgeSession:
+      type: apiKey
+      in: header
+      name: X-CoLAB-Session
+      description: 실제 tracked DB 로그인 세션. 요청 수명에만 보관하고 DB·로그에 저장하지 않는다.
     serviceToken:
       type: http
       scheme: bearer
