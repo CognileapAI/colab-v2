@@ -2602,7 +2602,8 @@ export interface components {
             operator: boolean;
         };
         /**
-         * @description 429 의 오류 봉투. 공통 `ErrorEnvelope`(`code`·`message`·`details`)에 **선택 칸 하나**를
+         * @description 정본 무근거 — 핫픽스 HF-B ①(커밋 82d94816): 429 가 언제 풀리는지 알린다. 공통 봉투는 `common.json` 정본대로 둔다.
+         *     429 의 오류 봉투. 공통 `ErrorEnvelope`(`code`·`message`·`details`)에 **선택 칸 하나**를
          *     더한 것이고 필수 칸은 그대로다 — 추가만이라 기존 소비자는 그대로 돈다.
          *
          *     ⚠ 공통 봉투가 `additionalProperties: false` 라 이 칸을 그쪽에 얹을 수 없다. 얹으면
@@ -2616,7 +2617,8 @@ export interface components {
             retryAfterSeconds?: number;
         };
         /**
-         * @description 로그인 잠금을 풀 **계정 하나**. 열쇠는 서버가 이 이메일에서 만든다 —
+         * @description 정본 무근거 — 핫픽스 HF-B ②(커밋 82d94816): 운영자가 로그인 잠금을 푸는 `clearLoginThrottle` 의 본문.
+         *     로그인 잠금을 풀 **계정 하나**. 열쇠는 서버가 이 이메일에서 만든다 —
          *     원시 버킷 열쇠를 받으면 클라이언트 버킷까지 지울 수 있어 제한을 끄는 스위치가 된다.
          */
         LoginThrottleClear: {
