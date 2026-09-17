@@ -33,6 +33,19 @@ def runtime():
     return module
 
 
+# Roles that open a task, run gates and hand the run back as task evidence.
+# `measurement-lane` exists because a lane that only *measures* the whole gate set had no
+# way to open a task at all, so full-run results stayed prose instead of becoming values
+# (issue #56 ⑵). It is deliberately NOT allowed to declare `all`/`task` as its gate set —
+# that selector is still rejected in `run_gates()`. It declares the concrete names, same
+# as any other lane, because the machine only enforces two things: gate exit codes and the
+# task evidence contract (ADR-0005). Letting a role say `all` would shave the second one.
+# ⚠ Read from `task_state` rather than restated here — that module binds the report path
+#   for exactly these roles, and the two lists must not be able to drift apart.
+GATE_ROLES = runtime().GATE_ROLES
+TASK_ROLES = ('researcher',) + GATE_ROLES
+
+
 def resolve_task_path(root, task, name, artifact_only=False):
     if task['schema'] == 'colab-task/2':
         return runtime().resolve(root, task, name, artifact_only=artifact_only)
@@ -146,14 +159,14 @@ def archive_report(source, destination):
 def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False):
     root = checkout(root)
     artifacts, gates = artifacts or [], gates or []
-    if role not in ('researcher', 'lane-worker'):
+    if role not in TASK_ROLES:
         raise ValueError('unsupported task role')
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
     if not legacy:
         if report is not None:
             raise ValueError('new tasks use runtime reports; old paths require explicit --legacy')
-        if role == 'lane-worker' and (not gates or any(not isinstance(g, str) or not g for g in gates)):
+        if role in GATE_ROLES and (not gates or any(not isinstance(g, str) or not g for g in gates)):
             raise ValueError('lane requires explicit gates')
         if role == 'researcher' and gates:
             raise ValueError('research task must not declare implementation gates')
@@ -167,6 +180,11 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
         runtime().bind_paths(root, task)
         runtime().save(root, task)
         return task
+    # `measurement-lane` is a new role; it has no legacy repository-output history to stay
+    # compatible with. Say so plainly instead of letting it fall through to the researcher
+    # branch below, which would reject it with a message about research gates.
+    if role == 'measurement-lane':
+        raise ValueError('measurement-lane has no legacy repository-output mode; drop --legacy')
     for name in artifacts:
         if inside(root, name).relative_to(root).as_posix() != name or not name.startswith(WATCH):
             raise ValueError('artifact must be a repository-relative research output')
@@ -223,8 +241,8 @@ def validate_report(data, required, head_tree=None):
 
 def gate_evidence(root, task_id):
     task = load_task(root, task_id)
-    if task['role'] != 'lane-worker':
-        raise ValueError('gate evidence requires lane-worker task')
+    if task['role'] not in GATE_ROLES:
+        raise ValueError('gate evidence requires a gate-running task role')
     evidence = dict(task_id=task_id, run_id=task.get('run_id'), checkout=str(root), files=snapshot_hash(task_snapshot(root, task)))
     if task['schema'] == 'colab-task/2':
         evidence.update(head_identity(root), checkout_id=task['checkout_id'], report=task['report'])
@@ -306,8 +324,8 @@ def stop(data, expected_role):
 
 def gate_start(root, task_id):
     task = load_task(root, task_id)
-    if task['role'] != 'lane-worker':
-        raise ValueError('gate execution requires lane-worker task')
+    if task['role'] not in GATE_ROLES:
+        raise ValueError('gate execution requires a gate-running task role')
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
         task['run_id'] = uuid.uuid4().hex
@@ -415,7 +433,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     start = commands.add_parser('begin')
-    start.add_argument('--role', required=True, choices=('researcher','lane-worker'))
+    start.add_argument('--role', required=True, choices=TASK_ROLES)
     start.add_argument('--artifact', action='append', default=[])
     start.add_argument('--gate', action='append', default=[])
     start.add_argument('--report')
