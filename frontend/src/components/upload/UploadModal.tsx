@@ -776,11 +776,12 @@ export function UploadModal(props: {
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
   /**
-   * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 원천 블록이 서는가.**
-   * `RegisterArea.StepThree` 와 **같은 식**이다 — `Lv0` 또는 연결 0건. 화면이 숨긴 값을
-   * 요청에 싣지 않으려면 표시 조건과 전송 조건이 한 식이어야 한다(WU-B6 이 세운 규율).
+   * ⭑ **⟨개정 2026-09-17 · #97⟩ 원천 블록이 서는가 — 연결 0건 하나다.**
+   * `RegisterArea.StepThree` 와 **문자 그대로 같은 식**이다 ／ 종전 ~~`Lv0` 또는 연결 0건~~.
+   * 화면이 숨긴 값을 요청에 싣지 않으려면 표시 조건과 전송 조건이 한 식이어야 한다
+   * (WU-B6 이 세운 규율). 등록 전 필수·형상 검사도 같은 식으로 좁힌다 — 아래 `submit()`.
    */
-  const sourceVisible = level === LV0 || lineageCards.length === 0;
+  const sourceVisible = lineageCards.length === 0;
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => {
     if (submitLock.current || committedDatasetIdRef.current) return;
@@ -1150,7 +1151,12 @@ export function UploadModal(props: {
         ? '[data-testid="reg-interval-unit"]' : '#reg-interval-value')?.focus(), 0);
       return;
     }
-    if (level === LV0 && (!sourceUrl.trim() || !sourceDownloadedOn.trim())) {
+    // ⭑ **⟨개정 2026-09-17 · #97⟩ `sourceVisible` 을 **덧붙인다**(치환이 아니다).**
+    //   블록이 숨은 동안 이 검사가 살아 있으면 화면에 없는 `reg-source-url` 로 초점을
+    //   보내려다 실패해 **등록이 영구히 막힌다**. ⛔ `level === LV0` 을 `sourceVisible` 로
+    //   바꿔치지 않는다 — `sourceVisible`(연결 0건)은 Lv1 이상에서도 참인데 Lv1 에는
+    //   `내려받은 날` 칸 자체가 없어(`RegisterArea` 의 `lv0` 슬롯) Lv1 등록이 막힌다.
+    if (sourceVisible && level === LV0 && (!sourceUrl.trim() || !sourceDownloadedOn.trim())) {
       setStep(3);
       setRegisterError(REGISTER_LV0_SOURCE_REQUIRED);
       setRegisterToast(REGISTER_LV0_SOURCE_REQUIRED);
@@ -1159,7 +1165,10 @@ export function UploadModal(props: {
       return;
     }
     // 제공된 날짜는 기존 형식 검사로 거절하고 칸 옆에 원인을 표시한다.
+    // ⭑ ⟨개정 2026-09-17 · #97⟩ 위와 같은 이유로 `sourceVisible` 을 덧붙인다 — 형상 오류
+    //   문구가 서는 자리(`reg-source-downloaded-on-error`)도 숨은 블록 안에 있다.
     if (
+      sourceVisible &&
       level === LV0 &&
       sourceDownloadedOn.trim() &&
       !isValidSourceDownloadedOnShape(sourceDownloadedOn.trim())

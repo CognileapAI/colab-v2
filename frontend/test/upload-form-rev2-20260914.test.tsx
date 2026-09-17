@@ -394,39 +394,101 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     }
   });
 
-  it('기본 Lv0을 유지한 채 같은 단계 부모를 연결하면 원천 블록과 적어 둔 값을 유지한다', async () => {
+  // ⭑ **⟨개정 2026-09-17 · #97⟩ 노출 판정에서 `Lv` 가 빠졌다 — 남은 조건은 **연결 0건** 하나다.**
+  //    ／ 종전 ~~「기본 Lv0 을 유지한 채 부모를 연결하면 원천 블록과 값을 유지한다」~~ —
+  //    Lv0 에 상위를 붙여도 블록이 남아 **이미 계보가 말한 출처를 다시 적으라고 읽혔다**.
+  //    Lv0 이 연결할 수 있는 상위는 Lv0 뿐이라 「연결 0건」 단일 조건이 그 판정과 동치다.
+  const LV0_PARENT: ParentCard = {
+    key: 'k1',
+    parentDatasetId: '01JYZ9K7WQ3N8V4M2X6C5B0PA1',
+    parentDatasetName: '부모 데이터셋',
+    confidence: null,
+    rationale: null,
+    origin: 'manual',
+    confirmed: true,
+    method: '절단',
+    confirmedMethodText: null,
+    picking: false,
+    parentLevel: 0,
+  };
+
+  it('#97 기본 Lv0에 같은 단계 부모를 연결하면 원천 블록이 사라지고, 떼면 다시 선다', async () => {
+    const { sources } = fakes();
+    const m = await openRegister(sources);
+    await setClassification();
+    await click(stepBtn('③'));
+    // ⛔ green-by-skip 방지 — **연결 전에는 보인다**는 양성 단언을 먼저 세운다.
+    //    조회가 늘 실패해서 통과하는 형태를 막는다.
+    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
+    expect(screen.getByTestId('reg-source-url')).toBeTruthy();
+    expect(screen.getByTestId('reg-source-downloaded-on')).toBeTruthy();
+
+    // 계보 화면이 부모 1건을 붙인다 — 그 순간 원천은 부모 쪽 계보가 말한다.
+    await act(async () => {
+      m.ctx().onParentsChange([LV0_PARENT]);
+    });
+    expect(screen.queryByTestId('reg-source-block')).toBeNull();
+    expect(screen.queryByTestId('reg-source-url')).toBeNull();
+    expect(screen.queryByTestId('reg-source-downloaded-on')).toBeNull();
+
+    // 뗀 순간 다시 선다 — 조작의 결과가 바로 화면에 나타난다.
+    await act(async () => {
+      m.ctx().onParentsChange([]);
+    });
+    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
+    expect(screen.getByTestId('reg-source-downloaded-on')).toBeTruthy();
+  });
+
+  // ⭑ **⟨#97 우려 ①⟩ 숨김만 고치고 등록 전 검사를 그대로 두면 등록이 영구히 막힌다.**
+  //    Lv0 필수 검사가 화면에 없는 `reg-source-url` 로 초점을 보내려다 실패하고, 사람은
+  //    토스트만 본 채 고칠 자리를 못 찾는다. **한 번도 적지 않은 경로**가 그 덫이다 —
+  //    적고 나서 숨기는 경로는 state 에 값이 남아 검사를 통과해 버려 덫을 재지 못한다.
+  it('#97 상위를 먼저 붙여 원천 칸을 한 번도 못 본 Lv0도 등록이 끝까지 진행된다', async () => {
     const { sources, calls } = fakes();
     const m = await openRegister(sources);
     await setClassification();
     await click(stepBtn('③'));
-    await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
-    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
-    // 계보 화면이 부모 1건을 붙인다 — 그 순간 원천은 부모 쪽 계보가 말한다.
-    const parent: ParentCard = {
-      key: 'k1',
-      parentDatasetId: '01JYZ9K7WQ3N8V4M2X6C5B0PA1',
-      parentDatasetName: '부모 데이터셋',
-      confidence: null,
-      rationale: null,
-      origin: 'manual',
-      confirmed: true,
-      method: '절단',
-      confirmedMethodText: null,
-      picking: false,
-      parentLevel: 0,
-    };
+    // 세 칸을 **한 번도 건드리지 않는다** — 비어 있는 채로 블록이 사라진다.
+    expect(screen.getByTestId('reg-source-url')).toHaveValue('');
     await act(async () => {
-      m.ctx().onParentsChange([parent]);
+      m.ctx().onParentsChange([LV0_PARENT]);
     });
-    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
-    expect(screen.getByTestId('reg-source')).toHaveValue('ERA5 · 유럽중기예보센터');
+    expect(screen.queryByTestId('reg-source-block')).toBeNull();
 
     await fillRequired();
     await submit();
     await waitFor(() => expect(calls.registered).toHaveLength(1));
     const body = calls.registered[0] as Record<string, unknown>;
-    expect(body.sourceLabel).toBe('ERA5 · 유럽중기예보센터');
-    expect(body.sourceUrl).toBe('https://example.org/era5');
+    expect(body.processingLevelUserSet).toBe(LV0);
+    expect('sourceUrl' in body).toBe(false);
+    expect('sourceDownloadedOn' in body).toBe(false);
+    // 막힘의 흔적이 남지 않는다 — 토스트도 오류 줄도 서지 않는다.
+    expect(screen.queryByTestId('up-register-toast')).toBeNull();
+  });
+
+  it('#97 Lv0 · 상위 1건이면 원천 칸이 숨어도 등록이 진행되고 그 값이 실리지 않는다', async () => {
+    const { sources, calls } = fakes();
+    const m = await openRegister(sources);
+    await setClassification();
+    await click(stepBtn('③'));
+    // 숨기 **전에** 세 칸을 채운다 — 숨은 값이 몰래 실리지 않음을 재려면 값이 있어야 한다.
+    await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2026-08-20');
+    await act(async () => {
+      m.ctx().onParentsChange([LV0_PARENT]);
+    });
+    expect(screen.queryByTestId('reg-source-block')).toBeNull();
+
+    await fillRequired();
+    await submit();
+    // ⛔ 「요청 0건」으로 통과하는 형태를 쓰지 않는다 — **요청이 실제로 나간 것**을 먼저 센다.
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    const body = calls.registered[0] as Record<string, unknown>;
+    expect(body.processingLevelUserSet).toBe(LV0);
+    expect(body.sourceLabel).toBeNull();
+    expect('sourceUrl' in body).toBe(false);
+    expect('sourceDownloadedOn' in body).toBe(false);
   });
 
   it('Lv1을 고른 뒤 유효한 부모를 연결하면 원천 블록이 사라지고 적어 둔 값이 전송되지 않는다', async () => {
