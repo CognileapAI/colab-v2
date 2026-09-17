@@ -41,7 +41,9 @@ command -v node >/dev/null 2>&1 || red "node 가 없다. 검사를 못 한 것�
 if [ ! -d "$NODE_DIR/node_modules/ajv" ]; then
   echo "ajv 미설치 — gates/tools/node/package-lock.json 기준으로 설치를 시도한다."
   # 병렬 실행 대비 — 잠금 뒤 한 번 더 본다.
-  . "$REPO_ROOT/gates/tools/_lock.sh"; gate_lock_fd "$NODE_DIR/node_modules"
+  # 잠그지 못하면 red(준비 · 78) 다 — 잠금 없이 설치 구간에 들어가지 않는다(`_lock.sh` 2026-09-18 개정).
+  . "$REPO_ROOT/gates/tools/_lock.sh"
+  gate_lock_fd "$NODE_DIR/node_modules" event-lint || exit "$GATE_LOCK_READINESS_EXIT"
   [ -d "$NODE_DIR/node_modules/ajv" ] && gate_unlock_fd
 fi
 if [ ! -d "$NODE_DIR/node_modules/ajv" ]; then
