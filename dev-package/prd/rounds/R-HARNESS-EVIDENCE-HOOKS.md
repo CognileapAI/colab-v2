@@ -38,7 +38,10 @@ ADR-0006 배치를 지킨다 — 판정 본문은 `.agents/`·`scripts/harness/`
 · `.claude/settings.json` · `.codex/hooks.json` · `scripts/tests/test_harness_lifecycle_contract.py`
 
 - [x] A-ⓐ~ⓓ 를 먼저 써서 red 확인. red 로그 = `2 != 0 : lifecycle evidence blocked: hook role
-      differs from event role` (claude·codex 두 경로 동시).
+      differs from event role`. A-ⓐ~ⓒ 는 **claude·codex 두 경로**를 돌고, A-ⓓ
+      (`test_role_outside_the_declared_set_is_rejected_by_the_lane_hook`)는 **claude 단일 경로**다.
+      ⚠ codex 경로 시험은 `registered_hooks` 를 patch 하므로 **매처 정규식의 실제 라우팅은 시험이
+      증명하지 않는다** — 정규식상 자명하고, 두 파일의 매처 동일성은 `agent-bridge` 가 본다.
 - [x] 새 훅 파일 없음 — `harness.yaml:48` `hook_names` 불변(intent A Q3 「신규 훅 기각」).
 - [x] 역할은 이벤트 페이로드의 `agent_type` 에서 온다. 매처에는 인자를 실을 자리가 없다
       (`config.py` 어댑터 한 줄 고정 · `agent-bridge.py` 의 인자 없는 command 정규식).
@@ -57,6 +60,11 @@ ADR-0006 배치를 지킨다 — 판정 본문은 `.agents/`·`scripts/harness/`
 - [x] `WATCH` 에 `dev-package/prd/specs/` 한 줄.
 - [x] `begin --legacy` 의 산출물 선언에 역할 조건 한 줄 — researcher 는 어느 schema 에서도
       `prd/specs/` 를 선언하지 못한다(우려 #3 · Ted 2026-09-18 판정 ⓑ).
+- [x] ⚠ **부수 효과 — `lane-worker` 의 legacy `prd/specs/` 선언은 신규 허용이다.** 종전에는
+      `WATCH` 밖이라 `begin` 이 거절했다. spec §B-ⓑ 의 「기존 동작 유지」는 이 점에서 틀렸고,
+      `test_harness_lifecycle_contract.py:256-259` 가 새 동작을 단언한다. **판정 영향 0** —
+      `stop()` 은 lane-worker 갈래에서 `verify_task_report()` 만 부르고, 그 안의 `artifacts` 검사는
+      `colab-task/2` 전용(`lifecycle_contract.py:276-280`)이라 legacy 선언 목록을 읽지 않는다.
 - [x] 문서 정합: `lifecycle-evidence.md` 「쓰는 주체는 부모다」 · `researcher.md` 쓰기 범위 한 줄.
 
 **우려 #2 재현 결과 — 재현되지 않는다.** 2026-09-17 관측(researcher 가 spec 을 쓰고 `read-only`

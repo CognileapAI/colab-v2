@@ -59,7 +59,10 @@ Codex 이벤트·matcher다. 원격 브랜치 보호도 별도이며 이 변경�
 - ③ `WATCH` 를 스펙까지 확장. — **완료(2026-09-18).** `lifecycle_contract.py` 의 `WATCH` 에
   `dev-package/prd/specs/` 를 더했고, 같은 자리에서 researcher 의 spec 선언을 거절한다. 역할과 경로는
   실행기가 이미 쥔 사실이므로 조용한 통과가 아니라 판정으로 나간다. spec
-  `dev-package/prd/specs/2026-09-18-harness-evidence-hooks.md` §B.
+  `dev-package/prd/specs/2026-09-18-harness-evidence-hooks.md` §B. 부수 효과로 `lane-worker` 의
+  `begin --legacy` 는 `prd/specs/` 선언이 **신규 허용**된다(종전에는 감시 밖이라 거절). 판정 영향은
+  0 이다 — `stop()` 의 lane 갈래는 `verify_task_report()` 만 보고, 그 안의 산출물 검사는
+  `colab-task/2` 전용이라 legacy 선언 목록을 읽지 않는다.
 - ④ 측정 레인의 `SubagentStop` 을 일반화한 `lane-gate-summary.sh` 로. — **완료(2026-09-18).**
   새 훅 파일 없이 `stop --role` 을 역할 집합으로 받고 매처를 `lane-worker|measurement-lane` 으로 넓혔다.
   측정 레인은 red 를 담은 **정합한** 보고로 닫는다 — red 를 재는 것이 그 역할의 산출물이기 때문이고,
