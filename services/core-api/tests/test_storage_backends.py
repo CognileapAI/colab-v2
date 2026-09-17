@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import dataclasses
+import io
 
 import pytest
 
@@ -20,6 +21,28 @@ from colab_core.kernel.config import (
 )
 from colab_core.kernel.s3 import S3Client
 from colab_core.kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
+
+
+@pytest.fixture(autouse=True)
+def deny_real_network_in_storage_units(monkeypatch):
+    """This module is unit-only; missing transport injection must never reach a socket."""
+    def denied(*args, **kwargs):
+        raise AssertionError("storage unit test attempted real network")
+
+    monkeypatch.setattr("urllib.request.urlopen", denied)
+    monkeypatch.setattr("socket.socket.connect", denied)
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_missing_transport_is_blocked_before_external_request(stream):
+    from colab_core.kernel.sigv4 import Credentials
+    client = S3Client(bucket="unit-only", region="ap-northeast-2",
+                      creds=Credentials(access_key="test-only", secret_key="test-only"))
+    with pytest.raises(AssertionError, match="attempted real network"):
+        if stream:
+            client.get_object_stream("not-an-object")
+        else:
+            client.head_object("not-an-object")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -68,6 +91,72 @@ def test_local_relocate_skips_missing_source(tmp_path) -> None:
     st = LocalFilesystemStorage(tmp_path)
     st.relocate(files=[_Row("F1", "uploads/U1/F1")], new_keys={"F1": "uploads/D1/F1"})
     assert not (tmp_path / "uploads/D1/F1").exists()
+
+
+@pytest.mark.parametrize("payload", [b"abc", b"xyz"])
+def test_local_measurement_requires_final_digest_not_equal_size(tmp_path, payload):
+    import hashlib
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="uploads/U1/F1", payload=payload)
+    args = dict(files=[_Row("F1", "uploads/U1/F1")],
+                new_keys={"F1": "uploads/D1/F1"},
+                measurements={"F1": {"digest": hashlib.sha256(b"abc").hexdigest(), "size_bytes": 3}})
+    if payload == b"abc":
+        assert st.relocate(**args) == {"F1"}
+    else:
+        with pytest.raises(OSError, match="measurement"):
+            st.relocate(**args)
+        assert (tmp_path / "uploads/U1/F1").read_bytes() == payload
+        assert not (tmp_path / "uploads/D1/F1").exists()
+
+
+def test_local_measured_move_never_overwrites_existing_destination(tmp_path):
+    import hashlib
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="source", payload=b"abc")
+    st.put(key="destination", payload=b"other")
+    with pytest.raises(FileExistsError):
+        st.relocate(files=[_Row("F1", "source")], new_keys={"F1": "destination"},
+                    measurements={"F1": {"digest": hashlib.sha256(b"abc").hexdigest(), "size_bytes": 3}})
+    assert (tmp_path / "destination").read_bytes() == b"other"
+    assert (tmp_path / "source").read_bytes() == b"abc"
+
+
+def test_local_measured_source_unlink_failure_removes_new_link_and_restores_prior_moves(tmp_path,monkeypatch):
+    import hashlib
+    st=LocalFilesystemStorage(tmp_path)
+    st.put(key="first",payload=b"abc")
+    st.put(key="second",payload=b"abc")
+    path_type=type(tmp_path)
+    unlink=path_type.unlink
+    def fail_second_source(path,*args,**kwargs):
+        if path == tmp_path / "second":
+            raise PermissionError("injected source unlink failure")
+        return unlink(path,*args,**kwargs)
+    monkeypatch.setattr(path_type,"unlink",fail_second_source)
+    measurement={"digest":hashlib.sha256(b"abc").hexdigest(),"size_bytes":3}
+    with pytest.raises(PermissionError,match="source unlink"):
+        st.relocate(files=[_Row("F1","first"),_Row("F2","second")],
+                    new_keys={"F1":"new-first","F2":"new-second"},
+                    measurements={"F1":measurement,"F2":measurement})
+    assert (tmp_path / "first").read_bytes() == (tmp_path / "second").read_bytes() == b"abc"
+    assert not (tmp_path / "new-first").exists()
+    assert not (tmp_path / "new-second").exists()
+
+
+def test_prepared_local_registration_separates_bytes_and_retains_changed_source(tmp_path):
+    import hashlib
+    storage=LocalFilesystemStorage(tmp_path)
+    storage.put(key='source',payload=b'abc')
+    prepared=storage.prepare_registration(files=[_Row('F1','source')],new_keys={'F1':'destination'},
+        measurements={'F1':{'digest':hashlib.sha256(b'abc').hexdigest(),'size_bytes':3}})
+    assert prepared.verified_ids==frozenset({'F1'})
+    assert (tmp_path/'source').read_bytes()==(tmp_path/'destination').read_bytes()==b'abc'
+    (tmp_path/'source').write_bytes(b'xyz')
+    with pytest.raises(OSError,match='identity changed'):
+        prepared.cleanup()
+    assert (tmp_path/'source').read_bytes()==b'xyz'
+    assert (tmp_path/'destination').read_bytes()==b'abc'
 
 
 def test_local_duplicate_preserves_source_and_exact_bytes(tmp_path) -> None:
@@ -122,9 +211,85 @@ def _fake(responses):
 def _client(responses) -> tuple[list, S3Client]:
     from colab_core.kernel.sigv4 import Credentials
     calls, transport = _fake(responses)
+    def stream_transport(method, url, headers, timeout):
+        status, response_headers, body = transport(method, url, headers, b"", timeout)
+        return status, response_headers, io.BytesIO(body)
     return calls, S3Client(bucket="b", region="ap-northeast-2",
                            creds=Credentials(access_key="AK", secret_key="SK"),
-                           transport=transport, backoff_base=0.0)
+                           transport=transport, stream_transport=stream_transport, backoff_base=0.0)
+
+
+@pytest.mark.parametrize("payload", [b"abc", b"xyz"])
+def test_s3_measurement_pins_copy_and_checks_bytes_before_source_delete(payload):
+    import hashlib
+    responses = [
+        (404, {}, b'<Error><Code>NoSuchKey</Code></Error>'),
+        (200, {"content-length": "3", "etag": '"source"'}, b""),
+        (200, {}, b'<CopyObjectResult><ETag>destination</ETag></CopyObjectResult>'),
+        (200, {"content-length": "3", "etag": '"destination"'}, b""),
+        (200, {"etag": '"destination"'}, payload),
+        (200, {}, b"<DeleteResult/>"),
+    ]
+    calls, client = _client(responses)
+    args = dict(files=[_Row("F1", "uploads/U1/F1")], new_keys={"F1": "datasets/D1/F1"},
+                measurements={"F1": {"digest": hashlib.sha256(b"abc").hexdigest(), "size_bytes": 3}})
+    if payload == b"abc":
+        assert S3UploadStorage(client).relocate(**args) == {"F1"}
+        assert b"uploads/U1/F1" in calls[-1][3]
+    else:
+        with pytest.raises(OSError, match="measurement"):
+            S3UploadStorage(client).relocate(**args)
+        assert b"datasets/D1/F1" in calls[-1][3]
+        assert b"uploads/U1/F1" not in calls[-1][3]
+    assert calls[2][2]["x-amz-copy-source-if-match"] == '"source"'
+    assert calls[4][2]["if-match"] == '"destination"'
+
+
+def test_s3_measured_move_does_not_overwrite_existing_destination():
+    calls, client = _client([(200, {"etag": '"other"', "content-length": "5"}, b"")])
+    with pytest.raises(FileExistsError):
+        S3UploadStorage(client).relocate(files=[_Row("F1", "source")], new_keys={"F1": "destination"},
+                                        measurements={"F1": {"digest": "a" * 64, "size_bytes": 3}})
+    assert [call[0] for call in calls] == ["HEAD"]
+
+
+def test_s3_measured_conditional_copy_failure_preserves_source():
+    from colab_core.kernel.s3 import S3Error
+    calls, client = _client([
+        (404, {}, b'<Error><Code>NoSuchKey</Code></Error>'),
+        (200, {"etag": '"source"', "content-length": "3"}, b""),
+        (412, {}, b'<Error><Code>PreconditionFailed</Code></Error>'),
+    ])
+    with pytest.raises(S3Error) as error:
+        S3UploadStorage(client).relocate(files=[_Row("F1", "source")], new_keys={"F1": "destination"},
+                                        measurements={"F1": {"digest": "a" * 64, "size_bytes": 3}})
+    assert error.value.status == 412
+    assert [call[0] for call in calls] == ["HEAD", "HEAD", "PUT"]
+
+
+@pytest.mark.parametrize('changed',[False,True])
+def test_prepared_s3_registration_only_conditionally_deletes_after_commit(changed):
+    import hashlib
+    from colab_core.kernel.s3 import S3Error
+    responses=[(404,{},b'<Error><Code>NoSuchKey</Code></Error>'),
+        (200,{'etag':'"original"','content-length':'3'},b''),
+        (200,{},b'<CopyObjectResult><ETag>copy</ETag></CopyObjectResult>'),
+        (200,{'etag':'"copy"','content-length':'3'},b''),
+        (200,{'etag':'"copy"'},b'abc'),
+        (412,{},b'<Error><Code>PreconditionFailed</Code></Error>') if changed else (204,{},b'')]
+    calls,client=_client(responses)
+    prepared=S3UploadStorage(client).prepare_registration(files=[_Row('F1','source')],new_keys={'F1':'destination'},
+        measurements={'F1':{'digest':hashlib.sha256(b'abc').hexdigest(),'size_bytes':3}})
+    assert prepared.verified_ids==frozenset({'F1'})
+    assert all(call[0]!='DELETE' for call in calls)
+    if changed:
+        with pytest.raises(S3Error) as error:
+            prepared.cleanup()
+        assert error.value.status==412
+    else:
+        prepared.cleanup()
+    assert calls[-1][0]=='DELETE' and calls[-1][2]['if-match']=='"original"'
+    assert len(calls)==6  # No unconditional fallback after 412.
 
 
 _COPY_OK = (200, {}, b"<CopyObjectResult><ETag>\"e\"</ETag></CopyObjectResult>")
@@ -324,9 +489,19 @@ def _stream_fake(responses):
 def _stream_client(responses) -> tuple[list, S3Client]:
     from colab_core.kernel.sigv4 import Credentials
     calls, transport = _stream_fake(responses)
+    def unexpected_regular_transport(*args, **kwargs):
+        raise AssertionError("stream-only fixture attempted regular request")
     return calls, S3Client(bucket="b", region="ap-northeast-2",
                            creds=Credentials(access_key="AK", secret_key="SK"),
+                           transport=unexpected_regular_transport,
                            stream_transport=transport, backoff_base=0.0)
+
+
+def test_stream_only_fixture_rejects_unexpected_regular_request():
+    calls, client = _stream_client([])
+    with pytest.raises(AssertionError, match="stream-only fixture"):
+        client.head_object("not-an-object")
+    assert calls == []
 
 
 def test_s3_open_is_a_get_object_stream() -> None:

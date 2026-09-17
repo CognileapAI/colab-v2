@@ -19,6 +19,7 @@ class MemoryLedger:
         #: 그래서 `accept()` 는 이 사전을 비워 둔 채 시작한다.
         self.file_rows: dict[str, dict] = {}
         self.grid_profiles: dict[str, dict] = {}
+        self.measurements: dict[tuple, str] = {}
 
     # ── 접수(= core-api 몫). 시험에서 전건을 세우기 위해 대역이 대신 해 준다 ──
     def accept(self, *, upload_id: str, lab_id: str, actor_account_id: str,
@@ -90,6 +91,19 @@ class MemoryLedger:
             "carries_lat": carries_lat, "carries_lon": carries_lon,
         }
         self.axes[file_id] = (carries_lat, carries_lon)
+
+    def record_measurement(self, *, file_id: str, upload_id: str,
+                           lab_id: str, measurement: dict) -> str | None:
+        from colab_pipeline.kernel.ids import new_ulid
+
+        row = self.file_rows.get(file_id)
+        if not row or row['lab_id'] != lab_id or row['upload_id'] != upload_id or row['kind'] != '본체':
+            return None
+        key = (file_id, row['storage_key'], upload_id, lab_id, measurement["parser_version"],
+               measurement["digest"], measurement["size_bytes"], measurement["format"])
+        if key not in self.measurements:
+            self.measurements[key] = new_ulid()
+        return self.measurements[key]
 
     def record_detected_format(self, file_id: str, fmt: str | None) -> bool:
         """실물과 같은 값을 돌려준다 — **이번이 처음 적는 것인가**(`〈253〉`)."""

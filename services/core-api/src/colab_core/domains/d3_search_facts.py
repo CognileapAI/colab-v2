@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
 from . import d3_search_changes as changes
+from . import d3_file_measurement as measured
 
 EXTRACTOR_VERSION = 'structured-v1'
 
@@ -110,7 +111,7 @@ def process(session: Session, item: changes.Claim, *, extractor_version: str = E
             if not changes.ack(session,item):
                 raise CommitRejected('expired before tombstone completion')
             return 'deleted'
-        source = load_source(session,item)
+        source = measured.load_source(session,item) if extractor_version == measured.EXTRACTOR else load_source(session,item)
         if source is None:
             changes.fail(session,item,error_code='source_unavailable')
             return 'source_unavailable'
@@ -137,7 +138,7 @@ def read_current(session: Session, dataset_id: str, *, extractor_version: str = 
     for row in rows:
         item = changes.Claim(row['lab_id'],row['source_kind'],row['source_id'],row['dataset_id'],
                              row['source_version'],0,False,0)
-        source = load_source(session,item)
+        source = measured.load_source(session,item) if extractor_version == measured.EXTRACTOR else load_source(session,item)
         if source and source['status']=='ready' and source['source_sha256']==row['source_sha256']:
             out.append(dict(row))
     return out

@@ -66,6 +66,8 @@ def planted(sql):
                                        source_label)
                VALUES (:id, current_lab_id(), :owner, :owner, :source)""",
             {"id": dataset_id, "owner": owner, "source": source_label})
+        sql('''INSERT INTO d4_lineage_revision(lab_id,dataset_id,revision,deleted)
+               VALUES (current_lab_id(),:id,1,false)''',{'id':dataset_id})
         sql("""INSERT INTO d3_dataset_description (dataset_id, lab_id, name, topic, summary)
                VALUES (:id, current_lab_id(), :name, :topic, '심은 요약')""",
             {"id": dataset_id, "name": name, "topic": topic})

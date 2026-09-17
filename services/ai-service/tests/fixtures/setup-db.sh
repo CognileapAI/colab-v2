@@ -28,26 +28,19 @@ psql_owner() { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U "$OWNER" -
 
 # A test fixture must never clear a persistent ontology database, even when its
 # container name was accidentally supplied through CONTAINER.
-if ! docker inspect "$CONTAINER" | python3 -c '
-import json,posixpath,sys
-try:
-    c=json.load(sys.stdin)[0]
-    mounts=c["HostConfig"].get("Tmpfs") or {}
-    env=dict(v.split("=",1) for v in c["Config"]["Env"] if "=" in v)
-    data=posixpath.normpath(env.get("PGDATA",""))
-    safe="/var/lib/postgresql/data" in mounts and (data=="/var/lib/postgresql/data" or data.startswith("/var/lib/postgresql/data/"))
-except (ValueError,KeyError,TypeError,IndexError):
-    safe=False
-sys.exit(0 if safe else 1)
-'; then
+if ! docker inspect "$CONTAINER" | python3 "$HERE/disposable_db.py"; then
   echo "ONTOLOGY_PROTECTED: test setup requires disposable tmpfs PGDATA" >&2
   exit 65
 fi
 
 # ① 소유자 롤 · 스키마
-psql_su -q -c "SET client_min_messages=warning; DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null 2>&1
+psql_su -q -c "SET client_min_messages=warning; DROP SCHEMA IF EXISTS knowledge CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null 2>&1
 psql_su -c "DO \$\$BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${OWNER}') THEN CREATE ROLE ${OWNER} LOGIN NOSUPERUSER NOBYPASSRLS; END IF; END\$\$;" >/dev/null
 psql_su -c "ALTER SCHEMA public OWNER TO ${OWNER}; GRANT ALL ON SCHEMA public TO ${OWNER};" >/dev/null
+psql_su -v owner="$OWNER" <<'SQL' >/dev/null
+SELECT format('GRANT CREATE ON DATABASE %I TO %I', current_database(), :'owner')
+\gexec
+SQL
 psql_owner < "$REPO/db/ai/schema.sql" >/dev/null
 
 # ② 시드 — 소유자 롤로 넣는다. 시험이 세는 수(22 · 49 · 19)의 출처가 여기다.
@@ -75,6 +68,24 @@ SELECT format('DO $chk$ BEGIN RAISE EXCEPTION %L; END $chk$', :'app' || ' 에 SE
   FROM information_schema.role_table_grants
  WHERE grantee = :'app' AND privilege_type <> 'SELECT'
  LIMIT 1
+\gexec
+SQL
+
+# Separate test-only writer. D10's existing role never receives this credential.
+psql_su <<'SQL' >/dev/null
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='colab_knowledge_writer') THEN
+    CREATE ROLE colab_knowledge_writer LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'knowledge-test-only';
+  END IF;
+END $$;
+GRANT USAGE ON SCHEMA public TO colab_knowledge_writer;
+GRANT SELECT ON public.d9_method_term, public.d9_topic_synonym, public.d9_place_alias,
+  public.d9_concept, public.d9_concept_edge TO colab_knowledge_writer;
+SELECT 'GRANT USAGE ON SCHEMA knowledge TO colab_knowledge_writer'
+ WHERE EXISTS (SELECT 1 FROM pg_namespace WHERE nspname='knowledge')
+\gexec
+SELECT 'GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA knowledge TO colab_knowledge_writer'
+ WHERE EXISTS (SELECT 1 FROM pg_namespace WHERE nspname='knowledge')
 \gexec
 SQL
 

@@ -426,6 +426,9 @@ class IngestionService:
             r = run_file(f.path, workdir=work.workdir, grid_dir=grid_dir, kind=work.kind,
                          previews_root=work.previews_root)
             results[f.file_id] = r
+            if r.measurement is not None:
+                self._ledger.record_measurement(file_id=f.file_id, upload_id=work.upload_id,
+                                                lab_id=work.lab_id, measurement=r.measurement)
             out = res.files[f.file_id]
             out.status, out.failures = r.status, list(r.failures)
             out.input_cog_class = r.input_cog_class
@@ -756,6 +759,33 @@ class SqlLedger:
                SET carries_lat = EXCLUDED.carries_lat, carries_lon = EXCLUDED.carries_lon
         """), {"id": file_id, "lab": lab_id, "uid": upload_id, "name": file_name,
                "key": storage_key, "lat": carries_lat, "lon": carries_lon})
+
+    def record_measurement(self, *, file_id: str, upload_id: str,
+                           lab_id: str, measurement: dict) -> str | None:
+        from sqlalchemy import text
+
+        params = {"id": new_ulid(), "file": file_id, "upload": upload_id, "lab": lab_id,
+                  "parser": measurement["parser_version"], "format": measurement["format"],
+                  "digest": measurement["digest"], "size": measurement["size_bytes"]}
+        # Storage identity comes from the D5 row, never a caller's path or metadata.
+        row = self._s.execute(text("""
+            INSERT INTO d5_file_measurement
+              (id,lab_id,upload_id,upload_file_id,parser_version,storage_key,
+               source_digest,byte_size,measured_format)
+            SELECT :id,f.lab_id,f.upload_id,f.id,:parser,f.storage_key,:digest,:size,:format
+              FROM d5_upload_file f WHERE f.id=:file AND f.lab_id=:lab
+                AND f.upload_id=:upload AND f.kind='본체'
+            ON CONFLICT DO NOTHING RETURNING id
+        """), params).scalar_one_or_none()
+        if row is not None:
+            return str(row)
+        row = self._s.execute(text("""
+            SELECT m.id FROM d5_file_measurement m JOIN d5_upload_file f ON f.id=m.upload_file_id
+             WHERE m.upload_file_id=:file AND m.upload_id=:upload AND m.lab_id=:lab
+               AND m.storage_key=f.storage_key AND m.source_digest=:digest
+               AND m.byte_size=:size AND m.parser_version=:parser AND m.measured_format=:format
+        """), params).scalar_one_or_none()
+        return str(row) if row is not None else None
 
     def record_detected_format(self, file_id: str, fmt: str | None) -> bool:
         """돌려주는 것은 **이번이 처음 적는 것인가** 다 (`〈253〉`).

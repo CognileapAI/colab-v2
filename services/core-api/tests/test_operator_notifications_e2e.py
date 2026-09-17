@@ -113,7 +113,11 @@ def test_two_labs_api_export_daily_reaches_only_activity(live_client, sql, opera
         assert process(event_id, remote, sender, report_at+dt.timedelta(seconds=i*2)) == 'sent'
     jobs.reconcile(archive, remote)
     assert not posts['development']
-    body = '\n'.join(posts['activity'])
+    # Transport chunks can split a name. First prove every exact chunk arrived,
+    # then remove their two-line envelopes and restore the original body order.
+    assert sorted(posts['activity']) == sorted(part['text'] for part in parts)
+    received = {text.split('\n', 2)[1]: text.split('\n', 2)[2] for text in posts['activity']}
+    body = ''.join(received[part['text'].split('\n', 2)[1]] for part in sorted(parts, key=lambda part: part['part']))
     assert '일일보고 연구실 A' in body and '일일보고 연구실 B' in body
     assert LAB_A in body and LAB_B in body
     assert '집계 완료' in body

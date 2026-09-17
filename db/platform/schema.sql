@@ -1060,6 +1060,18 @@ CREATE INDEX d4_lineage_edge_lab_idx ON d4_lineage_edge (lab_id);
 
 -- 기록 없음 표시 (정본 §4.2). 부모를 모르는 채 등록한 표시이고, 관계가 붙으면 지운다.
 -- 근거 없는 추측을 사실처럼 기록하지 않기 위한 자리다.
+CREATE TABLE d4_lineage_revision (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  revision bigint NOT NULL CHECK (revision>0),
+  deleted boolean NOT NULL,
+  PRIMARY KEY (lab_id,dataset_id)
+);
+ALTER TABLE d4_lineage_revision ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d4_lineage_revision FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d4_lineage_revision FOR ALL
+  USING (lab_id=current_lab_id()) WITH CHECK (lab_id=current_lab_id());
+
 CREATE TABLE d4_lineage_unknown (
   dataset_id      ulid        PRIMARY KEY REFERENCES d3_dataset(id),
   lab_id          ulid        NOT NULL REFERENCES d1_lab(id),
@@ -1884,6 +1896,169 @@ CREATE POLICY lab_boundary ON d3_search_refresh_run FOR ALL USING (
 );
 
 -- Zero selections and never-run selection are different states.
+-- D3-owned source processing fences; authenticated app adapters own issuance.
+CREATE TABLE d3_knowledge_fence (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  generation bigint NOT NULL CHECK (generation>0),
+  source_revision bigint NOT NULL CHECK (source_revision>0),
+  deleted boolean NOT NULL,
+  PRIMARY KEY (lab_id,dataset_id,source_kind,source_id)
+);
+ALTER TABLE d3_knowledge_fence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_fence FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_fence FOR ALL
+  USING (lab_id=current_lab_id()) WITH CHECK (lab_id=current_lab_id());
+CREATE TABLE d3_knowledge_deletion_grant (
+  grant_hash text PRIMARY KEY CHECK (grant_hash ~ '^[0-9a-f]{64}$'),
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  source_revision bigint NOT NULL CHECK (source_revision>0),
+  generation bigint NOT NULL CHECK (generation>0),
+  payload_digest text NOT NULL CHECK (payload_digest ~ '^[0-9a-f]{64}$'),
+  expires_at timestamptz NOT NULL
+);
+ALTER TABLE d3_knowledge_deletion_grant ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_deletion_grant FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_deletion_grant FOR ALL
+  USING (lab_id=current_lab_id() AND current_account_id() IS NULL)
+  WITH CHECK (lab_id=current_lab_id() AND current_account_id() IS NULL);
+
+CREATE TABLE d3_knowledge_source (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL REFERENCES d3_dataset(id) ON DELETE CASCADE,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  generation bigint NOT NULL CHECK (generation>0),
+  command jsonb NOT NULL CHECK (jsonb_typeof(command)='object' AND NOT command ? 'grant'),
+  PRIMARY KEY (lab_id,source_kind,source_id)
+);
+ALTER TABLE d3_knowledge_source ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_source FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_source FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (SELECT 1 FROM d3_file f JOIN d3_dataset d ON d.id=f.dataset_id
+    WHERE f.id=source_id AND f.dataset_id=d3_knowledge_source.dataset_id
+      AND f.lab_id=d3_knowledge_source.lab_id AND d.deleted_at IS NULL)
+);
+CREATE TABLE d3_knowledge_grant (
+  grant_hash text PRIMARY KEY CHECK (grant_hash ~ '^[0-9a-f]{64}$'),
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL REFERENCES d3_dataset(id) ON DELETE CASCADE,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  account_id ulid NOT NULL REFERENCES d1_account(id),
+  session_version bigint NOT NULL CHECK (session_version>0),
+  generation bigint NOT NULL CHECK (generation>0),
+  payload_digest text NOT NULL CHECK (payload_digest ~ '^[0-9a-f]{64}$'),
+  expires_at timestamptz NOT NULL
+);
+ALTER TABLE d3_knowledge_grant ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_grant FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_grant FOR ALL USING (
+  lab_id=current_lab_id() AND account_id=current_account_id() AND EXISTS (
+    SELECT 1 FROM d3_knowledge_source s WHERE s.lab_id=d3_knowledge_grant.lab_id
+      AND s.source_kind=d3_knowledge_grant.source_kind AND s.source_id=d3_knowledge_grant.source_id
+      AND s.dataset_id=d3_knowledge_grant.dataset_id)
+);
+
+CREATE TABLE d3_knowledge_dependency (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  lineage_revision bigint NOT NULL CHECK (lineage_revision>0),
+  PRIMARY KEY (lab_id,source_kind,source_id)
+);
+ALTER TABLE d3_knowledge_dependency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_dependency FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_dependency FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (SELECT 1 FROM d3_file f JOIN d3_dataset d ON d.id=f.dataset_id
+    WHERE f.id=source_id AND f.dataset_id=d3_knowledge_dependency.dataset_id
+      AND f.lab_id=d3_knowledge_dependency.lab_id AND d.deleted_at IS NULL)
+);
+
+CREATE TABLE d3_knowledge_projection (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('evidence','file')),
+  source_id ulid NOT NULL,
+  receipt_id ulid NOT NULL,
+  publication_sequence bigint NOT NULL CHECK (publication_sequence>0),
+  payload_digest text NOT NULL CHECK (payload_digest ~ '^[0-9a-f]{64}$'),
+  source_revision bigint NOT NULL CHECK (source_revision>0),
+  processing_generation bigint NOT NULL CHECK (processing_generation>0),
+  ontology_release text NOT NULL CHECK (ontology_release ~ '^[0-9a-f]{64}$'),
+  snapshot_id ulid REFERENCES d3_search_fact_snapshot(id) ON DELETE SET NULL,
+  PRIMARY KEY (lab_id,dataset_id,source_kind,source_id)
+);
+ALTER TABLE d3_knowledge_projection ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_knowledge_projection FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_knowledge_projection FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (SELECT 1 FROM d3_file f JOIN d3_dataset d ON d.id=f.dataset_id
+    WHERE f.id=source_id AND f.dataset_id=d3_knowledge_projection.dataset_id
+      AND f.lab_id=d3_knowledge_projection.lab_id AND d.deleted_at IS NULL)
+);
+
+CREATE TABLE d5_file_measurement (
+  id ulid PRIMARY KEY,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  upload_id ulid NOT NULL REFERENCES d5_upload(id) ON DELETE CASCADE,
+  upload_file_id ulid NOT NULL REFERENCES d5_upload_file(id) ON DELETE CASCADE,
+  issuer text NOT NULL DEFAULT 'pipeline-worker' CHECK (issuer='pipeline-worker'),
+  parser_version text NOT NULL CHECK (parser_version='file-measurement-v1'),
+  storage_key text NOT NULL CHECK (length(storage_key)>0),
+  source_digest text NOT NULL CHECK (source_digest ~ '^[0-9a-f]{64}$'),
+  byte_size bigint NOT NULL CHECK (byte_size>=0),
+  measured_format text NOT NULL CHECK (measured_format IN ('npy','netcdf','tif','hdf5')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (upload_file_id,storage_key,source_digest,byte_size,parser_version)
+);
+ALTER TABLE d5_file_measurement ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_file_measurement FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_file_measurement FOR ALL
+ USING (lab_id=current_lab_id())
+ WITH CHECK (lab_id=current_lab_id() AND EXISTS (
+   SELECT 1 FROM d5_upload_file f WHERE f.id=upload_file_id
+     AND f.upload_id=d5_file_measurement.upload_id AND f.lab_id=d5_file_measurement.lab_id
+     AND f.storage_key=d5_file_measurement.storage_key AND f.kind='본체'));
+CREATE FUNCTION d5_measurement_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'file measurement receipts are immutable' USING ERRCODE='23514';
+END $$;
+CREATE TRIGGER d5_measurement_immutable BEFORE UPDATE ON d5_file_measurement
+ FOR EACH ROW EXECUTE FUNCTION d5_measurement_immutable();
+
+CREATE TABLE d3_file_measurement (
+  file_id ulid PRIMARY KEY REFERENCES d3_file(id) ON DELETE CASCADE,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL REFERENCES d3_dataset(id) ON DELETE CASCADE,
+  file_revision bigint NOT NULL CHECK (file_revision>0),
+  storage_key text NOT NULL CHECK (length(storage_key)>0),
+  receipt_id ulid NOT NULL,
+  issuer text NOT NULL CHECK (issuer='pipeline-worker'),
+  parser_version text NOT NULL CHECK (parser_version='file-measurement-v1'),
+  source_digest text NOT NULL CHECK (source_digest ~ '^[0-9a-f]{64}$'),
+  byte_size bigint NOT NULL CHECK (byte_size>=0),
+  measured_format text NOT NULL CHECK (measured_format IN ('npy','netcdf','tif','hdf5'))
+);
+ALTER TABLE d3_file_measurement ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_file_measurement FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_file_measurement FOR ALL
+ USING (lab_id=current_lab_id() AND EXISTS (
+   SELECT 1 FROM d3_file f JOIN d3_dataset d ON d.id=f.dataset_id
+    WHERE f.id=file_id AND f.dataset_id=d3_file_measurement.dataset_id
+      AND f.lab_id=d3_file_measurement.lab_id AND d.deleted_at IS NULL));
+CREATE FUNCTION d3_measurement_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'registered measurement snapshots are immutable' USING ERRCODE='23514';
+END $$;
+CREATE TRIGGER d3_measurement_immutable BEFORE UPDATE ON d3_file_measurement
+ FOR EACH ROW EXECUTE FUNCTION d3_measurement_immutable();
+
 CREATE TABLE d3_search_selection_receipt (
   lab_id ulid NOT NULL REFERENCES d1_lab(id),
   binding_id ulid NOT NULL REFERENCES d3_search_ontology_binding(id) ON DELETE CASCADE,

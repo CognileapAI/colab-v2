@@ -210,6 +210,7 @@ def delete_dataset(request: Request, datasetId: str,
     「참조 있음」으로 읽어 실패한 바이트를 영영 못 줍는다. `representative_file_id` 는
     FK `ON DELETE SET NULL` 이 되돌린다.
     """
+    d4_lineage.lock_lab_for_lineage_write(db)
     core = _deletable(db, subject, datasetId)
     dataset_id = Ulid(datasetId)
 
@@ -227,6 +228,7 @@ def delete_dataset(request: Request, datasetId: str,
     if not d3_catalog.tombstone_dataset(db, dataset_id=dataset_id,
                                         actor_id=subject.account_id):
         raise errors.not_found()
+    d4_lineage.mark_dataset_deleted(db,dataset_id)
     d2_access.close_pending_access_requests(db, dataset_id=dataset_id,
                                             decider_id=subject.account_id,
                                             reason=ACCESS_REQUEST_CLOSED_REASON)

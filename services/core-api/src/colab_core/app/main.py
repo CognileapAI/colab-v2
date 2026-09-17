@@ -73,7 +73,8 @@ def create_app(settings: Settings | None = None, *, test_static_subjects: bool =
     async def _no_store_auth(request: Request, call_next):
         response = await call_next(request)
         if (request.url.path.startswith(f"{API_PREFIX}/sessions")
-                or request.url.path == f"{API_PREFIX}/me/password"):
+                or request.url.path == f"{API_PREFIX}/me/password"
+                or request.url.path.startswith('/internal/knowledge/')):
             response.headers["Cache-Control"] = "no-store"
         return response
     engine = make_engine(settings.database_url)
@@ -192,6 +193,8 @@ def create_app(settings: Settings | None = None, *, test_static_subjects: bool =
                    #   파일을 가른다 — 조회와 파괴를 한 파일이 들면 두 레인이 거기서 만난다.
                    deletion.router):
         app.include_router(router, prefix=API_PREFIX)
+    from .routes import knowledge
+    knowledge.configure(app)
     not_implemented.register(app, prefix=API_PREFIX)
 
     @app.exception_handler(HTTPException)

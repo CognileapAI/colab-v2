@@ -10,6 +10,9 @@
 from __future__ import annotations
 
 import hashlib
+import copy
+import shutil
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -45,6 +48,8 @@ class PipelineResult:
     input_path: Path
     status: str                      # "SUCCESS" | "FAILURE"
     metadata: AutoMetadata | None = None
+    parsed_metadata: AutoMetadata | None = None
+    measurement: dict | None = None
     # Map conversion still fails; registration may retain the parsed file (D.6-4).
     coordinates_unavailable: bool = False
     input_cog_class: str | None = None   # 입력 tif 의 3부류 판정
@@ -95,7 +100,7 @@ def _grid_digest(grid_dir: Path | None, used_reference_grid: bool) -> str:
 
 
 def map_tile_key(source: Path, *, grid_dir: Path | None, used_reference_grid: bool,
-                 kind: str) -> str:
+                 kind: str, source_digest: str | None = None) -> str:
     """이 산출물의 자리를 정하는 **전용 키** — 재료는 파이프라인이 실제로 가진 것뿐이다.
 
     렌더 산출물의 키 규칙(`viz-render` `render_cache_key`)을 **부르지 않는다** —
@@ -105,7 +110,7 @@ def map_tile_key(source: Path, *, grid_dir: Path | None, used_reference_grid: bo
     if kind not in OVERVIEW_RESAMPLING:
         raise ValueError(f"kind 는 categorical|continuous — 받은 값: {kind}")
     return storage_layout.map_tile_content_key(
-        sourceDigest=file_digest(source),
+        sourceDigest=source_digest if source_digest is not None else file_digest(source),
         sourceByteSize=Path(source).stat().st_size,
         gridDigest=_grid_digest(grid_dir, used_reference_grid),
         conversionKind=kind,
@@ -179,6 +184,31 @@ assert set(COG_BUILDERS) <= set(RENDERABLE_FORMATS)
 def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
              kind: str = storage_layout.MAP_TILE_CONVERSION_KIND,
              previews_root: Path | None = None) -> PipelineResult:
+    """Pin detection, digest, parsing and conversion to this invocation's bytes.
+
+    The snapshot is not proof that eventual registered storage has these bytes;
+    registration independently verifies the final destination before binding.
+    """
+    path,workdir=Path(path),Path(workdir)
+    workdir.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='measurement-',dir=workdir) as owned:
+        snapshot=Path(owned)/path.name
+        try:
+            shutil.copyfile(path,snapshot)
+        except OSError as exc:
+            return _fail(PipelineResult(input_path=path,status='FAILURE'),f'감지 실패: {type(exc).__name__}')
+        snapshot.chmod(0o400)
+        digest=file_digest(snapshot)
+        result=_run_file(snapshot,workdir=workdir,grid_dir=grid_dir,kind=kind,
+                         previews_root=previews_root,source_digest=digest)
+        result.input_path=path
+        if result.artifact is not None:
+            result.artifact.source_input=path
+        return result
+
+
+def _run_file(path: Path, *, workdir: Path, grid_dir: Path | None,
+              kind: str, previews_root: Path | None, source_digest: str) -> PipelineResult:
     """`previews_root` 가 주어지면 산출물은 **미리보기 산출물 자리**에 놓인다.
 
     ⚠ 없으면 예전처럼 `workdir` 임시 자리다 — 그 상태는 「자리를 안 정한 것」이고,
@@ -199,6 +229,11 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
     except (ParseError, Exception) as e:
         return _fail(res, f"파싱 실패({det.format}): {e}")
     meta = res.metadata
+    res.parsed_metadata=copy.deepcopy(meta)
+    measured_format={'NumPy':'npy','NetCDF':'netcdf','GeoTIFF':'tif','HDF5':'hdf5'}.get(det.format)
+    if measured_format is not None:
+        res.measurement={'parser_version':'file-measurement-v1','format':measured_format,
+                         'digest':source_digest,'size_bytes':path.stat().st_size}
 
     if det.format == "HDF5" or (det.format == "GRIB" and not meta.crs_embedded):
         res.notes.append(f"{det.format}는 원본을 viz-render가 직접 읽는다 — COG 산출 없음")
@@ -240,7 +275,8 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
     if previews_root is not None:
         try:
             res.tile_content_key = map_tile_key(
-                path, grid_dir=grid_dir, used_reference_grid=grid is not None, kind=kind)
+                path, grid_dir=grid_dir, used_reference_grid=grid is not None, kind=kind,
+                source_digest=source_digest)
         except ValueError as e:
             return _fail(res, f"지도 타일 내용 키를 지을 수 없다: {e}")
         out_path = storage_layout.preview_path(previews_root, res.tile_content_key, ".tif")

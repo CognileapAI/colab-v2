@@ -22,11 +22,15 @@ from typing import BinaryIO, Protocol
 
 # 값 모양은 kernel 이 정의하고 여기서 이름만 내놓는다 — 층 규칙(ports > kernel)상 kernel 이
 # ports 를 볼 수 없어 반대 방향으로는 못 두고, 두 곳에 적으면 필드가 갈린다.
-from ..kernel.storage_backends import PresignedGet  # noqa: F401 — Port 의 반환 모양
+from ..kernel.storage_backends import PresignedGet, PreparedRegistration  # noqa: F401 — Port 의 반환 모양
 from .ingestion import UploadFileRecord
 
 
 class UploadStoragePort(Protocol):
+    def prepare_registration(self, *, files: Sequence[UploadFileRecord], new_keys: dict[str,str],
+                             measurements: dict[str,dict]) -> PreparedRegistration:
+        """Verify destination bytes while preserving originals until the owning DB commit."""
+        ...
     def put(self, *, key: str, payload: bytes) -> None:
         """키 자리에 바이트를 놓는다. 이미 있으면 덮어쓴다."""
         ...
@@ -46,12 +50,13 @@ class UploadStoragePort(Protocol):
         ...
 
     def relocate(self, *, files: Sequence[UploadFileRecord],
-                 new_keys: dict[str, str]) -> None:
+                 new_keys: dict[str, str], measurements: dict[str, dict] | None = None) -> set[str]:
         """등록 전환·후주입에서 바이트를 데이터셋 자리로 옮긴다.
 
         모든 판정이 끝난 뒤 마지막에 불린다. 원본이 이미 없으면 그 파일은
         건너뛴다(원장은 새 자리를 적는다 — 두 자리를 만들지 않는다).
         도중 실패하면 옮긴 것을 되돌리고 예외를 다시 던진다.
+        측정 근거가 있으면 최종 바이트 SHA256/크기를 대조한다. 반환값은 검증한 file ID만이다.
         """
         ...
 

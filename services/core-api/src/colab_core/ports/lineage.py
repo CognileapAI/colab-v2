@@ -40,3 +40,14 @@ class LineageSummary:
 
 class LineageSummaryPort(Protocol):
     def summaries(self, dataset_ids: list[Ulid]) -> dict[str, LineageSummary]: ...
+
+
+@dataclasses.dataclass(frozen=True)
+class LineageRevision:
+    dataset_id: str
+    revision: int
+    deleted: bool
+
+
+class LineageRevisionPort(Protocol):
+    def revisions(self, dataset_ids: list[Ulid]) -> dict[str, LineageRevision]: ...

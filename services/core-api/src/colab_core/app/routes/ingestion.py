@@ -33,7 +33,7 @@ from ...kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
 from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
-from ..deps import current_subject, scoped_db
+from ..deps import current_subject, scoped_db, registration_db, defer_registration_cleanup
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, enforce_parent_level_rule,
                       is_blank_summary, MISSING_CATEGORY_MESSAGE, validate_access_state,
                       validate_human_metadata, warn_if_level_mismatch)
@@ -697,7 +697,7 @@ def _parse_parents(raw: Any) -> list[dict]:
 @router.post("/datasets", name="createDataset", status_code=201)
 def create_dataset(request: Request, body: dict = None,
                    subject: Subject = Depends(current_subject),
-                   db: Session = Depends(scoped_db)) -> dict:
+                   db: Session = Depends(registration_db,scope='function')) -> dict:
     """**등록 전환**이다 — 「새 데이터셋을 만든다」가 아니다.
 
     한 요청 = 한 트랜잭션이라 **전환 + 파일 + 계보 + 프로젝트가 통째로 서거나 통째로 없다**
@@ -707,6 +707,7 @@ def create_dataset(request: Request, body: dict = None,
     (불변규칙 1) DB 는 새 ULID 를 넣어도 아무 말 안 한다 — 지키는 것은 이 코드와
     `tests/test_dataset_registration.py` 의 단언뿐이다 (`NB-A`).
     """
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_upload_edit(db, subject)
     if not isinstance(body, dict):
         raise errors.bad_request("요청 본문이 객체가 아니다.")
@@ -815,6 +816,7 @@ def create_dataset(request: Request, body: dict = None,
         # 「없다」를 빈 문자열로 적으면 화면이 그것을 값으로 그린다.
         file_extension=(extensions[0] or None) if extensions else None,
     )
+    d4_lineage.initialize_dataset(db,dataset_id)
 
     # ①-a **사람이 적은 값을 먼저 쓴다** (`#62` · 정본 `VAL-006` · `〈138〉`).
     #
@@ -914,7 +916,19 @@ def create_dataset(request: Request, body: dict = None,
         d6_project.link_dataset(db, project_id=pid, dataset_id=dataset_id)
 
     # ⑤ 바이트 — **판정이 다 끝난 뒤에** 옮긴다. 앞에서 실패하면 바이트는 그대로다.
-    _storage(request).relocate(files=files, new_keys=new_keys)
+    # Canonical per-file proof is separate from the aggregate/human autometa above.
+    measurements = ledger.measurements(upload_id)
+    if measurements:
+        from ...domains import d3_file_measurement
+        prepared = _storage(request).prepare_registration(files=files, new_keys=new_keys,
+            measurements={fid:{'digest':proof.digest,'size_bytes':proof.size_bytes}
+                          for fid,proof in measurements.items()})
+        defer_registration_cleanup(db,prepared)
+        for fid in prepared.verified_ids:
+            d3_file_measurement.bind(db,receipt=measurements[fid],dataset_id=dataset_id,
+                                     storage_key=new_keys[fid])
+    else:
+        _storage(request).relocate(files=files, new_keys=new_keys)
     # ⑥ **올린 일이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
     #    등록이 다 끝난 뒤에 적는다 — 위에서 떨어진 요청은 데이터셋을 만들지 않았으므로
     #    활동도 없다(활동만 남으면 목록이 없는 데이터셋을 가리킨다).
