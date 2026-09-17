@@ -16,8 +16,10 @@ from __future__ import annotations
 
 from conftest import (
     ACC_A_PROF,
+    ACC_B_PROF,
     DS_A1,
     LAB_A,
+    LAB_B,
     _cleanup_scope,
     purge_test_rows,
     snapshot_test_rows,
@@ -95,3 +97,72 @@ def test_purge_keeps_the_seed_rows_it_did_not_make(session_factory, sql) -> None
     assert _count(sql, "SELECT count(*) AS n FROM d3_file") == 3
     assert _count(sql, "SELECT count(*) AS n FROM d6_project") == 1
     assert _count(sql, "SELECT count(*) AS n FROM d4_lineage_edge") == 1
+
+
+#: 시험이 만드는 계정 한 벌. 역할·스위치까지 함께 넣는 이유는 아래 주석에 적었다.
+_NEW_ACCOUNT = "0000000000000000000000ACX1"
+
+
+def test_purge_removes_the_account_rows_a_test_made(session_factory, sql) -> None:
+    """계정 계열도 **되돌리기가 줍는다** — 시험이 손으로 지우지 않는다.
+
+    왜 있는가 (실측 2026-09-17 · 이슈 #47 · `service-tests-core-api` 비결정 red):
+    `d1_account` 계열이 `_CLEANUP` 에 없어서 계정을 만드는 시험은 되돌리기를 `try/finally` 로
+    직접 적었고(`test_lab_members.py` 의 `_purge_member`), 계정 생성이 중간에 실패하면 그
+    `finally` 가 아예 서지 않아 A 연구실에 계정이 영구히 남았다. 남은 한 행은 곧바로
+    `memberCount`(`d1_identity.py` 의 `count(*) FROM d1_account`) 를 세는 다음 파일의 오라클을
+    틀리게 한다 — 내부 worker 수가 바뀌면 오염원과 피해자의 동거 여부가 바뀌어 판정이 흔들린다.
+
+    양성·음성을 한 시험에서 함께 센다 — 되돌리기 **전 3**(시드 2 ＋ 시험 1) · **후 2**.
+    「대상이 0 건이라 통과」 형태를 쓰지 않는다.
+    """
+    marker = session_factory()
+    try:
+        marker.begin()
+        _cleanup_scope(marker)
+        snapshot = snapshot_test_rows(marker)
+    finally:
+        marker.rollback()
+        marker.close()
+
+    # ⚠ 스위치 줄까지 넣는다. `d2_permission_switch` 는 `d1_account` 를 **CASCADE 없이**
+    #   참조하므로(`db/platform/schema.sql` 앵커 `CREATE TABLE d2_permission_switch`), 이 표가
+    #   되돌리기에서 빠지면 `d1_account` DELETE 가 FK 로 막히고 그 순간 되돌리기 **트랜잭션
+    #   전체**가 무효가 된다 — 삭제도 `_RESTORE` 도 함께 사라진다(2026-09-13 에 겪은 형태다).
+    sql("""INSERT INTO d1_account (id, lab_id, name, email)
+             VALUES (:id, current_lab_id(), '되돌리기 시험 계정', 'purge-acx1@example.com')""",
+        {"id": _NEW_ACCOUNT}, account_id=ACC_A_PROF, lab_id=LAB_A)
+    sql("""INSERT INTO d2_member_role (account_id, lab_id, role)
+             VALUES (:id, current_lab_id(), '연구원')""",
+        {"id": _NEW_ACCOUNT}, account_id=ACC_A_PROF, lab_id=LAB_A)
+    sql("""INSERT INTO d2_permission_switch (account_id, lab_id, switch, enabled)
+             VALUES (:id, current_lab_id(), '승인 위임', true)""",
+        {"id": _NEW_ACCOUNT}, account_id=ACC_A_PROF, lab_id=LAB_A)
+
+    assert _count(sql, "SELECT count(*) AS n FROM d1_account") == 3, \
+        "되돌리기 전에는 시드 2 ＋ 시험 1 이어야 한다 — 대상 0 건을 통과로 세지 않는다."
+    assert _count(sql, "SELECT count(*) AS n FROM d2_member_role") == 3
+    assert _count(sql, "SELECT count(*) AS n FROM d2_permission_switch") == 5
+
+    session = session_factory()
+    try:
+        session.begin()
+        _cleanup_scope(session)
+        purge_test_rows(session, snapshot)
+        session.commit()
+    finally:
+        session.close()
+
+    assert _count(sql, "SELECT count(*) AS n FROM d1_account WHERE id = :id",
+                  {"id": _NEW_ACCOUNT}) == 0, \
+        "시험이 만든 계정이 남았다 — 다음 파일의 `memberCount` 오라클이 이 행을 함께 센다."
+    assert _count(sql, "SELECT count(*) AS n FROM d1_account") == 2, \
+        "A 연구실 계정 수가 시드 2 로 돌아오지 않았다."
+    assert _count(sql, "SELECT count(*) AS n FROM d2_member_role") == 2, \
+        "역할 줄이 남았다 — 계정 DELETE 가 FK 로 막히는 자리다."
+    assert _count(sql, "SELECT count(*) AS n FROM d2_permission_switch") == 4, \
+        "스위치 줄이 남았다 — 계정 DELETE 가 FK 로 막히는 자리다."
+    # 시드는 지우지 않는다. 남는 것이 없으면 오라클도 없다(A 2건 ＋ 경계 밖 B 1건 = 시드 3건).
+    assert sql("SELECT count(*) AS n FROM d1_account", None,
+               account_id=ACC_B_PROF, lab_id=LAB_B)[0]["n"] == 1, \
+        "되돌리기가 연구실 경계를 넘어 B 연구실 시드 계정을 지웠다."
