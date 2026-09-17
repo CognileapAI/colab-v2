@@ -17,7 +17,8 @@ ensure_gate_venv() { # $1 = red() 를 부를 게이트 이름 (메시지용)
     # 병렬 실행 대비 — 같은 venv 를 둘이 동시에 지었다 지우면 「도구 없음」 red 가 난다.
     # 잠금을 잡은 뒤 한 번 더 본다(그 사이 다른 쪽이 다 지어 놨을 수 있다).
     . "$REPO_ROOT/gates/tools/_lock.sh"
-    gate_lock_fd "$venv"
+    # 잠그지 못하면 red(준비 · 78) 다 — 잠금 없이 venv 를 지었다 지우지 않는다(`_lock.sh` 2026-09-18 개정).
+    gate_lock_fd "$venv" "$gate" || return "$GATE_LOCK_READINESS_EXIT"
     if [ -x "$GATE_PY" ] && [ "$(cat "$stamp" 2>/dev/null || true)" = "$want" ]; then
       gate_unlock_fd; return 0
     fi

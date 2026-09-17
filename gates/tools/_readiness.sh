@@ -26,6 +26,19 @@ readiness_oneline() { # $1=원문 $2=최대 바이트
   else printf '%s' "$t" | tr -d '\200-\277\300-\377'; fi
 }
 
+# 환경 대기 계열(`cause=` 없는 표식)을 내는 **한 자리**. `_pg.sh` 의 `pg_readiness_report` 와
+# `_lock.sh` 가 둘 다 여기를 부른다 — 표식 문자열을 두 벌로 두면 한쪽이 언젠가 다른 말을 한다.
+readiness_env_wait() { # $1=게이트 $2=기다린 대상 $3=상한 $4=실경과 $5=사유
+  local gate="$1" what="$2" limit="$3" elapsed="$4" detail="$5"
+  printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=%s|elapsed=%s|detail=%s\n' \
+    "$gate" "$what" "$limit" "$elapsed" "$(readiness_oneline "$detail" 400)"
+  echo "::error::$gate red(준비) — **검사기가 돌지 못했다.** 판정 red 가 아니다.
+   기다린 것: $what
+   선언 상한: $limit · 실경과: $elapsed
+   사유: $detail
+   ⚠ 준비 실패도 **red 다.** 상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다."
+}
+
 readiness_undeclared_input() { # $1=게이트 $2=선언되지 않은 것 $3=사유
   local gate="$1" missing="$2" detail="$3"
   printf '::gate-readiness-failure::gate=%s|cause=입력미선언|missing=%s|detail=%s\n' \
