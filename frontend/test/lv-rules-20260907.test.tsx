@@ -133,6 +133,8 @@ async function openLineage(sources: UploadSources, selfLevel: string) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
   await change(screen.getByTestId('reg-level'), selfLevel);
   await click(screen.getByRole('button', { name: /^③/ }));
   await screen.findByTestId('lin-step');
@@ -352,6 +354,9 @@ describe('PRD-09 · 파일 제거는 연결 상태까지 내린다', () => {
     await screen.findByTestId('up-files');
     await click(await screen.findByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
+    await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+    await change(screen.getByTestId('reg-datatype'), '재분석자료');
+    await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(screen.getByRole('button', { name: /^③/ }));
     await screen.findByTestId('lin-step');
     expect(screen.queryAllByTestId('lin-card')).toHaveLength(0);

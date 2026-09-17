@@ -31,7 +31,6 @@ import { UploadEntry } from '../src/components/upload/UploadEntry';
 import {
   LV0,
   LV0_SOURCE_DATE_PLACEHOLDER,
-  LV0_SOURCE_NOTICE,
   LV0_SOURCE_URL_PLACEHOLDER,
 } from '../src/components/upload/RegisterArea';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
@@ -193,6 +192,9 @@ async function openRegister(sources: UploadSources) {
   await dropOne();
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), LV0);
 }
 
 
@@ -228,6 +230,9 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     const { sources } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
+    await pickLevel(LV0);
+    await pickLevel(LV0);
+    await pickLevel(LV0);
     await goStep('③');
 
     const source = screen.getByTestId('reg-source-block');
@@ -250,10 +255,7 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     // ⛔ 괄호 문구는 남지 않는다 — 표시는 배지 하나다.
     expect(source.textContent).not.toContain('(선택)');
 
-    // 안내 문면은 rev1 축자다.
-    const block = within(source).getByTestId('reg-source-lv0');
-    expect(within(block).getByTestId('reg-source-lv0-notice').textContent).toBe(LV0_SOURCE_NOTICE);
-    expect(LV0_SOURCE_NOTICE).toBe('원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.');
+    expect(within(source).queryByTestId('reg-source-lv0-notice')).toBeNull();
   });
 
   // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈏ Lv1 이면 두 칸이 안 보이고 **원천 표기는 그대로
@@ -282,6 +284,7 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     // ⭑ ⟨카드 ⑩ ⓐ⟩ 부모 0건 기본값이 `Lv0` 이라 흐름이 한 단 늘었다 —
     //   Lv0(기본값) → 열림 → Lv2 → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘.
     //   ／ 종전 ~~Lv2(기본값) → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘~~
+    await pickLevel(LV0);
     await goStep('③');
     expect(screen.getByTestId('reg-source-lv0')).toBeTruthy();
     await pickLevel('Lv2');

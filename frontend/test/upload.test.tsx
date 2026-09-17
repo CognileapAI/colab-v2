@@ -401,6 +401,9 @@ async function dropFiles(files: File[]) {
 async function openRegister() {
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   // ⭑ ⟨WU-B3 · PRD-12⟩ 등록 카드는 **① 분류**에서 열린다. 이 파일의 시험들이 재는 칸은
   // ② 메타데이터 입력에 있으므로 표시기로 한 단계 옮겨 둔다 — **재는 것은 그대로다**.
   await click(screen.getByRole('button', { name: /^② / }));
@@ -771,7 +774,7 @@ describe('§8 등록 3단계 표시기 — ①② 는 이 레인, ③ 은 얹히
     expect(screen.queryByTestId('reg-s3')).toBeNull();
   });
 
-  it('앞 단계를 채웠는지 검사하지 않는다 — 어느 칸이든 눌러서 간다', async () => {
+  it('분류 세 축을 고른 뒤에는 어느 칸이든 눌러서 간다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -968,7 +971,7 @@ describe('§8 ② 메타데이터 입력', () => {
     await openRegister();
     const labels = Array.from(document.querySelectorAll('label[for="reg-crs"]'));
     expect(labels).toHaveLength(1);
-    expect(labels[0]!.textContent).toBe('좌표계선택');
+    expect(labels[0]!.textContent).toBe('좌표계 입력선택');
     expect(labels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
     // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 이름표는 **입력 하나를 가리키지 않는다** — 표 전체의 이름이다.
     // ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 그래서 `label` 이 아니라 섹션 제목(`fieldlbl`)이다** —
@@ -2452,6 +2455,9 @@ describe('rev2 파일 교체 시 입력 초기화', () => {
     await click(screen.getByRole('button', { name: 'old.nc 빼기' }));
     await dropFiles([makeFile('new.nc')]);
     await click(screen.getByTestId('reg-open'));
+    await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+    await change(screen.getByTestId('reg-datatype'), '재분석자료');
+    await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(stepBtn('②'));
     expect(screen.getByTestId('reg-summary')).toHaveValue('');
   });

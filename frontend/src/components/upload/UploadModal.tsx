@@ -48,8 +48,6 @@ import { FileDropCard, keepOneExtension, MIXED_EXTENSION_NOTICE } from './FileDr
 import { PreviewPanel } from './PreviewPanel';
 import { LV0, RegisterArea, type Step } from './RegisterArea';
 import {
-  DEFAULT_CATEGORY,
-  DEFAULT_DATA_TYPE,
   MISSING_CATEGORY_MESSAGE,
 } from './axisDict';
 import {
@@ -79,6 +77,10 @@ import {
   type UploadSources,
   type UploadStatus,
 } from './types';
+
+export function missingClassificationId(category: string, dataType: string, level: string): string | null {
+  return !category ? 'reg-category' : !dataType ? 'reg-datatype' : !level ? 'reg-level' : null;
+}
 
 /**
  * 닫기 확인보다 **위에 있는 층**이 스스로 붙이는 표식 (PRD-39 ⑭ · 확장보기 · 찾기 · 계보 수정).
@@ -212,14 +214,11 @@ export function UploadModal(props: {
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
   // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
   const [nameDraft, setNameDraft] = useState('');
-  // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — 기본 선택값이 있고 그대로 실려 나간다.**
-  // 계약 `DatasetCreate.required` 에 `category`·`dataType` 이 올라(20차 ㉯) 서버가 400
-  // 「분류를 골라 주세요」를 내므로, 화면은 **늘 값을 실어 보낸다**.
-  // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 셋을 세지 않는다.
-  const [category, setCategory] = useState(DEFAULT_CATEGORY);
-  const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
-  // ⭑ ⟨카드 ⑩ ⓐ⟩ 첫 값도 계산값이다 — 부모 0건이면 `Lv0`(한 프레임이라도 `Lv2` 를 그리지 않는다).
-  const [level, setLevel] = useState(LV0);
+  // 분류 3축은 빈 상태에서 시작해 사람이 모두 고른 뒤에만 다음 단계로 간다.
+  // `DatasetCreate.required` 의 `category`·`dataType`에 빈 값을 싣지 않도록 화면에서 먼저 막는다.
+  const [category, setCategory] = useState('');
+  const [dataType, setDataType] = useState('');
+  const [level, setLevel] = useState('');
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** `sourceLabel` 옆에 두되 **다른 축**이다 —
@@ -709,9 +708,7 @@ export function UploadModal(props: {
    *  - ② 관측 간격 값·단위 · 기간 최소 단위
    *
    * 세지 않는 것 = **자동으로 채워진 값**. 파일명에서 만든 이름 초안 · 확장자 · 용량 ·
-   * 읽기 전용 가공 단계 칸 · (R-B 가 더할) 기본 선택값 `Lv2`·`연구실 구성원 전체`.
-   * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
-   * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
+   * 읽기 전용으로 자동 채워진 확장자·용량.
    */
   const hasHumanInput =
     (name.trim() !== '' && name !== nameDraft) ||
@@ -730,15 +727,13 @@ export function UploadModal(props: {
     granularity.trim() !== '' ||
     projects.length > 0 ||
     // ⭑ ⟨WU-A9R · PRD-14 증분⟩ 담은 프로젝트 건수와 **대표 그림 교체 여부**를 함께 센다.
-    //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
-    //   확장자·용량)은 여전히 세지 않는다.
+    //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(확장자·용량)은 세지 않는다.
     representativeFile !== null ||
     gridDescription.trim() !== '' ||
-    // ⭑ ⟨advisor ② · F3⟩ 세 축도 **사람이 고르는 칸**이다. 기본값 그대로면 세지 않고
-    //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
-    category !== DEFAULT_CATEGORY ||
-    dataType !== DEFAULT_DATA_TYPE ||
-    level !== LV0 ||
+    // 세 축도 사람이 고르는 칸이므로 하나라도 고르면 「잃을 것」이 된다.
+    category !== '' ||
+    dataType !== '' ||
+    level !== '' ||
     // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
     accessState !== null ||
     lineageParents.length > 0 ||
@@ -894,9 +889,9 @@ export function UploadModal(props: {
     setRepresentativeRetryBlocked(false);
     // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
-    setCategory(DEFAULT_CATEGORY);
-    setDataType(DEFAULT_DATA_TYPE);
-    setLevel(LV0);
+    setCategory('');
+    setDataType('');
+    setLevel('');
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -1130,11 +1125,12 @@ export function UploadModal(props: {
     // ⭑ ⟨advisor ② · F3⟩ 분류·유형은 계약 `DatasetCreate.required` 다 — 화면이 먼저 막는다.
     //   막기만 하고 세워 두면 사람은 ③ 에서 ① 의 빈 칸을 못 본다. 이름·설명 경로와 같은
     //   규율로 **적을 칸이 있는 단계로 데려가고 그 칸에 초점을 준다.**
-    if (!category || !dataType) {
+    const missingClassification = missingClassificationId(category, dataType, level);
+    if (missingClassification) {
       setStep(1);
       setRegisterError(MISSING_CATEGORY_MESSAGE);
       setRegisterToast(MISSING_CATEGORY_MESSAGE);
-      window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
+      window.setTimeout(() => document.getElementById(missingClassification)?.focus(), 0);
       return;
     }
     // ⑷ 기간 — **시작 시점이 있어야 성립한다.** 종료는 없어도 「그 시점 하나」로 읽힌다

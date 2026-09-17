@@ -154,6 +154,10 @@ async function openMeta(sources: UploadSources) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+  fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+  fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
+  await act(async () => {});
   await click(stepBtn('②'));
   return screen.getByTestId('reg-s2');
 }
@@ -243,7 +247,7 @@ describe('② 격자 — 한 줄 입력', () => {
     expect(grid.tagName).toBe('INPUT');
     const label = document.querySelector('label[for="reg-grid-description"]');
     expect(label).not.toBeNull();
-    expect((label as HTMLElement).textContent).toBe('격자선택');
+    expect((label as HTMLElement).textContent).toBe('격자 입력선택');
   });
 
   it('칸 아래 안내 문단이 없다 (목업에 그 문단이 없다)', async () => {

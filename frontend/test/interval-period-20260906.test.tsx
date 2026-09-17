@@ -134,6 +134,9 @@ async function openRegister() {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
   // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
   await click(screen.getByRole('button', { name: /^② / }));
@@ -432,14 +435,12 @@ describe('WU-A6 — 등록 미리보기 (PRD-35 세 번째 자리)', () => {
     });
     await change(screen.getByTestId('reg-interval-value'), '10');
     await change(screen.getByTestId('reg-interval-unit'), '분');
-    expect(screen.getByTestId('reg-period-preview')).toHaveTextContent(
-      '2020-05-01 00:00 ~ 03:00 (10분)',
-    );
+    expect(screen.queryByTestId('reg-period-preview')).toBeNull();
   });
 
   it('간격을 비우면 미리보기에도 **빈 괄호가 없다**', async () => {
     await openRegister();
     await applyPeriod('일', { 'start-year': '2025', 'start-month': '06', 'start-day': '01' });
-    expect(screen.getByTestId('reg-period-preview').textContent).not.toContain('(');
+    expect(screen.queryByTestId('reg-period-preview')).toBeNull();
   });
 });

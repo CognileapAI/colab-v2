@@ -124,6 +124,10 @@ async function openRegister() {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  fireEvent.change(screen.getByTestId('reg-category'), { target: { value: '기상·기후 인자' } });
+  fireEvent.change(screen.getByTestId('reg-datatype'), { target: { value: '재분석자료' } });
+  fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv0' } });
+  await act(async () => {});
   // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
   // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
   await click(screen.getByRole('button', { name: /^② / }));

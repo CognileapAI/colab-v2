@@ -172,6 +172,9 @@ async function openRegisterWithFile(
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
   // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
   await click(screen.getByRole('button', { name: /^② / }));
@@ -281,8 +284,7 @@ describe('PRD-14 증분 — 손댐 판정 2필드', () => {
   it('자동으로 채워진 값은 세지 않는다 — 파일만 올린 상태는 되묻지 않는다', async () => {
     await openRegisterWithFile();
     await click(screen.getByTestId('upload-close'));
-    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   // F1 — 대표 그림 플래그는 파일과 함께 내린다. 파일을 빼면 그 그림도 함께 사라지므로
@@ -328,11 +330,10 @@ describe('PRD-44 — 배경 클릭', () => {
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
   });
 
-  it('아무것도 안 적었으면 배경 클릭이 되묻지 않고 닫는다', async () => {
+  it('분류를 고른 뒤 배경을 누르면 확인한다', async () => {
     await openRegisterWithFile();
     await backdropClick();
-    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
   it('모달 내부 클릭은 닫지 않는다', async () => {
@@ -428,6 +429,9 @@ async function openConfirmWithPending(log: string[]) {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  await change(screen.getByTestId('reg-category'), '기상·기후 인자');
+  await change(screen.getByTestId('reg-datatype'), '재분석자료');
+  await change(screen.getByTestId('reg-level'), 'Lv0');
   await click(screen.getByRole('button', { name: /^② / }));
   await change(screen.getByTestId('reg-summary'), '가');
   await click(screen.getByTestId('upload-close'));
