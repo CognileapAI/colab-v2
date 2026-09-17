@@ -226,6 +226,42 @@ class LifecycleRedTests(unittest.TestCase):
         self.assertTrue(source.exists())
         self.assertFalse(destination.exists())
 
+    def test_researcher_spec_output_is_blocked_and_named_as_unhanded_output(self):
+        """`prd/specs/` is watched evidence the researcher may not hand out.
+
+        Both modes already end in exit 2 today; what the WATCH entry fixes is which
+        sentence the executor gives, and that sentence is the contract being pinned.
+        """
+        subprocess.run(['git', '-C', str(self.root), '-c', 'user.name=Test',
+                        '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty',
+                        '-qm', 'base'], check=True)
+        name = 'dev-package/prd/specs/x.md'
+        read_only = contract.begin(self.root, 'researcher')
+        self.put(name, 'spec written by a researcher')
+        self.assert_routes('researcher', self.marker(read_only, 'read-only'), 2)
+        task = contract.begin(self.root, 'researcher', artifacts=['runtime:artifacts/findings.md'])
+        artifact = Path(task['artifacts'][0])
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text('findings')
+        self.put(name, 'spec changed while the task was open')
+        message = self.marker(task, 'artifacts', {task['artifacts'][0]: contract.digest(artifact)})
+        result = self.hook('uncommitted-artifacts.sh', 'researcher', message)
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn('unhanded output', result.stderr)
+
+    def test_legacy_spec_declaration_is_refused_for_the_researcher_role_only(self):
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', legacy=True,
+                           artifacts=['dev-package/prd/specs/x.md'])
+        lane = contract.begin(self.root, 'lane-worker', legacy=True,
+                              artifacts=['dev-package/prd/specs/x.md'], gates=['contract-lint'],
+                              report='dev-package/reports/spec/lane/gate-summary.json')
+        self.assertEqual(lane['artifacts'], ['dev-package/prd/specs/x.md'])
+        for name in ('dev-package/intent/x.md', 'dev-package/sessions/x.md',
+                     'dev-package/reports/x.md'):
+            task = contract.begin(self.root, 'researcher', legacy=True, artifacts=[name])
+            self.assertEqual(task['artifacts'], [name])
+
     def measuring(self, gates=('first', 'second')):
         """A measurement-lane task whose coherent report carries one red row.
 

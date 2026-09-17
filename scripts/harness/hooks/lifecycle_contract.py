@@ -20,7 +20,10 @@ import sys
 import tempfile
 import uuid
 
-WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/')
+# `intent/` was already watched; the spec is the same lineage one step on, and a lane
+# reads it as the ground for what it implements, so it is evidence-bearing output too.
+SPECS = 'dev-package/prd/specs/'
+WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/', SPECS)
 STATES = ('green', 'red_판정', 'red_준비')
 
 
@@ -194,6 +197,12 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     for name in artifacts:
         if inside(root, name).relative_to(root).as_posix() != name or not name.startswith(WATCH):
             raise ValueError('artifact must be a repository-relative research output')
+        # Specs are watched, but the parent authors them from an approved intent; a researcher
+        # must not register as their author under any schema (`docs/development/lifecycle-evidence.md`).
+        # The executor holds both facts here — the role and the path — so it judges rather
+        # than letting the legacy schema be the way around the rule.
+        if role == 'researcher' and name.startswith(SPECS):
+            raise ValueError('specs are authored by the parent, not declared by a researcher')
     if role == 'lane-worker':
         if not gates or any(not isinstance(g, str) or not g for g in gates) or not report:
             raise ValueError('lane requires explicit gates and report')
