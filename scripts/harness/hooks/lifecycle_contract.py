@@ -44,6 +44,12 @@ def runtime():
 #   for exactly these roles, and the two lists must not be able to drift apart.
 GATE_ROLES = runtime().GATE_ROLES
 TASK_ROLES = ('researcher',) + GATE_ROLES
+# The role whose output IS the red count. Every other lane must reach green before it can
+# close; this one is asked to measure, so blocking on red would mean it could only close
+# all-green rounds and would have no way to report a failing host (intent 2026-09-17
+# measurement-lane-subagent-stop-hook 제약). Only the red verdict is waived — rows, counts,
+# the declared gate set and the tree evidence are still required in full.
+MEASURING_ROLES = ('measurement-lane',)
 
 
 def resolve_task_path(root, task, name, artifact_only=False):
@@ -208,7 +214,7 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     return task
 
 
-def validate_report(data, required, head_tree=None):
+def validate_report(data, required, head_tree=None, *, allow_red=False):
     if not isinstance(data, dict) or data.get('schema') != 'colab-gate-summary/1':
         raise ValueError('invalid report schema')
     if head_tree is not None and (not head_tree or data.get('tree') != head_tree):
@@ -235,7 +241,7 @@ def validate_report(data, required, head_tree=None):
         raise ValueError('counts disagree with gate rows')
     if not required or not set(required).issubset(names):
         raise ValueError('required gates are missing')
-    if counts['red_판정'] or counts['red_준비']:
+    if not allow_red and (counts['red_판정'] or counts['red_준비']):
         raise ValueError('gate failures remain')
 
 
@@ -256,7 +262,7 @@ def verify_task_report(root, task, report=None):
     if not task.get('run_id'):
         raise ValueError('gate execution has not started for this task')
     data = json.loads(path.read_text(encoding='utf-8'))
-    validate_report(data, task['gates'])
+    validate_report(data, task['gates'], allow_red=task['role'] in MEASURING_ROLES)
     expected = gate_evidence(root, task['task_id'])
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
