@@ -1,12 +1,16 @@
 # Intent: frontend/test 의 사실상 벽시계 예산 관행을 실제 신호 대기로 옮긴다
-메타 — 발의자: Ted · 방향 결정: Ted · 작성 2026-09-17 · 승인: 미승인 — Ted 승인 대기
+메타 — 발의자: Ted · 방향 결정: Ted · 작성 2026-09-17 · 승인: 미승인 — Ted 승인 대기(미결 5건)
+
+⚠ **이 intent 는 독립 결정이다.** `2026-09-17-harness-enforces-facts-it-holds.md` 의 규칙 문장에
+자동 정렬되지 않는다 — 그 규칙은 **실행기가 쥔 사실**을 다루고, 여기 77 자리는 시험이 스스로
+고른 예산이다. 그쪽 intent 도 이 파일을 「이 규칙의 사례가 아님」으로 분류한다.
 
 ## 문제
 - `#55` 를 고치는 동안 드러난 것 — 레포에 **선언되지 않은 벽시계 예산 관행**이 있다. `#55` 의 intent 는 이를 각주로만 적었다(`dev-package/intent/2026-09-17-issue-55-frontend-test-failure-naming.md:92` 축자 「`{ timeout: 4000 }` 이 약 40회 있다. 레포에 **사실상의 벽시계 예산 관행이 존재**한다.」). 실측하면 40 이 아니다.
 - 실측 (현 트리 · `claude/followup-intents`):
   - `const WAIT = { timeout: 5000 };` 선언이 **6 파일**이다. `frontend/test/preview-pick-and-fallback.test.tsx:38` · `frontend/test/preview-layout-20260912.test.tsx:32` · `frontend/test/preview-slot-4x3.test.tsx:34` · `frontend/test/preview-controls-20260912.test.tsx:30` · `frontend/test/upload-pick-conditional-20260913.test.tsx:26` · `frontend/test/upload-preview-poll-20260903.test.tsx:49`. 마지막 하나는 이제껏 집계에 안 잡혔다.
   - 그 `WAIT` 을 넘기는 호출 자리는 **45개**다(식별자 등장 51회 − 선언 6회). 파일별로 17 · 14 · 9 · 4 · 4 · 3 이다.
-  - `{ timeout: 4000 }` 은 **28개**다 — `frontend/test/grid-preview.test.tsx` 18 · `frontend/test/upload.test.tsx` 10. 「약 40」은 과다 계상이었다.
+  - `{ timeout: 4000 }` 은 **28개**다 — `frontend/test/grid-preview.test.tsx` 18 · `frontend/test/upload.test.tsx` 10. 「약 40」은 과다 계상이었다. ⚠ 2026-09-18 develop 재계수에서 `git grep` 히트는 **29건**이지만 그중 `frontend/test/lineage-unknown-20260907.test.tsx:296` 은 **주석**(「레포의 관행 예산은 `{ timeout: 4000 }`·`{ timeout: 5000 }` 이고」)이다. 실제 호출 자리는 **28개가 맞다.**
   - 인라인 `timeout: 5000` 1개 — `frontend/test/thumb-nudge-20260905.test.tsx:157`.
   - 낱개 3개 — `frontend/test/upload-progress-recovery.test.tsx:107`(3000) · `:115`(4500) · `frontend/test/unfinished-uploads.test.tsx:226`(2500).
   - **합계 77 자리 · 10 파일.**
@@ -29,10 +33,10 @@
 ## 제약
 - **너무 좁은 예산은 그 자체가 흔들림 생산자다.** 이 명제가 선택지 (b) 를 실질적으로 죽인다 — 77 자리를 지우면 예산이 testing-library 기본값 1000ms 로 **떨어진다**(4000·5000 → 1000). 완화가 아니라 4~5배 조임이다.
 - 그래서 `testTimeout` 선언으로는 이 77 자리를 대체할 수 없다. 축이 다르다. 대응하는 중앙 손잡이는 `configure({ asyncUtilTimeout })`(`@testing-library/dom`)이며 `frontend/test/setup.ts:1` 이 그 자리다. 이 사실을 확인하지 않고 (b) 를 고르면 전 파일이 red 가 된다.
-- `#55` 는 자기 예산을 p50 실측의 약 350배로 잡았다. 성능 단언이 아니라 **병리 탐지기**로서다 — 정상 회차가 넘을 수 없는 값을 두고, 넘으면 그것이 성능 저하가 아니라 고장이라는 뜻이 되게 한다. 여기서 예산을 정하는 자리도 같은 규율을 따른다. (이 배수는 `#55` 레인의 실측이며 현 트리에서 재현하지 않았다 — 미해결 질문 참조.)
-- 흔들림을 눈금으로 덮지 않는다. `gates/run.sh:761` 축자 — 「상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다.」 예산을 **올리는** 방향의 변경은 실측 없이는 이 문장에 걸린다.
+- `#55` 는 자기 예산을 p50 실측의 약 350배로 잡았다. 성능 단언이 아니라 **병리 탐지기**로서다 — 정상 회차가 넘을 수 없는 값을 두고, 넘으면 그것이 성능 저하가 아니라 고장이라는 뜻이 되게 한다. 여기서 예산을 정하는 자리도 같은 규율을 따른다. (배수 확인 — develop 의 `frontend/test/lineage-unknown-20260907.test.tsx:288` 이 p50 5.6ms 를 적었고 `:297` 의 예산이 2000ms 이므로 약 357배다.)
+- 흔들림을 눈금으로 덮지 않는다. `gates/run.sh:775` 축자 — 「상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다.」 예산을 **올리는** 방향의 변경은 실측 없이는 이 문장에 걸린다.
 - 이번 회차에 vitest 실행이 금지돼 있다. 모든 수치는 정적 계수이며 p50 실측은 없다.
-- `#55` 가 이미 손댄 2건(`frontend/test/upload-transfer.test.tsx:326`·`:348`·`:351`, `frontend/test/lineage-unknown-20260907.test.tsx:282-303`)은 이 intent 의 대상이 아니다. 현 트리에는 그 수정이 아직 없다(`git log --oneline -8` 기준 `7c5f90fc`).
+- `#55` 가 이미 손댄 2건은 이 intent 의 대상이 아니다. **그 수정은 PR #113(`dda542f1`)으로 develop 에 병합됐다**(2026-09-18 확인 · 초안의 「현 트리에는 아직 없다」는 낡았다). develop 실물 — `frontend/test/upload-transfer.test.tsx:326-329`·`:352-353`(`findBy*` → `await act(async () => {});` ＋ 동기 조회), `frontend/test/lineage-unknown-20260907.test.tsx:285-297`(`LEGACY_SCAN_BUDGET_MS = 2000` 이 `:297` 에 선언되고 `:302` 의 `it()` 두 번째 인자로 들어간다).
 
 ## 설계트리 (grill-me 결과)
 - Q1 관행이 실제로 있는가 → A 있다. 6 파일이 같은 이름(`WAIT`)의 같은 값(5000)을 독립적으로 선언했고, 두 파일이 28 자리에 4000 을 뿌렸다. 우연이 아니라 복제된 관행이다.
@@ -49,13 +53,13 @@
 - 77 자리 각각이 진짜 폴링인지 마이크로태스크 한 바퀴인지 미판정. 이번 회차는 정적 계수만 했다. 레인이 먼저 열 자리 — `frontend/test/upload.test.tsx:596` · `frontend/test/grid-preview.test.tsx` 의 첫 `timeout: 4000` 자리 · `frontend/test/preview-pick-and-fallback.test.tsx:38`(WAIT 17회로 최다).
 - `asyncUtilTimeout` 기본값이 이 레포의 testing-library 판에서 실제로 1000ms 인지 미확인. 근거를 `frontend/package.json` 의 `@testing-library/dom`·`@testing-library/react` 판번호에서 확인해야 한다. 레인은 `frontend/package.json` 을 열어 판번호를 먼저 적는다. **이 값이 다르면 Q4·Q7 의 판단이 바뀐다.**
 - `configure()` 가 `frontend/test/setup.ts:1` 에서 전 시험에 걸리는지 미확인(`frontend/vite.config.ts:18` 의 `setupFiles` 경로가 그 파일이다). 실행 금지라 확인하지 못했다.
-- `#55` 의 「p50 의 약 350배」 실측값. 현 트리에는 `#55` 수정이 아직 없고 이번 회차에 vitest 실행이 금지돼 재현하지 않았다. 근거를 `#55` 레인 산출물에서 회수해야 한다.
+- ~~`#55` 의 「p50 의 약 350배」 실측값~~ — 닫혔다. develop 의 `frontend/test/lineage-unknown-20260907.test.tsx:285-289` 가 실측을 주석으로 남겼다(대상 338 파일 / 3,343,168 바이트 · 13회 반복 · 현재 min 4.9 · **p50 5.6** · max 9.3 ms). `LEGACY_SCAN_BUDGET_MS = 2000`(`:297`)은 p50 5.6ms 의 약 357배다.
 - 6개 `WAIT` 선언이 전부 `findBy*`/`waitFor` 로만 흘러가는지 부분 확인. 표본 6자리(`frontend/test/preview-pick-and-fallback.test.tsx:107`·`:141`·`:149`·`:152`·`:198`·`:209`)가 `findByTestId` 였다. 나머지 39 자리는 미대조 — 만약 `it()` 의 옵션 인자로 쓰인 자리가 섞여 있으면 그 자리는 축이 달라 일괄 삭제 대상에서 빠진다.
 
 ## 범위 밖 (명시 제외)
-- `#55` 가 이미 다루는 2건(`frontend/test/upload-transfer.test.tsx:326`·`:348`·`:351`, `frontend/test/lineage-unknown-20260907.test.tsx:282-303`).
+- `#55` 가 이미 다루는 2건(develop 기준 `frontend/test/upload-transfer.test.tsx:326-329`·`:352-353`, `frontend/test/lineage-unknown-20260907.test.tsx:283-302`).
 - `vitest` 의 `testTimeout` 선언. 축이 달라 이 문제를 풀지 않는다. 필요하면 별건으로 세운다.
-- 예산을 **올리는** 변경. 실측 없이는 `gates/run.sh:761` 에 걸린다.
+- 예산을 **올리는** 변경. 실측 없이는 `gates/run.sh:775` 에 걸린다.
 - `{ timeout: 4000 }` 28 자리의 실제 신호 전환. 후속 레인으로 분리한다.
 - 재시도·플레이크 재실행·`-j` 축소 도입.
 - 제품 코드·계약·게이트 스크립트 변경.
@@ -69,7 +73,8 @@
   - ⑶ 6개 `WAIT` 선언과 45개 전달 자리의 일괄 삭제를 이 PR 에 넣을지, ②를 별도 커밋으로 가를지.
   - ⑷ `{ timeout: 4000 }` 28 자리를 남기는 판단(삭제하면 5000 으로 넓어져 판정이 느슨해진다)을 확정할지.
   - ⑸ `asyncUtilTimeout` 기본값과 `configure()` 적용 여부를 확인하는 vitest 1회 실행을 레인에 허가할지.
-  - ⑹ 이 intent 를 `#55` 와 같은 PR 에 얹을지, 별도 PR 로 세울지.
+- 삭제된 항목 — ~~⑹ 이 intent 를 `#55` 와 같은 PR 에 얹을지~~. **무효**다. `#55` 는 PR #113(`dda542f1`)으로 이미 병합됐으므로 얹을 PR 이 없다. 이 intent 는 별도 PR 로 간다.
+- 남은 승인 필요 지점: **⑴~⑸ 5건.** 2026-09-18 의 하네스 결정 묶음은 이 파일을 건드리지 않았다 — 독립 결정이다.
 - 재개봉 금지: 해당 없음(미승인).
 
 ## 참조
@@ -80,6 +85,6 @@
 - 4000 자리: `frontend/test/grid-preview.test.tsx`(18) · `frontend/test/upload.test.tsx:596`·`:650`·`:676`·`:689` 외(10)
 - 낱개: `frontend/test/thumb-nudge-20260905.test.tsx:157` · `frontend/test/upload-progress-recovery.test.tsx:107`·`:115` · `frontend/test/unfinished-uploads.test.tsx:226`
 - 설정: `frontend/vite.config.ts:15-24`, `frontend/test/setup.ts:1`
-- 규율: `gates/run.sh:761`
+- 규율: `gates/run.sh:775`
 - spec: 미작성. Ted 승인 뒤 합성한다.
 - 결정: 신규 legacy 결정번호 발급 없음.
