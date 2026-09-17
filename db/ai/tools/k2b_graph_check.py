@@ -13,7 +13,7 @@
   1. 노드·엣지 집합이 기준과 **완전일치** (기준에 없는 행이 있어도 red, 없어도 red)
   2. source_grade=6 행이 **Ted 승인 목록(APPROVED_G6)과 정확히 일치** — 승인 안 난 ⑥ 이 몰래 들어오면 red
   3. kind='방법' 정본 인용 13개가 d9_method_term 과 문자열 일치
-  4. kind='주제' 4개가 d9_topic_synonym.topic 4값과 일치
+  4. kind='주제' 6개가 d9_topic_synonym.topic 6값과 일치 (2026-09-18 결정 5 전에는 4/4 였다)
   5. '~의 한 가지다' 의 dst 중 expandable=false 인 것이 0 건 (§D-6 경계 4 — 부모 금지 목록)
   6. 팬아웃 상한 — 어떤 dst 도 자식이 6개를 넘지 않는다 (§D-6 경계 3)
   7. '안에 있다'·'~의 한 가지다' 의 양끝 kind 규약 (§E-2)
@@ -39,13 +39,17 @@ CANON_METHOD_LABELS = (
     "유역 경계로 잘라냄", "임계값 초과일 집계", "재격자화", "편의 보정", "다운스케일",
     "전처리", "보간 방식(선형/최근접)",
 )
-CANON_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
-# ⭑ ⟨WU-C13 · 2026-09-08⟩ **동의어 사전의 주제 어휘는 6값이다** — `0006_topic_vocab_six` 가
-#   `d9_topic_synonym_topic_check` 를 넓혔다(Ted 판정 2026-09-06 · 창 9 · `〈360〉` 해소).
-#   ⛔ **그래프 주제 노드는 여전히 4개다** — 그 리비전이 축자로 「개념 그래프는 만지지 않았다」
-#   라고 적었고 노드를 늘리려면 `k2b-graph-standard.tsv` 라는 별도 기준을 함께 고쳐야 한다.
-#   그래서 두 이름을 갈라 둔다: 노드 대조는 `CANON_TOPICS`(4) · 동의어 값 집합은 아래 6값.
-SYNONYM_TOPICS = CANON_TOPICS + ("가뭄", "파일 포맷 예제")
+CANON_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC", "가뭄", "파일 포맷 예제")
+# ⭑ ⟨2026-09-18 · Ted 판정 결정 5 · intent/2026-09-18-practitioner-cases-ontology.md⟩
+#   **그래프 주제 노드도 6개다** — `t-drought`(가뭄) · `t-fileformat`(파일 포맷 예제) 가
+#   `0010_practitioner_concept` 로 들어왔고 `k2b-graph-standard.tsv` 도 같은 회차에 손으로 고쳤다.
+#   판정 축자 — 「가뭄 파일포멧 예제 넣자. 데이터가 들어오면 검색이 되어야 한다」.
+#   ⛔ **아래 2026-08-25 주석은 이 판정이 대체한다.** 원문은 지우지 않고 취소선으로 남긴다 —
+#   ~~⟨WU-C13 · 2026-09-08⟩ 「동의어 사전의 주제 어휘는 6값이지만 **그래프 주제 노드는 여전히
+#   4개다**. 노드를 늘리려면 `k2b-graph-standard.tsv` 라는 별도 기준을 함께 고쳐야 한다」~~
+#   그 조건(별도 기준 동시 개정)은 이번에 **충족됐다.** 그래서 두 이름이 같은 값이 된다 —
+#   노드 대조도 동의어 값 집합도 6값이고, 갈라 둘 이유였던 비대칭이 사라졌다.
+SYNONYM_TOPICS = CANON_TOPICS
 
 # ── Ted 승인 목록 (2026-08-25, K1b-ONTOLOGY-CONTENT §F-A) ────────────────────
 # 등급 ⑥(도메인 상식)에 기댄 엣지는 **이 목록에 있는 것만** 시드에 들어올 수 있다.
@@ -200,7 +204,7 @@ def main() -> int:
     # ── 4. 주제 4 ↔ d9_topic_synonym.topic ──────────────────────────────────
     topic_labels = {v[1] for v in nodes.values() if v[0] == "주제"}
     if topic_labels != set(CANON_TOPICS):
-        fail(f"[4 주제 불일치] d9_concept 주제 {sorted(topic_labels)} ≠ 정본 4값 {sorted(CANON_TOPICS)}")
+        fail(f"[4 주제 불일치] d9_concept 주제 {sorted(topic_labels)} ≠ 정본 6값 {sorted(CANON_TOPICS)}")
     if topics and not topics <= set(SYNONYM_TOPICS):
         fail(f"[4] d9_topic_synonym.topic 에 정본 6값 밖의 값이 있다: {sorted(topics - set(SYNONYM_TOPICS))}")
 

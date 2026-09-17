@@ -3,7 +3,7 @@
 #
 # 규약은 `services/core-api/tests/fixtures/setup-db.sh` 와 같다. 다른 것은 체인(ai)뿐이다.
 #   ① 소유자 롤이 db/ai/schema.sql 을 적용한다              (앱 롤은 DDL 을 갖지 않는다)
-#   ② db/ai/seed 의 시드 둘을 소유자 롤로 적재한다           (K2 사전 22행 · K2b 그래프 노드 49·엣지 19)
+#   ② db/ai/seed 의 시드 셋을 소유자 롤로 적재한다           (K2 사전 22행 · K2b 그래프 노드 54·엣지 20)
 #   ③ 앱 롤(colab_ai_app) 을 만든다 — **SELECT 뿐이다.** 정본은 infra/staging/db-bootstrap.sh 의
 #      `app-grants` 이고 마지막 검사는 그것과 같은 fail-closed 다. D10 은 기록하지 않는다 (CLAUDE.md §3-2).
 #
@@ -43,9 +43,12 @@ SELECT format('GRANT CREATE ON DATABASE %I TO %I', current_database(), :'owner')
 SQL
 psql_owner < "$REPO/db/ai/schema.sql" >/dev/null
 
-# ② 시드 — 소유자 롤로 넣는다. 시험이 세는 수(22 · 49 · 19)의 출처가 여기다.
+# ② 시드 — 소유자 롤로 넣는다. 시험이 세는 수(22 · 54 · 20)의 출처가 여기다.
+#   셋째 파일은 2026-09-18 결정 4·5 가 더한 개념 6행이다(`0010_practitioner_concept` 의 적재물).
+#   빼면 test_concept_graph_db.py 가 54·20 을 못 세어 red 다 — skip 이 아니라 red 다.
 psql_owner < "$REPO/db/ai/seed/k2_ontology_seed.sql" >/dev/null
 psql_owner < "$REPO/db/ai/seed/k2b_concept_graph_seed.sql" >/dev/null
+psql_owner < "$REPO/db/ai/seed/practitioner_concept_nodes.sql" >/dev/null
 
 # ③ 앱 롤 — SELECT 뿐. 쓰기 권한이 하나라도 붙으면 여기서 죽는다.
 psql_su -v app="$APP" -v owner="$OWNER" -v app_password="$APP_PASSWORD" <<'SQL' >/dev/null

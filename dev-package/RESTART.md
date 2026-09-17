@@ -227,7 +227,7 @@ cd services/ai-service && CONTAINER=ai_pg APP_PASSWORD=<임시> tests/fixtures/s
 
 - 앱 롤은 **`colab_ai_app` 이고 `colab_app` 이 아니다** — 한 자격증명이 두 체인을 다 여는 순간을 만들지 않는다
 - 그 롤은 **SELECT 뿐**이고, 쓰기 권한이 붙으면 스크립트가 그 자리에서 죽는다(`infra/staging/db-bootstrap.sh` 의 `app-grants` 와 같은 fail-closed)
-- 시드 둘(`k2_ontology_seed.sql` · `k2b_concept_graph_seed.sql`)까지 적재한다 — 시험이 세는 수(사전 22 · 노드 49 · 엣지 19)의 출처다
+- 시드 셋(`k2_ontology_seed.sql` · `k2b_concept_graph_seed.sql` · `practitioner_concept_nodes.sql`)까지 적재한다 — 시험이 세는 수(사전 22 · 노드 54 · 엣지 20)의 출처다
 
 **없이 돌리면 붕괴로 보인다** — core-api `471 errors` · pipeline-worker `23 failed·15 errors` · viz-render `8 failed`.
 **전부 환경 게이트이고, skip 이 아니라 fail 로 떨구는 의도적 설계다**(green-by-skip 금지 · `CLAUDE.md §4`) — 고장으로 읽지 않는다.
