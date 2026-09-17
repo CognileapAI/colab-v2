@@ -55,7 +55,16 @@ Codex 이벤트·matcher다. 원격 브랜치 보호도 별도이며 이 변경�
   쓸 일이 없는 면제 변수를 미리 두면 그 자체가 green-by-skip 통로다.
 
 후속 PR 로 미룬 승격(이 PR 범위 밖):
-- ② `gates/run.sh` 의 호스트 전역 잠금을 Q2 형태로 — `COLAB_GATE_SUMMARY_CHILD=1` 재진입 면제 포함.
+- ② `gates/run.sh` 의 호스트 전역 잠금을 Q2 형태로. — **완료(2026-09-18 · 이 브랜치
+  `claude/gate-host-mutex`).** `gates/tools/_lock.sh` 에 `gate_host_mutex_acquire`/`release` 를 두고,
+  `serial` 선언 게이트를 실행하는 부모가 `${TMPDIR:-/tmp}/colab-v2-gate-host-mutex/host` 하나를 잡는다.
+  선언 독법을 `all)` 밖으로 끌어올려 단독 호출도 같은 표를 읽는다 — 선언이 프로세스 경계를 넘는다.
+  ⚠ **재진입 면제 키는 `COLAB_GATE_SUMMARY_CHILD=1` 이 아니라 `COLAB_GATE_MUTEX_HELD=1` 이다**
+  (Ted 2026-09-18 결정). 위 문면은 목적(재진입 교착 방지)을 적은 것이고, `task` 경로
+  (`run.sh:29-32` → `lifecycle_contract.py` `run_gates`)가 게이트마다 `CHILD=1` 자식을 부르므로
+  CHILD 를 키로 쓰면 측정 레인의 `serial` 게이트가 전부 **무잠금으로** 돈다. 키를 분리해야 그 목적이
+  `task` 에서도 성립한다. 못 잡으면 red(준비 · 78)이고 면제 변수는 두지 않는다.
+  spec `dev-package/prd/specs/2026-09-18-gate-host-mutex.md` · 증명 `gate-host-mutex-selftest`.
 - ③ `WATCH` 를 스펙까지 확장. — **완료(2026-09-18).** `lifecycle_contract.py` 의 `WATCH` 에
   `dev-package/prd/specs/` 를 더했고, 같은 자리에서 researcher 의 spec 선언을 거절한다. 역할과 경로는
   실행기가 이미 쥔 사실이므로 조용한 통과가 아니라 판정으로 나간다. spec
