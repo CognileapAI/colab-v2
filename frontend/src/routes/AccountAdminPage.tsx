@@ -127,11 +127,30 @@ export function AccountAdminPage() {
   const [statusRow, setStatusRow] = useState<Row | null>(null);
   const [operatorRow, setOperatorRow] = useState<Row | null>(null);
   const [tab, setTab] = useState<'list' | 'create'>('list');
-  const [createOperator, setCreateOperator] = useState(true);
+  // ⭑ ⟨2026-09-17 · #84⟩ 기본값은 **꺼짐**이다 ／ 종전 ~~`useState(true)`~~ — 주 동작은
+  //   일반 사용자 계정 생성이고, 권한이 기본값이 되면 안 된다.
+  const [createOperator, setCreateOperator] = useState(false);
+  /**
+   * ⭑ ⟨2026-09-17 · #84⟩ 연구실·역할은 uncontrolled(`name` ＋ FormData)다.
+   * `disabled` 만 붙이면 FormData 에서 빠져 **전송은 비지만 화면 값은 남는다.**
+   * 「값을 비움」을 실제로 만들려면 두 칸의 `value` 를 되돌려야 한다 — 가장 작은 수단이
+   * ref reset 이다. controlled 로 바꾸면 「등록 탭 값이 목록 탭을 다녀와도 유지된다」를
+   * 다시 세워야 한다. ⛔ `name` 은 지우거나 바꾸지 않는다(dev-seed 러너가 짚는 계약값).
+   */
+  const labRef = useRef<HTMLSelectElement | null>(null);
+  const roleRef = useRef<HTMLSelectElement | null>(null);
+  /** 체크 상태를 한 자리에서 바꾼다 — 끄고 켤 때 화면과 전송이 갈리지 않게 한다. */
+  const changeCreateOperator = (next: boolean) => {
+    setCreateOperator(next);
+    if (next) {
+      if (labRef.current) labRef.current.value = '';
+      if (roleRef.current) roleRef.current.value = '';
+    }
+  };
 
   useWorkProtection('account-admin', {
     dirty, inFlight: busy || rowBusy,
-    discard: () => { formRef.current?.reset(); setDirty(false); },
+    discard: () => { formRef.current?.reset(); setDirty(false); setCreateOperator(false); },
   });
 
   const load = useCallback(async () => {
@@ -179,7 +198,10 @@ export function AccountAdminPage() {
   }
 
   return (
-    <div className="login">
+    /* ⭑ ⟨2026-09-17 · #84⟩ `account-admin` 은 세로 가운데 정렬을 덮는 **수식 클래스**다.
+       공용 `.login` 을 직접 고치면 로그인 화면과 비밀번호 변경 화면이 함께 깨진다 —
+       그 두 화면은 이번 대상이 아니다(`login.css` 의 `.login.account-admin`). */
+    <div className="login account-admin">
       <h1>계정 관리</h1>
       <div className="settabs" role="tablist" aria-label="계정 관리 탭">
         <button type="button" role="tab" aria-selected={tab === 'list'}
@@ -188,13 +210,16 @@ export function AccountAdminPage() {
         </button>
         <button type="button" role="tab" aria-selected={tab === 'create'}
                 className={`st${tab === 'create' ? ' on' : ''}`} onClick={() => setTab('create')}>
-          시스템 관리자 등록
+          {/* ⭑ ⟨2026-09-17 · #84⟩ 탭·카드 제목·제출 버튼을 한 문면으로 통일한다 —
+              한 화면에 「초대」·「관리자 등록」·「사용자 생성」이 섞이면 무슨 일이
+              일어나는지 알 수 없다. 주 동작은 일반 사용자 계정 생성이다. */}
+          사용자 생성
         </button>
       </div>
       <div hidden={tab !== 'create'}>
       <section className="login-card account-card" data-testid="account-create">
         <span className="login-brand">Co-Lab</span>
-        <h2 className="login-title">시스템 관리자 등록</h2>
+        <h2 className="login-title">사용자 생성</h2>
         <p className="login-lead">소속이 있으면 연구실과 역할을 함께 지정하세요. 둘 다 비우면 무소속 시스템 관리자로 등록돼요.</p>
         <form ref={formRef} className="account-form" onInput={() => setDirty(true)} onSubmit={async e => {
           e.preventDefault();
@@ -220,22 +245,26 @@ export function AccountAdminPage() {
               } : {}),
             } });
             setMessage(data ? data.email + ' 계정을 추가했어요.' : (error?.message ?? '계정을 추가하지 못했어요.'));
-            if (data) { form.reset(); setDirty(false); void load(); }
+            // 성공 뒤 폼을 되돌린다. 체크박스는 controlled 라 `reset()` 이 닿지 않으므로
+            // 기본값(꺼짐)을 여기서 직접 되돌린다 — 다음 생성이 관리자로 시작하지 않는다.
+            if (data) { form.reset(); setDirty(false); setCreateOperator(false); void load(); }
           } catch { setMessage('서버에 연결하지 못했어요. 계정이 추가됐는지 확인한 뒤 다시 시도해 주세요.'); }
           finally { setBusy(false); }
         }}>
-          <label className="login-label">이름<input className="login-input" name="name" required /></label>
-          <label className="login-label">이메일<input className="login-input" name="email" type="email" required /></label>
-          <label className="login-label">연구실<select className="login-input" name="labId"><option value="">소속 없음</option>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
-          <label className="login-label">역할<select className="login-input" name="role"><option value="">신분 없음</option>{options?.roles.map(r => <option key={r} value={r}>{r === '교수' ? '교수 관리자' : r}</option>)}</select></label>
-          <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" autoComplete="new-password" required /></label>
+          {/* ⭑ ⟨2026-09-17 · #84⟩ 관리자 여부가 **폼의 첫 요소**다 — 그 선택이 아래 칸을
+              채울 필요가 있는지를 결정한다. 체크하면 연구실·역할이 비활성이 되고 값이 빈다. */}
           <label className="login-label account-operator-check">
-            <input type="checkbox" name="operator" checked={createOperator}
-                   onChange={e => setCreateOperator(e.target.checked)} /> 시스템 관리자로 등록
+            <input type="checkbox" name="operator" data-testid="ac-operator" checked={createOperator}
+                   onChange={e => changeCreateOperator(e.target.checked)} /> 시스템 관리자로 등록
           </label>
           <p className="login-label">시스템 관리자는 계정을 관리하고 모든 연구실 자료와 구성원을 관리할 수 있어요.</p>
+          <label className="login-label">이름<input className="login-input" name="name" data-testid="ac-name" required /></label>
+          <label className="login-label">이메일<input className="login-input" name="email" data-testid="ac-email" type="email" required /></label>
+          <label className="login-label">연구실<select ref={labRef} className="login-input" name="labId" data-testid="ac-lab" disabled={createOperator}><option value="">소속 없음</option>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
+          <label className="login-label">역할<select ref={roleRef} className="login-input" name="role" data-testid="ac-role" disabled={createOperator}><option value="">신분 없음</option>{options?.roles.map(r => <option key={r} value={r}>{r === '교수' ? '교수 관리자' : r}</option>)}</select></label>
+          <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" data-testid="ac-password" aria-describedby="initial-password-help" type="password" autoComplete="new-password" required /></label>
           <p id="initial-password-help" className="login-label">10~512자로 입력하세요. 영문·숫자·특수문자 조합은 필수가 아니에요. 사용자는 첫 로그인 때 비밀번호를 변경해야 해요.</p>
-          <button className="login-submit" type="submit" disabled={busy}>{busy ? '등록하는 중…' : (createOperator ? '시스템 관리자 등록' : '사용자 등록')}</button>
+          <button className="login-submit" type="submit" data-testid="ac-submit" disabled={busy}>{busy ? '등록하는 중…' : '사용자 생성'}</button>
         </form>
       </section>
       </div>

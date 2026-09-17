@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { PasswordChangePage } from '../src/auth/PasswordChangePage';
+import { LoginPage } from '../src/auth/LoginPage';
 import { AccountAdminPage } from '../src/routes/AccountAdminPage';
 import { SessionProvider } from '../src/permission/session';
 import { getSession, setSession } from '../src/auth/store';
@@ -46,7 +47,11 @@ test('비밀번호 변경 응답이 끊기면 자동 재전송 없이 결과 불
  expect(fetch).toHaveBeenCalledTimes(1);
  expect(screen.getByTestId('change-password')).toBeEnabled();
 });
-test('서비스 운영자가 기존 연구실과 역할로 관리자를 등록한다',async()=>{
+// ⭑ ⟨개정 2026-09-17 · #84⟩ ／ 종전 ~~「기존 연구실과 역할로 **관리자**를 등록한다」~~ —
+//    관리자를 체크하면 연구실·역할이 비활성·비움이 되므로 「관리자 ＋ 연구실·역할」 조합은
+//    화면에서 더 이상 만들 수 없다(Ted 결정: 관리자는 연구실·역할 없음). 재는 사실은
+//    그대로다 — **연구실·역할을 실은 생성 요청이 그 값으로 나간다.**
+test('서비스 운영자가 기존 연구실과 역할로 사용자를 생성한다',async()=>{
  // 화면이 목록도 함께 부르므로 **호출 순서가 아니라 경로**로 답한다.
  const fetch=vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
   const request=input as Request; const url=new URL(request.url);
@@ -56,7 +61,7 @@ test('서비스 운영자가 기존 연구실과 역할로 관리자를 등록�
   return json({message:'모의하지 않은 경로'},500);
  });
  render(<SessionProvider account={{accountId:'00000000000000000000000AP1',name:'운영자',email:'op@example.com',role:'교수',permissions:{},labId:LAB,labName:'A 연구실',canManageServiceAccounts:true,mustChangePassword:false}}><AccountAdminPage/></SessionProvider>);
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  const form=within(await screen.findByTestId('account-create'));
  await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
  fireEvent.change(form.getByLabelText('연구실'),{target:{value:LAB}});
@@ -64,10 +69,10 @@ test('서비스 운영자가 기존 연구실과 역할로 관리자를 등록�
  fireEvent.change(form.getByLabelText('이름'),{target:{value:'새 사용자'}});
  fireEvent.change(form.getByLabelText('이메일'),{target:{value:'new@example.com'}});
  fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.click(form.getByRole('button',{name:'시스템 관리자 등록'}));
+ fireEvent.click(form.getByRole('button',{name:'사용자 생성'}));
  await screen.findByText('new@example.com 계정을 추가했어요.');
  const request=fetch.mock.calls.map(call=>call[0] as Request).find(call=>call.method==='POST')!;
- expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',labId:LAB,role:'교수',operator:true});
+ expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',labId:LAB,role:'교수'});
  expect(screen.queryByText('initial-password')).not.toBeInTheDocument();
 });
 
@@ -107,16 +112,19 @@ test('계정 관리 화면은 사용자 목록 탭만 기본으로 보여 준다
  expect(screen.getByTestId('account-create')).not.toBeVisible();
 });
 
-test('시스템 관리자 등록 탭은 목록을 숨기고 무소속 관리자 요청을 보낸다',async()=>{
+// ⭑ ⟨개정 2026-09-17 · #84⟩ 체크박스 기본값이 꺼짐이 됐다 — 관리자 요청을 보내려면
+//    **명시로 체크한다.** ／ 종전 ~~기본 켜짐이라 아무 조작 없이 관리자가 됐다~~.
+test('사용자 생성 탭은 목록을 숨기고 관리자를 체크하면 무소속 관리자 요청을 보낸다',async()=>{
  const fetch=operatorFetch();
  renderAdmin();
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  const form=within(await screen.findByTestId('account-create'));
  expect(screen.getByRole('table',{name:'계정 목록',hidden:true})).not.toBeVisible();
+ fireEvent.click(form.getByLabelText('시스템 관리자로 등록'));
  fireEvent.change(form.getByLabelText('이름'),{target:{value:'무소속 관리자'}});
  fireEvent.change(form.getByLabelText('이메일'),{target:{value:'admin@example.com'}});
  fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.click(form.getByRole('button',{name:'시스템 관리자 등록'}));
+ fireEvent.click(form.getByRole('button',{name:'사용자 생성'}));
  await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
  const request=fetch.mock.calls.map(call=>call[0] as Request)
   .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
@@ -125,19 +133,25 @@ test('시스템 관리자 등록 탭은 목록을 숨기고 무소속 관리자 
  });
 });
 
-test('관리자 선택을 끄면 기존 일반 사용자 등록 요청을 유지한다',async()=>{
+// ⭑ ⟨개정 2026-09-17 · #84⟩ 기본값이 꺼짐이라 「끄는」 경로를 재려면 **먼저 켠다.**
+//    켰다 끄면 연구실·역할이 **다시 활성**이 되어야 한다 — 비활성 전환의 되돌림 경로다.
+test('관리자 선택을 켰다 끄면 연구실·역할이 다시 활성이 되고 일반 사용자 요청을 유지한다',async()=>{
  const fetch=operatorFetch();
  renderAdmin();
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  const form=within(screen.getByTestId('account-create'));
  await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
  fireEvent.click(form.getByLabelText('시스템 관리자로 등록'));
+ expect(form.getByLabelText('연구실')).toBeDisabled();
+ fireEvent.click(form.getByLabelText('시스템 관리자로 등록'));
+ expect(form.getByLabelText('연구실')).toBeEnabled();
+ expect(form.getByLabelText('역할')).toBeEnabled();
  fireEvent.change(form.getByLabelText('이름'),{target:{value:'일반 사용자'}});
  fireEvent.change(form.getByLabelText('이메일'),{target:{value:'user@example.com'}});
  fireEvent.change(form.getByLabelText('연구실'),{target:{value:LAB}});
  fireEvent.change(form.getByLabelText('역할'),{target:{value:'연구원'}});
  fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.click(form.getByRole('button',{name:'사용자 등록'}));
+ fireEvent.click(form.getByRole('button',{name:'사용자 생성'}));
  await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
  const request=fetch.mock.calls.map(call=>call[0] as Request)
   .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
@@ -146,28 +160,28 @@ test('관리자 선택을 끄면 기존 일반 사용자 등록 요청을 유지
  });
 });
 
-test('관리자 소속은 연구실과 역할 중 하나만 고르면 보내지 않는다',async()=>{
+test('소속은 연구실과 역할 중 하나만 고르면 보내지 않는다',async()=>{
  const fetch=operatorFetch();
  renderAdmin();
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  const form=within(screen.getByTestId('account-create'));
  await within(form.getByLabelText('역할')).findByRole('option',{name:'교수 관리자'});
  fireEvent.change(form.getByLabelText('이름'),{target:{value:'부분 소속'}});
  fireEvent.change(form.getByLabelText('이메일'),{target:{value:'partial@example.com'}});
  fireEvent.change(form.getByLabelText('역할'),{target:{value:'교수'}});
  fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.submit(form.getByRole('button',{name:'시스템 관리자 등록'}).closest('form')!);
+ fireEvent.submit(form.getByRole('button',{name:'사용자 생성'}).closest('form')!);
  expect(await screen.findByRole('status')).toHaveTextContent('연구실과 역할을 함께');
  expect(fetch.mock.calls.filter(call=>(call[0] as Request).method==='POST')).toHaveLength(0);
 });
 
-test('등록 탭에 입력한 값은 목록 탭을 다녀와도 유지된다',()=>{
+test('생성 탭에 입력한 값은 목록 탭을 다녀와도 유지된다',()=>{
  operatorFetch();
  renderAdmin();
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  fireEvent.change(screen.getByLabelText('이름'),{target:{value:'작성 중 관리자'}});
  fireEvent.click(screen.getByRole('tab',{name:'사용자 목록'}));
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  expect(screen.getByLabelText('이름')).toHaveValue('작성 중 관리자');
 });
 
@@ -351,7 +365,7 @@ test('계정 목록 표에 좌우 이동 안내와 키보드 초점을 받는 �
 test('초기 비밀번호 칸을 비밀번호 관리 도구가 새 비밀번호로 읽는다',async()=>{
  routedFetch();
  renderAdmin();
- fireEvent.click(screen.getByRole('tab',{name:'시스템 관리자 등록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
  const form=within(await screen.findByTestId('account-create'));
  expect(form.getByLabelText('초기 비밀번호')).toHaveAttribute('autocomplete','new-password');
 });
@@ -367,4 +381,125 @@ test('자기 줄 비활성화는 처음부터 눌리지 않고 이유가 화면�
  const other=await within(table).findByRole('row',{name:/one@example\.com/});
  expect(within(other).getByRole('button',{name:'비활성화'})).toBeEnabled();
  expect(within(other).queryByText('자기 계정은 비활성화할 수 없어요')).toBeNull();
+});
+
+// ═══════════════ 계정 생성 폼 — 문면 · 순서 · 기본값 · 시험 식별자 ═══════════════
+// 승인 intent = dev-package/intent/2026-09-17-issue-84-account-create-form.md (#84 · #54)
+// ⚠ #84⑵(뷰포트 높이가 바뀌어도 제출 버튼이 세로로 움직이지 않는다)는 **여기서 재지 않는다** —
+//   jsdom 에는 레이아웃 엔진이 없어 높이를 바꿔도 차이가 나지 않는다(green-by-skip).
+//   그 판정은 `frontend-visual`/`agent-browser` 의 실화면 계측 몫이고, 아래 수식 클래스
+//   존재 단언은 그 계측의 **대체가 아니다**.
+const CREATE_FIELD_TESTIDS=['ac-name','ac-email','ac-lab','ac-role','ac-password','ac-operator','ac-submit'] as const;
+
+test('#84 생성 탭·카드 제목·제출 버튼 문면이 모두 `사용자 생성` 이다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ const card=await screen.findByTestId('account-create');
+ expect(within(card).getByRole('heading',{name:'사용자 생성'})).toBeInTheDocument();
+ expect(within(card).getByRole('button',{name:'사용자 생성'})).toBeInTheDocument();
+ // 관리자 여부로 제출 문면이 갈리지 않는다 — 한 화면에 세 이름이 섞이지 않는다.
+ fireEvent.click(within(card).getByLabelText('시스템 관리자로 등록'));
+ expect(within(card).getByRole('button',{name:'사용자 생성'})).toBeInTheDocument();
+ expect(within(card).queryByRole('button',{name:'시스템 관리자 등록'})).toBeNull();
+ expect(within(card).queryByRole('button',{name:'사용자 등록'})).toBeNull();
+});
+
+test('#84 관리자 여부 체크가 폼의 첫 요소이고 기본값은 꺼짐이다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ const card=await screen.findByTestId('account-create');
+ const check=within(card).getByTestId('ac-operator') as HTMLInputElement;
+ expect(check.checked).toBe(false);
+ const form=check.closest('form')!;
+ // **첫 요소**다 — 그 선택이 아래 칸을 채울 필요가 있는지를 결정하기 때문이다.
+ expect(form.firstElementChild!.contains(check)).toBe(true);
+ // 이름 칸보다 앞선다 — 「첫 자식」이 우연히 맞는 형태를 막는다.
+ const name=within(card).getByTestId('ac-name');
+ expect(check.compareDocumentPosition(name)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('#84 관리자 여부를 체크하면 연구실·역할이 비활성이 되고 값이 빈다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ const card=await screen.findByTestId('account-create');
+ await within(within(card).getByTestId('ac-lab')).findByRole('option',{name:'A 연구실'});
+ const lab=within(card).getByTestId('ac-lab') as HTMLSelectElement;
+ const role=within(card).getByTestId('ac-role') as HTMLSelectElement;
+ // ⑴ 체크 **전에는 활성**이고 값이 실제로 들어간다 — 양성·음성 쌍으로 잰다.
+ expect(lab.disabled).toBe(false);
+ expect(role.disabled).toBe(false);
+ fireEvent.change(lab,{target:{value:LAB}});
+ fireEvent.change(role,{target:{value:'연구원'}});
+ expect(lab.value).toBe(LAB);
+ expect(role.value).toBe('연구원');
+ // ⑵ 체크하면 비활성이 되고 **값까지 비운다** — `disabled` 만으로는 화면에 값이 남는다.
+ fireEvent.click(within(card).getByTestId('ac-operator'));
+ expect(lab.disabled).toBe(true);
+ expect(role.disabled).toBe(true);
+ expect(lab.value).toBe('');
+ expect(role.value).toBe('');
+});
+
+test('#84 초기 상태로 다섯 칸만 채워 제출하면 관리자 아님으로 생성 요청이 나간다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ const card=await screen.findByTestId('account-create');
+ await within(within(card).getByTestId('ac-lab')).findByRole('option',{name:'A 연구실'});
+ // 관리자 체크는 **건드리지 않는다** — 아무 조작 없이 제출하면 일반 사용자여야 한다.
+ fireEvent.change(within(card).getByTestId('ac-name'),{target:{value:'일반 사용자'}});
+ fireEvent.change(within(card).getByTestId('ac-email'),{target:{value:'user@example.com'}});
+ fireEvent.change(within(card).getByTestId('ac-lab'),{target:{value:LAB}});
+ fireEvent.change(within(card).getByTestId('ac-role'),{target:{value:'연구원'}});
+ fireEvent.change(within(card).getByTestId('ac-password'),{target:{value:'initial-password'}});
+ fireEvent.click(within(card).getByTestId('ac-submit'));
+ await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
+ const request=fetch.mock.calls.map(call=>call[0] as Request)
+  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
+ const body=JSON.parse(await request.clone().text());
+ expect(body).toEqual({email:'user@example.com',name:'일반 사용자',labId:LAB,role:'연구원',initialPassword:'initial-password'});
+ // 권한이 기본값이 되지 않는다 — 열쇠 자체가 없다.
+ expect('operator' in body).toBe(false);
+});
+
+test('#54 생성 폼의 칸 일곱을 testid 로 각각 하나씩 짚을 수 있고 기존 구역 testid 도 산다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ const card=await screen.findByTestId('account-create');
+ // 총계가 아니라 **목록을 돌며 각각 1건**을 센다.
+ expect(CREATE_FIELD_TESTIDS).toHaveLength(7);
+ for(const id of CREATE_FIELD_TESTIDS) expect(within(card).getAllByTestId(id)).toHaveLength(1);
+ // 러너가 짚는 `name` 은 그대로 살아 있다 — testid 는 덧붙인 것이지 대체가 아니다.
+ // (dev-package/tools/dev-seed/runner.py 가 `[data-testid="account-create"] input[name="…"]` 로 짚는다)
+ const inputs=['name','email','initialPassword','operator'].map(n=>card.querySelector(`input[name="${n}"]`));
+ expect(inputs.filter(Boolean)).toHaveLength(4);
+ const selects=['labId','role'].map(n=>card.querySelector(`select[name="${n}"]`));
+ expect(selects.filter(Boolean)).toHaveLength(2);
+ expect(card.querySelector('button[type="submit"]')).toBeTruthy();
+});
+
+test('#84 계정 관리 화면 최상위에만 세로 배치 수식 클래스가 붙는다',async()=>{
+ operatorFetch();
+ const {container}=renderAdmin();
+ await screen.findByTestId('account-create');
+ const root=container.querySelector('.login')!;
+ expect(root.classList.contains('account-admin')).toBe(true);
+ // 공용 `.login` 은 그대로다 — 수식 클래스만 덧붙는다.
+ expect(root.classList.contains('login')).toBe(true);
+});
+
+test('#84 로그인·비밀번호 변경 화면에는 그 수식 클래스가 붙지 않는다',()=>{
+ const pw=render(<MemoryRouter><PasswordChangePage/></MemoryRouter>);
+ const pwRoot=pw.container.querySelector('.login')!;
+ expect(pwRoot).toBeTruthy();
+ expect(pwRoot.classList.contains('account-admin')).toBe(false);
+ pw.unmount();
+ const login=render(<MemoryRouter><LoginPage/></MemoryRouter>);
+ const loginRoot=login.container.querySelector('.login')!;
+ expect(loginRoot).toBeTruthy();
+ expect(loginRoot.classList.contains('account-admin')).toBe(false);
 });
