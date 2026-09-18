@@ -5874,8 +5874,13 @@ components:
             end: { type: string, format: date }
         region: { type: string, minLength: 1, maxLength: 500 }
         cadence:
+          # ⭑ ⟨2026-09-18 · Ted 「다 권고대로」 결정 2-ⓐ⟩ `hourly` 를 더한다 — **값 추가뿐이라
+          # 파괴가 아니다**(기존 값 4개는 그대로). 실무자 사례 #1-4·#2-4 가 「시간해상도 1시간
+          # 이하」를 직접 부르고, 정본 `02.File-format/DATASETS.md` seq 16 축자 「각 24시각이다」가
+          # 그 값을 가진 자료를 고정한다. pressure level(결정 2-ⓑ)·결측률 술어(결정 2-ⓒ)는
+          # 이 회차에서 열지 않는다 — 별도 결정으로 분리했다.
           type: string
-          enum: [daily, weekly, monthly, 15min]
+          enum: [daily, weekly, monthly, 15min, hourly]
         model: { type: string, minLength: 1, maxLength: 500 }
         variable: { type: string, minLength: 1, maxLength: 500 }
         directObservation: { type: boolean }

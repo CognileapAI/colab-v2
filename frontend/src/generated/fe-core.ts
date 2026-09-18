@@ -4120,7 +4120,7 @@ export interface components {
             };
             region?: string;
             /** @enum {string} */
-            cadence?: "daily" | "weekly" | "monthly" | "15min";
+            cadence?: "daily" | "weekly" | "monthly" | "15min" | "hourly";
             model?: string;
             variable?: string;
             directObservation?: boolean;

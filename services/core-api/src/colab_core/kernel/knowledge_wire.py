@@ -133,7 +133,7 @@ class EvidenceRegion(WireValue):
 class EvidenceCadence(WireValue):
     fact_id: Id
     predicate: Literal['cadence']
-    value: Literal['daily', 'weekly', 'monthly', '15min']
+    value: Literal['daily', 'weekly', 'monthly', '15min', 'hourly']
     source_locator: Annotated[str, Field(min_length=1, max_length=300)]
     source_version: SourceVersion
     evidence_kind: Literal['file_measurement', 'description_claim', 'human_review']
