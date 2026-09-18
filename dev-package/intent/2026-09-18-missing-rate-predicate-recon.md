@@ -206,6 +206,60 @@
 - 재개봉 금지: 아니오 — 기존 판정을 뒤집지 않는다. `2026-09-18-dataset-metadata-backfill.md`
   결정 2-ⓒ(별도 결정으로 분리)를 그대로 잇는다.
 
+## 구현 결과 (2026-09-18 · 브랜치 `codex/ai-search-missing-rate-predicate`)
+판정 1=㈎ · 2=㈎ · 3=㈐-2 · 4=㈎ 대로 구현했다. 아래는 전부 이 체크아웃의 실측이다.
+
+### red → green
+| 오라클 | red | green |
+|---|---|---|
+| core-api pytest(신규 `test_search_missing_rate.py` ＋ `test_practitioner_conditions.py`) | 13 failed / 13 passed | 0 failed |
+| `db/platform/tests/0043-drift.sh` | exit 1 (`alembic 렌더 실패: upgrade 0043_variable_missing_rate`) | exit 0 |
+
+### 게이트 (선언 7 + 프론트 2)
+| 게이트 | 종료코드 | 실측 |
+|---|---|---|
+| `service-tests-core-api` | 0 | 수집 1726 · 실행 1726 · failed 0 · errors 0 · skipped 0 · deselected 6 · 160.8초 |
+| `generated-up-to-date` | 0 | 등기부 20건 재생성 일치 · 등기부 밖 자칭 생성물 0건 |
+| `seam-consistency` | 0 | G-e 543 · G-b 10 · ㉠ 0 · ㉡ 18 |
+| `schema-diff` | 0 | 두 체인 각각 `upgrade head` 뒤 선언 = 적용 |
+| `migration-drift` | 0 | 오라클 33 · 실행 33 · 실패 0 · 준비 실패 0 (platform 선언 27→28) |
+| `rls-coverage` | 0 | `d3_dataset_variable` rls=on force=on 정책=2 — 생성 컬럼이 새 정책을 만들지 않았다 |
+| `contract-breaking` | 0 | 기준 HEAD 3건 대비 파괴적 변경 0 |
+| `frontend-typecheck` | 0 | `tsc --noEmit` 오류 0 |
+| `frontend-test` | 0 | vitest 1563 통과 / 0 실패 (128 파일) |
+
+구 체인 오라클 `db/platform/tests/0042-drift.sh` 는 **exit 0** 이다. head 를 `alembic heads` 로
+읽으므로 박힌 값이 없고, 이번 회차가 그 스크립트를 고치지 않았다.
+
+### 실물
+- 리비전 `0043_variable_missing_rate`(`0042_reconcile_admin_access` 위) —
+  `d3_dataset_variable.missing_rate_percent numeric GENERATED ALWAYS AS (…) STORED`.
+  downgrade 는 칸을 지우며 0042 shape 복원의 pg_dump 차이가 0줄이다.
+  ⚠ 리비전 id 는 26자다 — `alembic_version_platform.version_num` 이 varchar(32) 라
+  처음 쓴 `0043_variable_missing_rate_percent`(34자)는 적용 시점에 터졌다.
+  ⚠ 선언 `schema.sql` 에서 새 칸의 자리는 **표 마지막**이다. `ADD COLUMN` 이 뒤에 붙으므로
+  위로 올리면 선언과 적용의 pg_dump 가 열 순서에서 갈린다(첫 시도에서 실제로 갈렸다).
+  ⚠ 조건식은 중첩 CASE 다. `~ … AND …::numeric` 는 AND 두 항의 계산 순서가 보장되지 않아
+  `'낮음'::numeric` 가 터진다.
+- `d3_client_search.candidates` 의 `where` 에 `maxMissingRatePercent` — 대표 변수 EXISTS.
+  인자는 0~100 의 수만 받으며 그 밖은 `ValueError('maxMissingRatePercent must be a number in 0..100')` 다.
+- `client_search`: `validate_context` allowlist ＋ 0~100 밖 400, `_predicate` 가 facts 가 아니라
+  후보 줄의 `missing_rate_percent` 를 읽는다(그래서 `candidates` 가 그 값을 함께 싣는다).
+- 계약: `SearchContext.research.maxMissingRatePercent`(number · 0~100) ＋ `fe-core.ts` 재생성 1줄.
+  `SearchAssessment.tsx` 는 `conditionLabels` 만 더했다.
+
+### 이 문서와 다르게 확인된 것
+- 「영향 범위」가 예고한 `SearchEvidenceFacts` 신규 필드와 `Evidence.oneOf` 15종→16종은
+  **일어나지 않았다.** 판정 3 이 ㈎ 에서 ㈐ 로 바뀐 결과이고, 두 파일은 무변경이다.
+  `dataset_evidence_backfill.py`/`_apply.py` 도 무변경이다 — 파생에는 적용기가 필요 없다.
+- 「완료 정의 2」가 말한 「세 사례의 red 오라클」은 `expectSeq` 가 아니라 `expectEmpty` 로만
+  세울 수 있었다. `test_practitioner_conditions.py` 의 DEV 재현 픽스처는 `d3_dataset_variable`
+  행을 아예 심지 않고, 정본 856행에 결측률이 0건이라 심을 근거도 없다. 세 사례의 `mode` 는
+  바꾸지 않았고 `deferred` 문면만 사실에 맞게 고쳤다.
+- `maxResolutionM` 은 `eval/k4-search/measure_evidence.py` 의 측정 조건 목록에도 있으나
+  결측률은 더하지 않았다 — 값이 0건이라 측정 수치가 0으로 고정되고, 그 파일은 술어 집합의
+  선언이 아니라 측정 도구다.
+
 ## 참조
 - 선행 intent: `dev-package/intent/2026-09-18-dataset-metadata-backfill.md` 「후속 — 별도 결정으로
   분리한 항목」 2번
