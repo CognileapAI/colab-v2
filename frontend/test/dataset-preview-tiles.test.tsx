@@ -126,6 +126,12 @@ function layers() {
 function scaleOf(): number {
   return Number(layers().getAttribute('data-zoom-scale'));
 }
+/** `transform: translate(Xpx, Ypx) scale(S)` 원문에서 이동값 두 수를 읽는다. */
+function panOf(transform: string = layers().style.transform): { x: number; y: number } {
+  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(transform);
+  expect(m, `transform 원문을 읽지 못했다: ${transform}`).toBeTruthy();
+  return { x: Number(m![1]), y: Number(m![2]) };
+}
 function maxScaleOf(): number {
   return Number(layers().getAttribute('data-zoom-max-scale'));
 }
@@ -193,7 +199,39 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     fireEvent.mouseUp(window);
     // 확대 뒤 중심을 잡느라 이미 이동해 있다 — **움직인 만큼**을 본다
     expect(layers().style.transform).not.toBe(before);
-    expect(layers().style.transform).toContain('translate(-296px, -256px)');
+    // ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ 두 갈래로 갈라 **더 좁게** 잰다.
+    //   ㈎ 끈 만큼(가로 −40 · 세로 0) 정확히 옮겨진다 — 이 시험이 원래 재던 것.
+    //   ㈏ 확대 뒤의 자리는 **뷰포트 중심을 고정점으로 삼은 값**이다.
+    //   ／ 종전 표기 ~~`toContain('translate(-296px, -256px)')`~~ — 그 수는 확대 전
+    //   화면에 실제로 걸려 있던 중앙 정렬분(`512 × (1 − BASE) / 2`)을 고정점 계산에서
+    //   빠뜨린 값이었다. 기본 배율이 1 보다 작은 타일 갈래에서 버튼 확대가 뷰포트 중심을
+    //   붙잡지 못하고 그림이 미끄러지던 자리다. 단언을 지우지 않고 옳은 값으로 바꾼다.
+    const moved = panOf();
+    expect(moved.x).toBeCloseTo(panOf(before).x - 40, 6);
+    expect(moved.y).toBeCloseTo(panOf(before).y, 6);
+    expect(moved.x).toBeCloseTo(256 * (1 - 2 * BASE) - 40, 6);
+    expect(moved.y).toBeCloseTo(256 * (1 - 2 * BASE), 6);
+  });
+
+  it('타일 갈래는 층 묶음 상자가 아니라 **뷰포트 상자**로 중앙을 잡는다', async () => {
+    // ⭑ ⟨#120 · spec 우려 6 ⓐ⟩ 타일 갈래의 내용 상자는 **설계상 뷰포트 상자**다 —
+    //   `baseLevel` 이 뷰포트 폭으로 조각을 세우고 조각은 전부 절대 배치라 층 묶음이
+    //   제 높이를 만들지 않는다. jsdom 이 `offsetHeight` 를 0 으로 주는 것에 기대면
+    //   실화면에서 0 이 아닌 값이 잡히는 순간 타일 좌표가 조용히 어긋난다. 그래서
+    //   **층 묶음 상자를 일부러 심어 두고** 그것이 무시되는지 잰다.
+    renderDetail(makeSource());
+    await drawnMap();
+    Object.defineProperty(layers(), 'offsetWidth', { value: 512, configurable: true });
+    Object.defineProperty(layers(), 'offsetHeight', { value: 1600, configurable: true });
+    // 심은 값을 읽을 기회를 준다 — 배율을 올렸다 되돌리면 같은 자리에서 다시 계산된다.
+    fireEvent.click(screen.getByRole('button', { name: '확대' }));
+    fireEvent.click(screen.getByRole('button', { name: '축소' }));
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
+    // 뷰포트 상자(512×512) 기준 중앙. 층 묶음 상자(512×1600)를 썼다면 세로가 −464.5 다.
+    const pan = panOf();
+    expect(pan.x).toBeCloseTo(256 * (1 - BASE), 6);
+    expect(pan.y).toBeCloseTo(256 * (1 - BASE), 6);
+    expect(pan.y).not.toBeCloseTo((512 - 1600 * BASE) / 2, 6);
   });
 });
 
