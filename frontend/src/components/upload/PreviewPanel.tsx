@@ -19,6 +19,7 @@ import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 import { BoundsOutline, PreviewZoomControls } from '../preview/PreviewZoomControls';
+import { PreviewOverlay } from '../preview/PreviewOverlay';
 import { BasemapLayer } from '../preview/BasemapLayer';
 import { useZoomPan } from '../preview/useZoomPan';
 import { useStageRemaining } from '../preview/useStageRemaining';
@@ -623,6 +624,7 @@ export function PreviewPanel(props: {
               <div
                 className="pv-layers"
                 data-testid="up-preview-layers"
+                ref={zoom.layersRef}
                 data-zoom-scale={String(zoom.scale)}
                 data-zoom-base-scale={String(zoom.baseScale)}
                 {...(zoom.rungKm !== undefined ? { 'data-scale-rung-km': String(zoom.rungKm) } : {})}
@@ -648,10 +650,14 @@ export function PreviewPanel(props: {
                   onError={() => setTileExpired(true)}
                 />
               </div>
+              {/* ⭑ ⟨#120⟩ 확대/축소 줄 — 상세·확장보기와 **같은 컴포넌트**다(사용자 스토리 7).
+                  ／ 종전 표기 ~~뷰포트의 뒤 형제~~ — 도구 층으로 들어가 그림과 함께 움직이지 않는다. */}
+              <PreviewOverlay
+                testId="up-preview-overlay"
+                bottomRight={<PreviewZoomControls zoom={zoom} testId="up-preview-zoom" />}
+              />
             </div>
           ) : null}
-          {/* 확대/축소 줄 — 상세·확장보기와 **같은 컴포넌트**다(사용자 스토리 7) */}
-          <PreviewZoomControls zoom={zoom} testId="up-preview-zoom" />
           {tileExpired && (
             <div className="vizerr" role="alert" aria-live="assertive" data-testid="up-preview-expired">
               그림을 불러오지 못했어요. 미리보기를 다시 그려 주세요.
@@ -768,7 +774,6 @@ export function PreviewPanel(props: {
               ) : null}
             </div>
           ) : result?.imageUrl ? (
-            <>
               <div
                 className="pv-viewport"
                 data-testid="pv-expand-viewport"
@@ -780,6 +785,7 @@ export function PreviewPanel(props: {
                 <div
                   className="pv-layers"
                   data-testid="pv-expand-layers"
+                  ref={expandZoom.layersRef}
                   data-zoom-scale={String(expandZoom.scale)}
                   data-zoom-base-scale={String(expandZoom.baseScale)}
                   {...(expandZoom.rungKm !== undefined
@@ -800,9 +806,13 @@ export function PreviewPanel(props: {
                     onLoad={expandZoom.onImageLoad}
                   />
                 </div>
+                {/* ⭑ ⟨#120⟩ 확대 줄이 뷰포트 안 도구 층으로 들어간다 — `.pvx-b` 가
+                    뷰포트 뒤 형제까지 쌓아 세로로 스크롤되던 자리다. */}
+                <PreviewOverlay
+                  testId="pv-expand-tools"
+                  bottomRight={<PreviewZoomControls zoom={expandZoom} testId="pv-expand-zoom" />}
+                />
               </div>
-              <PreviewZoomControls zoom={expandZoom} testId="pv-expand-zoom" />
-            </>
           ) : (
             <p className="muted" data-testid="pv-expand-empty">
               아직 그리지 않았어요

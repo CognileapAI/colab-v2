@@ -1,0 +1,197 @@
+{
+  "a_first_display": {
+    "viewport": {
+      "height": 886,
+      "width": 1190,
+      "x": 117.5,
+      "y": 519.9375,
+      "cx": 712.5,
+      "cy": 962.9375
+    },
+    "image": {
+      "height": 1785,
+      "width": 1190,
+      "x": 117.5,
+      "y": 70.4375,
+      "cx": 712.5,
+      "cy": 962.9375
+    },
+    "dx": 0.0,
+    "dy": 0.0
+  },
+  "c_frame": {
+    "viewport": {
+      "height": 886,
+      "width": 1190,
+      "x": 117.5,
+      "y": 519.9375,
+      "cx": 712.5,
+      "cy": 962.9375
+    },
+    "frameIn": {
+      "height": 910,
+      "width": 1214,
+      "x": 105.5,
+      "y": 507.9375,
+      "cx": 712.5,
+      "cy": 962.9375
+    },
+    "heightEqual": false,
+    "heightDelta": -24,
+    "toolsInsideViewport": {
+      "zoom": true,
+      "legend": true,
+      "hud": true,
+      "value": true,
+      "shot": true
+    },
+    "tools": {
+      "zoom": {
+        "height": 39,
+        "width": 204.421875,
+        "x": 1091.078125,
+        "y": 1307.9375,
+        "cx": 1193.2890625,
+        "cy": 1327.4375
+      },
+      "legend": {
+        "height": 158.78125,
+        "width": 111.109375,
+        "x": 1184.390625,
+        "y": 531.9375,
+        "cx": 1239.9453125,
+        "cy": 611.328125
+      },
+      "hud": {
+        "height": 34.796875,
+        "width": 103.1875,
+        "x": 129.5,
+        "y": 1316.34375,
+        "cx": 181.09375,
+        "cy": 1333.7421875
+      },
+      "value": {
+        "height": 34.796875,
+        "width": 260.875,
+        "x": 129.5,
+        "y": 1359.140625,
+        "cx": 259.9375,
+        "cy": 1376.5390625
+      },
+      "shot": {
+        "height": 39,
+        "width": 84.953125,
+        "x": 1210.546875,
+        "y": 1354.9375,
+        "cx": 1253.0234375,
+        "cy": 1374.4375
+      }
+    }
+  },
+  "b_tools_fixed": {
+    "before": {
+      "zoom": {
+        "width": 204.422,
+        "height": 39,
+        "relX": 973.578,
+        "relY": 788.0
+      },
+      "legend": {
+        "width": 111.109,
+        "height": 158.781,
+        "relX": 1066.891,
+        "relY": 12.0
+      },
+      "hud": {
+        "width": 103.188,
+        "height": 34.797,
+        "relX": 12.0,
+        "relY": 796.406
+      },
+      "value": {
+        "width": 260.875,
+        "height": 34.797,
+        "relX": 12.0,
+        "relY": 839.203
+      },
+      "shot": {
+        "width": 84.953,
+        "height": 39,
+        "relX": 1093.047,
+        "relY": 835.0
+      }
+    },
+    "after": {
+      "zoom": {
+        "width": 204.422,
+        "height": 39,
+        "relX": 973.578,
+        "relY": 788.0
+      },
+      "legend": {
+        "width": 111.109,
+        "height": 158.781,
+        "relX": 1066.891,
+        "relY": 12.0
+      },
+      "hud": {
+        "width": 233.25,
+        "height": 34.797,
+        "relX": 12.0,
+        "relY": 750.812
+      },
+      "value": {
+        "width": 249.766,
+        "height": 80.391,
+        "relX": 12.0,
+        "relY": 793.609
+      },
+      "shot": {
+        "width": 84.953,
+        "height": 39,
+        "relX": 1093.047,
+        "relY": 835.0
+      }
+    },
+    "unchanged": {
+      "zoom": true,
+      "legend": true,
+      "hud": false,
+      "value": false,
+      "shot": true
+    },
+    "zoomedFromTo": [
+      1190,
+      4760
+    ],
+    "imageScaled": 4.0,
+    "dragRequestedPx": 200,
+    "imageMovedPx": 200.0,
+    "imageActuallyMoved": true
+  },
+  "e_overlay_click": {
+    "before": "고른 자리\n위도 36.0016 · 경도 117.4879\n셀값\n12.5 mm\n답하는 단위\n한 칸 · 원본과 같은 칸",
+    "after": "고른 자리\n위도 36.0016 · 경도 117.4879\n셀값\n12.5 mm\n답하는 단위\n한 칸 · 원본과 같은 칸",
+    "unchanged": true
+  },
+  "a_after_reset": {
+    "viewport": {
+      "height": 886,
+      "width": 1190,
+      "x": 117.5,
+      "y": -240.0625,
+      "cx": 712.5,
+      "cy": 202.9375
+    },
+    "image": {
+      "height": 1785,
+      "width": 1190,
+      "x": 117.5,
+      "y": -689.5625,
+      "cx": 712.5,
+      "cy": 202.9375
+    },
+    "dx": 0.0,
+    "dy": 0.0
+  }
+}

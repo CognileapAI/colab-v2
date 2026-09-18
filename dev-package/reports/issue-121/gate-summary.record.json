@@ -1,0 +1,71 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-fixture-reach",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-visual",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 4,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-typecheck",
+      "frontend-test",
+      "frontend-fixture-reach",
+      "frontend-visual"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "318b471e5e164f86a2d1b5f08c9fcffb",
+      "run_id": "6391a53172f14cc1b75fba95b85353e9",
+      "checkout": "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a23ffde2ec2f3dd46",
+      "files": "e38da45775fa2fb1e794c78399bca85f88285743d59cdbf1ee6e727ae9236268",
+      "commit": "2a557c4f470fff8f170b07d00b06d4fcd4b2d26e",
+      "tree": "126a793fc493e6095cbf146c04975a8d43981682",
+      "checkout_id": "6f139ab062ec453d18d0d4ff2922bd4e",
+      "report": "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.git/colab-harness/6f139ab062ec453d18d0d4ff2922bd4e/318b471e5e164f86a2d1b5f08c9fcffb/6391a53172f14cc1b75fba95b85353e9/gate-summary.json"
+    },
+    "after": {
+      "task_id": "318b471e5e164f86a2d1b5f08c9fcffb",
+      "run_id": "6391a53172f14cc1b75fba95b85353e9",
+      "checkout": "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a23ffde2ec2f3dd46",
+      "files": "e38da45775fa2fb1e794c78399bca85f88285743d59cdbf1ee6e727ae9236268",
+      "commit": "2a557c4f470fff8f170b07d00b06d4fcd4b2d26e",
+      "tree": "126a793fc493e6095cbf146c04975a8d43981682",
+      "checkout_id": "6f139ab062ec453d18d0d4ff2922bd4e",
+      "report": "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.git/colab-harness/6f139ab062ec453d18d0d4ff2922bd4e/318b471e5e164f86a2d1b5f08c9fcffb/6391a53172f14cc1b75fba95b85353e9/gate-summary.json"
+    }
+  },
+  "commit": "2a557c4f470fff8f170b07d00b06d4fcd4b2d26e",
+  "tree": "126a793fc493e6095cbf146c04975a8d43981682"
+}

@@ -74,8 +74,19 @@ summary_out_paths() { # $1=(선택) 산출 디렉터리 → 배출 경로들. �
   return 0
 }
 
-summary_gate_row() { # $1=이름 $2=상태 $3=종료코드 $4=준비 표식 → TSV 한 줄
-  printf '%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4"
+summary_gate_row() { # $1=이름 $2=상태 $3=종료코드 $4=준비 표식 $5=실패 표식 → TSV 한 줄
+  # ⚠ **위치 규약이다.** 자리를 바꾸거나 중간에 끼워 넣지 않는다. 앞 4열의 뜻은 2026-09-17
+  #   5열 전환에서도 한 글자도 바뀌지 않았고, 배출기(`gates/tools/gate_summary_json.py`)와
+  #   **같은 커밋에서** 함께 옮겼다. 한쪽만 옮기면 게이트가 찍은 값이 JSON 에서 조용히 사라진다.
+  printf '%s\t%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4" "$5"
+}
+
+# 게이트가 찍은 `::gate-failure::` 줄을 **전부** 모아 TSV 한 셀로 접는다.
+# 준비 표식과 달리 `-m1` 이 아니다 — 실패한 시험은 여럿이고, 첫 줄만 남기면 나머지를 잃는다.
+# TSV 한 셀이라 줄바꿈을 그대로 넣을 수 없으므로 ` || ` 로 잇는다(형식은 `gates/README.md`).
+summary_failure_marks() { # $1=로그 파일 → 접힌 한 줄(없으면 빈 문자열)
+  [ -f "${1:-}" ] || return 0
+  awk '/^::gate-failure::/ { if (n++) printf " || "; printf "%s", $0 }' "$1" 2>/dev/null || true
 }
 
 summary_head() { # $1=요청대상 $2=시작 $3=끝 $4=병렬도 $5~$8=계수 4개
@@ -96,6 +107,93 @@ gate_state_of() { # $1=종료코드 $2=준비 표식 → green|red_판정|red_�
   else echo "red_판정"; fi
 }
 
+# ── 병렬 안전성 선언을 읽는 자리 — **하나**다 ───────────────────────────────
+# 종전에는 이 독법이 `all)` 갈래 안에만 있었다(`:694-697`). 그래서 단독 호출은 선언을 **한 글자도
+#   읽지 않았고**, `serial` 은 한 프로세스 안에서만 뜻이 있었다. 호스트 뮤텍스가 그 선언을 집행하려면
+#   단독 호출도 같은 표를 읽어야 한다 — 그렇다고 독법을 두 벌로 두면 한쪽이 언젠가 다른 말을 한다
+#   (선언표 파서는 `gates/tools/parallelism.py` 하나라는 `scripts/harness/check.py:30-32` 의 규율).
+# 여기는 **읽기만** 한다. 파서도 표 형식도 바뀌지 않았다.
+declare -A GATE_MODE=()
+GATE_PLAN_NOTES=()
+GATE_MODE_MANIFEST=""
+GATE_MODE_READ=""
+gate_mode_read() { # 선언표를 한 번만 읽어 GATE_MODE·GATE_PLAN_NOTES 를 채운다
+  [ -z "$GATE_MODE_READ" ] || return 0
+  GATE_MODE_READ=1
+  local decl_raw c1 c2 c3
+  GATE_MODE_MANIFEST="${COLAB_GATE_PARALLELISM_MANIFEST:-$REPO_ROOT/gates/config/parallelism.toml}"
+  decl_raw="$(python3 "$REPO_ROOT/gates/tools/parallelism.py" "$GATE_MODE_MANIFEST" 2>&1)" \
+    || decl_raw="!PARSE	parallelism.py 를 돌리지 못했다"
+  while IFS=$'\t' read -r c1 c2 c3; do
+    [ -n "$c1" ] || continue
+    case "$c1" in
+      '!PARSE') GATE_PLAN_NOTES+=("⚠ 병렬 선언표를 읽지 못했다 (${GATE_MODE_MANIFEST#$REPO_ROOT/}) — 전 게이트를 단독으로 돌린다. $c2") ;;
+      '!BAD')   GATE_PLAN_NOTES+=("⚠ 선언 값이 serial·parallel 이 아니다: $c2 = '$c3' — 미선언으로 보고 단독으로 돌린다.") ;;
+      *)        GATE_MODE["$c1"]="$c2" ;;
+    esac
+  done <<< "$decl_raw"
+}
+
+# **실효** 모드. 미선언·표 파손은 `parallel` 이 아니라 **안전한 쪽(`serial`)** 이다 —
+# 「선언이 없다」를 「병렬 안전」으로 바꾸는 자리가 있으면 그것이 green-by-skip 의 잠금판이다.
+# `all)` 의 실행 계획 출력은 이 함수가 아니라 `GATE_MODE` 원값을 읽어 미선언을 그대로 드러낸다.
+gate_mode_of() { # $1=게이트 → serial | parallel
+  gate_mode_read
+  case "${GATE_MODE[$1]:-}" in
+    parallel) printf 'parallel' ;;
+    *)        printf 'serial' ;;
+  esac
+}
+
+# ── 호스트 뮤텍스 — `serial` 선언을 **프로세스 경계 너머로** 강제한다 ────────
+# ⭑ ⟨2026-09-18 신설 · ADR-0005 개정의 후속 ②⟩ 종전에 「게이트 레인은 호스트에 하나」는
+#   오케스트레이터가 레인 지시문에 그 문장을 적어서 지켜졌다 — 지시문을 읽지 않은 프로세스
+#   (다른 세션·Codex·사람 손)는 걸리지 않았다. 강제가 아니라 예의였다. 이제 실행기가 줄을 세운다.
+# 규칙은 하나다 — **잠금을 쥔 부모 아래의 자식만 면제된다.** 면제 키는 `COLAB_GATE_MUTEX_HELD=1`
+#   이고 `COLAB_GATE_SUMMARY_CHILD=1` 이 아니다: `task` 경로(`:29-32` → `lifecycle_contract.py`
+#   `run_gates`)가 게이트마다 `CHILD=1` 자식을 부르므로, CHILD 를 키로 쓰면 측정 레인의 `serial`
+#   게이트 전부가 **무잠금으로** 돈다(spec 우려 #2 · Ted 2026-09-18 결정).
+# ⚠ 잡는 자리는 요약 래퍼(바로 아래) **앞**이다. 뒤에 두면 배출처를 주는 레인·H7 경로에서는
+#   면제된 자식만 이 자리에 도달해 **잠금 0건**이 된다.
+# shellcheck source=/dev/null
+. "$REPO_ROOT/gates/tools/_lock.sh"
+GATE_MUTEX_N=0          # 잡은 건수
+GATE_MUTEX_M=0          # 면제(parallel 선언) 건수
+GATE_MUTEX_WAIT=0       # 대기 누계(초)
+if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ "$GATE" != "task" ] \
+   && [ -z "${COLAB_GATE_MUTEX_HELD:-}" ]; then
+  # ⚠ 표는 **명령 치환 밖에서** 읽는다. `$(gate_mode_of …)` 는 서브셸이라 거기서 읽으면
+  #   `GATE_MODE` 도 `GATE_PLAN_NOTES` 도 부모로 돌아오지 않는다 — 잠금 판정은 맞게 나오는데
+  #   「표를 못 읽었다」는 메모만 조용히 사라진다. 아래 요약이 그 메모를 찍으려면 여기가 먼저다.
+  gate_mode_read
+  if [ "$(gate_mode_of "$GATE")" = "serial" ]; then
+    if gate_host_mutex_acquire "$GATE"; then
+      GATE_MUTEX_N=1
+      GATE_MUTEX_WAIT="$GATE_HOST_MUTEX_WAITED"
+      # 이 실행이 낳는 모든 자식(요약 래퍼의 자식 · `case` 가 exec 하는 게이트 본체가 다시 부르는
+      # `run.sh`)은 이 잠금 아래에 있다. 다시 잡으면 자기 자신을 기다린다.
+      export COLAB_GATE_MUTEX_HELD=1
+    else
+      # 잠글 수 없으면 **판정하지 않는다.** 표식과 78 은 `_lock.sh` 가 이미 냈다.
+      exit 78
+    fi
+  else
+    GATE_MUTEX_M=1
+  fi
+  # ⭑ ⟨2026-09-18 정정 · 전수 측정에서 값으로 드러났다⟩ **결정이 난 그 자리에서 찍는다.**
+  #   종전에는 이 줄이 아래 요약 래퍼 안에 있었는데, 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 비었을
+  #   때만 돈다. 그런데 `task` 경로(`lifecycle_contract.py run_gates`)는 게이트마다 `CHILD=1` 자식을
+  #   부르므로 **잠금은 걸렸는데 71게이트 로그 어디에도 그 사실이 0건**이었다 — 실행기가 아는 사실을
+  #   삼킨 자리다(ADR-0005 개정 「무의미하거나 판정이거나」). 자식 stdout 은 게이트별 로그로 가므로
+  #   여기서 찍으면 `task` 경로에도 남는다.
+  # ⚠ **인쇄 자리는 여기 하나뿐이다.** 래퍼는 이 줄을 다시 찍지 않는다(같은 프로세스의 같은 사실).
+  #   `all` 의 부모는 자기 집계 줄을 따로 찍고, 그 solo 자식들은 `HELD=1` 이라 이 블록에 오지 않는다.
+  echo "  ── 호스트 뮤텍스 : 잠금 ${GATE_MUTEX_N}건 · 면제(parallel 선언) ${GATE_MUTEX_M}건 · 대기 누계 ${GATE_MUTEX_WAIT}s"
+  # 표 파손·값 이상 메모도 같은 자리에서 닫는다. 표를 못 읽어 안전한 쪽(단독)으로 접었다는 사실이
+  # 실행기 안에만 남으면 「왜 잠갔나」의 근거가 사라진다.
+  for n in ${GATE_PLAN_NOTES[@]+"${GATE_PLAN_NOTES[@]}"}; do echo "  $n"; done
+fi
+
 # ── 단독 게이트도 요약과 JSON 을 낸다 ────────────────────────────────────────
 # 왜: 레인의 반복 검증은 **단독 게이트**다(`rules §3-1`). H7 이 읽는 자리가 전수에만 생기면
 #   규율대로 일한 레인이 매번 「JSON 부재」로 걸린다.
@@ -115,6 +213,7 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
   fi
   one_finished="$(summary_now)"
   one_mark="$(grep -m1 '^::gate-readiness-failure::' "$one_out" 2>/dev/null || true)"
+  one_fail="$(summary_failure_marks "$one_out")"
   one_state="$(gate_state_of "$one_rc" "$one_mark")"
   n_green=0; n_red_judge=0; n_red_ready=0; n_undeclared_input=0
   echo "── 요약 ────────────────────────────────────────────────────"
@@ -131,13 +230,18 @@ if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}
           echo "  red(준비)  $GATE (exit $one_rc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${one_mark#::gate-readiness-failure::}" ;;
       esac ;;
     *)
-      echo "  red(판정)  $GATE (exit $one_rc) — 검사 대상이 규율을 어겼다"; n_red_judge=1 ;;
+      echo "  red(판정)  $GATE (exit $one_rc) — 검사 대상이 규율을 어겼다"; n_red_judge=1
+      # 게이트가 실패한 시험의 이름을 찍었으면 요약에도 한 줄씩 세운다 — 1300줄 출력을 뒤지지 않게.
+      grep '^::gate-failure::' "$one_out" 2>/dev/null | sed 's/^::gate-failure::/     · /' || true ;;
   esac
   echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
+  # ⚠ 호스트 뮤텍스 줄과 선언표 메모는 **여기서 찍지 않는다.** 결정이 난 자리(위 획득 블록)가
+  #   유일한 인쇄 자리다 — 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 빈 실행에서만 돌기 때문에
+  #   여기에 두면 `task` 경로에서 그 사실이 통째로 사라진다(2026-09-18 전수 측정 실측).
   mapfile -t SUMMARY_OUTS < <(summary_out_paths "${COLAB_GATE_OUTDIR:-}")
   { summary_head "$GATE" "$one_started" "$one_finished" 1 \
       "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"
-    printf 'gate\t%s\n' "$(summary_gate_row "$GATE" "$one_state" "$one_rc" "$one_mark")"
+    printf 'gate\t%s\n' "$(summary_gate_row "$GATE" "$one_state" "$one_rc" "$one_mark" "$one_fail")"
     printf 'target\t%s\n' "$GATE"
   } | summary_emit ${SUMMARY_OUTS[@]+"${SUMMARY_OUTS[@]}"}
   rm -f "$one_out"
@@ -197,7 +301,7 @@ ALL_GATES=(
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   frontend-visual-selftest harness-eval-selftest harness-contract-selftest
-  service-tests-selftest
+  service-tests-selftest gate-host-mutex-selftest
 )
 
 case "$GATE" in
@@ -210,6 +314,11 @@ case "$GATE" in
     ;;
   harness-contract-selftest)
     exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py
+    ;;
+  gate-host-mutex-selftest)
+    # 호스트 뮤텍스가 `serial` 선언을 **프로세스 경계 너머로** 집행함을 외부 행위로 증명한다.
+    # 자기 `mktemp -d` 를 TMPDIR 로 물려 부르므로 실제 호스트 잠금을 잡지 않는다.
+    exec "$REPO_ROOT/gates/tools/gate-host-mutex-selftest.sh"
     ;;
   operator-notifications)
     exec "$REPO_ROOT/gates/tools/operator-notifications.sh"
@@ -676,20 +785,10 @@ case "$GATE" in
     mkdir -p "$outdir"
     all_started="$(summary_now)"
 
-    # ── 선언을 읽는다 ────────────────────────────────────────────────────────
-    manifest="${COLAB_GATE_PARALLELISM_MANIFEST:-$REPO_ROOT/gates/config/parallelism.toml}"
-    declare -A GATE_MODE=()
-    plan_notes=()
-    decl_raw="$(python3 "$REPO_ROOT/gates/tools/parallelism.py" "$manifest" 2>&1)" \
-      || decl_raw="!PARSE	parallelism.py 를 돌리지 못했다"
-    while IFS=$'\t' read -r c1 c2 c3; do
-      [ -n "$c1" ] || continue
-      case "$c1" in
-        '!PARSE') plan_notes+=("⚠ 병렬 선언표를 읽지 못했다 (${manifest#$REPO_ROOT/}) — 전 게이트를 단독으로 돌린다. $c2") ;;
-        '!BAD')   plan_notes+=("⚠ 선언 값이 serial·parallel 이 아니다: $c2 = '$c3' — 미선언으로 보고 단독으로 돌린다.") ;;
-        *)        GATE_MODE["$c1"]="$c2" ;;
-      esac
-    done <<< "$decl_raw"
+    # ── 선언을 읽는다 — 독법은 위(`gate_mode_read`) 하나다 ────────────────────
+    gate_mode_read
+    manifest="$GATE_MODE_MANIFEST"
+    plan_notes=(${GATE_PLAN_NOTES[@]+"${GATE_PLAN_NOTES[@]}"})
 
     # ── 세 상태로 가른다 ─────────────────────────────────────────────────────
     solo_gates=(); pool_gates=(); undeclared_gates=()
@@ -720,24 +819,50 @@ case "$GATE" in
 
     # 종료코드와 **실행 구간**을 받아 적는다. 구간은 「단독으로 돌았다」를
     # 주장이 아니라 값으로 남기기 위한 것이다 (COLAB_GATE_OUTDIR 로 꺼내 대조한다).
-    run_one() { # $1=게이트 $2=안쪽 병렬도
-      local g="$1" ij="$2" st
+    # ⚠ 호스트 뮤텍스는 **단독 구간의 게이트 1건마다** 잡는다. 구간 전체(17건)를 한 번에 잠그면
+    #   반대 레인이 17건을 기다려 상한을 넘긴다 — 잠금 단위가 곧 최장 대기다.
+    #   병렬 풀의 게이트는 잡지 않고 `COLAB_GATE_MUTEX_HELD` 도 주지 않는다: **선언이 곧 면제**다.
+    run_one() { # $1=게이트 $2=안쪽 병렬도 $3=solo|pool
+      local g="$1" ij="$2" kind="$3" st
       st="$(date +%s.%N)"
-      if COLAB_GATE_JOBS="$ij" COLAB_GATE_INNER_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
-      then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
+      : > "$outdir/$g.out"
+      if [ "$kind" = solo ]; then
+        # 대기·준비 표식은 **부모**가 찍는다(자식 출력은 파일로 돌아간다). 같은 파일에 이어 붙여
+        # 재생 순서와 요약 분류기(`:783` 의 grep)가 둘 다 그것을 본다.
+        if gate_host_mutex_acquire "$g" >> "$outdir/$g.out" 2>&1; then
+          GATE_MUTEX_N=$(( GATE_MUTEX_N + 1 ))
+          GATE_MUTEX_WAIT=$(( GATE_MUTEX_WAIT + GATE_HOST_MUTEX_WAITED ))
+        else
+          # 잠글 수 없었으면 이 게이트는 **판정되지 않았다.** 78 을 그대로 적고 돌리지 않는다 —
+          # 잠금 없이 돌려서 나온 값은 부하가 섞인 값이고, 그것을 green 으로 세지 않는다.
+          echo 78 > "$outdir/$g.rc"
+          printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
+          return 0
+        fi
+        if COLAB_GATE_JOBS="$ij" COLAB_GATE_INNER_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 \
+           COLAB_GATE_MUTEX_HELD=1 "$REPO_ROOT/gates/run.sh" "$g" >>"$outdir/$g.out" 2>&1
+        then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
+        gate_host_mutex_release
+      else
+        if COLAB_GATE_JOBS="$ij" COLAB_GATE_INNER_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 \
+           "$REPO_ROOT/gates/run.sh" "$g" >>"$outdir/$g.out" 2>&1
+        then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
+      fi
       printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
     }
 
     # ① 단독 게이트 — 하나씩. **이 구간에는 다른 게이트가 하나도 돌지 않는다.**
     #    바깥이 비어 있으므로 안쪽 풀에는 코어를 그대로 준다 (곱해질 것이 없다).
-    for g in ${solo_gates[@]+"${solo_gates[@]}"}; do run_one "$g" "$solo_inner"; done
+    for g in ${solo_gates[@]+"${solo_gates[@]}"}; do run_one "$g" "$solo_inner" solo; done
 
-    # ② 병렬 게이트 — 풀에서 동시에.
+    # ② 병렬 게이트 — 풀에서 동시에. 선언이 곧 뮤텍스 면제이므로 건수를 여기서 센다
+    #    (서브셸 안에서 올린 계수는 부모로 돌아오지 않는다).
+    GATE_MUTEX_M="${#pool_gates[@]}"
     for g in ${pool_gates[@]+"${pool_gates[@]}"}; do
       while [ "$(jobs -rp | wc -l)" -ge "$jobs_n" ]; do wait -n 2>/dev/null || break; done
       # set -e 아래서 자식의 red 가 이 서브셸을 먼저 죽이면 종료코드를 못 적는다.
       # 종료코드 없는 게이트는 「미실행」으로 red 가 되므로, 반드시 받아 적는다.
-      { run_one "$g" "$inner"; } &
+      { run_one "$g" "$inner" pool; } &
     done
     wait
     rc=0
@@ -767,8 +892,9 @@ case "$GATE" in
     for g in "${ALL_GATES[@]}"; do
       grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
       rmark="$(grep -m1 '^::gate-readiness-failure::' "$outdir/$g.out" 2>/dev/null || true)"
-      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1)); json_gates+=("$(summary_gate_row "$g" green "$grc" "")")
-      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
+      gfail="$(summary_failure_marks "$outdir/$g.out")"
+      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1)); json_gates+=("$(summary_gate_row "$g" green "$grc" "" "")")
+      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark" "")")
       elif [ "$grc" = 78 ] || [ -n "$rmark" ]; then
         detail="${rmark#::gate-readiness-failure::}"
         # 원인을 표식에서 읽는다. `cause=` 가 없는 옛 표식은 환경대기다(`_pg.sh`).
@@ -779,10 +905,17 @@ case "$GATE" in
           *)
             echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${detail:-사유 표식 없음}" ;;
         esac
-        n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
-      else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); json_gates+=("$(summary_gate_row "$g" "red_판정" "$grc" "$rmark")"); fi
+        n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark" "")")
+      else
+        echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"
+        # 게이트가 실패한 시험의 이름을 찍었으면 요약에도 한 줄씩 세운다 — 1300줄 출력을 뒤지지 않게.
+        grep '^::gate-failure::' "$outdir/$g.out" 2>/dev/null | sed 's/^::gate-failure::/     · /' || true
+        n_red_judge=$((n_red_judge+1)); json_gates+=("$(summary_gate_row "$g" "red_판정" "$grc" "$rmark" "$gfail")"); fi
     done
     echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
+    # 잠금 N ＋ 면제 M = 실행 건수. N 은 `serial`(과 미선언) 건수와 같아야 한다 — 다르면
+    # 선언과 집행이 갈린 것이고, 그 순간 이 요약은 「단독으로 돌았다」를 주장만 하는 것이 된다.
+    echo "  ── 호스트 뮤텍스 : 잠금 ${GATE_MUTEX_N}건 · 면제(parallel 선언) ${GATE_MUTEX_M}건 · 대기 누계 ${GATE_MUTEX_WAIT}s"
     if [ "$n_red_ready" -gt 0 ]; then
       echo "  ⚠ red(준비) ${n_red_ready}건 — **판정이 아니라 준비가 낸 red 다.** 이 건들에 대해 검사 대상은 아직 판정되지 않았다."
       if [ "$n_undeclared_input" -gt 0 ]; then

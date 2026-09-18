@@ -8,6 +8,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `agent-bridge` | Codex/Claude 연결, 완료 훅 및 배포 자동 알림의 진입점·상태·중복 방지 |
 | `harness-contract` | `.agents/harness.yaml`의 공통 원본·adapter·필수 gate·0/1/78 계약 누락과 경로 이탈 |
 | `harness-contract-selftest` | malformed config·빈 필수 gate·누락 adapter를 조용히 통과시키는 회귀 |
+| **`gate-host-mutex-selftest`** ⭑신설 | **호스트 뮤텍스가 `serial` 선언을 프로세스 경계 너머로 집행함을 증명한다** — **ⓐ 점유 중 호출은 기다리다 red(준비 · 78)** 이고 **실경과가 상한 이상**이다(표식만 grep 하지 않는다) · **ⓑ 점유가 풀리면 green 이고 `waited` ≥ 1** — 이 두 시간값이 「잠금이 실제로 걸렸다」의 값 증거다 · ⓒ 잠금 파일을 열 수 없으면 78 · ⓓ `flock` 부재면 78(PATH 수술 · 면제 변수가 없으므로 주입 훅이 없다) · **ⓔ 면제는 선언(`parallel`)과 `COLAB_GATE_MUTEX_HELD=1` 둘뿐이다 — `COLAB_GATE_SUMMARY_CHILD=1` 만 있는 호출은 면제되지 않는다**(그것이 면제면 `task` 경로의 `serial` 게이트가 전부 무잠금이다) · ⓕ 배출처를 선언한 레인 경로에서도 **부모**가 잡는다 · **ⓖ 선언표를 못 읽으면 단독 호출도 그 메모를 stdout 에 찍고 안전한 쪽(잠근다)으로 접는다** — 종전에는 그 메모를 `all` 만 찍어 단독 호출이 침묵했고, 접은 근거가 실행기 안에만 남았다. · **ⓗ `task` 경로의 모양(`COLAB_GATE_SUMMARY_CHILD=1`)에서도 잠금 사실이 stdout 에 남고 줄은 정확히 1회다** — 요약 줄이 래퍼 블록 안에 있던 동안 전수 회차의 71게이트 로그 어디에도 잠금 건수가 0건이었다(2026-09-18 실측). 대상 게이트는 `exec-bit` 이고 선언표는 픽스처 toml(`COLAB_GATE_PARALLELISM_MANIFEST`)을 물린다 — 실제 `parallelism.toml` 에서 `exec-bit` 은 `parallel` 이므로 이 셀프테스트가 green 이면 **실행기가 표를 실제로 읽은 것**이다. `TMPDIR` 을 자기 `mktemp -d` 로 물려 **실제 호스트 잠금을 한 번도 잡지 않는다** |
 | `operator-notifications` | 운영자 사건 20개 선언과 영속 전달·일일 보고·AWS 정규화·두 loopback Slack 수신처 검증 |
 | `operator-notifications-selftest` | 필수 사건 manifest 누락을 판정 실패로 거부하는 음성 검사 |
 | `contract-breaking` | emit된 스펙이 frozen seam과 충돌 |
@@ -55,6 +56,17 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 
 - **`~/.colab-v2-test.env` 가 없고 `CI`·`GITHUB_ACTIONS` 도 비어 있으면, 게이트 이름을 준 실행은 무엇이든 dispatch 전에 red(준비 · 입력미선언 · 종료코드 78)로 끝난다** — `exec-bit`·`contract-lint`·`work-item-consistency` 처럼 그 값을 안 쓰는 게이트도 예외가 아니다(판정부 = `gates/run.sh` 의 env 블록). 파일이 있으면 실행기가 `set -a; . <파일>; set +a` 를 대신 친다. 자리를 옮기려면 `COLAB_TEST_ENV_FILE=<경로>`, 값이 이미 실려 있으면 `COLAB_TEST_ENV_SOURCED=1`. CI 는 이 파일을 쓰지 않고 게이트가 일회용 DB 를 스스로 세운다. 파일 세우는 법 = `dev-package/RESTART.md §2-④`.
 
+- **전수 회차의 정본 호출문은 아래 한 줄이다.** `seed-plan-drift`·`frontend-visual`·`harness-eval` 세 게이트는 운영자 입력이 없으면 red(준비 · 입력미선언 · 78)이고, 셋 다 **선언이든 명시 면제든 말을 해야** 병합 진입 조건 `red_준비 == 0`(`:137`)을 채운다. 변수를 아무것도 주지 않은 호스트에서는 어떤 브랜치도 그 조건을 만족할 수 없다. **명시 면제도 병합 진입 조건 충족이다**(intent `dev-package/intent/2026-09-17-gate-input-env-vars-block-merge-gate.md` 결정 · 2026-09-18). 면제 건수는 전수 요약 줄이 아니라 **해당 게이트 자신의 출력**에 드러난다 — `frontend-visual` 은 페이지 건수, `harness-eval` 은 과제 건수다.
+
+  ```bash
+  COLAB_REF_ROOT=<참조 데이터 루트> COLAB_VISUAL_EXEMPT=1 COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh all
+  # 측정 레인은 자기 task 의 선언 집합으로 돈다
+  COLAB_REF_ROOT=<참조 데이터 루트> COLAB_VISUAL_EXEMPT=1 COLAB_HARNESS_EVAL_EXEMPT=1 COLAB_TASK_ID=<task_id> bash gates/run.sh task
+  ```
+
+  `seed-plan-drift` 는 **면제가 아니라 실선언**이다 — 참조 데이터 루트의 기본 자리는 `dev-package/tools/dev-seed/README.md` §0 이 적고, 실물이 있는 호스트에서는 `COLAB_SEED_PLAN_NO_FILES=1` 대신 `COLAB_REF_ROOT` 를 준다. 그러므로 명시 면제가 필요한 것은 `frontend-visual`·`harness-eval` **2건**뿐이다.
+  **대신 실행하려면** — `COLAB_VISUAL_URLS=<url…>`(앱 기동이 전제다 · `:39`) · `COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD>`(**실제 모델을 부른다** · 승격 전이므로 로컬 `all` 과 CI 가 면제 모드로 도는 것이 현 규정이다 · `:43`).
+
 ## 빨리 도는 것과 덜 보는 것은 다르다
 
 게이트를 병렬로 돌린다. **검사 대상·기대값·판정 기준은 하나도 바뀌지 않았고, 바뀐 것은 실행 순서뿐이다.**
@@ -74,11 +86,51 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
   ⚠ **이 문장은 전에도 여기 있었는데 실행기가 읽지 않았다.** 그래서 `-j 2` 에서 red · 단독에서 green 이
   났다 — **판정이 아니라 배선이 낸 red** 이고, 앞선 거짓 red 와 같은 뿌리다. 고친 방향은 병렬도 인하도 ·
   재시도도 · 건너뛰기도 아니다: **선언을 표로 옮기고 실행기가 집행한다.** 이제 산문과 집행이 한 값을 본다.
+- ⭑ **⟨2026-09-18 · ADR-0005 개정의 후속 ②⟩ 호스트 뮤텍스 — `serial` 선언은 이제 프로세스 경계를 넘는다.**
+  종전에 이 선언은 **`gates/run.sh all` 한 프로세스 안에서만** 효력이 있었다(선언표를 읽는 자리가 `all)`
+  갈래 하나뿐이었다). 그래서 「게이트 레인은 호스트에 하나」(`rules §3-1`)는 오케스트레이터가 레인
+  지시문에 그 문장을 적어서 지켜졌다 — 지시문을 읽지 않은 프로세스(다른 세션·Codex·사람 손)는
+  걸리지 않았다. 강제가 아니라 예의였다. 이제 실행기가 줄을 세운다.
+  - **무엇을 잡나** — 호스트 전역 `flock` **하나**(`${TMPDIR:-/tmp}/colab-v2-gate-host-mutex/host`)를,
+    **`serial` 로 선언된 게이트를 실행하는 부모 프로세스만** 잡는다. 잠금 단위는 **게이트 1건**이다.
+    ⛔ **면제 변수는 없다.** `parallel` 선언이 곧 면제이고, 그 외의 면제는 **잠금을 쥔 부모가 자식에게
+    주는 `COLAB_GATE_MUTEX_HELD=1`** 하나뿐이다(재진입 교착 방지). ⚠ **`COLAB_GATE_SUMMARY_CHILD=1` 은
+    면제 키가 아니다** — `task` 경로가 게이트마다 그 자식을 부르므로, 그것을 키로 쓰면 측정 레인의
+    `serial` 게이트가 전부 무잠금으로 돈다.
+  - **잠금 키는 `TMPDIR` 하나다.** 경합 자원(호스트 CPU·메모리·도커 데몬)이 레포별이 아니기 때문이다.
+    레포 경로를 키에 넣으면 워크트리마다 잠금이 갈려 실효 한도가 배수로 늘어난다.
+  - **대기는 보인다** — `::gate-waiting::gate=<게이트>|waited=<초>|limit=<초>|lock=<경로>` 를 stdout 에
+    찍는다(획득 시도 직전 1회 ＋ 획득 직후 실경과 1회). 조용히 기다리면 멈춘 것과 구분되지 않는다.
+  - **상한** = `COLAB_GATE_MUTEX_WAIT`, 기본 **900초**(선례 `COLAB_PG_SLOT_WAIT`). 잠금이 게이트 1건
+    단위이므로 최장 대기는 상대 레인의 `serial` 게이트 **1건**이다.
+  - **세 갈래가 `red(준비 · 78)`** — ⑴ `flock` 부재 ⑵ 잠금 디렉터리·파일을 만들 수 없다 ⑶ 상한 초과.
+    셋 다 기존 보고 경로 하나(`_readiness.sh` `readiness_env_wait`)로 나간다. ⚠ **상한을 늘리거나
+    재시도해서 green 을 만들지 않는다** — 78 이 나면 그 값이 곧 실측이다.
+  - ⚠ **`serial` 이 잡은 동안 다른 프로세스의 `parallel` 게이트는 돈다.** 의도된 형태다 —
+    `serial` 이 보장하는 것은 「다른 `serial` 과 겹치지 않는다」이지 「혼자 돌았다」가 아니다.
+  - **잠금 여부가 결정된 그 자리에서** 한 줄이 선다: `── 호스트 뮤텍스 : 잠금 N건 · 면제(parallel 선언) M건 · 대기 누계 Xs`.
+    ⚠ 요약 래퍼 안이 아니다 — 래퍼는 `COLAB_GATE_SUMMARY_CHILD` 가 빈 실행에서만 돌아서, 거기 두면
+    `task` 경로(게이트마다 `CHILD=1` 자식)의 로그에서 잠금 사실이 **통째로 사라진다**(2026-09-18 실측).
+    N ＋ M = 실행 건수이고 N 은 `serial` 선언 건수와 같아야 한다. 증명 = `gate-host-mutex-selftest`.
 - `gates/run.sh all` 은 시작할 때 **실행 계획**(단독 N · 병렬 M · 미선언 K)을 찍고, 요약에도 미선언 건수를
   다시 적는다. `COLAB_GATE_OUTDIR=<경로>` 를 주면 게이트별 실행 구간(`*.span`)이 남아 **「단독으로 돌았다」를
   주장이 아니라 값으로** 대조할 수 있다.
 - 도구 설치 구간(`gates/.venv` · `node_modules`)에는 잠금을 걸었다(`_lock.sh`). 잠금이 없으면 둘이 동시에
   설치하다 한쪽이 「도구 없음」 red 를 내는데, 그건 검사 결과가 아니라 배선이 만든 red 다.
+  ⭑ **⟨2026-09-18 · ADR-0005 개정⟩ 잠글 수단(`flock`)이 없으면 `red(준비 · 78)` 이다.** 종전에는 잠그지 않고
+  그냥 진행했다 — 실행기가 「잠금이 서지 않았다」를 **알고도** 삼킨 자리다. `_pg.sh` 의 슬롯 세 갈래도 같이
+  승격했다(`flock` 부재 · 슬롯 디렉터리 생성 실패 · 슬롯 파일 열기 실패). **면제 변수는 두지 않는다** —
+  오늘 모든 호스트에 `flock` 이 있고(CI = `ubuntu-latest` · 개발 = WSL/util-linux), 없는 호스트가 합류하는
+  날 3상태 변수를 만든다.
+- ⭑ **⟨2026-09-17 · 이슈 #56⟩ 미선언은 이제 `harness-contract` 가 red(판정)으로 막는다.**
+  `scripts/harness/check.py` 의 `check_gate_parallelism()` 이 `ALL_GATES ⊆ parallelism.toml` 을 단언한다 —
+  빠진 이름도, **선언표에만 있는 이름**도, `serial`·`parallel` 아닌 값도 전부 `red(판정)` ＋ 종료코드 **1** 이다.
+  판정 대상이 **선언표**이므로 판정 red 가 맞다. 선언표나 `ALL_GATES` 를 **읽지 못하면** 그때는
+  `::gate-readiness-failure::` ＋ **78** 이다 — 대상을 못 읽은 것이지 대상이 규율을 어긴 것이 아니다(ADR-0004).
+  선언표를 읽는 자리는 실행기와 **같은 하나**다(`gates/tools/parallelism.py`). 두 벌로 두면 한쪽이 언젠가
+  다른 말을 한다. 단독 게이트 실행에서도 걸리므로 전수를 돌기 전에 안다.
+  ⚠ 이것은 결함 수정이 아니라 **결정 전환**이다 — 위의 「미선언 → 안전한 쪽(단독) ＋ 출력에 명시」는
+  의도된 설계였고, 승격은 그 결정을 뒤집는다(승인 2026-09-17). 새 게이트는 선언 없이는 들어오지 못한다.
 
 ## 게이트 요약 JSON — 기계가 읽는 한 벌 (스키마 `colab-gate-summary/1`)
 
@@ -111,6 +163,29 @@ COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> ./gates/run.sh all -
   JSON 이 직전 트리를 가리킨다).
 - ⚠ **병합 진입 조건은 `red_판정 == 0` 과 `red_준비 == 0` 둘 다**다(준비 red 도 red 다).
   H7 은 레인 종료만 보므로 준비 red 로 종료를 막지 않는다 — 그 판정은 병합 시점 몫이다.
+
+### 게이트 행의 `failures` — 실패한 시험의 이름을 싣는 공용 표식 ⟨2026-09-17 · 이슈 #55⟩
+
+red(판정)인데 **무엇이 깨졌는지 요약 어디에도 없으면** 사람이 1300줄 출력을 뒤진다.
+그래서 게이트 행에 열을 하나 더했다. **`counts` 키 집합은 그대로이고 스키마도 `colab-gate-summary/1`
+그대로다** — 새 열은 게이트 **행**에 붙지 `counts` 에 붙지 않으므로 ADR-0004 재검토 조건에 걸리지 않는다.
+
+- **표식 형식**(게이트가 stdout 에 찍는다) — `::gate-failure::gate=<이름>|file=<경로>|test=<시험 이름>`.
+  기존 `::gate-readiness-failure::gate=…|waited_for=…` 선례와 같은 모양이다. 게이트마다 열을
+  하나씩 늘리지 않고 **이 표식 하나**를 쓴다.
+- **접는 법** — 실패는 여럿이라 표식도 여러 줄인데 게이트 행은 TSV 한 셀이다. 실행기가 표식 줄을
+  **전부** 모아 ` || ` 로 이어 한 셀에 넣는다(`gates/run.sh` `summary_failure_marks()`).
+  준비 표식의 `grep -m1` 과 달리 **첫 줄만 남기지 않는다** — 그러면 나머지 실패를 잃는다.
+  ⚠ ` || ` 는 사람이 읽기 위한 구분자다. 이 값은 진단용이고 되파싱해서 판정에 쓰는 자리가 없다.
+- **경로** — 게이트가 찍고 → 실행기(`summary_gate_row()` 5번째 열)가 옮기고 → 배출기가 직렬화한다.
+  **계수를 다시 세는 자리도, 실패를 다시 찾는 자리도 만들지 않았다.**
+- 지금 이 표식을 찍는 게이트는 `frontend-test` 하나다. 다른 게이트로 넓히는 것은 별도 범위다.
+- ⚠ **게이트 행을 만드는 자리가 둘이다.** 하나는 위 경로(`gates/run.sh`)이고, 다른 하나는
+  `scripts/harness/hooks/lifecycle_contract.py` 의 `run_gates()` 다 — 그쪽은 `gates/run.sh` 의
+  `summary_gate_row()` 를 거치지 않고 같은 스키마의 행을 **자기 손으로** 짓는다.
+  이번에 `failures` 는 `run.sh` 쪽에만 더했다. `run_gates()` 에는 `::gate-failure::` 를 집는 코드가
+  없어 거기에 키를 더하면 **항상 `null`** 이 되고, 그것은 재지 않은 것을 잰 것처럼 쓰는 모양이다.
+  두 생산처를 하나로 합치는 일은 아직 담는 이슈가 없다 — 사실만 여기 적어 둔다.
 
 ## selftest가 있는 이유
 

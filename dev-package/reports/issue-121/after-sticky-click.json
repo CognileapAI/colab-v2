@@ -1,0 +1,74 @@
+{
+  "label": "수정 후 · 액션 열 고정(ⓔ)과 실제 클릭 · 생성 탭 간격",
+  "note": "좌표 단위는 CSS 픽셀(DPR 1). `.account-table-scroll` 가로 이동은 agent-browser `scroll left|right 2000 --selector '.account-table-scroll'` 로 끝까지 민 값이다.",
+  "stickyAtBothScrollEnds": {
+    "1280x800": {
+      "scrollWrapper": { "x": 53, "w": 1159, "right": 1212 },
+      "tableWidth": 1304,
+      "scrollableBy": 145,
+      "actionCell": {
+        "atLeftEnd": { "x": 636, "w": 576, "right": 1212 },
+        "atRightEnd": { "x": 636, "w": 576, "right": 1212 },
+        "movedPx": 0
+      },
+      "emailCell": { "atLeftEnd": { "x": 53 }, "atRightEnd": { "x": -92 }, "movedPx": -145 },
+      "buttonsAtLeftEnd": {
+        "btn1_시스템관리자지정": { "x": 648.5, "w": 141.83, "right": 790.33 },
+        "btn3_비활성화": { "x": 932.55, "w": 86.41, "right": 1018.95 }
+      },
+      "noteAtLeftEnd": { "x": 1026.95, "w": 170.36, "right": 1197.31, "fullyVisible": true },
+      "verdict": "고정 열이 스크롤 양 끝에서 0 px 움직였고, 같은 표의 이메일 셀은 145 px 움직였다 — sticky 가 실제로 붙었다."
+    },
+    "1024x768": {
+      "scrollWrapper": { "x": 53, "w": 903, "right": 956 },
+      "tableWidth": 1304,
+      "scrollableBy": 401,
+      "actionCell": {
+        "atLeftEnd": { "x": 380, "w": 576, "right": 956 },
+        "atRightEnd": { "x": 380, "w": 576, "right": 956 },
+        "movedPx": 0
+      },
+      "emailCell": { "atLeftEnd": { "x": 53 }, "atRightEnd": { "x": -348 }, "movedPx": -401 },
+      "verdict": "같음 — 고정 열 0 px · 이메일 셀 401 px."
+    },
+    "390x844": {
+      "sticky": false,
+      "reason": "A3 — `@media (min-width: 1024px)` 밖이라 고정하지 않는다. 고정하면 스크롤 영역 269 px 안에서 액션 열 194 px 이 자리를 다 먹어 나머지 일곱 열을 볼 수 없다.",
+      "measuredAt": "오른쪽 끝까지 민 상태(intent 완료 정의 ⓔ 의 1024px 미만 정의)",
+      "scrollWrapper": { "x": 53, "w": 269, "right": 322 },
+      "actionCell": { "x": 128, "w": 194, "right": 322 },
+      "buttons": {
+        "btn1_시스템관리자지정": { "x": 140, "w": 141.83, "right": 281.83, "insideWrapper": true },
+        "btn3_비활성화": { "x": 140, "w": 86.41, "right": 226.41, "insideWrapper": true }
+      },
+      "verdict": "오른쪽 끝에서 버튼 셋이 보이는 상자 안에 전부 들어온다."
+    }
+  },
+  "lastButtonRightWithinActionCellPadding": {
+    "criterion": "A9⑷ — 마지막 버튼의 오른쪽 끝 ≤ 액션 td 오른쪽 끝 − 12px",
+    "1920x1080": { "lastButtonRight": 1537.95, "cellRightMinus12": 1719.0, "pass": true },
+    "1440x900": { "lastButtonRight": 1178.95, "cellRightMinus12": 1360.0, "pass": true },
+    "1280x800": { "lastButtonRight": 1018.95, "cellRightMinus12": 1200.0, "pass": true },
+    "1024x768": { "lastButtonRight": 762.95, "cellRightMinus12": 944.0, "pass": true },
+    "390x844": { "lastButtonRight": 1261.41, "cellRightMinus12": 1345.0, "pass": true },
+    "note": "여유가 큰 까닭 — 마지막 버튼 뒤에 note 자리가 더 있다(자기 줄) 또는 액션 열이 버튼 셋보다 넓다."
+  },
+  "actualClicks": {
+    "criterion": "A9⑶ — `get box` 는 「눌린다」를 증명하지 않는다. 폭대마다 버튼 하나를 실제로 눌러 대화상자가 열림을 본다.",
+    "results": [
+      { "viewport": "1920x1080", "scrollPosition": "왼쪽 끝", "row": 2, "button": "시스템 관리자 지정", "dialogTitle": "시스템 관리자 지정", "opened": true },
+      { "viewport": "1440x900", "scrollPosition": "가로 스크롤 없음", "row": 3, "button": "시스템 관리자 해제", "dialogTitle": "시스템 관리자 해제", "opened": true },
+      { "viewport": "1280x800", "scrollPosition": "오른쪽 끝", "row": 2, "button": "비활성화", "dialogTitle": "계정 비활성화", "opened": true },
+      { "viewport": "1024x768", "scrollPosition": "오른쪽 끝", "row": 4, "button": "재활성화", "dialogTitle": "계정 재활성화", "opened": true },
+      { "viewport": "390x844", "scrollPosition": "오른쪽 끝", "row": 2, "button": "비밀번호 재설정", "dialogTitle": "비밀번호 재설정", "opened": true }
+    ],
+    "note": "1024×768 과 390×844 는 첫 클릭이 「Element not found」로 끊겼다. 버튼이 세로로 화면 아래에 있어서이며, `scrollintoview` 뒤 같은 선택자로 열렸다 — 고정 열·가로 스크롤과 무관한 세로 스크롤 문제다."
+  },
+  "createTabGap": {
+    "criterion": "D2 — 생성 탭의 탭 줄↔카드 간격은 14px → 24px 로 **바뀐다**. 의도한 변화로 선언한다.",
+    "viewport": "1920x1080",
+    "before": { "tabsBottom": 212.19, "cardTop": 226.19, "gap": 14 },
+    "after": { "tabsBottom": 216.09, "cardTop": 240.09, "gap": 24 },
+    "images": ["images/before-create-1920-light.png", "images/after-create-1920-light.png"]
+  }
+}

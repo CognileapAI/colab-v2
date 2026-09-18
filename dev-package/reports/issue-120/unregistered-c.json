@@ -1,0 +1,49 @@
+{
+  "unregistered": {
+    "viewport": {
+      "height": 1823,
+      "width": 1216,
+      "x": 104.5,
+      "y": 367.390625,
+      "cx": 712.5,
+      "cy": 1278.890625
+    },
+    "image": {
+      "height": 1821,
+      "width": 1214,
+      "x": 105.5,
+      "y": 368.390625,
+      "cx": 712.5,
+      "cy": 1278.890625
+    },
+    "frameIn": null,
+    "dx": 0.0,
+    "dy": 0.0,
+    "heightDelta": null,
+    "note": "등록 전 미리보기에는 4:3 자리 선점 틀(.pv-frame-in)이 없다 — 이 화면의 ⓒ 는 도구 층이 뷰포트 안에 있는가로 판정한다",
+    "hasZoomRow": 0,
+    "overlayIsViewportChild": 1,
+    "toolsInsideViewport": {
+      "legend": true,
+      "hud": true
+    },
+    "tools": {
+      "legend": {
+        "height": 158.78125,
+        "width": 111.109375,
+        "x": 1196.390625,
+        "y": 380.390625,
+        "cx": 1251.9453125,
+        "cy": 459.78125
+      },
+      "hud": {
+        "height": 34.796875,
+        "width": 103.1875,
+        "x": 117.5,
+        "y": 2142.59375,
+        "cx": 169.09375,
+        "cy": 2159.9921875
+      }
+    }
+  }
+}

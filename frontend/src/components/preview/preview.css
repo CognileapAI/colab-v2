@@ -101,10 +101,14 @@
   color: var(--color-text-muted);
 }
 
+/* ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ **여러 줄로 접히지 않는다.** 여러 줄 flex 는 줄
+   높이를 `.pv-mapcol` 의 내용(= 그림 높이)으로 재서, 도구를 뷰포트 안으로 옮긴 뒤에도
+   세로가 긴 그림이 4:3 틀 안쪽(`.pv-frame-in`)을 넘쳐 스크롤바를 세웠다(우려 9).
+   오른쪽 열(범례)이 도구 층으로 들어가 열이 하나뿐이라 `gap` 도 쓰이지 않는다.
+   ／ 종전 표기 ~~`gap: 20px` · `flex-wrap: wrap`~~. */
 .pv-map {
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
 }
 
@@ -189,6 +193,86 @@
   /* 끌어 옮기는 자리다 — 그림을 드래그해 가져가는 기본 동작을 끈다 */
   touch-action: none;
   user-select: none;
+  /* ⭑ ⟨#120⟩ **도구 층이 겹칠 기준 상자.** 이것이 없으면 뷰포트 안에 절대 배치로
+     얹을 자리가 없어 도구가 문서 흐름에 쌓인다(3층 구조의 1층). */
+  position: relative;
+}
+
+/* ── 도구 층 (`#120` intent · `PreviewOverlay.tsx`) ───────────────────────────
+   뷰포트의 직계 자식이자 층 묶음의 형제다. 층 묶음 안에 넣으면 도구가 그림과 함께
+   확대돼 정본 §8 조건 ⑵(확대해도 범례가 바뀌지 않는다)가 깨진다.
+   ⚠ 빈 자리는 그림에 그대로 닿아야 한다 — 그래서 층과 모서리 묶음은 포인터를 받지 않고
+     도구 요소만 받는다. */
+.pv-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 여백 소유 = 컨테이너. 모서리 묶음이 `inset 12px` 과 줄 간격을 갖고, 도구 요소는
+   margin 을 지지 않는다(디자인 제약 「여백은 컨테이너 소유」). */
+.pv-overlay-tr,
+.pv-overlay-br,
+.pv-overlay-bl {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* 우상단 = 범례. 세로로 끝까지 자리를 잡아 두고(범례 최대 높이의 기준 상자가 된다)
+   내용은 위에 붙인다 — 상자 자체는 포인터를 받지 않아 그림을 가리지 않는다. */
+.pv-overlay-tr {
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+/* 우하단 = 확대·축소·기본 배율·스크린샷. 좌하단 = 커서 위경도 표시와 값 조회. */
+.pv-overlay-br {
+  right: 12px;
+  bottom: 12px;
+  align-items: flex-end;
+}
+
+.pv-overlay-bl {
+  left: 12px;
+  bottom: 12px;
+  align-items: flex-start;
+}
+
+/* 도구 패널은 그림 위에 얹힌다 — **불투명 표면 배경**을 가져야 대비가 그림 색에
+   좌우되지 않는다(우려 3 ⓐ). 고정 층이지 팝오버가 아니므로 그림자는 0 이고 보더만 쓴다.
+   토큰은 `tokens.css` 것만 쓴다 — 새 색을 만들지 않는다. */
+.pv-overlay .pv-zoom,
+.pv-overlay .pv-shot,
+.pv-overlay .pv-value,
+.pv-overlay .pv-legend,
+.pv-overlay .pv-hud {
+  pointer-events: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  box-shadow: none;
+  max-width: 100%;
+  min-height: 0;
+}
+
+/* 컨테이너가 간격을 갖는다 — 도구 요소의 종전 margin 은 도구 층 안에서 0 이다. */
+.pv-overlay .pv-hud,
+.pv-overlay .pv-value {
+  margin: 0;
+}
+
+/* 범례가 구간 수에 따라 길어져도 뷰포트를 넘지 않는다 — **범례 안에서만** 스크롤한다
+   (우려 4 ⓐ). 넘치는 것을 감추는 것이 아니라 그 패널이 스스로 감당한다. */
+.pv-overlay .pv-legend {
+  max-height: calc(100% - 24px);
+  overflow: auto;
 }
 
 .pv-layers {
@@ -230,7 +314,11 @@
   /* ⭑ ⟨R-BUGFIX-260912 `#27`·`#28`⟩ 확대 줄은 **줄지 않고 접히지 않는다.**
      세로 흐름에서는 그림 자리가 줄어들고 이 줄이 남아야 스크롤 없이 보인다(`#27`).
      좁은 열에 눌리면 버튼 글자가 「확/대」·「기/본/배/율/로」로 세로로 접혔다(`#28`).
-     배치 소유는 옮기지 않는다 — 고정·절대 배치를 신설하지 않는다(판정 ⑦ ⓐ). */
+     배치 소유는 옮기지 않는다 — 고정·절대 배치를 신설하지 않는다(판정 ⑦ ⓐ).
+     ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ **판정 ⑦ ⓐ 는 이 intent 로 명시 해제됐다.**
+     확대 줄은 뷰포트 안 도구 층(`.pv-overlay-br` · `position: absolute`)으로 옮겨 갔고,
+     배치 소유는 그 모서리 컨테이너가 갖는다. 위 두 선언은 그대로 남는다 — 도구 층 안에서도
+     줄바꿈 금지와 「줄지 않음」은 같은 이유로 필요하다. 원문은 지우지 않는다. */
   flex: none;
   white-space: nowrap;
 }
@@ -369,9 +457,16 @@
   min-height: 0;
 }
 
+/* ⭑ ⟨#120⟩ **가로도 틀을 채운다.** 도구가 도구 층으로 들어가면서 이 열의 자식이 뷰포트
+   하나만 남았는데, 그 뷰포트의 내용(`.pv-layers .pv-tile { width: 100% }`)은 스스로 폭을
+   만들지 않는다 — 종전에는 확대 줄·HUD 의 글자가 열의 고유 폭을 세우고 있었다. 그래서
+   실화면에서 뷰포트 상자가 **폭 0** 으로 섰다(레인 실측 2026-09-18). 열이 지도 행의 남은
+   자리를 받게 해 그 순환을 끊는다. */
 .pv-frame .pv-mapcol {
   align-self: stretch;
   min-height: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* 확대/이동 자리도 같은 틀 안에서 비율을 지킨다(`useZoomPan` 동작 무변). */

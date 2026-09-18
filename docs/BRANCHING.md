@@ -44,6 +44,17 @@
 - 새 브랜치 접두어는 이 표에 먼저 기록한다. 기술적 worktree 브랜치와 별도의 제품 배포 원천을 혼동하지 않는다.
 - 강제 push와 태그 일괄 push는 사용하지 않는다. product 승격을 squash/rebase로 바꿔 공통 이력을 끊지 않는다.
 
+## 2-1. 버전 번호 — MAJOR·MINOR·PATCH
+
+- 출처 = Ted 결정 2026-09-18. 세 자리는 `MAJOR.MINOR.PATCH`다.
+- **MAJOR**(첫 숫자 · 예 `2.0.0`) = 큰 변화.
+- **MINOR**(가운데 숫자 · 예 `1.1.0`) = 수정 배포. 일반 develop → product 승격이 여기다.
+- **PATCH**(끝 숫자 · 예 `1.0.1`) = 핫픽스.
+- 올리는 자리는 **product PR 이전의 develop**이다. 승격 PR 안에서 올리지 않는다.
+- 올리는 파일 7건(선례 = PR #105) — `frontend/package.json` · `frontend/package-lock.json`의 루트 `version` 2곳(`npm install --package-lock-only`) · `services/{ai-service,core-api,pipeline-worker,viz-render}/pyproject.toml` · `services/core-api/src/colab_core/__init__.py`.
+- `contracts/seams/fe-core.yaml`의 `info.version`은 seam 계약 버전이며 제품 버전이 아니다. 함께 올리지 않는다.
+- 첫 적용 = `1.1.0` (2026-09-18).
+
 ## 3. 하지 말 것
 
 - 다른 저장소의 develop 또는 feature 브랜치를 product에 직접 반영하기.

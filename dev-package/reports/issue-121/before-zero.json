@@ -1,0 +1,946 @@
+{
+  "label": "HEAD(31872f69) · 0건 필터(email=zzz-no-such-account)",
+  "capturedAt": "2026-09-18T09:12:42.528Z",
+  "viewports": {
+    "1920x1080": {
+      "viewport": {
+        "w": 1920,
+        "h": 1080
+      },
+      "counts": {
+        "rows": 0,
+        "th": 8
+      },
+      "boxes": {
+        "h1": {
+          "x": 904.67,
+          "y": 108.09,
+          "w": 110.64,
+          "h": 48,
+          "right": 1015.31,
+          "bottom": 156.09
+        },
+        "tabs": {
+          "x": 864.17,
+          "y": 176.19,
+          "w": 191.66,
+          "h": 36,
+          "right": 1055.83,
+          "bottom": 212.19
+        },
+        "card": {
+          "x": 520.5,
+          "y": 250.19,
+          "w": 879,
+          "h": 366.38,
+          "right": 1399.5,
+          "bottom": 616.56
+        },
+        "listPanel": {
+          "x": 520.5,
+          "y": 226.19,
+          "w": 879,
+          "h": 390.38,
+          "right": 1399.5,
+          "bottom": 616.56
+        },
+        "filters": {
+          "x": 549.5,
+          "y": 391.38,
+          "w": 821,
+          "h": 92.8,
+          "right": 1370.5,
+          "bottom": 484.17
+        },
+        "scroll": {
+          "x": 549.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1370.5,
+          "bottom": 543.56
+        },
+        "table": {
+          "x": 549.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1370.5,
+          "bottom": 543.56
+        },
+        "scrollHint": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "note": {
+          "error": "Command failed: agent-browser --session i121 get box .account-row-note --json"
+        },
+        "th1": {
+          "x": 549.5,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 653.3,
+          "bottom": 543.06
+        },
+        "th2": {
+          "x": 653.3,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 736.25,
+          "bottom": 543.06
+        },
+        "th3": {
+          "x": 736.25,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 819.2,
+          "bottom": 543.06
+        },
+        "th4": {
+          "x": 819.2,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 923,
+          "bottom": 543.06
+        },
+        "th5": {
+          "x": 923,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 1005.95,
+          "bottom": 543.06
+        },
+        "th6": {
+          "x": 1005.95,
+          "y": 500.17,
+          "w": 172,
+          "h": 42.89,
+          "right": 1177.95,
+          "bottom": 543.06
+        },
+        "th7": {
+          "x": 1177.95,
+          "y": 500.17,
+          "w": 151.16,
+          "h": 42.89,
+          "right": 1329.11,
+          "bottom": 543.06
+        },
+        "th8": {
+          "x": 1329.11,
+          "y": 500.17,
+          "w": 41.39,
+          "h": 42.89,
+          "right": 1370.5,
+          "bottom": 543.06
+        },
+        "row1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) --json"
+        },
+        "row2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) --json"
+        },
+        "row5": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(5) --json"
+        },
+        "row6": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(6) --json"
+        },
+        "btn_normal_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(1) --json"
+        },
+        "btn_normal_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(2) --json"
+        },
+        "btn_normal_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_normal": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child --json"
+        },
+        "btn_self_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(1) --json"
+        },
+        "btn_self_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(2) --json"
+        },
+        "btn_self_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_self": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child --json"
+        }
+      },
+      "derived": {
+        "tabsBottomToCardTop": 38,
+        "h1BottomToTabsTop": 20.1,
+        "h1Top": 108.09,
+        "cardWidth": 879,
+        "tableWidth": 821,
+        "scrollWidth": 821,
+        "tableOverflowPx": 0
+      }
+    },
+    "1440x900": {
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "counts": {
+        "rows": 0,
+        "th": 8
+      },
+      "boxes": {
+        "h1": {
+          "x": 664.67,
+          "y": 108.09,
+          "w": 110.64,
+          "h": 48,
+          "right": 775.31,
+          "bottom": 156.09
+        },
+        "tabs": {
+          "x": 624.17,
+          "y": 176.19,
+          "w": 191.66,
+          "h": 36,
+          "right": 815.83,
+          "bottom": 212.19
+        },
+        "card": {
+          "x": 280.5,
+          "y": 250.19,
+          "w": 879,
+          "h": 366.38,
+          "right": 1159.5,
+          "bottom": 616.56
+        },
+        "listPanel": {
+          "x": 280.5,
+          "y": 226.19,
+          "w": 879,
+          "h": 390.38,
+          "right": 1159.5,
+          "bottom": 616.56
+        },
+        "filters": {
+          "x": 309.5,
+          "y": 391.38,
+          "w": 821,
+          "h": 92.8,
+          "right": 1130.5,
+          "bottom": 484.17
+        },
+        "scroll": {
+          "x": 309.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1130.5,
+          "bottom": 543.56
+        },
+        "table": {
+          "x": 309.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1130.5,
+          "bottom": 543.56
+        },
+        "scrollHint": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "note": {
+          "error": "Command failed: agent-browser --session i121 get box .account-row-note --json"
+        },
+        "th1": {
+          "x": 309.5,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 413.3,
+          "bottom": 543.06
+        },
+        "th2": {
+          "x": 413.3,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 496.25,
+          "bottom": 543.06
+        },
+        "th3": {
+          "x": 496.25,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 579.2,
+          "bottom": 543.06
+        },
+        "th4": {
+          "x": 579.2,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 683,
+          "bottom": 543.06
+        },
+        "th5": {
+          "x": 683,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 765.95,
+          "bottom": 543.06
+        },
+        "th6": {
+          "x": 765.95,
+          "y": 500.17,
+          "w": 172,
+          "h": 42.89,
+          "right": 937.95,
+          "bottom": 543.06
+        },
+        "th7": {
+          "x": 937.95,
+          "y": 500.17,
+          "w": 151.16,
+          "h": 42.89,
+          "right": 1089.11,
+          "bottom": 543.06
+        },
+        "th8": {
+          "x": 1089.11,
+          "y": 500.17,
+          "w": 41.39,
+          "h": 42.89,
+          "right": 1130.5,
+          "bottom": 543.06
+        },
+        "row1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) --json"
+        },
+        "row2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) --json"
+        },
+        "row5": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(5) --json"
+        },
+        "row6": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(6) --json"
+        },
+        "btn_normal_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(1) --json"
+        },
+        "btn_normal_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(2) --json"
+        },
+        "btn_normal_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_normal": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child --json"
+        },
+        "btn_self_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(1) --json"
+        },
+        "btn_self_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(2) --json"
+        },
+        "btn_self_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_self": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child --json"
+        }
+      },
+      "derived": {
+        "tabsBottomToCardTop": 38,
+        "h1BottomToTabsTop": 20.1,
+        "h1Top": 108.09,
+        "cardWidth": 879,
+        "tableWidth": 821,
+        "scrollWidth": 821,
+        "tableOverflowPx": 0
+      }
+    },
+    "1280x800": {
+      "viewport": {
+        "w": 1280,
+        "h": 800
+      },
+      "counts": {
+        "rows": 0,
+        "th": 8
+      },
+      "boxes": {
+        "h1": {
+          "x": 584.67,
+          "y": 108.09,
+          "w": 110.64,
+          "h": 48,
+          "right": 695.31,
+          "bottom": 156.09
+        },
+        "tabs": {
+          "x": 544.17,
+          "y": 176.19,
+          "w": 191.66,
+          "h": 36,
+          "right": 735.83,
+          "bottom": 212.19
+        },
+        "card": {
+          "x": 200.5,
+          "y": 250.19,
+          "w": 879,
+          "h": 366.38,
+          "right": 1079.5,
+          "bottom": 616.56
+        },
+        "listPanel": {
+          "x": 200.5,
+          "y": 226.19,
+          "w": 879,
+          "h": 390.38,
+          "right": 1079.5,
+          "bottom": 616.56
+        },
+        "filters": {
+          "x": 229.5,
+          "y": 391.38,
+          "w": 821,
+          "h": 92.8,
+          "right": 1050.5,
+          "bottom": 484.17
+        },
+        "scroll": {
+          "x": 229.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1050.5,
+          "bottom": 543.56
+        },
+        "table": {
+          "x": 229.5,
+          "y": 500.17,
+          "w": 821,
+          "h": 43.39,
+          "right": 1050.5,
+          "bottom": 543.56
+        },
+        "scrollHint": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "note": {
+          "error": "Command failed: agent-browser --session i121 get box .account-row-note --json"
+        },
+        "th1": {
+          "x": 229.5,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 333.3,
+          "bottom": 543.06
+        },
+        "th2": {
+          "x": 333.3,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 416.25,
+          "bottom": 543.06
+        },
+        "th3": {
+          "x": 416.25,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 499.2,
+          "bottom": 543.06
+        },
+        "th4": {
+          "x": 499.2,
+          "y": 500.17,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 603,
+          "bottom": 543.06
+        },
+        "th5": {
+          "x": 603,
+          "y": 500.17,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 685.95,
+          "bottom": 543.06
+        },
+        "th6": {
+          "x": 685.95,
+          "y": 500.17,
+          "w": 172,
+          "h": 42.89,
+          "right": 857.95,
+          "bottom": 543.06
+        },
+        "th7": {
+          "x": 857.95,
+          "y": 500.17,
+          "w": 151.16,
+          "h": 42.89,
+          "right": 1009.11,
+          "bottom": 543.06
+        },
+        "th8": {
+          "x": 1009.11,
+          "y": 500.17,
+          "w": 41.39,
+          "h": 42.89,
+          "right": 1050.5,
+          "bottom": 543.06
+        },
+        "row1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) --json"
+        },
+        "row2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) --json"
+        },
+        "row5": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(5) --json"
+        },
+        "row6": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(6) --json"
+        },
+        "btn_normal_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(1) --json"
+        },
+        "btn_normal_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(2) --json"
+        },
+        "btn_normal_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_normal": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child --json"
+        },
+        "btn_self_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(1) --json"
+        },
+        "btn_self_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(2) --json"
+        },
+        "btn_self_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_self": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child --json"
+        }
+      },
+      "derived": {
+        "tabsBottomToCardTop": 38,
+        "h1BottomToTabsTop": 20.1,
+        "h1Top": 108.09,
+        "cardWidth": 879,
+        "tableWidth": 821,
+        "scrollWidth": 821,
+        "tableOverflowPx": 0
+      }
+    },
+    "1024x768": {
+      "viewport": {
+        "w": 1024,
+        "h": 768
+      },
+      "counts": {
+        "rows": 0,
+        "th": 8
+      },
+      "boxes": {
+        "h1": {
+          "x": 456.67,
+          "y": 108.09,
+          "w": 110.64,
+          "h": 48,
+          "right": 567.31,
+          "bottom": 156.09
+        },
+        "tabs": {
+          "x": 416.17,
+          "y": 176.19,
+          "w": 191.66,
+          "h": 36,
+          "right": 607.83,
+          "bottom": 212.19
+        },
+        "card": {
+          "x": 72.5,
+          "y": 250.19,
+          "w": 879,
+          "h": 411.17,
+          "right": 951.5,
+          "bottom": 661.36
+        },
+        "listPanel": {
+          "x": 72.5,
+          "y": 226.19,
+          "w": 879,
+          "h": 435.17,
+          "right": 951.5,
+          "bottom": 661.36
+        },
+        "filters": {
+          "x": 101.5,
+          "y": 391.38,
+          "w": 821,
+          "h": 92.8,
+          "right": 922.5,
+          "bottom": 484.17
+        },
+        "scroll": {
+          "x": 101.5,
+          "y": 544.97,
+          "w": 821,
+          "h": 43.39,
+          "right": 922.5,
+          "bottom": 588.36
+        },
+        "table": {
+          "x": 101.5,
+          "y": 544.97,
+          "w": 821,
+          "h": 43.39,
+          "right": 922.5,
+          "bottom": 588.36
+        },
+        "scrollHint": {
+          "x": 101.5,
+          "y": 484.17,
+          "w": 821,
+          "h": 44.8,
+          "right": 922.5,
+          "bottom": 528.97
+        },
+        "note": {
+          "error": "Command failed: agent-browser --session i121 get box .account-row-note --json"
+        },
+        "th1": {
+          "x": 101.5,
+          "y": 544.97,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 205.3,
+          "bottom": 587.86
+        },
+        "th2": {
+          "x": 205.3,
+          "y": 544.97,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 288.25,
+          "bottom": 587.86
+        },
+        "th3": {
+          "x": 288.25,
+          "y": 544.97,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 371.2,
+          "bottom": 587.86
+        },
+        "th4": {
+          "x": 371.2,
+          "y": 544.97,
+          "w": 103.8,
+          "h": 42.89,
+          "right": 475,
+          "bottom": 587.86
+        },
+        "th5": {
+          "x": 475,
+          "y": 544.97,
+          "w": 82.95,
+          "h": 42.89,
+          "right": 557.95,
+          "bottom": 587.86
+        },
+        "th6": {
+          "x": 557.95,
+          "y": 544.97,
+          "w": 172,
+          "h": 42.89,
+          "right": 729.95,
+          "bottom": 587.86
+        },
+        "th7": {
+          "x": 729.95,
+          "y": 544.97,
+          "w": 151.16,
+          "h": 42.89,
+          "right": 881.11,
+          "bottom": 587.86
+        },
+        "th8": {
+          "x": 881.11,
+          "y": 544.97,
+          "w": 41.39,
+          "h": 42.89,
+          "right": 922.5,
+          "bottom": 587.86
+        },
+        "row1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) --json"
+        },
+        "row2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) --json"
+        },
+        "row5": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(5) --json"
+        },
+        "row6": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(6) --json"
+        },
+        "btn_normal_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(1) --json"
+        },
+        "btn_normal_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(2) --json"
+        },
+        "btn_normal_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_normal": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child --json"
+        },
+        "btn_self_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(1) --json"
+        },
+        "btn_self_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(2) --json"
+        },
+        "btn_self_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_self": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child --json"
+        }
+      },
+      "derived": {
+        "tabsBottomToCardTop": 38,
+        "h1BottomToTabsTop": 20.1,
+        "h1Top": 108.09,
+        "cardWidth": 879,
+        "tableWidth": 821,
+        "scrollWidth": 821,
+        "tableOverflowPx": 0
+      }
+    },
+    "390x844": {
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "counts": {
+        "rows": 0,
+        "th": 8
+      },
+      "boxes": {
+        "h1": {
+          "x": 139.67,
+          "y": 157.09,
+          "w": 110.64,
+          "h": 48,
+          "right": 250.31,
+          "bottom": 205.09
+        },
+        "tabs": {
+          "x": 99.17,
+          "y": 225.19,
+          "w": 191.66,
+          "h": 36,
+          "right": 290.83,
+          "bottom": 261.19
+        },
+        "card": {
+          "x": -72.5,
+          "y": 299.19,
+          "w": 535,
+          "h": 497.97,
+          "right": 462.5,
+          "bottom": 797.16
+        },
+        "listPanel": {
+          "x": -72.5,
+          "y": 275.19,
+          "w": 535,
+          "h": 521.97,
+          "right": 462.5,
+          "bottom": 797.16
+        },
+        "filters": {
+          "x": -43.5,
+          "y": 440.38,
+          "w": 477,
+          "h": 179.59,
+          "right": 433.5,
+          "bottom": 619.97
+        },
+        "scroll": {
+          "x": -43.5,
+          "y": 680.77,
+          "w": 477,
+          "h": 43.39,
+          "right": 433.5,
+          "bottom": 724.16
+        },
+        "table": {
+          "x": -43.5,
+          "y": 680.77,
+          "w": 477,
+          "h": 43.39,
+          "right": 433.5,
+          "bottom": 724.16
+        },
+        "scrollHint": {
+          "x": -43.5,
+          "y": 619.97,
+          "w": 477,
+          "h": 44.8,
+          "right": 433.5,
+          "bottom": 664.77
+        },
+        "note": {
+          "error": "Command failed: agent-browser --session i121 get box .account-row-note --json"
+        },
+        "th1": {
+          "x": -43.5,
+          "y": 680.77,
+          "w": 60.31,
+          "h": 42.89,
+          "right": 16.81,
+          "bottom": 723.66
+        },
+        "th2": {
+          "x": 16.81,
+          "y": 680.77,
+          "w": 48.2,
+          "h": 42.89,
+          "right": 65.02,
+          "bottom": 723.66
+        },
+        "th3": {
+          "x": 65.02,
+          "y": 680.77,
+          "w": 48.2,
+          "h": 42.89,
+          "right": 113.22,
+          "bottom": 723.66
+        },
+        "th4": {
+          "x": 113.22,
+          "y": 680.77,
+          "w": 60.31,
+          "h": 42.89,
+          "right": 173.53,
+          "bottom": 723.66
+        },
+        "th5": {
+          "x": 173.53,
+          "y": 680.77,
+          "w": 48.2,
+          "h": 42.89,
+          "right": 221.73,
+          "bottom": 723.66
+        },
+        "th6": {
+          "x": 221.73,
+          "y": 680.77,
+          "w": 99.94,
+          "h": 42.89,
+          "right": 321.67,
+          "bottom": 723.66
+        },
+        "th7": {
+          "x": 321.67,
+          "y": 680.77,
+          "w": 87.83,
+          "h": 42.89,
+          "right": 409.5,
+          "bottom": 723.66
+        },
+        "th8": {
+          "x": 409.5,
+          "y": 680.77,
+          "w": 24,
+          "h": 42.89,
+          "right": 433.5,
+          "bottom": 723.66
+        },
+        "row1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) --json"
+        },
+        "row2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) --json"
+        },
+        "row5": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(5) --json"
+        },
+        "row6": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(6) --json"
+        },
+        "btn_normal_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(1) --json"
+        },
+        "btn_normal_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(2) --json"
+        },
+        "btn_normal_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_normal": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(2) td:last-child --json"
+        },
+        "btn_self_1": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(1) --json"
+        },
+        "btn_self_2": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(2) --json"
+        },
+        "btn_self_3": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child button:nth-child(3) --json"
+        },
+        "actioncell_self": {
+          "error": "Command failed: agent-browser --session i121 get box .account-table tbody tr:nth-child(1) td:last-child --json"
+        }
+      },
+      "derived": {
+        "tabsBottomToCardTop": 38,
+        "h1BottomToTabsTop": 20.1,
+        "h1Top": 157.09,
+        "cardWidth": 535,
+        "tableWidth": 477,
+        "scrollWidth": 477,
+        "tableOverflowPx": 0
+      }
+    }
+  }
+}

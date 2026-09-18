@@ -20,7 +20,10 @@ import sys
 import tempfile
 import uuid
 
-WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/')
+# `intent/` was already watched; the spec is the same lineage one step on, and a lane
+# reads it as the ground for what it implements, so it is evidence-bearing output too.
+SPECS = 'dev-package/prd/specs/'
+WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/', SPECS)
 STATES = ('green', 'red_판정', 'red_준비')
 
 
@@ -31,6 +34,25 @@ def runtime():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+# Roles that open a task, run gates and hand the run back as task evidence.
+# `measurement-lane` exists because a lane that only *measures* the whole gate set had no
+# way to open a task at all, so full-run results stayed prose instead of becoming values
+# (issue #56 ⑵). It is deliberately NOT allowed to declare `all`/`task` as its gate set —
+# that selector is still rejected in `run_gates()`. It declares the concrete names, same
+# as any other lane, because the machine only enforces two things: gate exit codes and the
+# task evidence contract (ADR-0005). Letting a role say `all` would shave the second one.
+# ⚠ Read from `task_state` rather than restated here — that module binds the report path
+#   for exactly these roles, and the two lists must not be able to drift apart.
+GATE_ROLES = runtime().GATE_ROLES
+TASK_ROLES = ('researcher',) + GATE_ROLES
+# The role whose output IS the red count. Every other lane must reach green before it can
+# close; this one is asked to measure, so blocking on red would mean it could only close
+# all-green rounds and would have no way to report a failing host (intent 2026-09-17
+# measurement-lane-subagent-stop-hook 제약). Only the red verdict is waived — rows, counts,
+# the declared gate set and the tree evidence are still required in full.
+MEASURING_ROLES = ('measurement-lane',)
 
 
 def resolve_task_path(root, task, name, artifact_only=False):
@@ -146,14 +168,14 @@ def archive_report(source, destination):
 def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False):
     root = checkout(root)
     artifacts, gates = artifacts or [], gates or []
-    if role not in ('researcher', 'lane-worker'):
+    if role not in TASK_ROLES:
         raise ValueError('unsupported task role')
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
     if not legacy:
         if report is not None:
             raise ValueError('new tasks use runtime reports; old paths require explicit --legacy')
-        if role == 'lane-worker' and (not gates or any(not isinstance(g, str) or not g for g in gates)):
+        if role in GATE_ROLES and (not gates or any(not isinstance(g, str) or not g for g in gates)):
             raise ValueError('lane requires explicit gates')
         if role == 'researcher' and gates:
             raise ValueError('research task must not declare implementation gates')
@@ -167,9 +189,20 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
         runtime().bind_paths(root, task)
         runtime().save(root, task)
         return task
+    # `measurement-lane` is a new role; it has no legacy repository-output history to stay
+    # compatible with. Say so plainly instead of letting it fall through to the researcher
+    # branch below, which would reject it with a message about research gates.
+    if role == 'measurement-lane':
+        raise ValueError('measurement-lane has no legacy repository-output mode; drop --legacy')
     for name in artifacts:
         if inside(root, name).relative_to(root).as_posix() != name or not name.startswith(WATCH):
             raise ValueError('artifact must be a repository-relative research output')
+        # Specs are watched, but the parent authors them from an approved intent; a researcher
+        # must not register as their author under any schema (`docs/development/lifecycle-evidence.md`).
+        # The executor holds both facts here — the role and the path — so it judges rather
+        # than letting the legacy schema be the way around the rule.
+        if role == 'researcher' and name.startswith(SPECS):
+            raise ValueError('specs are authored by the parent, not declared by a researcher')
     if role == 'lane-worker':
         if not gates or any(not isinstance(g, str) or not g for g in gates) or not report:
             raise ValueError('lane requires explicit gates and report')
@@ -190,7 +223,7 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     return task
 
 
-def validate_report(data, required, head_tree=None):
+def validate_report(data, required, head_tree=None, *, allow_red=False):
     if not isinstance(data, dict) or data.get('schema') != 'colab-gate-summary/1':
         raise ValueError('invalid report schema')
     if head_tree is not None and (not head_tree or data.get('tree') != head_tree):
@@ -217,14 +250,14 @@ def validate_report(data, required, head_tree=None):
         raise ValueError('counts disagree with gate rows')
     if not required or not set(required).issubset(names):
         raise ValueError('required gates are missing')
-    if counts['red_판정'] or counts['red_준비']:
+    if not allow_red and (counts['red_판정'] or counts['red_준비']):
         raise ValueError('gate failures remain')
 
 
 def gate_evidence(root, task_id):
     task = load_task(root, task_id)
-    if task['role'] != 'lane-worker':
-        raise ValueError('gate evidence requires lane-worker task')
+    if task['role'] not in GATE_ROLES:
+        raise ValueError('gate evidence requires a gate-running task role')
     evidence = dict(task_id=task_id, run_id=task.get('run_id'), checkout=str(root), files=snapshot_hash(task_snapshot(root, task)))
     if task['schema'] == 'colab-task/2':
         evidence.update(head_identity(root), checkout_id=task['checkout_id'], report=task['report'])
@@ -238,7 +271,7 @@ def verify_task_report(root, task, report=None):
     if not task.get('run_id'):
         raise ValueError('gate execution has not started for this task')
     data = json.loads(path.read_text(encoding='utf-8'))
-    validate_report(data, task['gates'])
+    validate_report(data, task['gates'], allow_red=task['role'] in MEASURING_ROLES)
     expected = gate_evidence(root, task['task_id'])
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
@@ -254,10 +287,16 @@ def verify_task_report(root, task, report=None):
 
 
 def stop(data, expected_role):
+    # A `SubagentStop` matcher has nowhere to pass a role argument: the Claude adapter line is
+    # fixed to `exec bash … "$@"` (`scripts/harness/config.py`) and the settings command regex
+    # in `scripts/agent-bridge.py` accepts an argument-free command only. So the hook declares
+    # the set of roles it is allowed to judge and the role itself arrives in the event payload.
     if not isinstance(data, dict):
         raise ValueError('invalid lifecycle payload')
-    if data.get('agent_type') != expected_role:
+    allowed = (expected_role,) if isinstance(expected_role, str) else tuple(expected_role)
+    if data.get('agent_type') not in allowed:
         raise ValueError('hook role differs from event role')
+    expected_role = data['agent_type']
     root = checkout(data['cwd'])
     message = data.get('last_assistant_message')
     if not isinstance(message, str):
@@ -306,8 +345,8 @@ def stop(data, expected_role):
 
 def gate_start(root, task_id):
     task = load_task(root, task_id)
-    if task['role'] != 'lane-worker':
-        raise ValueError('gate execution requires lane-worker task')
+    if task['role'] not in GATE_ROLES:
+        raise ValueError('gate execution requires a gate-running task role')
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
         task['run_id'] = uuid.uuid4().hex
@@ -415,7 +454,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     start = commands.add_parser('begin')
-    start.add_argument('--role', required=True, choices=('researcher','lane-worker'))
+    start.add_argument('--role', required=True, choices=TASK_ROLES)
     start.add_argument('--artifact', action='append', default=[])
     start.add_argument('--gate', action='append', default=[])
     start.add_argument('--report')
@@ -439,7 +478,7 @@ def main():
     finish.add_argument('--mode', required=True, choices=('read-only','draft-return','artifacts','complete'))
     finish.add_argument('--summary', required=True)
     hook = commands.add_parser('stop')
-    hook.add_argument('--role', required=True)
+    hook.add_argument('--role', action='append', required=True)
     args = parser.parse_args()
     try:
         if args.command == 'validate-input':
