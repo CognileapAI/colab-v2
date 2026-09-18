@@ -268,7 +268,10 @@ export function AccountAdminPage() {
         </form>
       </section>
       </div>
-      <div hidden={tab !== 'list'}>
+      {/* ⭑ ⟨2026-09-18 · #121⑵⟩ grid 항목은 카드가 아니라 **이 래퍼**다 — 수식 클래스가
+          `justify-self: stretch` 를 걸어야 카드가 960px 에 갇히지 않는다(`login.css`).
+          ⛔ 그 규칙에 `display` 를 넣지 않는다 — `hidden` 이 죽는다. */}
+      <div className="account-list-panel" hidden={tab !== 'list'}>
       <section className="login-card account-list-card" data-testid="account-list">
         <h2 className="login-title">계정 목록</h2>
         <p className="login-lead">전 연구실 계정을 한 목록으로 봐요. 비밀번호 분실·퇴소를 여기서 처리해요.</p>
@@ -315,16 +318,24 @@ export function AccountAdminPage() {
             <tbody>
               {rows?.map(row => {
                 const self = row.accountId === account?.accountId;
+                // ⭑ ⟨2026-09-18 · #121⑵⟩ 열 폭이 고정이라 자유 문자열은 생략 부호로 끊긴다.
+                //    `title` 은 **화면에 그린 값 전체**다 — 잘린 표시를 다시 담지 않는다.
+                const labText = row.labName ?? '없음';
                 return (
                 <tr key={row.accountId}>
-                  <td>{row.email}</td>
-                  <td>{row.name}</td>
+                  <td className="account-cell-text" title={row.email}>{row.email}</td>
+                  <td className="account-cell-text" title={row.name}>{row.name}</td>
                   <td>{row.role === '교수' ? '교수 관리자' : row.role ?? '없음'}</td>
-                  <td>{row.labName ?? '없음'}</td>
+                  <td className="account-cell-text" title={labText}>{labText}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
                   <td>{row.operator ? '시스템 관리자' : '아니요'}</td>
                   <td>{day(row.lastLoginAt)}</td>
-                  <td className="account-row-actions">
+                  {/* ⭑ ⟨2026-09-18 · #121⑵⟩ 이 `td` 는 **table-cell 로 남는다** ／ 종전
+                      ~~`<td className="account-row-actions">`~~ — `td` 자체에 `display: flex` 가
+                      걸려 있어 익명 셀이 담기 상자가 되고 그 위의 `position: sticky` 가 붙지 않았다.
+                      flex 는 안쪽 `div` 가 진다. */}
+                  <td className="account-row-actions-cell">
+                    <div className="account-row-actions">
                     {/* 자기 자신 해제는 화면에서 막는다 — 되살릴 사람이 없어지는 자리라
                         서버도 400 을 내지만, 누를 수 있게 두면 그 거절이 사고처럼 보인다.
                         「마지막 한 명」은 화면이 셀 수 없다(목록이 필터로 좁혀져 있을 수 있다) —
@@ -342,7 +353,8 @@ export function AccountAdminPage() {
                             onClick={() => setStatusRow(row)}>
                       {row.status === 'inactive' ? '재활성화' : '비활성화'}
                     </button>
-                    {self ? <span className="account-row-note">{SELF_STATUS_REASON}</span> : null}
+                    {self ? <span className="account-row-note" title={SELF_STATUS_REASON}>{SELF_STATUS_REASON}</span> : null}
+                    </div>
                   </td>
                 </tr>
                 );

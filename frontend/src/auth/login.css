@@ -106,12 +106,31 @@
    `.login` 은 로그인 화면·비밀번호 변경 화면과 **공유**하므로 직접 고치지 않는다 —
    덮는 것은 최소 높이와 배치 기준점 둘뿐이고 가로 가운데 정렬은 그대로 둔다.
    가운데 정렬이면 폼 내용 길이가 바뀔 때마다 제출 버튼이 세로로 튄다. */
-.login.account-admin { min-height: auto; align-items: start; }
+/* ⭑ ⟨2026-09-18 · #121⑴⟩ 탭~카드 사이 여백의 **소유자는 이 컨테이너 하나**다.
+   종전 ~~`.settabs { margin-bottom: 14px }` ＋ `.account-list-card { margin-top: 24px }` = 38px~~ —
+   형제 마진 둘이 더해지는 꼴이라 한쪽을 고쳐도 다른 쪽이 남는다(`design-review §0` 여백 소유).
+   `--space-section` 은 640px 이하에서 20px 으로 내려간다 — 리터럴 24px 로 박지 않는다. */
+.login.account-admin { min-height: auto; align-items: start; row-gap: var(--space-section); }
+/* row-gap 은 같은 grid 의 **모든 행**에 걸린다. 아래 둘은 그 동반 필수다 — 안 덮으면
+   `h1`↔탭, 목록↔`message` 간격이 제 마진에 gap 을 더한 값으로 함께 벌어진다. */
+/* ⛔ `margin: 0` 을 쓰지 않는다 — 제목 **위** 여백까지 지워 화면 전체가 올라간다(A8). */
+.login.account-admin > h1 { margin-block-end: 0; }
+.login.account-admin .settabs { margin-bottom: 0; }
+.login.account-admin > .account-status { margin-top: 0; }
 .account-form .login-submit { margin-top: 4px; }
 .account-status { margin: 16px 0 0; color: var(--color-text-body); }
 
-/* 운영자 백오피스 목록 — 색·간격·모서리는 전부 토큰에서 온다(`shell/tokens.css`). */
-.account-list-card { max-width: 960px; margin-top: 24px; }
+/* ⭑ ⟨2026-09-18 · #121⑵⟩ grid 항목은 카드가 아니라 **이 래퍼**다. 공용
+   `.login { place-items: center }` 의 `justify-items: center` 가 래퍼를 fit-content 로 줄여
+   카드가 960px 에 갇히고 표가 그 안에서 774px 넘쳤다(HEAD 실측 · `before-loaded.json`).
+   ⛔ 이 규칙에 `display` 를 선언하지 않는다 — UA `[hidden] { display: none }` 이 깨져
+      숨은 탭이 보인다. */
+.account-list-panel { justify-self: stretch; min-width: 0; }
+
+/* 운영자 백오피스 목록 — 색·간격·모서리는 전부 토큰에서 온다(`shell/tokens.css`).
+   폭 상한은 **이 카드에만** 오른다. 공용 `.login-card { max-width: 360px }` 는 로그인·
+   비밀번호 변경 화면과 공유하므로 그대로 둔다. */
+.account-list-card { max-width: 1600px; margin-inline: auto; }
 .account-filters {
   display: flex; flex-wrap: wrap; gap: 12px;
   margin: 16px 0 0; padding: 12px;
@@ -120,16 +139,48 @@
 }
 .account-filters .login-label { display: grid; gap: 6px; margin: 0; min-width: 160px; flex: 1 1 160px; }
 .account-table-scroll { margin-top: 16px; overflow-x: auto; }
-.account-table { width: 100%; border-collapse: collapse; font-size: var(--text-body-sm); }
+/* ⭑ ⟨2026-09-18 · #121⑵⟩ 종전 기본 `table-layout: auto` 는 긴 이메일 **하나**가 여덟 열의
+   폭을 전부 바꿨다(HEAD 실측: 표 폭 1675.94 → 1342.02 · 이메일 열 544.58 → 210.81).
+   `min-width` 는 아래 px 열 여섯 ＋ 액션 열의 합 1104 에 이메일 열 하한 200 을 더한 값이다 —
+   이보다 좁은 자리에서는 열을 뭉개는 대신 가로 스크롤을 낸다. */
+.account-table {
+  width: 100%; border-collapse: collapse; font-size: var(--text-body-sm);
+  table-layout: fixed; min-width: 1304px;
+}
 .account-table th, .account-table td {
   padding: 10px 12px; text-align: left; white-space: nowrap;
   border-bottom: 1px solid var(--color-border);
 }
 .account-table th { color: var(--color-text-muted); font-weight: 600; }
 .account-table td { color: var(--color-text-body); }
+/* 열 폭은 HEAD 실측 max-content 에서 올림한 값이다(`dev-package/reports/issue-121/before-loaded.json`).
+   ⚠ `table-layout: fixed` 는 폭을 **첫 행에서만** 읽는다 — `td` 에 주면 조용히 무시된다(우려 6).
+   1 이메일 열은 폭을 주지 않는다: 남은 폭을 받고 넘치면 생략 부호로 끊는다.
+   4 연구실은 실측 145 → 96 으로 내렸다(A6 ① · 1440px 예산 1319 안에 이메일 하한 200 을 남기려면
+   자유 문자열 열을 먼저 줄인다. 잘린 값은 `title` 로 읽는다). */
+.account-table thead th:nth-child(2) { width: 64px; }
+.account-table thead th:nth-child(3) { width: 92px; }
+.account-table thead th:nth-child(4) { width: 96px; }
+.account-table thead th:nth-child(5) { width: 68px; }
+.account-table thead th:nth-child(6) { width: 104px; }
+.account-table thead th:nth-child(7) { width: 104px; }
+/* 액션 열 = 버튼 셋 354.46 ＋ 사이 gap 16 ＋ note 앞 gap 8 ＋ note 170.36 ＋ 셀 패딩 24
+   = 572.82 → 576. note 를 폭 산정에 **넣는다** — #84 가 세운 「거절의 까닭을 화면에 적는다」를
+   생략 부호로 되돌리지 않기 위해서다(A6 ② 를 쓰지 않아도 되게 ① 에서 자리를 만들었다). */
+.account-table thead th:nth-child(8) { width: 576px; }
+/* 자유 문자열 셀 — 열 폭이 고정이라 넘치는 값은 끊고, 전체 값은 `title` 로 읽는다. */
+.account-table td.account-cell-text { overflow: hidden; text-overflow: ellipsis; }
+/* ⭑ ⟨2026-09-18 · #121⑵⟩ flex 는 **안쪽 div** 가 진다. 종전처럼 `td` 에 걸면 그 `td` 가
+   table-cell 이 아니게 되고, 익명 셀이 담기 상자가 되어 그 위의 `position: sticky` 가 붙지 않는다(A1). */
 .account-row-actions { display: flex; gap: 8px; }
-/* 자기 줄에서만 나오는 잠금 이유 한 줄 — 눌리지 않는 버튼 옆에 그 까닭을 적는다. */
-.account-row-note { align-self: center; font-size: var(--text-caption); color: var(--color-text-muted); }
+/* 버튼은 줄어들지 않는다 — 줄어들면 문면이 끊기고 누를 자리가 좁아진다. */
+.account-row-actions > .btn { flex: 0 0 auto; }
+/* 자기 줄에서만 나오는 잠금 이유 한 줄 — 눌리지 않는 버튼 옆에 그 까닭을 적는다.
+   열 폭이 이 문면 전체를 담지만, 폭이 모자라는 순간에도 문면이 **사라지지 않고** 끊긴다. */
+.account-row-note {
+  align-self: center; font-size: var(--text-caption); color: var(--color-text-muted);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
 
 .account-modal-back {
   position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px;
@@ -145,8 +196,28 @@
 .account-modal-lead { margin: 0; color: var(--color-text-body); }
 .account-modal-help { margin: 0; font-size: var(--text-body-sm); color: var(--color-text-muted); }
 .account-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+/* ⭑ ⟨2026-09-18 · #121⑵⟩ 액션 열 고정 — 1440px 미만에서는 가로 스크롤이 남는데, 그 상태에서도
+   「어떤 뷰포트에서도 버튼 셋이 보이고 눌린다」를 지키는 수단이 이것뿐이다.
+   1024px **이상에서만** 건다: 390px 의 스크롤 영역은 300px 안쪽이고 액션 열은 576px 이라,
+   거기서 고정하면 왼쪽 버튼이 영구히 가려지고 나머지 일곱 열을 볼 수 없다(A3).
+   배경은 **불투명** 표면 토큰이라야 아래 행이 비쳐 보이지 않는다(우려 3). 그림자는 쓰지 않는다 —
+   고정 열은 팝오버가 아니라 표의 일부라 보더로만 구분한다(A4). */
+@media (min-width: 1024px) {
+  .account-table thead th:last-child,
+  .account-table td.account-row-actions-cell {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+  }
+}
 @media (max-width: 640px) {
   .account-row-actions { flex-wrap: wrap; }
+  /* `table-layout: fixed` 가 열을 px 로 묶으면 위 줄바꿈 규칙이 **죽은 규칙**이 된다.
+     이 폭대에서만 액션 열을 HEAD 실측 폭(194.36px)으로 되돌려 같은 줄바꿈 ―
+     따라서 같은 행 높이 ― 를 낸다(A3 · 금지 조건 「행 높이 변경 없음」). */
+  .account-table thead th:nth-child(8) { width: 194px; }
 }
 
 .auth-preserved-tree { pointer-events: none; user-select: none; }

@@ -492,6 +492,97 @@ test('#84 계정 관리 화면 최상위에만 세로 배치 수식 클래스가
  expect(root.classList.contains('login')).toBe(true);
 });
 
+// ═══════════════ #121 — 잘린 값의 전체 문면 · 액션 셀 구조 ═══════════════
+// 승인 근거 = dev-package/prd/specs/2026-09-18-issue-121-account-admin-gap-table.md
+//             「시험 결정 ⑶⑷」 ＋ 「advisor ① A1」.
+// ⚠ 열 폭·여백·고정 열은 **여기서 재지 않는다** — jsdom 에 배치 엔진이 없다(green-by-skip).
+//   그 판정은 `dev-package/reports/issue-121/` 의 실브라우저 `get box` 계측 몫이다.
+//   여기서는 생략 부호가 가린 값을 **읽을 수단이 실제로 붙어 있는지**만 잰다.
+const LONG_EMAIL='jeongsuyeon.researcher.2026@example-institute-of-water-resources-research.org';
+const ACCOUNTS_WITH_LONG_EMAIL=[
+ {accountId:ACC_1,email:'one@example.com',name:'한 사람',labId:LAB,labName:'A 연구실',role:'연구원',status:'active',lastLoginAt:'2026-09-11T02:03:04Z',operator:false},
+ {accountId:ACC_2,email:LONG_EMAIL,name:'정수연',labId:LAB_B,labName:'하천유역모델링연구실',role:'교수',status:'active',lastLoginAt:null,operator:false},
+];
+function longEmailFetch(){
+ return routedFetch(url=>url.pathname.endsWith('/admin/accounts-v2')?json({accounts:ACCOUNTS_WITH_LONG_EMAIL}):undefined);
+}
+
+test('#121 자유 문자열 셀은 생략 부호에 가려도 `title` 로 전체 값을 읽는다',async()=>{
+ longEmailFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ // 짧은 값 — 생략 부호가 걸리지 않는 쪽도 같은 수단을 갖는다(green-by-skip 방지 쌍).
+ const short=await within(table).findByRole('row',{name:/one@example\.com/});
+ expect(within(short).getByText('one@example.com')).toHaveAttribute('title','one@example.com');
+ expect(within(short).getByText('한 사람')).toHaveAttribute('title','한 사람');
+ expect(within(short).getByText('A 연구실')).toHaveAttribute('title','A 연구실');
+ // 60자 이상 — `title` 은 잘린 표시가 아니라 **원값** 이다.
+ expect(LONG_EMAIL.length).toBeGreaterThanOrEqual(60);
+ const long=await within(table).findByRole('row',{name:new RegExp(LONG_EMAIL.replace(/[.]/g,'\\.'))});
+ const longCell=within(long).getByText(LONG_EMAIL);
+ expect(longCell).toHaveAttribute('title',LONG_EMAIL);
+ expect(longCell).toHaveClass('account-cell-text');
+ expect(within(long).getByText('하천유역모델링연구실')).toHaveAttribute('title','하천유역모델링연구실');
+});
+
+test('#121 소속 없는 계정의 연구실 칸은 화면 문면과 `title` 이 같다',async()=>{
+ routedFetch(url=>url.pathname.endsWith('/admin/accounts-v2')
+  ?json({accounts:[{accountId:ACC_1,email:'solo@example.com',name:'무소속',labId:null,labName:null,role:null,status:'active',lastLoginAt:null,operator:true}]})
+  :undefined);
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ const row=await within(table).findByRole('row',{name:/solo@example\.com/});
+ // 역할 칸도 같은 `없음` 을 그리므로 **열 자리**로 짚는다(4번째 = 연구실).
+ const cells=row.querySelectorAll('td');
+ const labCell=cells[3]!;
+ expect(labCell).toHaveTextContent('없음');
+ // 화면이 `없음` 을 그리면 `title` 도 `없음` 이다 — 빈 title 로 「읽을 수 없음」을 만들지 않는다.
+ expect(labCell).toHaveAttribute('title','없음');
+ // 역할 열은 값 집합이 짧아 폭이 고정이라 생략 부호 대상이 아니다 — `title` 을 달지 않는다.
+ expect(cells[2]).toHaveTextContent('없음');
+ expect(cells[2]).not.toHaveAttribute('title');
+});
+
+test('#121 A1 액션 `td` 는 table-cell 로 남고 버튼은 안쪽 div 가 담는다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ const row=await within(table).findByRole('row',{name:/one@example\.com/});
+ const cell=within(row).getByRole('button',{name:'비밀번호 재설정'}).closest('td')!;
+ // 종전 ~~`<td className="account-row-actions">`~~ — `td` 자체에 flex 가 걸려 sticky 가 붙지 않았다.
+ expect(cell).toHaveClass('account-row-actions-cell');
+ expect(cell).not.toHaveClass('account-row-actions');
+ const inner=cell.querySelector(':scope > div.account-row-actions')!;
+ expect(inner).not.toBeNull();
+ expect(inner.querySelectorAll(':scope > button')).toHaveLength(3);
+});
+
+test('#121 자기 줄 이유 문면은 화면에 남고 `title` 로도 전체를 읽는다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ const self=await within(table).findByRole('row',{name:/op@example\.com/});
+ const note=within(self).getByText('자기 계정은 비활성화할 수 없어요');
+ expect(note).toHaveClass('account-row-note');
+ expect(note).toHaveAttribute('title','자기 계정은 비활성화할 수 없어요');
+ // note 는 액션 셀 안쪽 div 의 자식이다 — 셀 밖으로 내보내지 않는다.
+ expect(note.parentElement).toHaveClass('account-row-actions');
+});
+
+test('#121 A2 목록 패널 래퍼에 폭 수식 클래스가 붙고 숨김은 그대로다',async()=>{
+ operatorFetch();
+ const {container}=renderAdmin();
+ await screen.findByRole('table',{name:'계정 목록'});
+ const panel=container.querySelector('.account-list-panel')!;
+ expect(panel).not.toBeNull();
+ expect(panel.querySelector('[data-testid="account-list"]')).not.toBeNull();
+ // 목록 탭이 열린 상태 — 래퍼는 숨지 않는다.
+ expect(panel).not.toHaveAttribute('hidden');
+ // 생성 탭으로 옮기면 같은 래퍼가 `hidden` 을 되받는다(수식 클래스가 `display` 를 덮지 않는다).
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 생성'}));
+ expect(container.querySelector('.account-list-panel')).toHaveAttribute('hidden');
+});
+
 test('#84 로그인·비밀번호 변경 화면에는 그 수식 클래스가 붙지 않는다',()=>{
  const pw=render(<MemoryRouter><PasswordChangePage/></MemoryRouter>);
  const pwRoot=pw.container.querySelector('.login')!;
