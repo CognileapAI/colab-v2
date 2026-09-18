@@ -321,11 +321,12 @@ export function AccountAdminPage() {
                 // ⭑ ⟨2026-09-18 · #121⑵⟩ 열 폭이 고정이라 자유 문자열은 생략 부호로 끊긴다.
                 //    `title` 은 **화면에 그린 값 전체**다 — 잘린 표시를 다시 담지 않는다.
                 const labText = row.labName ?? '없음';
+                const roleText = row.role === '교수' ? '교수 관리자' : row.role ?? '없음';
                 return (
                 <tr key={row.accountId}>
                   <td className="account-cell-text" title={row.email}>{row.email}</td>
                   <td className="account-cell-text" title={row.name}>{row.name}</td>
-                  <td>{row.role === '교수' ? '교수 관리자' : row.role ?? '없음'}</td>
+                  <td className="account-cell-text" title={roleText}>{roleText}</td>
                   <td className="account-cell-text" title={labText}>{labText}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
                   <td>{row.operator ? '시스템 관리자' : '아니요'}</td>

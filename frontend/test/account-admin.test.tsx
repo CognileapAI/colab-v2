@@ -538,9 +538,24 @@ test('#121 소속 없는 계정의 연구실 칸은 화면 문면과 `title` 이
  expect(labCell).toHaveTextContent('없음');
  // 화면이 `없음` 을 그리면 `title` 도 `없음` 이다 — 빈 title 로 「읽을 수 없음」을 만들지 않는다.
  expect(labCell).toHaveAttribute('title','없음');
- // 역할 열은 값 집합이 짧아 폭이 고정이라 생략 부호 대상이 아니다 — `title` 을 달지 않는다.
+ // ⭑ C4 — 역할 칸도 고정 폭이라 넘치면 끊긴다. 화면 문면과 같은 `title` 을 단다.
  expect(cells[2]).toHaveTextContent('없음');
- expect(cells[2]).not.toHaveAttribute('title');
+ expect(cells[2]).toHaveAttribute('title','없음');
+});
+
+test('#121 C4 역할 칸의 `title` 은 화면에 그린 문면과 같다',async()=>{
+ routedFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ // `교수` 는 화면에서 `교수 관리자` 로 바뀐다 — `title` 은 원값이 아니라 **그린 문면**이다.
+ const prof=await within(table).findByRole('row',{name:/two@example\.com/});
+ const profRole=prof.querySelectorAll('td')[2]!;
+ expect(profRole).toHaveTextContent('교수 관리자');
+ expect(profRole).toHaveAttribute('title','교수 관리자');
+ const member=await within(table).findByRole('row',{name:/one@example\.com/});
+ const memberRole=member.querySelectorAll('td')[2]!;
+ expect(memberRole).toHaveTextContent('연구원');
+ expect(memberRole).toHaveAttribute('title','연구원');
 });
 
 test('#121 A1 액션 `td` 는 table-cell 로 남고 버튼은 안쪽 div 가 담는다',async()=>{

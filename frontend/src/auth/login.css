@@ -168,19 +168,22 @@
    = 572.82 → 576. note 를 폭 산정에 **넣는다** — #84 가 세운 「거절의 까닭을 화면에 적는다」를
    생략 부호로 되돌리지 않기 위해서다(A6 ② 를 쓰지 않아도 되게 ① 에서 자리를 만들었다). */
 .account-table thead th:nth-child(8) { width: 576px; }
-/* 자유 문자열 셀 — 열 폭이 고정이라 넘치는 값은 끊고, 전체 값은 `title` 로 읽는다. */
-.account-table td.account-cell-text { overflow: hidden; text-overflow: ellipsis; }
+/* ⭑ ⟨2026-09-18 · #121 C4⟩ 열 폭이 고정이고 `white-space: nowrap` 이라, 값이 열보다 길면
+   **이웃 칸 위에 그대로 그려진다.** 자유 문자열 열만이 아니라 본문 칸 전부가 대상이다.
+   액션 셀만 뺀다 — 거기엔 버튼이 담기고 폭도 그 문면에서 도출했다.
+   `.account-cell-text` 는 「`title` 로 전체 값을 읽는 칸」의 표지로 남는다(TSX 가 같이 단다). */
+.account-table td:not(.account-row-actions-cell) { overflow: hidden; text-overflow: ellipsis; }
 /* ⭑ ⟨2026-09-18 · #121⑵⟩ flex 는 **안쪽 div** 가 진다. 종전처럼 `td` 에 걸면 그 `td` 가
    table-cell 이 아니게 되고, 익명 셀이 담기 상자가 되어 그 위의 `position: sticky` 가 붙지 않는다(A1). */
 .account-row-actions { display: flex; gap: 8px; }
 /* 버튼은 줄어들지 않는다 — 줄어들면 문면이 끊기고 누를 자리가 좁아진다. */
 .account-row-actions > .btn { flex: 0 0 auto; }
 /* 자기 줄에서만 나오는 잠금 이유 한 줄 — 눌리지 않는 버튼 옆에 그 까닭을 적는다.
-   열 폭이 이 문면 전체를 담지만, 폭이 모자라는 순간에도 문면이 **사라지지 않고** 끊긴다. */
-.account-row-note {
-  align-self: center; font-size: var(--text-caption); color: var(--color-text-muted);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis;
-}
+   ⛔ 생략 부호 방지장치를 두지 않는다 ／ 종전 ~~`min-width: 0; overflow: hidden;
+   text-overflow: ellipsis`~~ — 액션 열 폭을 이 문면(실측 170.36px)까지 담도록 잡았으므로
+   넓은 폭에서는 걸릴 일이 없고, ≤640px 에서는 오히려 이 규칙이 문면을 실제로 잘랐다(#121 C1).
+   전체 문면은 화면과 `title` 양쪽에 남는다. */
+.account-row-note { align-self: center; font-size: var(--text-caption); color: var(--color-text-muted); }
 
 .account-modal-back {
   position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px;
@@ -212,12 +215,25 @@
     border-left: 1px solid var(--color-border);
   }
 }
+/* ⭑ ⟨2026-09-18 · #121 C3⟩ 위의 좁은 열 폭은 **1440px 예산 때문에** 깎은 값이다. 자리가
+   넉넉해지면 되돌린다 — 안 그러면 1920px 에서 이메일 열이 438px 인데 연구실 이름은 전부
+   `수자원환경…` 으로 잘리고 네 글자 이름도 끊긴다.
+   도출 — 표 폭 = 뷰포트 − 121(세로 스크롤바 15 ＋ `.login` 패딩 48 ＋ 카드 테두리 2 ＋ 패딩 56).
+   1536px 에서 표 1415px, 고정 열 합 100＋92＋148＋68＋104＋104＋576 = 1192 → 이메일 열 **223px**
+   으로 HEAD 의 보통 이메일 max-content(실측 210.81px)를 넘는다. 1920px 에서는 표 1542px,
+   이메일 열 350px. 그래서 분기점을 1536px 에 둔다. */
+@media (min-width: 1536px) {
+  .account-table thead th:nth-child(2) { width: 100px; }
+  .account-table thead th:nth-child(4) { width: 148px; }
+}
 @media (max-width: 640px) {
   .account-row-actions { flex-wrap: wrap; }
   /* `table-layout: fixed` 가 열을 px 로 묶으면 위 줄바꿈 규칙이 **죽은 규칙**이 된다.
      이 폭대에서만 액션 열을 HEAD 실측 폭(194.36px)으로 되돌려 같은 줄바꿈 ―
-     따라서 같은 행 높이 ― 를 낸다(A3 · 금지 조건 「행 높이 변경 없음」). */
-  .account-table thead th:nth-child(8) { width: 194px; }
+     따라서 같은 행 높이 ― 를 낸다(A3 · 금지 조건 「행 높이 변경 없음」).
+     ⚠ **올림**한다. 194 로 내리면 셀 내용 상자가 170px 이라 note(170.36px)가 1픽셀 모자라
+     잘린다 — #84 가 세운 「거절의 까닭을 화면에 적는다」를 되돌리는 자리다(#121 C1). */
+  .account-table thead th:nth-child(8) { width: 195px; }
 }
 
 .auth-preserved-tree { pointer-events: none; user-select: none; }

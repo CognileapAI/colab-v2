@@ -49,6 +49,7 @@ function media(css: string, query: string): string {
 }
 
 const WIDE = media(LOGIN, '(min-width: 1024px)');
+const ROOMY = media(LOGIN, '(min-width: 1536px)');
 const NARROW = media(LOGIN, '(max-width: 640px)');
 
 describe('⑴ 고쳐야 하는 선언이 실제로 서 있다', () => {
@@ -135,17 +136,34 @@ describe('⑴ 고쳐야 하는 선언이 실제로 서 있다', () => {
 
   it('A3 ≤640px 에서는 액션 열이 HEAD 실측 폭으로 돌아가 같은 줄바꿈을 낸다', () => {
     expect(NARROW).toContain('flex-wrap: wrap');
-    expect(rule(NARROW, '.account-table thead th:nth-child(8)')).toContain('width: 194px');
+    // ⚠ HEAD 실측 194.36px 을 **올림**한다. 194 로 내림하면 셀 내용 상자가 170px 이 되어
+    //    자기 줄 note(실측 170.36px)가 한 픽셀 모자라 생략 부호로 잘린다(#121 C1 실측 회귀).
+    expect(rule(NARROW, '.account-table thead th:nth-child(8)')).toContain('width: 195px');
   });
 
-  it('자유 문자열 셀은 생략 부호로 처리한다', () => {
-    const text = rule(LOGIN, '.account-table td.account-cell-text');
+  it('C3 ≥1536px 에서는 이름·연구실이 실측 max-content 를 되찾는다', () => {
+    expect(ROOMY).not.toBe('');
+    expect(rule(ROOMY, '.account-table thead th:nth-child(2)')).toContain('width: 100px');
+    expect(rule(ROOMY, '.account-table thead th:nth-child(4)')).toContain('width: 148px');
+    // 넓은 폭에서까지 좁은 예산 값을 쓰지 않는다 — 좁힌 것은 1440px 예산 때문이었다.
+    expect(ROOMY).not.toContain('width: 96px');
+  });
+
+  it('C4 액션 셀을 뺀 모든 `td` 가 넘치는 값을 끊는다', () => {
+    // `table-layout: fixed` ＋ `white-space: nowrap` 이면 넘치는 값이 이웃 칸 위에 그려진다.
+    // 자유 문자열 열뿐 아니라 **모든** 본문 칸이 대상이다(액션 셀은 버튼을 담으므로 제외).
+    const text = rule(LOGIN, '.account-table td:not(.account-row-actions-cell)');
+    expect(text).not.toBeNull();
     expect(text).toContain('overflow: hidden');
     expect(text).toContain('text-overflow: ellipsis');
-    // 우려 7 — note 도 같은 처리를 받되 폭 0 으로 사라지지 않는다(액션 열 폭이 자리를 남긴다).
+  });
+
+  it('C2 `.account-row-note` 는 HEAD 규칙 그대로다 — 생략 부호 방지장치를 두지 않는다', () => {
+    // 액션 열 폭이 note 전체를 담도록 잡혀 있어 생략 부호가 걸릴 자리가 없다.
+    // 종전 ~~`min-width: 0; overflow: hidden; text-overflow: ellipsis`~~ 는 죽은 규칙이면서
+    // ≤640px 에서만 실제로 문면을 잘랐다(#121 C1). 전체 문면은 `title` 로도 남는다.
     const note = rule(LOGIN, '.account-row-note');
-    expect(note).toContain('min-width: 0');
-    expect(note).toContain('text-overflow: ellipsis');
+    expect(note).toBe(' align-self: center; font-size: var(--text-caption); color: var(--color-text-muted); ');
   });
 });
 
