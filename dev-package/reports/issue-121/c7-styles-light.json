@@ -1,0 +1,56 @@
+{
+  "theme": "light",
+  "capturedAt": "2026-09-18T09:56:26.899Z",
+  "targets": {
+    "본문 td (이메일)": {
+      "selector": ".account-table tbody tr:nth-child(2) td:nth-child(1)",
+      "fontSize": "14px",
+      "color": "rgba(33, 39, 42, 0.88)",
+      "ownBackground": "rgba(0, 0, 0, 0)",
+      "effectiveBackground": "rgb(255, 255, 255)",
+      "backgroundIsOpaque": false,
+      "contrastVsEffectiveBackground": 15.13,
+      "fontSizePx": 14
+    },
+    "머리글 th (이메일)": {
+      "selector": ".account-table thead th:nth-child(1)",
+      "fontSize": "14px",
+      "color": "rgb(86, 92, 99)",
+      "ownBackground": "rgba(0, 0, 0, 0)",
+      "effectiveBackground": "rgb(255, 255, 255)",
+      "backgroundIsOpaque": false,
+      "contrastVsEffectiveBackground": 6.76,
+      "fontSizePx": 14
+    },
+    "자기 줄 note": {
+      "selector": ".account-table tbody tr:nth-child(1) .account-row-note",
+      "fontSize": "13px",
+      "color": "rgb(86, 92, 99)",
+      "ownBackground": "rgba(0, 0, 0, 0)",
+      "effectiveBackground": "rgb(255, 255, 255)",
+      "backgroundIsOpaque": false,
+      "contrastVsEffectiveBackground": 6.76,
+      "fontSizePx": 13
+    },
+    "고정 액션 셀 td": {
+      "selector": ".account-table tbody tr:nth-child(2) td.account-row-actions-cell",
+      "fontSize": "14px",
+      "color": "rgba(33, 39, 42, 0.88)",
+      "ownBackground": "rgb(255, 255, 255)",
+      "effectiveBackground": "rgb(255, 255, 255)",
+      "backgroundIsOpaque": true,
+      "contrastVsEffectiveBackground": 15.13,
+      "fontSizePx": 14
+    },
+    "카드 표면": {
+      "selector": "section.account-list-card",
+      "fontSize": "15px",
+      "color": "rgb(18, 22, 25)",
+      "ownBackground": "rgb(255, 255, 255)",
+      "effectiveBackground": "rgb(255, 255, 255)",
+      "backgroundIsOpaque": true,
+      "contrastVsEffectiveBackground": 18.19,
+      "fontSizePx": 15
+    }
+  }
+}
