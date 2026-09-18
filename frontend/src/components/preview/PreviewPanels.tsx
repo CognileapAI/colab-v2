@@ -8,6 +8,7 @@ import { resultImageSrc, tileUrl } from './tiles';
 import { baseLevel, levelFor, visibleTiles } from './tileGrid';
 import { centeredPanFor, type ZoomPan } from './useZoomPan';
 import { BoundsOutline, PreviewZoomControls } from './PreviewZoomControls';
+import { PreviewOverlay } from './PreviewOverlay';
 import { BasemapLayer } from './BasemapLayer';
 import { lonAtFraction, latAtFraction } from './projection';
 
@@ -236,6 +237,19 @@ export function PreviewMap(props: {
   const { result, zoom } = props;
   /** 커서 위경도 HUD 의 상태. `null` = 아직 지도 위가 아니다 · `'밖'` = 경계 밖이다. */
   const [hud, setHud] = useState<{ lat: number; lon: number } | '밖' | null>(null);
+  /**
+   * ⭑ ⟨#120⟩ **역변환이 보는 두 상자를 핸들러 안에서 만든다.**
+   * 뷰포트는 **종전대로 `getBoundingClientRect()`** 로 잰다 — 훅의 `box()`(`clientWidth`)는
+   * jsdom 에서 0 이라 기존 시험(`dataset-value-lookup` 의 `sizeViewport`)이 스텁한 rect 만
+   * 값을 갖는다. 내용 상자는 훅이 주되 못 재면 뷰포트로 대체한다(타일 갈래 = 뷰포트).
+   */
+  const viewAt = (rect: { width: number; height: number }) => {
+    const base = zoom ?? { scale: 1, x: 0, y: 0 };
+    const offset = zoom?.panOffset ?? { x: 0, y: 0 };
+    const content = zoom?.contentSize();
+    const pan = centeredPanFor({ scale: base.scale, ...offset }, rect, content);
+    return { scale: base.scale, ...pan, box: content ?? rect };
+  };
   // **갈래가 둘이다**(계약 `oneOf`). 타일이면 조각을 세우고, 아니면 그림 한 장이다.
   // ⭑ ⟨2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도 화면이 타일 쪽이다.
   const tiled = Boolean(result.tileUrlTemplate && result.bounds && zoom);
@@ -264,11 +278,12 @@ export function PreviewMap(props: {
                   // ⭑ ⟨WU-C4⟩ **역산은 화면에 실제로 걸린 변환을 써야 한다.** 사다리가
                   //   1 보다 작은 배율을 세우면 데이터는 틀 한가운데로 밀려 있고, 그
                   //   밀린 양은 여기서 방금 잰 상자에서 나온다(훅이 못 잰 순간도 있다).
-                  const z = zoom ?? { scale: 1, x: 0, y: 0 };
-                  const zc = { scale: z.scale, ...centeredPanFor(z, { width: rect.width, height: rect.height }) };
+                  // ⭑ ⟨개정 2026-09-18 · `#120`⟩ 비율을 나눌 상자는 **그림의 내용 상자**다.
+                  //   뷰포트 상자로 나누면 세로가 긴 그림에서 누른 자리와 다른 칸이 답한다.
+                  const zc = viewAt({ width: rect.width, height: rect.height });
                   const p = pointFromViewport(
                     { x: e.clientX - rect.left, y: e.clientY - rect.top },
-                    { width: rect.width, height: rect.height },
+                    zc.box,
                     result.bounds as NonNullable<RenderResult['bounds']>,
                     zc,
                   );
@@ -283,10 +298,9 @@ export function PreviewMap(props: {
                 onMouseMove: (e: import('react').MouseEvent<HTMLDivElement>) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const b = result.bounds as NonNullable<RenderResult['bounds']>;
-                  const z0 = zoom ?? { scale: 1, x: 0, y: 0 };
-                  const z = { scale: z0.scale, ...centeredPanFor(z0, { width: rect.width, height: rect.height }) };
-                  const lon = pvLonOf(e.clientX - rect.left, rect.width, b, z);
-                  const lat = pvLatOf(e.clientY - rect.top, rect.height, b, z);
+                  const z = viewAt({ width: rect.width, height: rect.height });
+                  const lon = pvLonOf(e.clientX - rect.left, z.box.width, b, z);
+                  const lat = pvLatOf(e.clientY - rect.top, z.box.height, b, z);
                   setHud(lon === undefined || lat === undefined ? '밖' : { lat, lon });
                 },
                 onMouseLeave: () => setHud(null),
@@ -308,6 +322,11 @@ export function PreviewMap(props: {
           <div
             className="pv-layers"
             data-testid="preview-layers"
+            {...(/* ⭑ ⟨#120 · 우려 6 ⓐ⟩ **타일 갈래의 내용 상자는 뷰포트 상자다** — `baseLevel` 이
+                    뷰포트 폭으로 조각을 세우고 조각은 전부 절대 배치라 층 묶음이 제 높이를 만들지
+                    않는다. 그 갈래에는 손잡이를 **일부러 달지 않아** `contentSize()` 가 `undefined`
+                    를 내고 훅이 뷰포트 상자로 대체한다 — jsdom 이 0 을 주는 우연이 아니라 설계다. */
+              zoom && !tiled ? { ref: zoom.layersRef } : {})}
             {...(zoom
               ? {
                   'data-zoom-scale': String(zoom.scale),
@@ -351,43 +370,66 @@ export function PreviewMap(props: {
               />
             ) : null}
           </div>
+          {/* ⭑ ⟨#120⟩ **도구 층 — 뷰포트의 직계 자식이자 층 묶음의 형제.** 여기 들어온
+              것은 그림을 옮기고 키워도 제자리에 남는다. 배치 규칙은 `PreviewOverlay` 한
+              곳에 살고, `.pv-mapcol` 에는 뷰포트만 남아 틀 안에 넘칠 것이 없다. */}
+          <PreviewOverlay
+            topRight={
+              <dl className="pv-legend" aria-label="범례">
+                {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
+                    화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
+                    돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
+                {result.legend.variable ? (
+                  <div className="pv-legend-row" data-testid="legend-variable">
+                    <dt>변수</dt>
+                    <dd>{result.legend.variable}</dd>
+                  </div>
+                ) : null}
+                {result.legend.classes.map((c) => (
+                  <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
+                    <dt>
+                      <span className="pv-swatch" style={{ background: c.color }} />
+                    </dt>
+                    {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
+                    <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
+                  </div>
+                ))}
+              </dl>
+            }
+            {...(zoom || props.actions
+              ? {
+                  bottomRight: (
+                    <>
+                      {zoom ? <PreviewZoomControls zoom={zoom} /> : null}
+                      {props.actions ?? null}
+                    </>
+                  ),
+                }
+              : {})}
+            {...(result.bounds || props.valuePanel
+              ? {
+                  bottomLeft: (
+                    <>
+                      {/* 커서 위경도 HUD — 값 조회 패널 **위**에 서고, 출처 라벨로 그것과 갈린다.
+                          `aria-live` 를 걸지 않는다: 커서를 따라 초당 수십 번 바뀌는 값을 읽어 주면
+                          보조기술 사용자가 다른 것을 못 듣는다. 그 사람의 길은 값 조회(클릭)다. */}
+                      {result.bounds ? (
+                        <p className="pv-hud" data-testid="preview-cursor-hud">
+                          {hud === null
+                            ? HUD_IDLE
+                            : hud === '밖'
+                              ? HUD_OUTSIDE
+                              : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
+                        </p>
+                      ) : null}
+                      {props.valuePanel ?? null}
+                    </>
+                  ),
+                }
+              : {})}
+          />
         </div>
-        {/* 커서 위경도 HUD — 값 조회 패널 **위**에 서고, 출처 라벨로 그것과 갈린다.
-            `aria-live` 를 걸지 않는다: 커서를 따라 초당 수십 번 바뀌는 값을 읽어 주면
-            보조기술 사용자가 다른 것을 못 듣는다. 그 사람의 길은 값 조회(클릭)다. */}
-        {result.bounds ? (
-          <p className="pv-hud" data-testid="preview-cursor-hud">
-            {hud === null
-              ? HUD_IDLE
-              : hud === '밖'
-                ? HUD_OUTSIDE
-                : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
-          </p>
-        ) : null}
-        {zoom ? <PreviewZoomControls zoom={zoom} /> : null}
-        {props.actions ?? null}
-        {props.valuePanel ?? null}
       </div>
-      <dl className="pv-legend" aria-label="범례">
-        {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
-            화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
-            돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
-        {result.legend.variable ? (
-          <div className="pv-legend-row" data-testid="legend-variable">
-            <dt>변수</dt>
-            <dd>{result.legend.variable}</dd>
-          </div>
-        ) : null}
-        {result.legend.classes.map((c) => (
-          <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
-            <dt>
-              <span className="pv-swatch" style={{ background: c.color }} />
-            </dt>
-            {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
-            <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
-          </div>
-        ))}
-      </dl>
     </section>
   );
 }

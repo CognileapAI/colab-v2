@@ -58,7 +58,25 @@ export interface ZoomPan {
   measured: boolean;
   /** 지금 재어 둔 화면 크기. 아직 못 쟀으면 `undefined` — 타일 모자이크가 이 값을 쓴다. */
   box: { width: number; height: number } | undefined;
+  /**
+   * ⭑ ⟨#120⟩ **중앙 기준 편차**로 들고 있는 이동값. `0` 이 곧 한가운데다.
+   * 화면에 거는 `x`·`y` 는 여기에 중앙값을 더한 결과이고, 크기를 아직 못 잰 순간에도
+   * 편차 0 은 「한가운데에 두려 한다」는 뜻으로 남는다.
+   */
+  panOffset: { x: number; y: number };
   viewportRef: (el: HTMLDivElement | null) => void;
+  /**
+   * ⭑ ⟨#120⟩ **층 묶음(`.pv-layers`)의 실제 배치 크기를 재는 자리.**
+   * 층 묶음 높이는 그림의 가로세로비를 따르므로 뷰포트와 비율이 다르다 — 중앙 정렬·
+   * 이동 범위·역변환·스크린샷 장면이 전부 이 상자를 써야 세로 중심이 맞는다.
+   */
+  layersRef: (el: HTMLElement | null) => void;
+  /**
+   * 층 묶음의 배치 크기. **두 치수 중 하나라도 0 이면 `undefined`** — jsdom·미측정·
+   * 타일 갈래가 그 경우이고, 부르는 쪽이 뷰포트 상자로 대체한다(타일 갈래는 설계상
+   * 내용 = 뷰포트다). **없는 크기를 지어내지 않는다.**
+   */
+  contentSize: () => { width: number; height: number } | undefined;
   onImageLoad: (e: { currentTarget: HTMLImageElement }) => void;
   /**
    * **원본 해상도를 그림이 아니라 밖에서 받는 자리** (조건 ⑷).
@@ -67,7 +85,18 @@ export interface ZoomPan {
    * **모르면 부르지 않는다** — 여기 기본값을 두면 한계를 지어내는 것이 된다.
    */
   onNativeWidth: (naturalWidth: number) => void;
-  onWheel: (e: { deltaY: number; preventDefault?: () => void }) => void;
+  /**
+   * ⭑ ⟨#120⟩ **휠 확대·축소의 고정점은 커서 아래 지점이다.** `clientX`·`clientY` 가 오면
+   * 뷰포트 좌표로 바꿔 고정점으로 넘기고, 없으면(시험의 합성 이벤트) 종전대로 중심이다.
+   * `target` 이 도구 층 안이면 아무 것도 하지 않는다 — 그 위에서는 페이지 스크롤이 자연스럽다.
+   */
+  onWheel: (e: {
+    deltaY: number;
+    clientX?: number;
+    clientY?: number;
+    target?: EventTarget | null;
+    preventDefault?: () => void;
+  }) => void;
   onMouseDown: (e: { clientX: number; clientY: number; button?: number }) => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -83,18 +112,31 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 
 /**
- * **틀보다 작은 데이터는 한가운데에 놓는다** (판정 축자 「`bounds` 중심」).
- * 배율이 1 이상이면 손대지 않는다 — 그때는 사람이 옮긴 자리가 답이다.
- * 크기를 아직 모르면 그대로 둔다 — **없는 크기로 자리를 지어내지 않는다.**
+ * **그림을 뷰포트 한가운데에 놓는다** (판정 축자 「`bounds` 중심」).
+ *
+ * ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ 두 가지가 바뀌었다.
+ *  ⑴ **내용 상자를 따로 받는다.** 종전은 「층 묶음 크기 = 뷰포트 크기」를 전제해
+ *     `size × (1 − scale) / 2` 한 식으로 두 축을 계산했다. 층 묶음 높이는 그림의
+ *     가로세로비를 따르므로 비율이 다르면 **세로 중심이 어긋난다**(이슈 첨부 1).
+ *  ⑵ **`view.x`·`view.y` 는 중앙 기준 편차다.** 그래서 배율이 1 이상이어도, 내용이
+ *     뷰포트보다 커도 중앙값을 함께 낸다 — 종전 `scale >= 1 → 손대지 않음` 은 세로가
+ *     긴 그림을 **위 정렬**로 두었고 그것이 이슈의 그 화면이다(우려 8).
+ *
+ * `contentSize` 를 주지 않거나 두 치수 중 하나라도 0 이면 **뷰포트 상자로 대체**한다 —
+ * 타일 갈래는 설계상 내용 = 뷰포트이고, 아직 못 잰 순간에는 종전과 같은 수가 나온다.
+ * 뷰포트 크기를 모르면 그대로 둔다 — **없는 크기로 자리를 지어내지 않는다.**
  */
 export function centeredPanFor(
   view: { scale: number; x: number; y: number },
-  size: { width: number; height: number } | undefined,
+  viewportSize: { width: number; height: number } | undefined,
+  contentSize?: { width: number; height: number } | undefined,
 ): { x: number; y: number } {
-  if (view.scale >= 1 || !size) return { x: view.x, y: view.y };
+  if (!viewportSize) return { x: view.x, y: view.y };
+  const content =
+    contentSize && contentSize.width > 0 && contentSize.height > 0 ? contentSize : viewportSize;
   return {
-    x: (size.width * (1 - view.scale)) / 2,
-    y: (size.height * (1 - view.scale)) / 2,
+    x: (viewportSize.width - content.width * view.scale) / 2 + view.x,
+    y: (viewportSize.height - content.height * view.scale) / 2 + view.y,
   };
 }
 
@@ -120,6 +162,9 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   const showBoundsOutline = useMemo(() => needsBoundsOutline(geo), [geo]);
 
   const el = useRef<HTMLDivElement | null>(null);
+  // ⭑ ⟨#120⟩ 층 묶음의 실제 배치 크기를 재는 손잡이. 없으면 내용 상자를 모른다.
+  const layers = useRef<HTMLElement | null>(null);
+  /** **이동값은 중앙 기준 편차다** — `0` 이 곧 한가운데다(`centeredPanFor`). */
   const [view, setView] = useState(() => ({ scale: 1, x: 0, y: 0 }));
   const [maxScale, setMaxScale] = useState(1);
   const [measured, setMeasured] = useState(false);
@@ -137,55 +182,96 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     return width > 0 && height > 0 ? { width, height } : undefined;
   }, []);
 
+  // ⭑ ⟨#120⟩ **내용 상자** — 층 묶음의 transform 이 걸리기 전 배치 크기다. 두 치수 중
+  //   하나라도 0 이면 못 잰 것으로 보고 부르는 쪽이 뷰포트 상자로 대체한다(타일 갈래는
+  //   `offsetWidth` 가 뷰포트 · `offsetHeight` 가 0 이고, 설계상 내용 = 뷰포트다).
+  const contentSize = useCallback(() => {
+    const node = layers.current;
+    if (!node) return undefined;
+    const width = node.offsetWidth;
+    const height = node.offsetHeight;
+    return width > 0 && height > 0 ? { width, height } : undefined;
+  }, []);
+
+  /** 중앙 정렬·이동 범위·역변환이 함께 쓰는 한 쌍. 내용을 못 재면 뷰포트로 대체한다. */
+  const boxes = useCallback(() => {
+    const viewport = box();
+    if (!viewport) return undefined;
+    return { viewport, content: contentSize() ?? viewport };
+  }, [box, contentSize]);
+
   // 변환은 층 묶음의 왼쪽 위를 기준으로 건다(`transform-origin: 0 0`). 그림이 화면 밖으로
   // 빠져나가 빈 자리가 생기지 않게 이동 범위를 그림 안으로 가둔다.
   const clampView = useCallback(
     (next: { scale: number; x: number; y: number }) => {
-      const size = box();
-      if (!size) return { scale: next.scale, x: 0, y: 0 };
-      // ⭑ ⟨WU-C4⟩ **배율이 1 보다 작을 수 있게 됐다** — 축척 사다리가 데이터보다 넓은 틀을
-      //   기본으로 세우기 때문이다(작은 유역). 그때는 **옮길 곳이 없다** — 데이터가 틀보다
-      //   작아 어디로 밀어도 빈 자리만 늘어난다. 그래서 이동값을 0 으로 두고, 화면에
-      //   내보낼 때 `centeredPanFor` 가 한가운데로 놓는다(아래 반환부).
-      //   **1 이상에서는 종전 식 그대로다.**
-      if (next.scale < 1) return { scale: next.scale, x: 0, y: 0 };
+      const sizes = boxes();
+      if (!sizes) return { scale: next.scale, x: 0, y: 0 };
+      // ⭑ ⟨개정 2026-09-18 · `#120`⟩ **시작 자리와 이동 범위를 가른다.** 이동값은
+      //   중앙 기준 편차이므로 여기서 가두는 것은 「중앙에서 얼마나 벗어날 수 있는가」다.
+      //   내용이 뷰포트보다 작거나 같은 축은 옮길 곳이 없어 편차 0(= 한가운데)에 고정되고,
+      //   큰 축은 ±(내용 × 배율 − 뷰포트)/2 까지 간다 — 그 끝이 그림의 가장자리다.
+      //   ／ 종전 표기 ~~`x: clamp(next.x, size.width * (1 - next.scale), 0)`~~ — 뷰포트
+      //   크기 하나로 두 축을 계산해 세로가 긴 그림의 아래로 갈 수 없었다.
+      const halfX = Math.max(0, (sizes.content.width * next.scale - sizes.viewport.width) / 2);
+      const halfY = Math.max(0, (sizes.content.height * next.scale - sizes.viewport.height) / 2);
       return {
         scale: next.scale,
-        x: clamp(next.x, size.width * (1 - next.scale), 0),
-        y: clamp(next.y, size.height * (1 - next.scale), 0),
+        x: clamp(next.x, -halfX, halfX),
+        y: clamp(next.y, -halfY, halfY),
       };
     },
-    [box],
+    [boxes],
   );
 
   const zoomTo = useCallback(
     (target: number, anchorX?: number, anchorY?: number) => {
       setView((cur) => {
-        const size = box();
+        const sizes = boxes();
         const next = clamp(target, baseScale, maxScale);
         if (next === cur.scale) return cur;
-        const ax = anchorX ?? (size ? size.width / 2 : 0);
-        const ay = anchorY ?? (size ? size.height / 2 : 0);
+        if (!sizes) return clampView({ scale: next, x: cur.x, y: cur.y });
+        // 고정점 계산은 **화면에 실제로 걸린 이동값**(중앙값 + 편차) 위에서 해야 한다.
+        const ax = anchorX ?? sizes.viewport.width / 2;
+        const ay = anchorY ?? sizes.viewport.height / 2;
+        const from = centeredPanFor(cur, sizes.viewport, sizes.content);
         const ratio = next / cur.scale;
-        return clampView({ scale: next, x: ax - (ax - cur.x) * ratio, y: ay - (ay - cur.y) * ratio });
+        const toX = ax - (ax - from.x) * ratio;
+        const toY = ay - (ay - from.y) * ratio;
+        // 다시 편차로 돌려 놓는다 — 상태는 언제나 중앙 기준이다.
+        const center = centeredPanFor({ scale: next, x: 0, y: 0 }, sizes.viewport, sizes.content);
+        return clampView({ scale: next, x: toX - center.x, y: toY - center.y });
       });
     },
-    [box, clampView, maxScale, baseScale],
+    [boxes, clampView, maxScale, baseScale],
   );
 
-  const zoomIn = useCallback(() => {
-    if (!measured || view.scale >= maxScale) {
-      // 한계를 모르거나 한계에 닿았다. **없는 값을 만들어 그리지 않는다.**
-      if (measured) setBlocked(true);
-      return;
-    }
-    zoomTo(view.scale * STEP);
-  }, [measured, maxScale, view.scale, zoomTo]);
+  // ⭑ ⟨#120⟩ 휠도 **버튼과 같은 한계·`blocked` 판정을 거친다** — 고정점만 다르다.
+  //   휠 확대가 `atLimit` 를 지어내지 않게 판정 자리를 하나로 둔다.
+  const stepIn = useCallback(
+    (anchorX?: number, anchorY?: number) => {
+      if (!measured || view.scale >= maxScale) {
+        // 한계를 모르거나 한계에 닿았다. **없는 값을 만들어 그리지 않는다.**
+        if (measured) setBlocked(true);
+        return;
+      }
+      zoomTo(view.scale * STEP, anchorX, anchorY);
+    },
+    [measured, maxScale, view.scale, zoomTo],
+  );
 
-  const zoomOut = useCallback(() => {
-    setBlocked(false);
-    zoomTo(view.scale / STEP);
-  }, [view.scale, zoomTo]);
+  const stepOut = useCallback(
+    (anchorX?: number, anchorY?: number) => {
+      setBlocked(false);
+      zoomTo(view.scale / STEP, anchorX, anchorY);
+    },
+    [view.scale, zoomTo],
+  );
+
+  // ⚠ 버튼은 **인자 없이** 부른다 — `onClick={zoom.zoomIn}` 이 넘기는 클릭 이벤트가
+  //   고정점 인자로 새어 들어가면 좌표를 지어내는 것이 된다.
+  const zoomIn = useCallback(() => stepIn(), [stepIn]);
+
+  const zoomOut = useCallback(() => stepOut(), [stepOut]);
 
   const reset = useCallback(() => {
     setBlocked(false);
@@ -203,12 +289,32 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   }, []);
 
   const onWheel = useCallback(
-    (e: { deltaY: number; preventDefault?: () => void }) => {
+    (e: {
+      deltaY: number;
+      clientX?: number;
+      clientY?: number;
+      target?: EventTarget | null;
+      preventDefault?: () => void;
+    }) => {
+      // ⭑ ⟨#120⟩ **도구 층 위에서는 그림을 건드리지 않는다.** 휠은 네이티브 리스너라
+      //   React 의 `stopPropagation` 이 닿지 않으므로 target 으로 가른다. 여기서
+      //   `preventDefault` 도 하지 않는다 — 그 위에서는 페이지 스크롤이 자연스럽다.
+      const target = e.target;
+      if (target instanceof Element && target.closest('.pv-overlay')) return;
       e.preventDefault?.();
-      if (e.deltaY < 0) zoomIn();
-      else zoomOut();
+      // 고정점은 **커서 아래 지점**이다. 좌표가 없으면(시험의 합성 이벤트) 종전대로 중심.
+      let ax: number | undefined;
+      let ay: number | undefined;
+      const node = el.current;
+      if (node && typeof e.clientX === 'number' && typeof e.clientY === 'number') {
+        const rect = node.getBoundingClientRect();
+        ax = e.clientX - rect.left;
+        ay = e.clientY - rect.top;
+      }
+      if (e.deltaY < 0) stepIn(ax, ay);
+      else stepOut(ax, ay);
     },
-    [zoomIn, zoomOut],
+    [stepIn, stepOut],
   );
 
   // ⭑ **휠은 네이티브 리스너로 건다 — React 의 `onWheel` 은 passive 다** (검수 #24).
@@ -297,21 +403,25 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   );
 
   const visibleFraction = useCallback((): ZoomBoundsFraction => {
-    const size = box();
-    if (!size) return { x0: 0, y0: 0, x1: 1, y1: 1 };
-    const w = size.width * view.scale;
-    const h = size.height * view.scale;
+    const sizes = boxes();
+    if (!sizes) return { x0: 0, y0: 0, x1: 1, y1: 1 };
+    // ⭑ ⟨#120⟩ 「지금 장면」은 **화면에 실제로 그려진 자리**에서 센다 — 그림의 범위는
+    //   내용 상자, 보이는 창은 뷰포트 상자다. 종전은 둘을 같은 것으로 보고 중앙 정렬분도
+    //   빠뜨려, 중앙에 놓인 그림의 장면이 왼쪽 위로 치우쳐 나갔다.
+    const at = centeredPanFor(view, sizes.viewport, sizes.content);
+    const w = sizes.content.width * view.scale;
+    const h = sizes.content.height * view.scale;
     return {
-      x0: clamp(-view.x / w, 0, 1),
-      y0: clamp(-view.y / h, 0, 1),
-      x1: clamp((size.width - view.x) / w, 0, 1),
-      y1: clamp((size.height - view.y) / h, 0, 1),
+      x0: clamp(-at.x / w, 0, 1),
+      y0: clamp(-at.y / h, 0, 1),
+      x1: clamp((sizes.viewport.width - at.x) / w, 0, 1),
+      y1: clamp((sizes.viewport.height - at.y) / h, 0, 1),
     };
-  }, [box, view]);
+  }, [boxes, view]);
 
   // **한가운데 놓기는 내보낼 때 한다** — 상태에 넣어 두면 화면 크기를 아직 못 잰 순간에
   // 0 으로 굳어 버리고, 그 뒤 크기를 알아도 다시 계산되지 않는다. 크기는 렌더마다 잰다.
-  const pan = centeredPanFor(view, box());
+  const pan = centeredPanFor(view, box(), contentSize());
 
   return {
     scale: view.scale,
@@ -334,10 +444,15 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     //   (조건 ⑷ · `PLAN-SoT §9 〈232〉`)은 정본 규칙이고 상한을 올리는 것은 정본 개정이다.
     atLimit:
       measured && view.scale >= maxScale && (view.scale > baseScale || blocked || maxScale <= baseScale),
+    panOffset: { x: view.x, y: view.y },
     viewportRef: (n) => {
       el.current = n;
       setNode(n);
     },
+    layersRef: (n) => {
+      layers.current = n;
+    },
+    contentSize,
     onImageLoad,
     onNativeWidth: learn,
     onWheel,

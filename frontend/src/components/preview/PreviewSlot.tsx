@@ -16,6 +16,13 @@
  *   서고, 틀 안 스크롤(`.pv-frame-in` · `overflow:auto`)에 실리지 않는다. 배치 규약이 이
  *   부품 한 곳에 모이므로 호출부 세 곳에 같은 JSX 순서를 복제하지 않는다. 줄과 틀 사이
  *   여백은 컨테이너(`.pv-frame-wrap`)의 gap 하나가 갖는다 — 자식은 margin 을 지지 않는다.
+ * ⚠ ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ 존치 규칙에 **「뷰포트 안 도구 층」**이 더해지고,
+ *   그와 함께 종전 판정 ⑦ ⓐ(「고정·절대 배치를 신설하지 않는다」)가 **명시 해제**됐다.
+ *   확대·축소·기본 배율·스크린샷·커서 위경도 표시·값 조회·범례는 이 틀 안 **뷰포트의
+ *   직계 자식**(`PreviewOverlay` · `.pv-overlay` · `position: absolute`)으로 서고, 틀 안
+ *   스크롤(`.pv-frame-in` · `overflow:auto`)에 실리지 않는다 — 뷰포트 밖에 넘칠 것이 남지
+ *   않는다. 배치 규약은 `PreviewOverlay` 한 곳에 살며 네 화면이 순서를 복제하지 않는다.
+ *   위 종전 문구는 지우지 않는다 — 「틀 위 줄」 규칙은 그대로 유효하다.
  */
 import type { ReactNode } from 'react';
 import './preview.css';

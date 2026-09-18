@@ -1,0 +1,77 @@
+{
+  "f_corner_collision": {
+    "browserViewport": [
+      760,
+      820
+    ],
+    "previewViewport": {
+      "height": 484.75,
+      "width": 655,
+      "x": 45,
+      "y": 479.34375,
+      "cx": 372.5,
+      "cy": 721.71875
+    },
+    "tools": {
+      "zoom": {
+        "height": 39,
+        "width": 204.421875,
+        "x": 483.578125,
+        "y": 866.09375,
+        "cx": 585.7890625,
+        "cy": 885.59375
+      },
+      "legend": {
+        "height": 158.78125,
+        "width": 111.109375,
+        "x": 576.890625,
+        "y": 491.34375,
+        "cx": 632.4453125,
+        "cy": 570.734375
+      },
+      "hud": {
+        "height": 34.796875,
+        "width": 103.1875,
+        "x": 57,
+        "y": 874.5,
+        "cx": 108.59375,
+        "cy": 891.8984375
+      },
+      "value": {
+        "height": 34.796875,
+        "width": 260.875,
+        "x": 57,
+        "y": 917.296875,
+        "cx": 187.4375,
+        "cy": 934.6953125
+      },
+      "shot": {
+        "height": 39,
+        "width": 84.953125,
+        "x": 603.046875,
+        "y": 913.09375,
+        "cx": 645.5234375,
+        "cy": 932.59375
+      }
+    },
+    "pairwiseIntersectionArea": {
+      "hud+legend": 0.0,
+      "hud+shot": 0.0,
+      "hud+value": 0.0,
+      "hud+zoom": 0.0,
+      "legend+shot": 0.0,
+      "legend+value": 0.0,
+      "legend+zoom": 0.0,
+      "shot+value": 0.0,
+      "shot+zoom": 0.0,
+      "value+zoom": 0.0
+    },
+    "insideViewport": {
+      "zoom": true,
+      "legend": true,
+      "hud": true,
+      "value": true,
+      "shot": true
+    }
+  }
+}
