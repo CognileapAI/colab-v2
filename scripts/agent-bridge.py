@@ -293,6 +293,14 @@ def codex_event() -> int:
         return 2
 
 
+def hook_context(stdout: str) -> str:
+    """A hook may already emit Claude's additionalContext JSON; carry only its text."""
+    try:
+        return json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    except (ValueError, TypeError, KeyError):
+        return stdout
+
+
 def dispatch_event(data: dict) -> dict:
     """Translate every registered lifecycle event; keep the existing shell judges."""
     if not isinstance(data, dict):
@@ -328,7 +336,7 @@ def dispatch_event(data: dict) -> dict:
             if result.returncode:
                 raise ValueError(f"{hook.name}: {result.stderr.strip() or 'hook failed'} (exit {result.returncode})")
             if result.stdout.strip():
-                messages.append(result.stdout.strip())
+                messages.append(hook_context(result.stdout.strip()))
             if result.stderr.strip():
                 messages.append(result.stderr.strip())
     if event == "SessionStart":

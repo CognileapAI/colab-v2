@@ -66,11 +66,14 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
 
 ### 자동 훅 등록 상태
 
-`.codex/hooks.json`은 기존 9개 셸 훅의 5개 이벤트를 `scripts/agent-bridge.py codex-event`로 연결한다.
+`.codex/hooks.json`은 기존 10개 셸 훅의 5개 이벤트를 `scripts/agent-bridge.py codex-event`로 연결한다.
 Windows 명령은 현재 Git 루트에서 Python 진입점을 찾고 WSL에 JSON stdin을 그대로 전달한다.
 Linux도 Git 루트에서 같은 진입점을 실행한다. 하위 폴더에서 시작해도 상대 경로가 어긋나지 않는다.
 PreToolUse의 patch 전체 경로(삭제·이동 목적지 포함)를 검사하고, PostToolUse CSS 출력은
 additionalContext JSON으로, SubagentStop 성공 출력은 systemMessage JSON으로 변환한다.
+`ponytail-inject.sh`는 코드 경로의 첫 Edit·Write 뒤에 `colab-ponytail` 요지를 세션·에이전트당
+한 번 additionalContext로 싣는다. 막지 않으며 준수 판정은 하지 않는다. 훅이 이미 낸
+`hookSpecificOutput.additionalContext` JSON은 bridge가 본문만 꺼내 다시 싣는다.
 실행 오류는 차단으로 전달한다. H2는 환경 준비이며 격리 사본 생성이나 성공 보장이 아니다.
 프로젝트 trust와 `/hooks`의 정의별 review가 필요하다. 이 PC에서는 2026-09-09 확인 시
 7개 등록 항목 모두 enabled/trusted이며 SessionStart 실행과 PreToolUse 차단을 실측했다.

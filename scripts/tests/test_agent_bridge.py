@@ -152,6 +152,36 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(payload['tool_input']['file_path'].endswith('tokens.css'))
 
     @patch.object(bridge.subprocess, 'run')
+    def test_hook_context_json_is_unwrapped_not_nested(self, run):
+        emitted = json.dumps({'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'additionalContext': '[ponytail] x'}})
+        run.return_value = subprocess.CompletedProcess([], 0, emitted, '')
+        event = self.event('PostToolUse', tool_name='apply_patch', tool_input={
+            'command': '*** Begin Patch\n*** Update File: services/core-api/app.py\n@@\n-a\n+b\n*** End Patch'})
+        context = bridge.dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        self.assertIn('[ponytail] x', context)
+        self.assertNotIn('hookSpecificOutput', context)
+
+    def test_ponytail_inject_fires_once_per_agent_on_code_paths_only(self):
+        hook = bridge.ROOT / '.claude/hooks/ponytail-inject.sh'
+        with tempfile.TemporaryDirectory() as tmp:
+            def run(path, agent=None):
+                payload = dict(session_id='s1', tool_name='Edit', cwd=str(bridge.ROOT),
+                               tool_input={'file_path': str(bridge.ROOT / path)})
+                if agent:
+                    payload['agent_id'] = agent
+                result = subprocess.run(['bash', str(hook)], input=json.dumps(payload), text=True,
+                                        capture_output=True, env=dict(os.environ, TMPDIR=tmp, COLAB_HOOKS='1'))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                return result.stdout
+            self.assertEqual(run('docs/development/dual-agent.md'), '')
+            self.assertEqual(run('services/core-api/README.md'), '')
+            first = json.loads(run('services/core-api/app.py'))['hookSpecificOutput']
+            self.assertEqual(first['hookEventName'], 'PostToolUse')
+            self.assertIn('colab-ponytail/SKILL.md', first['additionalContext'])
+            self.assertEqual(run('frontend/src/main.ts'), '')
+            self.assertIn('ponytail', run('frontend/src/main.ts', agent='a1'))
+
+    @patch.object(bridge.subprocess, 'run')
     def test_session_start_preserves_explicit_round_priority(self, run):
         run.return_value = subprocess.CompletedProcess([], 0, 'mtime suggestion', '')
         result = bridge.dispatch_event(self.event('SessionStart', source='startup'))
