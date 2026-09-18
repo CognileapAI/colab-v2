@@ -3743,6 +3743,7 @@ export interface components {
                 };
                 statistics?: ("instantaneous" | "daily_mean" | "daily_max" | "daily_min" | "monthly_mean" | "monthly_mean_daily_max" | "monthly_mean_daily_min")[];
                 maxResolutionM?: number;
+                maxMissingRatePercent?: number;
             };
         };
         /** @description 클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다. */

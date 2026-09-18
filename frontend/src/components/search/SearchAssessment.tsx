@@ -8,7 +8,7 @@ const variables = { land_surface_temperature: '지표면 온도', air_temperatur
 const statistics = { instantaneous: '순간값', daily_mean: '일평균', daily_max: '일최고', daily_min: '일최저', monthly_mean: '월평균', monthly_mean_daily_max: '일최고값의 월평균', monthly_mean_daily_min: '일최저값의 월평균' };
 const regions = { seoul: '서울', jeju: '제주', korean_peninsula: '한반도' };
 const labels: Record<string,string> = { variable:'관측 변수',region:'지역',period:'기간',statistics:'통계값',nativeResolutionM:'원래 공간 해상도(m)',platform:'관측 기반',provider:'제공 기관',unit:'단위',representation:'자료 형태',cadence:'시간 간격',directObservation:'직접 관측',format:'파일 형식' };
-const conditionLabels: Record<string,string> = { ...labels, maxResolutionM:'최대 공간 해상도(m)',descriptionAll:'설명에 모두 포함',coverageYear:'관측 연도(겹치는 기간)',uploadedMonth:'플랫폼 등록 월',exactPeriod:'기준 파일과 동일한 기간' };
+const conditionLabels: Record<string,string> = { ...labels, maxResolutionM:'최대 공간 해상도(m)',maxMissingRatePercent:'최대 결측률(%)',descriptionAll:'설명에 모두 포함',coverageYear:'관측 연도(겹치는 기간)',uploadedMonth:'플랫폼 등록 월',exactPeriod:'기준 파일과 동일한 기간' };
 
 function display(key: string, value: unknown): string {
   if (value == null) return '미확인';
