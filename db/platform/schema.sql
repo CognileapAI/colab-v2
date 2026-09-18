@@ -656,12 +656,17 @@ CREATE TABLE d3_dataset_variable (
   --   아니다. 그 행은 술어에서 빠질 뿐이다.
   -- ⚠ 중첩 CASE 인 이유: `~ … AND …::numeric` 로 적으면 두 항의 계산 순서가 보장되지 않아
   --   `'낮음'::numeric` 가 터진다. `substring` 은 매치 실패에 NULL 을 돌려주므로 안전하다.
+  -- ⚠ **정규식은 ASCII 이고 자릿수가 묶여 있다.** `\d+` 로 적으면 자유 입력 칸이 생성식을 통해
+  --   등록을 막는다 — 위 ⚠ 의 정반대다. `\d+` 는 numeric 한계(정수부 131072 · 소수부 16383)를
+  --   넘는 문면에서 `value overflows numeric format` 이 나고, `\d` 는 locale 의존이라 ICU
+  --   collation 판에서 전각 숫자 `'５%'` 까지 잡아 캐스트가 거절한다. 묶은 자릿수 밖
+  --   (`'0.1234567'`)은 오류가 아니라 NULL 이다. 근거는 `versions/0043_variable_missing_rate.py`.
   -- ⚠ **자리는 마지막이다** — `ALTER TABLE ADD COLUMN` 이 뒤에 붙이므로, 위로 올리면 선언과
   --   적용의 pg_dump 가 열 순서에서 갈린다(`0043-drift.sh` ㈑ 가 그것을 잡는다).
   missing_rate_percent numeric
     GENERATED ALWAYS AS (
-      CASE WHEN substring(missing_rate from '^\s*(\d+(?:\.\d+)?)\s*%?\s*$')::numeric BETWEEN 0 AND 100
-           THEN substring(missing_rate from '^\s*(\d+(?:\.\d+)?)\s*%?\s*$')::numeric
+      CASE WHEN substring(missing_rate from '^\s*([0-9]{1,3}(?:\.[0-9]{1,6})?)\s*%?\s*$')::numeric BETWEEN 0 AND 100
+           THEN substring(missing_rate from '^\s*([0-9]{1,3}(?:\.[0-9]{1,6})?)\s*%?\s*$')::numeric
       END
     ) STORED,
   -- 행 집합은 등록·수정이 **통째로 교체**한다(delete-then-insert) — 그래서 대리 키가 없다.

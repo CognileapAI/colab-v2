@@ -45,7 +45,8 @@ INSERT INTO d3_dataset (id, lab_id, owner_account_id, uploader_account_id) VALUE
    '0000000000000000000000MR02', '0000000000000000000000MR02');
 
 -- ── ① 파싱 가능한 문면 → 수치 ───────────────────────────────────────────────
--- 정규식은 intent 축자다: `^\s*\d+(\.\d+)?\s*%?\s*$`.
+-- 정규식은 intent 축자에서 좁힌 `^\s*([0-9]{1,3}(?:\.[0-9]{1,6})?)\s*%?\s*$` 다 — 왜 좁혔는지는
+-- ②의 극단 입력 블록과 `versions/0043_variable_missing_rate.py` 의 `_NUMBER` 주석에 있다.
 INSERT INTO d3_dataset_variable (dataset_id, lab_id, ordinal, name, missing_rate, is_representative) VALUES
   ('0000000000000000000000MRD1', '0000000000000000000000MR01', 1, '강수량', '0.2%',   true),
   ('0000000000000000000000MRD1', '0000000000000000000000MR01', 2, '기온',   ' 20 % ', false),

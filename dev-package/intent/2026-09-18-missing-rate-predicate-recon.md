@@ -260,6 +260,32 @@
   결측률은 더하지 않았다 — 값이 0건이라 측정 수치가 0으로 고정되고, 그 파일은 술어 집합의
   선언이 아니라 측정 도구다.
 
+### 후속 수정 — 생성식 정규식을 좁혔다 (2026-09-18 · 같은 브랜치)
+- **결함**: 위 정규식(intent 축자 `\d+`)은 자유 입력 칸의 **등록을 막았다** — 이 회차가 세운
+  「파싱 불가는 오류가 아니라 NULL」의 정반대다. `missing_rate` 에는 길이 상한이 없다
+  (`catalog.py:1114-1116` 의 검사는 「문자열이거나 null」까지이고 DB 에도 CHECK 가 없다).
+  로컬 postgres:16 · postgres:16-alpine(둘 다 16.15) 실측 — `repeat('9',140000)` 과
+  `'0.'||repeat('9',20000)` 은 numeric 한계(정수부 131072 · 소수부 16383)를 넘어
+  `value overflows numeric format`, ICU collation 판의 전각 숫자 `'５%'`(U+FF15)는
+  locale 의존 클래스인 `\d` 가 잡아 `invalid input syntax for type numeric: "５"` 로
+  INSERT 가 죽었다. libc collation(공식 이미지 기본)에서는 안 잡혀 판마다 결론이 갈린다.
+- **수정**: 리비전과 `schema.sql` 을 같은 값으로 고쳤다 —
+  `^\s*([0-9]{1,3}(?:\.[0-9]{1,6})?)\s*%?\s*$`. ASCII 명시 ＋ 자릿수 묶음.
+  0044 를 더하지 않았다(지속 제품 DB 미적용이라 제자리 수정이 맞다). 기존 기대 불변:
+  `'0.2%'`→0.2 · `' 20 % '`→20 · `'100'`→100 · `'101'`→NULL · `'낮음'`→NULL.
+  ⚠ **묶은 자릿수 밖은 값이 아니라 NULL 이 된다** — `'0.1234567'` 이 종전 0.1234567 에서
+  NULL 로 바뀐다. 소수 6자리는 이 회차의 선택이고, 넘침만 막는 것이 목적이면 `{1,15}` 로도
+  된다(numeric 소수부 한계 16383). 값을 되찾아야 하면 그 자리에서 넓히면 된다.
+- **red → green**: `0043-drift.sh` exit 1(㈎ `value overflows numeric format`) → exit 0 ·
+  `service-tests-core-api` failed 2(`overflow-int`·`overflow-frac`) → failed 0(수집·실행 1730).
+  오라클은 행동(`0043-assertions.sql` ②-h~m)과 식(⑥)을 따로 잰다 — 기본 collation 이 libc 인
+  판에서는 행동만으로 locale 의존이 드러나지 않는다. ⑥ 은 정규식을 다시 적지 않고
+  살아 있는 `generation_expression` 에서 꺼내 ICU collation 아래에서 돌린다.
+- ⚠ **공유 게이트 픽스처**: 이 PC 의 `schema-diff` 적용 DB(`colab_platform_applied`)에는
+  0043 이 이미 **구 정규식으로 적용돼 있었다**. `alembic upgrade head` 는 리비전이 이미
+  기록돼 있으면 제자리 수정을 반영하지 않으므로 그 DB 를 0042 로 내렸다가 다시 올려 맞췄다.
+  제자리로 고친 리비전은 이 손질이 따라붙는다.
+
 ## 참조
 - 선행 intent: `dev-package/intent/2026-09-18-dataset-metadata-backfill.md` 「후속 — 별도 결정으로
   분리한 항목」 2번
