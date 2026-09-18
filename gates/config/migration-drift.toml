@@ -22,10 +22,13 @@
 # 2026-09-18 재부모화 봉합 — db/platform +1벌(`0042-drift.sh`) → **27**.
 #   구 체인을 이미 적용한 DB 는 재부모화로 건너뛴 두 리비전을 다시 돌리지 않는다.
 #   그 드리프트를 `0042_reconcile_admin_access` 가 메우는지 재는 자리다. ai 체인 무변(3).
+# 2026-09-18 결측률 파생 칸 — db/platform +1벌(`0043-drift.sh`) → **28**.
+#   `d3_dataset_variable.missing_rate_percent` 가 자유 입력 `missing_rate` 에서 파생되고,
+#   파싱 불가·범위 밖이 NULL 로 빠질 뿐 등록을 막지 않는지 재는 자리다. ai 체인 무변(3).
 
 [[chain]]
 dir = "db/platform/tests"
-min = 27
+min = 28
 
 [[chain]]
 dir = "db/ai/tests"
