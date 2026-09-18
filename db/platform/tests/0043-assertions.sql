@@ -5,11 +5,14 @@
 --   · 0042 까지만       → 반드시 실패해야 한다 (red)   ← 「되돌리면 red」의 실물
 --   · 0043 downgrade 후 → 반드시 실패해야 한다 (red)
 --
--- **존재 확인만 하지 않는다.** 행을 실제로 넣고 파생값을 되읽는다. 재는 주장은 셋이다 —
+-- **존재 확인만 하지 않는다.** 행을 실제로 넣고 파생값을 되읽는다. 재는 주장은 넷이다 —
 --   ① 파싱 가능한 문면은 수치가 된다 (`'0.2%'`→0.2 · `' 20 % '`→20 · `'5'`→5)
---   ② 파싱 불가·범위 밖은 NULL 이 될 뿐 **등록을 막지 않는다** (`'낮음'`·`'200%'`·`'-1%'`)
+--   ② 파싱 불가·범위 밖은 NULL 이 될 뿐 **등록을 막지 않는다** (`'낮음'`·`'200%'`·`'-1%'`).
+--      자릿수가 numeric 한계를 넘는 문면과 전각 숫자도 같다 — 캐스트가 터지면 그 행의
+--      INSERT 가 통째로 죽고 그것은 「파싱 불가는 오류가 아니다」를 깨는 것이다(②-h~j).
 --   ③ 원본 칸(`missing_rate`)의 자유 입력 계약은 그대로다 — text 이고 CHECK 가 붙지 않았다
 --      (`contracts/seams/fe-core.yaml` `missingRate` 「자유 입력」 · PRD-16 · 결정 3=㈐-2)
+--   ⑥ 그 안전이 판의 locale 에 딸려 오지 않는다 — 정규식이 ASCII 이고 자릿수가 묶여 있다
 --
 -- **제약·생성식 시험이지 RLS 시험이 아니다** — superuser 로 돌아 RLS 를 우회한다.
 -- 생성 컬럼은 표의 정책을 그대로 물려받으므로 여기서는 카탈로그(켜짐·FORCE·정책)까지만 본다.
@@ -72,11 +75,35 @@ SELECT _t_percent(9,  NULL, '②-d 100 초과는 범위 밖이다');
 SELECT _t_percent(10, NULL, '②-e 음수는 정규식에서 걸린다');
 SELECT _t_percent(11, NULL, '②-f 빈 문자열');
 SELECT _t_percent(12, NULL, '②-g NULL');
+
+-- ② 계속 — **극단 입력도 등록을 막지 않는다.** 위 일곱은 「수치가 아니다」이고 아래 여섯은
+-- 「수치처럼 생겼는데 캐스트가 터진다」다. `missing_rate` 에는 길이 상한이 없으므로
+-- (`catalog.py` `_VARIABLE_FIELDS` 검사는 「문자열이거나 null」까지다) 자릿수가 numeric 한계를
+-- 넘는 문면이 실제로 들어올 수 있고, 숫자 문자 집합은 collation 에 딸려 온다.
+--   · `\d` 는 locale 의존이라 ICU collation 아래에서는 전각 숫자(U+FF15)까지 잡는다 —
+--     잡아 놓고 `::numeric` 이 거절하면 그 자리에서 INSERT 가 죽는다.
+--   · `\d+` 는 자릿수가 무제한이라 numeric 한계(정수부 131072 · 소수부 16383)를 넘기면
+--     `value overflows numeric format` 이 난다.
+-- 둘 다 **파일 맨 위 ②의 주장을 정면으로 깬다** — 파싱 불가는 NULL 일 뿐 오류가 아니어야 한다.
+-- 그래서 정규식은 ASCII 숫자만, 자릿수를 묶어서 적는다(`[0-9]{1,3}(?:\.[0-9]{1,6})?`).
+INSERT INTO d3_dataset_variable (dataset_id, lab_id, ordinal, name, missing_rate, is_representative) VALUES
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 20, '누적강수', repeat('9', 140000),   false),
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 21, '누적일사', '0.' || repeat('9', 20000), false),
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 22, '전각결측', U&'\FF15' || '%',       false),
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 23, '지수표기', '1e5',                 false),
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 24, '과다소수', '0.1234567',           false),
+  ('0000000000000000000000MRD1', '0000000000000000000000MR01', 25, '사십자리', repeat('9', 40),       false);
+SELECT _t_percent(20, NULL, '②-h 정수부가 numeric 한계를 넘는 문면 — 등록이 죽으면 안 된다');
+SELECT _t_percent(21, NULL, '②-i 소수부가 numeric 한계를 넘는 문면 — 정수부만 묶어서는 못 막는다');
+SELECT _t_percent(22, NULL, '②-j 전각 숫자 — ICU collation 에서 `\d` 가 잡으면 캐스트가 터진다');
+SELECT _t_percent(23, NULL, '②-k 지수 표기 — numeric 은 받지만 결측률 문면은 아니다');
+SELECT _t_percent(24, NULL, '②-l 소수 7자리는 묶인 자릿수 밖이다 — 값이 아니라 NULL 로 빠진다');
+SELECT _t_percent(25, NULL, '②-m 40자리는 numeric 한계 안이지만 100 초과라 범위 밖이다');
 DO $$
 DECLARE n integer;
 BEGIN
   SELECT count(*) INTO n FROM d3_dataset_variable WHERE dataset_id = '0000000000000000000000MRD1';
-  IF n <> 12 THEN PERFORM _t_fail(format('② 12행을 넣었는데 %s행이 남았다 — 파생이 등록을 막았다', n)); END IF;
+  IF n <> 18 THEN PERFORM _t_fail(format('② 18행을 넣었는데 %s행이 남았다 — 파생이 등록을 막았다', n)); END IF;
 END $$;
 
 -- ── ③ 파생 컬럼의 성질 — GENERATED ALWAYS ＊STORED＊ 이고 원본을 따라 바뀐다 ──
@@ -140,6 +167,41 @@ BEGIN
   SELECT count(*) INTO n FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
    WHERE c.relname = 'd3_dataset_variable' AND p.polname = 'lab_boundary';
   IF n <> 1 THEN PERFORM _t_fail('⑤ lab_boundary 정책이 없다'); END IF;
+END $$;
+
+-- ── ⑥ 정규식 자체의 성질 — ASCII 이고 자릿수가 묶여 있다 ────────────────────
+-- ②-h~j 는 **행동**으로 재고 여기서는 **식**으로 잰다. 둘 다 필요한 이유는 기본 collation 이
+-- libc 인 판(공식 postgres:16·16-alpine 둘 다 그렇다)에서는 `\d` 가 전각 숫자를 잡지 않아
+-- ②-j 만으로는 locale 의존이 드러나지 않기 때문이다. 식을 직접 보면 판과 무관하게 잡힌다.
+--
+-- 비교 대상은 **살아 있는 생성식에서 꺼낸 문자열**이다 — 여기에 정규식을 다시 적으면
+-- 리비전과 갈라져도 시험이 모른다.
+DO $$
+DECLARE pat text; wide text := U&'\FF15' || '%';
+BEGIN
+  SELECT (regexp_match(generation_expression, '''(\^[^'']*\$)''::text'))[1] INTO pat
+    FROM information_schema.columns
+   WHERE table_name = 'd3_dataset_variable' AND column_name = 'missing_rate_percent';
+  IF pat IS NULL THEN
+    PERFORM _t_fail('⑥-a 생성식에서 정규식을 꺼내지 못했다 — 식의 모양이 바뀌었다');
+  END IF;
+  IF position('\d' in pat) > 0 THEN
+    PERFORM _t_fail(format('⑥-b 정규식이 locale 의존 숫자 클래스 \d 를 쓴다 (%s) — ICU collation 에서 전각 숫자를 잡고 ::numeric 이 터진다', pat));
+  END IF;
+  IF position('[0-9]' in pat) = 0 THEN
+    PERFORM _t_fail(format('⑥-c 정규식이 ASCII 숫자 범위를 명시하지 않는다 (%s)', pat));
+  END IF;
+  -- 자릿수가 묶여 있지 않으면 numeric 한계를 넘는 문면에서 다시 터진다(②-h·②-i).
+  IF position('+' in pat) > 0 THEN
+    PERFORM _t_fail(format('⑥-d 정규식에 무제한 반복 + 가 남아 있다 (%s) — 자릿수를 묶어야 한다', pat));
+  END IF;
+  -- 같은 식을 ICU collation 아래에서 실제로 돌려 본다. 기본 collation 이 libc 여도 결론이 같다.
+  IF NOT EXISTS (SELECT 1 FROM pg_collation WHERE collname = 'und-x-icu') THEN
+    PERFORM _t_fail('⑥-e und-x-icu collation 이 없다 — 이 오라클은 ICU 가 있는 판에서 돈다(공식 postgres:16 이미지 기준)');
+  END IF;
+  IF substring(wide COLLATE "und-x-icu" from pat) IS NOT NULL THEN
+    PERFORM _t_fail(format('⑥-f ICU collation 에서 전각 숫자가 정규식에 잡힌다 (%s) — 그 캐스트가 등록을 죽인다', pat));
+  END IF;
 END $$;
 
 ROLLBACK;

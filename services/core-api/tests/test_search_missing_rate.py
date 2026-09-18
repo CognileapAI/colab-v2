@@ -112,6 +112,31 @@ def test_upper_bound_is_inclusive_and_widening_admits_the_higher_rate(fixtures, 
         assert fixtures[key] not in _search(session_factory, {'maxMissingRatePercent': 100})
 
 
+#: 「수치처럼 생겼는데 `::numeric` 이 거절하는」 문면. `missing_rate` 는 길이 상한이 없는 자유
+#: 입력이라(`catalog.py` 의 검사는 「문자열이거나 null」까지다) 실제로 들어올 수 있다.
+#: 생성식이 이것을 캐스트까지 끌고 가면 변수 행 INSERT 가 통째로 죽어 **등록 자체가 막힌다** —
+#: 0043 이 세운 「파싱 불가는 오류가 아니라 NULL 이다」의 정반대다.
+EXTREME_FREE_TEXT = [
+    ('overflow-int', '9' * 140000),        # 정수부가 numeric 한계(131072자리)를 넘는다
+    ('overflow-frac', '0.' + '9' * 20000),  # 소수부가 numeric 한계(16383자리)를 넘는다
+    ('wide-numeral', '５%'),                # ICU collation 에서 `\d` 가 잡고 캐스트가 거절한다
+    ('exponent', '1e5'),                    # numeric 은 받지만 결측률 문면이 아니다
+]
+
+
+@pytest.mark.parametrize('label,rate', EXTREME_FREE_TEXT, ids=[x[0] for x in EXTREME_FREE_TEXT])
+def test_extreme_free_text_registers_and_only_drops_out_of_the_predicate(
+        p2_client, sql, session_factory, label, rate):
+    """등록은 되고 술어에서만 빠진다. 여기서 터지면 자유 입력 계약이 깨진 것이다."""
+    dataset = _dataset(sql, p2_client(), name=f'극단 문면 자료 {label}',
+                       variables=[(1, '강수량', rate, True)])
+    derived = sql('SELECT missing_rate_percent FROM d3_dataset_variable WHERE dataset_id = :id',
+                  {'id': dataset})
+    assert derived == [{'missing_rate_percent': None}], f'{label} 이 수치로 읽혔다'
+    assert dataset not in _search(session_factory, {'maxMissingRatePercent': 100}), \
+        f'{label} 이 술어에 들어왔다'
+
+
 def test_unknown_predicate_still_raises(fixtures, session_factory):
     with pytest.raises(ValueError, match='unsupported typed predicate'):
         _search(session_factory, {'missingRatePercent': 1})
