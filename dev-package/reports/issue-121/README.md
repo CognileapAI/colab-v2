@@ -352,18 +352,20 @@ spec 의 코드 산술값(`.settabs { margin-bottom: 14px }` ＋ `.account-list-
 ## 게이트 — `gate-summary.record.json`
 
 - 명령: `COLAB_TASK_ID=318b471e5e164f86a2d1b5f08c9fcffb COLAB_VISUAL_URLS='http://127.0.0.1:5179/account-admin' bash gates/run.sh task`
-- run `9e09ba2fb4e141f48c333314c2dd8f3a` · commit `db1946c0` · tree `77ccef4b`
+- **보정 회차 최종** — run `6391a53172f14cc1b75fba95b85353e9` · commit `2a557c4f` · tree `126a793f`
 - 결과: **green 4 / red(판정) 0 / red(준비) 0** · 종료코드 **0**
-- `verify-report --task … --report … --gate ×4` →
-  `green: task identity, explicit report/gates and current working files verified`
 
 | 게이트 | 판정 | 계수 |
 |---|---|---|
 | `frontend-typecheck` | green | `tsc --noEmit`(include=src·test) 오류 **0건** |
-| `frontend-test` | green | vitest 통과 **1607건** · 실패 **0건** (129 파일) |
+| `frontend-test` | green | vitest 통과 **1610건** · 실패 **0건** (129 파일) |
 | `frontend-fixture-reach` | green | 도달 **203개**(진입점 제외 202) · 금지 모듈 **0건** |
-| `frontend-visual` | green | 페이지 **1건** · 13px 미만 **0건** · 대비<4.5 **0건** · 스크린샷 2장 · 허용 접두사 0개 |
+| `frontend-visual` | green(exit 0) | 페이지 **1건** · 13px 미만 **0건** · 대비<4.5 **0건** · 스크린샷 2장 · 허용 접두사 0개 |
 
+- **이 화면에 대한 실제 성적은 「3 게이트 green ＋ 시각 게이트 미도달」이다.** `frontend-visual`
+  의 종료코드는 0 이지만 그것이 연 화면은 계정 관리 화면이 아니라 **로그인 화면**이다(근거는 바로 아래).
+  네 번째 green 을 이 화면의 시각 판정으로 세지 않는다.
+- 시험 수 1607 → **1610**(보정 회차 ＋3: C3 폭대 1 · C4 넘침 1 · C4 역할 `title` 1).
 - `COLAB_VISUAL_URLS` 를 **실선언**했고 `COLAB_VISUAL_EXEMPT` 는 쓰지 않았다(CSS 를 만졌다).
 - **`COLAB_GATE_REPORT_DIR` 는 넘기지 않았다.** `COLAB_TASK_ID` 와 함께 주면 실행기가
   `explicit report directory differs from current task run` 준비 실패(78)로 막는다
