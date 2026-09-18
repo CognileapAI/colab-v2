@@ -647,6 +647,23 @@ CREATE TABLE d3_dataset_variable (
   value_range   text,
   missing_rate  text,
   is_representative boolean NOT NULL DEFAULT false,
+  -- ⭑ ⟨`0043`⟩ **사본이 아니라 파생이다.** 조건 검색(`maxMissingRatePercent`)은 수치로 비교해야
+  --   하는데 `missing_rate` 는 자유 입력 text 다. facts 로 전재하면(intent 판정 3-㈎) 원본이
+  --   고쳐져도 사본을 다시 쓰는 주체가 없다 — 여기서 파생하면 그 주체가 필요 없다.
+  -- ⛔ **원본 칸의 입력 계약은 그대로다** — `fe-core.yaml` `missingRate` 「자유 입력. `0.2%` 처럼
+  --   사람이 적은 그대로」(PRD-16). text · NULL 허용 · CHECK 없음.
+  -- ⚠ 파싱 불가(`'낮음'`)도 범위 밖(`'200%'`)도 **오류가 아니라 NULL** 이다. 막으면 자유 입력이
+  --   아니다. 그 행은 술어에서 빠질 뿐이다.
+  -- ⚠ 중첩 CASE 인 이유: `~ … AND …::numeric` 로 적으면 두 항의 계산 순서가 보장되지 않아
+  --   `'낮음'::numeric` 가 터진다. `substring` 은 매치 실패에 NULL 을 돌려주므로 안전하다.
+  -- ⚠ **자리는 마지막이다** — `ALTER TABLE ADD COLUMN` 이 뒤에 붙이므로, 위로 올리면 선언과
+  --   적용의 pg_dump 가 열 순서에서 갈린다(`0043-drift.sh` ㈑ 가 그것을 잡는다).
+  missing_rate_percent numeric
+    GENERATED ALWAYS AS (
+      CASE WHEN substring(missing_rate from '^\s*(\d+(?:\.\d+)?)\s*%?\s*$')::numeric BETWEEN 0 AND 100
+           THEN substring(missing_rate from '^\s*(\d+(?:\.\d+)?)\s*%?\s*$')::numeric
+      END
+    ) STORED,
   -- 행 집합은 등록·수정이 **통째로 교체**한다(delete-then-insert) — 그래서 대리 키가 없다.
   PRIMARY KEY (dataset_id, ordinal)
 );

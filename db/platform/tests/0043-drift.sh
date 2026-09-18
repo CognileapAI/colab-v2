@@ -23,7 +23,7 @@ CHAIN="$(cd "$HERE/.." && pwd)"
 ALEMBIC="${COLAB_ALEMBIC:-alembic}"
 IMAGE="${COLAB_PG_IMAGE:-postgres:16-alpine}"
 
-REV="0043_variable_missing_rate_percent"
+REV="0043_variable_missing_rate"
 PREV_REV="0042_reconcile_admin_access"
 
 red(){ echo "::error::0043-drift red — $*"; exit 1; }

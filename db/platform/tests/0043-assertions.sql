@@ -14,7 +14,7 @@
 -- **제약·생성식 시험이지 RLS 시험이 아니다** — superuser 로 돌아 RLS 를 우회한다.
 -- 생성 컬럼은 표의 정책을 그대로 물려받으므로 여기서는 카탈로그(켜짐·FORCE·정책)까지만 본다.
 --
--- 근거 = db/platform/versions/0043_variable_missing_rate_percent.py
+-- 근거 = db/platform/versions/0043_variable_missing_rate.py
 
 \set ON_ERROR_STOP on
 BEGIN;
