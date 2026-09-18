@@ -11,6 +11,18 @@ from ..kernel.search_semantics import SEMANTICS
 LIMIT = 200
 
 
+def _percentage(value):
+    """백분율 인자를 0~100 의 수로 못박는다. bool 은 수가 아니다.
+
+    호출자가 검증했다고 믿지 않는다 — 이 함수는 HTTP 밖(오라클·도구)에서도 불린다.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        raise ValueError('maxMissingRatePercent must be a number in 0..100')
+    if not 0 <= value <= 100:
+        raise ValueError('maxMissingRatePercent must be a number in 0..100')
+    return float(value)
+
+
 def candidates(session, conditions, *, verified_ids=None):
     where = ['d.deleted_at IS NULL']
     params = {'limit':LIMIT+1}
@@ -23,6 +35,14 @@ def candidates(session, conditions, *, verified_ids=None):
     if conditions.get('uploadedMonth'):
         where.append("to_char(d.uploaded_at AT TIME ZONE 'Asia/Seoul','YYYY-MM')=:month")
         params['month'] = conditions['uploadedMonth']
+    if 'maxMissingRatePercent' in conditions:
+        # 결측률은 파일이 아니라 데이터셋의 **대표 변수** 사실이라 file_checks 가 아닌 여기 산다.
+        # 읽는 칸은 원본에서 파생된 수치(`0043`)다 — facts 사본이 아니므로 등록·수정이 그 자리에
+        # 반영된다. 파싱 불가·미기재는 NULL 이라 EXISTS 가 서지 않고 조용히 넓어지지 않는다.
+        params['missing_rate'] = _percentage(conditions['maxMissingRatePercent'])
+        where.append('''EXISTS (SELECT 1 FROM d3_dataset_variable v
+            WHERE v.dataset_id=d.id AND v.is_representative
+              AND v.missing_rate_percent <= :missing_rate)''')
     # Apply hard predicates before LIMIT. Unrelated recent uploads must not crowd
     # an older matching product out of the candidate window. One EXISTS means
     # every requested property belongs to the same current reviewed file.
@@ -30,7 +50,7 @@ def candidates(session, conditions, *, verified_ids=None):
     for index,(key,value) in enumerate(conditions.items()):
         arg = f'v{index}'
         params[arg] = value
-        if key in ('descriptionAll','uploadedMonth'):
+        if key in ('descriptionAll','uploadedMonth','maxMissingRatePercent'):
             params.pop(arg)
             continue
         if key in ('variable','region'):
@@ -70,15 +90,24 @@ def candidates(session, conditions, *, verified_ids=None):
               AND f.kind='본체' AND ('''+') AND ('.join(file_checks or ['true'])+''')
             ORDER BY CASE WHEN jsonb_typeof(e.facts->'nativeResolutionM')='number'
                       THEN (e.facts->>'nativeResolutionM')::numeric END NULLS LAST,e.file_id LIMIT 1'''
+    # 대표 변수의 파생 결측률을 후보 줄에 함께 싣는다 — 판정부(`client_search._predicate`)가
+    # 데이터셋 단위 술어를 `descriptionAll`·`uploadedMonth` 와 같은 자리에서 되읽기 위해서다.
+    # 이 값은 응답 항목에 실리지 않는다(`routes/catalog.py` 는 verdict 와 `_compose` 만 쓴다).
     rows = session.execute(text('''SELECT d.id dataset_id,dd.name,dd.summary,
-        d.uploaded_at created_at,d.last_modified_at,ev.* FROM d3_dataset d
+        d.uploaded_at created_at,d.last_modified_at,
+        (SELECT v.missing_rate_percent FROM d3_dataset_variable v
+          WHERE v.dataset_id=d.id AND v.is_representative) missing_rate_percent,
+        ev.* FROM d3_dataset d
         JOIN d3_dataset_description dd ON dd.dataset_id=d.id
         JOIN LATERAL ('''+evidence_query+''') ev ON true
         WHERE '''+' AND '.join(where)+''' ORDER BY d.uploaded_at DESC,d.id LIMIT :limit'''),params).mappings().all()
     out = []
     for row in rows[:LIMIT]:
         out.append({'dataset_id':row['dataset_id'],'name':row['name'],'summary':row['summary'],
-                    'created_at':row['created_at'],'evidence':{
+                    'created_at':row['created_at'],
+                    'missing_rate_percent':(None if row['missing_rate_percent'] is None
+                                            else float(row['missing_rate_percent'])),
+                    'evidence':{
                         'file_id':row['file_id'],'file_name':row['file_name'],'facts':row['facts'],
                         'source':{'label':row['source_label'],'locator':row['source_locator'],'sha256':row['source_sha256']}},
                     'receipt':{'file_id':row['file_id'],'revision':row['revision'],'file_revision':row['file_revision'],
