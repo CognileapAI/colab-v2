@@ -19,10 +19,13 @@
 # 2026-09-18 develop 동기화 — db/platform +1벌(`0032-private-owner-drift.sh`) → **26**.
 #   재부모화한 `0032_private_owner_access` 가 `0033_admin_body_access` 의 관리자 갈래를
 #   지우지 않고 소유자 갈래만 더하는지 재는 자리다. ai 체인 무변(3).
+# 2026-09-18 재부모화 봉합 — db/platform +1벌(`0042-drift.sh`) → **27**.
+#   구 체인을 이미 적용한 DB 는 재부모화로 건너뛴 두 리비전을 다시 돌리지 않는다.
+#   그 드리프트를 `0042_reconcile_admin_access` 가 메우는지 재는 자리다. ai 체인 무변(3).
 
 [[chain]]
 dir = "db/platform/tests"
-min = 26
+min = 27
 
 [[chain]]
 dir = "db/ai/tests"
