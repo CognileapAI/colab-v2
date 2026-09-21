@@ -38,7 +38,7 @@ def parse(query: str) -> dict:
         resolution=re.search(r'(\d+(?:\.\d+)?)(km|m)',q)
         if resolution: criteria['nativeResolutionM']=float(resolution[1])*(1000 if resolution[2]=='km' else 1)
     if '보간' in q and re.search(r'하지않|안한|없는',q): criteria['interpolated']=False
-    cadence=next((value for pattern,value in [('월평균|한달평균','monthly'),('일별|매일','daily'),('주간|매주','weekly'),('시간별|매시간|시간단위','hourly')] if re.search(pattern,q)),None)
+    cadence=next((value for pattern,value in [('월평균|한달평균','monthly'),('일별|매일','daily'),('주간|매주','weekly'),('시간별|매시간|시간단위','hourly'),(r'(?<!\d)5\s*분','5min'),(r'(?<!\d)10\s*분','10min'),('연평균|연단위|연 단위|매년|해마다','yearly')] if re.search(pattern,q)),None)
     if cadence: criteria['cadence']=cadence
     region=next((r for r in ['제주','한반도','서울','강원','전라','경상'] if r in q),None)
     if '경기' in q and '충청' in q: region='경기남부충청'
@@ -78,7 +78,7 @@ def assess(criteria: dict, facts: dict) -> dict:
         elif key == 'nativeResolutionM' and actual is not None:
             display = f'{actual:g}m'
         elif key == 'cadence' and actual is not None:
-            display = {'daily':'일별','weekly':'주간','monthly':'월평균','15min':'15분','hourly':'매시'}.get(actual,actual)
+            display = {'daily':'일별','weekly':'주간','monthly':'월평균','15min':'15분','hourly':'매시','5min':'5분','10min':'10분','yearly':'연 단위'}.get(actual,actual)
         checks[label]=('unknown' if actual is None else 'supported' if match else 'contradicted',display)
     if criteria.get('roles'):
         actual=facts.get('roles')

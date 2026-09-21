@@ -5879,8 +5879,15 @@ components:
           # 이하」를 직접 부르고, 정본 `02.File-format/DATASETS.md` seq 16 축자 「각 24시각이다」가
           # 그 값을 가진 자료를 고정한다. pressure level(결정 2-ⓑ)·결측률 술어(결정 2-ⓒ)는
           # 이 회차에서 열지 않는다 — 별도 결정으로 분리했다.
+          # ⭑ ⟨2026-09-21 · Ted 결정 3 「가 권고대로」⟩ `5min`·`10min`·`yearly` 를 더한다 —
+          # `hourly` 와 같은 방식의 **값 추가뿐이라 파괴가 아니다**(기존 값 5개는 그대로).
+          # 정본이 값을 말하는데 자리가 없어 1회차가 적지 못한 세 자리다(1회차 후속 6번):
+          # `01.level-data/01.precipitation/DATASETS.md` seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」 → 5min ·
+          # `02.File-format/DATASETS.md` seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은
+          # NetCDF4 원자료」 → 10min · `01.level-data/02.vegetation/DATASETS.md` seq 11 축자 「연 단위 100 m
+          # 토지피복지도」 → yearly. pressure level(결정 2-ⓑ)·결측률 술어(결정 2-ⓒ)는 그대로 닫혀 있다.
           type: string
-          enum: [daily, weekly, monthly, 15min, hourly]
+          enum: [daily, weekly, monthly, 15min, hourly, 5min, 10min, yearly]
         model: { type: string, minLength: 1, maxLength: 500 }
         variable: { type: string, minLength: 1, maxLength: 500 }
         directObservation: { type: boolean }

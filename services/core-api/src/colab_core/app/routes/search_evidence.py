@@ -45,7 +45,8 @@ class EvidenceFacts(BaseModel):
                         "documentation", "analysis_code"]] | None = None
     period: EvidencePeriod | None = None
     region: str | None = Field(default=None, min_length=1, max_length=500)
-    cadence: Literal["daily", "weekly", "monthly", "15min", "hourly"] | None = None
+    cadence: Literal["daily", "weekly", "monthly", "15min", "hourly",
+                     "5min", "10min", "yearly"] | None = None
     model: str | None = Field(default=None, min_length=1, max_length=500)
     variable: str | None = Field(default=None, min_length=1, max_length=500)
     directObservation: StrictBool | None = None
