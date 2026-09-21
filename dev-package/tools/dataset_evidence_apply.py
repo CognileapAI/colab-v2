@@ -1,5 +1,11 @@
 """생성된 검색 근거 payload 를 한 트랜잭션으로 싣는다. **멱등**이고 재시드가 아니다.
 
+⚠ **초안(규칙 추론) 사실은 쓰지 않는다** — 2026-09-21 Ted 결정 1. payload 의 `draftFacts` 는
+`d3_search_evidence` 에 실리지 않는다. 그 표는 `file_id` 가 PK 이고 `status` 가 행 단위라
+한 파일이 reviewed 와 draft 를 함께 가질 수 없고, 행을 통째로 draft 로 내리면 정본 전재
+사실까지 조건 검색에서 사라진다. 이 스크립트는 `draft_withheld` 로 그 칸 수만 보고한다.
+승격 구조(히트 측정 → 승격·폐기)는 별도 intent 의 몫이며 `rule:<ID>` locator 로 찾아온다.
+
 무엇을 쓰나 (전부 추가·정합화이고 삭제가 없다):
   · `d3_search_evidence` — 데이터셋의 **본체 파일마다** 한 행(upsert). 조건 검색이 읽는 자리다.
   · `d3_dataset_description.topic` — 프로젝트 4 ↔ topic CHECK 6값 정합화(2026-09-15 후속 2번).
@@ -63,7 +69,7 @@ def apply_payloads(execute, payloads: dict, *, reviewer_id: str, dry_run: bool =
     """`execute(sql, params) -> list[dict]` 하나만 받는다 — 시험은 앱 롤 세션을, DEV 명령은
     한 트랜잭션 연결을 넘긴다. 같은 SQL 이 두 자리에서 돈다(적용기를 두 벌로 두지 않는다)."""
     report = {"datasets": 0, "missing": [], "evidence": 0, "evidence_unchanged": 0,
-              "topic": 0, "source_label": 0, "files": 0}
+              "topic": 0, "source_label": 0, "files": 0, "draft_withheld": 0}
     for row in payloads["datasets"]:
         found = execute(_FIND_DATASET, {"name": row["name"]})
         if not found:
@@ -74,6 +80,7 @@ def apply_payloads(execute, payloads: dict, *, reviewer_id: str, dry_run: bool =
                              "이름으로 고를 수 없으면 적재하지 않는다.")
         dataset = found[0]
         report["datasets"] += 1
+        report["draft_withheld"] += len(row.get("draftFacts") or {})
         source = row["source"]
         facts_json = json.dumps(row["facts"], ensure_ascii=False, sort_keys=True)
 
