@@ -42,11 +42,16 @@ LEXICAL = (
 )
 
 CONDITIONS = (
-    ("조건 검색 platform=ground", {"platform": "ground"}),
-    ("조건 검색 platform=satellite", {"platform": "satellite"}),
+    # ⭑ platform·directObservation 은 2026-09-21 Ted 결정 1 로 **초안**이 되었다 — 적재되지
+    #   않으므로 적재 후에도 0건이다. 줄을 지우지 않는다: 0 이 된 것을 드러내는 것이 측정이다.
+    ("조건 검색 platform=ground (2회차 초안 — 미적재)", {"platform": "ground"}),
+    ("조건 검색 platform=satellite (2회차 초안 — 미적재)", {"platform": "satellite"}),
+    ("조건 검색 directObservation=true (2회차 초안 — 미적재)", {"directObservation": True}),
     ("조건 검색 cadence=hourly (결정 2-ⓐ 로 연 값)", {"cadence": "hourly"}),
     ("조건 검색 cadence=15min", {"cadence": "15min"}),
-    ("조건 검색 directObservation=true", {"directObservation": True}),
+    ("조건 검색 cadence=5min (결정 3 으로 연 값)", {"cadence": "5min"}),
+    ("조건 검색 cadence=10min (결정 3 으로 연 값)", {"cadence": "10min"}),
+    ("조건 검색 cadence=yearly (결정 3 으로 연 값)", {"cadence": "yearly"}),
     ("조건 검색 maxResolutionM<=5000", {"maxResolutionM": 5000}),
     ("조건 검색 variable=precipitation + coverageYear 2022",
      {"variable": "precipitation", "coverageYear": 2022}),

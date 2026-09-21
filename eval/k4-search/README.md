@@ -133,6 +133,58 @@ services/core-api/.venv/bin/python eval/k4-search/measure_evidence.py <URL>
 적재 후 **15 passed**. 집계는 가능 8 · 부분 3 · blocked 3 이고, blocked 3건
 (`#1-5`·`#2-5` 자료 부재 · `#2-6` pressure level)은 green 을 주장하지 않는다.
 
+## 2026-09-21 재측정 — 규칙 추론값을 초안으로 내린 2회차
+
+같은 하네스·같은 일회용 DB 재료. 바뀐 것은 **생성물 payload 와 계약의 cadence 3값**이다.
+Ted 결정 1 축자 — 「다 초안으로 넣는다. 실제로 얼마나 히트했냐를 측정하고 이에 따라 승격 또는
+폐기하는 구조를 가져야한다.」 → `platform`·`representation`·`directObservation`·`interpolated`
+와 규칙으로 이어받은 `nativeResolutionM`·`region` 은 **적재되지 않는다**.
+조건 검색은 `status='reviewed'` 만 읽으므로(`d3_client_search.py:97`) 그 축은 0건이 된다.
+
+돌리는 법은 위 2026-09-18 절의 3단계와 같다. 모델 호출 0회.
+
+| 질의·조건 | 적재 전 | 1회차 적재 후 | **2회차 적재 후** |
+|---|---|---|---|
+| 주제 결합 「강수」 + `topic=강우·강수` | 2건 | 7건 | **7건** |
+| 주제 결합 「가뭄」 + `topic=가뭄` | 0건 | 2건 | **2건** |
+| 원천 표기 「기상청」 | 1건 | 7건 | **7건** |
+| `platform=ground` | 0건 | 8건 | **0건 — 초안** |
+| `platform=satellite` | 0건 | 14건 | **0건 — 초안** |
+| `directObservation=true` | 0건 | 20건 | **0건 — 초안** |
+| `cadence=hourly` | 0건 | 1건 | **1건** |
+| `cadence=15min` | 0건 | 2건 | **2건** |
+| `cadence=5min` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 1 HSR) |
+| `cadence=10min` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 17 GK-2A LST) |
+| `cadence=yearly` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 11 LULC) |
+| `maxResolutionM<=5000` | 0건 | 6건 | **5건** (seq 3 의 해상도는 규칙값 → 초안) |
+| `variable=precipitation` + `coverageYear=2022` | 0건 | 3건 | **3건** |
+| `d3_search_evidence` 행 | 0행 | 28행 | **28행** |
+
+**「시간해상도 1시간 이하」 히트** — 1회차 **3건**(hourly 1 ＋ 15min 2) → 2회차 **5건**
+(＋ 5min 1 ＋ 10min 1). 1회차 후속 6번이 「정본이 말하는데 적지 못했다」고 남긴 자리가 닫혔다.
+`yearly` 1건은 1시간 이하가 아니라 별도다.
+
+**사실 칸의 등급** — 1회차 reviewed 230칸 · draft 0칸 → 2회차 **reviewed 123칸 · draft 110칸**
+(＋ cadence 3칸이 reviewed 로 늘었다). 규칙별 초안 셈은 생성물 옆
+`dev-package/tools/generated/dataset-evidence-payloads-rule-summary.json` 에 있다 —
+platform 26 · representation 28 · directObservation 26 · interpolated 28 ·
+native-resolution-carried 1 · region-from-registration-note 1 · **bbox-korea-peninsula 0**.
+
+적용기 멱등 실측 — 1회 `evidence 28 / unchanged 0`, 2회 `evidence 0 / unchanged 28`,
+두 번 모두 `draft_withheld 110`.
+
+### 실무자 사례 오라클 (2회차)
+
+같은 일회용 DB 에서 **17 passed**. 집계가 1회차 가능 8 · 부분 3 · blocked 3 에서
+**가능 3 · 부분 5 · blocked 3 · blocked_draft 3** 으로 바뀌었다. 줄어든 자리는 규칙 추론값을
+초안으로 내린 만큼이고, 새 등급 `blocked_draft` 의 사유는 「규칙 추론값은 초안 — 사람 확인 후
+승격」이다. `PC-1-2`·`PC-1-6`·`PC-2-2` 가 그 자리이고 `PC-1-3`·`PC-2-3` 은 reviewed 축만
+남겨 partial 로 내렸다. **초안 사실 위에서 green 을 주장하지 않는다.**
+
+지명 축은 여전히 비어 있다 — 정본을 고치지 않고 후보표만 만들었다
+(`dev-package/reports/practitioner-place-candidates-260921.md` · 후보가 선 행 8 / 28,
+보조 bbox 는 28행 전부 미상).
+
 ## 고정 snapshot 조건 결합 실험
 
 `python3 eval/k4-search/structured_probe.py --output <새 JSON 경로>`
