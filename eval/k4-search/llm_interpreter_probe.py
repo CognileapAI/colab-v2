@@ -142,7 +142,11 @@ def run_remote(ssh_host, ssh_key, payload):
                            ssh_host, remote_cmd], input=json.dumps(payload), text=True,
                           capture_output=True, timeout=120)
     if proc.returncode:
-        raise RuntimeError('remote query failed (details withheld to protect connection secrets)')
+        # Last line only, with addresses and DB URLs masked — enough to tell an assertion from a connection fault.
+        import re
+        tail = proc.stderr.strip().splitlines()[-1:] or ['']
+        masked = re.sub(r'postgres(ql)?://\S+', '<db-url>', re.sub(r'\d+\.\d+\.\d+\.\d+', '<ip>', tail[0]))[:200]
+        raise RuntimeError(f'remote query failed: {masked}')
     result = json.loads(proc.stdout)
     if result['read_only'] != 'on' or len(result['results']) != len(payload['cases']):
         raise ValueError('incomplete read-only run')
