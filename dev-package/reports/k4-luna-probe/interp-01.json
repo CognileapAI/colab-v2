@@ -1,0 +1,967 @@
+{
+  "kind": "LLM interpreter probe over golden 12; interpreter->deployed D3 (no expansion/API/UI); comparison experiment, not a product change",
+  "model": "gpt-5.6-luna",
+  "provider": "openai",
+  "repeats": 2,
+  "system_prompt_sha256": "9b5069c7a0dc82c5d6e53bee02dad801140bec39e08844e7a06ad57c6331753a",
+  "interpreter_sha256": "e9c14476dfc9a724c9b5f9e16ded99869fac313e71cb95e3b24fafb082507358",
+  "runner_sha256": "4bc4f25fdd4febbe20254e90699ff387704a97929ac2cd091345b6f0125fb1de",
+  "suite_sha256": "0703d6abbdd0a01b14fee3d7c102c9a833ab76a3d4f01c77f6f61baa1586cba3",
+  "snapshot_sha256": "1b9b9afd50b3a827d555cfd6b1982bcf531de0c8af11db2de0d49ce5b5875bbe",
+  "local_sha": "12f5e31d48922a191a404967651701c507ad6c49",
+  "model_calls": 24,
+  "fell_back_to_literal": [],
+  "determinism_distinct_term_sets": {
+    "SEARCH-GOLD-001": 1,
+    "SEARCH-GOLD-002": 2,
+    "SEARCH-GOLD-003": 1,
+    "SEARCH-GOLD-004": 2,
+    "SEARCH-GOLD-005": 1,
+    "SEARCH-GOLD-006": 1,
+    "SEARCH-GOLD-007": 2,
+    "SEARCH-GOLD-008": 2,
+    "SEARCH-GOLD-009": 1,
+    "SEARCH-GOLD-010": 1,
+    "SEARCH-GOLD-011": 1,
+    "SEARCH-GOLD-012": 1
+  },
+  "passes": [
+    [
+      {
+        "id": "SEARCH-GOLD-001",
+        "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식생",
+          "월평균",
+          "위성"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 3.3040900019695982,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식생\",\"월평균\",\"위성\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-002",
+        "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년 5월",
+          "경기 남부",
+          "충청권",
+          "식물",
+          "푸른지",
+          "월평균"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.708413132932037,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월\",\"경기 남부\",\"충청권\",\"식물\",\"푸른지\",\"월평균\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-003",
+        "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년 5월 1일",
+          "식생지수",
+          "U-Net"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 1.4195080959470943,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월 1일\",\"식생지수\",\"U-Net\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-004",
+        "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "GK2A_NDVI_mean_202305.tif",
+          "천리안",
+          "202305"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.9245293129934,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"GK2A_NDVI_mean_202305.tif\",\"천리안\",\"202305\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-005",
+        "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "U-Net",
+          "식생지수",
+          "지형",
+          "토지피복",
+          "검증용",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 4.249671721947379,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"식생지수\",\"지형\",\"토지피복\",\"검증용\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-006",
+        "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "레이더 반사도",
+          "강우 추정",
+          "검증",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 3.277065322967246,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"레이더 반사도\",\"강우 추정\",\"검증\",\"강수\"],\"topic\":\"강우·강수\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-007",
+        "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "WGS84",
+          "연구대상지",
+          "15분",
+          "누적",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.809934846009128,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"WGS84\",\"연구대상지\",\"15분\",\"누적\",\"강수\"],\"topic\":\"강우·강수\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-008",
+        "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2000년",
+          "2025년",
+          "대한민국",
+          "시군구",
+          "4주",
+          "가뭄지수",
+          "주간"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.3087820659857243,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2000년\",\"2025년\",\"대한민국\",\"시군구\",\"4주\",\"가뭄지수\",\"주간\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-009",
+        "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+        "is_data_query": true,
+        "terms": [
+          "시군구별",
+          "주간",
+          "SPI-4weeks",
+          "SPI"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 3.0579727420117706,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"시군구별\",\"주간\",\"SPI-4weeks\",\"SPI\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-010",
+        "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "U-Net",
+          "가뭄지수"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.1678280850173905,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"가뭄지수\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-011",
+        "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "결측률",
+          "0%",
+          "검증된",
+          "2023년",
+          "5월",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 1.799095642985776,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"결측률\",\"0%\",\"검증된\",\"2023년\",\"5월\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-012",
+        "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "100m",
+          "직접 관측한",
+          "천리안",
+          "월평균",
+          "NDVI"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 1.9352522499393672,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"100m\",\"직접 관측한\",\"천리안\",\"월평균\",\"NDVI\"],\"topic\":\"식생·NDVI\"}"
+        }
+      }
+    ],
+    [
+      {
+        "id": "SEARCH-GOLD-001",
+        "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식생",
+          "월평균",
+          "위성"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.631488633924164,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식생\",\"월평균\",\"위성\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-002",
+        "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식물이 얼마나 푸른지",
+          "월평균"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.734146471018903,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식물이 얼마나 푸른지\",\"월평균\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-003",
+        "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2023년 5월 1일",
+          "식생지수",
+          "U-Net"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 1.8178876979509369,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월 1일\",\"식생지수\",\"U-Net\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-004",
+        "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "GK2A_NDVI_mean_202305.tif",
+          "천리안"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.682371061993763,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"GK2A_NDVI_mean_202305.tif\",\"천리안\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-005",
+        "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "U-Net",
+          "식생지수",
+          "지형",
+          "토지피복",
+          "검증용",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 5.785440201987512,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"식생지수\",\"지형\",\"토지피복\",\"검증용\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-006",
+        "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "레이더 반사도",
+          "강우 추정",
+          "검증",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.6625587220769376,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"레이더 반사도\",\"강우 추정\",\"검증\",\"강수\"],\"topic\":\"강우·강수\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-007",
+        "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "WGS84",
+          "연구대상지",
+          "잘라 둔",
+          "15분",
+          "누적",
+          "강수",
+          "표본"
+        ],
+        "topic": "강우·강수",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 4.5620018660556525,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"WGS84\",\"연구대상지\",\"잘라 둔\",\"15분\",\"누적\",\"강수\",\"표본\"],\"topic\":\"강우·강수\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-008",
+        "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "2000년부터 2025년까지",
+          "대한민국",
+          "시군구",
+          "4주 가뭄지수",
+          "주간"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 3.477282483014278,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"2000년부터 2025년까지\",\"대한민국\",\"시군구\",\"4주 가뭄지수\",\"주간\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-009",
+        "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+        "is_data_query": true,
+        "terms": [
+          "시군구별",
+          "주간",
+          "SPI-4weeks",
+          "SPI"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 3.2571634789928794,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"시군구별\",\"주간\",\"SPI-4weeks\",\"SPI\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-010",
+        "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "U-Net",
+          "가뭄지수"
+        ],
+        "topic": "가뭄",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.760865587973967,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"가뭄지수\"],\"topic\":\"가뭄\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-011",
+        "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "결측률",
+          "0%",
+          "검증된",
+          "2023년",
+          "5월",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.2694259830750525,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"결측률\",\"0%\",\"검증된\",\"2023년\",\"5월\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+        }
+      },
+      {
+        "id": "SEARCH-GOLD-012",
+        "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+        "is_data_query": true,
+        "terms": [
+          "100m",
+          "직접 관측한",
+          "천리안",
+          "월평균",
+          "NDVI"
+        ],
+        "topic": "식생·NDVI",
+        "source": "llm",
+        "degraded": false,
+        "degraded_reason": null,
+        "call": {
+          "model": "gpt-5.6-luna",
+          "seconds": 2.7434150020126253,
+          "structured": true,
+          "raw": "{\"isDataQuery\":true,\"terms\":[\"100m\",\"직접 관측한\",\"천리안\",\"월평균\",\"NDVI\"],\"topic\":\"식생·NDVI\"}"
+        }
+      }
+    ]
+  ],
+  "literal": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "2023년",
+        "5월",
+        "경기",
+        "남부와",
+        "충청권의",
+        "식생",
+        "상태를",
+        "살펴볼",
+        "수",
+        "있는",
+        "월평균",
+        "위성",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "2023년",
+        "5월",
+        "경기",
+        "남부와",
+        "충청권에서",
+        "식물이",
+        "얼마나",
+        "푸른지",
+        "월평균으로",
+        "볼",
+        "수",
+        "있는",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "2023년",
+        "5월",
+        "1일의",
+        "식생지수를",
+        "U-Net",
+        "예측한",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "GK2A_NDVI_mean_202305",
+        "tif",
+        "만드는",
+        "데",
+        "쓴",
+        "천리안",
+        "원자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "U-Net",
+        "식생지수",
+        "모델에",
+        "쓴",
+        "지형·토지피복",
+        "보조자료와",
+        "검증용",
+        "식생자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "레이더",
+        "반사도로",
+        "만든",
+        "강우",
+        "추정",
+        "결과와",
+        "검증에",
+        "쓴",
+        "강수",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "WGS84",
+        "바꾸고",
+        "연구대상지에",
+        "맞춰",
+        "잘라",
+        "둔",
+        "15분",
+        "누적",
+        "강수",
+        "표본",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "2000년부터",
+        "2025년까지",
+        "대한민국",
+        "시군구의",
+        "4주",
+        "가뭄지수를",
+        "주간으로",
+        "비교할",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+      "is_data_query": true,
+      "terms": [
+        "시군구별",
+        "주간",
+        "SPI-4weeks",
+        "자료",
+        "찾아줘",
+        "SPEI",
+        "말고",
+        "SPI",
+        "필요해"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "검색",
+        "대상",
+        "자료",
+        "중",
+        "U-Net",
+        "예측한",
+        "가뭄지수",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "결측률이",
+        "0%로",
+        "검증된",
+        "2023년",
+        "5월",
+        "식생",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+      "is_data_query": true,
+      "terms": [
+        "100m로",
+        "직접",
+        "관측한",
+        "천리안",
+        "월평균",
+        "NDVI",
+        "자료",
+        "찾아줘"
+      ],
+      "topic": null,
+      "source": "literal",
+      "degraded": false,
+      "degraded_reason": "이번에는 질문의 낱말 그대로 찾아요. 적혀 있을 법한 말로 물어보면 잘 나와요.",
+      "call": null
+    }
+  ],
+  "calls": [
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.3040900019695982,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식생\",\"월평균\",\"위성\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.708413132932037,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월\",\"경기 남부\",\"충청권\",\"식물\",\"푸른지\",\"월평균\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.4195080959470943,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월 1일\",\"식생지수\",\"U-Net\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.9245293129934,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"GK2A_NDVI_mean_202305.tif\",\"천리안\",\"202305\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.249671721947379,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"식생지수\",\"지형\",\"토지피복\",\"검증용\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.277065322967246,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"레이더 반사도\",\"강우 추정\",\"검증\",\"강수\"],\"topic\":\"강우·강수\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.809934846009128,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"WGS84\",\"연구대상지\",\"15분\",\"누적\",\"강수\"],\"topic\":\"강우·강수\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.3087820659857243,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2000년\",\"2025년\",\"대한민국\",\"시군구\",\"4주\",\"가뭄지수\",\"주간\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.0579727420117706,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"시군구별\",\"주간\",\"SPI-4weeks\",\"SPI\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.1678280850173905,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"가뭄지수\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.799095642985776,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"결측률\",\"0%\",\"검증된\",\"2023년\",\"5월\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.9352522499393672,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"100m\",\"직접 관측한\",\"천리안\",\"월평균\",\"NDVI\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.631488633924164,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식생\",\"월평균\",\"위성\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.734146471018903,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년\",\"5월\",\"경기 남부\",\"충청권\",\"식물이 얼마나 푸른지\",\"월평균\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.8178876979509369,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2023년 5월 1일\",\"식생지수\",\"U-Net\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.682371061993763,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"GK2A_NDVI_mean_202305.tif\",\"천리안\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.785440201987512,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"식생지수\",\"지형\",\"토지피복\",\"검증용\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.6625587220769376,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"레이더 반사도\",\"강우 추정\",\"검증\",\"강수\"],\"topic\":\"강우·강수\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.5620018660556525,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"WGS84\",\"연구대상지\",\"잘라 둔\",\"15분\",\"누적\",\"강수\",\"표본\"],\"topic\":\"강우·강수\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.477282483014278,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"2000년부터 2025년까지\",\"대한민국\",\"시군구\",\"4주 가뭄지수\",\"주간\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.2571634789928794,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"시군구별\",\"주간\",\"SPI-4weeks\",\"SPI\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.760865587973967,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"U-Net\",\"가뭄지수\"],\"topic\":\"가뭄\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.2694259830750525,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"결측률\",\"0%\",\"검증된\",\"2023년\",\"5월\",\"식생\"],\"topic\":\"식생·NDVI\"}"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.7434150020126253,
+      "structured": true,
+      "raw": "{\"isDataQuery\":true,\"terms\":[\"100m\",\"직접 관측한\",\"천리안\",\"월평균\",\"NDVI\"],\"topic\":\"식생·NDVI\"}"
+    }
+  ]
+}
