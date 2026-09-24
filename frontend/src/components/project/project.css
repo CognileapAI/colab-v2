@@ -22,7 +22,6 @@
 .project-page .page-head h1 {
   font-size: var(--text-h2);
   margin: 0;
-  letter-spacing: -0.023em;
 }
 
 .project-detail .pd-head h1 {
@@ -57,18 +56,21 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 16px;
+  padding: var(--space-card);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-section);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .pj-ctl {
-  display: inline-flex;
+  display: grid;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 .pj-views button {
@@ -76,6 +78,10 @@
   border: 1px solid var(--color-border);
   background: transparent;
   cursor: pointer;
+  min-height: var(--control-height);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-body-sm);
 }
 
 .pj-views button.on {
@@ -112,7 +118,6 @@
    (R-LTH-REVIEW-1 · 판정 카드 ⑥ ⓐ `D-2`) */
 .pcard:focus-visible {
   outline: 2px solid var(--color-primary-600);
-  outline-offset: 2px;
 }
 
 /* 닫힘은 배경을 한 단계 낮춘다. **투명도로 흐리게 만들지 않는다** —
@@ -210,7 +215,7 @@
 
 .pj-table {
   table-layout: fixed;
-  min-width: 900px;
+  min-width: 680px;
 }
 
 .pj-table th:first-child { width: 36%; }
@@ -264,8 +269,8 @@
 .project-detail .card {
   box-shadow: none;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
   padding: 14px;
   margin-bottom: 14px;
 }
@@ -331,19 +336,21 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(15 20 28 / 45%);
+  background: var(--color-overlay);
   z-index: 200;
 }
 
 .pj-modal {
   display: flex;
   flex-direction: column;
-  width: min(560px, 100%);
-  max-height: 90vh;
+  width: min(600px, 100%);
+  max-height: calc(100dvh - 48px);
   overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  border-color: var(--color-border-strong);
 }
 
 .pj-modal-h {
@@ -351,13 +358,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 20px var(--space-card);
   border-bottom: 1px solid var(--color-border);
 }
 
 .pj-modal-h h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .pj-x {
@@ -370,7 +379,7 @@
 }
 
 .pj-modal-b {
-  padding: 16px;
+  padding: var(--space-card);
   overflow-y: auto;
 }
 
@@ -378,20 +387,19 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 16px var(--space-card);
   border-top: 1px solid var(--color-border);
 }
 
 /* ── 폼 칸 ─────────────────────────────────────────────────────────────── */
-.pj-row {
-  margin-bottom: 14px;
-}
+.pj-row { margin-bottom: 24px; }
 
 .pj-row label {
   display: block;
-  margin-bottom: 5px;
-  font-size: 13px;
-  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .pj-inp,
@@ -417,8 +425,12 @@
 .pj-seg {
   display: inline-flex;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
+  border-color: var(--color-border-strong);
+  padding: 4px;
+  gap: 4px;
+  background: var(--color-surface-alt);
 }
 
 .pj-seg button {
@@ -426,13 +438,18 @@
   border: 0;
   background: none;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   cursor: pointer;
+  min-height: 36px;
+  padding-inline: 20px;
+  border-radius: var(--radius-sm);
 }
 
 .pj-seg button.on {
-  background: var(--color-gray-100);
+  background: var(--color-surface);
   font-weight: 600;
+  color: var(--color-text);
+  outline: 1px solid var(--color-border-strong);
 }
 
 .pj-2col {
@@ -466,16 +483,19 @@
 /* 연결 주소 묶음 — 설명·기간과 **다른 카드**다 (§1.2·§8) */
 .pj-fgroup {
   margin: 4px 0 14px;
-  padding: 12px;
+  padding: 20px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
+  margin-top: 24px;
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-strong);
 }
 
 .pj-fgroup-h {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .pj-fgroup-h .t {
@@ -554,10 +574,40 @@
 .pj-2col .pj-inp { flex: 1 1 0; min-width: 0; }
 .pj-empty { padding: 32px 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-muted); text-align: center; }
 .pj-modal-h, .pj-modal-f { flex-shrink: 0; }
-.pj-x { min-width: 32px; min-height: 32px; }
+.pj-x { min-width: 32px; min-height: 32px; width: var(--control-height); height: var(--control-height); border-radius: var(--radius-sm); font-size: 24px; flex-shrink: 0; }
 @media (max-width: 640px) {
   .pj-modal-back { padding: 16px; }
   .pj-modal { max-height: calc(100dvh - 32px); }
   .pj-inp, .pj-tarea { font-size: 16px; }
   .pj-cards { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+:is(.pj-inp, .pj-tarea) { min-height: var(--control-height); padding: 10px 12px; font-size: var(--text-body); line-height: 1.5; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); }
+.pj-tarea { min-height: 96px; }
+:is(.pj-defnote, .pj-hint) { color: var(--color-text-muted); font-size: var(--text-caption); line-height: 1.7; }
+.pj-fgroup .pj-row { margin-bottom: 0; }
+.pj-err { color: var(--fg-danger); background: var(--bg-danger); }
+@media (max-width: 640px) {
+  .pj-modal-back { padding: 12px; }
+  .pj-modal { max-height: calc(100dvh - 24px); }
+  .pj-modal-h { padding: 16px var(--space-card); }
+  .pj-fgroup { padding: 16px; }
+  .pj-seg button { min-height: 44px; }
+}
+body:has(.pj-modal-back) { overflow: hidden; }
+.pj-card { border-radius: var(--radius-lg); box-shadow: none; }
+.pj-ds-scroll { overflow-x: auto; max-width: 100%; }
+.pj-ds { min-width: 680px; }
+.pj-ctl select { min-height: var(--control-height); padding: 8px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-body-sm); }
+.pj-views { display: flex; align-self: end; }
+.pj-views button:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.pj-views button:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.pj-new { min-height: var(--control-height); padding: 8px 14px; border: 1px solid var(--color-primary-600); border-radius: var(--radius-sm); background: var(--color-primary-600); color: var(--color-on-primary); font: inherit; font-size: var(--text-body-sm); cursor: pointer; }
+.pd-linkurl, .pd-linkurl:visited { color: var(--color-primary-700); text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .pj-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  .pj-ctl { min-width: 0; }
+  .pj-ctl select { width: 100%; font-size: 16px; }
+  .pj-count { grid-column: 1 / -1; margin-left: 0; }
 }

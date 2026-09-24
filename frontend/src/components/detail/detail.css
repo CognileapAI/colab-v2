@@ -8,8 +8,14 @@
 .detail-page .dt-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: var(--space-5); }
 .detail-page .dh-main { flex: 1; min-width: 0; }
 .detail-page .dt-header h1 {
-  font-family: var(--font-data); font-size: 31px; font-weight: 700; letter-spacing: -0.03em;
-  line-height: 1.25; font-variant-numeric: tabular-nums; margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .detail-page .dh-file { font-family: var(--font-data); font-size: var(--text-body-sm); color: var(--color-text-muted); margin-top: 3px; }
 .detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
@@ -305,3 +311,8 @@
   color: var(--color-gray-600);
   font-size: var(--text-caption);
 }
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+:is(.dt-header, .dt-card) { border-radius: var(--radius-lg); box-shadow: none; }
+.dt-card h3 { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+.detail-page .dsec-h h2 { font-size: 20px; }

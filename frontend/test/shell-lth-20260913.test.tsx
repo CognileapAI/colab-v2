@@ -31,7 +31,8 @@ const read = (rel: string): string =>
   String(readFileSync(resolve(process.cwd(), rel), 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
 
 const SHELL = read('src/shell/shell.css');
-const DESIGN = read('src/shell/design-system.css');
+// P2a — 보정 층의 GNB 접는 단(900px·640px)은 shell.css 로 옮겨졌다(경로만 바꿈).
+const DESIGN = read('src/shell/shell.css');
 
 /** `@media (…)` 블록들을 원문에서 잘라 이어 붙인다. */
 function mediaBlock(css: string, query: string): string {

@@ -1,6 +1,6 @@
 .ar-pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .ar-pending-note { font-size: 13px; color: var(--color-text-muted); }
-.approval-dialog { width: min(520px, calc(100% - 32px)); padding: 24px; }
+.approval-dialog { width: min(520px, calc(100% - 32px)); padding: var(--space-card); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); box-shadow: none; }
 .approval-dialog h3 { margin: 0 0 12px; font-size: 18px; }
 .approval-dialog p, .vc-impact { font-size: 14px; line-height: 1.7; }
 .ar-reason, .vc-reason { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; font-size: 14px; }

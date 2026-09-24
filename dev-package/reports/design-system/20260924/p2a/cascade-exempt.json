@@ -1,0 +1,10 @@
+[
+ {"kind": "flip", "no": 73, "selector": ".dr-useg button.on", "reason": "공유 키는 상태 클래스 `.on` 하나 — `.pj-seg`(프로젝트 만들기 모달의 구분 단추)와 `.dr-useg`(업로드 기간 선택의 단위 단추)는 서로 다른 컴포넌트 루트라 한 요소에 함께 걸리지 않는다"},
+ {"kind": "flip", "no": 73, "selector": ".search-page .vfilter.on", "reason": "공유 키는 상태 클래스 `.on` 하나 — `.vfilter` 는 검색 결과 화면(`.search-page`)의 필터 단추이고 `.pj-seg` 는 프로젝트 모달의 구분 단추다"},
+ {"kind": "flip", "no": 120, "selector": ".dr-times .form-row", "reason": "`.labinfo-modal`(연구실 정보 모달)과 `.dr-times`(업로드 기간 선택 팝오버)는 서로 다른 컴포넌트 루트다"},
+ {"kind": "flip", "no": 120, "selector": ".modal-takeover .form-row", "reason": "`.labinfo-modal`(연구실 정보 모달)과 `.modal-takeover`(업로드 전면 모달)는 서로 다른 모달 루트다"},
+ {"kind": "changed-live", "selector": ".pcard:focus-visible", "prop": "outline-offset", "reason": "`.pcard` 는 `<a>`(ProjectCards.tsx) — 오늘 DS#129 `:is(button, a, input, select, textarea):focus-visible`(0,2,1)이 `.pcard:focus-visible`(0,2,0)을 이겨 초점 간격 3px 이 렌더된다. #129 를 중복으로 버리면(셸 `:where()` 규칙 0,1,0) 2px 이 되살아나므로 죽은 선언을 지웠다"},
+ {"kind": "changed-live", "selector": ".login-input:focus-visible", "prop": "outline", "reason": "`.login-input` 은 `<input>`(LoginPage.tsx) — 오늘 DS#129(0,2,1)가 `.login-input:focus-visible { outline: none }`(0,2,0)을 이겨 초점 윤곽이 렌더된다. #129 를 버리면 none 이 되살아나므로 죽은 선언을 지웠다"},
+ {"kind": "dropped", "no": 89, "reason": "조사 drop — `@media (max-width: 640px) .dash-tile { padding: 16px }` 는 DS#48 `.dash-tile { padding: 16px }`(미디어 없음)과 같은 값. #48 은 dashboard.css 의 `.dash-tile` 규칙에 병합됐고 그 뒤 같은 선택자로 padding 을 다시 쓰는 규칙이 없다"},
+ {"kind": "dropped", "no": 129, "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"}
+]

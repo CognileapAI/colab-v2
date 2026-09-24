@@ -52,12 +52,14 @@
   color: var(--color-on-primary);
   font-size: 14px;
   cursor: pointer;
+  min-height: var(--control-height);
 }
 
 .pv-h2 {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: var(--text-section);
   font-weight: 600;
+  line-height: 1.5;
 }
 
 .pv-basic-grid {
@@ -155,7 +157,7 @@
 .pv-control {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   font-size: 13px;
 }
 
@@ -560,4 +562,14 @@
   stroke-width: 1;
   stroke-dasharray: 3 2;
   vector-effect: non-scaling-stroke;
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+.pv-control select { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+:is(.pv-zoom, .pv-shot) button:where(:not(.btn)) { color: var(--color-text); }
+@media (max-width: 640px) {
+  .pv-control select { font-size: 16px; }
+  .pv-basic-grid { grid-template-columns: minmax(0, 1fr); }
+  .pv-basic-row dd { min-width: 0; overflow-wrap: anywhere; }
+  :is(.pv-zoom, .pv-shot, .lin) button { min-height: 44px; }
 }

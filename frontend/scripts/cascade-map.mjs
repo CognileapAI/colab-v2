@@ -27,7 +27,7 @@
 // body; CSS imported only by components (deletion.css) comes after the styles.ts set.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, posix, relative, sep } from 'node:path';
+import { join, posix, relative, sep } from 'node:path';
 
 const READINESS = 78;
 const DS = 'src/shell/design-system.css';
@@ -260,7 +260,14 @@ function subjectInfo(sel) {
     }
   };
   visit(last.simples, true);
-  return { tokens, types, hasKey, pseudoElement: last.pseudoElement, states };
+  // key tokens of the whole selector (ancestors too), used when both subjects are the same bare type
+  const allKeys = new Set();
+  const walk = (simples) => { for (const x of simples) {
+    if (x.kind === 'class') allKeys.add(`.${x.name}`); else if (x.kind === 'id') allKeys.add(`#${x.name}`);
+    else if (x.kind === 'pseudo' && ['is', 'where', 'matches'].includes(x.name)) for (const a of splitTop(x.args, ',')) for (const c of parseSelector(a.trim()).compounds) walk(c.simples);
+  } };
+  for (const c of compounds) walk(c.simples);
+  return { tokens, types, hasKey, pseudoElement: last.pseudoElement, states, allKeys };
 }
 
 // Is every element matched by `inner` also matched by `outer`? (conservative: true only when provable)
@@ -330,6 +337,42 @@ function longhands(p) {
   return [...new Set(l.flatMap((x) => (x === p ? [x] : longhands(x))))];
 }
 function overlap(p, q) { const a = new Set(longhands(p)); return longhands(q).some((x) => a.has(x)); }
+// Longhand → value for the shorthands the absorption touches (null = cannot expand).
+const BORDER_STYLE = /^(none|hidden|solid|dashed|dotted|double|groove|ridge|inset|outset)$/;
+function expandValue(p, v) {
+  const t = splitTop(v.trim(), ' ').filter(Boolean);
+  const four = (base, suffix = '') => { const [a, b = a, c = a, d = b] = t; return { [`${base}-top${suffix}`]: a, [`${base}-right${suffix}`]: b, [`${base}-bottom${suffix}`]: c, [`${base}-left${suffix}`]: d }; };
+  for (const base of ['padding', 'margin']) {
+    if (p === base) return t.length <= 4 ? four(base) : null;
+    if (p === `${base}-inline`) return { [`${base}-left`]: t[0], [`${base}-right`]: t[1] ?? t[0] };
+    if (p === `${base}-block`) return { [`${base}-top`]: t[0], [`${base}-bottom`]: t[1] ?? t[0] };
+  }
+  if (p === 'border-color') return t.length <= 4 ? four('border', '-color') : null;
+  if (p === 'border' || /^border-(top|right|bottom|left)$/.test(p)) {
+    const w = t.find((x) => /^(\d|thin|medium|thick)/.test(x)) ?? 'medium';
+    const st = t.find((x) => BORDER_STYLE.test(x)) ?? 'none';
+    const col = t.filter((x) => x !== w && x !== st).join(' ') || 'currentcolor';
+    const sides = p === 'border' ? SIDES : [p.slice(7)];
+    return Object.fromEntries(sides.flatMap((sd) => [[`border-${sd}-width`, w], [`border-${sd}-style`, st], [`border-${sd}-color`, col]]));
+  }
+  if (p === 'gap') return { 'row-gap': t[0], 'column-gap': t[1] ?? t[0] };
+  if (longhands(p).length === 1) return { [p]: v };
+  return null;
+}
+// Do two declarations give the same value to every longhand they share?
+function valuesAgree(p1, v1, p2, v2) {
+  if (p1 === p2) return v1 === v2;
+  const a = expandValue(p1, v1); const b = expandValue(p2, v2);
+  if (!a || !b) return false;
+  const shared = Object.keys(a).filter((k) => k in b);
+  return shared.length > 0 && shared.every((k) => a[k] === b[k]);
+}
+function changedLonghands(p, from, to) {
+  if (to == null) return longhands(p);
+  const a = expandValue(p, from); const b = expandValue(p, to);
+  if (!a || !b) return longhands(p);
+  return Object.keys(a).filter((k) => a[k] !== b[k]);
+}
 
 // ---------------------------------------------------------------- media
 function mediaRange(conds) {
@@ -395,10 +438,12 @@ function competitorsFor(model, dsRule, sel, decl, opts = {}) {
       const shared = [...ti.tokens].filter((x) => info.tokens.has(x));
       let kind = null;
       if (shared.some((x) => /^[.#[]/.test(x))) kind = 'key';
+      else if (shared.length && !info.hasKey && !ti.hasKey && [...ti.allKeys].some((x) => info.allKeys.has(x))) kind = 'key';
       else if (shared.length) kind = 'type';
       else if (!ti.hasKey && (ti.types.size === 0 || info.types.size === 0 || [...ti.types].some((x) => info.types.has(x)))) kind = ti.types.size ? 'type' : 'universal';
       else if (!info.hasKey && info.types.size && ti.types.size && [...ti.types].some((x) => info.types.has(x))) kind = 'type';
       if (!kind) continue;
+      if (exclusiveRoots(info, ti)) continue;
       if (info.types.size && ti.types.size && ![...ti.types].some((x) => info.types.has(x)) && !shared.length) continue;
       for (const d of r.decls) {
         if (!overlap(d.prop, decl.prop)) continue;
@@ -407,6 +452,14 @@ function competitorsFor(model, dsRule, sel, decl, opts = {}) {
     }
   }
   return out;
+}
+
+// Route roots (one per route page · src/routes/*Page.tsx) never nest: selectors rooted in two different
+// route roots cannot match the same element.
+const ROUTE_ROOTS = ['.catalog-page', '.lab-page', '.project-page', '.project-detail', '.detail-page', '.preview-page', '.search-page', '.settings-page'];
+function exclusiveRoots(a, b) {
+  const ra = ROUTE_ROOTS.filter((x) => a.allKeys.has(x)); const rb = ROUTE_ROOTS.filter((x) => b.allKeys.has(x));
+  return ra.length && rb.length && !ra.some((x) => rb.includes(x));
 }
 
 const beats = (aSpec, aPos, aImp, bSpec, bPos, bImp) => (aImp !== bImp ? aImp : (cmp3(aSpec, bSpec) || aPos - bPos) > 0);
@@ -445,7 +498,8 @@ function mapDs(model, researchOwners) {
               const losesTo = comps.filter((c) => c.winnerToday === 'C' && !c.sameValue && c.kind === 'key');
               return { prop: d.prop, value: d.value, line: d.line, competitors: comps, losesToday: losesTo.length,
                 revive: comps.filter((c) => c.revive && !c.sameValue && c.kind === 'key'),
-                reviveTypeCompat: comps.filter((c) => c.revive && !c.sameValue && c.kind !== 'key').length };
+                reviveTypeCompat: comps.filter((c) => c.revive && !c.sameValue && c.kind !== 'key').length,
+                reviveTypeCompatStates: comps.filter((c) => c.revive && !c.sameValue && c.kind !== 'key' && c.states.length) };
             }),
           };
         }),
@@ -470,12 +524,13 @@ function readResearchOwners() {
 function writeMap(out, model, map, rev) {
   mkdirSync(out, { recursive: true });
   const rel = (c) => `${c.file.replace(/^src\//, '')}:${c.line}`;
-  let reviveTotal = 0; let loseDecls = 0; let declTotal = 0; let stateRevive = 0; let typeCompat = 0;
+  let reviveTotal = 0; let loseDecls = 0; let declTotal = 0; let stateRevive = 0; let typeCompat = 0; const typeStateRows = [];
   const reviveRows = [];
   for (const r of map) for (const e of r.entries) for (const a of e.args) for (const d of a.decls) {
     declTotal++;
     if (d.losesToday) loseDecls++;
     typeCompat += d.reviveTypeCompat;
+    for (const c of d.reviveTypeCompatStates) typeStateRows.push({ no: r.no, arg: a.arg, specAfter: fmt3(a.specAfter), prop: d.prop, dsValue: d.value, c });
     for (const c of d.revive) {
       reviveTotal++;
       if (c.states.length) stateRevive++;
@@ -510,6 +565,14 @@ function writeMap(out, model, map, rev) {
     lines.push(`| ${x.no} | \`${x.arg}\` | ${x.specAfter} | ${x.prop} | \`${x.dsValue}\` | \`${x.c.selector}\` | ${rel(x.c)} | ${x.c.spec} | ${x.c.media || '-'} | \`${x.c.value}\` | ${x.c.revive} | ${x.c.states.join(' ') || '-'} | ${x.c.subsetOfS ? '예' : '아니오'} |`);
   }
   lines.push('');
+  lines.push('## 요소·전체 compound 호환 후보 중 상태 선택자 (값 다름 · 계산값 전수 대조가 못 보는 것)');
+  lines.push('');
+  lines.push('상태(:hover·:focus·:focus-visible·:active·:disabled·[readonly]·[aria-*])는 캡처와 렌더 계산값 대조에 보이지 않는다. 같은 요소에 걸리는지는 선택자만으로 알 수 없어 요소 종류를 확인해 처리한다.');
+  lines.push('');
+  lines.push('| DS# | S(인자) | spec 뒤 | 속성 | DS 값 | 경쟁 C | 위치 | spec C | C 값 | 종류 | 상태 |');
+  lines.push('|---:|---|---|---|---|---|---|---|---|---|---|');
+  for (const x of typeStateRows) lines.push(`| ${x.no} | \`${x.arg}\` | ${x.specAfter} | ${x.prop} | \`${x.dsValue}\` | \`${x.c.selector}\` | ${rel(x.c)} | ${x.c.spec} | \`${x.c.value}\` | ${x.c.revive} | ${x.c.states.join(' ')} |`);
+  lines.push('');
   lines.push('## 규칙별 표');
   lines.push('');
   lines.push('`DS 짐` = 오늘 그 선언이 지는 경쟁(값 다름) · `되살` = 되살아남 후보 수. 경쟁 전수는 `cascade-map.json`.');
@@ -524,7 +587,7 @@ function writeMap(out, model, map, rev) {
   lines.push('');
   writeFileSync(join(out, 'cascade-map.md'), lines.join('\n'));
   const json = { schema: 'colab-cascade-map/1', rev: rev || 'worktree', order: model.order, ruleCount: model.rules.length, dsRules: map.length,
-    totals: { declUnits: declTotal, losesToday: loseDecls, revive: reviveTotal, stateRevive, typeCompat },
+    totals: { declUnits: declTotal, losesToday: loseDecls, revive: reviveTotal, stateRevive, typeCompat, typeCompatState: typeStateRows.length },
     rules: map.map((r) => ({ ...r, entries: r.entries.map((e) => ({ ...e, specToday: fmt3(e.specToday), args: e.args.map((a) => ({ ...a, specAfter: fmt3(a.specAfter), decls: a.decls.map((d) => ({ ...d, competitors: d.competitors.filter((c) => c.kind === 'key') })) })) })) })) };
   writeFileSync(join(out, 'cascade-map.json'), JSON.stringify(json) + '\n');
   console.log(`cascade-map: ds rules ${map.length} · units ${declTotal} · loses-today ${loseDecls} · revive ${reviveTotal} (state ${stateRevive}) -> ${relative('.', join(out, 'cascade-map.md'))}`);
@@ -533,7 +596,7 @@ function writeMap(out, model, map, rev) {
 
 // ---------------------------------------------------------------- verify
 function normSel(s) { return s.replace(/\s+/g, ' ').replace(/\s*([>+~,])\s*/g, '$1').replace(/"/g, "'").trim(); }
-function verify(out, baseRev) {
+function verify(out, baseRev, exemptFile) {
   const base = buildModel(lister(baseRev));
   const cur = buildModel(lister(null));
   const map = mapDs(base, readResearchOwners());
@@ -549,15 +612,33 @@ function verify(out, baseRev) {
     }
   }
   const dsRules = base.rules.filter((r) => r.file === DS);
+  const homeOf = new Map(); // current decl object -> {specToday, pos, important}
+  const unitHome = new Map(); // `${no}|${arg}|${prop}` -> {rule, decl, spec}
+  const uKey = (no, arg, prop) => `${no}|${normSel(arg)}|${prop}`;
+  for (const m of map) for (const e of m.entries) for (const a of e.args) for (const d of a.decls) {
+    const keys = [`${normSel(e.prefix === 'document' ? e.full : a.arg)}@@${m.media}`, `${normSel(e.full)}@@${m.media}`];
+    const hs = [...new Set(keys.flatMap((k) => index.get(k) || []))].filter((h) => h.rule.decls.some((x) => x.prop === d.prop)).sort((x, y) => x.rule.pos - y.rule.pos);
+    const last = hs.at(-1);
+    if (last) { const ld = last.rule.decls.filter((x) => x.prop === d.prop).at(-1); if (ld.value === d.value) unitHome.set(uKey(m.no, a.arg, d.prop), { rule: last.rule, decl: ld, spec: specificity(last.selector) }); }
+    for (const h of hs) for (const x of h.rule.decls) {
+      if (x.prop === d.prop && x.value === d.value && !homeOf.has(x)) homeOf.set(x, { specToday: e.specToday, pos: dsRules[m.no - 1].pos, important: d.important, no: m.no });
+    }
+  }
   for (const m of map) {
     const r = dsRules[m.no - 1];
     for (const e of m.entries) for (const a of e.args) for (const d of a.decls) {
-      const key = `${normSel(e.prefix === 'document' ? e.full : a.arg)}@@${m.media}`;
-      const homes = (index.get(key) || []).filter((h) => h.rule.decls.some((x) => x.prop === d.prop));
+      const keys = [`${normSel(e.prefix === 'document' ? e.full : a.arg)}@@${m.media}`, `${normSel(e.full)}@@${m.media}`];
+      const homes = [...new Set(keys.flatMap((k) => index.get(k) || []))].filter((h) => h.rule.decls.some((x) => x.prop === d.prop));
       // effective home = the last-positioned candidate carrying the property
       const home = homes.sort((x, y) => x.rule.pos - y.rule.pos).at(-1);
       const homeDecl = home?.rule.decls.filter((x) => x.prop === d.prop).at(-1);
       const unit = { no: m.no, arg: a.arg, prop: d.prop, value: d.value, home: home ? `${home.rule.file}:${homeDecl.line}` : null };
+      if (home && homeDecl.value !== d.value) {
+        const sup = map.find((m2) => m2 !== m && m2.media === m.media && m2.entries.some((e2) => e2.args.some((a2) => normSel(a2.arg) === normSel(a.arg)
+          && a2.decls.some((d2) => d2.prop === d.prop && d2.value === homeDecl.value)
+          && beats(e2.specToday, dsRules[m2.no - 1].pos, false, e.specToday, r.pos, false))));
+        if (sup) { unit.status = 'superseded'; unit.by = sup.no; moved.push(unit); continue; }
+      }
       if (!home || homeDecl.value !== d.value) {
         // allowed only when declared dropped: loses in every context (duplicate)
         unit.status = home ? 'value-differs' : 'missing';
@@ -569,48 +650,91 @@ function verify(out, baseRev) {
       const homeSpec = specificity(home.selector);
       const flips = [];
       for (const c of competitorsFor(cur, home.rule, a.arg, { prop: d.prop, value: d.value }, { skip: (rr) => rr === home.rule })) {
-        if (c.decl.value === d.value) continue;
+        if (c.decl.value === d.value || c.kind !== 'key' || valuesAgree(d.prop, d.value, c.decl.prop, c.decl.value)) continue;
         const nowWins = beats(homeSpec, home.rule.pos, homeDecl.important, c.spec, c.rule.pos, c.decl.important);
         // same-rule later overlapping declarations are handled by source order within the rule
         const todayComp = m.entries.flatMap((x) => x.args).find((x) => x.arg === a.arg)?.decls.find((x) => x.prop === d.prop)?.competitors
           .find((x) => normSel(x.selector) === normSel(c.selector) && x.prop === c.decl.prop && x.media === mediaKey(c.rule.media) && x.file === c.rule.file && x.value === c.decl.value);
-        const wonToday = todayComp ? todayComp.winnerToday === 'DS' : null;
-        if (!nowWins && wonToday !== false) flips.push({ selector: c.selector, file: c.rule.file, line: c.decl.line, prop: c.decl.prop, value: c.decl.value, spec: fmt3(c.spec), today: todayComp ? 'DS won' : 'new competitor', states: c.states });
+        const other = homeOf.get(c.decl);
+        const wonToday = other ? beats(e.specToday, r.pos, d.important, other.specToday, other.pos, other.important)
+          : todayComp ? todayComp.winnerToday === 'DS' : null;
+        // dominated: another DS unit beat this one today in the competitor's context and still beats the competitor
+        const dominated = !nowWins && map.some((m2) => m2 !== m && m2.entries.some((e2) => e2.args.some((a2) => a2.decls.some((d2) => {
+          if (!overlap(d2.prop, c.decl.prop) || !longhands(c.decl.prop).filter((x) => longhands(d.prop).includes(x)).every((x) => longhands(d2.prop).includes(x))) return false;
+          if (!mediaSubset(c.rule.media, dsRules[m2.no - 1].media)) return false;
+          if (!(normSel(a2.arg) === normSel(a.arg) || subsetOf(c.selector, a2.arg))) return false;
+          if (!beats(e2.specToday, dsRules[m2.no - 1].pos, false, e.specToday, r.pos, false)) return false;
+          const h2 = unitHome.get(uKey(m2.no, a2.arg, d2.prop));
+          return h2 && beats(h2.spec, h2.rule.pos, false, c.spec, c.rule.pos, c.decl.important) && beats(h2.spec, h2.rule.pos, false, homeSpec, home.rule.pos, false);
+        }))));
+        // context split (spec 3): a rule with the competitor's own selector re-states the DS value wherever the unit applies
+        const split = !nowWins && cur.rules.some((r2) => r2 !== c.rule && mediaSubset(r.media, r2.media) && r2.decls.some((x) => x.prop === d.prop && x.value === d.value)
+          && r2.selectors.some((t) => normSel(t) === normSel(c.selector) && beats(specificity(t), r2.pos, false, c.spec, c.rule.pos, c.decl.important)));
+        if (!nowWins && wonToday !== false && !dominated && !split) flips.push({ selector: c.selector, file: c.rule.file, line: c.decl.line, prop: c.decl.prop, value: c.decl.value, spec: fmt3(c.spec), today: todayComp ? 'DS won' : 'new competitor', states: c.states });
       }
       // later declaration in the same home rule overriding it
       const idx = home.rule.decls.lastIndexOf(homeDecl);
-      for (const x of home.rule.decls.slice(idx + 1)) if (overlap(x.prop, d.prop) && x.value !== d.value) flips.push({ selector: home.selector, file: home.rule.file, line: x.line, prop: x.prop, value: x.value, spec: fmt3(homeSpec), today: 'same-rule later' });
+      for (const x of home.rule.decls.slice(idx + 1)) if (overlap(x.prop, d.prop) && x.value !== d.value && !r.decls.slice(r.decls.findIndex((z) => z.prop === d.prop) + 1).some((z) => z.prop === x.prop && z.value === x.value)) flips.push({ selector: home.selector, file: home.rule.file, line: x.line, prop: x.prop, value: x.value, spec: fmt3(homeSpec), today: 'same-rule later' });
       unit.flips = flips;
       moved.push(unit);
       if (flips.length) problems.push({ kind: 'flip', ...unit });
     }
   }
   // non-DS declarations removed or changed (base → current), with dead-today proof
-  const declKey = (r, d) => `${r.file}|${normSel(r.selectorText)}|${mediaKey(r.media)}|${d.prop}`;
+  // key = file | selector | media | property | ordinal among identical keys (same-selector rules repeat in a file)
+  const keyed = (rules) => { const seen = new Map(); const out = new Map();
+    for (const r of rules) for (const d of r.decls) { const k0 = `${r.file}|${normSel(r.selectorText)}|${mediaKey(r.media)}|${d.prop}`;
+      const n = seen.get(k0) || 0; seen.set(k0, n + 1); out.set(d, `${k0}|${n}`); }
+    return out; };
+  const baseKeys = keyed(base.rules.filter((r) => r.file !== DS));
+  const curKeys = keyed(cur.rules);
   const curDecls = new Map();
-  for (const r of cur.rules) for (const d of r.decls) curDecls.set(declKey(r, d), d.value);
+  for (const r of cur.rules) for (const d of r.decls) curDecls.set(curKeys.get(d), d.value);
   const changed = [];
   for (const r of base.rules) {
     if (r.file === DS) continue;
     for (const d of r.decls) {
-      const k = declKey(r, d);
+      const k = baseKeys.get(d);
       const now = curDecls.get(k);
       if (now === d.value) continue;
       // proof: some DS argument S with the property and a value ≠ this beats it today and it is ⊆ S
       const proofs = [];
       for (const m of map) for (const e of m.entries) for (const a of e.args) for (const dd of a.decls) {
         const c = dd.competitors.find((x) => x.file === r.file && x.line === d.line && x.prop === d.prop && r.selectors.some((t) => normSel(t) === normSel(x.selector)));
-        if (c && c.winnerToday === 'DS' && c.subsetOfS && overlap(dd.prop, d.prop) && longhands(d.prop).every((lh) => longhands(dd.prop).includes(lh) || a.decls.some((z) => longhands(z.prop).includes(lh)))) proofs.push({ no: m.no, arg: a.arg, prop: dd.prop, value: dd.value });
+        const need = changedLonghands(d.prop, d.value, now);
+        if (c && c.winnerToday === 'DS' && c.subsetOfS && overlap(dd.prop, d.prop) && need.every((lh) => a.decls.some((z) => longhands(z.prop).includes(lh) && c.winnerToday === 'DS'))
+          && (now == null || (dd.prop === d.prop && dd.value === now) || need.every((lh) => a.decls.some((z) => { const ev = expandValue(z.prop, z.value); const nv = expandValue(d.prop, now); return ev && nv && ev[lh] === nv[lh]; })))) proofs.push({ no: m.no, arg: a.arg, prop: dd.prop, value: dd.value });
       }
       changed.push({ file: r.file, line: d.line, selector: r.selectorText, media: mediaKey(r.media), prop: d.prop, from: d.value, to: now ?? null, deadToday: proofs.length > 0, proofs: proofs.slice(0, 3) });
     }
   }
   for (const c of changed) if (!c.deadToday) problems.push({ kind: 'changed-live', ...c });
-  mkdirSync(out, { recursive: true });
-  const res = { schema: 'colab-cascade-verify/1', base: baseRev, dsUnits: moved.length + dropped.length, moved: moved.length, dropped, changed, problems,
+  const unitTotal = moved.length + dropped.length;
+  // explicit exemptions (manual proof · reason required) — counted and printed, never silent
+  const exemptions = exemptFile ? JSON.parse(readFileSync(exemptFile, 'utf8')) : [];
+  const exempted = [];
+  const matches = (x, p, isDrop) => (x.kind === 'dropped' ? isDrop : !isDrop && (x.kind == null || x.kind === p.kind))
+    && (x.no == null || x.no === p.no) && (x.prop == null || x.prop === p.prop)
+    && (x.selector == null || (p.flips ? p.flips.some((f) => normSel(f.selector) === normSel(x.selector)) : normSel(p.selector || p.arg || '') === normSel(x.selector)));
+  for (const x of exemptions) if (!x.reason) problems.push({ kind: 'exemption-without-reason', ...x });
+  for (const [list, isDrop] of [[problems, false], [dropped, true]]) for (let i = list.length - 1; i >= 0; i--) {
+    const p = list[i];
+    const hit = exemptions.filter((y) => y.reason && matches(y, p, isDrop));
+    if (!hit.length) continue;
+    if (p.flips) {
+      const rest = p.flips.filter((f) => !hit.some((y) => y.selector && normSel(f.selector) === normSel(y.selector)));
+      exempted.push({ ...p, flips: p.flips.filter((f) => !rest.includes(f)), reason: hit.map((y) => y.reason).join(' / ') });
+      if (rest.length) { p.flips = rest; continue; }
+    } else exempted.push({ ...p, reason: hit.map((y) => y.reason).join(' / ') });
+    list.splice(i, 1);
+  }
+  const res = { schema: 'colab-cascade-verify/1', base: baseRev, dsUnits: unitTotal, moved: moved.length, dropped, changed, problems, exempted,
     layers: Object.fromEntries(Object.entries(cur.files).map(([f, v]) => [f, { layerBlocks: v.stats.layerBlocks.map((b) => b.name), unlayeredRules: v.stats.unlayeredRules, imports: v.stats.imports, rules: v.ruleCount }])) };
   writeFileSync(join(out, 'cascade-verify.json'), JSON.stringify(res, null, 1));
-  const lines = ['# P2a cascade verify', '', `기준 \`${baseRev}\` → 작업 트리 · DS 선언 단위 ${res.dsUnits} · 옮겨짐 ${moved.length} · 버림/불일치 ${dropped.length} · 비DS 선언 변경 ${changed.length}(오늘 죽음 증명 ${changed.filter((c) => c.deadToday).length}) · 문제 ${problems.length}`, ''];
+  const lines = ['# P2a cascade verify', '', `기준 \`${baseRev}\` → 작업 트리 · DS 선언 단위 ${res.dsUnits} · 옮겨짐 ${moved.length} · 버림/불일치(면제 밖) ${dropped.length} · 비DS 선언 변경 ${changed.length}(오늘 죽음 증명 ${changed.filter((c) => c.deadToday).length}) · 면제 ${exempted.length} · 문제 ${problems.length}`, ''];
+  lines.push('## 면제 (선택자·미디어만으로 증명할 수 없어 사유로 판정한 것)', '', '| 종류 | DS# | 대상 | 사유 |', '|---|---:|---|---|');
+  for (const x of exempted) lines.push(`| ${x.kind || x.status} | ${x.no ?? '-'} | \`${x.flips ? x.flips.map((f) => f.selector).join(' · ') : (x.selector || x.arg)}\` ${x.prop || ''} | ${x.reason} |`);
+  lines.push('');
   lines.push('## 버림·불일치 (DS 선언이 새 자리에서 같은 값으로 발견되지 않음)', '', '| DS# | 인자 | 속성 | DS 값 | 상태 | 찾은 값 |', '|---:|---|---|---|---|---|');
   for (const x of dropped) lines.push(`| ${x.no} | \`${x.arg}\` | ${x.prop} | \`${x.value}\` | ${x.status} | ${x.homeValue ? `\`${x.homeValue}\`` : '-'} |`);
   lines.push('', '## 비DS 선언 변경 (삭제·값 일치)', '', '| 파일:행 | 선택자 | 미디어 | 속성 | 원래 값 | 뒤 | 오늘 죽음 증명 |', '|---|---|---|---|---|---|---|');
@@ -618,8 +742,8 @@ function verify(out, baseRev) {
   lines.push('', '## 문제', '', '| 종류 | 내용 |', '|---|---|');
   for (const p of problems) lines.push(`| ${p.kind} | ${p.kind === 'flip' ? `DS#${p.no} \`${p.arg}\` ${p.prop}=\`${p.value}\` @ ${p.home} ← ${p.flips.map((f) => `\`${f.selector}\` ${f.file.replace(/^src\//, '')}:${f.line} ${f.prop}=\`${f.value}\` (${f.spec} · ${f.today})`).join(' · ')}` : p.kind === 'changed-live' ? `${p.file}:${p.line} \`${p.selector}\` ${p.prop} \`${p.from}\` → ${p.to ?? '삭제'}` : JSON.stringify(p)} |`);
   writeFileSync(join(out, 'cascade-verify.md'), lines.join('\n') + '\n');
-  console.log(`cascade-verify: units ${res.dsUnits} · moved ${moved.length} · dropped ${dropped.length} · changed ${changed.length} · problems ${problems.length} -> ${relative('.', join(out, 'cascade-verify.md'))}`);
-  return problems.length ? 1 : 0;
+  console.log(`cascade-verify: units ${res.dsUnits} · moved ${moved.length} · dropped ${dropped.length} · changed ${changed.length} · exempted ${exempted.length} · problems ${problems.length} -> ${relative('.', join(out, 'cascade-verify.md'))}`);
+  return problems.length || dropped.length ? 1 : 0;
 }
 
 // ---------------------------------------------------------------- main
@@ -639,7 +763,7 @@ function main() {
     if (mode === 'verify') {
       const base = opt('--base');
       if (!base) { console.error('::cascade-map:: verify needs --base <rev>'); return READINESS; }
-      return verify(out, base);
+      return verify(out, base, opt('--exempt'));
     }
   } catch (e) {
     console.error(`::cascade-map:: ${e.stack || e.message}`);
@@ -648,5 +772,6 @@ function main() {
   console.error('usage: cascade-map.mjs map [--rev R] [--out D] | verify --base R [--out D]');
   return READINESS;
 }
-process.exitCode = main();
-export { specificity, parseSelector, subsetOf, longhands, expandIs, stripPrefix, parseCss, dirname };
+// Run only as a script (importing the module for its helpers must not run the CLI).
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) process.exitCode = main();
+export { specificity, parseSelector, subsetOf, longhands, expandIs, stripPrefix, parseCss, expandValue, valuesAgree };

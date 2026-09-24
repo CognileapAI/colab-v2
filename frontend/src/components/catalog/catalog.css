@@ -3,10 +3,10 @@
    ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
 
 .catalog-page { padding: 24px 20px 40px; }
-.catalog-page .page-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-.catalog-page .page-head h1 { font-size: var(--text-h2, 24px); margin: 0; letter-spacing: -0.023em; }
-.catalog-page .hcnt { font-size: var(--text-body-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.catalog-page .desc { font-size: var(--text-caption); color: var(--color-text-muted); }
+.catalog-page .page-head { display: flex; align-items: baseline; gap: 8px 12px; margin-bottom: var(--space-section); flex-wrap: wrap; }
+.catalog-page .page-head h1 { margin: 0; }
+.catalog-page .hcnt { font-size: var(--text-body-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; padding: 2px 9px; border-radius: var(--radius-pill); background: var(--color-gray-100); }
+.catalog-page .desc { font-size: var(--text-body-sm); color: var(--color-text-muted); flex-basis: 100%; line-height: 1.6; }
 .catalog-page .card {
   /* ⑥ 카드는 그림자를 지지 않는다 — 그림자는 팝오버(`.colmenu`)의 것이다 (WU-A11 판정 ⑥).
      ⑨ 바깥선은 안쪽선(`--color-border-strong`)보다 연하지 않다 — 역전 해소 (판정 ⑨). */
@@ -33,7 +33,7 @@
 .tbl tr.clk td { transition: background var(--ease), box-shadow var(--ease); }
 .tbl tr.clk:hover td { background: var(--color-surface-hover); }
 .tbl tr.clk:hover td:first-child { box-shadow: inset 2px 0 0 var(--color-primary-600); }
-.tbl .fname { font-family: var(--font-data); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text); }
+.tbl .fname { font-family: var(--font-data); font-size: var(--text-body-sm); font-weight: 600; letter-spacing: 0; color: var(--color-text); min-width: 260px; max-width: 320px; white-space: normal; }
 .tbl tr.is-locked td { color: var(--color-text-muted); }
 .tbl tr.is-locked .fname { color: var(--color-gray-500); }
 .tbl td.empty { text-align: center; padding: 36px 14px; color: var(--color-text-muted); white-space: normal; }
@@ -41,7 +41,7 @@
 /* 열 이름 자체가 버튼. 표식(정렬 화살표·조건 점)만 오른쪽에 붙는다 */
 .tbl thead th > .thf {
   display: flex; align-items: center; gap: 5px; width: 100%;
-  padding: 10px 14px; border: none; background: none; font: inherit; color: inherit;
+  padding: 10px 16px; border: none; background: none; font: inherit; color: inherit;
   cursor: pointer; white-space: nowrap; text-align: left;
 }
 .tbl thead th > .thf:hover { background: var(--color-gray-100); }
@@ -71,8 +71,16 @@
 .colmenu button.cm-i:hover { background: var(--color-gray-100); }
 .colmenu button.cm-i.on { color: var(--color-text); font-weight: 600; }
 .colmenu .cm-box {
-  width: 13px; height: 13px; flex: none; border: 1px solid var(--color-border-control); border-radius: 3px;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1px solid var(--color-border-control);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-caption);
+  color: var(--color-on-primary);
 }
 .colmenu button.cm-i.on .cm-box { background: var(--color-primary-600); border-color: var(--color-primary-600); }
 .colmenu .cm-i .cm-l { flex: 1; min-width: 0; }
@@ -88,17 +96,29 @@
 
 /* 적용된 조건 칩 줄 — 없으면 줄째로 사라진다 (컴포넌트가 null 을 낸다) */
 .fchips {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border); background: var(--color-surface-alt);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px var(--space-card);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
 }
 .fchips .fl { font-size: 13px; color: var(--color-text-muted); margin-right: 2px; }
 .fchips .fc {
-  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px 0 9px;
-  border: 1px solid var(--color-border-control); border-radius: var(--radius-pill);
-  background: var(--color-surface); font-size: 13px; color: var(--color-text-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 6px 0 9px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text-body);
 }
 .fchips .fc b { font-weight: 600; color: var(--color-text); }
-.fchips .fc button { border: none; background: none; padding: 0; font-size: 13px; line-height: 1; color: var(--color-gray-500); cursor: pointer; }
+.fchips .fc button { border: none; background: none; padding: 0; font-size: 13px; line-height: 1; color: var(--color-gray-500); cursor: pointer; width: 24px; height: 28px; }
 .fchips .fall { margin-left: 4px; border: none; background: none; font-size: 13px; color: var(--color-text-muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
 .chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 13px; font-weight: 600; line-height: 1; white-space: nowrap; }
@@ -133,10 +153,10 @@
 
 /* 행 빠른 작업 — 평소엔 자리만 잡고 있다가 행 hover·키보드 포커스에서 나타난다 */
 .tbl th.rowact, .tbl td.rowact { width: 74px; padding-right: 14px; }
-.tbl td.rowact .ra { display: flex; gap: 4px; justify-content: flex-end; opacity: 0; transition: opacity var(--ease); }
+.tbl td.rowact .ra { display: flex; gap: 4px; justify-content: flex-end; transition: opacity var(--ease); }
 .tbl tbody tr:hover td.rowact .ra, .tbl td.rowact .ra:focus-within { opacity: 1; }
 .tbl td.rowact .rab {
-  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--color-border-control); border-radius: var(--radius-sm);
   background: var(--color-surface); color: var(--color-text-body); cursor: pointer; padding: 0;
 }
@@ -145,9 +165,18 @@
 
 /* 두 길 상호 안내 — 카탈로그는 검색을 가리킨다 (`Policy_데이터_찾기 §1.3-8`) */
 .crosslink {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding: 13px 15px;
-  border: 1px dashed var(--color-border-strong); border-radius: var(--radius-md);
-  font-size: var(--text-caption); color: var(--color-text-muted); background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 16px 20px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  line-height: 1.6;
 }
 .crosslink a { color: var(--color-primary-700); }
 
@@ -168,17 +197,37 @@
 .catalog-page .dl-error { margin: 0 0 8px; font-size: var(--text-body-sm); color: var(--color-warning-600); }
 
 /* The four filters share spacing while the three-axis component keeps its API. */
-.catalog-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 20px; border-bottom: 1px solid var(--color-border); }
+.catalog-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; padding: var(--space-card); border-bottom: 1px solid var(--color-border); }
 .catalog-filters .axis-bar { display: contents; }
-.catalog-filters .axis-pick { display: flex; flex-direction: column; min-width: 0; gap: 6px; }
-.catalog-filters .axis-k { font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
-.catalog-filters select { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: 14px; }
+.catalog-filters .axis-pick { display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+.catalog-filters .axis-k { font-weight: 600; color: var(--color-text-muted); }
+.catalog-filters select { width: 100%; min-width: 0; height: var(--control-height); padding: 0 10px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: 14px; padding-inline: 12px; border-color: var(--color-border-control); }
 .catalog-open { border: 0; padding: 2px 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 .catalog-open:hover { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 900px) { .catalog-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .catalog-page { padding: 20px 16px 32px; }
-  .catalog-filters { padding: 16px; gap: 14px 12px; }
-  .catalog-filters select { height: 40px; font-size: 16px; }
+  .catalog-filters { gap: 14px 12px; }
+  .catalog-filters select { font-size: 16px; }
   .catalog-page .desc { flex-basis: 100%; }
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+.axis-k { font-size: var(--text-caption); color: var(--color-text-muted); }
+.tbl th .thf { min-height: 44px; padding-inline: 16px; }
+.fname .catalog-open { display: block; max-width: 100%; overflow-wrap: anywhere; margin-bottom: 4px; }
+.fname .chip { margin-right: 4px; }
+.tbl td:nth-child(4) { white-space: normal; min-width: 128px; max-width: 180px; }
+.tbl .catalog-open { line-height: 1.5; }
+.tbl .rowact .ra { opacity: 1; }
+.tbl .rowact .rab { width: 36px; height: 36px; }
+.colmenu button { min-height: 36px; }
+@media (max-width: 640px) {
+  .catalog-filters { gap: 16px 12px; }
+  .colmenu button { min-height: 44px; }
+  .tbl .rowact .rab { width: 44px; height: 44px; }
+}
+.fname .lock { float: left; margin-right: 6px; margin-top: 2px; }
+@media (max-width: 640px) {
+  .tbl .colmenu { position: fixed; inset: auto 16px 16px; width: auto; max-width: none; max-height: 60dvh; overflow-y: auto; z-index: 140; padding: 12px; }
 }

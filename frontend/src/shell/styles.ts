@@ -1,5 +1,6 @@
 // Product and visual fixtures use one deterministic CSS entry.
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import './tokens.css';
 import '../components/catalog/catalog.css';
 import '../components/detail/detail.css';
 import '../components/project/project.css';
