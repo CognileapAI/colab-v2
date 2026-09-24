@@ -2012,11 +2012,12 @@ def _describe_controls(c):
             + ") · 시각 후보 " + str(c.get("instantCount", "?")) + " · slot " + str(c.get("slotState") or "-"))
 
 
-def request_selected_preview(target_file_id=None):
+def request_selected_preview(target_file_id=None, diag=None):
     """선택 파일의 설명이 선 뒤에 사용자와 같은 `보기` 요청 한 건을 만든다.
 
     target_file_id 를 주지 않으면 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다.
-    클릭 직전 요청·콘솔 기록을 비워 시간 초과 때 「클릭 뒤」 증거만 남게 한다.
+    누르기 직전 요청·콘솔 기록을 비워 시간 초과 때 「누름 뒤」 증거만 남게 한다.
+    diag(dict) 에 적중 검사·누름 방법을 채운다(`press_preview_draw`).
     """
     deadline = time.time() + PREVIEW_SETTLE_S
     controls = {}
@@ -2056,12 +2057,124 @@ def request_selected_preview(target_file_id=None):
     log("  · 정착 확인 " + format(time.time() - started, ".1f") + "s — 기다린 것 = 파일 일치 · 보기 활성"
         + "(설명·팔레트 도착 · DatasetPreviewSection.tsx:355) · slot idle · 연속 "
         + str(PREVIEW_SETTLE_STABLE_S) + "s · " + _describe_controls(controls))
+    press_preview_draw(diag if diag is not None else {})
+    return target
+
+
+# ── 보기 누름 — 적중 검사 · 초점 ＋ Enter · JS click 폴백 ─────────────────────
+# ⚠ dev 2026-09-25 00:45–01:00 KST(f938198c) — 정착 확인 뒤 `agent-browser click` 이 5행 모두 rc 0 인데
+#   클릭 뒤 요청 0건 · slot idle 그대로였다(onClick → draw() 미실행 · DatasetPreviewSection.tsx:224-250,354).
+#   로컬 대역 페이지 실측(agent-browser 0.27.0): 좌표 클릭은 ⑴ 버튼이 화면 밖이면 스크롤 없이 화면 밖
+#   좌표를 누르고 ⑵ 버튼 중심이 고정 층에 덮이면 그 층을 누른다 — 둘 다 rc 0 · 처리기 0회.
+#   그래서 누르기 전에 버튼 중심의 적중 대상을 재어 남기고, 초점 ＋ Enter 로 누른 뒤 slot 이 idle 을
+#   떠났는지 확인한다. 떠나지 않으면 JS click 한 번으로 폴백하고 어느 방법이 먹혔는지 적는다.
+PREVIEW_DRAW_CSS = '[data-testid="dt-preview-draw"]'
+PREVIEW_PRESS_ACK_S = 5.0
+PREVIEW_HIT_JS = """(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return {found: false};
+  const probe = () => {
+    const r = btn.getBoundingClientRect();
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const inViewport = x >= 0 && y >= 0 && x < vw && y < vh;
+    const el = inViewport ? document.elementFromPoint(x, y) : null;
+    const onButton = !!el && (el === btn || btn.contains(el));
+    const near = el && el.closest ? el.closest('[data-testid]') : null;
+    const cls = el ? (typeof el.className === 'string' ? el.className : (el.getAttribute('class') || '')) : '';
+    return {x, y, vw, vh, inViewport, onButton, cover: (!el || onButton) ? null : {
+      tag: el.tagName.toLowerCase(), testid: el.getAttribute('data-testid') || '',
+      ancestorTestid: near ? (near.getAttribute('data-testid') || '') : '', cls: cls.slice(0, 80),
+      text: (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 80)}};
+  };
+  const before = probe();
+  btn.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+  return {found: true, before, after: probe()};
+})()"""
+PREVIEW_JS_CLICK = """(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return {clicked: false};
+  btn.click();
+  return {clicked: true};
+})()"""
+
+
+def _describe_point(p):
+    if not isinstance(p, dict):
+        return "못 잼"
+    where = "(" + str(p.get("x")) + "," + str(p.get("y")) + ")"
+    if not p.get("inViewport"):
+        return where + " 화면 밖(창 " + str(p.get("vw")) + "x" + str(p.get("vh")) + ")"
+    if p.get("onButton"):
+        return where + " = 보기 단추"
+    c = p.get("cover") or dict()
+    if not c:
+        return where + " 적중 요소 없음"
+    return (where + " 을 덮은 요소 = " + str(c.get("tag") or "?")
+            + (" testid=" + str(c.get("testid")) if c.get("testid") else "")
+            + (" 조상testid=" + str(c.get("ancestorTestid"))
+               if c.get("ancestorTestid") and c.get("ancestorTestid") != c.get("testid") else "")
+            + (" class=" + str(c.get("cls")) if c.get("cls") else "")
+            + (" 「" + str(c.get("text")) + "」" if c.get("text") else ""))
+
+
+def describe_hit(hit):
+    """적중 검사 결과 한 줄 — 스크롤 전(좌표 클릭이 누를 자리)과 스크롤 뒤 버튼 중심의 적중 대상."""
+    if not isinstance(hit, dict):
+        return "적중 검사 못 함"
+    if not hit.get("found"):
+        return "보기 단추 없음"
+    return ("스크롤 전 중심 " + _describe_point(hit.get("before"))
+            + " · 스크롤 뒤 중심 " + _describe_point(hit.get("after")))
+
+
+def _slot_left_idle(seconds):
+    """slot 이 idle 을 떠난 값(drawing·done·failed)을 기다린다. 못 떠나면 None."""
+    deadline = time.time() + seconds
+    while True:
+        state = str(_preview_controls().get("slotState") or "")
+        if state and state != "idle":
+            return state
+        if time.time() >= deadline:
+            return None
+        time.sleep(0.1)
+
+
+def press_preview_draw(diag):
+    """보기를 누른다 — 적중 검사 → 증거 기록 비우기 → 초점 ＋ Enter → (미반영이면) JS click 한 번.
+
+    diag 에 hit_test(원자료) · hit_summary · activation(focus+Enter | js-click | none) · slot_after 를 채운다.
+    """
+    hit = js(PREVIEW_HIT_JS, default=None)
+    diag["hit_test"] = hit
+    diag["hit_summary"] = "(dry-run)" if CFG.dry_run else describe_hit(hit)
+    log("  · 보기 적중 검사 — " + diag["hit_summary"])
     for args in (["network", "requests", "--clear"], ["console", "--clear"], ["errors", "--clear"]):
         rc, _, err = ab(args, expect_ok=False, quiet=True)
         if rc != 0:
             log("  ! 증거 기록 비우기 실패(" + " ".join(args) + "): " + str(err))
-    ab(["click", '[data-testid="dt-preview-draw"]'])
-    return target
+    if CFG.dry_run:
+        ab(["focus", PREVIEW_DRAW_CSS], expect_ok=False)
+        ab(["press", "Enter"], expect_ok=False)
+        diag["activation"] = "focus+Enter"
+        return
+    rc, _, err = ab(["focus", PREVIEW_DRAW_CSS], expect_ok=False)
+    if rc == 0:
+        ab(["press", "Enter"], expect_ok=False)
+        left = _slot_left_idle(PREVIEW_PRESS_ACK_S)
+        if left:
+            diag["activation"] = "focus+Enter"
+            diag["slot_after"] = left
+            log("  · 보기 누름 = focus+Enter · slot " + left)
+            return
+        log("  ! focus+Enter 뒤 " + str(PREVIEW_PRESS_ACK_S) + "s 안에 slot 이 idle 을 떠나지 않았다 — JS click 한 번")
+    else:
+        log("  ! 보기 초점 실패(" + str(err) + ") — JS click 한 번")
+    js(PREVIEW_JS_CLICK, default=None)
+    left = _slot_left_idle(PREVIEW_PRESS_ACK_S)
+    diag["activation"] = "js-click" if left else "none"
+    diag["slot_after"] = left or "idle"
+    log("  · 보기 누름 = " + diag["activation"] + " · slot " + diag["slot_after"])
 
 
 # ── 시간 초과 증거 · 분류 · 행별 판정 ────────────────────────────────────────
@@ -2122,11 +2235,13 @@ def _work_rel(path):
         return str(path)
 
 
-def collect_preview_evidence(tag):
-    """시간 초과 행의 증거 — 클릭 뒤 요청(민감 칸 제외)·콘솔·페이지 오류·화면 상태를 fail/ 에 남긴다.
+def collect_preview_evidence(tag, diag=None):
+    """시간 초과 행의 증거 — 누름 뒤 요청(민감 칸 제외)·콘솔·페이지 오류·화면 상태를 fail/ 에 남긴다.
 
+    diag = 누름 진단(`press_preview_draw`) — 누름 방법·적중 검사를 같은 JSON 에 싣는다.
     반환 = (분류 · 증거 경로 목록 · 한 줄 요약).
     """
+    diag = diag or dict()
     FAIL_DIR.mkdir(parents=True, exist_ok=True)
     rc, data, err = ab(["network", "requests"], expect_ok=False, quiet=True)
     raw = (data or {}).get("requests") if isinstance(data, dict) else None
@@ -2150,6 +2265,9 @@ def collect_preview_evidence(tag):
         "requests_since_click": requests,
         "page_resource_previews_posts": perf_posts,
         "page_state": page,
+        "activation": diag.get("activation") or "",
+        "hit_test": diag.get("hit_summary") or "",
+        "hit_test_raw": diag.get("hit_test"),
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     crc, cdata, cerr = ab(["console"], expect_ok=False, quiet=True)
     erc, edata, eerr = ab(["errors"], expect_ok=False, quiet=True)
@@ -2167,6 +2285,7 @@ def collect_preview_evidence(tag):
                + ("(" + ",".join(str(p.get("status", "대기")) for p in posts) + ")" if posts else "")
                + " · 요청 기록 " + ("읽음" if network_ok else "못 읽음")
                + " · 콘솔 error " + str(sum(1 for m in messages if m.get("type") == "error")) + "건"
+               + " · 누름 " + str(diag.get("activation") or "-")
                + " · " + _describe_controls(page))
     return classification, [_work_rel(network_path), _work_rel(console_path)], summary
 
@@ -2174,13 +2293,14 @@ def collect_preview_evidence(tag):
 def write_preview_table(previews):
     """행별 판정표 — 작업 자리의 verify-previews.tsv 와 로그에 같은 내용을 남긴다."""
     head = ["seq", "name", "format", "preview_expected", "outcome", "classification", "verdict",
-            "evidence"]
+            "evidence", "activation", "hit_test"]
     lines = ["\t".join(head)]
     for p in previews:
         cols = [str(p.get("seq")), str(p.get("name") or "-"), str(p.get("format")),
                 str(p.get("preview_expected") or "-"), str(p.get("outcome") or p.get("render") or "-"),
                 str(p.get("classification") or "-"), _preview_verdict(p),
-                ",".join(p.get("evidence") or []) or "-"]
+                ",".join(p.get("evidence") or []) or "-",
+                str(p.get("activation") or "-"), str(p.get("hit_test") or "-")]
         lines.append("\t".join(c.replace("\t", " ").replace("\n", " ") for c in cols))
     log("· 미리보기 행별 판정표")
     for line in lines:
@@ -2190,6 +2310,21 @@ def write_preview_table(previews):
         log("  = " + PREVIEW_TABLE_NAME)
 
 
+def _preview_timeout_entry(entry, tag, reason, outcome, diag):
+    """누른 뒤 terminal/display 에 닿지 못한 행 — 증거(누름 방법·적중 검사 포함)를 남기고 분류한다."""
+    classification, evidence, summary = collect_preview_evidence(tag, diag)
+    dump_failure(tag, reason + " · " + classification + " · 누름 " + str(diag.get("activation") or "-")
+                 + " · 적중 검사 " + str(diag.get("hit_summary") or "-"))
+    entry["render"] = "미확인"
+    entry["outcome"] = outcome
+    entry["classification"] = classification
+    entry["status_text"] = reason
+    entry["evidence"] = evidence + [_work_rel(FAIL_DIR / (tag + ".txt")),
+                                    _work_rel(FAIL_DIR / (tag + ".png"))]
+    log("  ! 미리보기 seq " + str(entry["seq"]) + "(" + str(entry["format"]) + ") 분류 = " + summary)
+    return entry
+
+
 def verify_preview_row(entry):
     """한 행 — 정착 뒤 보기 · terminal/display 대기 · 측정. 실패해도 예외를 밖으로 내지 않는다."""
     seq = entry["seq"]
@@ -2197,8 +2332,9 @@ def verify_preview_row(entry):
     tag = "verify-preview-" + str(seq).zfill(2) + "-" + fmt
     open_url("/datasets/" + str(entry["dataset_id"]))
     wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+    diag = dict()
     try:
-        entry["file_id"] = request_selected_preview()
+        entry["file_id"] = request_selected_preview(diag=diag)
     except Fail as exc:
         # 보기를 누르지 않았다 — POST 부재를 제품 결함으로 읽지 않는다(차단).
         entry["render"] = "미확인"
@@ -2209,6 +2345,13 @@ def verify_preview_row(entry):
         entry["evidence"] = [_work_rel(FAIL_DIR / (tag + ".txt")), _work_rel(FAIL_DIR / (tag + ".png"))]
         log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 준비 안 됨 — " + str(exc))
         return entry
+    entry["activation"] = diag.get("activation") or "-"
+    entry["hit_test"] = diag.get("hit_summary") or "-"
+    if entry["activation"] == "none":
+        # 어떤 누름도 slot 을 움직이지 못했다 — 표시 대기(120 s)를 하지 않고 곧바로 증거를 남긴다.
+        reason = ("보기 누름 미반영(focus+Enter · JS click 모두 " + str(PREVIEW_PRESS_ACK_S)
+                  + "s 안에 slot idle 유지)")
+        return _preview_timeout_entry(entry, tag, reason, "누름 미반영", diag)
     outcome = wait_any([
         ["displayed", lambda: (lambda m: m.get("slotState") == "done"
          and int(m.get("imageCount") or 0) > 0
@@ -2218,16 +2361,7 @@ def verify_preview_row(entry):
     ], PREVIEW_DISPLAY_WAIT_S, label="미리보기 terminal/display")
     if outcome is None:
         reason = "미리보기 terminal/display 시간 초과(" + str(PREVIEW_DISPLAY_WAIT_S) + "s)"
-        classification, evidence, summary = collect_preview_evidence(tag)
-        dump_failure(tag, reason + " · " + classification)
-        entry["render"] = "미확인"
-        entry["outcome"] = "시간 초과"
-        entry["classification"] = classification
-        entry["status_text"] = reason
-        entry["evidence"] = evidence + [_work_rel(FAIL_DIR / (tag + ".txt")),
-                                        _work_rel(FAIL_DIR / (tag + ".png"))]
-        log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 분류 = " + summary)
-        return entry
+        return _preview_timeout_entry(entry, tag, reason, "시간 초과", diag)
     measured = _preview_measurement()
     slot_state = measured.get("slotState") or outcome or ""
     bad = int(measured.get("unavailable") or 0)

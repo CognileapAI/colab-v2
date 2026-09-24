@@ -57,7 +57,7 @@ class Clock:
 class FakePreviewPage:
     """DatasetPreviewSection 의 선택·describe·보기 전이를 흉내 낸다."""
 
-    def __init__(self, clock, files, describe_s=2.0):
+    def __init__(self, clock, files, describe_s=2.0, covered=False, keyboard_ok=True, js_click_ok=True):
         self.clock = clock
         self.file_id = files[0]
         self.describe_s = describe_s
@@ -66,6 +66,12 @@ class FakePreviewPage:
         self.posts = []
         self.commands = []
         self.click_at = None
+        # 버튼 중심이 떠 있는 층(「올리다 만 것이 있어요」)에 덮였는가 — 좌표 클릭은 그 층이 받는다.
+        self.covered = covered
+        self.keyboard_ok = keyboard_ok
+        self.js_click_ok = js_click_ok
+        self.focused = False
+        self.js_clicks = 0
 
     def has_description(self):
         return self.description_at is not None and self.clock.t >= self.description_at
@@ -82,7 +88,29 @@ class FakePreviewPage:
             "now": self.clock.t * 1000,
         }
 
+    def activate(self):
+        self.click_at = self.clock.t
+        if self.controls()["drawEnabled"]:
+            self.drawing = True
+            self.posts.append(self.file_id)
+
+    def hit(self):
+        center = {"x": 50, "y": 300, "inViewport": True}
+        cover = ({"tag": "div", "testid": "resume-drafts", "ancestorTestid": "resume-drafts",
+                  "cls": "resume-float", "text": "올리다 만 것이 있어요 이어서 하기"}
+                 if self.covered else None)
+        return {"found": True, "before": dict(center, onButton=not self.covered, cover=cover),
+                "after": dict(center, onButton=not self.covered, cover=cover)}
+
     def js(self, script, default=None, **_kwargs):
+        if "elementFromPoint" in script:
+            return self.hit()
+        if ".click()" in script:
+            self.commands.append(["js-click", DRAW])
+            self.js_clicks += 1
+            if self.js_click_ok:
+                self.activate()
+            return {"clicked": True}
         return self.controls()
 
     def ab(self, args, **_kwargs):
@@ -94,10 +122,13 @@ class FakePreviewPage:
             else:
                 self.description_at = None  # 비워지고 다시 부르지 않는다
         elif args[0] == "click" and args[1] == DRAW:
-            self.click_at = self.clock.t
-            if self.controls()["drawEnabled"]:
-                self.drawing = True
-                self.posts.append(self.file_id)
+            if not self.covered:  # 덮였으면 좌표 클릭은 덮은 층이 받는다(rc 는 0)
+                self.activate()
+        elif args[0] == "focus":
+            self.focused = args[1] == DRAW
+        elif args[:2] == ["press", "Enter"]:
+            if self.focused and self.keyboard_ok:
+                self.activate()
         return 0, {}, ""
 
 
@@ -145,7 +176,66 @@ def test_draw_is_not_clicked_when_the_page_never_settles(monkeypatch):
 
     with pytest.raises(runner.Fail, match="준비"):
         runner.request_selected_preview()
-    assert not any(c[0] == "click" for c in page.commands)
+    assert not any(c[0] in ("click", "focus", "press", "js-click") for c in page.commands)
+
+
+# ══════════════ 보기 누름 — 적중 검사 · 초점 ＋ Enter · JS click 폴백 ══════════════
+# dev 2026-09-25 00:45–01:00 KST — 정착 확인(파일 일치 · 보기 활성 · slot idle · 1 s) 뒤
+# `agent-browser click` 이 5행 모두 rc 0 이었는데 요청 0건 · slot idle 그대로였다(onClick 미실행).
+# 로컬 대역 페이지 실측(agent-browser 0.27.0): 좌표 클릭은 ⑴ 버튼이 화면 밖이면 스크롤 없이 화면 밖
+# 좌표를 누르고 ⑵ 버튼 중심이 고정 층에 덮이면 그 층을 누른다 — 둘 다 rc 0 · 처리기 0회.
+
+def test_covered_draw_is_pressed_by_focus_enter_and_hit_test_names_the_cover(monkeypatch):
+    clock = Clock()
+    page = FakePreviewPage(clock, ["FILE-1"], covered=True)
+    install_page(monkeypatch, page, clock)
+    clock.t = 5.0
+    diag = {}
+
+    assert runner.request_selected_preview(diag=diag) == "FILE-1"
+    assert page.posts == ["FILE-1"]
+    assert diag["activation"] == "focus+Enter"
+    assert "resume-drafts" in diag["hit_summary"] and "올리다 만 것" in diag["hit_summary"]
+    assert ["click", DRAW] not in page.commands
+    assert page.commands.index(["focus", DRAW]) < page.commands.index(["press", "Enter"])
+    assert page.js_clicks == 0
+
+
+def test_keyboard_press_not_reflected_falls_back_to_one_js_click(monkeypatch):
+    clock = Clock()
+    page = FakePreviewPage(clock, ["FILE-1"], covered=True, keyboard_ok=False)
+    install_page(monkeypatch, page, clock)
+    clock.t = 5.0
+    diag = {}
+
+    runner.request_selected_preview(diag=diag)
+    assert diag["activation"] == "js-click"
+    assert page.js_clicks == 1
+    assert page.posts == ["FILE-1"]
+
+
+def test_no_method_reflected_is_recorded_as_none(monkeypatch):
+    clock = Clock()
+    page = FakePreviewPage(clock, ["FILE-1"], covered=True, keyboard_ok=False, js_click_ok=False)
+    install_page(monkeypatch, page, clock)
+    clock.t = 5.0
+    diag = {}
+
+    runner.request_selected_preview(diag=diag)
+    assert diag["activation"] == "none"
+    assert page.js_clicks == 1
+    assert page.posts == []
+
+
+def test_hit_summary_reports_off_viewport_center_before_scroll():
+    got = runner.describe_hit({"found": True,
+                               "before": {"x": 50, "y": 1412, "inViewport": False, "onButton": False,
+                                          "cover": None, "vw": 1280, "vh": 577},
+                               "after": {"x": 50, "y": 288, "inViewport": True, "onButton": True,
+                                         "cover": None, "vw": 1280, "vh": 577}})
+    assert "화면 밖" in got and "보기 단추" in got
+    assert runner.describe_hit(None) == "적중 검사 못 함"
+    assert "없음" in runner.describe_hit({"found": False})
 
 
 def test_timeout_classification_separates_client_and_server():
@@ -293,3 +383,34 @@ def test_client_no_request_row_is_observed_and_does_not_fail_the_phase(monkeypat
     assert st["steps"]["verify"]["status"] == "done"
     assert (tmp_path / "fail" / "verify-preview-15-grib-console.json").exists()
     assert any("client_no_request" in line for line in logs)
+
+
+def test_press_method_and_hit_test_reach_table_and_unreflected_press_skips_display_wait(
+        monkeypatch, tmp_path):
+    """누름 방법·적중 검사가 판정표·증거에 남고, 어떤 누름도 반영되지 않은 행은 표시 대기 없이 적힌다."""
+    st, plan, opened, logs = verify_env(monkeypatch, tmp_path, [])
+    current = {"n": 0}
+
+    def fake_request(target_file_id=None, diag=None):
+        did = "D" + str(PREVIEW_ROWS[current["n"]][0])
+        current["n"] += 1
+        opened.append(did)
+        diag["activation"] = "none" if did == "D15" else "focus+Enter"
+        diag["hit_summary"] = "스크롤 뒤 중심 (50,300) 을 덮은 요소 = div testid=resume-drafts"
+        return "F-" + did
+
+    monkeypatch.setattr(runner, "request_selected_preview", fake_request)
+    started = runner.time.time()
+    runner.phase_verify(st, plan)
+
+    table = read_table(tmp_path)
+    assert table[0][8:10] == ["activation", "hit_test"]
+    rows = {r[0]: r for r in table[1:]}
+    assert rows["15"][4] == "누름 미반영"
+    assert rows["15"][5] == "client_no_request"
+    assert rows["15"][8] == "none" and "resume-drafts" in rows["15"][9]
+    assert rows["17"][8] == "focus+Enter" and rows["17"][6] == "통과"
+    network = json.loads((tmp_path / "fail" / "verify-preview-15-grib-network.json").read_text())
+    assert network["activation"] == "none" and "resume-drafts" in network["hit_test"]
+    # 행 15 는 120 s 표시 대기를 하지 않았다(나머지 네 행은 곧바로 display 에 닿는다).
+    assert runner.time.time() - started < runner.PREVIEW_DISPLAY_WAIT_S
