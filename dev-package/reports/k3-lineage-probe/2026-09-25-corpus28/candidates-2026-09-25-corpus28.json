@@ -1,0 +1,4767 @@
+{
+  "kind": "K3 WU-S6 — core-api 가 계보 제안 요청에 실을 후보 + 대조군 4종 + 규칙 팔 기록. 모델 호출 0회 · 판정 게이트 아님",
+  "corpus": "eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json 의 28건을 일회용 DB 에 재생",
+  "sample_limits": {
+    "children": 5,
+    "edges": 10,
+    "candidate_population": 28,
+    "visible_datasets_in_dev": 28,
+    "snapshot_children_with_parents": 13,
+    "snapshot_edges": 18
+  },
+  "groups": [
+    "main",
+    "removed",
+    "descendants",
+    "siblings",
+    "removed_and_siblings"
+  ],
+  "sibling_rules": [
+    "same_level"
+  ],
+  "strategy": "filtered",
+  "k": 20,
+  "corpus_size": 28,
+  "visible_datasets_in_dev": 28,
+  "level_source": "스냅샷 v2 의 processing_level 열(dev processing_level_user_set). 일회용 DB 에도 같은 값을 싣고 `lineage-cases.json` 의 upload_level 과 대조해 오타를 막는다.",
+  "autometa_note": "`seed_reference_corpus` 는 자동 메타 행을 빈 채로 넣으므로 스냅샷의 실제 값을 덮어 썼다. 축별로 채워진 건수는 autometa_axes_present 에 적는다 — 빈 축은 지어내지 않는다(v2 에서도 variables 는 전 건 비어 있다).",
+  "autometa_axes_present": {
+    "period": 28,
+    "crs": 24,
+    "grid": 26,
+    "variables": 0,
+    "fileName": 28
+  },
+  "seed_rows_note": "일회용 DB 에는 시험 시드(DSA1·DSA2)가 같은 연구실에 함께 서 있다. 그 둘도 사람이 고를 수 있는 진짜 후보라 후보에 세고, 케이스마다 `candidates_outside_corpus` 로 몇 건인지 드러낸다.",
+  "child_itself_note": "⭑ 2026-09-24 Ted 결정 ⑦ 뒤 — 업로드의 **이름 초안과 파일명이 둘 다** 같은 데이터셋은 후보에서 빠진다(`d3_catalog._self_candidate_ids`).",
+  "local_sha": "82ecf733cf4368ee03a02d5f71b161679c6558e8",
+  "cases": [
+    {
+      "id": "K3-LIN-001",
+      "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+      "child_name": "hsr_sample",
+      "topic": "강우·강수",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "hsr_sample",
+        "file": {
+          "fileName": "hsr_sample.npy",
+          "kind": "본체",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "file_meta": {
+        "fileName": "hsr_sample.npy",
+        "kind": "본체",
+        "partCount": 3
+      },
+      "dataset_name_draft": "hsr_sample",
+      "subject": "강우·강수",
+      "searched_count": 30,
+      "candidates": [
+        {
+          "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+          "name": "HSR 레이더합성 변환 결과",
+          "topic": "파일 포맷 예제",
+          "summary": "bin 에서 변환한 합성 반사도 배열",
+          "periodStart": "2025-08-13T00:00:00+00:00",
+          "periodEnd": "2025-08-13T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+        },
+        {
+          "datasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+          "name": "HSR 레이더합성 원자료",
+          "topic": "파일 포맷 예제",
+          "summary": "HSR 합성 바이너리 원본",
+          "processingLevel": 0,
+          "periodStart": "2025-08-13T00:00:00+00:00",
+          "periodEnd": "2025-08-13T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "fileName": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+        },
+        {
+          "datasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "name": "rn15_sample",
+          "topic": "강우·강수",
+          "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "fileName": "rn15_sample.npy"
+        },
+        {
+          "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+          "name": "rn15 15분 누적강수",
+          "topic": "강우·강수",
+          "summary": "지상 격자 15분 누적강수 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "fileName": "sfc_grid_rn_15m_201907281430.nc"
+        },
+        {
+          "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+          "name": "HSR 레이더 반사도 원자료",
+          "topic": "강우·강수",
+          "summary": "기상청 HSR 합성 반사도 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+        },
+        {
+          "datasetId": "0000000000000000000000DSA2",
+          "name": "A 강우 격자화",
+          "topic": "강우·강수",
+          "summary": "격자화 결과",
+          "processingLevel": 1,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량"
+          ]
+        },
+        {
+          "datasetId": "0000000000000000000000DSA1",
+          "name": "A 강우 원자료",
+          "topic": "강우·강수",
+          "summary": "관측 원자료",
+          "sourceLabel": "기상청",
+          "processingLevel": 0,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ]
+        }
+      ],
+      "candidate_count": 7,
+      "child_itself_in_candidates": false,
+      "candidates_outside_corpus": [
+        "0000000000000000000000DSA2",
+        "0000000000000000000000DSA1"
+      ],
+      "sibling_rule": "same_level",
+      "descendant_ids": [
+        "01M39TCARM2C2NJ8S9SA4QBSER"
+      ],
+      "sibling_ids": [
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39VBGCMRM3K31W963PGG7E8",
+        "01M39XWZBR39ZDX38RZVADF3BR",
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+        "01M39YP2K5A3CEEF99M5TNVR44",
+        "01M39YSE2MMXGA14SHG08PHY6S",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ"
+      ],
+      "upload_axes": {
+        "file_name": "hsr_sample.npy",
+        "crs": null,
+        "grid": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null
+      },
+      "candidate_axes": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ"
+        },
+        "01M39ZCMYVKSA6N5SS3HJZ225F": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F"
+        },
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+        },
+        "01M39Z0009K337B2N4DK4TSE9C": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C"
+        },
+        "01M39YSE2MMXGA14SHG08PHY6S": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S"
+        },
+        "01M39YP2K5A3CEEF99M5TNVR44": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44"
+        },
+        "01M39YJVRFA5N1T1498KNN007Y": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "crs": "EPSG:32652",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y"
+        },
+        "01M39YCEB2RHDTPH26KEV70TK4": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "crs": "EPSG:32651",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4"
+        },
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+        },
+        "01M39XZFZ6NYXQ48YD4KZN168X": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X"
+        },
+        "01M39XWZBR39ZDX38RZVADF3BR": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR"
+        },
+        "01M39VM0GYXG98CXDJKFD8RPYJ": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ"
+        },
+        "01M39VBGCMRM3K31W963PGG7E8": {
+          "file_name": "ERA5_slhf_202509010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8"
+        },
+        "01M39V7N5V054MKPFW7N0DTYEX": {
+          "file_name": "surface.grib",
+          "crs": "GEOGCS[\"Coordinate System imported from GRIB file\",DATUM[\"unnamed\",SPHEROID[\"Sphere\",6367470,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX"
+        },
+        "01M39V0T17DHQ5PF5XSSERTZ8H": {
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H"
+        },
+        "01M39V005J6SQ9SW8MZ8D16ZWK": {
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK"
+        },
+        "01M39TZ0SCEYHHMBWZ991M1QGN": {
+          "file_name": "Prediction_20230501.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN"
+        },
+        "01M39TW21793T8631ATHJREHK5": {
+          "file_name": "LULC_2023.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-01-01T00:00:00+00:00",
+          "period_end": "2023-01-01T00:00:00+00:00",
+          "dataset_id": "01M39TW21793T8631ATHJREHK5"
+        },
+        "01M39TVD38600D4EKH13EV55DV": {
+          "file_name": "Aspect.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV"
+        },
+        "01M39TTPB2T87ESQKHCZPBAKD6": {
+          "file_name": "DEM.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6"
+        },
+        "01M39TB4NTBCFC8TSTNB93N5YP": {
+          "file_name": "rn15_sample.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP"
+        },
+        "01M39T979PMQKRSK3GPCNYWHH3": {
+          "file_name": "sfc_grid_rn_15m_201907281430.nc",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T979PMQKRSK3GPCNYWHH3"
+        },
+        "01M39T7N812JDX7GW62F8YFZ0V": {
+          "file_name": "RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V"
+        },
+        "0000000000000000000000DSA2": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA2"
+        },
+        "0000000000000000000000DSA1": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA1"
+        }
+      },
+      "eligibility": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 1,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 1,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "derived_level": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 0,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 0,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 0,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 0
+      },
+      "groups": {
+        "main": {
+          "group": "main",
+          "filter": "eligibility",
+          "population": 7,
+          "population_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 7,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+              "name": "HSR 레이더합성 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "bin 에서 변환한 합성 반사도 배열",
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+            },
+            {
+              "datasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+              "name": "HSR 레이더합성 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "HSR 합성 바이너리 원본",
+              "processingLevel": 0,
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+            },
+            {
+              "datasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "name": "rn15_sample",
+              "topic": "강우·강수",
+              "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "rn15_sample.npy"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKB6RN9SMPEV6FPN132G",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+                "parentDatasetName": "HSR 레이더합성 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKB6AE8F2ZQ2G2GMTTPG",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.bin.gz) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+                "parentDatasetName": "HSR 레이더합성 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              },
+              {
+                "suggestionId": "01M3ATXKB6D37PNCZJJX3RV5NK",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(rn15_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+                "parentDatasetName": "rn15_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "rn15_sample.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKB65DK05PJMBSNJR334",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_201907281430.bin.gz) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+                "parentDatasetName": "HSR 레이더 반사도 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              }
+            ]
+          }
+        },
+        "removed": {
+          "group": "removed",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 6,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 1,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+              "name": "HSR 레이더합성 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "bin 에서 변환한 합성 반사도 배열",
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+            },
+            {
+              "datasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+              "name": "HSR 레이더합성 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "HSR 합성 바이너리 원본",
+              "processingLevel": 0,
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+            },
+            {
+              "datasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "name": "rn15_sample",
+              "topic": "강우·강수",
+              "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "rn15_sample.npy"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKB6KTX7BH3EEMCZ6WJT",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+                "parentDatasetName": "HSR 레이더합성 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKB6XGXWH8KKAWE45NQW",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.bin.gz) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+                "parentDatasetName": "HSR 레이더합성 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              },
+              {
+                "suggestionId": "01M3ATXKB623D7JPNWMJ7GNP13",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(rn15_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+                "parentDatasetName": "rn15_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "rn15_sample.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "descendants": {
+          "group": "descendants",
+          "filter": "eligibility",
+          "population": 1,
+          "population_ids": [
+            "01M39TCARM2C2NJ8S9SA4QBSER"
+          ],
+          "in_pool": 0,
+          "in_pool_ids": [],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 1,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "siblings": {
+          "group": "siblings",
+          "filter": "eligibility",
+          "population": 15,
+          "population_ids": [
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "in_pool": 12,
+          "in_pool_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "survived": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 3,
+          "candidates": [
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39V005J6SQ9SW8MZ8D16ZWK",
+              "name": "SPI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39V0T17DHQ5PF5XSSERTZ8H",
+              "name": "SPEI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPEI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39VBGCMRM3K31W963PGG7E8",
+              "name": "ERA5 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "GRIB 에서 변환한 slhf·ssr·str 시각별 배열",
+              "periodStart": "2025-09-01T00:00:00+00:00",
+              "periodEnd": "2025-09-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "721x1440",
+              "fileName": "ERA5_slhf_202509010000.npy"
+            },
+            {
+              "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+              "name": "GK-2A LST 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "nc 에서 변환한 지표온도 배열",
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+            },
+            {
+              "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+              "name": "HSR 레이더합성 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "bin 에서 변환한 합성 반사도 배열",
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+            },
+            {
+              "datasetId": "01M39YP2K5A3CEEF99M5TNVR44",
+              "name": "HLS S30 T51SYB 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T51SYB 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-25T00:00:00+00:00",
+              "periodEnd": "2025-12-25T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39YSE2MMXGA14SHG08PHY6S",
+              "name": "HLS S30 T52SCE 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T52SCE 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-27T00:00:00+00:00",
+              "periodEnd": "2025-12-27T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39ZCMYVKSA6N5SS3HJZ225F",
+              "name": "hdf4 MOD15A2H h27v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h27v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy"
+            },
+            {
+              "datasetId": "01M39ZK1YKQRT84W0PSJFD89SJ",
+              "name": "hdf4 MOD15A2H h28v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h28v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKB6XQ1HQ0T9E9BBRERF",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+                "parentDatasetName": "HSR 레이더합성 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "removed_and_siblings": {
+          "group": "removed_and_siblings",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 4,
+          "candidate_ids": [
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 3,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+              "name": "HSR 레이더합성 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "HSR 합성 바이너리 원본",
+              "processingLevel": 0,
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKB6D5E4QRF4X96E2ABP",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(RDR_CMP_HSR_PUB_202508131000.bin.gz) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XZFZ6NYXQ48YD4KZN168X",
+                "parentDatasetName": "HSR 레이더합성 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "hsr_sample.npy",
+                    "candidateValue": "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              }
+            ]
+          }
+        }
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+          "parent_name": "HSR 레이더 반사도 원자료",
+          "parent_role": "주입력",
+          "in_candidates": true,
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-002",
+      "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+      "child_name": "GK2A_NDVI_mean_202305",
+      "topic": "식생·NDVI",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "GK2A_NDVI_mean_202305",
+        "file": {
+          "fileName": "GK2A_NDVI_mean_202305.tif",
+          "kind": "본체"
+        },
+        "subject": "식생·NDVI"
+      },
+      "file_meta": {
+        "fileName": "GK2A_NDVI_mean_202305.tif",
+        "kind": "본체"
+      },
+      "dataset_name_draft": "GK2A_NDVI_mean_202305",
+      "subject": "식생·NDVI",
+      "searched_count": 30,
+      "candidates": [
+        {
+          "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+          "name": "GK-2A LST 변환 결과",
+          "topic": "파일 포맷 예제",
+          "summary": "nc 에서 변환한 지표온도 배열",
+          "periodStart": "2020-05-01T00:00:00+00:00",
+          "periodEnd": "2020-05-01T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+        },
+        {
+          "datasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+          "name": "GK-2A LST 원자료",
+          "topic": "파일 포맷 예제",
+          "summary": "GK-2A 지표온도 10분 간격 원본",
+          "processingLevel": 0,
+          "periodStart": "2020-05-01T00:00:00+00:00",
+          "periodEnd": "2020-05-01T00:00:00+00:00",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "fileName": "gk2a_ami_le2_lst_ko_202005010000.nc"
+        },
+        {
+          "datasetId": "01M39TW21793T8631ATHJREHK5",
+          "name": "LULC_2023",
+          "topic": "식생·NDVI",
+          "summary": "2023년 연 단위 토지피복지도",
+          "periodStart": "2023-01-01T00:00:00+00:00",
+          "periodEnd": "2023-01-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "LULC_2023.tif"
+        },
+        {
+          "datasetId": "01M39TVD38600D4EKH13EV55DV",
+          "name": "Aspect",
+          "topic": "식생·NDVI",
+          "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "Aspect.tif"
+        },
+        {
+          "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "name": "DEM",
+          "topic": "식생·NDVI",
+          "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "DEM.tif"
+        },
+        {
+          "datasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "name": "HLS_S30_NDVI_mean_202305",
+          "topic": "식생·NDVI",
+          "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "HLS_S30_NDVI_mean_202305.tif"
+        },
+        {
+          "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+          "name": "GK-2A 일 단위 식생자료",
+          "topic": "식생·NDVI",
+          "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+          "processingLevel": 0,
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-31T00:00:00+00:00",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+        }
+      ],
+      "candidate_count": 7,
+      "child_itself_in_candidates": false,
+      "candidates_outside_corpus": [],
+      "sibling_rule": "same_level",
+      "descendant_ids": [
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "sibling_ids": [
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39VBGCMRM3K31W963PGG7E8",
+        "01M39XWZBR39ZDX38RZVADF3BR",
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+        "01M39YP2K5A3CEEF99M5TNVR44",
+        "01M39YSE2MMXGA14SHG08PHY6S",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ"
+      ],
+      "upload_axes": {
+        "file_name": "GK2A_NDVI_mean_202305.tif",
+        "crs": null,
+        "grid": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null
+      },
+      "candidate_axes": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ"
+        },
+        "01M39ZCMYVKSA6N5SS3HJZ225F": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F"
+        },
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+        },
+        "01M39Z0009K337B2N4DK4TSE9C": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C"
+        },
+        "01M39YSE2MMXGA14SHG08PHY6S": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S"
+        },
+        "01M39YP2K5A3CEEF99M5TNVR44": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44"
+        },
+        "01M39YJVRFA5N1T1498KNN007Y": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "crs": "EPSG:32652",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y"
+        },
+        "01M39YCEB2RHDTPH26KEV70TK4": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "crs": "EPSG:32651",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4"
+        },
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+        },
+        "01M39XZFZ6NYXQ48YD4KZN168X": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X"
+        },
+        "01M39XWZBR39ZDX38RZVADF3BR": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR"
+        },
+        "01M39VM0GYXG98CXDJKFD8RPYJ": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ"
+        },
+        "01M39VBGCMRM3K31W963PGG7E8": {
+          "file_name": "ERA5_slhf_202509010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8"
+        },
+        "01M39V7N5V054MKPFW7N0DTYEX": {
+          "file_name": "surface.grib",
+          "crs": "GEOGCS[\"Coordinate System imported from GRIB file\",DATUM[\"unnamed\",SPHEROID[\"Sphere\",6367470,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX"
+        },
+        "01M39V0T17DHQ5PF5XSSERTZ8H": {
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H"
+        },
+        "01M39V005J6SQ9SW8MZ8D16ZWK": {
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK"
+        },
+        "01M39TZ0SCEYHHMBWZ991M1QGN": {
+          "file_name": "Prediction_20230501.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN"
+        },
+        "01M39TW21793T8631ATHJREHK5": {
+          "file_name": "LULC_2023.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-01-01T00:00:00+00:00",
+          "period_end": "2023-01-01T00:00:00+00:00",
+          "dataset_id": "01M39TW21793T8631ATHJREHK5"
+        },
+        "01M39TVD38600D4EKH13EV55DV": {
+          "file_name": "Aspect.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV"
+        },
+        "01M39TTPB2T87ESQKHCZPBAKD6": {
+          "file_name": "DEM.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6"
+        },
+        "01M39TT0S5PSJ0DQNR0XMTHFNW": {
+          "file_name": "HLS_S30_NDVI_mean_202305.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW"
+        },
+        "01M39TK0F5P3W4APB91N08KTMY": {
+          "file_name": "gk2a_ami_le2_vgt_ko_202305010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY"
+        }
+      },
+      "eligibility": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 1,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 1,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "derived_level": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 0,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 0,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 0,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 0
+      },
+      "groups": {
+        "main": {
+          "group": "main",
+          "filter": "eligibility",
+          "population": 7,
+          "population_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 7,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+              "name": "GK-2A LST 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "nc 에서 변환한 지표온도 배열",
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+            },
+            {
+              "datasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+              "name": "GK-2A LST 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "GK-2A 지표온도 10분 간격 원본",
+              "processingLevel": 0,
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.nc"
+            },
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "name": "HLS_S30_NDVI_mean_202305",
+              "topic": "식생·NDVI",
+              "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "HLS_S30_NDVI_mean_202305.tif"
+            },
+            {
+              "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+              "name": "GK-2A 일 단위 식생자료",
+              "topic": "식생·NDVI",
+              "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+              "processingLevel": 0,
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKDA76KVQ5MHWRWP4SXF",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+                "parentDatasetName": "GK-2A LST 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKDAW5WKCGWBMFXVFSK3",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.nc) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+                "parentDatasetName": "GK-2A LST 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.nc"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              },
+              {
+                "suggestionId": "01M3ATXKDAA8TDPDHGSVZNAZ69",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(HLS_S30_NDVI_mean_202305.tif) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+                "parentDatasetName": "HLS_S30_NDVI_mean_202305",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "HLS_S30_NDVI_mean_202305.tif"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKDA3X1236ES7NBC612K",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TK0F5P3W4APB91N08KTMY",
+                "parentDatasetName": "GK-2A 일 단위 식생자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              }
+            ]
+          }
+        },
+        "removed": {
+          "group": "removed",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 6,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 1,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+              "name": "GK-2A LST 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "nc 에서 변환한 지표온도 배열",
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+            },
+            {
+              "datasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+              "name": "GK-2A LST 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "GK-2A 지표온도 10분 간격 원본",
+              "processingLevel": 0,
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.nc"
+            },
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "name": "HLS_S30_NDVI_mean_202305",
+              "topic": "식생·NDVI",
+              "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "HLS_S30_NDVI_mean_202305.tif"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKDA9TWEDY2EWEEJB9TF",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+                "parentDatasetName": "GK-2A LST 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKDA0FXA2JTF3T74DYC1",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.nc) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+                "parentDatasetName": "GK-2A LST 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.nc"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              },
+              {
+                "suggestionId": "01M3ATXKDA1YP0WMVE659NDASZ",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(HLS_S30_NDVI_mean_202305.tif) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+                "parentDatasetName": "HLS_S30_NDVI_mean_202305",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "HLS_S30_NDVI_mean_202305.tif"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "descendants": {
+          "group": "descendants",
+          "filter": "eligibility",
+          "population": 1,
+          "population_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "in_pool": 1,
+          "in_pool_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 1,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "siblings": {
+          "group": "siblings",
+          "filter": "eligibility",
+          "population": 15,
+          "population_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "in_pool": 12,
+          "in_pool_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "survived": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 3,
+          "candidates": [
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39V005J6SQ9SW8MZ8D16ZWK",
+              "name": "SPI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39V0T17DHQ5PF5XSSERTZ8H",
+              "name": "SPEI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPEI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39VBGCMRM3K31W963PGG7E8",
+              "name": "ERA5 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "GRIB 에서 변환한 slhf·ssr·str 시각별 배열",
+              "periodStart": "2025-09-01T00:00:00+00:00",
+              "periodEnd": "2025-09-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "721x1440",
+              "fileName": "ERA5_slhf_202509010000.npy"
+            },
+            {
+              "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+              "name": "GK-2A LST 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "nc 에서 변환한 지표온도 배열",
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+            },
+            {
+              "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+              "name": "HSR 레이더합성 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "bin 에서 변환한 합성 반사도 배열",
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+            },
+            {
+              "datasetId": "01M39YP2K5A3CEEF99M5TNVR44",
+              "name": "HLS S30 T51SYB 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T51SYB 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-25T00:00:00+00:00",
+              "periodEnd": "2025-12-25T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39YSE2MMXGA14SHG08PHY6S",
+              "name": "HLS S30 T52SCE 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T52SCE 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-27T00:00:00+00:00",
+              "periodEnd": "2025-12-27T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39ZCMYVKSA6N5SS3HJZ225F",
+              "name": "hdf4 MOD15A2H h27v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h27v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy"
+            },
+            {
+              "datasetId": "01M39ZK1YKQRT84W0PSJFD89SJ",
+              "name": "hdf4 MOD15A2H h28v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h28v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKDBJY168CDH26CN36TD",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+                "parentDatasetName": "GK-2A LST 변환 결과",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "removed_and_siblings": {
+          "group": "removed_and_siblings",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 1,
+          "candidate_ids": [
+            "01M39VM0GYXG98CXDJKFD8RPYJ"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 6,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+              "name": "GK-2A LST 원자료",
+              "topic": "파일 포맷 예제",
+              "summary": "GK-2A 지표온도 10분 간격 원본",
+              "processingLevel": 0,
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.nc"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKDBJJGN5RCKKSBG22HA",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(gk2a_ami_le2_lst_ko_202005010000.nc) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39VM0GYXG98CXDJKFD8RPYJ",
+                "parentDatasetName": "GK-2A LST 원자료",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                    "candidateValue": "gk2a_ami_le2_lst_ko_202005010000.nc"
+                  }
+                ],
+                "parentProcessingLevel": 0
+              }
+            ]
+          }
+        }
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "parent_name": "GK-2A 일 단위 식생자료",
+          "parent_role": "주입력",
+          "in_candidates": true,
+          "rank": 7
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-003",
+      "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+      "child_name": "pred_sample",
+      "topic": "강우·강수",
+      "upload_level": 2,
+      "upload_meta": {
+        "datasetNameDraft": "pred_sample",
+        "file": {
+          "fileName": "pred_sample.npy",
+          "kind": "본체",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "file_meta": {
+        "fileName": "pred_sample.npy",
+        "kind": "본체",
+        "partCount": 3
+      },
+      "dataset_name_draft": "pred_sample",
+      "subject": "강우·강수",
+      "searched_count": 30,
+      "candidates": [
+        {
+          "datasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "name": "Prediction (공간상세화)",
+          "topic": "식생·NDVI",
+          "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-31T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "1280x1280",
+          "fileName": "Prediction_20230501.npy"
+        },
+        {
+          "datasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "name": "rn15_sample",
+          "topic": "강우·강수",
+          "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "fileName": "rn15_sample.npy"
+        },
+        {
+          "datasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "name": "hsr_sample",
+          "topic": "강우·강수",
+          "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "fileName": "hsr_sample.npy"
+        },
+        {
+          "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+          "name": "rn15 15분 누적강수",
+          "topic": "강우·강수",
+          "summary": "지상 격자 15분 누적강수 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "fileName": "sfc_grid_rn_15m_201907281430.nc"
+        },
+        {
+          "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+          "name": "HSR 레이더 반사도 원자료",
+          "topic": "강우·강수",
+          "summary": "기상청 HSR 합성 반사도 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+        },
+        {
+          "datasetId": "0000000000000000000000DSA2",
+          "name": "A 강우 격자화",
+          "topic": "강우·강수",
+          "summary": "격자화 결과",
+          "processingLevel": 1,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량"
+          ]
+        },
+        {
+          "datasetId": "0000000000000000000000DSA1",
+          "name": "A 강우 원자료",
+          "topic": "강우·강수",
+          "summary": "관측 원자료",
+          "sourceLabel": "기상청",
+          "processingLevel": 0,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ]
+        }
+      ],
+      "candidate_count": 7,
+      "child_itself_in_candidates": false,
+      "candidates_outside_corpus": [
+        "0000000000000000000000DSA2",
+        "0000000000000000000000DSA1"
+      ],
+      "sibling_rule": "same_level",
+      "descendant_ids": [],
+      "sibling_ids": [
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "upload_axes": {
+        "file_name": "pred_sample.npy",
+        "crs": null,
+        "grid": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null
+      },
+      "candidate_axes": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ"
+        },
+        "01M39ZCMYVKSA6N5SS3HJZ225F": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F"
+        },
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+        },
+        "01M39Z0009K337B2N4DK4TSE9C": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C"
+        },
+        "01M39YSE2MMXGA14SHG08PHY6S": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S"
+        },
+        "01M39YP2K5A3CEEF99M5TNVR44": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44"
+        },
+        "01M39YJVRFA5N1T1498KNN007Y": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "crs": "EPSG:32652",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y"
+        },
+        "01M39YCEB2RHDTPH26KEV70TK4": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "crs": "EPSG:32651",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4"
+        },
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+        },
+        "01M39XZFZ6NYXQ48YD4KZN168X": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X"
+        },
+        "01M39XWZBR39ZDX38RZVADF3BR": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR"
+        },
+        "01M39VM0GYXG98CXDJKFD8RPYJ": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ"
+        },
+        "01M39VBGCMRM3K31W963PGG7E8": {
+          "file_name": "ERA5_slhf_202509010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8"
+        },
+        "01M39V7N5V054MKPFW7N0DTYEX": {
+          "file_name": "surface.grib",
+          "crs": "GEOGCS[\"Coordinate System imported from GRIB file\",DATUM[\"unnamed\",SPHEROID[\"Sphere\",6367470,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX"
+        },
+        "01M39V0T17DHQ5PF5XSSERTZ8H": {
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H"
+        },
+        "01M39V005J6SQ9SW8MZ8D16ZWK": {
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK"
+        },
+        "01M39TZ0SCEYHHMBWZ991M1QGN": {
+          "file_name": "Prediction_20230501.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN"
+        },
+        "01M39TW21793T8631ATHJREHK5": {
+          "file_name": "LULC_2023.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-01-01T00:00:00+00:00",
+          "period_end": "2023-01-01T00:00:00+00:00",
+          "dataset_id": "01M39TW21793T8631ATHJREHK5"
+        },
+        "01M39TVD38600D4EKH13EV55DV": {
+          "file_name": "Aspect.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV"
+        },
+        "01M39TTPB2T87ESQKHCZPBAKD6": {
+          "file_name": "DEM.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6"
+        },
+        "01M39TB4NTBCFC8TSTNB93N5YP": {
+          "file_name": "rn15_sample.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP"
+        },
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE": {
+          "file_name": "hsr_sample.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE"
+        },
+        "01M39T979PMQKRSK3GPCNYWHH3": {
+          "file_name": "sfc_grid_rn_15m_201907281430.nc",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T979PMQKRSK3GPCNYWHH3"
+        },
+        "01M39T7N812JDX7GW62F8YFZ0V": {
+          "file_name": "RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V"
+        },
+        "0000000000000000000000DSA2": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA2"
+        },
+        "0000000000000000000000DSA1": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA1"
+        }
+      },
+      "eligibility": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 1,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 1,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "derived_level": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 0,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 0,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 0,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 0
+      },
+      "groups": {
+        "main": {
+          "group": "main",
+          "filter": "eligibility",
+          "population": 7,
+          "population_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 7,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+              "name": "Prediction (공간상세화)",
+              "topic": "식생·NDVI",
+              "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "1280x1280",
+              "fileName": "Prediction_20230501.npy"
+            },
+            {
+              "datasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "name": "rn15_sample",
+              "topic": "강우·강수",
+              "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "rn15_sample.npy"
+            },
+            {
+              "datasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "name": "hsr_sample",
+              "topic": "강우·강수",
+              "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "hsr_sample.npy"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKF6J9H0HJWTXRKA8ABN",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+                "parentDatasetName": "Prediction (공간상세화)",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "pred_sample.npy",
+                    "candidateValue": "Prediction_20230501.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKF6RJDE2S8JKG6HKR46",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(rn15_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TB4NTBCFC8TSTNB93N5YP",
+                "parentDatasetName": "rn15_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "pred_sample.npy",
+                    "candidateValue": "rn15_sample.npy"
+                  }
+                ]
+              },
+              {
+                "suggestionId": "01M3ATXKF61J7PFHDEY5RDTYXK",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+                "parentDatasetName": "hsr_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "pred_sample.npy",
+                    "candidateValue": "hsr_sample.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "removed": {
+          "group": "removed",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 5,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 2,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+              "name": "Prediction (공간상세화)",
+              "topic": "식생·NDVI",
+              "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "1280x1280",
+              "fileName": "Prediction_20230501.npy"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKF6EYM8MVJ985NTXHVH",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+                "parentDatasetName": "Prediction (공간상세화)",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "pred_sample.npy",
+                    "candidateValue": "Prediction_20230501.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "descendants": {
+          "group": "descendants",
+          "filter": "eligibility",
+          "population": 0,
+          "population_ids": [],
+          "in_pool": 0,
+          "in_pool_ids": [],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "siblings": {
+          "group": "siblings",
+          "filter": "eligibility",
+          "population": 1,
+          "population_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "in_pool": 1,
+          "in_pool_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "survived": 1,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+              "name": "Prediction (공간상세화)",
+              "topic": "식생·NDVI",
+              "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "1280x1280",
+              "fileName": "Prediction_20230501.npy"
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKF6PYNRV5M6V9P0K2FH",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TZ0SCEYHHMBWZ991M1QGN",
+                "parentDatasetName": "Prediction (공간상세화)",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "pred_sample.npy",
+                    "candidateValue": "Prediction_20230501.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "removed_and_siblings": {
+          "group": "removed_and_siblings",
+          "filter": "removed",
+          "population": 7,
+          "population_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 7,
+          "in_pool_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 4,
+          "candidate_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 3,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        }
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "parent_name": "hsr_sample",
+          "parent_role": "주입력",
+          "in_candidates": true,
+          "rank": 3
+        },
+        {
+          "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "parent_name": "rn15_sample",
+          "parent_role": "보조입력",
+          "in_candidates": true,
+          "rank": 2
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-004",
+      "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+      "child_name": "Prediction (공간상세화)",
+      "topic": "식생·NDVI",
+      "upload_level": 2,
+      "upload_meta": {
+        "datasetNameDraft": "Prediction (공간상세화)",
+        "file": {
+          "fileName": "Prediction_20230501.npy",
+          "kind": "본체",
+          "partCount": 33
+        },
+        "subject": "식생·NDVI"
+      },
+      "file_meta": {
+        "fileName": "Prediction_20230501.npy",
+        "kind": "본체",
+        "partCount": 33
+      },
+      "dataset_name_draft": "Prediction (공간상세화)",
+      "subject": "식생·NDVI",
+      "searched_count": 30,
+      "candidates": [
+        {
+          "datasetId": "01M39TW21793T8631ATHJREHK5",
+          "name": "LULC_2023",
+          "topic": "식생·NDVI",
+          "summary": "2023년 연 단위 토지피복지도",
+          "periodStart": "2023-01-01T00:00:00+00:00",
+          "periodEnd": "2023-01-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "LULC_2023.tif"
+        },
+        {
+          "datasetId": "01M39TVD38600D4EKH13EV55DV",
+          "name": "Aspect",
+          "topic": "식생·NDVI",
+          "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "Aspect.tif"
+        },
+        {
+          "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "name": "DEM",
+          "topic": "식생·NDVI",
+          "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "DEM.tif"
+        },
+        {
+          "datasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "name": "HLS_S30_NDVI_mean_202305",
+          "topic": "식생·NDVI",
+          "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "HLS_S30_NDVI_mean_202305.tif"
+        },
+        {
+          "datasetId": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "name": "GK2A_NDVI_mean_202305",
+          "topic": "식생·NDVI",
+          "summary": "DQF 로 품질 저하 픽셀을 NaN 으로 바꾸고 유효 범주 -1~1 밖을 NaN 처리한 뒤, 원자료 좌표계 LCC 를 WGS84 로 변환해 NDVI 레이어만 TIF 로 저장한 자료. 경기도 남부~충청권 일대로 영역을 추출하고 2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환했다.",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "fileName": "GK2A_NDVI_mean_202305.tif"
+        },
+        {
+          "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+          "name": "GK-2A 일 단위 식생자료",
+          "topic": "식생·NDVI",
+          "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+          "processingLevel": 0,
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-31T00:00:00+00:00",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+        }
+      ],
+      "candidate_count": 6,
+      "child_itself_in_candidates": false,
+      "candidates_outside_corpus": [],
+      "sibling_rule": "same_level",
+      "descendant_ids": [],
+      "sibling_ids": [
+        "01M39TCARM2C2NJ8S9SA4QBSER"
+      ],
+      "upload_axes": {
+        "file_name": "Prediction_20230501.npy",
+        "crs": null,
+        "grid": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null
+      },
+      "candidate_axes": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ"
+        },
+        "01M39ZCMYVKSA6N5SS3HJZ225F": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F"
+        },
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+        },
+        "01M39Z0009K337B2N4DK4TSE9C": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C"
+        },
+        "01M39YSE2MMXGA14SHG08PHY6S": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S"
+        },
+        "01M39YP2K5A3CEEF99M5TNVR44": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44"
+        },
+        "01M39YJVRFA5N1T1498KNN007Y": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "crs": "EPSG:32652",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y"
+        },
+        "01M39YCEB2RHDTPH26KEV70TK4": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "crs": "EPSG:32651",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4"
+        },
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+        },
+        "01M39XZFZ6NYXQ48YD4KZN168X": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X"
+        },
+        "01M39XWZBR39ZDX38RZVADF3BR": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR"
+        },
+        "01M39VM0GYXG98CXDJKFD8RPYJ": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ"
+        },
+        "01M39VBGCMRM3K31W963PGG7E8": {
+          "file_name": "ERA5_slhf_202509010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8"
+        },
+        "01M39V7N5V054MKPFW7N0DTYEX": {
+          "file_name": "surface.grib",
+          "crs": "GEOGCS[\"Coordinate System imported from GRIB file\",DATUM[\"unnamed\",SPHEROID[\"Sphere\",6367470,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX"
+        },
+        "01M39V0T17DHQ5PF5XSSERTZ8H": {
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H"
+        },
+        "01M39V005J6SQ9SW8MZ8D16ZWK": {
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK"
+        },
+        "01M39TW21793T8631ATHJREHK5": {
+          "file_name": "LULC_2023.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-01-01T00:00:00+00:00",
+          "period_end": "2023-01-01T00:00:00+00:00",
+          "dataset_id": "01M39TW21793T8631ATHJREHK5"
+        },
+        "01M39TVD38600D4EKH13EV55DV": {
+          "file_name": "Aspect.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV"
+        },
+        "01M39TTPB2T87ESQKHCZPBAKD6": {
+          "file_name": "DEM.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6"
+        },
+        "01M39TT0S5PSJ0DQNR0XMTHFNW": {
+          "file_name": "HLS_S30_NDVI_mean_202305.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW"
+        },
+        "01M39TSEPR820QBZ1DBBFKDJEP": {
+          "file_name": "GK2A_NDVI_mean_202305.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP"
+        },
+        "01M39TK0F5P3W4APB91N08KTMY": {
+          "file_name": "gk2a_ami_le2_vgt_ko_202305010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY"
+        }
+      },
+      "eligibility": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 1,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39TW21793T8631ATHJREHK5": 1,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "derived_level": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 0,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 0,
+        "01M39TW21793T8631ATHJREHK5": 0,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 0
+      },
+      "groups": {
+        "main": {
+          "group": "main",
+          "filter": "eligibility",
+          "population": 6,
+          "population_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 6,
+          "in_pool_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 6,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "name": "HLS_S30_NDVI_mean_202305",
+              "topic": "식생·NDVI",
+              "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "HLS_S30_NDVI_mean_202305.tif"
+            },
+            {
+              "datasetId": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "name": "GK2A_NDVI_mean_202305",
+              "topic": "식생·NDVI",
+              "summary": "DQF 로 품질 저하 픽셀을 NaN 으로 바꾸고 유효 범주 -1~1 밖을 NaN 처리한 뒤, 원자료 좌표계 LCC 를 WGS84 로 변환해 NDVI 레이어만 TIF 로 저장한 자료. 경기도 남부~충청권 일대로 영역을 추출하고 2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환했다.",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "GK2A_NDVI_mean_202305.tif"
+            },
+            {
+              "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+              "name": "GK-2A 일 단위 식생자료",
+              "topic": "식생·NDVI",
+              "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+              "processingLevel": 0,
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "removed": {
+          "group": "removed",
+          "filter": "removed",
+          "population": 6,
+          "population_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 6,
+          "in_pool_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 5,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+              "name": "GK-2A 일 단위 식생자료",
+              "topic": "식생·NDVI",
+              "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+              "processingLevel": 0,
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "descendants": {
+          "group": "descendants",
+          "filter": "eligibility",
+          "population": 0,
+          "population_ids": [],
+          "in_pool": 0,
+          "in_pool_ids": [],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "siblings": {
+          "group": "siblings",
+          "filter": "eligibility",
+          "population": 1,
+          "population_ids": [
+            "01M39TCARM2C2NJ8S9SA4QBSER"
+          ],
+          "in_pool": 0,
+          "in_pool_ids": [],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 1,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "removed_and_siblings": {
+          "group": "removed_and_siblings",
+          "filter": "removed",
+          "population": 6,
+          "population_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "in_pool": 6,
+          "in_pool_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "survived": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 5,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TK0F5P3W4APB91N08KTMY",
+              "name": "GK-2A 일 단위 식생자료",
+              "topic": "식생·NDVI",
+              "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+              "processingLevel": 0,
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-31T00:00:00+00:00",
+              "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        }
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "parent_name": "GK2A_NDVI_mean_202305",
+          "parent_role": "주입력",
+          "in_candidates": true,
+          "rank": 5
+        },
+        {
+          "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "parent_name": "HLS_S30_NDVI_mean_202305",
+          "parent_role": "보조입력",
+          "in_candidates": true,
+          "rank": 4
+        },
+        {
+          "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "parent_name": "DEM",
+          "parent_role": "보조입력",
+          "in_candidates": true,
+          "rank": 3
+        },
+        {
+          "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "parent_name": "Aspect",
+          "parent_role": "보조입력",
+          "in_candidates": true,
+          "rank": 2
+        },
+        {
+          "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "parent_name": "LULC_2023",
+          "parent_role": "보조입력",
+          "in_candidates": true,
+          "rank": 1
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-005",
+      "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+      "child_name": "rn15_sample",
+      "topic": "강우·강수",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "rn15_sample",
+        "file": {
+          "fileName": "rn15_sample.npy",
+          "kind": "본체",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "file_meta": {
+        "fileName": "rn15_sample.npy",
+        "kind": "본체",
+        "partCount": 3
+      },
+      "dataset_name_draft": "rn15_sample",
+      "subject": "강우·강수",
+      "searched_count": 30,
+      "candidates": [
+        {
+          "datasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "name": "hsr_sample",
+          "topic": "강우·강수",
+          "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "fileName": "hsr_sample.npy"
+        },
+        {
+          "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+          "name": "rn15 15분 누적강수",
+          "topic": "강우·강수",
+          "summary": "지상 격자 15분 누적강수 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "fileName": "sfc_grid_rn_15m_201907281430.nc"
+        },
+        {
+          "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+          "name": "HSR 레이더 반사도 원자료",
+          "topic": "강우·강수",
+          "summary": "기상청 HSR 합성 반사도 원본",
+          "processingLevel": 0,
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+        },
+        {
+          "datasetId": "0000000000000000000000DSA2",
+          "name": "A 강우 격자화",
+          "topic": "강우·강수",
+          "summary": "격자화 결과",
+          "processingLevel": 1,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량"
+          ]
+        },
+        {
+          "datasetId": "0000000000000000000000DSA1",
+          "name": "A 강우 원자료",
+          "topic": "강우·강수",
+          "summary": "관측 원자료",
+          "sourceLabel": "기상청",
+          "processingLevel": 0,
+          "crs": "EPSG:5179",
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ]
+        }
+      ],
+      "candidate_count": 5,
+      "child_itself_in_candidates": false,
+      "candidates_outside_corpus": [
+        "0000000000000000000000DSA2",
+        "0000000000000000000000DSA1"
+      ],
+      "sibling_rule": "same_level",
+      "descendant_ids": [
+        "01M39TCARM2C2NJ8S9SA4QBSER"
+      ],
+      "sibling_ids": [
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39VBGCMRM3K31W963PGG7E8",
+        "01M39XWZBR39ZDX38RZVADF3BR",
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+        "01M39YP2K5A3CEEF99M5TNVR44",
+        "01M39YSE2MMXGA14SHG08PHY6S",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ"
+      ],
+      "upload_axes": {
+        "file_name": "rn15_sample.npy",
+        "crs": null,
+        "grid": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null
+      },
+      "candidate_axes": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ"
+        },
+        "01M39ZCMYVKSA6N5SS3HJZ225F": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F"
+        },
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": {
+          "file_name": "MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+        },
+        "01M39Z0009K337B2N4DK4TSE9C": {
+          "file_name": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "crs": "Sinusoidal R=6371007.181 → WGS84 (파일 내 StructMetadata)",
+          "grid": "2400x2400",
+          "variables": [],
+          "period_start": "2019-09-30T00:00:00+00:00",
+          "period_end": "2019-10-31T00:00:00+00:00",
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C"
+        },
+        "01M39YSE2MMXGA14SHG08PHY6S": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S"
+        },
+        "01M39YP2K5A3CEEF99M5TNVR44": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "crs": null,
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44"
+        },
+        "01M39YJVRFA5N1T1498KNN007Y": {
+          "file_name": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "crs": "EPSG:32652",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-27T00:00:00+00:00",
+          "period_end": "2025-12-27T00:00:00+00:00",
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y"
+        },
+        "01M39YCEB2RHDTPH26KEV70TK4": {
+          "file_name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "crs": "EPSG:32651",
+          "grid": "3660x3660",
+          "variables": [],
+          "period_start": "2025-12-25T00:00:00+00:00",
+          "period_end": "2025-12-25T00:00:00+00:00",
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4"
+        },
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+        },
+        "01M39XZFZ6NYXQ48YD4KZN168X": {
+          "file_name": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2025-08-13T00:00:00+00:00",
+          "period_end": "2025-08-13T00:00:00+00:00",
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X"
+        },
+        "01M39XWZBR39ZDX38RZVADF3BR": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR"
+        },
+        "01M39VM0GYXG98CXDJKFD8RPYJ": {
+          "file_name": "gk2a_ami_le2_lst_ko_202005010000.nc",
+          "crs": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)",
+          "grid": "900x900",
+          "variables": [],
+          "period_start": "2020-05-01T00:00:00+00:00",
+          "period_end": "2020-05-01T00:00:00+00:00",
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ"
+        },
+        "01M39VBGCMRM3K31W963PGG7E8": {
+          "file_name": "ERA5_slhf_202509010000.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8"
+        },
+        "01M39V7N5V054MKPFW7N0DTYEX": {
+          "file_name": "surface.grib",
+          "crs": "GEOGCS[\"Coordinate System imported from GRIB file\",DATUM[\"unnamed\",SPHEROID[\"Sphere\",6367470,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
+          "grid": "721x1440",
+          "variables": [],
+          "period_start": "2025-09-01T00:00:00+00:00",
+          "period_end": "2025-09-01T00:00:00+00:00",
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX"
+        },
+        "01M39V0T17DHQ5PF5XSSERTZ8H": {
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H"
+        },
+        "01M39V005J6SQ9SW8MZ8D16ZWK": {
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "crs": null,
+          "grid": null,
+          "variables": [],
+          "period_start": "2000-01-01T00:00:00+00:00",
+          "period_end": "2025-12-20T00:00:00+00:00",
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK"
+        },
+        "01M39TZ0SCEYHHMBWZ991M1QGN": {
+          "file_name": "Prediction_20230501.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-31T00:00:00+00:00",
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN"
+        },
+        "01M39TW21793T8631ATHJREHK5": {
+          "file_name": "LULC_2023.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-01-01T00:00:00+00:00",
+          "period_end": "2023-01-01T00:00:00+00:00",
+          "dataset_id": "01M39TW21793T8631ATHJREHK5"
+        },
+        "01M39TVD38600D4EKH13EV55DV": {
+          "file_name": "Aspect.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV"
+        },
+        "01M39TTPB2T87ESQKHCZPBAKD6": {
+          "file_name": "DEM.tif",
+          "crs": "EPSG:4326",
+          "grid": "1280x1280",
+          "variables": [],
+          "period_start": "2023-05-01T00:00:00+00:00",
+          "period_end": "2023-05-01T00:00:00+00:00",
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6"
+        },
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE": {
+          "file_name": "hsr_sample.npy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "128x128",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE"
+        },
+        "01M39T979PMQKRSK3GPCNYWHH3": {
+          "file_name": "sfc_grid_rn_15m_201907281430.nc",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2049x2049",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T979PMQKRSK3GPCNYWHH3"
+        },
+        "01M39T7N812JDX7GW62F8YFZ0V": {
+          "file_name": "RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "crs": "WGS84 (기준 격자 파일)",
+          "grid": "2881x2305",
+          "variables": [],
+          "period_start": "2019-07-28T00:00:00+00:00",
+          "period_end": "2024-07-09T00:00:00+00:00",
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V"
+        },
+        "0000000000000000000000DSA2": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA2"
+        },
+        "0000000000000000000000DSA1": {
+          "file_name": null,
+          "crs": "EPSG:5179",
+          "grid": null,
+          "variables": [
+            "강우량",
+            "기온",
+            "유출량"
+          ],
+          "period_start": null,
+          "period_end": null,
+          "dataset_id": "0000000000000000000000DSA1"
+        }
+      },
+      "eligibility": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 1,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 1,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "derived_level": {
+        "01M39ZK1YKQRT84W0PSJFD89SJ": 1,
+        "01M39ZCMYVKSA6N5SS3HJZ225F": 1,
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH": 0,
+        "01M39Z0009K337B2N4DK4TSE9C": 0,
+        "01M39YSE2MMXGA14SHG08PHY6S": 1,
+        "01M39YP2K5A3CEEF99M5TNVR44": 1,
+        "01M39YJVRFA5N1T1498KNN007Y": 0,
+        "01M39YCEB2RHDTPH26KEV70TK4": 0,
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX": 1,
+        "01M39XZFZ6NYXQ48YD4KZN168X": 0,
+        "01M39XWZBR39ZDX38RZVADF3BR": 1,
+        "01M39VM0GYXG98CXDJKFD8RPYJ": 0,
+        "01M39VBGCMRM3K31W963PGG7E8": 1,
+        "01M39V7N5V054MKPFW7N0DTYEX": 0,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 0,
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 0,
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "01M39TW21793T8631ATHJREHK5": 0,
+        "01M39TVD38600D4EKH13EV55DV": 1,
+        "01M39TTPB2T87ESQKHCZPBAKD6": 0
+      },
+      "groups": {
+        "main": {
+          "group": "main",
+          "filter": "eligibility",
+          "population": 5,
+          "population_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 5,
+          "in_pool_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 5,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "name": "hsr_sample",
+              "topic": "강우·강수",
+              "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "hsr_sample.npy"
+            },
+            {
+              "datasetId": "01M39T979PMQKRSK3GPCNYWHH3",
+              "name": "rn15 15분 누적강수",
+              "topic": "강우·강수",
+              "summary": "지상 격자 15분 누적강수 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2049x2049",
+              "fileName": "sfc_grid_rn_15m_201907281430.nc"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKJF47FTHMARF8MSVN6J",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+                "parentDatasetName": "hsr_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "rn15_sample.npy",
+                    "candidateValue": "hsr_sample.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "removed": {
+          "group": "removed",
+          "filter": "removed",
+          "population": 5,
+          "population_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 5,
+          "in_pool_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 4,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 1,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "name": "hsr_sample",
+              "topic": "강우·강수",
+              "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "128x128",
+              "fileName": "hsr_sample.npy"
+            },
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": false,
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": [
+              {
+                "suggestionId": "01M3ATXKJF6A162ZP0FSS5H171",
+                "kind": "가공 전 데이터",
+                "confidence": "애매",
+                "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+                "parentDatasetId": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+                "parentDatasetName": "hsr_sample",
+                "suggestedParentRole": "주입력",
+                "evidence": [
+                  {
+                    "field": "fileName",
+                    "uploadValue": "rn15_sample.npy",
+                    "candidateValue": "hsr_sample.npy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "descendants": {
+          "group": "descendants",
+          "filter": "eligibility",
+          "population": 1,
+          "population_ids": [
+            "01M39TCARM2C2NJ8S9SA4QBSER"
+          ],
+          "in_pool": 0,
+          "in_pool_ids": [],
+          "survived": 0,
+          "candidate_ids": [],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 1,
+          "candidates": [],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "siblings": {
+          "group": "siblings",
+          "filter": "eligibility",
+          "population": 15,
+          "population_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "in_pool": 12,
+          "in_pool_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "survived": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 0,
+          "not_in_pool": 3,
+          "candidates": [
+            {
+              "datasetId": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "name": "DEM",
+              "topic": "식생·NDVI",
+              "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "DEM.tif"
+            },
+            {
+              "datasetId": "01M39TVD38600D4EKH13EV55DV",
+              "name": "Aspect",
+              "topic": "식생·NDVI",
+              "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+              "periodStart": "2023-05-01T00:00:00+00:00",
+              "periodEnd": "2023-05-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "Aspect.tif"
+            },
+            {
+              "datasetId": "01M39TW21793T8631ATHJREHK5",
+              "name": "LULC_2023",
+              "topic": "식생·NDVI",
+              "summary": "2023년 연 단위 토지피복지도",
+              "periodStart": "2023-01-01T00:00:00+00:00",
+              "periodEnd": "2023-01-01T00:00:00+00:00",
+              "crs": "EPSG:4326",
+              "grid": "1280x1280",
+              "fileName": "LULC_2023.tif"
+            },
+            {
+              "datasetId": "01M39V005J6SQ9SW8MZ8D16ZWK",
+              "name": "SPI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39V0T17DHQ5PF5XSSERTZ8H",
+              "name": "SPEI-4weeks",
+              "topic": "가뭄",
+              "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+              "periodStart": "2000-01-01T00:00:00+00:00",
+              "periodEnd": "2025-12-20T00:00:00+00:00",
+              "fileName": "SPEI_4weeks_sig_wide.gpkg"
+            },
+            {
+              "datasetId": "01M39VBGCMRM3K31W963PGG7E8",
+              "name": "ERA5 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "GRIB 에서 변환한 slhf·ssr·str 시각별 배열",
+              "periodStart": "2025-09-01T00:00:00+00:00",
+              "periodEnd": "2025-09-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "721x1440",
+              "fileName": "ERA5_slhf_202509010000.npy"
+            },
+            {
+              "datasetId": "01M39XWZBR39ZDX38RZVADF3BR",
+              "name": "GK-2A LST 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "nc 에서 변환한 지표온도 배열",
+              "periodStart": "2020-05-01T00:00:00+00:00",
+              "periodEnd": "2020-05-01T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "900x900",
+              "fileName": "gk2a_ami_le2_lst_ko_202005010000.npy"
+            },
+            {
+              "datasetId": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+              "name": "HSR 레이더합성 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "bin 에서 변환한 합성 반사도 배열",
+              "periodStart": "2025-08-13T00:00:00+00:00",
+              "periodEnd": "2025-08-13T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_202508131000.npy"
+            },
+            {
+              "datasetId": "01M39YP2K5A3CEEF99M5TNVR44",
+              "name": "HLS S30 T51SYB 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T51SYB 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-25T00:00:00+00:00",
+              "periodEnd": "2025-12-25T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39YSE2MMXGA14SHG08PHY6S",
+              "name": "HLS S30 T52SCE 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "T52SCE 타일 밴드 3종의 변환 배열",
+              "periodStart": "2025-12-27T00:00:00+00:00",
+              "periodEnd": "2025-12-27T00:00:00+00:00",
+              "grid": "3660x3660",
+              "fileName": "HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy"
+            },
+            {
+              "datasetId": "01M39ZCMYVKSA6N5SS3HJZ225F",
+              "name": "hdf4 MOD15A2H h27v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h27v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy"
+            },
+            {
+              "datasetId": "01M39ZK1YKQRT84W0PSJFD89SJ",
+              "name": "hdf4 MOD15A2H h28v05 변환 결과",
+              "topic": "파일 포맷 예제",
+              "summary": "폴더명 hdf5 · 실물 HDF4. h28v05 변수 6종 × 4일",
+              "periodStart": "2019-09-30T00:00:00+00:00",
+              "periodEnd": "2019-10-31T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2400x2400",
+              "fileName": "MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy"
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        },
+        "removed_and_siblings": {
+          "group": "removed_and_siblings",
+          "filter": "removed",
+          "population": 5,
+          "population_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "in_pool": 5,
+          "in_pool_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "survived": 3,
+          "candidate_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "blocked_by_level": 0,
+          "removed_by_design": 2,
+          "not_in_pool": 0,
+          "candidates": [
+            {
+              "datasetId": "01M39T7N812JDX7GW62F8YFZ0V",
+              "name": "HSR 레이더 반사도 원자료",
+              "topic": "강우·강수",
+              "summary": "기상청 HSR 합성 반사도 원본",
+              "processingLevel": 0,
+              "periodStart": "2019-07-28T00:00:00+00:00",
+              "periodEnd": "2024-07-09T00:00:00+00:00",
+              "crs": "WGS84 (기준 격자 파일)",
+              "grid": "2881x2305",
+              "fileName": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+            },
+            {
+              "datasetId": "0000000000000000000000DSA2",
+              "name": "A 강우 격자화",
+              "topic": "강우·강수",
+              "summary": "격자화 결과",
+              "processingLevel": 1,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량"
+              ]
+            },
+            {
+              "datasetId": "0000000000000000000000DSA1",
+              "name": "A 강우 원자료",
+              "topic": "강우·강수",
+              "summary": "관측 원자료",
+              "sourceLabel": "기상청",
+              "processingLevel": 0,
+              "crs": "EPSG:5179",
+              "variables": [
+                "강우량",
+                "기온",
+                "유출량"
+              ]
+            }
+          ],
+          "rule_arm": {
+            "degraded": true,
+            "degradedReason": "대조 축이 맞는 후보가 없습니다.",
+            "scope": {
+              "labId": "0000000000000000000000000A",
+              "labName": "연구실",
+              "searchedCount": 30
+            },
+            "rawDataLikely": false,
+            "suggestions": []
+          }
+        }
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+          "parent_name": "rn15 15분 누적강수",
+          "parent_role": "주입력",
+          "in_candidates": true,
+          "rank": 2
+        }
+      ]
+    }
+  ]
+}
