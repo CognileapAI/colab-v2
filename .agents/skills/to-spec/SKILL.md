@@ -30,6 +30,11 @@ Check with the user that these seams match their expectations.
 ## 문제 진술
 - \<intent 문제절을 개발 언어로 1~3행\>
 
+## 원한 결과 (V-id)
+- V1 \<intent 원한 결과를 검증 가능한 한 문장으로\> — 확인 방법: \<게이트·시험·화면 동작\>
+- V2 ...
+- 식별자 V1… 는 PR 요약 「원한 결과 ↔ 실제 ↔ 근거」 표의 행 이름으로 그대로 쓴다.
+
 ## 해법 개요
 - \<사용자 관점 서술. 「사용자 관점 동일 행위는 기존 흐름 재사용」 원칙 적용\>
 
@@ -75,6 +80,7 @@ Check with the user that these seams match their expectations.
 - 카드 그림자 **0** (팝오버 허용) · 여백은 **컨테이너가 소유**
 - 인터랙션 하한: pointer-down 즉시 피드백 · 전환 중단 가능 · 움직임엔 `prefers-reduced-motion` 분기
 - 화면 없음(백엔드 전용)이면 「해당 없음」 한 줄로 끝낸다
+- 선택: 화면 spec 은 `dev-package/prd/specs/<회차>-mockup.html` 수기 HTML 1장을 붙일 수 있다(정적 · 외부 자원 없음). 명시 호출 전용 스킬(explain-visually·archify 등)을 부르지 않는다.
 **적을 수 없는 항목은 아래 「우려 항목」에 올린다** — 판정 없이 구현으로 넘기지 않는다.
 
 ## 우려 항목 (판정 필요)
