@@ -683,6 +683,14 @@ stage_seed() {
 #        core-api 가 10,02x ms 에 끊어 503 을 냈다(`dev-package/sessions/DR-3-run-2026-09-13.md §6`).
 #        뒷단 개선은 이 회차 범위 밖(`PV-2`)이라 여기서는 **판정만** 한다.
 PREVIEW_WAIT_MS="${COLAB_RESEED_PREVIEW_WAIT_MS:-45000}"
+# 보기 전 정착 규칙 — 러너 `preview_settled`(`dev-seed/runner.py`)와 같다.
+#   파일 선택값 있음 · 보기 활성 · slot `idle` 이 PREVIEW_STABLE_MS 이상 **이어진** 뒤에만 누른다(대기 상한 PREVIEW_WAIT_MS).
+# ⚠ 이미 선택된 파일을 다시 고르지 않는다 — 배포 프론트(`ea21d8c2aa54` DatasetPreviewSection.tsx)는
+#   같은 파일 재선택에서 onPick 이 설명을 비우고(:347-351) 파일 id 가 바뀔 때만 다시 받아(:169-183)
+#   보기가 영구 비활성(:355)이 된다. agent-browser 0.27.0 은 비활성 버튼 클릭도 성공으로 답한다.
+# 누른 뒤 PREVIEW_CLICK_ACK_MS 안에 slot 이 idle 을 떠나지 않으면 「클릭 미반영」으로 적는다(전체 대기 없이).
+PREVIEW_STABLE_MS="${COLAB_RESEED_PREVIEW_STABLE_MS:-1000}"
+PREVIEW_CLICK_ACK_MS="${COLAB_RESEED_PREVIEW_CLICK_ACK_MS:-5000}"
 
 # 브라우저 세션 — 러너(`dev-seed/runner.py` `DEFAULT_SESSION`)가 로그인해 둔 **그 세션**을 이름으로 쓴다.
 # ⚠ `AGENT_BROWSER_SESSION_NAME` 환경변수는 agent-browser 가 읽지 않는다(4회차 `20260914T035058Z` 실측 —
@@ -846,24 +854,45 @@ PY
       fi
       continue
     fi
-    preview_file=""; local draw_enabled=""
+    # 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다 — 다시 고르지 않는다(위 PREVIEW_STABLE_MS 주석).
+    preview_file=""; local draw_enabled="" stable_since="" now settled=0
+    slot_state=""
     t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
-    while [ "$(date +%s%3N)" -lt "$t1" ]; do
+    while :; do
+      now="$(date +%s%3N)"; [ "$now" -lt "$t1" ] || break
       preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
       draw_enabled="$(ab_dev is enabled '[data-testid="dt-preview-draw"]' 2>/dev/null | tr -d ' \t\r\n')"
-      [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && break
+      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      if [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && [ "$slot_state" = idle ]; then
+        [ -n "$stable_since" ] || stable_since="$now"
+        if [ "$(( $(date +%s%3N) - stable_since ))" -ge "$PREVIEW_STABLE_MS" ]; then settled=1; break; fi
+      else
+        stable_since=""
+      fi
       sleep 0.05
     done
-    if [ -z "$preview_file" ] || [ "$draw_enabled" != true ] \
-      || ! ab_dev select '[data-testid="dt-pick-file"]' "$preview_file" >/dev/null 2>&1; then
-      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name — 미리보기 파일 명시 선택 실패"
+    if [ "$settled" != 1 ]; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 정착 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
       continue
     fi
     t0="$(date +%s%3N)"
     if ! ab_dev click '[data-testid="dt-preview-draw"]' >/dev/null 2>&1; then
       printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
       blocked_add verify "seq=$seq $name — 미리보기 보기 명시 실행 실패"
+      continue
+    fi
+    # 클릭 반영 확인 — 종료 0 은 반영의 증거가 아니다(비활성 버튼도 0). slot 이 idle 을 떠나야 한다.
+    slot_state=idle
+    while :; do
+      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      [ -n "$slot_state" ] && [ "$slot_state" != idle ] && break
+      [ "$(( $(date +%s%3N) - t0 ))" -lt "$PREVIEW_CLICK_ACK_MS" ] || break
+      sleep 0.05
+    done
+    if [ -z "$slot_state" ] || [ "$slot_state" = idle ]; then
+      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t클릭 미반영\n' "$seq" "$name" "$(( $(date +%s%3N) - t0 ))" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 클릭 미반영(${PREVIEW_CLICK_ACK_MS}ms 안에 slot 이 idle 을 떠나지 않았다 · 받은 값 [$slot_state])"
       continue
     fi
     # Container presence is not completion: its slot starts in idle/drawing.

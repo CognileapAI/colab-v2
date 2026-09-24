@@ -14,6 +14,11 @@
 #   ⓒ 로그인 화면(`login-submit` ≥ 1)이면 「판정불가」 ＋ 차단 사유에 「로그인 화면」 ＋ 비영 종료.
 #   ⓓ 빈 화면(`basic-info` 0)이면 「판정불가」 ＋ 차단 사유에 「상세 화면」 ＋ 비영 종료.
 #   ⓔ id 없는 행은 이름을 지킨 채 「미성립 · id 미확보」이고 그 이름으로 `/datasets/<이름>` 을 열지 않는다.
+#   ⓖ 이미 선택된 파일을 다시 고르지 않는다 — 배포 프론트(`ea21d8c2aa54` DatasetPreviewSection.tsx)는
+#      같은 파일 재선택에서 설명을 비우고(:347-351) 파일 id 가 바뀔 때만 다시 받아(:169-183) 보기가
+#      영구 비활성(:355)이 된다. agent-browser 0.27.0 은 비활성 버튼 클릭도 성공으로 답한다.
+#      보기는 「파일 일치 · 보기 활성 · slot idle」이 1 s 이상 유지된 뒤에만 누르고(러너 `preview_settled` 와 같은 규칙),
+#      누른 뒤 slot 이 idle 을 떠나지 않으면 전체 대기 없이 「클릭 미반영」으로 적는다.
 #
 # 실물 무접촉 = `agent-browser` 를 PATH 대역으로 가린다. ssh·docker 는 이 단계가 부르지 않는다.
 set -uo pipefail
@@ -40,15 +45,25 @@ cat > "$TMP/bin/agent-browser" <<'STUB'
 if [ "${1:-}" = "--session" ]; then shift 2; fi
 page="${FIXTURE_PAGE:-detail}"
 case "${1:-}" in
-  open) rm -f "$FIXTURE_AB_LOG.waited" "$FIXTURE_AB_LOG.selected" "$FIXTURE_AB_LOG.drawn" "$FIXTURE_AB_LOG.unsupported-seen"; exit "${FIXTURE_OPEN_FAIL:-0}" ;;
+  open)
+    rm -f "$FIXTURE_AB_LOG.waited" "$FIXTURE_AB_LOG.drawn" "$FIXTURE_AB_LOG.unsupported-seen"
+    # 배포 프론트 모형 — 기본 파일이 선택된 채 열리고 그 파일의 설명(describe)이 도착해 있다.
+    : > "$FIXTURE_AB_LOG.described"; date +%s%3N > "$FIXTURE_AB_LOG.opened"
+    exit "${FIXTURE_OPEN_FAIL:-0}" ;;
   select)
     [ "${2:-}" = '[data-testid="dt-pick-file"]' ] || exit 1
     [ "${3:-}" = 'FILE-1' ] || exit 1
-    : > "$FIXTURE_AB_LOG.selected" ;;
+    # 이미 선택된 FILE-1 을 다시 고르면 onPick 이 설명을 비우고(:347-351) 파일 id 가 그대로라
+    # 다시 받지 않는다(:169-183) — 보기는 영구 비활성(:355).
+    rm -f "$FIXTURE_AB_LOG.described" ;;
   click)
     [ "${2:-}" = '[data-testid="dt-preview-draw"]' ] || exit 1
-    [ -f "$FIXTURE_AB_LOG.selected" ] || exit 1
-    : > "$FIXTURE_AB_LOG.drawn" ;;
+    # agent-browser 0.27.0 — 비활성 버튼 클릭도 종료 0 으로 답한다. 반영 여부는 slot 이 말한다.
+    if [ -f "$FIXTURE_AB_LOG.described" ] && [ "${FIXTURE_DRAW_ENABLED:-true}" = true ] \
+       && [ "${FIXTURE_CLICK_NOOP:-0}" != 1 ]; then
+      : > "$FIXTURE_AB_LOG.drawn"
+      echo $(( $(date +%s%3N) - $(cat "$FIXTURE_AB_LOG.opened") )) > "$FIXTURE_AB_LOG.click-after-ms"
+    fi ;;
   wait)
     case "${2:-}" in *dt-preview-slot*) : > "$FIXTURE_AB_LOG.waited" ;; esac
     exit 0 ;;
@@ -79,7 +94,7 @@ case "${1:-}" in
     esac ;;
   is)
     if [ "${2:-} ${3:-}" = 'enabled [data-testid="dt-preview-draw"]' ]; then
-      echo "${FIXTURE_DRAW_ENABLED:-true}"
+      if [ -f "$FIXTURE_AB_LOG.described" ]; then echo "${FIXTURE_DRAW_ENABLED:-true}"; else echo false; fi
       exit 0
     fi
     exit 1 ;;
@@ -120,6 +135,10 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+# 정착 유지 창은 기본값(1 s)을 한 번 재고, 나머지 케이스는 짧게 줄여 픽스처를 빠르게 돈다.
+DEFAULT_STABLE_MS="${PREVIEW_STABLE_MS:-}"
+PREVIEW_STABLE_MS=40
+PREVIEW_CLICK_ACK_MS=150
 ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
 ACCOUNTS_FILE="$TMP/approved-profile.json"
 cp "$RESEED_DIR/accounts-profile.example.json" "$ACCOUNTS_FILE"
@@ -150,20 +169,25 @@ JSON
 JSON
   fi
 }
-reset_run() { rm -f "$ACCOUNTS_WORK_DIR/details-verified.json"; : > "$FIXTURE_AB_LOG"; rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
+reset_run() { rm -f "$ACCOUNTS_WORK_DIR/details-verified.json"; : > "$FIXTURE_AB_LOG"; rm -f "$FIXTURE_AB_LOG.click-after-ms";  rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
 verdict_of() { awk -F'\t' -v s="$1" '$1==s {print $4}' "$RUN_DIR/preview-judgment.tsv"; }
 
 # ── ⓐ·ⓑ 상세 화면 · 세션 인자 ────────────────────────────────────────────
 write_state 0; reset_run
 export FIXTURE_PAGE=detail
+[ "$DEFAULT_STABLE_MS" = 1000 ] || note "ⓖ 보기 전 정착 유지 창 기본값이 1000 ms 가 아니다: [$DEFAULT_STABLE_MS]"
+saved_wait="$PREVIEW_WAIT_MS"; PREVIEW_WAIT_MS=4000; PREVIEW_STABLE_MS="${DEFAULT_STABLE_MS:-1000}"
 stage_verify >/dev/null 2>&1; rc=$?
+PREVIEW_WAIT_MS="$saved_wait"; PREVIEW_STABLE_MS=40
+click_after="$(cat "$FIXTURE_AB_LOG.click-after-ms" 2>/dev/null)"
+[ "${click_after:-0}" -ge 1000 ] || note "ⓖ′ 보기를 정착 1 s 유지 전에 눌렀다(열린 뒤 [${click_after:-미반영}] ms)"
 [ "$rc" -eq 0 ] || note "ⓑ 상세 화면 전건 성립인데 stage_verify 가 $rc 로 끝났다: $(tail -1 "$STAGE_LOG")"
 [ "$(verdict_of 1)" = 성립 ] || note "ⓑ′ 상세 화면의 판정이 「성립」이 아니다: [$(verdict_of 1)]"
 n_calls="$(grep -c '^AB' "$FIXTURE_AB_LOG")"
 n_sess="$(grep -c $'^AB\t--session\tcolab-dev\t' "$FIXTURE_AB_LOG")"
 [ "$n_calls" -gt 0 ] || note "ⓐ agent-browser 호출이 0건이다 — 순회가 돌지 않았다"
 [ "$n_calls" = "$n_sess" ] || note "ⓐ′ --session colab-dev 없이 나간 agent-browser 호출이 $(( n_calls - n_sess ))건이다(전체 $n_calls) — 환경변수는 세션을 고르지 않는다"
-[ "$(grep -c $'^AB\t--session\tcolab-dev\tselect\t\[data-testid="dt-pick-file"\]\tFILE-1$' "$FIXTURE_AB_LOG")" -eq 1 ] || note "ⓑ″ 파일을 정확히 한 번 명시 선택하지 않았다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tselect\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓖ″ 이미 선택된 파일을 다시 골랐다 — 설명이 비워져 보기가 영구 비활성이 된다"
 [ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t\[data-testid="dt-preview-draw"\]$' "$FIXTURE_AB_LOG")" -eq 1 ] || note "ⓑ‴ 보기를 정확히 한 번 명시 클릭하지 않았다"
 
 # `is enabled`가 false를 출력해도 종료 0인 CLI 계약을 true로 오인하지 않는다.
@@ -172,6 +196,20 @@ stage_verify >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] || note "보기 버튼 false 출력을 활성 상태로 오인했다"
 [ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "보기 버튼 비활성인데 클릭했다"
 unset FIXTURE_DRAW_ENABLED
+
+# 보기 클릭이 반영되지 않으면(slot 이 idle 그대로) 전체 대기 없이 「클릭 미반영」으로 적는다.
+reset_run; export FIXTURE_CLICK_NOOP=1
+saved_wait="$PREVIEW_WAIT_MS"; PREVIEW_WAIT_MS=5000
+t_start="$(date +%s%3N)"
+stage_verify >/dev/null 2>&1; rc=$?
+t_took=$(( $(date +%s%3N) - t_start ))
+PREVIEW_WAIT_MS="$saved_wait"
+[ "$rc" -ne 0 ] || note "ⓖ‴ 반영되지 않은 보기 클릭을 성공으로 판정했다"
+[ "$(awk -F'\t' '$1=="1" {print $4"|"$8}' "$RUN_DIR/preview-judgment.tsv")" = "판정불가|클릭 미반영" ] \
+  || note "ⓖ‴′ 반영되지 않은 클릭의 판정표 행이 [판정불가|클릭 미반영] 이 아니다: [$(awk -F'\t' '$1=="1" {print $4"|"$8}' "$RUN_DIR/preview-judgment.tsv")]"
+grep -q '클릭 미반영' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓖ‴″ 차단 사유에 「클릭 미반영」이 없다"
+[ "$t_took" -lt 4000 ] || note "ⓖ‴‴ 클릭 미반영을 전체 대기(${t_took} ms)까지 기다렸다"
+unset FIXTURE_CLICK_NOOP
 
 # 러너가 재어 둔 저장 기간·모델 입력 설명이 빠지거나 미달이면 상세 화면이 멀쩡해도 차단한다.
 cp "$SEED_WORK_DIR/verify.json" "$TMP/verify-good.json"
