@@ -134,6 +134,71 @@ class HarnessConfigTests(unittest.TestCase):
             (root / "scripts/harness/hooks/git-guard.sh").unlink()
             self.assertTrue(self.module.check_contract(root, value), "missing judge must fail")
 
+    def surface(self, directory):
+        """Copy the adapter surface the contract judges into a scratch root."""
+        root = Path(directory)
+        for relative in ('.claude', '.agents', '.codex/agents', 'scripts/harness/hooks'):
+            shutil.copytree(ROOT / relative, root / relative)
+        shutil.copy2(ROOT / 'CLAUDE.md', root / 'CLAUDE.md')
+        return root
+
+    # K1 — a hook can be declared and shimmed and still be silently unwired.
+    def test_declared_hook_must_be_registered_under_its_event_and_matcher(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        value['adapters']['required_files'] = []
+        value['paths']['required'] = []
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.surface(directory)
+            self.assertEqual(self.module.check_contract(root, value), [])
+            path = root / '.claude/settings.json'
+            original = path.read_text()
+            settings = json.loads(original)
+            # Keep the matcher; drop exactly one command line (bridge symmetry cannot see this).
+            entry = next(e for e in settings['hooks']['PreToolUse'] if e['matcher'] == 'Edit|Write')
+            entry['hooks'] = [h for h in entry['hooks'] if 'test-file-guard.sh' not in h['command']]
+            path.write_text(json.dumps(settings))
+            self.assertEqual(self.module.check_contract(root, value), [
+                'hook not registered in .claude/settings.json: test-file-guard.sh '
+                '(event PreToolUse, matcher Edit|Write)'])
+            path.write_text(original)
+            moved = json.loads(json.dumps(value))
+            moved['sources']['hook_registrations']['git-guard.sh']['matcher'] = 'Edit|Write'
+            self.assertEqual(self.module.check_contract(root, moved), [
+                'hook not registered in .claude/settings.json: git-guard.sh '
+                '(event PreToolUse, matcher Edit|Write)'])
+            undeclared = json.loads(json.dumps(value))
+            del undeclared['sources']['hook_registrations']['worktree-setup.sh']
+            self.assertEqual(self.module.check_contract(root, undeclared), [
+                'hook has no event/matcher registration: worktree-setup.sh'])
+        missing = json.loads(json.dumps(value))
+        del missing['sources']['hook_registrations']
+        with self.assertRaises(self.module.ContractError):
+            self.module.validate_contract(missing)
+
+    # K4 — always-on documents carry a declared line budget.
+    def test_always_on_documents_over_the_line_budget_are_red(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        self.assertEqual(value['hygiene']['always_on_max_lines'], 120)
+        self.assertEqual(self.module.check_always_on_lines(ROOT, value), [])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.claude/rules').mkdir(parents=True)
+            (root / 'AGENTS.md').write_text('line\n' * 120)
+            (root / 'CLAUDE.md').write_text('line\n')
+            (root / '.claude/rules/fixture.md').write_text('line\n' * 121)
+            self.assertEqual(self.module.check_always_on_lines(root, value), [
+                'always-on document exceeds 120 lines: .claude/rules/fixture.md (121)'])
+            (root / '.claude/rules/fixture.md').unlink()
+            (root / 'CLAUDE.md').unlink()
+            self.assertEqual(self.module.check_always_on_lines(root, value), [
+                'always-on document is missing: CLAUDE.md',
+                'always-on pattern matches no file: .claude/rules/*.md'])
+        for broken in (None, 0, '120', True):
+            bad = json.loads(json.dumps(value))
+            bad['hygiene']['always_on_max_lines'] = broken
+            with self.subTest(limit=broken), self.assertRaises(self.module.ContractError):
+                self.module.validate_contract(bad)
+
     def run_check(self, contract):
         return subprocess.run(
             [sys.executable, str(ROOT / "scripts/harness/check.py"),

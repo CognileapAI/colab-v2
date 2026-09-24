@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 
-from config import ContractError, check_contract, load_contract
+from config import ContractError, check_always_on_lines, check_contract, load_contract
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::gate-readiness-failure:: harness-contract: {exc}", file=sys.stderr)
         return 78
     errors = check_contract(root, value)
+    errors += check_always_on_lines(root, value)
     parallelism_errors, readiness, judged_gates = check_gate_parallelism(root)
     if readiness is not None:
         # We could not read the judgement target. Everything we *did* judge is still
@@ -105,6 +106,8 @@ def main(argv: list[str] | None = None) -> int:
         "green: shared harness contract; "
         f"required gates {len(value['gates']['required'])}, "
         f"adapters {len(value['adapters']['required_files'])}, "
+        f"hook registrations {len(value['sources']['hook_registrations'])}, "
+        f"always-on line budget {value['hygiene']['always_on_max_lines']}, "
         f"parallel-safety declarations {judged_gates}"
     )
     return 0

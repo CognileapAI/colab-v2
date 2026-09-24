@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path, PurePosixPath
+import re
 import tomllib
 
 
@@ -18,6 +19,7 @@ TOP_LEVEL = {
     "adapters",
     "paths",
     "publication",
+    "hygiene",
 }
 
 
@@ -78,6 +80,24 @@ def validate_contract(value: object) -> dict:
         if not isinstance(item, str) or not item:
             raise ContractError("paths.retired_roots must contain non-empty strings")
         _relative(item, "paths.retired_roots")
+    sources = value.get("sources")
+    if not isinstance(sources, dict):
+        raise ContractError("sources must be an object")
+    registrations = sources.get("hook_registrations")
+    if not isinstance(registrations, dict):
+        raise ContractError("sources.hook_registrations must be an object")
+    for name, entry in registrations.items():
+        if (not isinstance(entry, dict) or set(entry) != {"event", "matcher"}
+                or any(not isinstance(item, str) or not item.strip() for item in entry.values())):
+            raise ContractError(f"sources.hook_registrations.{name} needs non-empty event and matcher")
+    hygiene = value.get("hygiene")
+    if not isinstance(hygiene, dict):
+        raise ContractError("hygiene must be an object")
+    limit = hygiene.get("always_on_max_lines")
+    if type(limit) is not int or limit <= 0:
+        raise ContractError("hygiene.always_on_max_lines must be a positive integer")
+    for item in _strings(hygiene.get("always_on_files"), "hygiene.always_on_files"):
+        _relative(item, "hygiene.always_on_files")
     return value
 
 
@@ -160,6 +180,7 @@ def check_contract(root: Path, value: dict) -> list[str]:
                 errors.append(f"missing hook adapter: {name}")
         if not (root / "scripts/harness/hooks/lifecycle_contract.py").is_file():
             errors.append("missing shared lifecycle contract")
+        errors += _check_hook_wiring(root, names, value["sources"]["hook_registrations"])
     for name in value["adapters"]["required_files"]:
         if not (root / name).exists():
             errors.append(f"missing required adapter: {name}")
@@ -169,4 +190,66 @@ def check_contract(root: Path, value: dict) -> list[str]:
     for name in value["paths"]["retired_roots"]:
         if (root / name).exists():
             errors.append(f"retired path still exists: {name}")
+    return errors
+
+
+def _check_hook_wiring(root: Path, names: list, registrations: dict) -> list[str]:
+    """Assert each declared hook is wired in `.claude/settings.json` under its event and matcher.
+
+    `agent-bridge check` compares the Claude and Codex event/matcher sets, so dropping a whole
+    matcher is caught there. Dropping one command line under a kept matcher is not — that is
+    the path this check closes (intent 2026-09-25-external-harness-gap, outcome 1).
+    """
+    try:
+        settings = json.loads((root / ".claude/settings.json").read_text(encoding="utf-8"))
+        wired: dict[tuple[str, str], list] = {}
+        for event, entries in settings["hooks"].items():
+            for entry in entries:
+                commands = [hook["command"] for hook in entry["hooks"]]
+                wired.setdefault((event, entry["matcher"]), []).extend(commands)
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:
+        return [f"cannot read hook registrations from .claude/settings.json: {exc}"]
+    errors = []
+    for name in names:
+        if not isinstance(name, str) or not name.endswith(".sh") or PurePosixPath(name).name != name:
+            continue  # already reported as an invalid shared hook name
+        entry = registrations.get(name)
+        if entry is None:
+            errors.append(f"hook has no event/matcher registration: {name}")
+            continue
+        shim = re.compile(r"(?:^|[\s\"'/])\.claude/hooks/" + re.escape(name) + r"(?=$|[\s\"'])")
+        commands = wired.get((entry["event"], entry["matcher"]), [])
+        if not any(isinstance(command, str) and shim.search(command) for command in commands):
+            errors.append(f"hook not registered in .claude/settings.json: {name} "
+                          f"(event {entry['event']}, matcher {entry['matcher']})")
+    for name in sorted(set(registrations) - set(names)):
+        errors.append(f"hook registration names an undeclared hook: {name}")
+    return errors
+
+
+def check_always_on_lines(root: Path, value: dict) -> list[str]:
+    """Documents loaded into every session stay under the declared line budget."""
+    hygiene = value["hygiene"]
+    limit = hygiene["always_on_max_lines"]
+    errors = []
+    for pattern in hygiene["always_on_files"]:
+        if any(char in pattern for char in "*?["):
+            paths = sorted(path for path in root.glob(pattern) if path.is_file())
+            if not paths:
+                errors.append(f"always-on pattern matches no file: {pattern}")
+                continue
+        else:
+            if not (root / pattern).is_file():
+                errors.append(f"always-on document is missing: {pattern}")
+                continue
+            paths = [root / pattern]
+        for path in paths:
+            relative = path.relative_to(root).as_posix()
+            try:
+                count = len(path.read_text(encoding="utf-8").splitlines())
+            except (OSError, UnicodeError) as exc:
+                errors.append(f"cannot read always-on document: {relative}: {exc}")
+                continue
+            if count > limit:
+                errors.append(f"always-on document exceeds {limit} lines: {relative} ({count})")
     return errors
