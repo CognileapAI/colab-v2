@@ -30,4 +30,12 @@
 .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
 .btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
 .btn-primary:active { background: var(--color-primary-700); }
+
+/* ── field — 입력·선택 ──
+   출처: 셸 끝 임시 블록(P2a 흡수 · 종전 보정 층). upload.css 의 `.inp, .sel`(8px 10px · 8px 모서리)은 오늘 이
+   규칙에 순서로 전부 졌다(삭제). `textarea.inp` 의 크기 조절은 업로드 화면 규칙으로 남는다. */
+:is(.inp, .sel) { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+@media (max-width: 640px) {
+  :is(.inp, .sel) { font-size: 16px; }
+}
 }

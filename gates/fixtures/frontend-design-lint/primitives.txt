@@ -9,3 +9,6 @@
 .btn-ghost
 .btn-danger
 .btn-sm
+# field
+.inp
+.sel

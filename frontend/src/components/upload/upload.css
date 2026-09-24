@@ -248,7 +248,7 @@
   color: var(--color-text-muted);
   letter-spacing: 0;
 }
-.inp, .sel { padding: 8px 10px; border: 1px solid var(--up-line); border-radius: 8px; font: inherit; }
+/* `.inp`·`.sel` 의 기본값은 `shell/primitives.css`(P2b). */
 textarea.inp { resize: vertical; }
 .fieldlbl { font-size:13px; color: var(--up-muted); margin: 12px 0 8px; }
 
