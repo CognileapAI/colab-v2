@@ -418,7 +418,14 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       };
       samples.current = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
       // 캡처가 있으면 뷰포트 밖으로 나가도 이동이 이어진다. 없으면(jsdom) 창 리스너가 받는다.
-      (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
+      // 캡처는 던질 수 있다(이미 끝난 포인터의 NotFoundError 등). 처리기를 끊지 않고, 그 포인터의 끌기를
+      // 지워 남은 `drag.current` 가 뒤이은 포인터를 막지 않게 한다(A27 의 두 번째 포인터 무시와 충돌 방지).
+      try {
+        (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
+      } catch {
+        if (drag.current?.id === e.pointerId) drag.current = null;
+        samples.current = [];
+      }
     },
     [stopInertia],
   );
@@ -528,7 +535,8 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
-      // 도는 관성 프레임은 놓을 때의 `clampView` 를 쥐고 있다 — 리스너를 새로 걸 때 멈춘다(A41).
+      // 언마운트 때만 돈다 — `clampView`·`stopInertia` 는 안정 참조라 이 효과가 다시 걸리지 않는다.
+      // 화면 크기·한계 배율 변화 때의 관성 정지(A41)는 `remeasure` 가 맡는다.
       stopInertia();
     };
   }, [clampView, stopInertia]);
