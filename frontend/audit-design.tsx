@@ -32,9 +32,27 @@ import { fixtureLineageSource } from './src/components/lineage/graphFixture';
 import { AccessRequestPanel } from './src/components/approval/AccessRequestPanel';
 import { VerificationAction } from './src/components/approval/VerificationAction';
 import type { ApprovalSource } from './src/components/approval/types';
+import { AccountAdminPage } from './src/routes/AccountAdminPage';
+import { PasswordChangePage } from './src/auth/PasswordChangePage';
+import type { Schemas } from './src/api/client';
 
+// account-admin 장면이 부르는 두 경로만 로컬 응답을 준다(`api/client.ts` 가 호출 시점에 `globalThis.fetch` 를 찾는다).
+const ADMIN_OPTIONS: Schemas['AccountOptions'] = {labs: [{labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHU', name: '수자원순환연구실'}, {labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHV', name: '기후예측연구실'}], roles: ['교수', '연구원']};
+const ADMIN_ACCOUNTS: Schemas['ServiceAccountListV2'] = {accounts: [
+  {accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AD1', email: 'op@example.ac.kr', name: '운영자', labId: null, labName: null, role: null, status: 'active', lastLoginAt: '2026-09-20T09:00:00Z', operator: true},
+  {accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AD2', email: 'lion@example.ac.kr', name: '사자 교수', labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHU', labName: '수자원순환연구실', role: '교수', status: 'active', lastLoginAt: '2026-09-19T01:30:00Z', operator: false},
+  {accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AD3', email: 'tiger@example.ac.kr', name: '호랑이', labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHU', labName: '수자원순환연구실', role: '연구원', status: 'active', lastLoginAt: null, operator: false},
+  {accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AD4', email: 'a.very.long.researcher.mailbox.name.for.layout@hydrology.example.ac.kr', name: '표범', labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHV', labName: '기후예측연구실', role: '연구원', status: 'active', lastLoginAt: '2026-09-02T12:00:00Z', operator: false},
+  {accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AD5', email: 'cheetah@example.ac.kr', name: '치타', labId: '01JYZ9K7WQ3N8V4M2X6C5B0AHV', labName: '기후예측연구실', role: '교수', status: 'inactive', lastLoginAt: '2026-08-11T08:00:00Z', operator: false},
+]};
 // Fallback ports show explicit fixture failure instead of contacting any backend.
-window.fetch = async () => new Response(JSON.stringify({message: '시각 검수용 응답: 이 기능의 서버 호출은 차단됩니다.'}), {status: 503, headers: {'Content-Type': 'application/json'}});
+globalThis.fetch = async (input: RequestInfo | URL) => {
+  const path = new URL(input instanceof Request ? input.url : String(input), location.href).pathname;
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}});
+  if (scene === 'account-admin' && path.endsWith('/admin/accounts-v2')) return json(ADMIN_ACCOUNTS);
+  if (scene === 'account-admin' && path.endsWith('/admin/account-options')) return json(ADMIN_OPTIONS);
+  return json({message: '시각 검수용 응답: 이 기능의 서버 호출은 차단됩니다.'}, 503);
+};
 const blocked = async (): Promise<never> => { throw new Error('시각 검수: 저장하지 않습니다.'); };
 const approval: ApprovalSource = { requestAccess: blocked, requestVerification: blocked, approveVerification: blocked, cancelVerification: blocked };
 const DS1 = '01JYZ9K7WQ3N8V4M2X6C5B0DS1';
@@ -121,7 +139,7 @@ const searchSource: SearchSource = {search: async () => {
   const items = scene === 'search-empty' ? [] : FIXTURE_ROWS.slice(0, 3).map(row => ({...row, summary: '강수 관측과 유역 분석을 위한 연구 자료', period: null, relevanceBar: 0.8, rationale: '이름과 주제에 검색어가 포함되어 있어요.'}));
   return {scope: {labId: 'lab', labName: '수자원순환연구실', searchedCount: 128}, isDataQuery: true, degraded: scene === 'search-degraded', items, totalCount: items.length, nextCursor: null};
 }};
-const previewJob: RenderJob = scene === 'preview-done' ? {renderId: 'render', status: '완료', result: {tileUrlTemplate: `${auditTileUrl}?z={z}&x={x}&y={y}`, bounds: {west:126.5,south:34.8,east:129.6,north:37.2}, legend: {palette:'viridis',variable:'rain',unit:'mm/h',classes:[{color:'#21918c',min:0,max:5}]}}} : {renderId: 'render', status: '실패', failure: {code: 'RENDER_FAILED', message: '파일을 그리지 못했어요.'}};
+const previewJob: RenderJob = scene === 'preview-done' ? {target: {uploadId: 'upload'}, renderId: 'render', status: '완료', result: {tileUrlTemplate: `${auditTileUrl}?z={z}&x={x}&y={y}`, bounds: {west:126.5,south:34.8,east:129.6,north:37.2}, legend: {palette:'viridis',variable:'rain',unit:'mm/h',classes:[{color:'#21918c',min:0,max:5}]}}} : {target: {uploadId: 'upload'}, renderId: 'render', status: '실패', failure: {code: 'RENDER_FAILED', message: '파일을 그리지 못했어요.'}};
 const previewSource: PreviewSource = { get: async () => {if (scene === 'preview-expired') throw new PreviewGone(); return previewJob;}, create: async () => previewJob, probeTile: async () => 'ok'};
 const empty = scene === 'empty';
 const source = fullSource(empty ? {
@@ -139,8 +157,10 @@ function Scene() {
   if (scene.startsWith('preview')) return <Routes><Route path="/datasets/preview/:uploadId" element={<UnregisteredPreviewPage source={previewSource} />} /></Routes>;
   if (scene === 'project-detail') return <Routes><Route path="/projects/:projectId" element={<ProjectDetailPage source={fixtureProjectSource()} />} /></Routes>;
   if (scene === 'login') return <LoginPage />;
+  if (scene === 'password-change') return <PasswordChangePage />;
+  if (scene === 'account-admin') return <main className="appmain"><AccountAdminPage /></main>;
   if (scene === 'settings') return <LabSettingsPage port={members} labSource={{read: source.lab, update: blocked}} />;
-  if (scene === 'lab' || scene === 'empty') return <LabPage source={source} />;
+  if (scene === 'lab' || scene === 'empty' || scene === 'gnb-more') return <LabPage source={source} />;
   if (scene === 'lab-dialog') return <><LabPage source={source} />{open && <LabInfoModal source={source} onClose={close} />}</>;
   if (scene === 'projects' || scene === 'project-table') return <ProjectsPage source={fixtureProjectSource()} />;
   if (scene === 'project-dialog' || scene === 'project-close') return <><ProjectsPage source={fixtureProjectSource()} />{open && (scene === 'project-close' ? <ProjectCloseModal detail={FIXTURE_PROJECTS[0]!} onConfirm={blocked} onClose={close} /> : <ProjectFormModal mode={{kind:'새 프로젝트'}} onSubmit={blocked} onClose={close} />)}</>;
@@ -149,5 +169,11 @@ function Scene() {
   if (scene === 'detail') return <Routes><Route path="/datasets/:datasetId" element={<DatasetDetailPage source={fixtureDetailSource()} lineageSource={fixtureLineageSource()} />} /></Routes>;
   return <Routes><Route path="/datasets" element={<DatasetsPage source={fixtureCatalogSource()} />} /><Route path="/datasets/:datasetId" element={<main data-screen="fixture-detail"><h1>데이터셋 상세 진입 확인</h1></main>} /></Routes>;
 }
-const entry = scene === 'detail' ? '/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1' : scene === 'project-detail' ? `/projects/${FIXTURE_PROJECTS[0]!.projectId}` : scene.startsWith('search') ? '/datasets/search?q=강수' : scene.startsWith('preview') ? '/datasets/preview/upload?render=render' : scene.startsWith('project') ? '/projects' : scene === 'lab' || scene === 'empty' ? '/lab' : '/datasets';
-createRoot(document.getElementById('root')!).render(<MemoryRouter initialEntries={[scene.startsWith('preview') ? {pathname:'/datasets/preview/upload',search:'?render=render',state:{preview:{uploadId:'upload',renderId:'render',withoutReferenceGrid:true,basicInfo:{byteSize:148000000,variable:'rain'},files:[{fileId:'file',fileName:'rain.nc',kind:'본체',byteSize:148000000}]}}} : entry]}><SessionProvider account={account({'연구실 설정':true,'프로젝트 생성':true,'업로드·편집': full || scene === 'detail'})}>{full && scene !== 'login' && <Gnb />}<Scene /></SessionProvider></MemoryRouter>);
+// 계정 플래그 — `scripts/visual-baseline/scenes.json` 이 장면마다 `upload`·`labSettings`·`operator` 를 고정한다.
+// 값이 없으면 종전 기본값(업로드 = full 또는 detail · 연구실 설정 켬 · 운영자 아님)을 쓴다.
+const flag = (key: string, fallback: boolean) => previewParams.has(key) ? previewParams.get(key) === '1' : fallback;
+const sessionAccount = {...account({'연구실 설정': flag('labSettings', true), '프로젝트 생성': true, '업로드·편집': flag('upload', full || scene === 'detail')}), ...(flag('operator', scene === 'account-admin') ? {canManageServiceAccounts: true} : {})};
+// 제품에서 GNB 없이 단독 렌더되는 화면(`AuthGate`).
+const STANDALONE = ['login', 'password-change'];
+const entry = scene === 'detail' ? '/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1' : scene === 'project-detail' ? `/projects/${FIXTURE_PROJECTS[0]!.projectId}` : scene.startsWith('search') ? '/datasets/search?q=강수' : scene.startsWith('preview') ? '/datasets/preview/upload?render=render' : scene.startsWith('project') ? '/projects' : scene === 'lab' || scene === 'empty' || scene === 'gnb-more' ? '/lab' : scene === 'account-admin' ? '/account-admin' : '/datasets';
+createRoot(document.getElementById('root')!).render(<MemoryRouter initialEntries={[scene.startsWith('preview') ? {pathname:'/datasets/preview/upload',search:'?render=render',state:{preview:{uploadId:'upload',renderId:'render',withoutReferenceGrid:true,basicInfo:{byteSize:148000000,variable:'rain'},files:[{fileId:'file',fileName:'rain.nc',kind:'본체',byteSize:148000000}]}}} : entry]}><SessionProvider account={sessionAccount}>{full && !STANDALONE.includes(scene) && <Gnb />}<Scene /></SessionProvider></MemoryRouter>);
