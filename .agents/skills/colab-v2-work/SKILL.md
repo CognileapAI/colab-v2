@@ -127,3 +127,5 @@ description: CoLAB v2 레포에서 무엇이든 실행할 때 쓴다. 서브에�
 - [ ] **신규 task 인계** — 선언 산출물·실제 검증·남은 제약·다음 진입조건을 task runtime/로컬 계획에 남긴다. 사용자 게시용 PR 요약과 절차를 제공하되 게시 완료를 주장하지 않는다.
 - [ ] **legacy 항목을 실제 변경한 경우만** — 대장·HANDOFF·기존 세션 기록의 정합을 유지한다. 신규 작업 종료의 필수조건으로 legacy 기록을 새로 만들지 않는다.
 - [ ] **비가역 행동에 승인이 있었는가.** `main` 병합·`main` push·force-push·운영 데이터 삭제는 **Ted 의 명시 승인 없이 하지 않는다.** 워크트리 격리를 우회하지 않는다 — 다른 체크아웃 대상 작업이 막히면 그 사실과 Ted 가 직접 실행할 한 줄 명령을 전달한다. 커밋 메시지는 한국어(첫 줄에 무엇을, 본문에 왜), 병합 후 워크트리·브랜치 3종 정리(`§2-1`).
+- [ ] **커밋에 `Intent-Ref:` 트레일러가 있는가.** 연결 intent 가 있으면 커밋 메시지 끝 트레일러 블록(Co-Authored-By 위)에 `Intent-Ref: dev-package/intent/<파일>.md` 를 단다. `services/**`·`frontend/src/**`·`contracts/**`·`db/**`·`scripts/**`·`gates/**`·`.agents/**`·`.claude/**`·`.codex/**` 를 바꾸는 브랜치는 이 트레일러 커밋이 적어도 1개 있어야 하고 게이트 `intent-ref` 가 red(판정)으로 잡는다. 승인된 intent 본문은 줄 추가만 한다(수정·삭제는 red · 필요하면 새 intent).
+  - 소급 경로 — 트레일러 없는 기존 브랜치는 빈 커밋 1개로 채운다: `git commit --allow-empty -m "<무엇을>" -m "Intent-Ref: dev-package/intent/<파일>.md"`.

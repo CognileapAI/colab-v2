@@ -1,6 +1,6 @@
 # 결정과 PR 인계
 
-새 ADR은 필요한 결정에만 선택적으로 작성한다. 파일명은 `0001-lowercase-slug.md`,
+새 ADR은 필요한 결정에만 선택적으로 작성한다(기준은 아래 「언제 남기나」). 파일명은 `0001-lowercase-slug.md`,
 제목은 `# ADR-0001: 결정 제목`이다. `_template.md`를 사용한다.
 
 - `proposed`: 검토 중인 제안. 문서 작성이나 검사 통과가 승인이 아니다.
@@ -38,7 +38,7 @@ python3 scripts/harness/agreement_snapshot.py <초안폴더>/agreements/001 --ch
 ## PR 초안과 완료 판정
 
 `.github/pull_request_template.md`의 목적·범위·계획·결정·검증·남은 제약 여섯 절을 짧게 채운다.
-그림·세 상자·가치 확인·볼 곳·증거 별도 절은 선택이다. 검증 절의 기대→실제→근거 한 문단으로도 충분하다.
+검증 절의 「원한 결과 ↔ 실제 ↔ 근거」 표는 원한 결과마다 한 행과 가치 상태를 채운다. 그림·볼 곳·증거 별도 절은 선택이다.
 Plan-Ref, 전체 Head-SHA와 실제 검증 상태를 적는다. 초안은 미검증 상태로 검사할 수 있다.
 완료 판정 및 Draft의 ‘검증됨’ 주장에는 head가 일치하는 CI evidence와 실제 producer artifact 묶음이 필요하다.
 등록표의 producer/check 집합·SHA/tree/run/attempt·필터 적용·실제 gate 행과 종료값을 재검사한다.
@@ -53,6 +53,16 @@ python3 scripts/harness/pr_contract.py <PR본문.md> --head <40자리SHA> --mode
 
 통과는 로컬 문서·증거 정합 판정이다. push·Draft PR·Issue는 게시 대상과 내용을 먼저 보여주고
 현재 대화의 사용자 승인을 받아야 한다. 병합·배포·기존 기록 삭제는 별도 승인이다.
+
+## 언제 남기나
+
+- 서비스 경계·주요 의존성·데이터 소유권 같은 구조를 정하거나 바꿀 때.
+- 여러 곳이 따르는 API·데이터 계약이나 보안·배포·운영 정책을 정할 때.
+- 하네스의 승인·검증·완료 조건이나 사람과 에이전트의 역할을 바꿀 때.
+- 기존 결정을 뒤집거나, 비용 때문에 고르지 않은 대안을 뒤에도 알아야 할 때.
+
+단순 결함 수정·문구 수정·국소 구현 선택에는 쓰지 않는다. 결정이 그대로면 기존 ADR을 참조한다.
+파일 수나 PR 크기로 필요 여부를 정하지 않는다(출처: `sungwooHa/ai-sdlc-harness@78b2d0f` `docs/decisions/README.md` 「언제 남기나」).
 
 ## 출처
 

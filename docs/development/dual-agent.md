@@ -36,7 +36,7 @@ PR 게시는 사용자가 수행한다. 에이전트는 로컬 요약·검증 �
 Claude의 paths·모델·도구·격리 frontmatter는 해당 어댑터에 그대로 보존한다.
 Codex 역할은 `.agents/roles`를 직접 읽으며 Claude frontmatter를 적용하지 않는다.
 공통 본문 수정은 원본에서 한 번만 한다.
-공통 스킬 13개와 Codex 전용 완료 알림 스킬을 `.agents/skills/<이름>/SKILL.md`로 등록한다.
+공통 스킬 17개와 Codex 전용 완료 알림 스킬 1개(`slack-completion`)를 `.agents/skills/<이름>/SKILL.md`로 등록한다(2026-09-25 실측 · `harness-contract`가 원본 18개·Claude 어댑터 17개를 대조).
 `grill-me`와 `to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
 Codex에서는 `$grill-me`, `$to-spec`로 호출한다. 개인 `$intent`는 grill-me의 별칭이다.
 각 스킬을 읽으면 **그 원본 디렉터리**를 기준으로 상대 링크·스크립트 경로를 해석한다.
@@ -252,6 +252,35 @@ Codex 프로젝트 훅 위치는 `.codex/hooks.json` 또는 `.codex/config.toml`
 기존 스크립트를 그대로 등록하면 파일 검사를 조용히 건너뛸 수 있다.
 Codex에서 Bash는 exec_command도 포함하지만 후속 write_stdin마다 PreToolUse가 다시 실행되지는 않는다.
 이 도구 범위의 한계를 전체 셸·파일 접근의 강제 보장으로 확대해 보고하지 않는다.
+
+## 하네스 판정 질문
+
+훅·게이트·규칙·역할·스킬을 넣거나 뺄 때 아래 질문에 답하고, 답을 PR 요약 「결정」 절에 적는다.
+
+1. 기계가 판정하는 사실인가, 규율 선언인가 — 판정이면 게이트 종료코드나 작업 증거 계약에 붙이고, 선언이면 OS 강제라고 적지 않는다([ADR-0005](../decisions/0005-harness-controls-are-declarative.md)).
+2. 실행기가 아는 사실을 삼키지 않는가 — 결과는 green · red(판정) · red(준비 · 78) 중 하나이고 조용한 `return 0`은 없다([ADR-0004](../decisions/0004-gate-verdict-three-states.md) · ADR-0005 2026-09-18 개정).
+3. 통과를 승인으로 읽게 만들지 않는가 — 기계는 형식만 판정하고 승인은 사람이 한다([ADR-0003](../decisions/0003-human-approval-machine-checks-form.md)).
+4. 본문이 한 곳에 있는가 — 본문은 `.agents/`·`scripts/harness/`가 소유하고 `.claude/`·`.codex/`는 등록·변환만 한다([ADR-0006](../decisions/0006-agents-dir-owns-body-thin-adapters.md)).
+5. 한 층 아래로 충분하지 않은가 — 새 훅은 재신뢰 비용이 들므로 기존 게이트·CI·인계 검사로 안 될 때만 둔다. 훅도 등록된 이벤트·matcher 안에서만 차단한다([ADR-0005](../decisions/0005-harness-controls-are-declarative.md)).
+
+### 보류 중인 외부 장치
+
+`sungwooHa/ai-sdlc-harness`(커밋 `78b2d0f`) 대조에서 보류한 장치다(intent `dev-package/intent/2026-09-25-external-harness-gap.md` 설계트리). 재검토 조건이 생기면 새 intent로 연다.
+
+- 질문 게이트(AskUserQuestion 4개 · 추천 첫 자리 · PreToolUse+Stop) — Codex에 AskUserQuestion이 없고 훅·재신뢰가 필요하며 번호 목록 차단이 우리 보고 형식과 오탐한다. 재검토: 두 도구에 같은 질문 도구가 있고 오탐 없는 판정식이 나올 때.
+- git pre-commit(`.githooks`) — drvfs 실행비트와 작업 사본마다 `core.hooksPath` 설정이 필요하다. 재검토: 실행비트 문제가 없는 사본만 남고 hooksPath 설정을 사본 생성 절차에 넣을 수 있을 때.
+- 보호 경로 선언(+ Bash 쓰기 검사) — 지금 새로 보호할 경로가 0건이고 `generated-up-to-date`·`migration-drift`가 사후 검출한다. 재검토: 생성물 직접 편집 사고 1회.
+- 스킬 symlink 미러 · 어댑터 분리(`user-invocable:false`) — Windows/NTFS 체크아웃과 Codex 스킬 로딩의 symlink 호환을 확인하지 않았다. 재검토: 호환 확인 뒤 다음 상류 갱신 때 선별.
+- UserPromptSubmit 입력 기록 전용 훅 — 승인 원문 대조 근거가 되지만 훅 1 · 재신뢰 1이고 차단하지 않는다. 재검토: 승인 원문 오기 사고 1회.
+- ADR 후보 안내(`adr-advice.py`) — 붙일 합의 훅을 채택하지 않았다. 재검토: ADR 누락 사고 1회.
+- 스킬별 Codex 메타(`agents/openai.yaml` · `allow_implicit_invocation: false`) — 현재 `grill-me`·`grilling`·`to-spec` 3개에만 있다. 재검토: Codex가 이 정책을 지키는지와 명시 호출 전용 스킬 목록을 확인한 뒤 나머지로 넓힌다.
+
+## 하네스 변경 절차
+
+1. 기계 계약 `.agents/harness.yaml`을 먼저 고친다. 로더·검사는 `scripts/harness/config.py`·`scripts/harness/check.py`다.
+2. 공통 본문(`.agents/`·`scripts/harness/`)을 고치고 `.claude/settings.json`·`.codex/hooks.json`·어댑터는 등록·변환만 맞춘다.
+3. `gates/run.sh harness-contract`·`agent-bridge`(훅·lifecycle을 바꿨으면)를 돌려 세 계수를 PR 요약 「검증」에 적는다. 훅 정의를 바꿨으면 병합 뒤 각 PC의 `/hooks` 재신뢰(사용자 몫)를 「남은 제약」에 적는다.
+4. PR 요약 「결정」 절에 바뀐 층과 한 층 아래에 둘 수 없던 이유를 적는다. 지속 결정이면 `docs/decisions/README.md` 「언제 남기나」에 따라 ADR을 남긴다.
 
 ## 작업공간 보관 후보
 
