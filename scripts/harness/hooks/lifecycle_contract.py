@@ -53,6 +53,43 @@ TASK_ROLES = ('researcher',) + GATE_ROLES
 # measurement-lane-subagent-stop-hook 제약). Only the red verdict is waived — rows, counts,
 # the declared gate set and the tree evidence are still required in full.
 MEASURING_ROLES = ('measurement-lane',)
+# Lane file scope (`begin --scope <glob>`, intent 2026-09-25-external-harness-gap 원한 결과 6).
+# Checked after the fact at `handoff --mode complete` / H7, never as a pre-tool block (no new hook).
+# Paths every scoped lane may touch without declaring them: gate/report output and the
+# lifecycle document itself. The task runtime (`colab-harness/…`) lives in the git common
+# directory, outside the checkout snapshot, so it never shows up as a changed file.
+SCOPE_DEFAULTS = ('dev-package/reports/**', 'docs/development/lifecycle-evidence.md')
+
+
+def scope_regex(glob):
+    """`**` crosses directories, `*` and `?` do not; everything else is literal."""
+    out, i = [], 0
+    while i < len(glob):
+        if glob.startswith('**/', i):
+            out.append('(?:.*/)?'); i += 3
+        elif glob.startswith('**', i):
+            out.append('.*'); i += 2
+        elif glob[i] == '*':
+            out.append('[^/]*'); i += 1
+        elif glob[i] == '?':
+            out.append('[^/]'); i += 1
+        else:
+            out.append(re.escape(glob[i])); i += 1
+    return re.compile(''.join(out))
+
+
+def check_scope_declarations(scope):
+    if len(set(scope)) != len(scope):
+        raise ValueError('duplicate task declaration')
+    for glob in scope:
+        if (not isinstance(glob, str) or not glob or '\x00' in glob or '\\' in glob
+                or glob.startswith(('/', './')) or '..' in glob.split('/')):
+            raise ValueError('lane scope must be a repository-relative POSIX glob: ' + repr(glob))
+
+
+def out_of_scope(task, changed):
+    patterns = [scope_regex(g) for g in (*task['scope'], *SCOPE_DEFAULTS)]
+    return sorted(p for p in changed if not any(r.fullmatch(p) for r in patterns))
 
 
 def resolve_task_path(root, task, name, artifact_only=False):
@@ -165,11 +202,16 @@ def archive_report(source, destination):
             temporary.unlink(missing_ok=True)
 
 
-def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False):
+def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False, scope=None):
     root = checkout(root)
-    artifacts, gates = artifacts or [], gates or []
+    artifacts, gates, scope = artifacts or [], gates or [], scope or []
     if role not in TASK_ROLES:
         raise ValueError('unsupported task role')
+    if scope and role not in GATE_ROLES:
+        raise ValueError('research task declares artifacts, not a lane scope')
+    check_scope_declarations(scope)
+    # Only a declared scope adds the key, so an undeclared task keeps the current record and behaviour.
+    extra = dict(scope=list(scope)) if scope else {}
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
     if not legacy:
@@ -185,7 +227,7 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
         task = dict(schema='colab-task/2', task_id=uuid.uuid4().hex, run_id=uuid.uuid4().hex,
                     checkout=str(root), checkout_id=key, role=role, agent_id=agent_id,
                     artifact_declarations=artifacts, gates=gates, baseline=snapshot(root),
-                    started_identity=head_identity(root))
+                    started_identity=head_identity(root), **extra)
         runtime().bind_paths(root, task)
         runtime().save(root, task)
         return task
@@ -216,7 +258,7 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     task_id = uuid.uuid4().hex
     task = dict(schema='colab-task/1', task_id=task_id, checkout=str(root), role=role,
                 agent_id=agent_id, artifacts=artifacts, gates=gates, report=report,
-                baseline=snapshot(root, report))
+                baseline=snapshot(root, report), **extra)
     path = task_path(root, task_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -339,6 +381,19 @@ def stop(data, expected_role):
     else:
         if mode != 'complete':
             raise ValueError('lane completion requires current gate evidence')
+        if task.get('scope'):
+            # Same baseline as the researcher branch: the begin-time content snapshot of every
+            # tracked and untracked non-ignored file (commits since begin still count as changes).
+            now = task_snapshot(root, task)
+            changed = {p for p in set(now) | set(task['baseline']) if now.get(p) != task['baseline'].get(p)}
+            outside = out_of_scope(task, changed)
+            if outside:
+                raise ValueError(
+                    'changes outside declared lane scope: ' + ', '.join(outside)
+                    + ' — exits: (1) widen the scope in a new task (lifecycle begin --role '
+                    + task['role'] + ' --scope <glob> …, same --gate set), rerun its gates and hand off'
+                    ' that task, naming the widened paths and why in --summary;'
+                    ' (2) revert the out-of-scope changes, rerun gates and hand off this task again')
         verify_task_report(root, task)
     return 'H6' if expected_role == 'researcher' else 'H7'
 
@@ -460,6 +515,8 @@ def main():
     start.add_argument('--report')
     start.add_argument('--agent-id')
     start.add_argument('--legacy', action='store_true', help='explicit legacy repository-output compatibility')
+    start.add_argument('--scope', action='append', default=[],
+                       help='lane file glob (repeatable); handoff --mode complete blocks changes outside it')
     write = commands.add_parser('write-artifact')
     write.add_argument('--task', required=True)
     write.add_argument('--run-id', required=True)
@@ -489,7 +546,7 @@ def main():
         else:
             root = checkout(Path.cwd())
             if args.command == 'begin':
-                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id, args.legacy)
+                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id, args.legacy, args.scope)
                 print(json.dumps({k: v for k, v in task.items() if k != 'baseline'}, ensure_ascii=False))
             elif args.command == 'gate-snapshot':
                 print(json.dumps(gate_evidence(root, args.task)))

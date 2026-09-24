@@ -222,6 +222,92 @@ class TaskRuntimeTests(unittest.TestCase):
             contract.begin(self.root, 'auditor', gates=['check'])
 
 
+    # ── L1 lane scope (spec S-EXTERNAL-HARNESS-GAP-20260925 · intent 2026-09-25 원한 결과 6) ──
+    def complete_lane(self, task_id):
+        """Bind a fresh run, write a coherent green report and hand off through stop()."""
+        evidence = contract.gate_start(self.root, task_id)
+        current = contract.load_task(self.root, task_id)
+        path = contract.resolve_task_path(self.root, current, current['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.measurement_report(evidence, current['gates'])))
+        handoff = {'task_id': task_id, 'run_id': current['run_id'], 'mode': 'complete',
+                   'summary': 'lane result', 'artifacts': {}}
+        payload = {'cwd': str(self.root), 'agent_type': 'lane-worker',
+                   'last_assistant_message': 'done\nCOLAB_HANDOFF ' + json.dumps(handoff)}
+        return contract.stop(payload, 'lane-worker')
+
+    def write(self, relative, text='x'):
+        target = self.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text)
+
+    def test_lane_scope_blocks_out_of_scope_change_and_names_both_exits(self):
+        self.write('keep.txt', 'baseline')
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**', 'docs/a.md'])
+        self.assertEqual(task['scope'], ['src/**', 'docs/a.md'])
+        self.write('src/deep/module.py')
+        self.write('docs/a.md')
+        self.write('docs/other.md')
+        with self.assertRaises(ValueError) as caught:
+            self.complete_lane(task['task_id'])
+        message = str(caught.exception)
+        self.assertIn('docs/other.md', message)
+        self.assertNotIn('src/deep/module.py', message)
+        self.assertIn('(1)', message); self.assertIn('--scope', message)
+        self.assertIn('(2)', message); self.assertIn('revert', message)
+        # A deletion outside the scope is a change outside the scope too.
+        (self.root / 'docs/other.md').unlink(); (self.root / 'keep.txt').unlink()
+        with self.assertRaisesRegex(ValueError, 'keep.txt'):
+            self.complete_lane(task['task_id'])
+        self.write('keep.txt', 'baseline')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_default_allowed_paths_need_no_declaration(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
+        self.write('src/a.py')
+        self.write('dev-package/reports/round/lane/notes.md')
+        self.write('docs/development/lifecycle-evidence.md')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # `*` does not cross a directory; `**` would.
+        self.write('src/nested/b.py')
+        with self.assertRaisesRegex(ValueError, 'src/nested/b.py'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_without_scope_keeps_current_behavior(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('scope', task)
+        self.write('anywhere/at/all.txt')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_declarations_are_validated(self):
+        for bad in ([''], ['/abs/**'], ['../up/**'], ['a/../b'], ['src\\x'], ['./src/**'], ['src/**', 'src/**']):
+            with self.subTest(scope=bad), self.assertRaises(ValueError):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', scope=['src/**'])
+
+    def test_lane_scope_cli_handoff_is_refused_with_exits(self):
+        (self.root / '.gitignore').write_text('__pycache__/\n')
+        self.write('gates/run.sh', '#!/usr/bin/env bash\necho verified\n')
+        script = str(ROOT / 'scripts/harness/hooks/lifecycle_contract.py')
+        def cli(*args):
+            return subprocess.run([sys.executable, script, *args], cwd=self.root, text=True, capture_output=True)
+        begun = cli('begin', '--role', 'lane-worker', '--gate', 'check', '--scope', 'src/**')
+        self.assertEqual(begun.returncode, 0, begun.stderr)
+        task_id = json.loads(begun.stdout)['task_id']
+        self.write('src/in.py'); self.write('outside.txt')
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        refused = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(refused.returncode, 78)
+        self.assertNotIn('COLAB_HANDOFF', refused.stdout)
+        self.assertIn('outside.txt', refused.stderr)
+        self.assertIn('--scope', refused.stderr); self.assertIn('revert', refused.stderr)
+        (self.root / 'outside.txt').unlink()
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        accepted = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertIn('COLAB_HANDOFF', accepted.stdout)
+
 class ResearcherTaskHookTests(unittest.TestCase):
     """R1 — `SubagentStart` (researcher) opens the H6 task so the first Stop is not bounced.
 
