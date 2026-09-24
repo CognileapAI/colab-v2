@@ -111,6 +111,13 @@ GREEN: 구현 커밋 `bb477fa9` 뒤 F-preview·L3·L3b 43건 통과(로컬 `npx 
 - `bb477fa9`(구현): `frontend/src/components/preview/useZoomPan.ts` 만 — `frontend/test/**` · `gates/**` · `contracts/**` 0
 - 보고서 커밋: 이 보고서 만. 파일 면 밖 제품 파일 변경 0. `COLAB_FIX_LANE` 훅은 이 환경에서 걸 수 없어 규율로 지켰다.
 
+### 브랜치 이름 충돌(작업 중 사건)
+
+- 지시문의 공용 브랜치 이름 `fixlane-work` 를 다른 수정 레인 워크트리(`wf_808554ed-fad-74`)도 체크아웃했다. 그 레인의 `checkout -B fixlane-work origin/worktree-wf_808554ed-fad-1` 이 이 레인의 보고서 커밋 `7a45f2a3` 뒤에 ref 를 `79c2b61f`(F-css 머리)로 되돌렸다(`git reflog fixlane-work` : `fixlane-work@{0}: branch: Reset to origin/worktree-wf_808554ed-fad-1`).
+- 이 레인의 커밋 3개는 잃지 않았다. 작업 사본 파일은 그대로였고, ref 만 조작해 이 워크트리를 고유 브랜치 `fpfix-wf46`(= `7a45f2a3`)로 옮겼다(`git branch` · `git symbolic-ref`). 다른 레인의 워크트리·`fixlane-work` ref 는 건드리지 않았다.
+- 그 사이 돈 게이트 run `e9c5bd59b93549e7b152e9212b2e9bbe` 는 green 4/0/0 이지만 기록된 identity 가 `7a45f2a3` 와 `79c2b61f` 로 섞였다 — 증거로 쓰지 않는다. 인계 증거는 이 보고서 커밋 뒤 고유 브랜치에서 다시 돈 run 이다.
+- 후속: 수정 레인 지시문이 모든 레인에 같은 로컬 브랜치 이름(`fixlane-work`)을 주고 `checkout -B` 를 시킨다. 레인별 고유 이름이 필요하다.
+
 ### 하지 않은 것
 
 - 실브라우저(dev · StrictMode) 관성 멈춤 자리 확인 — vitest renderHook `reactStrictMode` 로만 검증했다. agent-browser·`frontend-visual` 미실행.
