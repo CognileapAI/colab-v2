@@ -2477,7 +2477,7 @@ items:
       ⑵ 갈린 자리가 실측되면 **어느 값이 정본인지 사람이 판정한 뒤** 한 값으로 모은다 — 시험이 고르지 않는다
       ⑶ 세 파일에 공통인 이름은 `tokens.css` 로 올릴지 화면 로컬로 둘지 판정한다(「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 부딪히지 않게)
       ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx`·`catalog` 시험 green).
-    evidence: "2026-09-11 독립 수용: BF-11 실제 5곳 확인으로 선행 의존 해제. 공통16개 값충돌0·화면로컬 유지·변이 음성4개 및 화면 회귀를 dev f8과 동일 frontend인 main620 CI1204건에 연결했다. 실제 CSSOM 78개·중복 이름18개 충돌0. sessions/20260911-stage12-final-verification.md. 과거: 2026-09-08 로컬 구현·음성 회귀는 sessions/20260908-product-local-verification.md BF-13."
+    evidence: "2026-09-11 독립 수용: BF-11 실제 5곳 확인으로 선행 의존 해제. 공통16개 값충돌0·화면로컬 유지·변이 음성4개 및 화면 회귀를 dev f8과 동일 frontend인 main620 CI1204건에 연결했다. 실제 CSSOM 78개·중복 이름18개 충돌0. sessions/20260911-stage12-final-verification.md. 과거: 2026-09-08 로컬 구현·음성 회귀는 sessions/20260908-product-local-verification.md BF-13. 2026-09-24 P1: 완료 정의 ⑶ 판정 = 공유 이름은 tokens.css 로(대안 B) · ⑴ 시험은 게이트 `frontend-design-lint` a 로 승계·폐기."
     deadline: null
     note: >-
       **신설 2026-09-05 · 등록만** — `PLAN-SoT §9 〈331〉`. 발견 = `BF-11` 수용 검토(`reports/bf-11/lane-report.md §2`·`§7`).

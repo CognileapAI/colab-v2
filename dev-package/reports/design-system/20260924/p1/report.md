@@ -12,7 +12,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 | 2 게이트 `frontend-design-lint` + selftest · 등록 · 착수 CSS red 기록 | 완료 |
 | 3 `tokens.css` 재구성 · 화면 `:root` 제거 | 완료 — 게이트 green(a 0 · b 0 · c 0(면제 6) · d 0) |
 | 4 preview 경로(Q7) | 완료 — 제안 × 어둡게 agent-browser 확인 |
-| 5 시험 · 대장 | 진행 전 |
+| 5 시험 · 대장 | BF-13 시험 폐기 · 대장 1줄 · **`preview-slot-4x3` 1건 red — 멈춤(판정 대기)** |
 | 6 시각 변경 0 대조 | 진행 전 |
 | 7 게이트 | 진행 전 |
 
@@ -109,3 +109,19 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
 - `audit:build`(`tsc --noEmit -p tsconfig.audit.json` 포함) exit 0.
 
 `calm` 이 없던 문맥의 값 변화(캡처 밖 · Q7 로 폐기된 모드): `audit-selected-preview.html` 과 `design` 인자 없는 `audit-design.html` 은 종전 calm 스코프 밖이라 기본 `:root` 값(`--leading-body` 1.467 · `--tracking-body` 0.0096em · calm 전용 이름 미정의)을 썼다. 이제 제품과 같은 값을 쓴다. 제품(`index.html`)과 캡처 33장면(`design=full`·`audit-upload`)은 종전에도 calm 값이었다.
+
+## 시험 · 대장(단계 5)
+
+- `frontend/test/shared-css-tokens.test.ts`(BF-13) 삭제 — 대상(화면 `:root`)이 0건이 됐다. 오라클은 게이트 a 가 승계.
+- `vitest run`(삭제 뒤): **Test Files 1 failed | 128 passed (129) · Tests 1 failed | 1609 passed (1610)**.
+- `css-residual-rc11.test.ts` — 통과. spec 의 처리 기준(기대값이 죽은 선언 값과 같으면 calm 값으로 고침)을 적용할 자리가 없었다 · 고친 기대값 0.
+- **멈춘 항목 — `test/preview-slot-4x3.test.tsx:100`** 「비율은 CSS 한 자리(토큰)에서 온다 — 4 / 3」:
+
+  ```
+  AssertionError: 선택자 부재: :root: expected -1 to be greater than -1
+   ❯ block test/preview-slot-4x3.test.tsx:45:37
+  ```
+
+  시험이 `preview.css` 안의 `:root` 블록에서 `--pv-frame-ratio: 4 / 3` 를 찾는다. spec 은 화면 CSS 의 `:root` 를 0 으로 만들라고 하고(게이트 d), 이 이름을 preview 루트 범위로 옮기라고 한다 — **두 요구가 동시에 참일 수 없다.** spec 이 예상한 실패(`css-residual-rc11` 의 죽은 값)가 아니므로 spec 의 규칙(「그 밖의 실패는 시험을 넓히지 말고 멈추고 보고한다」)대로 시험을 고치지 않았다. 값·렌더는 같다(`.pv-frame` 의 `aspect-ratio: var(--pv-frame-ratio)` 무변 · 값 `4 / 3` 은 `.pv-frame-wrap` 범위로 이동 · 시각 대조는 단계 6).
+  제안(판정 뒤 1줄): `expect(block(CSS, ':root'))` → `expect(block(CSS, '.pv-frame-wrap {'))`. 오라클(비율이 CSS 한 자리 토큰에서 온다 · 값 4 / 3)은 그대로다.
+- `dev-package/work-items.yaml` BF-13 `evidence` 끝에 한 문장 추가: 「2026-09-24 P1: 완료 정의 ⑶ 판정 = 공유 이름은 tokens.css 로(대안 B) · ⑴ 시험은 게이트 `frontend-design-lint` a 로 승계·폐기.」 `status`·번호·다른 필드 무변. `gates/run.sh work-item-consistency` → exit 0 「대장과 산문의 불일치 0」.
