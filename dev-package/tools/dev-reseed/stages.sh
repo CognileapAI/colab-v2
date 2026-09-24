@@ -483,13 +483,33 @@ EOF
   prelude_login_credential || return 1
 
   log "④ 서비스 운영자 — provision-service-operator.sql (FORCE RLS 아래라 경계를 먼저 건다)"
+  operator_grant "prelude:operator" || return 1
+}
+
+# ── 임시 운영자 창(窓) ───────────────────────────────────────────────────
+# 교수에게 주는 서비스 운영자 자격은 **`accounts` 국면 하나에만** 필요하다(무소속 운영자 4명은
+# `canManageServiceAccounts` 가 있어야 화면에서 만들 수 있다). 그 자격이 켜져 있는 동안
+# 생성 넷(`createProject`·`createUpload`·`initiateUploadTransfer`·`createDataset`)은
+# `X-CoLAB-Target-Lab` 헤더를 **요구한다** — `services/core-api/src/colab_core/app/target_scope.py:8·42-43`.
+# 교수(비운영자)에게는 그 요구가 아예 없고, 오히려 헤더를 실으면 거절된다(`target_scope.py:31-34`).
+# 러너는 그 칸을 채우지 않으므로(`dev-package/tools/dev-seed/runner.py:880-887`)
+# 2026-09-24 회차의 `seed` 가 첫 프로젝트에서 「대상 연구실을 선택해 주세요.」로 멈췄다.
+# ⇒ 창을 `accounts` 국면으로 좁힌다. 화면 세 자리에 연구실 선택을 새로 붙이는 대신
+#   **DR-4 가 28/28 을 세운 그 단일 연구실 경로**로 되돌리는 쪽이다.
+#
+# ⚠ **제품 API(`set_operator`)로 내리지 않는다.** 그 경로는 자격 버전을 올리고 열린 세션을
+#   끊는다(`services/core-api/src/colab_core/kernel/db_credentials.py:260-264`) — 러너의 로그인이
+#   그 자리에서 죽는다. 운영자 여부는 **매 요청 다시 읽으므로**(`kernel/auth.py:25`)
+#   `account_admin.service_operator` 의 행 하나만 빼면 세션을 건드리지 않고 즉시 반영된다.
+#   그 표에는 RLS 가 걸려 있지 않다(`db/platform/schema.sql:155-158`) — 경계를 걸 GUC 가 필요 없다.
+operator_grant() { # $1 = 원격 라벨
   # ⚠ `account_id` 는 **원문 그대로** 넘긴다 — `provision-service-operator.sql` 이 `:'account_id'`
   #   (psql 이 따옴표를 씌우는 꼴)로 읽는다. ② 의 `provision-account.sql` 은 맨 `:account_id` 라
   #   그쪽만 `sqlq` 로 미리 감싼다. 두 파일의 변수 꼴이 다르다 — 값의 꼴은 **파일이 정한다.**
   #   4회차 재개 2(`20260914T023537Z`)가 여기에 감싼 값을 넘겨 `'''<id>'''` 로 조회했고
   #   `INSERT 0 0` → 「지정한 계정이 없어 운영자를 등록하지 못했다」 로 멈췄다.
   #   `SET app.current_lab` 은 SQL 리터럴 자리라 종전대로 `sqlq` 로 감싼다.
-  ssh_script "prelude:operator" <<EOF || return 1
+  ssh_script "$1" <<EOF || return 1
 set -euo pipefail
 $(remote_assign ACCOUNT_ID "$RESEED_ACCOUNT_ID")
 $(remote_assign ACCOUNT_LAB_ID "$LAB_ID")
@@ -503,6 +523,37 @@ docker run --rm --network host --user 0 \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID" \\
     -c "SET app.current_lab = \$ACCOUNT_LAB_ID_Q" \\
     "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/op.sql'
+EOF
+}
+
+# 내리는 문장은 **배포된 트리에 없다**(그 자리는 대상 ref 의 파일만 걸 수 있다) — 그래서
+# 본문을 base64 로 실어 `psql -f -` 의 표준입력으로 넣는다(`lib.sh` `remote_assign` 머리말).
+# 판정 두 개를 같은 트랜잭션(`-1`)에 둔다 — 거절이 서면 DELETE 도 함께 되돌아간다.
+#   ⑴ 그 계정의 행이 남아 있으면 거절     ⑵ 운영자가 **한 명도** 남지 않으면 거절
+# ⑵ 는 제품이 지키는 불변식과 같다(「마지막 관리자는 해제할 수 없다」 · `db_credentials.py:250-252`).
+operator_revoke() { # $1 = 원격 라벨
+  local sql
+  sql="$(cat <<'SQL'
+\set ON_ERROR_STOP on
+DELETE FROM account_admin.service_operator WHERE account_id=:'account_id';
+SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''임시 운영자를 내리지 못했다''; END $check$'
+ WHERE EXISTS (SELECT 1 FROM account_admin.service_operator WHERE account_id=:'account_id')
+\gexec
+SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''운영자가 한 명도 남지 않는다 — 내리지 않는다''; END $check$'
+ WHERE NOT EXISTS (SELECT 1 FROM account_admin.service_operator)
+\gexec
+SQL
+)"
+  ssh_script "$1" <<EOF || return 1
+set -euo pipefail
+$(remote_assign ACCOUNT_ID "$RESEED_ACCOUNT_ID")
+$(remote_assign REVOKE_SQL "$sql")
+export ACCOUNT_ID
+printf '%s\\n' "\$REVOKE_SQL" | docker run --rm -i --network host --user 0 \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
+  -e ACCOUNT_ID \\
+  $PSQL_IMAGE sh -c 'psql -1 -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID" \\
+    "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f -'
 EOF
 }
 
@@ -597,6 +648,12 @@ stage_seed() {
       --accounts-password-file "$ACCOUNTS_WORK_DIR/initial-$i.txt" || return 1
   done
   run python3 "$RESEED_DIR/accounts.py" check-created --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+
+  log "③ 임시 운영자 해제 — 여기서부터 교수 자격 하나로 돈다(대상 연구실 헤더 요구가 사라진다)"
+  # 계정 넷이 선 것을 확인한 **뒤**에 내린다. 여기부터 `projects`·`datasets`·`verify` 는
+  # DR-4 가 28/28 을 세운 것과 같은 단일 연구실 경로다.
+  operator_revoke "seed:operator-revoke" || return 1
+
   for phase in projects datasets verify report; do
     run python3 "$runner" --phase "$phase" "${args[@]}" || return 1
   done
@@ -666,6 +723,12 @@ CVPY
 
 account_finalize() {
   local binding
+  # `seed` 가 내린 임시 운영자를 **되올린 뒤에** 최종화한다. `accounts.py` 의 최종화는
+  # 교수 비밀번호를 초기값으로 되돌릴 자격의 표식으로 그 운영자 행을 읽고, 없으면
+  # 「final professor credential drift; refusing another reset」 로 거절한다.
+  # 최종화 자신이 마지막에 그 행을 다시 내리므로(`set_operator(..., False)`) 끝 상태는 같다.
+  # 멱등이다 — `provision-service-operator.sql` 이 `ON CONFLICT DO NOTHING` 이다.
+  operator_grant "verify:operator-grant" || return 1
   binding="$(python3 "$RESEED_DIR/accounts.py" check-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" --target-sha "$TARGET_SHA")" || return 1
   python3 "$RESEED_DIR/accounts.py" finalize --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
     --binding "$binding" --base-url "$DEV_URL" --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR"

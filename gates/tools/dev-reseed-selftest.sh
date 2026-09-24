@@ -27,6 +27,11 @@
 #      로그인 화면·빈 화면은 「성립」이 아니라 「판정불가」이며, id 없는 행은 이름을 지킨다.
 #      왜 = 4회차 `20260914T035058Z` 의 verify 가 로그인 화면 27건을 전건 「성립」으로 적었다
 #      (환경변수 세션 미반영 · 계수 0 = 성립 · 탭 접힘). 셋 다 실모드로 돈 적이 없었다.
+#   ⓖ `tests/operator-window.sh` **임시 운영자 자격이 켜져 있는 구간**을 판정한다 —
+#      `accounts` 국면 뒤에 내리고 `projects` 앞에서 내려가 있으며, 계정 최종화 직전에만 되올린다.
+#      왜 = `bafae4a7` 이후 생성 넷이 운영자에게 `X-CoLAB-Target-Lab` 을 요구하는데
+#      러너는 그 칸을 모른다(`app/target_scope.py:42-43`). 2026-09-24 재시드가 첫 프로젝트에서
+#      멈춘 자리이고, **국면 순서를 보는 검사는 어디에도 없었다.**
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -58,6 +63,7 @@ CASES=(
   "$RESEED_DIR/tests/s3-review.sh"
   "$RESEED_DIR/tests/verify-session.sh"
   "$RESEED_DIR/tests/deploy-rehearsal.sh"
+  "$RESEED_DIR/tests/operator-window.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
