@@ -488,7 +488,11 @@ textarea.inp { resize: vertical; }
    여기서는 React 가 열렸을 때만 그리므로 그 두 줄을 걷는다. 나머지는 축자다. */
 .dr-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:60;
   background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);
-  box-shadow:var(--shadow-lg);padding:14px 16px 12px;width:576px;max-width:calc(100vw - 48px);}
+  box-shadow:var(--shadow-lg);padding:14px 16px 12px;width:576px;max-width:calc(100vw - 48px);
+  transform-origin:top left;transition:opacity var(--ease),transform var(--ease);}
+/* design-review 20260924 #2 — 여는 전환(값 3). 칸 아래 왼쪽 정렬 자리에서 커진다(기준점 = 칸 쪽).
+   닫기는 지금처럼 즉시다(판정 문구가 「여는 전환」만 말한다). 전역 reduced-motion 규칙이 전환을 끈다. */
+@starting-style{.dr-pop{opacity:0;transform:scale(0.96);}}
 .dr-times{display:flex;gap:12px;margin-bottom:12px;}
 .dr-times .form-row{flex:1;margin-bottom:0;}
 .dr-nav{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -662,7 +666,7 @@ textarea.inp { resize: vertical; }
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
 :is(.up-card, .mapstage, .reggate, .regarea) { border-radius: var(--radius-lg); box-shadow: none; }
 @media (max-width: 640px) {
-  .dr-pop { position: fixed; inset: auto 12px 12px; width: auto; max-width: none; max-height: 80dvh; overflow-y: auto; }
+  .dr-pop { position: fixed; inset: auto 12px 12px; width: auto; max-width: none; max-height: 80dvh; overflow-y: auto; transform-origin: bottom center; }
   .dr-cal-d { height: 44px; }
 }
 .up-empty .up-card > .card-b { padding: 0; }
