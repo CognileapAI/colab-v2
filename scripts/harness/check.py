@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 
-from config import ContractError, check_always_on_lines, check_contract, load_contract
+from config import ContractError, check_always_on_lines, check_contract, check_home_paths, load_contract
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -89,7 +89,10 @@ def main(argv: list[str] | None = None) -> int:
         return 78
     errors = check_contract(root, value)
     errors += check_always_on_lines(root, value)
+    home_errors, home_readiness = check_home_paths(root, value)
+    errors += home_errors
     parallelism_errors, readiness, judged_gates = check_gate_parallelism(root)
+    readiness = readiness or home_readiness
     if readiness is not None:
         # We could not read the judgement target. Everything we *did* judge is still
         # printed, but the exit code says 준비, not 판정 (ADR-0004).
@@ -108,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         f"adapters {len(value['adapters']['required_files'])}, "
         f"hook registrations {len(value['sources']['hook_registrations'])}, "
         f"always-on line budget {value['hygiene']['always_on_max_lines']}, "
+        f"home-path roots {len(value['hygiene']['home_path_roots'])}, "
         f"parallel-safety declarations {judged_gates}"
     )
     return 0

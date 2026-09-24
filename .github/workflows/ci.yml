@@ -559,7 +559,7 @@ jobs:
       # `.agents/ci-producers.json` 에 아직 없는 검사라 `verify_evidence.py record` 로 감싸지 않는다 —
       # red 는 이 잡을 실패시키고 `ci-required` 가 막는다.
       - name: ADR 구조·대체 연결 전수 검사
-        run: ./gates/run.sh adr-records
+        run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "adr-records" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh adr-records
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "work-item-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh work-item-consistency
       # 참조자료 드라이브는 CI 에 없다. 그래서 **명시 면제**로 돈다 — md 4건 ↔ 커밋된 등재표

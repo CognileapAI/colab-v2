@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path, PurePosixPath
 import re
+import subprocess
 import tomllib
 
 
@@ -21,6 +22,16 @@ TOP_LEVEL = {
     "publication",
     "hygiene",
 }
+
+# A user home directory written as an absolute path. The user component is a real account
+# name, so placeholders such as `<u>`, `$USER` or `…` never match. `/mnt/c/Users/<u>/` is
+# listed first so the leftmost match reports the whole WSL form once.
+HOME_PATH = re.compile(
+    r"/mnt/[A-Za-z]/Users/[A-Za-z0-9._-]+/"
+    r"|/home/[A-Za-z0-9._-]+/"
+    r"|/Users/[A-Za-z0-9._-]+/"
+    r"|[A-Za-z]:\\{1,2}Users\\{1,2}[A-Za-z0-9._-]+\\{1,2}"
+)
 
 
 class ContractError(ValueError):
@@ -96,8 +107,10 @@ def validate_contract(value: object) -> dict:
     limit = hygiene.get("always_on_max_lines")
     if type(limit) is not int or limit <= 0:
         raise ContractError("hygiene.always_on_max_lines must be a positive integer")
-    for item in _strings(hygiene.get("always_on_files"), "hygiene.always_on_files"):
-        _relative(item, "hygiene.always_on_files")
+    for field in ("always_on_files", "home_path_roots"):
+        for item in _strings(hygiene.get(field), f"hygiene.{field}"):
+            _relative(item, f"hygiene.{field}")
+    _strings(hygiene.get("home_path_allow"), "hygiene.home_path_allow", nonempty=False)
     return value
 
 
@@ -253,3 +266,47 @@ def check_always_on_lines(root: Path, value: dict) -> list[str]:
             if count > limit:
                 errors.append(f"always-on document exceeds {limit} lines: {relative} ({count})")
     return errors
+
+
+def check_home_paths(root: Path, value: dict) -> tuple[list[str], str | None]:
+    """Reject user home absolute paths in harness documents.
+
+    Returns (judgement errors, readiness reason). The file list comes from Git (tracked plus
+    untracked-but-not-ignored), so nested worktrees and ignored runtime files are not read.
+    Binary files are skipped. Not being able to list or read the files is readiness, not green.
+    """
+    hygiene = value["hygiene"]
+    allowed = set(hygiene["home_path_allow"])
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard",
+             "--", *hygiene["home_path_roots"]],
+            capture_output=True, check=False)
+    except OSError as exc:
+        return [], f"cannot list harness documents: {exc}"
+    if listed.returncode != 0:
+        return [], "cannot list harness documents: " + listed.stderr.decode("utf-8", "replace").strip()
+    names = sorted({name for name in listed.stdout.decode("utf-8").split("\0") if name})
+    errors, scanned = [], 0
+    for name in names:
+        path = root / name
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            return errors, f"cannot read harness document {name}: {exc}"
+        if b"\0" in data:
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        scanned += 1
+        for number, line in enumerate(text.splitlines(), 1):
+            for match in HOME_PATH.finditer(line):
+                if match.group(0) not in allowed:
+                    errors.append(f"home absolute path in {name}:{number}: {match.group(0)}")
+    if scanned == 0:
+        return errors, "home-path scan found no harness document to read"
+    return errors, None

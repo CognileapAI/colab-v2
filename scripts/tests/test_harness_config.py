@@ -199,6 +199,33 @@ class HarnessConfigTests(unittest.TestCase):
             with self.subTest(limit=broken), self.assertRaises(self.module.ContractError):
                 self.module.validate_contract(bad)
 
+    # K3 — user home absolute paths must not leak into harness documents.
+    def test_home_absolute_paths_in_harness_documents_are_red(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        self.assertEqual(self.module.check_home_paths(ROOT, value), ([], None))
+        fixture = ROOT / 'gates/fixtures/harness-contract/home-paths.md'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            for folder in ('docs', 'scripts', '.claude'):
+                (root / folder).mkdir()
+            shutil.copy2(fixture, root / 'docs/leak.md')
+            shutil.copy2(fixture, root / 'scripts/out-of-scope.md')
+            (root / '.claude/blob.bin').write_bytes(b'\0/home/alice/\0')
+            (root / 'AGENTS.md').write_text('clean /home/user/ example and /home/<u>/ pattern\n')
+            errors, readiness = self.module.check_home_paths(root, value)
+            self.assertIsNone(readiness)
+            self.assertEqual(errors, [
+                'home absolute path in docs/leak.md:3: /home/alice/',
+                'home absolute path in docs/leak.md:4: /Users/alice/',
+                'home absolute path in docs/leak.md:5: C:\\Users\\alice\\',
+                'home absolute path in docs/leak.md:6: /mnt/c/Users/alice/',
+            ])
+        with tempfile.TemporaryDirectory() as directory:
+            errors, readiness = self.module.check_home_paths(Path(directory), value)
+            self.assertEqual(errors, [])
+            self.assertIsNotNone(readiness, 'an unreadable file list is readiness, not green')
+
     def run_check(self, contract):
         return subprocess.run(
             [sys.executable, str(ROOT / "scripts/harness/check.py"),

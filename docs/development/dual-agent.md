@@ -37,7 +37,7 @@ Claude의 paths·모델·도구·격리 frontmatter는 해당 어댑터에 그�
 Codex 역할은 `.agents/roles`를 직접 읽으며 Claude frontmatter를 적용하지 않는다.
 공통 본문 수정은 원본에서 한 번만 한다.
 공통 스킬 17개와 Codex 전용 완료 알림 스킬 1개(`slack-completion`)를 `.agents/skills/<이름>/SKILL.md`로 등록한다(2026-09-25 실측 · `harness-contract`가 원본 18개·Claude 어댑터 17개를 대조).
-`grill-me`와 `to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
+`grill-me`·`grilling`·`to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
 Codex에서는 `$grill-me`, `$to-spec`로 호출한다. 개인 `$intent`는 grill-me의 별칭이다.
 각 스킬을 읽으면 **그 원본 디렉터리**를 기준으로 상대 링크·스크립트 경로를 해석한다.
 `docs/`, `dev-package/`, `.claude/`, `.agents/`, `scripts/`, `gates/`로 시작하는 저장소 경로는

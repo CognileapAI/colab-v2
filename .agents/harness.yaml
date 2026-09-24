@@ -96,7 +96,9 @@
   },
   "hygiene": {
     "always_on_max_lines": 120,
-    "always_on_files": ["AGENTS.md", "CLAUDE.md", ".claude/rules/*.md"]
+    "always_on_files": ["AGENTS.md", "CLAUDE.md", ".claude/rules/*.md"],
+    "home_path_roots": ["AGENTS.md", "CLAUDE.md", ".agents", ".claude", ".codex", "docs"],
+    "home_path_allow": ["/home/user/"]
   },
   "adr_gate": {
     "root": "docs/decisions",
