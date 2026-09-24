@@ -22,8 +22,10 @@
 #   ⓗ 보기는 좌표 클릭이 아니라 초점 ＋ Enter 로 누르고(미반영이면 JS click 한 번), 누르기 전 적중 검사
 #      (버튼 중심의 elementFromPoint)와 먹힌 방법을 판정표 비고·로그에 남긴다. dev 2026-09-25 실측 —
 #      `click` 이 rc 0 인데 onClick 이 돌지 않았다(버튼 중심이 화면 밖이거나 떠 있는 층에 덮이면 그렇다).
-#   ⓘ GeoPackage(정본 미성립) 행은 기대를 바꾸지 않고, 실제로 보인 것(미지원 표시 계수 · slot · 보기 활성)을
-#      판정표 비고에 적는다.
+#   ⓘ GeoPackage(정본 미성립) 행도 정착 뒤 보기를 같은 방법(초점 ＋ Enter · JS click 폴백)으로 누르고
+#      미지원 표시(`dt-preview-unsupported`)를 기다린다 — 배포 프론트는 누른 뒤에만 그 표시를 그린다.
+#      기대는 바꾸지 않고, 실제로 보인 것(미지원 표시 계수 · slot · 보기 활성 · 누름 방법)을 비고에 적는다.
+#   ⓙ 눌렀더니 그려지면 불일치(「기대와 달리 미리보기 성립」)로 적고, ⓚ·ⓛ 판정불가 행에는 그 문구를 붙이지 않는다.
 #
 # 실물 무접촉 = `agent-browser` 를 PATH 대역으로 가린다. ssh·docker 는 이 단계가 부르지 않는다.
 set -uo pipefail
@@ -96,15 +98,17 @@ case "${1:-}" in
     exit 0 ;;
   get)
     case "${2:-} ${3:-}" in
-      'value [data-testid="dt-pick-file"]')       [ "${FIXTURE_UNSUPPORTED:-0}" = 1 ] || echo FILE-1 ;;
-      'text [data-testid="dt-preview-total"]')    [ -f "$FIXTURE_AB_LOG.drawn" ] && [ "${FIXTURE_TERMINAL:-done}" = done ] && echo '총 10ms' ;;
+      'value [data-testid="dt-pick-file"]')       [ "${FIXTURE_UNSUPPORTED:-0}" = on-load ] || echo FILE-1 ;;
+      'text [data-testid="dt-preview-total"]')    [ -f "$FIXTURE_AB_LOG.drawn" ] && [ "${FIXTURE_TERMINAL:-done}" = done ] && [ "${FIXTURE_UNSUPPORTED:-0}" != 1 ] && echo '총 10ms' ;;
       'count [data-testid="login-submit"]')        [ "$page" = login ] && echo 1 || echo 0 ;;
       'count [data-testid="basic-info"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
       'count [data-testid="preview-unavailable"]')
         if [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ] && [ -f "$FIXTURE_AB_LOG.waited" ]; then echo 1
         elif [ "$page" = detail ]; then echo "${FIXTURE_UNAVAIL:-0}"; else echo 0; fi ;;
       'attr [data-testid="dt-preview-slot"]')
-        if [ ! -f "$FIXTURE_AB_LOG.drawn" ]; then echo idle
+        if [ "${FIXTURE_UNSUPPORTED:-0}" = on-load ]; then echo failed
+        elif [ ! -f "$FIXTURE_AB_LOG.drawn" ]; then echo idle
+        elif [ "${FIXTURE_UNSUPPORTED:-0}" = 1 ]; then echo failed
         elif [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ]; then
           if [ -f "$FIXTURE_AB_LOG.waited" ]; then echo failed
           else : > "$FIXTURE_AB_LOG.waited"; echo drawing; fi
@@ -113,7 +117,10 @@ case "${1:-}" in
       'count [data-testid="ig-unset-가공 단계"]')   echo 0 ;;
       'count [data-testid="usage-card"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
       'count [data-testid="dt-preview-unsupported"]')
-        if [ "${FIXTURE_UNSUPPORTED:-0}" != 1 ]; then echo 0
+        # 배포 프론트 모형 — 그릴 조각이 없으면 열자마자(:155-156 · on-load), 있으면 보기를 누른 뒤
+        # create 가 「그릴 수 없음」(NotRenderableError)으로 돌아와야(:239-240,362-366) 표시가 선다.
+        if [ "${FIXTURE_UNSUPPORTED:-0}" = on-load ]; then echo 1
+        elif [ "${FIXTURE_UNSUPPORTED:-0}" != 1 ] || [ ! -f "$FIXTURE_AB_LOG.drawn" ]; then echo 0
         elif [ "${FIXTURE_UNSUPPORTED_DELAY:-0}" = 1 ] && [ ! -f "$FIXTURE_AB_LOG.unsupported-seen" ]; then
           : > "$FIXTURE_AB_LOG.unsupported-seen"; echo 0
         else echo 1; fi ;;
@@ -121,7 +128,8 @@ case "${1:-}" in
     esac ;;
   is)
     if [ "${2:-} ${3:-}" = 'enabled [data-testid="dt-preview-draw"]' ]; then
-      if [ -f "$FIXTURE_AB_LOG.described" ]; then echo "${FIXTURE_DRAW_ENABLED:-true}"; else echo false; fi
+      if [ "${FIXTURE_UNSUPPORTED:-0}" = on-load ]; then echo false
+      elif [ -f "$FIXTURE_AB_LOG.described" ]; then echo "${FIXTURE_DRAW_ENABLED:-true}"; else echo false; fi
       exit 0
     fi
     exit 1 ;;
@@ -307,6 +315,9 @@ EXPECT_DATASETS=1
 unset FIXTURE_TERMINAL
 
 # 정본이 정확히 허용한 GeoPackage 두 이름의 미성립만 성공한다.
+# ⓘ 배포 프론트의 `dt-preview-unsupported` 는 보기를 누르고 create 가 「그릴 수 없음」으로 돌아온 뒤에만
+#   선다(`ea21d8c2aa54` DatasetPreviewSection.tsx:239-240,362-366). 누르지 않고 기다리기만 하면 끝내 안 선다
+#   (dev 1차 시도 seq 13·14 「미지원 상태 미확인」). 정착 뒤 같은 누름(초점 ＋ Enter)으로 눌러야 한다.
 for expected_name in SPI-4weeks SPEI-4weeks; do
   cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<YAML
 datasets:
@@ -318,17 +329,55 @@ JSON
   cp "$TMP/verify-good.json" "$SEED_WORK_DIR/verify.json"
   reset_run; export FIXTURE_UNAVAIL=1 FIXTURE_UNSUPPORTED=1 FIXTURE_UNSUPPORTED_DELAY=1
   stage_verify >/dev/null 2>&1; rc=$?
-  [ "$rc" -eq 0 ] || note "정본이 허용한 $expected_name 미리보기 미성립을 실패로 판정했다"
-  case "$(note_of 1)" in *"미지원 표시 [1]"*"slot ["*) ;; *) note "ⓘ $expected_name 비고에 실제 표시(미지원 표시 · slot)가 없다: [$(note_of 1)]" ;; esac
+  [ "$rc" -eq 0 ] || note "ⓘ 정본이 허용한 $expected_name 미리보기 미성립을 실패로 판정했다(보기를 누르지 않으면 미지원 표시가 서지 않는다): $(note_of 1)"
+  [ "$(verdict_of 1)" = 미성립 ] || note "ⓘ $expected_name 판정이 「미성립」이 아니다: [$(verdict_of 1)]"
+  case "$(note_of 1)" in "정본상 포맷 미지원"*"미지원 표시 [1]"*"slot [failed]"*"누름 focus+Enter"*"적중 "*) ;;
+    *) note "ⓘ′ $expected_name 비고에 실제 표시(미지원 표시 · slot)·누름 방법·적중 검사가 없다: [$(note_of 1)]" ;; esac
+  [ "$(grep -c $'^AB\t--session\tcolab-dev\tfocus\t\[data-testid="dt-preview-draw"\]$' "$FIXTURE_AB_LOG")" -eq 1 ] \
+    && [ "$(grep -c $'^AB\t--session\tcolab-dev\tpress\tEnter$' "$FIXTURE_AB_LOG")" -eq 1 ] \
+    || note "ⓘ″ $expected_name 행에서 보기를 초점 ＋ Enter 로 정확히 한 번 누르지 않았다"
+  [ "$(grep -c $'^AB\t--session\tcolab-dev\tselect\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓘ‴ $expected_name 행에서 이미 선택된 파일을 다시 골랐다"
 done
 unset FIXTURE_UNAVAIL FIXTURE_UNSUPPORTED FIXTURE_UNSUPPORTED_DELAY
-# ⓘ′ 미지원 표시가 끝내 없으면 기대(미성립)는 그대로 두고 판정불가로 막되, 실제로 보인 것을 적는다.
-reset_run
+
+# ⓘ⁗ 그릴 조각이 아예 없으면(:155-156) 열자마자 미지원 표시가 서고 보기는 비활성이다 — 누르지 않고 미성립.
+reset_run; export FIXTURE_UNSUPPORTED=on-load
 stage_verify >/dev/null 2>&1; rc=$?
-[ "$rc" -ne 0 ] || note "ⓘ′ 미지원 표시가 없는 GeoPackage 행을 성공으로 판정했다"
-case "$(note_of 1)" in "미지원 상태 미확인"*"미지원 표시 [0]"*"slot [idle]"*"보기 활성 ["*) ;;
-  *) note "ⓘ″ 미지원 표시 부재 행의 비고가 실제 표시를 적지 않았다: [$(note_of 1)]" ;; esac
-grep -q '미지원 표시 \[0\]' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓘ‴ 차단 사유에 실제 표시(미지원 표시 [0])가 없다"
+[ "$rc" -eq 0 ] || note "ⓘ⁗ 열자마자 선 미지원 표시를 실패로 판정했다: $(note_of 1)"
+case "$(verdict_of 1)|$(note_of 1)" in "미성립|정본상 포맷 미지원"*"미지원 표시 [1]"*"누름 없음"*) ;;
+  *) note "ⓘ⁗′ 열자마자 선 미지원 표시 행이 [미성립|정본상 포맷 미지원 … 누름 없음] 이 아니다: [$(verdict_of 1)|$(note_of 1)]" ;; esac
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tpress\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓘ⁗″ 비활성 보기를 눌렀다"
+unset FIXTURE_UNSUPPORTED
+
+# ⓙ 눌렀더니 그려졌다(slot done) — 기대(미성립)는 바꾸지 않고 불일치로 적는다.
+reset_run
+stage_verify >"$TMP/verify.out" 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "ⓙ 기대(미성립)와 달리 그려진 GeoPackage 행을 성공으로 판정했다"
+case "$(verdict_of 1)|$(note_of 1)" in "성립|기대와 달리 미리보기 성립"*"slot [done]"*"누름 focus+Enter"*) ;;
+  *) note "ⓙ′ 그려진 GeoPackage 행이 [성립|기대와 달리 미리보기 성립 … slot [done] … 누름 focus+Enter] 가 아니다: [$(verdict_of 1)|$(note_of 1)]" ;; esac
+grep -q '기대와 달리 미리보기 성립 seq 1' "$TMP/verify.out" || note "ⓙ″ 대조 결과에 「기대와 달리 미리보기 성립 seq 1」이 없다"
+grep -q '기대와 달리 미리보기 성립' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓙ‴ 차단 사유에 불일치가 없다"
+
+# ⓚ 보기가 끝내 활성이 되지 않으면 누르지 않고 판정불가로 막되, 실제로 보인 것을 적는다.
+#   판정불가는 「성립」이 아니므로 「기대와 달리 미리보기 성립」을 붙이지 않는다.
+reset_run; export FIXTURE_DRAW_ENABLED=false
+stage_verify >"$TMP/verify.out" 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "ⓚ 미지원 표시가 없는 GeoPackage 행을 성공으로 판정했다"
+case "$(verdict_of 1)|$(note_of 1)" in "판정불가|미지원 상태 미확인"*"미지원 표시 [0]"*"slot [idle]"*"보기 활성 [false]"*"누름 없음"*) ;;
+  *) note "ⓚ′ 미지원 표시 부재 행의 비고가 실제 표시를 적지 않았다: [$(verdict_of 1)|$(note_of 1)]" ;; esac
+grep -q '미지원 표시 \[0\]' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓚ″ 차단 사유에 실제 표시(미지원 표시 [0])가 없다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tpress\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓚ‴ 비활성 보기를 눌렀다"
+grep -q '기대와 달리 미리보기 성립' "$TMP/verify.out" && note "ⓚ⁗ 판정불가 행에 「기대와 달리 미리보기 성립」을 붙였다"
+unset FIXTURE_DRAW_ENABLED
+
+# ⓛ 누름이 반영되지 않으면(초점 ＋ Enter · JS click 모두) 판정불가 · 누름 none 을 적는다.
+reset_run; export FIXTURE_UNSUPPORTED=1 FIXTURE_KEYBOARD_NOOP=1 FIXTURE_JS_CLICK_NOOP=1
+stage_verify >"$TMP/verify.out" 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "ⓛ 반영되지 않은 누름의 GeoPackage 행을 성공으로 판정했다"
+case "$(verdict_of 1)|$(note_of 1)" in "판정불가|미지원 상태 미확인"*"누름 none"*) ;;
+  *) note "ⓛ′ 누름 미반영 GeoPackage 행이 [판정불가|미지원 상태 미확인 … 누름 none] 이 아니다: [$(verdict_of 1)|$(note_of 1)]" ;; esac
+grep -q '기대와 달리 미리보기 성립' "$TMP/verify.out" && note "ⓛ″ 판정불가 행에 「기대와 달리 미리보기 성립」을 붙였다"
+unset FIXTURE_UNSUPPORTED FIXTURE_KEYBOARD_NOOP FIXTURE_JS_CLICK_NOOP
 
 # 기대 증거가 빠지면 실제 화면이 성립이어도 fail closed다.
 write_state 0

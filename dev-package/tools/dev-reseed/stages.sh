@@ -762,6 +762,33 @@ preview_press() {
   printf 'none|%s' "$s"; return 1
 }
 
+# 보기 전 정착 대기 — 파일 선택값 있음 · 보기 활성 · slot idle 이 PREVIEW_STABLE_MS 이상 이어질 때까지(상한 PREVIEW_WAIT_MS).
+# 호출한 쪽(stage_verify)의 preview_file · draw_enabled · slot_state · unsupported_n 에 마지막 관측값을 남긴다.
+# $1 = unsupported 면 미지원 표시(`dt-preview-unsupported`)도 함께 본다 — 그릴 조각이 아예 없으면 배포 프론트가
+#      열자마자 그 표시를 세우고 보기는 비활성으로 둔다(`ea21d8c2aa54` DatasetPreviewSection.tsx:155-156,355).
+# 종료 0 = 정착 · 1 = 상한까지 정착 못 함 · 2 = 누르기 전에 미지원 표시가 섰다.
+preview_settle() {
+  local t_end now stable_since=""
+  t_end=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+  while :; do
+    now="$(date +%s%3N)"; [ "$now" -lt "$t_end" ] || return 1
+    if [ "${1:-}" = unsupported ]; then
+      unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+      [ "$unsupported_n" = 1 ] && return 2
+    fi
+    preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
+    draw_enabled="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
+    slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+    if [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && [ "$slot_state" = idle ]; then
+      [ -n "$stable_since" ] || stable_since="$now"
+      [ "$(( $(date +%s%3N) - stable_since ))" -lt "$PREVIEW_STABLE_MS" ] || return 0
+    else
+      stable_since=""
+    fi
+    sleep 0.05
+  done
+}
+
 # 미리보기 판정 — `preview-unavailable` 의 **계수 한 개**로 가른다.
 #   0        → 성립      (「볼 수 없다」 표시가 없다)
 #   1 이상   → 미성립    (표시가 있다)
@@ -885,6 +912,7 @@ PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
   local seq did name expected t0 t1 ms shown level unset_lv usage login_n info_n slot_state preview_file display_total unsupported_n
+  local draw_enabled hit press press_method verdict u_press u_verdict u_unavail seen settle_rc
   while IFS=$'\t' read -r seq did name expected; do
     [ -n "$seq" ] || continue
     [ "$name" = - ] && name=""
@@ -899,58 +927,71 @@ PY
       continue
     fi
     if [ "$expected" = "미성립(포맷 미지원 · 판정 표에 이름으로)" ]; then
-      unsupported_n=""; t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
-      while [ "$(date +%s%3N)" -lt "$t1" ]; do
-        unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
-        [ "$unsupported_n" = 1 ] && break
-        sleep 0.05
-      done
+      # 배포 프론트의 `dt-preview-unsupported` 는 보기(draw)를 누르고 create 가 「그릴 수 없음」
+      #   (NotRenderableError)으로 돌아온 뒤에만 그려진다(`ea21d8c2aa54` DatasetPreviewSection.tsx:239-240,362-366 ·
+      #   그때 slot = failed). 누르지 않고 기다리기만 하면 끝내 서지 않는다(dev 1차 시도 seq 13·14 「미지원 상태 미확인」).
+      # 그래서 다른 행과 같은 정착 → 적중 검사 → 초점 ＋ Enter(JS click 폴백)로 누른 뒤 표시를 기다린다.
+      # 그릴 조각이 아예 없어 열자마자 표시가 서면(:155-156) 비활성 보기를 누르지 않는다.
+      # 기대(미성립)는 바꾸지 않는다. 화면에 **실제로 보인 것**을 비고에 그대로 적어 판단 근거로 남긴다.
+      unsupported_n=""; u_press="누름 없음"; ms=0; slot_state=""
+      preview_settle unsupported; settle_rc=$?
+      if [ "$settle_rc" = 0 ]; then
+        hit="$(preview_hit_test)"; hit="${hit:-못 잼}"
+        log "seq=$seq $name — 보기 적중 검사: $hit"
+        t0="$(date +%s%3N)"
+        press="$(preview_press)"; press_method="${press%%|*}"; slot_state="${press#*|}"
+        log "seq=$seq $name — 보기 누름 = $press_method · slot [$slot_state]"
+        u_press="누름 $press_method · 적중 $hit"
+        if [ "$press_method" != none ]; then
+          # 누른 순간부터 PREVIEW_WAIT_MS 안에 미지원 표시 · 또는 terminal(slot failed/done)을 기다린다.
+          while :; do
+            unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+            [ "$unsupported_n" = 1 ] && break
+            slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+            case "$slot_state" in
+              failed|done)
+                unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+                break ;;
+            esac
+            [ "$(( $(date +%s%3N) - t0 ))" -lt "$PREVIEW_WAIT_MS" ] || break
+            sleep 0.05
+          done
+        fi
+        ms=$(( $(date +%s%3N) - t0 ))
+      elif [ "$settle_rc" = 1 ]; then
+        log "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
+      fi
       login_n="$(ab_dev get count '[data-testid="login-submit"]' 2>/dev/null | tr -d ' \t\r\n')"
       info_n="$(ab_dev get count '[data-testid="basic-info"]' 2>/dev/null | tr -d ' \t\r\n')"
       level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
       unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
       usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
-      # 기대(미성립)는 바꾸지 않는다. 화면에 **실제로 보인 것**을 비고에 그대로 적어 판단 근거로 남긴다.
-      # 참고 — 배포 프론트의 `dt-preview-unsupported` 는 보기(draw) 요청이 「그릴 수 없음」으로 돌아온 뒤에만
-      #   그려진다(`ea21d8c2aa54` DatasetPreviewSection.tsx:362-366 · 그때 slot = failed). 이 갈래는 보기를 누르지 않는다.
-      local u_slot u_draw u_unavail seen
-      u_slot="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
-      u_draw="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
+      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      draw_enabled="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
       u_unavail="$(ab_dev get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
-      seen="미지원 표시 [$unsupported_n] · slot [$u_slot] · 보기 활성 [$u_draw] · preview-unavailable [$u_unavail] · 로그인 [$login_n] · 상세 [$info_n]"
+      seen="미지원 표시 [$unsupported_n] · slot [$slot_state] · 보기 활성 [$draw_enabled] · preview-unavailable [$u_unavail] · 로그인 [$login_n] · 상세 [$info_n] · $u_press"
       log "seq=$seq $name — 정본 미성립 행 화면: $seen"
       if [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$unsupported_n" = 1 ]; then
-        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원 · %s\n' "$seq" "$name" "$level" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        printf '%s\t%s\t%s\t미성립\t%s\t%s\t%s\t정본상 포맷 미지원 · %s\n' "$seq" "$name" "$level" "$ms" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+      elif [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$slot_state" = done ]; then
+        # 눌렀더니 그려졌다 — 기대(미성립)는 그대로 두고 불일치로 적는다(아래 대조가 「기대와 달리 미리보기 성립」을 낸다).
+        printf '%s\t%s\t%s\t성립\t%s\t%s\t%s\t기대와 달리 미리보기 성립 · %s\n' "$seq" "$name" "$level" "$ms" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 기대와 달리 미리보기 성립(정본 미성립 · 포맷 미지원) · $seen"
       else
-        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인 · %s\n' "$seq" "$name" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t미지원 상태 미확인 · %s\n' "$seq" "$name" "$ms" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
         blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다 · $seen"
       fi
       continue
     fi
     # 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다 — 다시 고르지 않는다(위 PREVIEW_STABLE_MS 주석).
-    preview_file=""; local draw_enabled="" stable_since="" now settled=0
-    slot_state=""
-    t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
-    while :; do
-      now="$(date +%s%3N)"; [ "$now" -lt "$t1" ] || break
-      preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
-      draw_enabled="$(ab_dev is enabled '[data-testid="dt-preview-draw"]' 2>/dev/null | tr -d ' \t\r\n')"
-      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
-      if [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && [ "$slot_state" = idle ]; then
-        [ -n "$stable_since" ] || stable_since="$now"
-        if [ "$(( $(date +%s%3N) - stable_since ))" -ge "$PREVIEW_STABLE_MS" ]; then settled=1; break; fi
-      else
-        stable_since=""
-      fi
-      sleep 0.05
-    done
-    if [ "$settled" != 1 ]; then
+    preview_file=""; draw_enabled=""; slot_state=""
+    preview_settle; settle_rc=$?
+    if [ "$settle_rc" != 0 ]; then
       printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 정착 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
       blocked_add verify "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
       continue
     fi
     # 적중 검사 — 누르기 전에 보기 단추 중심이 무엇에 닿는지 남긴다(위 PREVIEW_HIT_JS 주석).
-    local hit press press_method
     hit="$(preview_hit_test)"; hit="${hit:-못 잼}"
     log "seq=$seq $name — 보기 적중 검사: $hit"
     t0="$(date +%s%3N)"
@@ -990,7 +1031,7 @@ PY
     # 계수도 같은 이유로 `tr -dc` 를 쓰지 않는다 — 숫자만 남기면 「못 받음」이 「0」이 된다.
     unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
     usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
-    local verdict; verdict="$(preview_verdict "$shown")"
+    verdict="$(preview_verdict "$shown")"
     if [ "${login_n:-x}" != 0 ]; then
       verdict=판정불가; level=""; unset_lv=""; usage=""
       blocked_add verify "seq=$seq $name — 로그인 화면이다(login-submit 계수 [$login_n]) · 브라우저 세션 $AB_SESSION 미로그인 · 판정 불가"
@@ -1053,7 +1094,10 @@ invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
 expected_unestablished = sorted((s for s, value in preview_expected.items()
                                  if value == no_preview_text), key=int)
 unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
-missing_unestablished = sorted(set(expected_unestablished) - set(unestablished), key=int)
+# 「기대와 달리 미리보기 성립」은 **실제로 성립한 행**에만 붙인다 — 판정불가는 재지 못한 것이지 성립이 아니다
+# (판정불가는 위 「미리보기 판정불가」로 따로 낸다).
+established = [r[0] for r in rows if r[3] == "성립"]
+missing_unestablished = sorted(set(expected_unestablished) & set(established), key=int)
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
