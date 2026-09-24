@@ -5,8 +5,10 @@
 #   preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report
 #
 # 절차의 원본 = `dev-package/sessions/DR-2-runbook.md`(2026-09-13 사람이 밟은 순서).
-# 승인 = **dev 한정 상시 승인**(`.claude/rules/deploy.md` 11번 증보 문단 · 2026-09-14 개정).
-#        게이트 넷 충족 시 회차별 GO 불요. staging·prod 는 무변(매회 GO)이고 이 도구가 돌지 않는다.
+# 승인 = `.agents/rules/deploy.md` 11번 증보 문단(2026-09-25 개정) — 게이트 다섯.
+#        **빈 dev** 만 dev 한정 상시 승인(회차별 GO 불요)이다. **비어 있지 않은 dev** 는 상시 승인 밖이고
+#        매 회차 사용자가 정지 게이트의 표별 계수를 보고 준 명시 GO 로만 지운다.
+#        staging·prod 는 무변(매회 GO)이고 이 도구가 돌지 않는다.
 # 경계 = dev 하나. `_ops/` 무접촉. DB 직접 쓰기는 prelude 의 SQL 선행 4단계뿐이다.
 #
 # preflight 는 **언제나 돈다** — 읽기 전용이고, 배포 대상 sha 를 해석하는 자리가 거기 하나뿐이다.
@@ -22,8 +24,11 @@
 #   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
-#   COLAB_RESEED_ACK_NONEMPTY — reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **이번 계수의** sha256.
-#     그 값이 없거나 다르면 앱 정지·DROP·S3 전에 멈춘다(2026-09-24 사고 · `stages.sh` 정지 게이트).
+#   COLAB_RESEED_ACK_NONEMPTY · COLAB_RESEED_ACK_BASIS — **사용자만** 넣는다(에이전트 Bash 는 훅이 막는다).
+#     reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **그 회차의 1회용 토큰**(만료 30분 · 한 번 쓰면 소진)과
+#     GO 근거(누가 · 어디서 · 언제). 없거나 다르면 앱 정지·DROP·S3 전에 멈춘다(2026-09-24 사고 · `stages.sh` 정지 게이트).
+#   ⚠ `--from bootstrap|up|s3` 는 **reset 을 돈 같은 `--run-dir`** 로만 잇는다 — s3 계획은 그 실행 자리의
+#     reset 판정과 DROP 직전 계수에 묶이고, 없으면 멈춘다.
 #
 # ⚠ **`COLAB_DEV_SECRETS_DIR` 를 읽지 않는다.** 그 이름은 운영자 기계의 `dev-operator.env` 에서
 #   **개발 기계의 로컬 폴더**를 가리키고, `infra/dev/README.md` 의 같은 이름은 EC2 의 `dev.env`
@@ -131,7 +136,7 @@ MD_ROOT=""
 SEED_WORK_DIR=""
 
 usage() {
-  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 계정 신원 기본값:
