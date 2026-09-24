@@ -68,4 +68,5 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 - 커밋 = 한 WU 의 한 논리적 단계. 계약과 그 소비자는 같은 커밋. 메시지는 한국어(첫 줄 무엇을, 본문 왜).
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋한다(NTFS · `core.filemode=false` · `§4-3`).
 - **최종 메시지** = ≤15행. 결론·값 → 근거 `파일:행` → 남은 위험 → 후속 항목 → `WORKTREE=… BRANCH=…`. 개조식 · 정성어 배제 · 기술 용어에 비유 금지. 산출물(커밋 메시지 · 문서 · 보고)은 한국어, 내부 추론·코드 주석은 영어 허용.
-- 문서·보고에 절대경로를 적지 않는다. 경로는 레포 루트 기준 상대경로.
+- 최종 메시지에 이 task 의 gate-summary **절대경로**(begin 이 돌려준 report)와 3계수를 적는다. 오케스트레이터가 advisor ② 에 그대로 넘긴다 (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
+- 문서·보고 **파일**에 절대경로를 적지 않는다. 경로는 레포 루트 기준 상대경로(위 최종 메시지의 gate-summary 경로만 예외).

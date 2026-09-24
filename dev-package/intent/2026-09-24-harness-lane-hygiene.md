@@ -1,5 +1,5 @@
-# Intent: 하네스 고도화 — 방향 기록 (검토 완료 · Ted 판정 대기)
-메타 — 발의자: Ted · 작성 2026-09-24 · 상태: **검토 완료(2026-09-24 · 증거 3건) · 구현 미승인 · Ted 판정 대기**
+# Intent: 하네스 고도화 — 검토 완료 · 승인 (2026-09-24 · 전부 권고대로)
+메타 — 발의자: Ted · 작성 2026-09-24 · 상태: **승인 2026-09-24 — Ted 원문 "전부 권고대로 할게"** · spec v2 `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`
 - 1차: Ted 원문 "권고대로 해서 하네스고도화하고. 좋아. 작업은계속하자" (2026-09-24 · 권고 4건 수용)
 - 2차(우선): Ted 원문 "저하네스에 인텐트로 어떻게 해야할지만같이기록해두자 저대로만 개선하기보다 진지하게 따져보고 개선하는게좋을듯하니" (2026-09-24) — **권고를 그대로 구현하지 말고, 이 문서에 「어떻게 해야 할지」를 기록해 둔 뒤 진지하게 따져 보고 개선한다.** 착수했던 구현 레인은 중단했다(커밋 0).
 - 3차: Ted 원문 "develop 최신 받고, (git pull) 하네스 작업 intent 해서 마저해보자 진지하게 따질것, ponytail 저것도 함께 같이 처리하자, 하네스 관련된 모든 브랜치 다 한꺼번에 정리하면서 적용 검토" (2026-09-24) — 네 절의 「모을 증거」를 모아 답과 권고를 적었다. 구현은 판정 뒤다.
@@ -76,13 +76,13 @@
 
 ## 어떻게 진행할지 (Ted 판정)
 1. (완료 2026-09-24) 증거 수집 — researcher 3건 · 이번 세션 실측 1건 · 잠금 재현 1건 · advisor ② 검토(수정 9건 반영). 위 네 절의 「답」.
-2. Ted 판정 — 아래 「판정 요청」.
-3. 승인 뒤 spec v2 를 쓴다(R1~R4 · ② 규칙 · F1~F3 · ④ 등급 기록). advisor ① → 레인 순서다. 1차 권고 기준 초안 `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md` 는 대체된다.
+2. (완료 2026-09-24) Ted 판정 — 「판정 요청」 다섯 항목 전부 권고대로. F3 은 권고에 넣지 않은 선택 항목이라 범위 밖.
+3. spec v2 를 쓴다(R1~R4 · ② 규칙 · F1·F2 · ④ 등급 기록). advisor ① → 레인 순서다. 1차 초안은 같은 경로에서 v2 로 대체했다(v1 은 git 이력).
 
 ## 영향 범위 (구현 시 · 참고)
 - `.agents/rules/colab-rules.md` · `.agents/roles/*.md` · `.agents/skills/colab-v2-work/SKILL.md` · `scripts/harness/hooks/*` · `.claude/settings.json` · `.codex/hooks.json` · `docs/development/*.md` · 브라우저 도구 스크립트. 제품 코드 0.
 
-## 판정 요청 (Ted)
+## 판정 요청 (Ted · 2026-09-24 전부 권고대로로 닫힘)
 - ① R1 researcher 자동 task 훅 채택 여부 — 훅 1개 추가 · 이 PC `/hooks` 재신뢰. R2~R4 는 문서 변경.
 - ② 규칙화(코드 0)로 충분한지.
 - ③ 훅안 기각 + F2(본 수정 · `AGENT_BROWSER_IDLE_TIMEOUT_MS` 안전망 포함)·F1(보강) 채택 여부. F3 포함 여부.
@@ -96,9 +96,10 @@
 ## 확인
 - Ted 확인 문장(원문 그대로): "저하네스에 인텐트로 어떻게 해야할지만같이기록해두자 저대로만 개선하기보다 진지하게 따져보고 개선하는게좋을듯하니" (2026-09-24)
 - Ted 확인 문장(원문 그대로 · 3차): "develop 최신 받고, (git pull) 하네스 작업 intent 해서 마저해보자 진지하게 따질것, ponytail 저것도 함께 같이 처리하자, 하네스 관련된 모든 브랜치 다 한꺼번에 정리하면서 적용 검토" (2026-09-24)
-- 재개봉 금지: 아니오(판정 뒤 개정 예정).
+- Ted 승인 문장(원문 그대로 · 4차): "전부 권고대로 할게," (2026-09-24)
+- 재개봉 금지: 예(잔여 결함은 새 intent).
 
 ## 참조
 - 실측: `dev-package/reports/design-system/20260924/p0/report.md`(advisor ② 증거 판정) · P1~P3 보고서의 「spec 과 다르게 한 점」 · 메모리 `subagent-turn-limits-truncate-results` · `gate-lanes-cannot-run-in-parallel` · `issue-pr-workflow-shape` · 3차 검토 근거: `dev-package/reports/harness/20260924-lane-hygiene-review/`
 - 하네스 설계: `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` · `docs/development/dual-agent.md` · `docs/development/lifecycle-evidence.md`
-- 대체될 spec(1차 권고 기준 초안): `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`
+- spec v2: `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`(v1 = 1차 권고 기준 초안 · git 이력)
