@@ -476,6 +476,17 @@ def _within_candidates(suggestion: object, allowed: set) -> bool:
 #: 없는 근거를 요구하면 참인 답이 사라진다. 그쪽 문장을 다시 쓰는 일도 여기서 하지 않는다.
 PARENT_SUGGESTION_KIND = "가공 전 데이터"
 
+#: ⭑ **⟨K3 `WU-S5` 2026-09-24 · Ted 판정 2회차 5⟩ 응답에 남기는 제안의 상위 k.**
+#: **두 팔이 같은 상수를 쓴다**(`app/rule_suggest.py` 가 이것을 import 한다) — 절단이 갈리면
+#: `WU-S6` 실측의 hit@3 이 「어느 팔이 나은가」가 아니라 「어느 팔이 많이 냈나」를 잰다.
+#: 값은 후보 상한(`routes/ingestion.LINEAGE_CANDIDATE_LIMIT` · 계약
+#: `LineageSuggestionRequest.candidates.maxItems`)과 같다 — 제안은 후보 집합의 부분집합이라
+#: **모델 팔에서 이 절단은 사실상 일어나지 않는다**(그래서 이 줄이 기존 동작을 바꾸지 않는다).
+#: 규칙 팔은 신호가 흔한 연구실에서 실제로 여기서 잘린다.
+#: ⚠ 상수를 `routes` 에서 import 하지 않는다 — 라우트가 이 모듈을 import 하므로 순환이 된다.
+#: 두 값이 같다는 사실은 시험이 지킨다(`tests/test_rule_based_suggester.py`).
+SUGGESTION_LIMIT = 20
+
 
 def _verified_suggestion(suggestion: object, upload_axes, candidate_axes: dict):
     """제안 한 건의 인용을 **실제 값에 대조**하고, 검증된 것만으로 다시 세운다.
@@ -608,7 +619,9 @@ class HttpLineageSuggestionRelay:
                 _record_suggest_failure(
                     rejected=True, lab_id=lab_id, status=status,
                     reason=f"인용이 실제 값과 다른 제안 {unverified}건을 버렸다.")
-            body = {**body, "suggestions": verified}
+            # ⭑ ⟨K3 `WU-S5`⟩ **상위 k 절단은 규칙 팔과 같은 상수다.** 폐기 계수를 센 **뒤**에
+            # 자른다 — 넘쳐서 자른 건을 「인용이 틀렸다」로 세면 감시가 없는 고장을 본다.
+            body = {**body, "suggestions": verified[:SUGGESTION_LIMIT]}
         # **여기부터가 정직한 빈 상태의 자리다** — 저쪽이 답했고 0건이면 그것이 참인 답이다.
         # 그 자리에는 실패 기록을 남기지 않는다. 남기면 「없다」와 「못 물어봤다」가
         # 기록에서 다시 붙고, 감시가 매 업로드마다 울어 아무도 보지 않게 된다.
