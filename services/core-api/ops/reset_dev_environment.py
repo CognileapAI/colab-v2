@@ -18,13 +18,22 @@
 
 ## 단계 — 이 도구는 ⑴⑵⑸ 만 한다
 
-  ⑴ `--phase count`     계수. 표별 행 **전수**(`--count-url-file` 의 BYPASSRLS 롤 · `row_security=off`)
-                        · DB 가 가리키는 저장 키 · 접두사별 객체 수 · 진행 중 멀티파트 수.
-                        보고서에 시각을 싣지 않는다 — 그 sha256 이 재시드 정지 게이트의 ack 토큰이다.
-  ⑵ `--phase schema`    두 체인 스키마 삭제·재생성. 끝나면 **다음 명령을 찍고 0 으로 끝난다.**
+  ⑴ `--phase count`     계수. 두 체인 모두 BYPASSRLS 롤(`--count-url-file` · `--count-ai-url-file` ·
+                        `row_security=off`)로 센다 — 스키마의 **모든** 기본 표(pg_catalog 열거)의 행수와
+                        행 내용 지문 · 정지 판정 표 일곱의 행수 · DB 가 가리키는 저장 키 · 접두사별 객체 수와
+                        키 목록 sha256 · 진행 중 멀티파트. 보고서에 시각을 싣지 않는다 — 그 sha256 이 ack 대조값이다.
+  ⑵ `--phase schema`    두 체인 스키마 삭제·재생성. **DROP 직전 같은 프로세스에서 다시 세어** `--count-report`
+                        에 쓰고, 비어 있지 않은데(`nonempty_reasons`) `--ack-sha256` 이 그 재계수의 sha256 과
+                        다르면 한 건도 지우지 않고 exit 3 이다. 끝나면 **다음 명령을 찍고 0 으로 끝난다.**
   ⑸ `--phase s3-plan`   `uploads/`·`previews/` 의 **exact key** 목록 ＋ 진행 중 멀티파트를 계획 파일로.
-                        `--referenced-keys <⑴ 보고서>` 와 겹치면 그 보고서 sha256 을 `--ack-sha256` 로 받아야 쓴다.
+                        필수 = `--referenced-keys <⑵ 의 재계수>` ＋ `--referenced-sha256 <그 sha256>`(이번 reset 에
+                        묶는다) ＋ `--count-url-file`(**지금** DB 가 가리키는 키 — 1건이라도 있으면 exit 3).
+                        계획이 재계수의 참조 키와 겹치면 그 파일 sha256 을 `--ack-sha256` 로 받아야 쓴다.
+                        `--dry-run` 이면 거부 사유를 찍고 `dryRun` 표지가 붙은 계획(적용 불가)을 쓴다.
      `--phase s3-apply` 그 계획의 키만 삭제 ＋ 멀티파트 중단. `--plan-sha256` 대조가 있어야 돈다.
+
+⛔ **ack 는 사용자가 표별 계수를 보고 준 명시 GO 의 기록이다**(`.agents/rules/deploy.md` 11번 증보). 에이전트는
+  계수 파일의 sha256 을 스스로 계산해 넘기지 않는다 — 비어 있지 않은 dev 는 상시 승인 밖이다.
 
 ⭑ **⑵′ 확장 · ⑶ 마이그레이션 · ⑷ 앱 권한은 이 도구에 없다.** 앱 이미지에 alembic 이 없고
   (`infra/dev/migrator/Dockerfile` 의 별도 이미지가 소유자 롤로 돈다) 부트스트랩은 셸 스크립트다.
@@ -51,14 +60,23 @@
 
 ## 쓰는 법 (dev EC2 위 · `docs/DEPLOY.md §6-1` 의 격리 실행과 같은 모양)
 
+재시드는 `dev-package/tools/dev-reseed/reseed.sh` 가 이 도구를 부른다(정지 게이트 · 1회용 ack). 손으로 부르면
+아래 한 벌이다 — 계수 URL 두 파일은 백업 cron 이 쓰는 BYPASSRLS 읽기 롤(`colab_backup`)의 것이다.
+
     docker run --rm --network host --user 0 \\
       -v $COLAB_DEV_SECRETS_DIR/platform-owner-db.url:/s/platform.url:ro \\
       -v $COLAB_DEV_SECRETS_DIR/ai-owner-db.url:/s/ai.url:ro \\
+      -v $COLAB_DEV_SECRETS_DIR/backup-platform-db.url:/s/count.url:ro \\
+      -v $COLAB_DEV_SECRETS_DIR/backup-ai-db.url:/s/count-ai.url:ro \\
       -v <이 파일>:/tmp/reset.py:ro -v /tmp/out:/out \\
       -e COLAB_CORE_S3_BUCKET -e COLAB_CORE_S3_REGION \\
       colab-v2/core-api:dev python /tmp/reset.py \\
         --target dev --yes-reset-dev --phase count \\
-        --platform-url-file /s/platform.url --ai-url-file /s/ai.url --report /out/count.json
+        --platform-url-file /s/platform.url --ai-url-file /s/ai.url \\
+        --count-url-file /s/count.url --count-ai-url-file /s/count-ai.url --report /out/count.json
+
+    # 비어 있으면 ack 없이, 비어 있지 않으면 사용자 GO 를 받은 뒤에만 그 계수의 sha256 을 준다.
+    … --phase schema --count-report /out/count-at-drop.json --report /out/schema.json [--ack-sha256 <sha256>]
 
 `--dry-run` 은 모든 검사·목록을 그대로 하고 보고서·계획을 쓰되 **파괴적인 일을 하나도 하지 않는다**.
 """
@@ -135,6 +153,24 @@ REFERENCED_KEY_SOURCES = ("d3_file", "d5_upload_file", "d5_upload_transfer_file"
 #: 계수 보고서에 싣는 경로 표지 — 재시드 정지 게이트가 이 값이 아닌 계수를 판정 불가로 읽는다.
 COUNT_PATH = "bypassrls:row_security=off"
 
+#: 내용 지문 대상 — 체인별 스키마의 **모든** 기본 표를 pg_catalog 에서 열거한다(고정 목록이 아니다).
+#
+# ⭑ 2026-09-25 검토 — 고정 표 일곱의 행수만 해시하면 설명·변수 메타·접근 승인·AI 원장처럼 계수하지 않는
+#   표의 편집, 계수 표의 UPDATE, 같은 개수의 S3 객체 교체가 토큰을 바꾸지 않는다. 그러면 운영자가 편집 전
+#   상태를 보고 준 토큰이 편집 뒤에도 통과한다. 그래서 표마다 행수 ＋ 행 내용 지문(md5 의 정렬 결합)을 싣고
+#   S3 는 접두사별 키 목록(키·크기)의 sha256 을 싣는다.
+FINGERPRINT_SCHEMAS: dict[str, tuple[str, ...]] = {
+    "platform": ("public", "account_admin"),
+    "ai": ("public",),
+}
+
+# 파티션 부모(p)는 자식 행을 함께 세므로 자식(relispartition)은 뺀다. alembic 버전 표는 자료가 아니다.
+_TABLES_SQL = ("select n.nspname, c.relname from pg_class c "
+               "join pg_namespace n on n.oid = c.relnamespace "
+               "where c.relkind in ('r', 'p') and not c.relispartition "
+               "and n.nspname = any(%s) and c.relname not like 'alembic%%' "
+               "order by 1, 2")
+
 _SHA256_HEX = frozenset("0123456789abcdef")
 
 PLAN_SCHEMA = "colab-dev-reset-plan/1"
@@ -150,6 +186,14 @@ NEXT_COMMANDS = (
 )
 
 PHASES = ("count", "schema", "s3-plan", "s3-apply")
+
+#: 계수 URL(BYPASSRLS 읽기 롤)이 필요한 단계와 체인. `schema` 는 DROP 직전에 다시 세고,
+#  `s3-plan` 은 **지금** DB 가 가리키는 키를 읽는다.
+COUNT_URL_PHASES: dict[str, tuple[str, ...]] = {
+    "count": ("platform", "ai"),
+    "schema": ("platform", "ai"),
+    "s3-plan": ("platform",),
+}
 
 _REFUSE = 2        # 인자·환경·계획 파일 가드
 _PRECONDITION = 3  # DB 실물이 기대와 다르다
@@ -216,7 +260,29 @@ def ack_token_refusal(token: str | None) -> str | None:
     return None
 
 
-def referenced_refusal(count_report: str, bucket: str, planned: set[str],
+def nonempty_reasons(report: dict) -> dict[str, int]:
+    """정지 판정 — 0 이 아닌 항목. 빈 dict 이면 「비어 있다」.
+
+    ⭑ DB 행 0 · 참조 키 0 이어도 `uploads/` 객체나 진행 중 멀티파트가 남아 있으면 비어 있지 않다.
+      DB 는 `_ops/backups` 의 pg_dump 로 되살릴 수 있지만 업로드 원본은 백업 경로가 없다 — 그 객체가
+      복원을 쓸모 있게 하는 마지막 사본이다(2026-09-25 검토 지적). `previews/` 는 파일 id 에서 다시
+      만드는 생성물이라 보지 않는다.
+    """
+    rows = report["db"]["platform"]["rows"]
+    out = {table: int(rows[table]) for table in COUNT_TABLES if rows.get(table)}
+    refs = int(report["referencedKeys"]["count"])
+    if refs:
+        out["referencedKeys"] = refs
+    uploads = int(report["s3"]["objects"].get(ALLOWED_PREFIXES[0], 0))
+    if uploads:
+        out["s3:uploads/"] = uploads
+    multipart = int(report["s3"]["multipartUploads"])
+    if multipart:
+        out["s3:multipartUploads"] = multipart
+    return out
+
+
+def referenced_refusal(raw: bytes, bucket: str, planned: set[str],
                        ack: str | None) -> tuple[dict | None, str | None]:
     """계획 키 ∩ DB 가 가리키던 키. 겹치면 **그 계수 파일의 sha256** 을 ack 로 받아야 진행한다.
 
@@ -227,9 +293,8 @@ def referenced_refusal(count_report: str, bucket: str, planned: set[str],
     if refusal:
         return None, refusal
     try:
-        raw = _private_bytes(count_report, "계수 보고서")
         body = json.loads(raw)
-    except (OSError, RuntimeError, ValueError) as exc:
+    except ValueError as exc:
         return None, f"DB 참조 키를 읽지 못했다 ({type(exc).__name__}: {exc})."
     ref = body.get("referencedKeys") if isinstance(body, dict) else None
     if (not isinstance(body, dict) or body.get("schema") != REPORT_SCHEMA
@@ -271,12 +336,20 @@ def _private_file(path: str, what: str) -> str:
     return _private_bytes(path, what).decode("utf-8")
 
 
-def _write_private_json(path: str, body: dict) -> None:
+def _json_bytes(body: dict) -> bytes:
+    """보고서 직렬화 한 벌 — 계수 파일의 sha256(ack 토큰)은 이 바이트에서 나온다."""
+    return (json.dumps(body, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def _write_private_bytes(path: str, raw: bytes) -> None:
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(body, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
-                 encoding="utf-8")
+    p.write_bytes(raw)
     p.chmod(0o600)
+
+
+def _write_private_json(path: str, body: dict) -> None:
+    _write_private_bytes(path, _json_bytes(body))
 
 
 def _now() -> str:
@@ -328,86 +401,142 @@ def _count_one(cur, sql: str) -> int:                         # noqa: ANN001
     return int(row[0])
 
 
-def _full_counts(cur) -> tuple[int, dict[str, int], list[str]]:  # noqa: ANN001
-    """⭑ **전수**를 센다 — 연구실 경계를 걸지 않는다.
-
-    ⑴ 접속 롤이 BYPASSRLS 인지 먼저 본다. 아니면 거부한다(FORCE RLS 가 소유자에게도 걸린다).
+def _bypass_on(cur, chain: str) -> None:                    # noqa: ANN001
+    """⑴ 접속 롤이 BYPASSRLS 인지 먼저 본다. 아니면 거부한다(FORCE RLS 가 소유자에게도 걸린다).
     ⑵ `row_security = off` 를 건다. 우회 못 하는 롤이면 PostgreSQL 이 정책에 걸리는 질의를
        **걸러 내지 않고 오류로 끝낸다** — 거짓 0 이 나올 자리가 없다(`pg_dump` 가 쓰는 같은 장치).
-    ⑶ 표가 없으면 0 으로 읽지 않고 거부한다.
     """
     cur.execute("select rolbypassrls from pg_roles where rolname = current_user")
     row = cur.fetchone()
     if not row or row[0] is not True:
-        raise CountRefusal("계수 접속 롤이 BYPASSRLS 가 아니다 — FORCE RLS 아래에서 센 0 은 "
+        raise CountRefusal(f"{chain} 계수 접속 롤이 BYPASSRLS 가 아니다 — FORCE RLS 아래에서 센 0 은 "
                            "「비어 있다」가 아니다(deploy.md 10번). BYPASSRLS 읽기 롤 URL 을 준다.")
     cur.execute("set local row_security = off")
-    wanted = sorted(set(COUNT_TABLES) | set(REFERENCED_KEY_SOURCES) | {"d1_lab"})
-    cur.execute("select t from unnest(%s::text[]) as t where to_regclass(t) is null", (wanted,))
+
+
+def _require_tables(cur, wanted) -> None:                     # noqa: ANN001
+    """표가 없으면 0 으로 읽지 않고 거부한다."""
+    cur.execute("select t from unnest(%s::text[]) as t where to_regclass(t) is null", (sorted(wanted),))
     missing = sorted(r[0] for r in cur.fetchall())
     if missing:
         raise CountRefusal(f"계수 대상 표가 없다 {missing} — 0 으로 읽지 않는다.")
+
+
+def _referenced_keys(cur) -> list[str]:                       # noqa: ANN001
+    cur.execute(" union ".join(f"select storage_key from {t}" for t in REFERENCED_KEY_SOURCES))
+    return sorted({r[0] for r in cur.fetchall() if r and r[0]})
+
+
+def _full_counts(cur) -> tuple[int, dict[str, int], list[str]]:  # noqa: ANN001
+    """⭑ **전수**를 센다 — 연구실 경계를 걸지 않는다(`_bypass_on` 을 먼저 부른다)."""
+    _require_tables(cur, set(COUNT_TABLES) | set(REFERENCED_KEY_SOURCES) | {"d1_lab"})
     labs = _count_one(cur, "select count(*) from d1_lab")
     totals = {table: _count_one(cur, f"select count(*) from {table}") for table in COUNT_TABLES}
-    cur.execute(" union ".join(f"select storage_key from {t}" for t in REFERENCED_KEY_SOURCES))
-    keys = sorted({r[0] for r in cur.fetchall() if r and r[0]})
-    return labs, totals, keys
+    return labs, totals, _referenced_keys(cur)
+
+
+def _ident(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _fingerprints(cur, schemas: tuple[str, ...]) -> dict[str, dict]:  # noqa: ANN001
+    """스키마의 **모든** 기본 표 — 표마다 행수와 행 내용 지문(행 md5 의 정렬 결합의 md5).
+
+    표 목록은 pg_catalog 에서 읽는다. 새 표가 생겨도 여기를 고치지 않고 토큰 안으로 들어온다.
+    """
+    cur.execute(_TABLES_SQL, (list(schemas),))
+    found = [(r[0], r[1]) for r in cur.fetchall()]
+    out: dict[str, dict] = {}
+    for nsp, rel in found:
+        qualified = f"{_ident(nsp)}.{_ident(rel)}"
+        cur.execute(f"select count(*), md5(coalesce(string_agg(md5(t::text), '' "
+                    f"order by md5(t::text)), '')) from {qualified} as t")
+        row = cur.fetchone()
+        if not row or row[0] is None or row[1] is None:
+            raise CountRefusal(f"내용 지문 응답이 없다 — {nsp}.{rel}")
+        out[f"{nsp}.{rel}"] = {"rows": int(row[0]), "md5": str(row[1])}
+    return out
 
 
 # ── S3 조회 ────────────────────────────────────────────────────────────────
 
-def _s3_snapshot(s3) -> tuple[dict[str, list[str]], list[list[str]]]:   # noqa: ANN001
-    objects = {prefix: sorted(key for key, _size in s3.list_objects(prefix))
+def _s3_listing(s3) -> tuple[dict[str, list[tuple[str, int]]], list[list[str]]]:  # noqa: ANN001
+    objects = {prefix: sorted((key, int(size)) for key, size in s3.list_objects(prefix))
                for prefix in ALLOWED_PREFIXES}
     uploads = sorted([key, upload_id]
                      for key, upload_id in s3.list_multipart_uploads(ALLOWED_PREFIXES[0]))
     return objects, uploads
 
 
+def _s3_snapshot(s3) -> tuple[dict[str, list[str]], list[list[str]]]:   # noqa: ANN001
+    listing, uploads = _s3_listing(s3)
+    return {p: [k for k, _s in listing[p]] for p in ALLOWED_PREFIXES}, uploads
+
+
+def _lines_sha256(lines) -> str:                              # noqa: ANN001
+    return hashlib.sha256("".join(f"{line}\n" for line in lines).encode("utf-8")).hexdigest()
+
+
 # ── 단계 ───────────────────────────────────────────────────────────────────
 
-def _phase_count(a, urls, bucket, region, connect, s3_factory) -> int:   # noqa: ANN001
-    # platform 은 BYPASSRLS 계수 URL 로, ai 는 스키마 집합만 소유자 URL 로 본다.
+def _count_report(urls, bucket, region, connect, s3_factory) -> dict:  # noqa: ANN001
+    """계수 보고서 본문 — `--phase count` 와 `--phase schema` 의 DROP 직전 재계수가 **같은 한 벌**을 쓴다.
+
+    두 체인 모두 BYPASSRLS 계수 URL 로 센다. 실패는 `CountRefusal` 로 올라온다(보고서를 쓰지 않는다).
+    ⚠ 시각을 싣지 않는다 — 이 바이트의 sha256 이 ack 토큰이다. 같은 상태를 다시 세면 같은 바이트다.
+    """
     db: dict[str, dict] = {}
     referenced: list[str] = []
-    for chain, url in (("platform", urls["count"]), ("ai", urls["ai"])):
-        with connect(url) as conn:
+    for chain in ("platform", "ai"):
+        with connect(urls["count-" + chain]) as conn:
             try:
                 with conn.cursor() as cur:
                     entry: dict = {"schemas": sorted(_namespaces(cur))}
+                    _bypass_on(cur, chain)
                     if chain == "platform":
                         labs, totals, referenced = _full_counts(cur)
-                        entry.update(countPath=COUNT_PATH, labs=labs, rows=totals)
+                        entry.update(labs=labs, rows=totals)
+                    entry.update(countPath=COUNT_PATH,
+                                 tables=_fingerprints(cur, FINGERPRINT_SCHEMAS[chain]))
                     db[chain] = entry
-            except CountRefusal as exc:
-                print(f"⛔ {exc} 보고서를 쓰지 않았다.", file=sys.stderr)
-                return _PRECONDITION
             finally:
                 conn.rollback()
-    objects, uploads = _s3_snapshot(s3_factory(bucket=bucket, region=region))
-    # ⚠ 시각을 싣지 않는다 — 이 파일의 sha256 이 재시드 정지 게이트의 ack 토큰이다.
-    #   같은 상태를 다시 세면 같은 바이트가 나와야 운영자가 준 토큰을 대조할 수 있다.
-    report = {
-        "schema": REPORT_SCHEMA, "phase": "count", "dryRun": bool(a.dry_run),
-        "bucket": bucket, "db": db,
+    listing, uploads = _s3_listing(s3_factory(bucket=bucket, region=region))
+    return {
+        "schema": REPORT_SCHEMA, "phase": "count", "bucket": bucket, "db": db,
         "referencedKeys": {"count": len(referenced), "keys": referenced},
-        "s3": {"objects": {p: len(objects[p]) for p in ALLOWED_PREFIXES},
-               "multipartUploads": len(uploads)},
+        "s3": {"objects": {p: len(listing[p]) for p in ALLOWED_PREFIXES},
+               "objectsSha256": {p: _lines_sha256(f"{k}\t{n}" for k, n in listing[p])
+                                 for p in ALLOWED_PREFIXES},
+               "multipartUploads": len(uploads),
+               "multipartSha256": _lines_sha256(f"{k}\t{u}" for k, u in uploads)},
     }
-    _write_private_json(a.report, report)
-    print("── 계수 (BYPASSRLS 롤 · row_security=off · 행 전수)")
-    for chain, entry in db.items():
-        print(f"   {chain:<9} 스키마 {entry['schemas']}"
+
+
+def _print_counts(report: dict) -> None:
+    for chain, entry in report["db"].items():
+        print(f"   {chain:<9} 스키마 {entry['schemas']} · 표 {len(entry['tables'])}"
               + (f" · 연구실 {entry['labs']} · {entry['rows']}" if "rows" in entry else ""))
-    print(f"   DB 가 가리키는 저장 키 {len(referenced)}")
+    print(f"   DB 가 가리키는 저장 키 {report['referencedKeys']['count']}")
     for prefix in ALLOWED_PREFIXES:
-        print(f"   S3 {prefix:<10} 객체 {len(objects[prefix])}")
-    print(f"   S3 진행 중 멀티파트 {len(uploads)}")
+        print(f"   S3 {prefix:<10} 객체 {report['s3']['objects'][prefix]}")
+    print(f"   S3 진행 중 멀티파트 {report['s3']['multipartUploads']}")
+
+
+def _phase_count(a, urls, bucket, region, connect, s3_factory) -> int:   # noqa: ANN001
+    try:
+        report = _count_report(urls, bucket, region, connect, s3_factory)
+    except CountRefusal as exc:
+        print(f"⛔ {exc} 보고서를 쓰지 않았다.", file=sys.stderr)
+        return _PRECONDITION
+    _write_private_json(a.report, report)
+    print("── 계수 (BYPASSRLS 롤 · row_security=off · 두 체인 모든 기본 표의 행수·내용 지문)")
+    _print_counts(report)
     print(f"── 보고서: {a.report}")
     return 0
 
 
-def _phase_schema(a, urls, bucket, connect) -> int:          # noqa: ANN001
+def _phase_schema(a, urls, bucket, region, connect, s3_factory) -> int:  # noqa: ANN001
     # ⭑ 두 체인을 **먼저 다 본 뒤에** 손을 댄다. 한쪽만 지우고 멈추면 부분 실행이다.
     observed: dict[str, set[str]] = {}
     refusals: list[str] = []
@@ -424,9 +553,32 @@ def _phase_schema(a, urls, bucket, connect) -> int:          # noqa: ANN001
             print(f"⛔ {line}", file=sys.stderr)
         return _PRECONDITION
 
+    # ⭑ DROP 직전 같은 프로세스에서 **다시 센다** — 래퍼의 정지 게이트를 거치지 않은 직접 호출도 여기서 막힌다.
+    #   비어 있지 않은데 ack 가 이 재계수 바이트의 sha256 과 다르면 한 건도 지우지 않는다.
+    try:
+        recount = _count_report(urls, bucket, region, connect, s3_factory)
+    except CountRefusal as exc:
+        print(f"⛔ DROP 직전 재계수를 못 했다 — {exc} 아무것도 지우지 않았다.", file=sys.stderr)
+        return _PRECONDITION
+    raw = _json_bytes(recount)
+    token = hashlib.sha256(raw).hexdigest()
+    _write_private_bytes(a.count_report, raw)
+    nonempty = nonempty_reasons(recount)
+    if nonempty and a.ack_sha256 != token:
+        why = ("ack 가 없다" if a.ack_sha256 is None else
+               "ack 가 이 재계수와 다르다(지난 회차 값이거나 그 사이 자료가 바뀌었다)")
+        counts = " · ".join(f"{k} {v}" for k, v in nonempty.items())
+        print(f"⛔ DROP 직전 재계수가 비어 있지 않다 — {counts}", file=sys.stderr)
+        print(f"   {why}. 아무것도 지우지 않았다. 재계수 {a.count_report} · sha256 {token}", file=sys.stderr)
+        print("   비어 있지 않은 dev 는 사용자가 이 계수를 보고 준 명시 GO 로만 지운다"
+              "(.agents/rules/deploy.md 11번 증보).", file=sys.stderr)
+        return _PRECONDITION
+
     report = {"schema": REPORT_SCHEMA, "phase": "schema", "at": _now(),
               "dryRun": bool(a.dry_run), "bucket": bucket,
               "before": {c: sorted(s) for c, s in observed.items()},
+              "countAtDrop": {"file": a.count_report, "sha256": token, "nonEmpty": nonempty,
+                              "ackSha256": a.ack_sha256 if nonempty else None},
               "statements": {c: list(RECREATE_DDL[c]) for c in ("platform", "ai")}}
 
     if a.dry_run:
@@ -445,6 +597,8 @@ def _phase_schema(a, urls, bucket, connect) -> int:          # noqa: ANN001
         print("── 두 체인 스키마 재생성 COMMIT.")
 
     _write_private_json(a.report, report)
+    print(f"── DROP 직전 재계수 {a.count_report} · sha256 {token}"
+          + (" · 비어 있음" if not nonempty else " · ack 일치"))
     print("\n── 다음은 이 도구가 하지 않는다. 사람이 이 순서로 낸다"
           " (앱 이미지에 alembic 이 없다).")
     for i, cmd in enumerate(NEXT_COMMANDS, start=1):
@@ -454,10 +608,51 @@ def _phase_schema(a, urls, bucket, connect) -> int:          # noqa: ANN001
     return 0
 
 
-def _phase_s3_plan(a, bucket, region, s3_factory) -> int:    # noqa: ANN001
-    if not a.plan_out:
-        print("--phase s3-plan 에는 --plan-out 이 필요하다.", file=sys.stderr)
+def _live_referenced(urls, connect) -> list[str]:            # noqa: ANN001
+    """**지금** DB 가 가리키는 저장 키 — BYPASSRLS 로 전수. 표가 없으면(마이그레이션 전) 판정 불가다."""
+    with connect(urls["count-platform"]) as conn:
+        try:
+            with conn.cursor() as cur:
+                _bypass_on(cur, "platform")
+                _require_tables(cur, REFERENCED_KEY_SOURCES)
+                return _referenced_keys(cur)
+        finally:
+            conn.rollback()
+
+
+def _phase_s3_plan(a, urls, bucket, region, connect, s3_factory) -> int:  # noqa: ANN001
+    missing = [flag for flag, value in (("--plan-out", a.plan_out),
+                                        ("--referenced-keys", a.referenced_keys),
+                                        ("--referenced-sha256", a.referenced_sha256)) if not value]
+    if missing:
+        print(f"⛔ --phase s3-plan 에는 {' · '.join(missing)} 이 필요하다 — 이번 reset 의 DROP 직전 계수와 "
+              "그 sha256 없이 계획을 쓰지 않는다.", file=sys.stderr)
         return _REFUSE
+    refusal = ack_token_refusal(a.referenced_sha256)
+    if refusal:
+        print(f"⛔ --referenced-sha256 — {refusal}", file=sys.stderr)
+        return _REFUSE
+    try:
+        raw = _private_bytes(a.referenced_keys, "참조 키 계수 파일")
+    except (OSError, RuntimeError) as exc:
+        print(f"⛔ DB 참조 키를 읽지 못했다 ({type(exc).__name__}: {exc}).", file=sys.stderr)
+        return _REFUSE
+    referenced_sha = hashlib.sha256(raw).hexdigest()
+
+    # ⚠ 아래 셋(묶임 · 지금 DB · 겹침)은 dry-run 이면 사유만 찍고 적용할 수 없는 계획을 쓴다.
+    problems: list[tuple[int, str]] = []
+    if referenced_sha != a.referenced_sha256:
+        problems.append((_REFUSE, f"참조 키 파일 sha256 {referenced_sha} 이 이번 reset 의 값 "
+                                  f"{a.referenced_sha256} 과 다르다 — 지난 회차가 남긴 파일이다."))
+    try:
+        live = _live_referenced(urls, connect)
+    except CountRefusal as exc:
+        print(f"⛔ 지금 DB 가 가리키는 키를 못 셌다 — {exc} 계획을 쓰지 않았다.", file=sys.stderr)
+        return _PRECONDITION
+    if live:
+        problems.append((_PRECONDITION, f"지금 DB 가 가리키는 저장 키 {len(live)} 건 — 스키마 삭제·재생성 뒤의 "
+                                        "DB 가 아니다(그 뒤 올라온 자료다). 그 키를 지우는 계획을 쓰지 않는다."))
+
     objects, uploads = _s3_snapshot(s3_factory(bucket=bucket, region=region))
     keys = sorted(k for prefix in ALLOWED_PREFIXES for k in objects[prefix])
     # 목록을 만든 쪽도 자기 산출을 검사한다 — 접두사 조회가 무엇을 돌려주든 계획은 좁다.
@@ -465,29 +660,42 @@ def _phase_s3_plan(a, bucket, region, s3_factory) -> int:    # noqa: ANN001
     if refusal:
         print(f"⛔ {refusal}", file=sys.stderr)
         return _REFUSE
-    referenced = None
-    if a.referenced_keys:
-        referenced, refusal = referenced_refusal(
-            a.referenced_keys, bucket, set(keys) | {k for k, _u in uploads}, a.ack_sha256)
-        if refusal:
-            print(f"⛔ {refusal} 계획을 쓰지 않았다.", file=sys.stderr)
-            return _REFUSE
+    referenced, refusal = referenced_refusal(
+        raw, bucket, set(keys) | {k for k, _u in uploads}, a.ack_sha256)
+    if refusal:
+        problems.append((_REFUSE, refusal))
+    if problems and not a.dry_run:
+        for _code, line in problems:
+            print(f"⛔ {line} 계획을 쓰지 않았다.", file=sys.stderr)
+        return max(code for code, _line in problems)
+    for _code, line in problems:
+        print(f"⚠ dry-run — 실행이면 거부: {line}", file=sys.stderr)
+
     payload = {"schema": PLAN_SCHEMA, "bucket": bucket,
                "keys": keys, "multipartUploads": [list(u) for u in uploads]}
+    if a.dry_run:
+        # s3-apply 는 이 필드가 있는 계획을 받지 않는다(PLAN_FIELDS) — 리허설 계획은 적용될 수 없다.
+        payload["dryRun"] = True
     digest = plan_digest(payload)
     _write_private_json(a.plan_out, dict(payload, sha256=digest))
     _write_private_json(a.report, {
         "schema": REPORT_SCHEMA, "phase": "s3-plan", "at": _now(),
         "dryRun": bool(a.dry_run), "bucket": bucket, "plan": a.plan_out, "planSha256": digest,
-        "referenced": referenced,
+        "referencedSha256": referenced_sha, "referenced": referenced,
+        "live": {"referencedKeys": len(live)},
+        "wouldRefuse": [line for _code, line in problems],
         "before": {"objects": {p: len(objects[p]) for p in ALLOWED_PREFIXES},
                    "multipartUploads": len(uploads)}})
     if referenced is not None:
         print(f"   DB 가 가리키던 키와 겹침 {referenced['intersection']} 건"
               + (" · ack 토큰 일치" if referenced["ackSha256"] else ""))
+    print(f"   지금 DB 가 가리키는 키 {len(live)} 건")
     print(f"── 계획 {a.plan_out} — 키 {len(keys)} 건 · 진행 중 멀티파트 {len(uploads)} 건")
     print(f"   sha256 {digest}")
-    print("   적용은 `--phase s3-apply --apply-plan <위 파일> --plan-sha256 <위 값>` 이다.")
+    if a.dry_run:
+        print("   dry-run 계획이다 — s3-apply 가 받지 않는다.")
+    else:
+        print("   적용은 `--phase s3-apply --apply-plan <위 파일> --plan-sha256 <위 값>` 이다.")
     return 0
 
 
@@ -496,6 +704,8 @@ def _parse_plan(raw: str, bucket: str, expected_sha: str) -> tuple[dict, str | N
         plan = json.loads(raw)
     except json.JSONDecodeError:
         return {}, "계획 파일 JSON 이 올바르지 않다."
+    if isinstance(plan, dict) and plan.get("dryRun") is not None:
+        return {}, "dry-run 계획이다 — 리허설 계획은 적용하지 않는다. 실행 모드로 계획을 다시 세운다."
     if not isinstance(plan, dict) or set(plan) != PLAN_FIELDS:
         return {}, f"계획 최상위 필드가 정확하지 않다 — {sorted(PLAN_FIELDS)} 여야 한다."
     if plan["schema"] != PLAN_SCHEMA:
@@ -600,13 +810,20 @@ def main(argv: list[str] | None = None, *, connect=None, s3_factory=None) -> int
     ap.add_argument("--apply-plan", help="--phase s3-apply 가 읽을 계획 파일(실행자 소유 0600).")
     ap.add_argument("--plan-sha256", help="--apply-plan 의 기대 sha256. 어긋나면 거부한다.")
     ap.add_argument("--count-url-file",
-                    help="--phase count 필수. platform DB 의 BYPASSRLS 읽기 롤(colab_backup) 접속 URL "
+                    help="count·schema·s3-plan 필수. platform DB 의 BYPASSRLS 읽기 롤(colab_backup) 접속 URL "
                          "파일. 호스트·DB 가 --platform-url-file 과 같아야 한다.")
+    ap.add_argument("--count-ai-url-file",
+                    help="count·schema 필수. ai DB 의 BYPASSRLS 읽기 롤 접속 URL 파일. "
+                         "호스트·DB 가 --ai-url-file 과 같아야 한다.")
+    ap.add_argument("--count-report",
+                    help="--phase schema 필수. DROP 직전 재계수를 쓸 자리(0600). 그 sha256 이 ack 대조값이다.")
     ap.add_argument("--referenced-keys",
-                    help="--phase s3-plan: 스키마 삭제 전 --phase count 보고서(0600). 계획이 그 "
-                         "referencedKeys 와 겹치면 --ack-sha256 없이 계획을 쓰지 않는다.")
+                    help="--phase s3-plan 필수. 이번 reset 의 DROP 직전 계수 파일(0600 · count-at-drop.json).")
+    ap.add_argument("--referenced-sha256",
+                    help="--phase s3-plan 필수. --referenced-keys 파일의 기대 sha256 — 이번 reset 에 묶는다.")
     ap.add_argument("--ack-sha256",
-                    help="--referenced-keys 파일의 sha256. 겹침을 알고 지운다는 운영자 확인이다.")
+                    help="schema: 비어 있지 않은 재계수의 sha256. s3-plan: 계획이 참조 키와 겹칠 때 그 파일의 "
+                         "sha256. 사용자가 계수를 보고 준 명시 GO 의 기록이다.")
     a = ap.parse_args(argv)
 
     def refuse(message: str) -> int:
@@ -641,22 +858,30 @@ def main(argv: list[str] | None = None, *, connect=None, s3_factory=None) -> int
         urls[chain] = url
 
     # ⓓ 계수 URL — 전수를 읽는 롤이어야 하고, 지울 바로 그 DB 여야 한다.
-    if a.phase == "count":
-        if not a.count_url_file:
-            return refuse("--phase count 에는 --count-url-file(BYPASSRLS 읽기 롤 URL 파일)이 필요하다 — "
+    for chain in COUNT_URL_PHASES.get(a.phase, ()):
+        flag = "--count-url-file" if chain == "platform" else "--count-ai-url-file"
+        path = a.count_url_file if chain == "platform" else a.count_ai_url_file
+        if not path:
+            return refuse(f"--phase {a.phase} 에는 {flag}({chain} BYPASSRLS 읽기 롤 URL 파일)이 필요하다 — "
                           "소유자·앱 롤로 센 0 은 FORCE RLS 아래 거짓 0 이다.")
         try:
-            url, host = _read_url_file(a.count_url_file, "count")
+            url, host = _read_url_file(path, flag[2:-9])
         except (OSError, RuntimeError) as exc:
             return refuse(str(exc) + ".")
-        refusal = host_refusal("count", host)
+        refusal = host_refusal(f"{chain} count", host)
         if refusal:
             return refuse(refusal)
-        target = urllib.parse.urlsplit(urls["platform"])
+        target = urllib.parse.urlsplit(urls[chain])
         counted = urllib.parse.urlsplit(url)
         if (counted.hostname, counted.port, counted.path) != (target.hostname, target.port, target.path):
-            return refuse("계수 URL 의 호스트·포트·DB 가 platform URL 과 다르다 — 센 DB 와 지울 DB 가 같아야 한다.")
-        urls["count"] = url
+            return refuse(f"{chain} 계수 URL 의 호스트·포트·DB 가 {chain} URL 과 다르다 — "
+                          "센 DB 와 지울 DB 가 같아야 한다.")
+        urls["count-" + chain] = url
+    if a.phase == "schema" and not a.count_report:
+        return refuse("--phase schema 에는 --count-report(DROP 직전 재계수 자리)가 필요하다.")
+    refusal = ack_token_refusal(a.ack_sha256)
+    if refusal:
+        return refuse(refusal)
 
     connect = connect or _default_connect
     s3_factory = s3_factory or _default_s3
@@ -664,9 +889,9 @@ def main(argv: list[str] | None = None, *, connect=None, s3_factory=None) -> int
     if a.phase == "count":
         return _phase_count(a, urls, bucket, region, connect, s3_factory)
     if a.phase == "schema":
-        return _phase_schema(a, urls, bucket, connect)
+        return _phase_schema(a, urls, bucket, region, connect, s3_factory)
     if a.phase == "s3-plan":
-        return _phase_s3_plan(a, bucket, region, s3_factory)
+        return _phase_s3_plan(a, urls, bucket, region, connect, s3_factory)
     return _phase_s3_apply(a, bucket, region, s3_factory)
 
 

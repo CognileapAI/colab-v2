@@ -65,8 +65,9 @@ if [ "$last" = "bash -s" ]; then
   exit 0
 fi
 printf 'CMD %s\n' "$last" >> "$FIXTURE_SSH_LOG"
-# reset 정지 게이트가 계수 파일을 되읽는 자리 — 빈 DB 계수를 낸다(정지 게이트 자체는 `reset-gate.sh` 가 판정한다).
-case "$last" in *count-before.json*) base64 -w0 < "$FIXTURE_COUNT_BEFORE"; exit 0 ;; esac
+# reset 정지 게이트·DROP 직전 재계수를 되읽는 자리 — 빈 DB 계수를 낸다(정지 게이트 자체는 `reset-gate.sh` 가 판정한다).
+case "$last" in *"base64 -w0"*count-before.json*|*"base64 -w0"*count-at-drop.json*)
+  base64 -w0 < "$FIXTURE_COUNT_BEFORE"; exit 0 ;; esac
 if [ -n "${FIXTURE_DOCTOR_FILE:-}" ]; then
   cat "$FIXTURE_DOCTOR_FILE"
   exit "${FIXTURE_DOCTOR_RC:-0}"

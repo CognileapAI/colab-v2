@@ -15,6 +15,13 @@
   ⑼ 네 단계(count · schema · s3-plan · s3-apply)의 green 경로
   ⑽ 계수는 BYPASSRLS 롤 ＋ row_security=off 로 행 전수를 세고, 시각 없이 같은 상태면 같은 바이트다
   ⑾ s3 계획이 DB 가 가리키던 키와 겹치면 계수 보고서 sha256(ack 토큰) 없이 쓰지 않는다
+  ⑿ 계수 토큰은 두 체인의 **모든** 기본 표(pg_catalog 열거)의 행수·내용 지문과 S3 키 목록 지문을 덮는다
+     — 같은 개수의 UPDATE·키 교체도 토큰을 바꾼다(2026-09-25 검토 지적)
+  ⒀ `--phase schema` 는 DROP 직전 같은 프로세스에서 다시 세고, 비어 있지 않은데 ack 가 그 재계수의
+     sha256 과 다르면 DROP 을 한 건도 내지 않는다 — 래퍼를 거치지 않고 직접 불러도 같다
+  ⒁ 「비어 있다」는 DB 행 0 · 참조 키 0 · `uploads/` 객체 0 · 멀티파트 0 을 모두 뜻한다(고아 객체도 사람 자료다)
+  ⒂ `--phase s3-plan` 은 참조 키 파일과 그 sha256(이번 reset 의 것)을 필수로 받고, **지금** DB 가 가리키는
+     키가 1건이라도 있으면 계획을 쓰지 않는다 — 지난 회차 파일로는 넘어가지 않는다
 """
 from __future__ import annotations
 
@@ -40,6 +47,7 @@ AI_URL = "postgresql://colab_owner:pw@colab-v2-dev-pg.example.internal:5432/cola
 STAGING_URL = "postgresql://colab_owner:pw@colab-v2-staging-pg.example.internal:5432/colab_platform"
 #: 계수 전용 BYPASSRLS 읽기 롤 — 호스트·DB 는 platform 과 같아야 한다.
 COUNT_URL = "postgresql://colab_backup:pw@colab-v2-dev-pg.example.internal:5432/colab_platform"
+COUNT_AI_URL = "postgresql://colab_backup:pw@colab-v2-dev-pg.example.internal:5432/colab_ai"
 
 
 # ── 가짜 DB ────────────────────────────────────────────────────────────────
@@ -167,24 +175,49 @@ def url_files(tmp_path):
 
 @pytest.fixture
 def count_url_file(tmp_path):
-    def make(url: str = COUNT_URL) -> str:
-        p = tmp_path / "count.url"
+    def make(url: str = COUNT_URL, name: str = "count.url") -> str:
+        p = tmp_path / name
         p.write_text(url, encoding="utf-8")
         p.chmod(0o600)
         return str(p)
     return make
 
 
+@pytest.fixture
+def count_args(count_url_file):
+    """계수 URL 두 벌(platform · ai) — `count`·`schema`·`s3-plan` 이 받는 인자."""
+    def make(platform: str = COUNT_URL, ai: str = COUNT_AI_URL) -> list[str]:
+        return ["--count-url-file", count_url_file(platform),
+                "--count-ai-url-file", count_url_file(ai, "count-ai.url")]
+    return make
+
+
+PLATFORM_TABLES = (("account_admin", "login_credential"), ("public", "d1_account"),
+                   ("public", "d3_dataset"), ("public", "d3_dataset_description"))
+AI_TABLES = (("public", "d10_model_call"),)
+
+
 def _count_rows(schemas: list[str], counts: int = 0, *, bypass: bool = True,
-                keys: tuple[str, ...] = (), missing: tuple[str, ...] = ()):
-    """전수 계수 경로의 응답. 순서가 곧 우선순위다(FakeCursor 는 앞의 조각부터 본다)."""
+                keys: tuple[str, ...] = (), missing: tuple[str, ...] = (),
+                tables: tuple[tuple[str, str], ...] = PLATFORM_TABLES, md5: str = "0" * 32):
+    """전수 계수 경로의 응답. 순서가 곧 우선순위다(FakeCursor 는 앞의 조각부터 본다).
+
+    `relkind`(표 열거)는 `pg_namespace` 를 조인하므로 그보다 앞에 둔다.
+    `string_agg`(내용 지문)는 `count(*)` 를 함께 내므로 그보다 앞에 둔다.
+    """
     return [
+        ("relkind", list(tables)),
         ("pg_namespace", [(s,) for s in schemas]),
         ("rolbypassrls", [(bypass,)]),
         ("to_regclass", [(m,) for m in missing]),
         ("storage_key", [(k,) for k in keys]),
+        ("string_agg", [(counts, md5)]),
         ("count(*)", [(counts,)]),
     ]
+
+
+def _ai_rows(counts: int = 0, *, bypass: bool = True, md5: str = "0" * 32):
+    return _count_rows(["public"], counts, bypass=bypass, tables=AI_TABLES, md5=md5)
 
 
 def _argv(phase: str, urls, report, *extra: str, yes: bool = True) -> list[str]:
@@ -195,6 +228,18 @@ def _argv(phase: str, urls, report, *extra: str, yes: bool = True) -> list[str]:
     if yes:
         argv.append("--yes-reset-dev")
     return argv + list(extra)
+
+
+def _schema_argv(urls, tmp_path, count: list[str], *extra: str) -> list[str]:
+    """`--phase schema` — DROP 직전 재계수를 `count-at-drop.json` 에 쓴다."""
+    return _argv("schema", urls, tmp_path / "r.json", *count,
+                 "--count-report", str(tmp_path / "count-at-drop.json"), *extra)
+
+
+def _schema_factory(counts: int = 0, *, keys: tuple[str, ...] = (), md5: str = "0" * 32):
+    """스키마 단계용 — 소유자 URL 과 계수 URL 이 같은 체인이면 같은 가짜 접속을 받는다."""
+    return FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], counts, keys=keys, md5=md5)),
+                           FakeConn(_ai_rows(counts, md5=md5)))
 
 
 def _write_plan(path: pathlib.Path, keys: list[str], uploads: list[list[str]],
@@ -331,19 +376,19 @@ def test_허용_접두사_판정은_경계값을_가른다() -> None:
 
 # ── ⑺ 스키마 집합 가드 ────────────────────────────────────────────────────
 
-def test_platform_스키마_집합이_다르면_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
+def test_platform_스키마_집합이_다르면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     """`account_admin` 이 없으면 0025 가 만든 스키마가 이미 어딘가로 갔다는 뜻이다."""
     factory = FakeConnFactory(FakeConn(_rows(["public"])), FakeConn(_rows(["public"])))
-    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json"), connect=factory)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory)
     assert rc == 3
     assert "account_admin" in capsys.readouterr().err
     assert not any("drop schema" in s.lower() for s in factory.platform.cur.executed)
 
 
-def test_ai_스키마_집합에_여분이_있으면_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
+def test_ai_스키마_집합에_여분이_있으면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
                               FakeConn(_rows(["public", "tiger"])))
-    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json"), connect=factory)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory)
     assert rc == 3
     assert "tiger" in capsys.readouterr().err
     assert not any("drop schema" in s.lower() for s in factory.ai.cur.executed)
@@ -358,11 +403,11 @@ def test_스키마_집합_판정은_양쪽_기대값을_쓴다() -> None:
 
 # ── ⑻ dry-run ────────────────────────────────────────────────────────────
 
-def test_dry_run_은_DROP_을_내지_않는다(dev_env, url_files, tmp_path) -> None:
-    factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
-                              FakeConn(_rows(["public"])))
+def test_dry_run_은_DROP_을_내지_않는다(dev_env, url_files, count_args, tmp_path) -> None:
+    factory = _schema_factory()
     report = tmp_path / "r.json"
-    rc = reset.main(_argv("schema", url_files(), report, "--dry-run"), connect=factory)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args(), "--dry-run"), connect=factory,
+                    s3_factory=lambda **kw: FakeS3())
     assert rc == 0
     for conn in (factory.platform, factory.ai):
         joined = " ".join(conn.cur.executed).lower()
@@ -391,58 +436,104 @@ REQUIRED_COUNT_TABLES = {"d1_account", "account_admin.login_credential", "d3_dat
                          "d5_upload", "d6_project", "d4_lineage_edge"}
 
 
-def _count(factory, urls, count_url, report, s3=None):
-    return reset.main(_argv("count", urls, report, "--count-url-file", count_url),
+def _count(factory, urls, count, report, s3=None):
+    return reset.main(_argv("count", urls, report, *count),
                       connect=factory, s3_factory=lambda **kw: s3 or FakeS3())
 
 
-def test_계수_단계는_BYPASSRLS_롤로_전수를_센다(dev_env, url_files, count_url_file, tmp_path) -> None:
+def test_계수_단계는_BYPASSRLS_롤로_전수를_센다(dev_env, url_files, count_args, tmp_path) -> None:
     """FORCE RLS 아래 경계 경로는 거짓 0 을 낸다(2026-09-24 사고) — 연구실 경계를 걸지 않고
     BYPASSRLS 롤 ＋ `row_security = off` 로 센다. `off` 는 우회 못 하는 롤이면 조용히 거르지 않고 오류를 낸다."""
     factory = FakeConnFactory(
         FakeConn(_count_rows(["public", "account_admin"], counts=7,
                              keys=("uploads/L/a.nc", "uploads/L/a.nc", "previews/x.png"))),
-        FakeConn(_rows(["public"])))
+        FakeConn(_ai_rows()))
     s3 = FakeS3({"uploads/a.bin": 3, "previews/p.png": 4, "_ops/backups/dev/z": 5},
                 [("uploads/m.bin", "UP1")])
     report = tmp_path / "r.json"
-    rc = _count(factory, url_files(), count_url_file(), report, s3)
+    rc = _count(factory, url_files(), count_args(), report, s3)
     assert rc == 0
-    executed = factory.platform.cur.executed
-    assert not any("app.current_lab" in s for s in executed)      # 경계 경로를 쓰지 않는다
-    bypass = next(i for i, s in enumerate(executed) if "rolbypassrls" in s)
-    off = next(i for i, s in enumerate(executed) if "row_security" in s and "off" in s)
-    first_count = next(i for i, s in enumerate(executed) if "count(*)" in s)
-    assert bypass < off < first_count
+    for conn in (factory.platform, factory.ai):
+        executed = conn.cur.executed
+        assert not any("app.current_lab" in s for s in executed)      # 경계 경로를 쓰지 않는다
+        bypass = next(i for i, s in enumerate(executed) if "rolbypassrls" in s)
+        off = next(i for i, s in enumerate(executed) if "row_security" in s and "off" in s)
+        first_count = next(i for i, s in enumerate(executed) if "count(*)" in s)
+        assert bypass < off < first_count
     body = json.loads(report.read_text(encoding="utf-8"))
     assert body["phase"] == "count"
     rows = body["db"]["platform"]["rows"]
     assert REQUIRED_COUNT_TABLES <= set(rows)
     assert all(rows[t] == 7 for t in REQUIRED_COUNT_TABLES)
     assert body["db"]["platform"]["countPath"] == reset.COUNT_PATH
+    assert body["db"]["ai"]["countPath"] == reset.COUNT_PATH
     assert body["referencedKeys"] == {"count": 2, "keys": ["previews/x.png", "uploads/L/a.nc"]}
     assert body["s3"]["objects"]["uploads/"] == 1
     assert body["s3"]["objects"]["previews/"] == 1
     assert body["s3"]["multipartUploads"] == 1
-    assert "_ops/" not in json.dumps(body["s3"]["objects"])
+    assert "_ops/" not in json.dumps(body["s3"])
 
 
-def test_계수_보고서는_같은_상태면_같은_바이트다(dev_env, url_files, count_url_file, tmp_path) -> None:
+def test_계수는_두_체인의_모든_기본_표를_열거해_행수와_내용_지문을_싣는다(dev_env, url_files, count_args,
+                                                          tmp_path) -> None:
+    """고정 표 일곱만 세면 설명·변수 메타·AI 원장 편집이 토큰 밖이다(2026-09-25 검토 지적).
+    표 목록은 pg_catalog 에서 열거하고(`relkind` r·p · 파티션 자식 제외 · alembic_version 제외),
+    표마다 행수와 행 내용 지문을 싣는다."""
+    factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], counts=2, md5="a" * 32)),
+                              FakeConn(_ai_rows(3, md5="b" * 32)))
+    report = tmp_path / "r.json"
+    assert _count(factory, url_files(), count_args(), report) == 0
+    body = json.loads(report.read_text(encoding="utf-8"))
+    tables = body["db"]["platform"]["tables"]
+    assert set(tables) == {f"{n}.{t}" for n, t in PLATFORM_TABLES}
+    assert tables["public.d3_dataset_description"] == {"rows": 2, "md5": "a" * 32}
+    assert body["db"]["ai"]["tables"] == {"public.d10_model_call": {"rows": 3, "md5": "b" * 32}}
+    enum_sql = next(s for s in factory.platform.cur.executed if "relkind" in s)
+    assert "relispartition" in enum_sql and "alembic" in enum_sql
+    assert any("string_agg" in s and '"public"."d3_dataset_description"' in s
+               for s in factory.platform.cur.executed)
+
+
+def test_계수_토큰은_같은_개수의_내용_편집에도_바뀐다(dev_env, url_files, count_args, tmp_path) -> None:
+    """행수가 같아도 행 내용이 바뀌면(데이터셋 설명 편집) 계수 파일 바이트가 달라진다 — 옛 토큰이 떨어진다."""
+    digests = []
+    for n, md5 in ((1, "a" * 32), (2, "c" * 32)):
+        factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], counts=3, md5=md5)),
+                                  FakeConn(_ai_rows()))
+        report = tmp_path / f"r{n}.json"
+        assert _count(factory, url_files(), count_args(), report) == 0
+        digests.append(hashlib.sha256(report.read_bytes()).hexdigest())
+    assert digests[0] != digests[1]
+
+
+def test_계수_토큰은_같은_개수의_S3_키_교체에도_바뀐다(dev_env, url_files, count_args, tmp_path) -> None:
+    digests = []
+    for n, key in ((1, "uploads/L/a.nc"), (2, "uploads/L/b.nc")):
+        factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"])), FakeConn(_ai_rows()))
+        report = tmp_path / f"r{n}.json"
+        assert _count(factory, url_files(), count_args(), report, FakeS3({key: 3})) == 0
+        body = json.loads(report.read_text(encoding="utf-8"))
+        assert body["s3"]["objects"]["uploads/"] == 1
+        digests.append(hashlib.sha256(report.read_bytes()).hexdigest())
+    assert digests[0] != digests[1]
+
+
+def test_계수_보고서는_같은_상태면_같은_바이트다(dev_env, url_files, count_args, tmp_path) -> None:
     """ack 토큰 = 이 파일의 sha256 이다. 시각이 실리면 다시 센 순간 토큰이 바뀌어 대조가 성립하지 않는다."""
     digests = []
     for n in (1, 2):
         factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], counts=3,
                                                        keys=("uploads/k",))),
-                                  FakeConn(_rows(["public"])))
+                                  FakeConn(_ai_rows()))
         report = tmp_path / f"r{n}.json"
-        assert _count(factory, url_files(), count_url_file(), report) == 0
+        assert _count(factory, url_files(), count_args(), report) == 0
         digests.append(hashlib.sha256(report.read_bytes()).hexdigest())
     assert digests[0] == digests[1]
 
 
 def test_계수_URL_이_없으면_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
     factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"])),
-                              FakeConn(_rows(["public"])))
+                              FakeConn(_ai_rows()))
     report = tmp_path / "r.json"
     rc = reset.main(_argv("count", url_files(), report), connect=factory,
                     s3_factory=lambda **kw: FakeS3())
@@ -452,46 +543,162 @@ def test_계수_URL_이_없으면_거부한다(dev_env, url_files, tmp_path, cap
     assert not report.exists()
 
 
-def test_계수_URL_호스트에_dev_가_없으면_거부한다(dev_env, url_files, count_url_file, tmp_path, capsys) -> None:
+def test_AI_계수_URL_이_없으면_거부한다(dev_env, url_files, count_url_file, tmp_path, capsys) -> None:
+    """AI 체인(d10_model_call 등)도 토큰 안에 있어야 한다 — 스키마 목록만 보던 자리."""
+    factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"])), FakeConn(_ai_rows()))
+    report = tmp_path / "r.json"
+    rc = reset.main(_argv("count", url_files(), report, "--count-url-file", count_url_file()),
+                    connect=factory, s3_factory=lambda **kw: FakeS3())
+    assert rc == 2
+    assert "--count-ai-url-file" in capsys.readouterr().err
+    assert not report.exists()
+
+
+def test_AI_계수_URL_이_ai_DB_와_다르면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    rc = reset.main(_argv("count", url_files(), tmp_path / "r.json", *count_args(ai=COUNT_URL)))
+    assert rc == 2
+    assert "ai" in capsys.readouterr().err
+
+
+def test_AI_계수_롤이_BYPASSRLS_가_아니면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"])),
+                              FakeConn(_ai_rows(bypass=False)))
+    report = tmp_path / "r.json"
+    rc = _count(factory, url_files(), count_args(), report)
+    assert rc == 3
+    assert "BYPASSRLS" in capsys.readouterr().err
+    assert not report.exists()
+
+
+def test_계수_URL_호스트에_dev_가_없으면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     staging = COUNT_URL.replace("-dev-", "-staging-")
-    rc = reset.main(_argv("count", url_files(), tmp_path / "r.json", "--count-url-file",
-                          count_url_file(staging)))
+    rc = reset.main(_argv("count", url_files(), tmp_path / "r.json", *count_args(platform=staging)))
     err = capsys.readouterr().err
     assert rc == 2
     assert "-dev" in err
     assert "pw@" not in err
 
 
-def test_계수_URL_이_지울_DB_와_다르면_거부한다(dev_env, url_files, count_url_file, tmp_path, capsys) -> None:
+def test_계수_URL_이_지울_DB_와_다르면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     """센 DB 와 지우는 DB 가 다르면 계수는 판정 근거가 아니다."""
     other = COUNT_URL.replace("/colab_platform", "/colab_platform_copy")
-    rc = reset.main(_argv("count", url_files(), tmp_path / "r.json", "--count-url-file",
-                          count_url_file(other)))
+    rc = reset.main(_argv("count", url_files(), tmp_path / "r.json", *count_args(platform=other)))
     assert rc == 2
     assert "platform" in capsys.readouterr().err
 
 
-def test_계수_롤이_BYPASSRLS_가_아니면_거부한다(dev_env, url_files, count_url_file, tmp_path, capsys) -> None:
+def test_계수_롤이_BYPASSRLS_가_아니면_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     """소유자·앱 롤은 FORCE RLS 에 걸린다 — 그 롤로 센 0 은 「비어 있다」가 아니다(deploy.md 10번)."""
     factory = FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], bypass=False)),
-                              FakeConn(_rows(["public"])))
+                              FakeConn(_ai_rows()))
     report = tmp_path / "r.json"
-    rc = _count(factory, url_files(), count_url_file(), report)
+    rc = _count(factory, url_files(), count_args(), report)
     assert rc == 3
     assert "BYPASSRLS" in capsys.readouterr().err
     assert not any("count(*)" in s for s in factory.platform.cur.executed)
     assert not report.exists()
 
 
-def test_계수_표가_없으면_0_으로_읽지_않는다(dev_env, url_files, count_url_file, tmp_path, capsys) -> None:
+def test_계수_표가_없으면_0_으로_읽지_않는다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     factory = FakeConnFactory(
         FakeConn(_count_rows(["public", "account_admin"], missing=("account_admin.login_credential",))),
-        FakeConn(_rows(["public"])))
+        FakeConn(_ai_rows()))
     report = tmp_path / "r.json"
-    rc = _count(factory, url_files(), count_url_file(), report)
+    rc = _count(factory, url_files(), count_args(), report)
     assert rc == 3
     assert "account_admin.login_credential" in capsys.readouterr().err
     assert not report.exists()
+
+
+# ── 스키마 단계 — DROP 직전 같은 프로세스의 재계수 ─────────────────────────
+
+def _drops(factory) -> int:
+    return sum("drop schema" in s.lower() for c in (factory.platform, factory.ai) for s in c.cur.executed)
+
+
+def test_스키마_단계를_직접_불러도_비어_있지_않으면_ack_없이_DROP_하지_않는다(dev_env, url_files, count_args,
+                                                          tmp_path, capsys) -> None:
+    """래퍼(stages.sh)의 정지 게이트를 거치지 않고 도구를 직접 불러도 막힌다 — 런북대로 손으로 돌리는 자리."""
+    factory = _schema_factory(counts=5, keys=("uploads/L/a.nc",))
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory,
+                    s3_factory=lambda **kw: FakeS3({"uploads/L/a.nc": 3}))
+    err = capsys.readouterr().err
+    assert rc == 3
+    assert _drops(factory) == 0
+    assert factory.platform.committed == 0 and factory.ai.committed == 0
+    recount = tmp_path / "count-at-drop.json"
+    token = hashlib.sha256(recount.read_bytes()).hexdigest()
+    assert token in err and "d3_dataset 5" in err
+    assert oct(recount.stat().st_mode)[-3:] == "600"
+
+
+def test_스키마_단계는_지난_ack_를_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    factory = _schema_factory(counts=5)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args(), "--ack-sha256", "e" * 64),
+                    connect=factory, s3_factory=lambda **kw: FakeS3())
+    assert rc == 3
+    assert _drops(factory) == 0
+    assert "ack" in capsys.readouterr().err
+
+
+def test_스키마_단계는_재계수와_같은_ack_면_DROP_하고_재계수_sha256_을_남긴다(dev_env, url_files, count_args,
+                                                             tmp_path) -> None:
+    # 같은 상태를 한 번 세어 토큰을 얻는다 — 계수 파일에 시각이 없으므로 재계수도 같은 바이트다.
+    counted = tmp_path / "count-before.json"
+    assert _count(_schema_factory(counts=5), url_files(), count_args(), counted) == 0
+    token = hashlib.sha256(counted.read_bytes()).hexdigest()
+    factory = _schema_factory(counts=5)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args(), "--ack-sha256", token),
+                    connect=factory, s3_factory=lambda **kw: FakeS3())
+    assert rc == 0
+    assert _drops(factory) == 2
+    assert (tmp_path / "count-at-drop.json").read_bytes() == counted.read_bytes()
+    body = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert body["countAtDrop"]["sha256"] == token
+    assert body["countAtDrop"]["ackSha256"] == token
+    assert body["countAtDrop"]["nonEmpty"]["d3_dataset"] == 5
+
+
+def test_스키마_단계는_DB_가_비어도_uploads_객체가_남아_있으면_ack_를_요구한다(dev_env, url_files, count_args,
+                                                              tmp_path, capsys) -> None:
+    """DB 행 0 · 참조 키 0 이어도 `uploads/` 객체는 복원의 마지막 사본일 수 있다(DB 는 pg_dump 가 있다)."""
+    factory = _schema_factory(counts=0)
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory,
+                    s3_factory=lambda **kw: FakeS3({"uploads/L/orphan.nc": 3}, [("uploads/L/m.nc", "UP")]))
+    err = capsys.readouterr().err
+    assert rc == 3
+    assert _drops(factory) == 0
+    assert "uploads/" in err
+
+
+def test_스키마_단계는_계수_URL_없이_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
+    factory = _schema_factory()
+    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json",
+                          "--count-report", str(tmp_path / "c.json")), connect=factory)
+    assert rc == 2
+    assert "--count-url-file" in capsys.readouterr().err
+    assert _drops(factory) == 0
+
+
+def test_스키마_단계는_재계수_자리_없이_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    factory = _schema_factory()
+    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json", *count_args()), connect=factory)
+    assert rc == 2
+    assert "--count-report" in capsys.readouterr().err
+    assert _drops(factory) == 0
+
+
+def test_비어_있음_판정은_DB_행_참조_키_uploads_멀티파트를_모두_본다() -> None:
+    def report(rows=0, refs=0, uploads=0, previews=0, mp=0):
+        return {"db": {"platform": {"rows": {t: rows for t in reset.COUNT_TABLES}}},
+                "referencedKeys": {"count": refs},
+                "s3": {"objects": {"uploads/": uploads, "previews/": previews}, "multipartUploads": mp}}
+    assert reset.nonempty_reasons(report()) == {}
+    assert reset.nonempty_reasons(report(previews=9)) == {}          # 생성물이다 — 다시 만든다
+    assert reset.nonempty_reasons(report(uploads=2)) == {"s3:uploads/": 2}
+    assert reset.nonempty_reasons(report(mp=1)) == {"s3:multipartUploads": 1}
+    assert reset.nonempty_reasons(report(refs=1)) == {"referencedKeys": 1}
+    assert reset.nonempty_reasons(report(rows=1))["d1_account"] == 1
 
 
 # ── S3 계획 × DB 가 가리키는 키 ────────────────────────────────────────────
@@ -505,19 +712,30 @@ def _write_count_report(path: pathlib.Path, keys: list[str], *, bucket: str = DE
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _plan_argv(urls, tmp_path, *extra: str) -> list[str]:
+def _plan_argv(urls, tmp_path, count: list[str], *extra: str) -> list[str]:
     return _argv("s3-plan", urls, tmp_path / "r.json", "--plan-out", str(tmp_path / "plan.json"),
-                 *extra)
+                 *count, *extra)
+
+
+def _referenced(tmp_path, keys: list[str], **kwargs) -> tuple[list[str], str]:
+    """이번 reset 의 DROP 직전 계수(count-at-drop.json)와 그 sha256 — s3-plan 필수 인자 한 벌."""
+    counted = tmp_path / "count-at-drop.json"
+    token = _write_count_report(counted, keys, **kwargs)
+    return ["--referenced-keys", str(counted), "--referenced-sha256", token], token
+
+
+def _live(keys: tuple[str, ...] = ()):
+    """s3-plan 이 **지금** DB 를 읽는 가짜 접속 — 스키마 재생성·마이그레이션 뒤라면 참조 키가 0 이다."""
+    return FakeConnFactory(FakeConn(_count_rows(["public", "account_admin"], keys=keys)), FakeConn(_ai_rows()))
 
 
 S3_WITH_REFERENCED = {"uploads/L/a.nc": 3, "uploads/L/b.nc": 4, "previews/p.png": 5}
 
 
-def test_s3_계획이_DB_참조_키와_겹치면_토큰_없이_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
+def test_s3_계획이_DB_참조_키와_겹치면_토큰_없이_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
     """2026-09-24 — 계획이 DB 행이 가리키는 키 1,778 건을 조용히 담았다. 겹침은 이름을 대고 멈춘다."""
-    counted = tmp_path / "count-before.json"
-    token = _write_count_report(counted, ["uploads/L/a.nc", "uploads/L/b.nc", "uploads/L/gone.nc"])
-    rc = reset.main(_plan_argv(url_files(), tmp_path, "--referenced-keys", str(counted)),
+    ref, token = _referenced(tmp_path, ["uploads/L/a.nc", "uploads/L/b.nc", "uploads/L/gone.nc"])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref), connect=_live(),
                     s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
     err = capsys.readouterr().err
     assert rc == 2
@@ -525,33 +743,29 @@ def test_s3_계획이_DB_참조_키와_겹치면_토큰_없이_거부한다(dev_
     assert not (tmp_path / "plan.json").exists()
 
 
-def test_s3_계획은_어긋난_토큰을_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
-    counted = tmp_path / "count-before.json"
-    _write_count_report(counted, ["uploads/L/a.nc"])
-    rc = reset.main(_plan_argv(url_files(), tmp_path, "--referenced-keys", str(counted),
-                               "--ack-sha256", "f" * 64),
-                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+def test_s3_계획은_어긋난_토큰을_거부한다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    ref, _token = _referenced(tmp_path, ["uploads/L/a.nc"])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref, "--ack-sha256", "f" * 64),
+                    connect=_live(), s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
     assert rc == 2
     assert "토큰" in capsys.readouterr().err
     assert not (tmp_path / "plan.json").exists()
 
 
-def test_s3_계획은_일치하는_토큰이면_겹침을_기록하고_쓴다(dev_env, url_files, tmp_path) -> None:
-    counted = tmp_path / "count-before.json"
-    token = _write_count_report(counted, ["uploads/L/a.nc", "uploads/L/b.nc"])
-    rc = reset.main(_plan_argv(url_files(), tmp_path, "--referenced-keys", str(counted),
-                               "--ack-sha256", token),
-                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+def test_s3_계획은_일치하는_토큰이면_겹침을_기록하고_쓴다(dev_env, url_files, count_args, tmp_path) -> None:
+    ref, token = _referenced(tmp_path, ["uploads/L/a.nc", "uploads/L/b.nc"])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref, "--ack-sha256", token),
+                    connect=_live(), s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
     assert rc == 0
     assert json.loads((tmp_path / "plan.json").read_text(encoding="utf-8"))["keys"] == sorted(S3_WITH_REFERENCED)
     body = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert body["referenced"] == {"intersection": 2, "countReportSha256": token, "ackSha256": token}
+    assert body["live"] == {"referencedKeys": 0}
 
 
-def test_s3_계획은_겹침이_없으면_토큰_없이_쓴다(dev_env, url_files, tmp_path) -> None:
-    counted = tmp_path / "count-before.json"
-    _write_count_report(counted, ["uploads/elsewhere/z.nc"])
-    rc = reset.main(_plan_argv(url_files(), tmp_path, "--referenced-keys", str(counted)),
+def test_s3_계획은_겹침이_없으면_토큰_없이_쓴다(dev_env, url_files, count_args, tmp_path) -> None:
+    ref, _token = _referenced(tmp_path, ["uploads/elsewhere/z.nc"])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref), connect=_live(),
                     s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
     assert rc == 0
     body = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
@@ -559,20 +773,83 @@ def test_s3_계획은_겹침이_없으면_토큰_없이_쓴다(dev_env, url_file
 
 
 @pytest.mark.parametrize("kwargs", [{"bucket": "colab-platform-data-staging"}, {"phase": "s3-plan"}])
-def test_s3_계획은_계수_보고서가_아니면_거부한다(dev_env, url_files, tmp_path, kwargs) -> None:
-    counted = tmp_path / "count-before.json"
-    token = _write_count_report(counted, [], **kwargs)
-    rc = reset.main(_plan_argv(url_files(), tmp_path, "--referenced-keys", str(counted),
-                               "--ack-sha256", token),
-                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+def test_s3_계획은_계수_보고서가_아니면_거부한다(dev_env, url_files, count_args, tmp_path, kwargs) -> None:
+    ref, token = _referenced(tmp_path, [], **kwargs)
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref, "--ack-sha256", token),
+                    connect=_live(), s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
     assert rc == 2
     assert not (tmp_path / "plan.json").exists()
 
 
-def test_스키마_단계는_두_체인을_재생성하고_다음_명령을_찍는다(dev_env, url_files, tmp_path, capsys) -> None:
-    factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
-                              FakeConn(_rows(["public"])))
-    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json"), connect=factory)
+def test_s3_계획은_참조_키_파일_없이_쓰지_않는다(dev_env, url_files, count_args, tmp_path, capsys) -> None:
+    """`--referenced-keys` 가 선택 인자면 빼는 순간 대조 없이 계획이 선다(검토 실측 rc=0 · LIVE 3건 계획)."""
+    s3 = FakeS3(S3_WITH_REFERENCED)
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args()), connect=_live(),
+                    s3_factory=lambda **kw: s3)
+    assert rc == 2
+    assert "--referenced-keys" in capsys.readouterr().err
+    assert not (tmp_path / "plan.json").exists()
+
+
+def test_s3_계획은_이번_reset_의_sha256_이_아닌_참조_키_파일을_거부한다(dev_env, url_files, count_args, tmp_path,
+                                                           capsys) -> None:
+    """지난 회차가 남긴 파일 — 그 키는 이미 지워졌고 지금 DB 는 새 키를 가리킨다. 겹침 0 으로 통과하면 안 된다."""
+    ref, _token = _referenced(tmp_path, ["uploads/OLD/1.nc", "uploads/OLD/2.nc"])
+    ref[ref.index("--referenced-sha256") + 1] = "d" * 64
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref), connect=_live(),
+                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+    assert rc == 2
+    assert "sha256" in capsys.readouterr().err
+    assert not (tmp_path / "plan.json").exists()
+
+
+def test_s3_계획은_지금_DB_가_가리키는_키가_있으면_쓰지_않는다(dev_env, url_files, count_args, tmp_path,
+                                                   capsys) -> None:
+    """`--from s3` 재개 사이에 사람이 올린 파일 — 옛 계수(겹침 0)로는 보이지 않는다. 지금 DB 를 다시 읽는다."""
+    ref, _token = _referenced(tmp_path, [])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref),
+                    connect=_live(keys=("uploads/L/a.nc", "uploads/L/b.nc")),
+                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+    err = capsys.readouterr().err
+    assert rc == 3
+    assert "2 건" in err
+    assert not (tmp_path / "plan.json").exists()
+
+
+def test_s3_계획은_계수_URL_없이_거부한다(dev_env, url_files, tmp_path, capsys) -> None:
+    ref, _token = _referenced(tmp_path, [])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, [], *ref), connect=_live(),
+                    s3_factory=lambda **kw: FakeS3(S3_WITH_REFERENCED))
+    assert rc == 2
+    assert "--count-url-file" in capsys.readouterr().err
+    assert not (tmp_path / "plan.json").exists()
+
+
+def test_s3_계획_dry_run_은_거부_사유를_찍고_적용할_수_없는_계획만_쓴다(dev_env, url_files, count_args,
+                                                          tmp_path, capsys) -> None:
+    """리허설 ⑸ 는 시드된 dev 에서 계획과 검토 본문을 실모드로 밟는다 — 그 계획은 s3-apply 가 받지 않는다."""
+    ref, _token = _referenced(tmp_path, [])
+    s3 = FakeS3(S3_WITH_REFERENCED)
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref, "--dry-run"),
+                    connect=_live(keys=("uploads/L/a.nc",)), s3_factory=lambda **kw: s3)
+    err = capsys.readouterr().err
+    assert rc == 0
+    assert "1 건" in err
+    plan = json.loads((tmp_path / "plan.json").read_text(encoding="utf-8"))
+    assert plan["dryRun"] is True
+    rc = reset.main(_argv("s3-apply", url_files(), tmp_path / "a.json",
+                          "--apply-plan", str(tmp_path / "plan.json"), "--plan-sha256", plan["sha256"]),
+                    s3_factory=lambda **kw: s3)
+    assert rc == 2
+    assert "dry-run" in capsys.readouterr().err
+    assert s3.deleted == []
+
+
+def test_스키마_단계는_두_체인을_재생성하고_다음_명령을_찍는다(dev_env, url_files, count_args, tmp_path,
+                                            capsys) -> None:
+    factory = _schema_factory()
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory,
+                    s3_factory=lambda **kw: FakeS3())
     assert rc == 0
     platform_sql = " ".join(factory.platform.cur.executed).lower()
     assert "drop schema public, account_admin cascade" in platform_sql
@@ -580,7 +857,7 @@ def test_스키마_단계는_두_체인을_재생성하고_다음_명령을_찍�
     assert "revoke create on schema public from public" in platform_sql
     ai_sql = " ".join(factory.ai.cur.executed).lower()
     assert "drop schema public cascade" in ai_sql
-    assert "account_admin" not in ai_sql
+    assert "drop schema public, account_admin" not in ai_sql
     assert factory.platform.committed == 1 and factory.ai.committed == 1
     out = capsys.readouterr().out
     assert "db-bootstrap.sh extensions" in out
@@ -588,34 +865,35 @@ def test_스키마_단계는_두_체인을_재생성하고_다음_명령을_찍�
     assert "db-bootstrap.sh app-grants" in out
 
 
-def test_재생성은_public_스키마_주석을_되돌린다(dev_env, url_files, tmp_path) -> None:
+def test_재생성은_public_스키마_주석을_되돌린다(dev_env, url_files, count_args, tmp_path) -> None:
     """`initdb` 의 `public` 은 주석 'standard public schema' 를 달고 있다.
 
     `DROP SCHEMA public` ＋ `CREATE SCHEMA public` 하면 그 주석이 NULL 이 되고, `pg_dump` 는
     그 차이를 `COMMENT ON SCHEMA public IS '';` 로 뽑는다 ⟹ `schema-diff` 가 red 다.
     로컬 증명에서 실제로 두 체인 다 이 한 줄로 red 였다(`dev-package/sessions/DR-1a-local-proof.md`).
     """
-    factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
-                              FakeConn(_rows(["public"])))
-    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json"), connect=factory)
+    factory = _schema_factory()
+    rc = reset.main(_schema_argv(url_files(), tmp_path, count_args()), connect=factory,
+                    s3_factory=lambda **kw: FakeS3())
     assert rc == 0
     for conn in (factory.platform, factory.ai):
         joined = " ".join(conn.cur.executed).lower()
         assert "comment on schema public is 'standard public schema'" in joined
 
 
-def test_s3_계획_단계는_exact_key_목록과_sha256_을_쓴다(dev_env, url_files, tmp_path) -> None:
+def test_s3_계획_단계는_exact_key_목록과_sha256_을_쓴다(dev_env, url_files, count_args, tmp_path) -> None:
     s3 = FakeS3({"uploads/a.bin": 3, "previews/p.png": 4, "_ops/backups/dev/z": 5},
                 [("uploads/m.bin", "UP1")])
     plan = tmp_path / "plan.json"
-    rc = reset.main(_argv("s3-plan", url_files(), tmp_path / "r.json",
-                          "--plan-out", str(plan)),
+    ref, _token = _referenced(tmp_path, [])
+    rc = reset.main(_plan_argv(url_files(), tmp_path, count_args(), *ref), connect=_live(),
                     s3_factory=lambda **kw: s3)
     assert rc == 0
     body = json.loads(plan.read_text(encoding="utf-8"))
     assert body["keys"] == ["previews/p.png", "uploads/a.bin"]
     assert body["multipartUploads"] == [["uploads/m.bin", "UP1"]]
     assert body["bucket"] == DEV_BUCKET
+    assert "dryRun" not in body
     assert reset.plan_digest({k: v for k, v in body.items() if k != "sha256"}) == body["sha256"]
     assert oct(plan.stat().st_mode)[-3:] == "600"
     assert s3.deleted == []
@@ -651,11 +929,11 @@ def test_계획_요약은_sha256_을_정규_직렬화로_만든다() -> None:
                    separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
-def test_보고서는_실행자_소유_0600_으로_쓴다(dev_env, url_files, tmp_path) -> None:
-    factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
-                              FakeConn(_rows(["public"])))
+def test_보고서는_실행자_소유_0600_으로_쓴다(dev_env, url_files, count_args, tmp_path) -> None:
+    factory = _schema_factory()
     report = tmp_path / "r.json"
-    reset.main(_argv("schema", url_files(), report, "--dry-run"), connect=factory)
+    reset.main(_schema_argv(url_files(), tmp_path, count_args(), "--dry-run"), connect=factory,
+               s3_factory=lambda **kw: FakeS3())
     info = report.stat()
     assert oct(info.st_mode)[-3:] == "600"
     assert info.st_uid == os.getuid()
