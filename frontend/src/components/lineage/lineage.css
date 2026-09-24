@@ -165,12 +165,9 @@ section.lin {
      · 흐려진 이름 #8a93a0 on #fff6ed = 2.91:1 — **비활성 컨트롤**이라 4.5:1 대상이 아니고,
        그 행이 무엇인지·왜 못 고르는지는 위 5.00:1 문구가 말한다.
    ⚠ **불투명도로 흐리지 않는다** — `opacity` 를 걸면 사유 문구까지 함께 내려가
-   위 `R-21` 이 고친 자리가 그대로 되돌아온다. */
-:root {
-  --lin-over-bg: var(--color-warning-50);
-  --lin-over-ink: var(--color-warning-600);
-  --lin-over-name: var(--color-text-muted);
-}
+   위 `R-21` 이 고친 자리가 그대로 되돌아온다.
+   토큰 `--lin-over-*` 는 정본 `shell/tokens.css` 에 있다 — 연결 단계(`.lin`)와 계보 고치기 모달(`.lin-fix`)이
+   함께 참조해 한 루트 범위에 둘 수 없다(P1 · 값 무변). */
 
 /* 연결 규칙 안내 한 줄 — 이 단계의 맨 위 */
 .lin-scope-lv {

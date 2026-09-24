@@ -1,15 +1,7 @@
 /* S-04 업로드 전체 화면 모달 — 치수·색의 정본은 목업
    `mockups/업로드와_계보_확정_260817.html` 이다. 목업에 없는 요소를 여기서 발명하지 않는다.
-   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
-     여기서 잇는다 (집 관례 — `components/detail/detail.css` 머리말). */
-:root {
-  --up-line: var(--color-border);
-  --up-muted: var(--color-text-muted);
-  --up-ink: var(--color-text);
-  --up-warn: var(--color-warning-600);
-  --up-warn-bg: var(--color-warning-50);
-  --up-radius: 12px;
-}
+   ※ 토큰은 정본 `shell/tokens.css` 에 있다 — `--up-*` 도 여러 루트·전역 셀렉터가 참조해 정본에 둔다
+     (대안 B · P1 에서 값 무변으로 옮김). 이 파일에 `:root` 를 두지 않는다. */
 
 /* 모달은 화면을 통째로 덮고 아래에서 올라온다(0.46초), 닫힐 때 같은 길로 내려간다(0.32초).
    스크롤은 페이지가 아니라 모달 본문 안에서 돈다 (§8 업로드 모달) */
@@ -237,8 +229,8 @@
       ／ 종전 ~~테두리 ＋ 배경 ＋ 좌우 여백의 알약~~ — 알약은 값(상태 칩)처럼 읽혀 라벨의
       일부로 붙지 않고, 한 화면에 네 개가 서면 칸 이름보다 배지가 먼저 눈에 든다.
    ⚠ **사용처와 `data-testid`·클래스 이름은 무변이다** — 바뀐 것은 스타일뿐이다.
-   ⚠ 색은 `--fg-danger` 를 직접 읽는다 — 이 파일 `:root` 의 `--color-danger-600` 은
-      라이트 값 고정이라 다크에서 대비가 떨어진다(후속 항목). */
+   ⚠ 색은 `--fg-danger` 를 직접 읽는다 — 종전 이 파일 `:root` 의 `--color-danger-600`(라이트 값 고정)은
+      정본 값에 가려 쓰이지 않던 죽은 선언이라 P1 에서 지웠다. */
 .reqtag {
   font-size: var(--text-caption);
   font-weight: 700;
@@ -445,22 +437,8 @@ textarea.inp { resize: vertical; line-height: 1.5; }
    원천 = 기획 정본 rev2(`업로드_계보_260905_rev2_이태헌.html`) `<style>` 블록.
    같은 이름이 rev2 에 있으면 **축자 이식**이고, 이름이 다르거나 rev2 에 없으면 **각색**이다
    (각색분은 각 규칙 위에 사유를 적었다). 출처 대조표는 회차 노트 `advisor ② 반영` 절.
-   ※ rev2 는 자체 :root 에 토큰을 다 갖고 있으나 `shell/tokens.css` 는 셸이 쓰는 것만
-     옮겨져 있다 — 공유 파일을 건드리지 않고, 이 화면이 처음 쓰는 토큰만 여기서 잇는다. */
-:root {
-  --color-border-control: #848c94;
-  --color-primary-50: #edf4ff;
-  --color-primary-100: #e2eeff;
-  --color-text-on-primary: var(--color-white, #ffffff);
-  --color-text-subtle: #697077;
-  --color-danger-600: #ba3125;
-  --font-data: var(--font-sans);
-  --leading-body-sm: 1.429;
-  --radius-lg: 12px;
-  --shadow-lg: 0px 6px 10px -4px #17171714, 0px 16px 24px -6px #17171714;
-  --space-1: 4px;
-  --space-2: 8px;
-}
+   ※ rev2 는 자체 :root 에 토큰을 다 갖고 있다 — 이 화면이 쓰는 이름은 정본 `shell/tokens.css` 에 있다
+     (P1 에서 값 무변으로 옮김 · 정본과 다르던 죽은 선언 4종은 지웠다). */
 
 /* ── 값 안내 한 줄 (rev2 축자) ─────────────────────────────────────────── */
 .fieldnote{margin-top:5px;font-size:var(--text-caption);color:var(--color-text-muted);line-height:1.55;}

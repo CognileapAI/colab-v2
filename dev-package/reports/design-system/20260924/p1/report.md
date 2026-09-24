@@ -10,7 +10,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 |---|---|
 | 1 착수 캡처 · 손 계측 | 완료 |
 | 2 게이트 `frontend-design-lint` + selftest · 등록 · 착수 CSS red 기록 | 완료 |
-| 3 `tokens.css` 재구성 · 화면 `:root` 제거 | 진행 전 |
+| 3 `tokens.css` 재구성 · 화면 `:root` 제거 | 완료 — 게이트 green(a 0 · b 0 · c 0(면제 6) · d 0) |
 | 4 preview 경로(Q7) | 진행 전 |
 | 5 시험 · 대장 | 진행 전 |
 | 6 시각 변경 0 대조 | 진행 전 |
@@ -51,3 +51,41 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
 3. **등록 두 곳 추가** — `gates/config/parallelism.toml`(`scripts/harness/check.py` 가 `ALL_GATES ⊆ parallelism` 을 강제) · `.agents/ci-producers.json`(`verify_evidence.py record --check` 가 등록을 요구).
 4. **면제 목록 부재 = red(준비 · 78)** — spec 의 78 조건(대상 0건 · node 부재)에 더했다. 목록이 없으면 c 를 판정할 수 없다.
 5. **b 의 정의 집합에 TS/TSX 의 `'--x'` 문자열을 넣었다** — `style={{'--w': v}}`·`setProperty('--x')` 로 넣는 이름(오늘 `Gnb.tsx` 의 `--shell-gnb-offset` 1건 · CSS 에도 정의됨). architecture P4 가 허용하는 데이터값 대입 경로를 b 가 red 로 막지 않게.
+
+## ⓔ 정본 실측표(단계 3)
+
+화면 `:root` 선언 77건 = catalog 18 · detail 26 · project 8 · upload 18(두 블록 6 + 12) · lineage 3 · toast 3 · preview 1. 전부 화면 파일에서 없앴다.
+
+| 처리 | spec | 실제 | 이름 |
+|---|---:|---:|---|
+| 라이트 값 이동(다크는 이미 정본) | 17 | 17 | `--color-accent-50/200/500/700` · `--color-gray-100/200/600/700` · `--color-primary-50/100/200/800` · `--color-success-50/100/600` · `--color-warning-50/600` |
+| 공유 승격 | 7 | 7 | `--font-data` · `--radius-lg` · `--radius-pill` · `--shadow-lg` · `--color-ai` · `--text-h3` · `--weight-heading` |
+| 정본 계열 이름 승격 | 9 | 9 | `--space-1` · `--space-2` · `--leading-body-sm`(upload) · `--space-4/5/6` · `--color-on-dark` · `--color-on-dark-muted` · `--color-band-dark-2`(detail) |
+| 접두사 이름 → 루트 밖 참조로 **승격** | 0 | 9 | `--up-line` · `--up-muted` · `--up-ink` · `--up-warn` · `--up-warn-bg` · `--up-radius` · `--lin-over-bg` · `--lin-over-ink` · `--lin-over-name` |
+| 접두사 이름 → 화면 루트 범위 | 13 | 4 | `--toast-fg` · `--toast-bg` · `--toast-radius` → `.toast` · `--pv-frame-ratio` → `.pv-frame-wrap` |
+| 죽은 선언 삭제 | 5 | 5 | `--color-border-control`(catalog·upload) · `--color-surface-alt`(catalog·project) · `--text-h2`(detail·project) · `--color-danger-600`(upload) · `--color-text-subtle`(upload) |
+| 중복 삭제 | 1 | 1 | `--color-text-on-primary`(upload) |
+| **정본으로 합계** | 33 | **42** | 위 17 + 7 + 9 + 9 |
+
+접두사 이름 9종을 범위가 아니라 정본으로 올린 근거(spec 「루트 밖에서 참조되는 이름이 나오면 승격 목록으로 올리고 표에 적는다」):
+
+- `--up-*` 6 — spec 이 적은 `.up { }` 루트 클래스는 **저장소에 없다**(TSX 의 `className` 에 `up` 0건). 참조 셀렉터가 업로드 모달(`.modal-takeover`) · 확인 대화상자(`.confirm-back`) · 미완 업로드 배너(`.up-banner` · `UnfinishedUploads.tsx`) 세 루트에 흩어져 있고, `.btn` · `.btn-primary` · `.muted` · `.inp` · `.sel` 처럼 **앱 전역에 걸리는 셀렉터**(`upload.css:109·258·312·314`)도 이 이름을 읽는다. 한 루트 범위로 내리면 그 밖의 요소에서 값이 사라진다.
+- `--lin-over-*` 3 — 참조 요소가 연결 단계 루트 `.lin`(`LineageStep.tsx:239`)과 계보 고치기 모달 루트 `.lin-fix`(`LineageFixModal.tsx:114`) 두 곳에 있다. `ParentPicker` 가 두 루트 모두에서 렌더되고(`.lin-picker` · `.lin-over-why`), `.lin-fix-method-l` 은 모달에만 있다. 한 루트 범위로는 닿지 않는다.
+- 범위로 내린 4종은 참조 셀렉터가 전부 그 루트 요소 자신이거나 그 자손이다 — `--toast-*` 는 `.toast` 규칙 한 곳에서만 읽고, `--pv-frame-ratio` 는 `.pv-frame`(`PreviewSlot.tsx` 에서 늘 `.pv-frame-wrap` 의 자식)에서만 읽는다.
+
+미정의 참조 2 · 정본 밖 이름 참조 8 처리:
+
+| 참조 | 처리 | 근거 |
+|---|---|---|
+| `login.css:198` `var(--text-title-sm, 18px)` | `var(--text-h3)` | 같은 뜻(`h3` 글자 크기) · 같은 값 18px 인 기존 토큰(이번에 정본으로 승격) |
+| `deletion.css:10` `var(--color-surface-muted, transparent)` | `transparent`(리터럴 키워드) | 이름이 정의된 적이 없어 **늘 폴백 `transparent` 가 렌더됐다.** 뜻이 같은 기존 토큰 중 값이 `transparent` 인 것은 없다 — 새 값을 지어내지 않고 렌더되던 값을 그대로 적었다. 채울지(`--color-surface-alt` 등)는 **Ted 판정 항목**으로 남긴다 |
+| `--lin-over-ink` ×3(`lineage.css` 폴백 `#5b6472`) | 정본 승격으로 정의됨 | 폴백 `#5b6472` 는 종전에도 렌더되지 않았다(정의가 늘 있었다) · 후속 항목 |
+| `--radius-pill` ×2 · `--up-muted` ×1 | 정본 승격으로 정의됨 | — |
+
+`tokens.css` 구조: 머리말(대안 B 규칙) → `:root`(calm 블록 합침 · 원시 눈금 → 의미 토큰 → 글자 → 간격 → 셸 → 여러 루트 접두사 이름) → `@media (max-width: 900px)` → 다크 → `@media (max-width: 640px)`. 합칠 때 겹친 이름 2종(`--leading-body` 1.467/1.6 · `--tracking-body` 0.0096em/0)은 제품이 늘 쓰던 calm 값을 남겼다.
+
+다크 짝: 라이트 색 계열 이름 중 다크 블록에 없는 6종을 `same-in-dark.txt` 에 사유와 함께 적었다 — `--color-white` · `--shadow-sm` · `--shadow-lg` · `--color-band-dark-2` · `--color-on-dark` · `--color-on-dark-muted`. 다크 값을 새로 만든 이름은 0.
+
+### `<html>` 유효 토큰 값 대조(정적 · 캡처와 별개)
+
+`styles.ts` 적재 순서(`@import` 펼침)대로 `:root` 계열 규칙을 특이도·순서로 풀어, 제품 문맥(`html[data-design=calm][data-theme=light|dark]`) · 폭 1440/800/375 에서 착수 HEAD 와 수정본의 `<html>` 사용자 정의 속성 값을 이름마다 비교했다. **차이 24 = 범위로 내린 4종 × 6 조합뿐**(루트에서 사라짐 · 의도). 나머지 이름은 두 테마·세 폭 모두 값이 같다 — 죽은 선언 6종이 실제로 가려져 있었다는 확인이기도 하다.

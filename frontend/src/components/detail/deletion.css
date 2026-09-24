@@ -7,7 +7,7 @@
   margin-bottom: 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-muted, transparent);
+  background: transparent; /* 종전 `var(--color-surface-muted, transparent)` — 정의된 적 없는 이름이라 늘 폴백이 렌더됐다(P1 · 값 무변) */
 }
 .dl-keep p {
   margin: 6px 0 0;

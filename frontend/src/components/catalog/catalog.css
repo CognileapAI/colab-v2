@@ -1,29 +1,6 @@
 /* S-03 카탈로그 — 치수·색의 정본은 목업 `mockups/데이터_찾기_260817.html` 의 카탈로그 블록이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
-   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
-     여기서 잇는다. 값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다. */
-:root {
-  --color-gray-100: #e8ecf2;
-  --color-gray-200: #dfe3e8;
-  --color-gray-600: #565c63;
-  --color-gray-700: #434950;
-  --color-success-50: #efffef;
-  --color-success-600: #067506;
-  --color-warning-50: #fff6ed;
-  --color-warning-600: #a85400;
-  --color-primary-50: #edf4ff;
-  --color-primary-100: #e2eeff;
-  /* ⟨WU-C11 · R-B 판정 45⟩ Lv3 칩 4단째 — 목업 `:root` 축자(blue90 · blue30).
-     `--color-primary-800` 은 목업 주석이 「밝은 틴트 위 파랑 텍스트(칩 4.5:1 확보)」로 못박은 값이다. */
-  --color-primary-200: #bad7ff;
-  --color-primary-800: #0b4eb6;
-  --color-surface-alt: #f4f7fb;
-  --color-border-control: #848c94;
-  --font-data: var(--font-sans);
-  --radius-lg: 12px;
-  --radius-pill: 9999px;
-  --shadow-lg: 0px 6px 10px -4px #17171714, 0px 16px 24px -6px #17171714;
-}
+   ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
 
 .catalog-page { padding: 24px 20px 40px; }
 .catalog-page .page-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }

@@ -1,6 +1,5 @@
 /* 구성원 · 권한 격자 — 치수·색의 정본은 목업 `mockups/제품_260817.html` 의
    `.memtbl` · `.settabs` · `.modal` 블록이다. 토큰만 쓰고 새 색을 만들지 않는다. */
-@import '../../shell/tokens.css';
 
 .card {
   background: var(--color-surface);

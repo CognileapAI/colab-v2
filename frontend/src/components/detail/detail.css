@@ -1,37 +1,6 @@
 /* S-05 데이터셋 상세 상단 — 치수·색의 정본은 목업 `mockups/데이터셋_상세_260817.html` 이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
-   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
-     여기서 잇는다. 값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다. */
-:root {
-  --color-gray-100: #e8ecf2;
-  --color-gray-600: #565c63;
-  --color-gray-700: #434950;
-  --color-warning-50: #fff6ed;
-  --color-warning-600: #a85400;
-  --color-primary-50: #edf4ff;
-  --color-primary-100: #e2eeff;
-  /* ⟨WU-C11 · 판정 45⟩ Lv3 4단째 — 목업 `:root` 축자(blue90 · blue30) */
-  --color-primary-200: #bad7ff;
-  --color-primary-800: #0b4eb6;
-  /* AI 액센트 = Montage accent violet (목업 `:root` 축자 · 판정 48). 코랄이 아니다 */
-  --color-accent-50: #f1e8ff;
-  --color-accent-200: #d2b6ff;
-  --color-accent-500: #6742f5;
-  --color-accent-700: #4821db;
-  --color-ai: var(--color-accent-500);
-  --color-band-dark-2: #121619;
-  --color-on-dark: #ffffff;
-  --color-on-dark-muted: rgba(255, 255, 255, 0.72);
-  --font-data: var(--font-sans);
-  --radius-lg: 12px;
-  --radius-pill: 9999px;
-  --text-h2: 24px;
-  --text-h3: 18px;
-  --weight-heading: 600;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-}
+   ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
 
 .detail-page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 96px; }
 

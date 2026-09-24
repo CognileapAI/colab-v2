@@ -1,22 +1,8 @@
 /* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
    이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
 
-/* BF-11 — 이 화면에만 쓰는 값. 셸 정본(`shell/tokens.css`)에 없는 이름만 여기 적는다
-   (`detail.css`·`catalog.css` 머리 `:root` 와 같은 관례). 값은 그 두 파일의 것을 그대로 옮겼다.
-   종전에는 이 자리가 없어 `--line`·`--fg-muted`·`--surface`·`--fg`·`--surface-2`·`--warn` 이
-   **어디에도 정의되지 않은 채** 폴백 리터럴로만 그려졌고(정본과 미묘하게 어긋난 색),
-   폴백이 없던 `--color-gray-100`·`--color-success-*`·`--radius-pill` 은 선언째 버려졌다. */
-:root {
-  --color-gray-100: #e8ecf2;
-  --color-surface-alt: #f4f7fb;
-  --color-success-50: #efffef;
-  /* 성공 계열 테두리 — 집 토큰에 없는 한 칸이다. 종전 폴백 값을 그대로 이름 붙였다 */
-  --color-success-100: #cde9d6;
-  --color-success-600: #067506;
-  --color-warning-600: #a85400;
-  --text-h2: 24px;
-  --radius-pill: 9999px;
-}
+/* BF-11 — 종전 이 자리의 `:root`(이 화면이 쓰던 토큰 8종)는 정본 `shell/tokens.css` 로 옮겼다(대안 B · P1 · 값 무변).
+   폐기된 별칭 `--line`·`--fg-muted`·`--surface`·`--fg`·`--surface-2`·`--warn` 을 되살리지 않는다. */
 
 /* 버그 1·9 — 화면 뿌리가 자기 여백을 직접 갖는 관례(`catalog.css:24`·`detail.css:27`)를
    여기만 빠뜨렸었다. 카드·제목이 뷰포트 좌단에 붙고(bug01), 상세는 카드 면 없이
