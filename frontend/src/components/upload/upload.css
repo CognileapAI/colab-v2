@@ -556,7 +556,7 @@ textarea.inp { resize: vertical; }
 .mb-takeover.up-empty { align-items:center; padding:20px; }
 .up-empty .modal-takeover { width:min(620px,94vw); height:auto; max-height:90vh; border-radius:14px; overflow:hidden; }
 .up-empty .up-body { flex:initial; padding:20px 22px; }
-.up-empty .up-card { border:0; padding:0; }
+.up-empty .up-card { border-width:0; border-style:none; padding:0; }
 .up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background: var(--color-surface-alt); }
 .up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:var(--color-primary-50); color:var(--color-text); font-size:36px; margin-bottom:12px; }
 .up-file-choose { margin-top:14px; }

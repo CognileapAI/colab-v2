@@ -56,7 +56,8 @@
   cursor: pointer;
   transition: background var(--ease), border-color var(--ease);
 }
-.btn:hover { background: var(--color-gray-50); }
+/* P2a — primary·secondary 의 배경은 보정 층이 hover 에서도 덮고 있었다(억눌린 hover 유지 · 되살림은 후속 판정). */
+.btn:where(:not(.btn-primary, .btn-secondary)):hover { background: var(--color-gray-50); }
 .btn-primary {
   background: var(--color-primary-600);
   border-color: var(--color-primary-600);
@@ -185,7 +186,7 @@
     padding: 10px 12px;
     margin: 10px 0;
   }
-  .memgrid .memtbl td { display: block; width: auto; border-bottom: none; padding: 3px 0; }
+  .memgrid .memtbl td { display: block; width: auto; border-bottom: none; }
   .memgrid .memtbl td.pc {
     display: flex;
     align-items: center;

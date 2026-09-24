@@ -1,12 +1,17 @@
 # P2a cascade verify
 
-기준 `7967e00146b8387092e94cf1c3d15efa84fb5d21` → 작업 트리 · DS 선언 단위 621 · 옮겨짐 610 · 버림/불일치(면제 밖) 0 · 비DS 선언 변경 138(오늘 죽음 증명 136) · 면제 16 · 문제 0
+기준 `7967e00146b8387092e94cf1c3d15efa84fb5d21` → 작업 트리 · DS 선언 단위 621 · 옮겨짐 610 · 버림/불일치(면제 밖) 0 · 비DS 선언 변경 146(오늘 죽음 증명 139) · 면제 21 · 문제 0
 
 ## 면제 (선택자·미디어만으로 증명할 수 없어 사유로 판정한 것)
 
 | 종류 | DS# | 대상 | 사유 |
 |---|---:|---|---|
 | changed-live | - | `.login-input:focus-visible` outline | `.login-input` 은 `<input>`(LoginPage.tsx) — 오늘 DS#129(0,2,1)가 `.login-input:focus-visible { outline: none }`(0,2,0)을 이겨 초점 윤곽이 렌더된다. #129 를 버리면 none 이 되살아나므로 죽은 선언을 지웠다 |
+| changed-live | - | `.up-empty .up-card` border | `border:0` 중 색 longhand(currentcolor)만 죽어 있었다 — 오늘 DS#9 `.card { border-color }`(접두 포함 0,2,0 · 뒤)가 덮는다(`className="card up-card"`). 흡수 뒤 색이 currentcolor 로 바뀌는 것을 upload 계산값 대조로 확인해 `border-width:0; border-style:none` 으로 값을 맞췄다(폭 0 그대로) |
+| changed-live | - | `.modal.lab-info` padding | `.lab-info` 는 `className="modal modal--dialog lab-info"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제 |
+| changed-live | - | `.modal.lab-info` padding | `.lab-info` 는 `className="modal modal--dialog lab-info"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제 |
+| changed-live | - | `.memgrid .memtbl td` padding | `.memtbl` 표는 `className="tbl memtbl"`(MemberPermissionGrid.tsx) — 오늘 DS#18 `.tbl td { padding: 10px 12px }`(접두 포함 0,2,1 · 뒤)가 이 640px 선언(0,2,1)을 덮는다. 흡수 뒤 되살아나는 것을 members-375 계산값 대조로 확인해 죽은 선언을 지웠다 |
+| changed-live | - | `.btn:hover` background | 선택자를 `.btn:where(:not(.btn-primary, .btn-secondary)):hover`(특이도 0,2,0 그대로)로 좁혔다 — 오늘 DS#81 `.btn-primary`·#82 `.btn-secondary`(접두 포함 0,2,0 · 뒤)가 hover 배경을 덮는다. 흡수 뒤 둘이 0,1,0 이 되면 hover 가 되살아나는 것을 계산값 전수 대조(마우스가 놓인 upload-link·upload-metadata 의 주 버튼)로 확인했다. 그 밖의 `.btn` 에는 그대로 걸린다 |
 | changed-live | - | `.pcard:focus-visible` outline-offset | `.pcard` 는 `<a>`(ProjectCards.tsx) — 오늘 DS#129 `:is(button, a, input, select, textarea):focus-visible`(0,2,1)이 `.pcard:focus-visible`(0,2,0)을 이겨 초점 간격 3px 이 렌더된다. #129 를 중복으로 버리면(셸 `:where()` 규칙 0,1,0) 2px 이 되살아나므로 죽은 선언을 지웠다 |
 | flip | 120 | `.dr-times .form-row · .modal-takeover .form-row` margin-bottom | `.labinfo-modal`(연구실 정보 모달)과 `.dr-times`(업로드 기간 선택 팝오버)는 서로 다른 컴포넌트 루트다 / `.labinfo-modal`(연구실 정보 모달)과 `.modal-takeover`(업로드 전면 모달)는 서로 다른 모달 루트다 |
 | flip | 73 | `.search-page .vfilter.on · .dr-useg button.on` color | 공유 키는 상태 클래스 `.on` 하나 — `.pj-seg`(프로젝트 만들기 모달의 구분 단추)와 `.dr-useg`(업로드 기간 선택의 단위 단추)는 서로 다른 컴포넌트 루트라 한 요소에 함께 걸리지 않는다 / 공유 키는 상태 클래스 `.on` 하나 — `.vfilter` 는 검색 결과 화면(`.search-page`)의 필터 단추이고 `.pj-seg` 는 프로젝트 모달의 구분 단추다 |
@@ -39,6 +44,7 @@
 | components/catalog/catalog.css:9 | `.catalog-page .desc` | - | font-size | `var(--text-caption)` | `var(--text-body-sm)` | DS#7 `.catalog-page .desc` |
 | components/catalog/catalog.css:36 | `.tbl .fname` | - | font-size | `13px` | `var(--text-body-sm)` | DS#19 `.tbl .fname` |
 | components/catalog/catalog.css:36 | `.tbl .fname` | - | letter-spacing | `-0.01em` | `0` | DS#19 `.tbl .fname` |
+| components/catalog/catalog.css:39 | `.tbl td.empty` | - | padding | `36px 14px` | 삭제 | DS#18 `.tbl td` |
 | components/catalog/catalog.css:44 | `.tbl thead th > .thf` | - | padding | `10px 14px` | `10px 16px` | DS#17 `.tbl th .thf` |
 | components/catalog/catalog.css:74 | `.colmenu .cm-box` | - | width | `13px` | `16px` | DS#102 `.colmenu .cm-box` |
 | components/catalog/catalog.css:74 | `.colmenu .cm-box` | - | height | `13px` | `16px` | DS#102 `.colmenu .cm-box` |
@@ -47,6 +53,7 @@
 | components/catalog/catalog.css:91 | `.fchips` | - | gap | `6px` | `8px` | DS#26 `.fchips` |
 | components/catalog/catalog.css:91 | `.fchips` | - | padding | `10px 14px` | `12px var(--space-card)` | DS#26 `.fchips` |
 | components/catalog/catalog.css:96 | `.fchips .fc` | - | height | `24px` | `32px` | DS#27 `.fchips .fc` |
+| components/catalog/catalog.css:135 | `.tbl th.rowact, .tbl td.rowact` | - | padding-right | `14px` | 삭제 | DS#18 `.tbl td` |
 | components/catalog/catalog.css:136 | `.tbl td.rowact .ra` | - | opacity | `0` | 삭제 | DS#24 `.tbl .rowact .ra` |
 | components/catalog/catalog.css:139 | `.tbl td.rowact .rab` | - | width | `26px` | 삭제 | DS#25 `.tbl .rowact .rab` |
 | components/catalog/catalog.css:139 | `.tbl td.rowact .rab` | - | height | `26px` | 삭제 | DS#25 `.tbl .rowact .rab` |
@@ -67,6 +74,7 @@
 | components/project/project.css:64 | `.pj-toolbar` | - | margin-bottom | `14px` | `var(--space-section)` | DS#172 `.pj-toolbar` |
 | components/project/project.css:68 | `.pj-ctl` | - | display | `inline-flex` | `grid` | DS#173 `.pj-ctl` |
 | components/project/project.css:70 | `.pj-ctl` | - | gap | `6px` | `8px` | DS#173 `.pj-ctl` |
+| components/project/project.css:83 | `.pj-views button.on` | - | font-weight | `600` | 삭제 | DS#176 `.pj-views button` |
 | components/project/project.css:115 | `.pcard:focus-visible` | - | outline-offset | `2px` | 삭제 | **없음** |
 | components/project/project.css:213 | `.pj-table` | - | min-width | `900px` | `680px` | DS#182 `.pj-table` |
 | components/project/project.css:267 | `.project-detail .card` | - | border | `1px solid var(--color-border)` | `1px solid var(--color-border-strong)` | DS#9 `.card` |
@@ -88,8 +96,10 @@
 | components/project/project.css:434 | `.pj-seg button.on` | - | background | `var(--color-gray-100)` | `var(--color-surface)` | DS#73 `.pj-seg button.on` |
 | components/project/project.css:469 | `.pj-fgroup` | - | padding | `12px` | `20px` | DS#75 `.pj-fgroup` |
 | components/project/project.css:478 | `.pj-fgroup-h` | - | margin-bottom | `10px` | `16px` | DS#77 `.pj-fgroup-h` |
+| components/members/members.css:58 | `.btn:hover` | - | background | `var(--color-gray-50)` | 삭제 | **없음** |
 | components/members/members.css:64 | `.btn-primary:hover` | - | background | `var(--color-primary-700)` | 삭제 | DS#81 `.btn-primary` |
 | components/members/members.css:177 | `.memgrid .card-b` | (max-width: 640px) | padding | `6px 12px` | 삭제 | DS#111 `.card-b` |
+| components/members/members.css:188 | `.memgrid .memtbl td` | (max-width: 640px) | padding | `3px 0` | 삭제 | **없음** |
 | components/lab/lab.css:38 | `.labinfo-modal` | - | padding | `18px` | `var(--space-card)` | DS#117 `.labinfo-modal` |
 | components/lab/lab.css:39 | `.labinfo-modal` | - | border-radius | `12px` | `var(--radius-lg)` | DS#117 `.labinfo-modal` |
 | components/lab/lab.css:44 | `.labinfo-modal h3` | - | font-size | `var(--text-body)` | `20px` | DS#119 `.labinfo-modal h3` |
@@ -138,8 +148,10 @@
 | components/dashboard/dashboard.css:372 | `.dash-step-no` | - | width | `24px` | `28px` | DS#59 `.dash-step-no` |
 | components/dashboard/dashboard.css:372 | `.dash-step-no` | - | height | `24px` | `28px` | DS#59 `.dash-step-no` |
 | components/dashboard/dashboard.css:372 | `.dash-step-no` | - | line-height | `24px` | `28px` | DS#59 `.dash-step-no` |
+| components/dashboard/dashboard.css:373 | `.modal.lab-info` | - | padding | `24px` | 삭제 | **없음** |
 | components/dashboard/dashboard.css:379 | `.dash-card` | (max-width: 640px) | padding | `16px` | 삭제 | DS#39 `.dash-card` |
 | components/dashboard/dashboard.css:381 | `.dash-recent button` | (max-width: 640px) | padding | `10px 0` | `12px 0` | DS#52 `.dash-recent button` |
+| components/dashboard/dashboard.css:383 | `.modal.lab-info` | (max-width: 640px) | padding | `20px` | 삭제 | **없음** |
 | components/preview/preview.css:59 | `.pv-h2` | - | font-size | `15px` | `var(--text-section)` | DS#112 `.pv-h2` |
 | components/preview/preview.css:158 | `.pv-control` | - | gap | `4px` | `8px` | DS#116 `.pv-control` |
 | components/lineage/lineage.css:236 | `.lin .chip--warning` | - | background | `var(--lin-over-bg)` | 삭제 | DS#150 `.chip--warning` |
@@ -149,6 +161,7 @@
 | components/upload/upload.css:251 | `textarea.inp` | - | line-height | `1.5` | 삭제 | DS#105 `.inp` |
 | components/upload/upload.css:252 | `.inp[readonly]` | - | background | `var(--color-surface-alt)` | 삭제 | DS#105 `.inp` |
 | components/upload/upload.css:252 | `.inp[readonly]` | - | color | `var(--up-muted)` | 삭제 | DS#105 `.inp` |
+| components/upload/upload.css:559 | `.up-empty .up-card` | - | border | `0` | 삭제 | **없음** |
 | components/upload/upload.css:577 | `.up-empty .reggate` | - | border-radius | `0` | 삭제 | DS#110 `.reggate` |
 | components/upload/upload.css:593 | `.modal-takeover .up-steps .card-b` | - | gap | `12px` | `20px` | DS#121 `.modal-takeover .up-steps .card-b` |
 | components/upload/upload.css:593 | `.modal-takeover .up-steps .card-b` | - | padding | `20px 22px` | `var(--space-card)` | DS#121 `.modal-takeover .up-steps .card-b` |

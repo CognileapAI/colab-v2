@@ -37,7 +37,7 @@
 .tbl .fname { font-family: var(--font-data); font-size: var(--text-body-sm); font-weight: 600; letter-spacing: 0; color: var(--color-text); min-width: 260px; max-width: 320px; white-space: normal; }
 .tbl tr.is-locked td { color: var(--color-text-muted); }
 .tbl tr.is-locked .fname { color: var(--color-gray-500); }
-.tbl td.empty { text-align: center; padding: 36px 14px; color: var(--color-text-muted); white-space: normal; }
+.tbl td.empty { text-align: center; color: var(--color-text-muted); white-space: normal; }
 
 /* 열 이름 자체가 버튼. 표식(정렬 화살표·조건 점)만 오른쪽에 붙는다 */
 .tbl thead th > .thf {
@@ -153,7 +153,8 @@
 .lin--none { color: var(--color-gray-500); font-weight: 500; }
 
 /* 행 빠른 작업 — 평소엔 자리만 잡고 있다가 행 hover·키보드 포커스에서 나타난다 */
-.tbl th.rowact, .tbl td.rowact { width: 74px; padding-right: 14px; }
+.tbl th.rowact, .tbl td.rowact { width: 74px; }
+.tbl th.rowact { padding-right: 14px; }
 .tbl td.rowact .ra { display: flex; gap: 4px; justify-content: flex-end; transition: opacity var(--ease); }
 .tbl tbody tr:hover td.rowact .ra, .tbl td.rowact .ra:focus-within { opacity: 1; }
 .tbl td.rowact .rab {

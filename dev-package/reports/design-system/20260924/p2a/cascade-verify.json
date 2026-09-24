@@ -133,6 +133,24 @@
   },
   {
    "file": "src/components/catalog/catalog.css",
+   "line": 39,
+   "selector": ".tbl td.empty",
+   "media": "",
+   "prop": "padding",
+   "from": "36px 14px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 18,
+     "arg": ".tbl td",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
    "line": 44,
    "selector": ".tbl thead th > .thf",
    "media": "",
@@ -272,6 +290,24 @@
      "arg": ".fchips .fc",
      "prop": "height",
      "value": "32px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 135,
+   "selector": ".tbl th.rowact, .tbl td.rowact",
+   "media": "",
+   "prop": "padding-right",
+   "from": "14px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 18,
+     "arg": ".tbl td",
+     "prop": "padding",
+     "value": "10px 12px"
     }
    ]
   },
@@ -632,6 +668,24 @@
      "arg": ".pj-ctl",
      "prop": "gap",
      "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 83,
+   "selector": ".pj-views button.on",
+   "media": "",
+   "prop": "font-weight",
+   "from": "600",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 176,
+     "arg": ".pj-views button",
+     "prop": "font",
+     "value": "inherit"
     }
    ]
   },
@@ -1008,6 +1062,17 @@
   },
   {
    "file": "src/components/members/members.css",
+   "line": 58,
+   "selector": ".btn:hover",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-gray-50)",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/members/members.css",
    "line": 64,
    "selector": ".btn-primary:hover",
    "media": "",
@@ -1041,6 +1106,17 @@
      "value": "20px var(--space-card)"
     }
    ]
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 188,
+   "selector": ".memgrid .memtbl td",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "3px 0",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
   },
   {
    "file": "src/components/lab/lab.css",
@@ -1950,6 +2026,17 @@
   },
   {
    "file": "src/components/dashboard/dashboard.css",
+   "line": 373,
+   "selector": ".modal.lab-info",
+   "media": "",
+   "prop": "padding",
+   "from": "24px",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
    "line": 379,
    "selector": ".dash-card",
    "media": "(max-width: 640px)",
@@ -1983,6 +2070,17 @@
      "value": "12px"
     }
    ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 383,
+   "selector": ".modal.lab-info",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "20px",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
   },
   {
    "file": "src/components/preview/preview.css",
@@ -2145,6 +2243,17 @@
      "value": "var(--color-text)"
     }
    ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 559,
+   "selector": ".up-empty .up-card",
+   "media": "",
+   "prop": "border",
+   "from": "0",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
   },
   {
    "file": "src/components/upload/upload.css",
@@ -2547,6 +2656,71 @@
   },
   {
    "kind": "changed-live",
+   "file": "src/components/upload/upload.css",
+   "line": 559,
+   "selector": ".up-empty .up-card",
+   "media": "",
+   "prop": "border",
+   "from": "0",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`border:0` 중 색 longhand(currentcolor)만 죽어 있었다 — 오늘 DS#9 `.card { border-color }`(접두 포함 0,2,0 · 뒤)가 덮는다(`className=\"card up-card\"`). 흡수 뒤 색이 currentcolor 로 바뀌는 것을 upload 계산값 대조로 확인해 `border-width:0; border-style:none` 으로 값을 맞췄다(폭 0 그대로)"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 383,
+   "selector": ".modal.lab-info",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "20px",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.lab-info` 는 `className=\"modal modal--dialog lab-info\"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 373,
+   "selector": ".modal.lab-info",
+   "media": "",
+   "prop": "padding",
+   "from": "24px",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.lab-info` 는 `className=\"modal modal--dialog lab-info\"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/members/members.css",
+   "line": 188,
+   "selector": ".memgrid .memtbl td",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "3px 0",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.memtbl` 표는 `className=\"tbl memtbl\"`(MemberPermissionGrid.tsx) — 오늘 DS#18 `.tbl td { padding: 10px 12px }`(접두 포함 0,2,1 · 뒤)가 이 640px 선언(0,2,1)을 덮는다. 흡수 뒤 되살아나는 것을 members-375 계산값 대조로 확인해 죽은 선언을 지웠다"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/members/members.css",
+   "line": 58,
+   "selector": ".btn:hover",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-gray-50)",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "선택자를 `.btn:where(:not(.btn-primary, .btn-secondary)):hover`(특이도 0,2,0 그대로)로 좁혔다 — 오늘 DS#81 `.btn-primary`·#82 `.btn-secondary`(접두 포함 0,2,0 · 뒤)가 hover 배경을 덮는다. 흡수 뒤 둘이 0,1,0 이 되면 hover 가 되살아나는 것을 계산값 전수 대조(마우스가 놓인 upload-link·upload-metadata 의 주 버튼)로 확인했다. 그 밖의 `.btn` 에는 그대로 걸린다"
+  },
+  {
+   "kind": "changed-live",
    "file": "src/components/project/project.css",
    "line": 115,
    "selector": ".pcard:focus-visible",
@@ -2564,12 +2738,12 @@
    "arg": ".labinfo-modal .form-row",
    "prop": "margin-bottom",
    "value": "20px",
-   "home": "src/components/lab/lab.css:50",
+   "home": "src/components/lab/lab.css:51",
    "flips": [
     {
      "selector": ".dr-times .form-row",
      "file": "src/components/upload/upload.css",
-     "line": 483,
+     "line": 484,
      "prop": "margin-bottom",
      "value": "0",
      "spec": "0,2,0",
@@ -2579,7 +2753,7 @@
     {
      "selector": ".modal-takeover .form-row",
      "file": "src/components/upload/upload.css",
-     "line": 593,
+     "line": 594,
      "prop": "margin-bottom",
      "value": "0",
      "spec": "0,2,0",
@@ -2600,7 +2774,7 @@
     {
      "selector": ".search-page .vfilter.on",
      "file": "src/components/search/search.css",
-     "line": 134,
+     "line": 135,
      "prop": "color",
      "value": "var(--color-success-600, #1f8b4c)",
      "spec": "0,3,0",
@@ -2610,7 +2784,7 @@
     {
      "selector": ".dr-useg button.on",
      "file": "src/components/upload/upload.css",
-     "line": 517,
+     "line": 518,
      "prop": "color",
      "value": "var(--color-text-on-primary)",
      "spec": "0,2,1",
@@ -2631,7 +2805,7 @@
     {
      "selector": ".dr-useg button.on",
      "file": "src/components/upload/upload.css",
-     "line": 517,
+     "line": 518,
      "prop": "background",
      "value": "var(--color-primary-600)",
      "spec": "0,2,1",
@@ -2742,111 +2916,153 @@
   }
  ],
  "layers": {
-  "src/shell/tokens.css": {
+  "src/shell/layers.css": {
    "layerBlocks": [],
-   "unlayeredRules": 4,
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 0
+  },
+  "src/shell/tokens.css": {
+   "layerBlocks": [
+    "tokens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 4
   },
   "src/components/catalog/catalog.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 102,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
-   "rules": 102
+   "rules": 103
   },
   "src/components/detail/detail.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 148,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 148
   },
   "src/components/project/project.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 116,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 116
   },
   "src/components/members/members.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 44,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 44
   },
   "src/components/lab/lab.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 12,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 12
   },
   "src/components/search/search.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 58,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 58
   },
   "src/components/dashboard/dashboard.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 70,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
-   "rules": 70
+   "rules": 69
   },
   "src/components/preview/preview.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 75,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 75
   },
   "src/components/lineage/lineage.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 73,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 73
   },
   "src/components/lineage/lineageGraph.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 50,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 50
   },
   "src/components/upload/upload.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 273,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 273
   },
   "src/components/approval/approval.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 17,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 17
   },
   "src/components/common/toast.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 1,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 1
   },
   "src/components/common/variableTable.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 17,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 17
   },
   "src/auth/login.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 58,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 58
   },
   "src/shell/shell.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 115,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 115
   },
   "src/components/detail/deletion.css": {
-   "layerBlocks": [],
-   "unlayeredRules": 5,
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
    "imports": 0,
    "rules": 5
   }
