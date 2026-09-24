@@ -10,5 +10,3 @@
 --color-on-dark · 위 어두운 띠 위 글자색 — 띠가 테마 무관이라 글자도 테마 무관
 --color-on-dark-muted · 위 어두운 띠 위 보조 글자색 — 띠가 테마 무관이라 글자도 테마 무관
 f · src/components/upload/upload.css · .chip · background · #eef2f7 · 같은 값 토큰 없음(가까운 --color-gray-100 #e8ecf2 · --color-surface-alt #f4f7fb 는 값이 다르다) — 새 토큰 vs 기존 토큰으로 값 변경(시각 변경)을 Ted 판정 대기 · spec P3 우려 1
-f · src/auth/login.css · .account-modal-back · background · color-mix(in srgb, var(--color-bg) 70%, transparent) · 정본 토큰 --color-bg 와 transparent 의 혼합이라 리터럴 색 값은 없다 — 토큰으로 옮기려면 새 토큰 이름이 필요해 P3(새 토큰 금지) 밖 · 판정 대기
-f · src/auth/login.css · .auth-expiry-overlay · background · color-mix(in srgb, var(--color-bg) 96%, transparent) · 정본 토큰 --color-bg 와 transparent 의 혼합이라 리터럴 색 값은 없다 — 토큰으로 옮기려면 새 토큰 이름이 필요해 P3(새 토큰 금지) 밖 · 판정 대기

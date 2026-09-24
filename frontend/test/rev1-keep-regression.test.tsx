@@ -131,12 +131,12 @@ describe('rev1 #6 — 뷰어 휠 확대 · 끌어 이동 · 초기화', () => {
     renderDetailPreview();
     const viewport = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    const before = screen.getByTestId('preview-layers').style.transform;
+    const before = screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform');
     expect(before).not.toBe('');
     fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
     fireEvent.mouseMove(window, { clientX: 240, clientY: 260 });
     fireEvent.mouseUp(window);
-    expect(screen.getByTestId('preview-layers').style.transform).not.toBe(before);
+    expect(screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
   });
 
   it('`기본 배율로` 가 확대·이동을 한 번에 되돌린다 (rev1 `초기화`)', async () => {

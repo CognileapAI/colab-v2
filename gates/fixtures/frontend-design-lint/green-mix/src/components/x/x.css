@@ -1,0 +1,3 @@
+/* 화면 픽스처(P3) — 토큰끼리의 color-mix() 는 리터럴이 아니다(var() · transparent · currentColor · 비율만) */
+.x-page .veil { background: color-mix(in srgb, var(--color-link) 70%, transparent); }
+.x-page .edge { border-color: color-mix(in oklab, currentColor, var(--color-white) 20%); }

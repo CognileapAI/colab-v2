@@ -94,7 +94,7 @@ async function drawn() {
 }
 
 function transformOf(): string {
-  return screen.getByTestId('preview-layers').style.transform;
+  return screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform');
 }
 
 /** 최근접 순위법 — 표본이 적을 때 보간은 없는 정밀도를 지어낸다. */

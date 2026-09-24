@@ -20,13 +20,14 @@
 //      make a late `@import` invalid anyway).
 //   f  (P3) colour literal in any CSS other than tokens.css — hex · rgb()/rgba()/hsl()/hsla()/hwb()/
 //      lab()/lch()/oklab()/oklch()/color()/color-mix() · the 148 CSS named colours — as a direct value
+//      (a color-mix() of only var()/transparent/currentColor is a token mix, not a literal)
 //      or inside a var() fallback. Not literals: transparent · currentColor · inherit · initial · unset.
 //      Exemptions share the same-in-dark list: `f · <file> · <selector> · <property> · <literal> · <reason>`;
 //      an entry with an empty reason or matching nothing (stale) is red and exempts nothing.
 //   g  (P3) a JSX `style` attribute in <root>/src/**/*.tsx whose value is not an object literal made only of
 //      `--*` keys (TS AST, not regex): any other key (incl. shorthand `{ width }` · spread · computed
 //      non-literal) or a non-object value is red. `--*`-only objects count as variable assignments (v).
-//      `style` keys inside JSX spread attributes (`{...{ style: {…} }}`) are reported but not judged.
+//      A `style` key inside a JSX spread attribute (`{...(c ? { style: {…} } : {})}`) is judged the same way.
 // `@layer` blocks are transparent: rules inside `@layer x { … }` are judged like unlayered ones.
 // Exit: 0 green · 1 red · 78 readiness failure (no files, missing list, a listed file missing on disk,
 //   `typescript` not resolvable).
@@ -150,6 +151,24 @@ function closeParen(value, open) {
   return value.length;
 }
 
+// color-mix(<interpolation>, <colour> [<pct>]?, <colour> [<pct>]?) — true when every colour argument is a
+// var() reference, `transparent` or `currentColor` (percentages allowed).
+function tokenOnlyMix(inner) {
+  const args = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i <= inner.length; i++) {
+    const ch = inner[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if ((ch === ',' || i === inner.length) && depth === 0) { args.push(inner.slice(start, i).trim()); start = i + 1; }
+  }
+  if (args.length < 3 || !/^in\s/i.test(args[0])) return false;
+  return args.slice(1).every(a => {
+    const colour = a.replace(/(^|\s)-?[\d.]+%(?=\s|$)/g, ' ').trim();
+    return /^var\(\s*--[\w-]+\s*\)$/.test(colour) || /^(transparent|currentcolor)$/i.test(colour);
+  });
+}
+
 // f — colour literals in one declaration value: [{ kind: 'direct'|'fallback'|'name', literal }].
 function colourLiterals(prop, rawValue) {
   // Blank strings and url(...) bodies (keeping length) so `#id`, quoted text and file names never match.
@@ -173,6 +192,9 @@ function colourLiterals(prop, rawValue) {
     if (!COLOR_FN.test(m[1])) continue;
     const end = closeParen(value, m.index + m[1].length) + 1;
     if (taken.some(([s, e]) => m.index >= s && m.index < e)) continue;
+    // color-mix() whose colours are only var()/transparent/currentColor mixes tokens — not a literal.
+    // Its inner tokens are then scanned like any other value (a literal nested inside still counts).
+    if (/^color-mix$/i.test(m[1]) && tokenOnlyMix(value.slice(m.index + m[1].length + 1, end - 1))) continue;
     taken.push([m.index, end]);
     out.push({ kind: inFallback(m.index) ? 'fallback' : 'direct', literal: rawValue.slice(m.index, end) });
   }
@@ -290,7 +312,7 @@ try {
   readiness(`typescript 파서를 불러오지 못했다(${process.env.COLAB_DESIGN_LINT_TYPESCRIPT || 'typescript'}) — frontend 에서 npm ci 가 먼저다: ${String(e.message).split('\n')[0]}`);
 }
 const gHits = [];    // {file,line,keys}
-const gSpread = [];  // {file,line} — `style` inside a JSX spread attribute (reported, not judged)
+const gSpread = [];  // {file,line} — `style` keys inside JSX spread attributes (judged like attributes)
 let gVars = 0;
 let tsxCount = 0;
 const unwrap = n => {
@@ -314,22 +336,29 @@ const keyText = (p, sf) => {
 function scanStyles(rel, text) {
   const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const lineOf = n => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+  // One judgement for both forms: `style={…}` and a `style` key inside a JSX spread attribute.
+  const judge = (at, expr, raw, via) => {
+    const obj = expr ? unwrap(expr) : null;
+    if (!obj || !ts.isObjectLiteralExpression(obj)) {
+      gHits.push({ file: rel, line: lineOf(at), via, keys: [`(객체 리터럴 아님: ${raw ? raw.getText(sf).slice(0, 60) : '값 없음'})`] });
+      return;
+    }
+    const keys = obj.properties.map(p => keyText(p, sf));
+    const bad = keys.filter(k => !k.key.startsWith('--'));
+    if (bad.length) gHits.push({ file: rel, line: lineOf(at), via, keys: bad.map(k => (k.shorthand ? `${k.key}(축약형)` : k.key)) });
+    else if (keys.length) gVars++;
+  };
   const visit = node => {
     if (ts.isJsxAttribute(node) && node.name.getText(sf) === 'style') {
       const init = node.initializer;
-      const expr = init && ts.isJsxExpression(init) ? unwrap(init.expression) : null;
-      if (!expr || !ts.isObjectLiteralExpression(expr)) {
-        gHits.push({ file: rel, line: lineOf(node), keys: [`(객체 리터럴 아님: ${init ? init.getText(sf).slice(0, 60) : '값 없음'})`] });
-      } else {
-        const keys = expr.properties.map(p => keyText(p, sf));
-        const bad = keys.filter(k => !k.key.startsWith('--'));
-        if (bad.length) gHits.push({ file: rel, line: lineOf(node), keys: bad.map(k => (k.shorthand ? `${k.key}(축약형)` : k.key)) });
-        else if (keys.length) gVars++;
-      }
+      judge(node, init && ts.isJsxExpression(init) ? init.expression : null, init, 'attr');
     }
     if (ts.isJsxSpreadAttribute(node)) {
       const find = n => {
-        if (ts.isPropertyAssignment(n) && keyText(n, sf).key === 'style') gSpread.push({ file: rel, line: lineOf(n) });
+        if ((ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n)) && keyText(n, sf).key === 'style') {
+          gSpread.push({ file: rel, line: lineOf(n) });
+          judge(n, ts.isPropertyAssignment(n) ? n.initializer : null, n, 'spread');
+        }
         ts.forEachChild(n, find);
       };
       find(node.expression);
@@ -421,8 +450,7 @@ show('d :root/@import', dHits, x => `${x.file}:${x.line} ${x.what}`);
 if (scopedColor.length) show('참고 · 범위 색 토큰(다크 미검사)', scopedColor, x => `${x.file}:${x.line} ${x.name} (${x.sel})`);
 show('f 색 리터럴(정본 밖)', fLive, x => `${x.file}:${x.line} ${x.sel} { ${x.prop}: … ${x.literal} } (${x.kind === 'fallback' ? 'var() 폴백' : x.kind === 'name' ? '색 이름' : '직접'})`);
 show('f 면제 목록 구멍', fHoles, x => x);
-show('g 인라인 style 의 비변수 키', gHits, x => `${x.file}:${x.line} ${x.keys.join(', ')}`);
-if (gSpread.length) show('참고 · 펼침 속성 안의 style 키(g 밖 · 판정 안 함)', gSpread, x => `${x.file}:${x.line}`);
+show('g 인라인 style 의 비변수 키', gHits, x => `${x.file}:${x.line} ${x.keys.join(', ')}${x.via === 'spread' ? ' (펼침 속성)' : ''}`);
 if (fm) console.log(`면제(f) ${fm}: ${fEntries.map(e => e.malformed ? `형식 오류(${e.line}행)` : `${e.file} ${e.selector} ${e.property} ${e.literal}(${e.reason || '사유 없음'})`).join(' · ')}`);
 if (m) console.log(`면제(same-in-dark) ${m}: ${entries.map(e => `${e.name}(${e.reason || '사유 없음'})`).join(' · ')}`);
 

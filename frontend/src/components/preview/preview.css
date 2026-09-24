@@ -286,9 +286,9 @@
   position: relative;
 }
 
-/* 확대·이동 변환 — 업로드 미리보기·확장보기(`upload/PreviewPanel`)가 `--pv-layers-transform` 으로 넘긴다(P3).
-   `data-zoom-scale` 은 확대 상태가 층을 움직일 때만 붙는다. 데이터셋 미리보기(`preview-layers`)는
-   아직 인라인 변환을 펼침 속성으로 싣고, 인라인이 이 규칙을 이긴다(P3 보고서 「하지 않은 것」). */
+/* 확대·이동 변환 — 데이터셋 미리보기(`preview/PreviewPanels`)·업로드 미리보기·확장보기(`upload/PreviewPanel`)가
+   `--pv-layers-transform` 으로 넘긴다(P3 · 인라인 style 은 변수 대입만). `data-zoom-scale` 은 확대 상태가
+   층을 움직일 때만 같은 자리에서 붙으므로, 확대 상태가 없는 `.pv-layers` 에는 이 규칙이 걸리지 않는다. */
 .pv-layers[data-zoom-scale] {
   transform: var(--pv-layers-transform);
   transform-origin: 0 0;

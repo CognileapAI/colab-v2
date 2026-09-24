@@ -341,9 +341,8 @@ export function PreviewMap(props: {
                       }
                     : {}),
                   style: {
-                    transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
-                    transformOrigin: '0 0',
-                  },
+                    '--pv-layers-transform': `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
+                  } as React.CSSProperties,
                 }
               : {})}
           >

@@ -1,0 +1,2 @@
+/* 화면 픽스처(P3) — 리터럴 색이 섞인 color-mix() 는 f 로 센다(바깥 함수 1건) */
+.x-page .veil { background: color-mix(in srgb, #fff 50%, var(--color-link)); }

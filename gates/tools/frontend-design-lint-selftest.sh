@@ -6,7 +6,7 @@
 # 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
 # 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
 #
-# 케이스 — green 3 · red 9 · red(준비) 4 = 16.
+# 케이스 — green 4 · red 11 · red(준비) 4 = 19.
 #   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
 #   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
 #   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
@@ -22,6 +22,9 @@
 #   ⓜ green-fg/    토큰 참조 · 제외 키워드 · 사유 있는 f 면제 1건 · 변수 대입만인 인라인 2건(P3) → green
 #   ⓝ red-f/       직접 hex · 폴백 hex · 색 이름 · 사유 없는 f 면제 · 낡은 f 면제(P3)     → red
 #   ⓞ red-g/       인라인 색 · px · 축약형 `{ width }`(변수 대입만인 1건은 세지 않는다)(P3) → red
+#   ⓠ red-g-spread/ 펼침 속성 안의 `style` 키(비변수 키 1 · 변수 대입만 1)(P3)         → red
+#   ⓡ green-mix/   토큰끼리의 color-mix()(var() · transparent · currentColor)(P3)     → green
+#   ⓢ red-mix/     리터럴 색이 섞인 color-mix()(P3)                                 → red
 #   ⓟ typescript 파서 부재(COLAB_DESIGN_LINT_TYPESCRIPT 를 없는 경로로 · g 를 못 잼)(P3) → red(준비 · 78)
 set -uo pipefail
 
@@ -124,6 +127,16 @@ expect_line "ⓝ f 네 갈래" "$FIX/red-f" "f=6 f_direct=2 f_fallback=1 f_name=
 expect red "ⓞ g 인라인 색 · px · 축약형" "$FIX/red-g"
 expect_line "ⓞ g 계수" "$FIX/red-g" " g=3 g_vars=1 "
 expect_line "ⓞ 축약형을 키로 읽었다" "$FIX/red-g" "src/components/x/X.tsx:9 width(축약형)"
+# ⓠ 펼침 속성 안의 style — 속성과 같은 판정(비변수 키는 red · 변수 대입만은 v).
+expect red "ⓠ g 펼침 속성 안의 style" "$FIX/red-g-spread"
+expect_line "ⓠ g 계수" "$FIX/red-g-spread" " g=1 g_vars=1 g_spread=2 "
+expect_line "ⓠ 펼침 속성으로 표시" "$FIX/red-g-spread" "src/components/x/X.tsx:7 transform (펼침 속성)"
+# ⓡ 토큰끼리의 color-mix() 는 리터럴이 아니다.
+expect green "ⓡ 토큰끼리의 color-mix()" "$FIX/green-mix"
+expect_line "ⓡ f 0 · 면제 0" "$FIX/green-mix" "색 리터럴 0(면제 0)"
+# ⓢ 리터럴 색이 섞인 color-mix() 는 f 다.
+expect red "ⓢ 리터럴 색이 섞인 color-mix()" "$FIX/red-mix"
+expect_line "ⓢ f 계수" "$FIX/red-mix" "f=1 f_direct=1 f_fallback=0 f_name=0 f_holes=0"
 # ⓟ typescript 부재 — g 를 잴 수 없으면 통과로 세지 않는다.
 expect ready "ⓟ typescript 파서 부재" "$FIX/green-fg" COLAB_DESIGN_LINT_TYPESCRIPT=/nonexistent/typescript
 
@@ -132,4 +145,4 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 expect_readiness_verdict frontend-design-lint-selftest
-echo "frontend-design-lint-selftest green — 검사 16건 전건 기대대로 (green 3 · red 9 · red(준비) 4)."
+echo "frontend-design-lint-selftest green — 검사 19건 전건 기대대로 (green 4 · red 11 · red(준비) 4)."
