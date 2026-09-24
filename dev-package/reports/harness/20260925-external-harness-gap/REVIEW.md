@@ -53,3 +53,7 @@ advisor ② 자리를 반증 워크플로 네 회차가 맡았다(검토자 → 
 - 비평: 원한 결과 충족 7 · 부분 1(6 — ②③④) · PR 준비 = 위 수정 뒤.
 - 수정: 충돌은 `git ls-files -u` 로 먼저 가리고 그 밖의 실패는 git 메시지를 그대로 담는다(수정 전 `AssertionError: "index.lock" does not match "… resolve conflicts first"` → 수정 후 green) · 문서·기록 5곳 정정 · 게시 명령은 `set -e` 와 브랜치를 꺼내지 않는 `git show` 방식.
 
+## 최종 측정(d63c18f3 · 4회차 수정 반영)
+- `gates/run.sh all`: green 76 / red(판정) 0 / red(준비) 0 · 게이트 합집합 8 green · ci-filter-check green · 단위 시험 131 OK(skip 10).
+- 게시 절차 모의 실행(브랜치를 쥐지 않은 주 체크아웃 · `gh pr create` 와 #131 확인만 제외): `pr_contract.py --mode draft` PASS.
+
