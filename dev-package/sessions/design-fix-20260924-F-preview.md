@@ -18,7 +18,7 @@
 | A24 · A28 · A34 | 출발 자리 = 렌더 시점 ref `viewNow` — 커밋 전 마지막 이동이 빠짐 | 출발 자리 = 첫 프레임 갱신 함수의 `cur`(최신 값) · 목표·인계 속도도 거기서 계산 · `viewNow` 제거 | 「마지막 pointermove 의 렌더 전에 pointerup」(:217 · act 밖 `dispatchEvent`) |
 | A27 | 두 번째 포인터의 누름이 끌기를 가로챔 | `drag.current` 가 다른 id 면 누름 무시(`useZoomPan.ts:405`) | 「두 번째 손가락의 누름·이동·놓기」(:239) |
 | A29 | `baseScale` effect 가 관성을 멈추지 않아 다음 프레임이 시작 자리(편차 0)를 덮음 | effect 첫 줄 `stopInertia()`(`useZoomPan.ts:573`) | renderHook — 경계 WIDE→NARROW(기본 배율 0.668)(:287) |
-| A41 | 관성 프레임이 놓을 때의 목표·범위를 쥔 채 크기 변화 뒤에도 진행 | `remeasure`(resize · 원본 폭 학습) 첫 줄 `stopInertia()`(:539) · 포인터 리스너 effect 정리 때 `stopInertia()`(:529) | renderHook — 관성 중 resize(:303) |
+| A41 | 관성 프레임이 놓을 때의 목표·범위를 쥔 채 크기 변화 뒤에도 진행 | A41 은 `remeasure`(resize · 원본 폭 학습) 첫 줄 `stopInertia()`(:539)가 담당한다. 포인터 리스너 effect 정리의 `stopInertia()`(:529)는 의존값 `clampView`·`stopInertia` 가 안정 참조(의존 사슬 끝이 `[]`)라 언마운트 때만 돈다 — A41 경로가 아니다 〔정정 2026-09-25 · F-final FP-2〕 | renderHook — 관성 중 resize(:303) |
 | A30 | 속도 인계를 재는 동작 시험 없음 | 코드 변화 없음 · 시험 추가 | 「첫 프레임(16ms)의 자리가 놓은 속도 인계 값」(:318) — `spring(13, 목표, v, 0.016)` ± 5e-4 · v0=0 값과 1px 이상 차이 |
 | A35 | 관성을 잡은 탭 뒤 click 이 값 조회로 감 | 누름 때 `caught = inertia.current !== null`(:407) · 놓기 때 `dragged = active \|\| caught`(:448) | 「관성 중 임계 안 누름·놓기 뒤 click 은 조회 0 · 그다음 평소 탭은 조회 1」(:343) |
 
