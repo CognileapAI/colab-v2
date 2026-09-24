@@ -52,3 +52,59 @@ class DictionaryPort(Protocol):
 
     def expand(self, terms: tuple[str, ...], query: str):
         ...
+
+
+# ── 계보 제안 (`R-K3-RESUME WU2`) ───────────────────────────────────────────
+@dataclass(frozen=True)
+class ParentCandidate:
+    """**core-api 가 D3 에서 골라 실어 보낸 후보 한 건** (`core-ai.yaml LineageParentCandidate`).
+
+    찾는 것은 D3 의 주인이고 매기는 것만 이쪽이다 (`〈72〉-㉮` 검색과 같은 분담).
+    이 단위는 카탈로그에 닿지 않으므로 **스스로 후보를 만들 수 없다** — 그것이
+    「후보 밖 ID 를 제안하지 않는다」가 코드에서 참이 되는 이유다.
+
+    ⚠ **모르는 값은 `None` 이고 모델에게 열쇠 자체를 만들어 주지 않는다.** 빈 문자열이나
+    `0` 으로 채우면 「못 읽음」과 「값 없음」이 갈리지 않고, 그 둘은 다른 사실이다.
+    """
+
+    dataset_id: str
+    name: str
+    topic: str | None = None
+    summary: str | None = None
+    source_label: str | None = None
+    processing_level: int | None = None
+    period_start: str | None = None
+    period_end: str | None = None
+
+
+@dataclass(frozen=True)
+class SuggestionOutcome:
+    """제안 생산자의 답 한 벌.
+
+    ⚠ **왜 `list | None` 이 아닌가.** 라운드 초안은 「못 하면 `None`」이라고 적었는데,
+    `None` 하나로는 **왜 0건인지**가 사라진다 — 「살펴볼 후보가 없다」·「켜지 않았다」·
+    「닿지 못했다」는 사용자에게 다른 사실이고, `SuggestionEnvelope.build` 는 0건에
+    사유를 **요구한다**(`d10_suggestion:161-168`). 그래서 `None` 은 파서 안쪽에만 두고
+    (읽지 못한 답 = `None`), 표면으로는 사유를 지고 나온다 —
+    `Interpretation` 이 `degraded_reason` 을 지고 나오는 것과 같은 모양이다.
+
+    `suggestions` 는 `d10_suggestion.Suggestion` 들이다. **이 층은 그 형태를 모른다** —
+    `import-boundary` 가 `app > d10 > ports` 를 강제하므로 아래층인 여기가 위층을
+    import 하지 않는다. 조립은 `app/` 이 한다.
+    """
+
+    suggestions: tuple = ()
+    #: 0건일 때의 사유. 제안이 있으면 `None` 이다.
+    empty_declaration: str | None = None
+
+
+class LineageSuggesterPort(Protocol):
+    """계보 제안 생산자. **예외를 던지지 않는다** — 못 하면 빈 제안 + 사유다.
+
+    모델이 하는 일은 **받은 후보의 순위·근거 한 줄·3값 확신도**까지다 (`〈72〉-㉮`).
+    """
+
+    def suggest(self, *, file_meta: dict, candidates: tuple[ParentCandidate, ...],
+                dataset_name_draft: str | None = None,
+                subject: str | None = None) -> SuggestionOutcome:
+        ...

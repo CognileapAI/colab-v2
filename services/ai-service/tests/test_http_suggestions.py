@@ -200,3 +200,127 @@ def test_범위를_요청_그대로_되비춘다(client) -> None:
     """core-api 는 보낸 값과 받은 값이 다르면 응답을 버린다 — 여기서 지어내면 전부 버려진다."""
     scope = client.post(PATH, json=_body(), headers=_headers()).json()["scope"]
     assert scope == {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 12}
+
+
+# ── 후보를 실은 요청 — 표면이 계약을 실제로 요구한다 (WU2) ───────────────────
+CAND_A = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+CAND_B = "01ARZ3NDEKTSV4RRFFQ69G5FB0"
+
+
+def _cand(**over):
+    item = {"datasetId": CAND_A, "name": "강수 — 원자료", "topic": "강우·강수",
+            "summary": "기상청 AWS 일강수량", "processingLevel": 0}
+    item.update(over)
+    return item
+
+
+class _Fake:
+    """모델 자리에 앉는 가짜 전송. **부른 횟수를 센다.**"""
+
+    def __init__(self, reply: str = '{"suggestions": []}') -> None:
+        self.reply, self.calls = reply, 0
+
+    def __call__(self, payload: dict) -> str:
+        self.calls += 1
+        return self.reply
+
+
+def _app(settings, suggester=None):
+    from colab_ai.app.main import create_app
+    return TestClient(create_app(settings, suggester=suggester))
+
+
+def _llm_client(fake: _Fake) -> TestClient:
+    """플래그를 켠 조립 — **전송만 가짜다.** 게이트에서 모델을 부르지 않는다."""
+    from colab_ai.app.suggest import LlmLineageSuggester
+    from colab_ai.kernel.config import Settings
+    settings = Settings(openai_api_key="sk-테스트", suggest_lineage_mode="llm")
+    return _app(settings, LlmLineageSuggester(
+        api_key=settings.openai_api_key, model=settings.model, transport=fake))
+
+
+def test_후보_항목에_계약에_없는_열쇠가_있으면_400_이다(client, spec) -> None:
+    assert spec["components"]["schemas"]["LineageParentCandidate"][
+        "additionalProperties"] is False
+    res = client.post(PATH, json=_body(candidates=[_cand(relevance=0.9)]),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_후보의_ID_가_정규_ID_가_아니면_400_이다(client) -> None:
+    res = client.post(PATH, json=_body(candidates=[_cand(datasetId="12")]),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_후보_상한을_넘으면_400_이다(client, spec) -> None:
+    cap = spec["components"]["schemas"]["LineageSuggestionRequest"][
+        "properties"]["candidates"]["maxItems"]
+    res = client.post(PATH, json=_body(candidates=[_cand()] * (cap + 1)),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_후보를_생략하면_모델을_부르지_않고_200_이다() -> None:
+    """안 보내던 소비자가 그대로 200 이어야 파괴적 변경이 아니다."""
+    fake = _Fake()
+    res = _llm_client(fake).post(PATH, json=_body(), headers=_headers())
+    assert res.status_code == 200, res.text
+    assert res.json()["suggestions"] == []
+    assert fake.calls == 0, "살펴볼 후보가 없는데 토큰을 태웠다"
+
+
+def test_플래그가_꺼져_있으면_후보가_있어도_모델을_부르지_않는다() -> None:
+    from colab_ai.app.main import build_suggester
+    from colab_ai.app.suggest import EmptyLineageSuggester
+    from colab_ai.kernel.config import Settings
+    settings = Settings(openai_api_key="sk-테스트")       # 기본값 = off
+    assert isinstance(build_suggester(settings), EmptyLineageSuggester)
+
+    res = _app(settings).post(PATH, json=_body(candidates=[_cand()]),
+                              headers=_headers())
+    assert res.status_code == 200
+    assert res.json()["suggestions"] == []
+
+
+def test_플래그를_켜려_했는데_키가_없으면_고장_문구다() -> None:
+    from colab_ai.app.main import build_suggester
+    from colab_ai.app.suggest import EmptyLineageSuggester
+    from colab_ai.kernel.config import Settings
+    chosen = build_suggester(Settings(suggest_lineage_mode="llm"))
+    assert isinstance(chosen, EmptyLineageSuggester)
+    out = chosen.suggest(file_meta=_file(), candidates=(),
+                         dataset_name_draft=None, subject=None)
+    assert out.empty_declaration == EmptyLineageSuggester.NO_CREDENTIALS_REASON
+
+
+def test_켠_회차의_제안이_표면까지_흐른다() -> None:
+    fake = _Fake(json.dumps({"suggestions": [
+        {"parentDatasetId": CAND_A, "confidence": "확실",
+         "rationale": "기상청 AWS 일강수량을 crop 한 표본이다",
+         "suggestedParentRole": "주입력"}]}, ensure_ascii=False))
+    res = _llm_client(fake).post(
+        PATH, json=_body(candidates=[_cand(), _cand(datasetId=CAND_B, name="DEM")]),
+        headers=_headers())
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert fake.calls == 1
+    assert body["degraded"] is False
+    assert len(body["suggestions"]) == 1
+    one = body["suggestions"][0]
+    assert one["parentDatasetId"] == CAND_A
+    assert one["parentDatasetName"] == "강수 — 원자료"
+    assert one["confidence"] == "확실"
+    assert one["kind"] == "가공 전 데이터"
+    for forbidden in ("score", "confidencePercent", "%"):
+        assert forbidden not in json.dumps(body, ensure_ascii=False)
+
+
+def test_후보_밖_ID_는_표면에서도_사라진다() -> None:
+    fake = _Fake(json.dumps({"suggestions": [
+        {"parentDatasetId": "01ARZ3NDEKTSV4RRFFQ69G5FZZ", "confidence": "확실",
+         "rationale": "지어낸 ID 다"}]}, ensure_ascii=False))
+    body = _llm_client(fake).post(PATH, json=_body(candidates=[_cand()]),
+                                  headers=_headers()).json()
+    assert body["suggestions"] == []
+    assert body["degradedReason"], "0건의 사유를 응답이 스스로 말해야 한다"

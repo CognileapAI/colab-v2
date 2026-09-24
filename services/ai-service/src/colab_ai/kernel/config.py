@@ -84,15 +84,32 @@ class Settings:
     #: ③ **「키를 못 넣은 것」과 「안 쓰기로 한 것」이 같은 상태로 보인다.**
     #: `〈136〉-㉲` 가 요구한 것은 그 반대다 — **켜는 시점을 값으로 정할 수 있어야 한다.**
     query_interpretation: str = "literal"
+    #: 계보 제안 방식 — `"off"`(AI 가 매기지 않는다) | `"llm"`(모델이 매긴다). **기본은 `off`.**
+    #:
+    #: `〈136〉` 이 질의 해석에 적용한 규율과 **같은 자리**다 — 켜는 시점을 값으로 정할 수
+    #: 있어야 한다. 「키를 못 넣은 것」과 「안 쓰기로 한 것」을 같은 상태로 보이게 하지 않는다.
+    #: 기본이 `off` 인 근거는 게이트 ① 판정 2 — E-04 가 아직 제안을 부르지 않는 상태에서
+    #: 계약·생산자를 먼저 세우는 회차이기 때문이다(`R-K3-RESUME` 판정 기록 2·6).
+    #:
+    #: ⚠ **파이썬 쪽 이름이 환경변수와 다른 이유.** 게이트 `ai-no-lineage-write` 의 red
+    #: 조건 ⑥ 은 ai-service 코드에서 **D4 테이블 접두사**를 찾는다
+    #: (`gates/config/boundaries.toml:47` · `_tbl_re` 는 앞 글자가 단어 문자일 때만 뺀다).
+    #: 그 목록의 소문자 접두사와 **같은 모양으로 시작하는 파이썬 식별자**는 읽기여도 red 다.
+    #: 환경변수는 대문자라 걸리지 않으므로 **배선 이름은 그대로 두고** 파이썬 쪽 이름만
+    #: 오퍼레이션 이름(`suggestLineage`)을 따른다.
+    suggest_lineage_mode: str = "off"
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         e = os.environ if env is None else env
         # 모르는 값은 **끈 쪽으로** 떨어뜨린다 — 오타가 검색을 몰래 켜지 않는다.
         mode = (e.get("COLAB_AI_QUERY_INTERPRETATION") or "").strip().lower()
+        # 같은 규율. 오타(`LLM_`)는 `off` 로 떨어지고, 모델 호출이 몰래 켜지지 않는다.
+        suggest = (e.get("COLAB_AI_LINEAGE_SUGGESTION") or "").strip().lower()
         return cls(
             dict_db_url=resolve_env_or_file(e, ENV_DB_URL),
             openai_api_key=e.get("OPENAI_API_KEY") or None,
             model=e.get("COLAB_MODEL_HELPER") or "gpt-5.6-luna",
             query_interpretation="llm" if mode == "llm" else "literal",
+            suggest_lineage_mode="llm" if suggest == "llm" else "off",
         )
