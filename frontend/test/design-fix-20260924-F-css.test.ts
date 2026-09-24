@@ -338,3 +338,22 @@ describe('A11 · 값 20 · 누르는 동안(`:active`) 대비 예외를 정본�
     expect(line).toContain('예외');
   });
 });
+
+describe('수정 라운드 F2 · 정본 ⑤ 누름 줄은 규칙만 — 남은 자리는 ⑦ 판정 대기', () => {
+  const DOC = raw('../docs/design-system.md');
+  const section = (head: string): string => {
+    const from = DOC.indexOf(`\n## ${head}`);
+    const to = DOC.indexOf('\n## ', from + 1);
+    return DOC.slice(from, to < 0 ? undefined : to);
+  };
+  it('⑤ 누름 피드백 줄에 레인 상태(미적용 · 레인 보고서)가 없다', () => {
+    const line = section('⑤').split('\n').find((l) => l.startsWith('- 누름 피드백')) ?? '';
+    expect(line).toContain('--color-surface-pressed');
+    expect(line).not.toMatch(/미적용|레인 보고서|아직/);
+  });
+  it('⑦ 판정 대기에 업로드 달력 누름 자리(A21)가 한 행으로 있다', () => {
+    const row = section('⑦').split('\n').find((l) => l.startsWith('|') && l.includes('.dr-nav button')) ?? '';
+    expect(row).toContain('.dr-useg button');
+    expect(row).toContain('A21');
+  });
+});
