@@ -2,7 +2,7 @@
 
 - 판정 설정: pixelmatch `threshold 0` · `includeAA true` (엄격). 보조 열: `threshold 0.1`.
 - 기준: `frontend/.visual/p3-before` · HEAD `26b8a6761a975b5cac0b48b8196ab43894540564` · 2026-09-24T05:45:44+00:00
-- 후보: `frontend/.visual/p3-after` · HEAD `67ce06084695f4f295d240cfba30323040a0ef40` · 2026-09-24T06:04:48+00:00
+- 후보: `frontend/.visual/p3-after2` · HEAD `5b2a2a83b3643645fe074374b31395535615dad0` · 2026-09-24T06:36:34+00:00
 - 명세 sha256: `d6983d7118ec6ae784ffccfd6e5e53b9022b70ef8cb1c4cad303b130dd8de51f`
 - 캡처 196장 · 장면 33개 · red 0장 · 엄격 차이 픽셀 합 0 · 보조 차이 픽셀 합 0 · 크기 차이 0장
 - 종료코드: **0**

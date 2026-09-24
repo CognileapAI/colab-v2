@@ -9,6 +9,7 @@ OLD = {
   'tile': '<div class="pv-mosaic" style="position:relative;width:300px;height:300px"><img id="t" class="pv-tile-piece" alt="" style="position:absolute;left:10px;top:20px;width:30px;height:40px"></div>',
   'uplayers': '<div class="pv-layers" id="t" data-zoom-scale="2" style="transform:translate(5px, 6px) scale(2);transform-origin:0 0;width:100px;height:80px"></div>',
   'plainlayers': '<div class="pv-layers" id="t" style="width:100px;height:80px"></div>',
+  'dslayers': '<div class="pv-viewport" style="width:300px;height:225px;overflow:hidden"><div class="pv-layers" id="t" data-zoom-scale="1.5" data-zoom-max-scale="8" data-zoom-base-scale="1" style="transform:translate(-40px, -12.5px) scale(1.5);transform-origin:0 0"></div></div>',
   'dereq': '<div class="detail-page"><div class="dt-edit"><span class="de-req" id="t">필수</span></div></div>',
   'vswon': '<div class="search-page"><button class="vfilter on"><span class="vsw" id="t"></span></button></div>',
   'reg': '<div class="card-b"><div id="t" style="margin-top:16px">x</div></div>',
@@ -20,6 +21,7 @@ NEW = {
   'tile': '<div class="pv-mosaic" style="position:relative;width:300px;height:300px"><img id="t" class="pv-tile-piece" alt="" style="--pv-piece-left:10px;--pv-piece-top:20px;--pv-piece-w:30px;--pv-piece-h:40px"></div>',
   'uplayers': '<div class="pv-layers" id="t" data-zoom-scale="2" style="--pv-layers-transform:translate(5px, 6px) scale(2);width:100px;height:80px"></div>',
   'plainlayers': OLD['plainlayers'],
+  'dslayers': '<div class="pv-viewport" style="width:300px;height:225px;overflow:hidden"><div class="pv-layers" id="t" data-zoom-scale="1.5" data-zoom-max-scale="8" data-zoom-base-scale="1" style="--pv-layers-transform:translate(-40px, -12.5px) scale(1.5)"></div></div>',
   'dereq': OLD['dereq'],
   'vswon': OLD['vswon'],
   'reg': '<div class="card-b"><div id="t" class="reg-source-block">x</div></div>',
@@ -53,7 +55,7 @@ def _run(dist, markup, session, port):
 
 C.BROWSER_ARGS[:] = json.loads(C.MANIFEST.read_text()).get('browser', {}).get('args', [])
 before = run(pathlib.Path('.visual/p3-dist-before').resolve(), OLD, 'p3probe-b')
-after = run(pathlib.Path('.visual/p3-dist-after').resolve(), NEW, 'p3probe-a')
+after = run(pathlib.Path('.visual/p3-dist-after2').resolve(), NEW, 'p3probe-a')
 for s in ['p3probe-b', 'p3probe-a']:
     try: C.ab(s, 'close', timeout=30)
     except Exception: pass

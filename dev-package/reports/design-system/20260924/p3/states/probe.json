@@ -39,6 +39,19 @@
    "transform-origin": "50px 40px",
    "width": "100px"
   },
+  "dslayers-light": {
+   "after-bg": "rgba(0, 0, 0, 0)",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "color": "rgb(18, 22, 25)",
+   "height": "0px",
+   "left": "0px",
+   "margin-top": "0px",
+   "position": "relative",
+   "top": "0px",
+   "transform": "matrix(1.5, 0, 0, 1.5, -40, -12.5)",
+   "transform-origin": "0px 0px",
+   "width": "298px"
+  },
   "dereq-light": {
    "after-bg": "rgba(0, 0, 0, 0)",
    "background-color": "rgba(33, 39, 42, 0.88)",
@@ -155,6 +168,19 @@
    "transform": "none",
    "transform-origin": "50px 40px",
    "width": "100px"
+  },
+  "dslayers-dark": {
+   "after-bg": "rgba(0, 0, 0, 0)",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "color": "rgb(237, 242, 247)",
+   "height": "0px",
+   "left": "0px",
+   "margin-top": "0px",
+   "position": "relative",
+   "top": "0px",
+   "transform": "matrix(1.5, 0, 0, 1.5, -40, -12.5)",
+   "transform-origin": "0px 0px",
+   "width": "298px"
   },
   "dereq-dark": {
    "after-bg": "rgba(0, 0, 0, 0)",
@@ -275,6 +301,19 @@
    "transform-origin": "50px 40px",
    "width": "100px"
   },
+  "dslayers-light": {
+   "after-bg": "rgba(0, 0, 0, 0)",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "color": "rgb(18, 22, 25)",
+   "height": "0px",
+   "left": "0px",
+   "margin-top": "0px",
+   "position": "relative",
+   "top": "0px",
+   "transform": "matrix(1.5, 0, 0, 1.5, -40, -12.5)",
+   "transform-origin": "0px 0px",
+   "width": "298px"
+  },
   "dereq-light": {
    "after-bg": "rgba(0, 0, 0, 0)",
    "background-color": "rgba(33, 39, 42, 0.88)",
@@ -391,6 +430,19 @@
    "transform": "none",
    "transform-origin": "50px 40px",
    "width": "100px"
+  },
+  "dslayers-dark": {
+   "after-bg": "rgba(0, 0, 0, 0)",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "color": "rgb(237, 242, 247)",
+   "height": "0px",
+   "left": "0px",
+   "margin-top": "0px",
+   "position": "relative",
+   "top": "0px",
+   "transform": "matrix(1.5, 0, 0, 1.5, -40, -12.5)",
+   "transform-origin": "0px 0px",
+   "width": "298px"
   },
   "dereq-dark": {
    "after-bg": "rgba(0, 0, 0, 0)",

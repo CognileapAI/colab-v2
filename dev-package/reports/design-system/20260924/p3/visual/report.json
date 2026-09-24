@@ -17,10 +17,10 @@
     "parallel": 2
   },
   "candidate": {
-    "dir": "frontend/.visual/p3-after",
-    "gitHead": "67ce06084695f4f295d240cfba30323040a0ef40",
+    "dir": "frontend/.visual/p3-after2",
+    "gitHead": "5b2a2a83b3643645fe074374b31395535615dad0",
     "gitDirty": false,
-    "capturedAt": "2026-09-24T06:04:48+00:00",
+    "capturedAt": "2026-09-24T06:36:34+00:00",
     "captureCount": 196,
     "parallel": 2
   },
