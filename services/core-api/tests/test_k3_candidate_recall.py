@@ -12,6 +12,7 @@ K4 가 「없는 골든 데이터셋」을 실측 직전의 준비 실패로 처
 """
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,24 @@ def _cases() -> dict:
 
 def _snapshot() -> dict:
     return json.loads(SNAPSHOT_PATH.read_text())
+
+
+#: ⭑ ⟨K3 `WU-S6` 2026-09-24⟩ **가공 단계의 정본은 이름의 「(Lv.n)」 이다.**
+#: 참조 스냅샷의 데이터셋 항목에는 가공 단계 열이 없고(`processing_level` 열쇠 부재)
+#: 일회용 DB 의 `processing_level_user_set` 도 비어 있다 — 그러므로 사람이 등록 폼 ①에서
+#: 고를 값을 이름에서 읽는 수밖에 없고, **읽는 규칙을 한 곳에 못 박는다.**
+#: ⚠ 괄호 안만 본다. 「식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)」 처럼 본문에 다른
+#: 단계가 적힌 이름이 실재한다 — 앞에서부터 찾으면 그 이름이 Lv.2 로 읽힌다.
+_LEVEL_IN_NAME = re.compile(r"\(Lv\.(\d)")
+
+
+def snapshot_level(dataset: dict) -> int:
+    """스냅샷 데이터셋 한 건의 가공 단계. **못 읽으면 터진다 — 0 으로 떨어지지 않는다.**"""
+    assert "processing_level" not in dataset, \
+        "스냅샷에 가공 단계 열이 생겼다 — 이름 파싱을 그 열로 바꾼다(두 벌로 두지 않는다)."
+    found = _LEVEL_IN_NAME.search(dataset["name"])
+    assert found is not None, f"이름에서 가공 단계를 못 읽었다: {dataset['name']}"
+    return int(found.group(1))
 
 
 def _upload_meta(child: dict) -> dict:
@@ -73,6 +92,13 @@ def test_계보_정답이_참조_스냅샷과_한_글자도_어긋나지_않는�
             assert got["parent_dataset_id"] in by_id, "부모 ID 가 코퍼스 밖이다"
             assert got["parent_name"] == by_id[got["parent_dataset_id"]]["name"]
         edges += len(case["parents"])
+
+    # ⭑ ⟨K3 `WU-S6`⟩ **업로드 Lv 가 스냅샷과 한 글자도 다르지 않다.** 이 검사는 표식이
+    #   없어 매 게이트에서 돈다 — 오타가 실측 직전의 준비 실패로 처음 드러나지 않게 한다
+    #   (K4 가 「없는 골든 데이터셋」으로 배운 자리와 같은 규율).
+    for case in cases["cases"]:
+        assert case["upload_level"] == snapshot_level(by_id[case["child_dataset_id"]]), \
+            f"업로드 Lv 가 스냅샷 이름과 다르다: {case['id']}"
 
     # 표본 한계는 **정답 파일이 아니라 스냅샷 쪽에서도** 센다 — 두 수가 갈리면 정답이 낡은 것이다.
     assert len(cases["cases"]) == 4 and edges == 6

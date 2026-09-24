@@ -1,5 +1,5 @@
 {
-  "kind": "K3 계보 정답 — 사람이 등록한 실제 엣지. 모델도 합격선도 여기에 없다.",
+  "kind": "K3 계보 정답 — 사람이 등록한 실제 엣지와 자식별 업로드 Lv. 모델도 합격선도 여기에 없다. `upload_level` 은 사람이 등록 폼 ①에서 고를 값이고 출처는 스냅샷 이름의 「(Lv.n)」 이다 — 스냅샷에 가공 단계 열이 없다.",
   "corpus": "eval/k4-search/fixtures/reference/dev-data-snapshot.json",
   "sample_limits": {
     "children": 4,
@@ -13,6 +13,7 @@
       "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
       "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
       "topic": "강우·강수",
+      "upload_level": 1,
       "parents": [
         {
           "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
@@ -33,6 +34,7 @@
       "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
       "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
       "topic": "식생·NDVI",
+      "upload_level": 1,
       "parents": [
         {
           "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
@@ -47,6 +49,7 @@
       "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
       "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
       "topic": "강우·강수",
+      "upload_level": 2,
       "parents": [
         {
           "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
@@ -61,6 +64,7 @@
       "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
       "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
       "topic": "식생·NDVI",
+      "upload_level": 2,
       "parents": [
         {
           "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
