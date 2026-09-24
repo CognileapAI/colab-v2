@@ -10,7 +10,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P2A-20260924.md` · 조사: `p2/
 - 시각 변경 0 — `visual:diff` **196 captures · red 0 · strict px 0 · exit 0**(ⓑ).
 - 렌더 계산값 0 차이 — 착수 빌드와 최종 빌드를 같은 196 페이지에서 **모든 요소·가상요소(`::before`·`::after`·`::placeholder`·`::marker`)의 계산 스타일 전 속성**으로 대조해 차이 0(캡처보다 엄격한 보조 오라클 · 아래 ⓑ′).
 - 상태 강제 계측 16건 전후 동일(ⓒ).
-- **멈춤 항목 1 — `frontend-test` red(판정) 1**: `test/dashboard.test.tsx` 「검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다」가 `maxWidth 680px` 를 기대하는데 `720px` 이 나온다. 680px 은 제품에서 **렌더된 적이 없는 값**이다(보정 층 `.lab-page .search-hero { max-width: 720px }` 이 접두 특이도로 덮었고, jsdom 시험에는 `.colab-ui` 가 없어 보정 층이 안 걸렸다). 흡수로 720px 이 소유 파일(`search.css`)로 오면서 시험이 처음으로 제품 값을 본다. 지시대로 시험을 고치지 않았다 — 판정 요청(아래 「판정 필요」).
+- **판정 뒤 해소 — 종전 `frontend-test` red(판정) 1**: `test/dashboard.test.tsx` 「검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다」가 `maxWidth 680px` 를 기대하는데 `720px` 이 나온다. 680px 은 제품에서 **렌더된 적이 없는 값**이다(보정 층 `.lab-page .search-hero { max-width: 720px }` 이 접두 특이도로 덮었고, jsdom 시험에는 `.colab-ui` 가 없어 보정 층이 안 걸렸다). 흡수로 720px 이 소유 파일(`search.css`)로 오면서 시험이 처음으로 제품 값을 본다. 시험을 고치지 않고 판정을 요청했고, 오케스트레이터 승인(ⓐ 720px)으로 기대값을 바꿨다(아래 「기존 시험 변경」).
 
 ## 진행 상태
 
@@ -20,7 +20,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P2A-20260924.md` · 조사: `p2/
 | 2 판정 도구 `cascade-map.mjs` · 지도 | 완료 | `088f6be6` · `7e85d0e6` |
 | 3 흡수 · `design-system.css` 삭제 | 완료 | `d9aafcee` · 잔여 되살아남 6곳 `f78f878c` |
 | 4 `@layer` · 게이트 d 범위 · lint 사각 3건 | 완료 | `f8e99708` |
-| 5 vitest 껍질 제거 플러그인 · 시험 경로 | 완료(시험 1건 red · 판정 필요) | `5e85c477` |
+| 5 vitest 껍질 제거 플러그인 · 시험 경로 | 완료(판정 1건 승인 뒤 기대값 변경) | `5e85c477` · 기대값 __CT__ |
 | 6 상태 계측 | 완료(16건 동일) | `f78f878c` |
 | 7 시각 변경 0 | 완료 — 196장 엄격 차이 0 · exit 0 | `12b29144` |
 | 8 게이트 | 실행 — green 4 / red(판정) 1(`frontend-test` · 판정 필요 1건) / red(준비) 0 · exit 1 | — |
@@ -88,7 +88,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P2A-20260924.md` · 조사: `p2/
 - `test.css.include` 에 `layers.css`.
 - 경로만 바꾼 시험 2파일: `test/shell-lth-20260913.test.tsx`(900px · 640px 블록 → `shell.css`) · `test/account-admin-layout-20260918.test.ts`(`.table-scroll-hint` · 1100px 블록 → `shell.css` · it 제목의 파일명). 단언 값 무변.
 - 결과: Test Files 1 failed | 129 passed (130) · Tests 1 failed | 1612 passed (1613). 건수 = P1 1610 + `layer-shim` 3 · 폐기 0.
-- red 1건 = `dashboard.test.tsx` 「검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다」 `AssertionError: expected '720px' to be '680px'`. 원인은 결론에 적었다. 계산값 시험 나머지 5 it(뿌리 1200px 포함)는 통과 — 뿌리 `.lab-page` 1280px 규칙은 패턴이라 `shell.css` 로 갔고 대시보드 시험은 `shell.css` 를 싣지 않는다.
+- 기대값 변경 전 red 1건 = `dashboard.test.tsx` 「검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다」 `AssertionError: expected '720px' to be '680px'`. 원인은 결론에 적었다. 계산값 시험 나머지 5 it(뿌리 1200px 포함)는 통과 — 뿌리 `.lab-page` 1280px 규칙은 패턴이라 `shell.css` 로 갔고 대시보드 시험은 `shell.css` 를 싣지 않는다.
 
 ## ⓑ 시각 변경 0(단계 7)
 
@@ -148,7 +148,7 @@ agent-browser 로 착수 빌드와 최종 빌드에서 같은 장면·폭 1440 �
 | `test/shell-lth-20260913.test.tsx` | `DESIGN` 이 읽는 파일 `design-system.css` → `shell.css`(900px · 640px 블록) |
 | `test/account-admin-layout-20260918.test.ts` | `DESIGN` 이 읽는 파일 → `shell.css` · it 제목의 파일명 |
 | `test/layer-shim.test.ts` | 신설 3 it |
-| `test/dashboard.test.tsx` | **무변 — red 1(판정 필요)** |
+| `test/dashboard.test.tsx` | 기대값 1줄 + 주석 2줄(아래 「기존 시험 변경」 · 오케스트레이터 승인) |
 
 ## spec 과 다르게 한 점
 
@@ -164,16 +164,17 @@ agent-browser 로 착수 빌드와 최종 빌드에서 같은 장면·폭 1440 �
 ## 하지 않은 것
 
 - **vitest 는 층 순서를 검증하지 못한다** — test 전용 플러그인이 층 껍질을 벗기므로 시험의 계산값은 층 없는 캐스케이드다. 층 판정의 증거는 실브라우저 캡처(ⓑ)와 계산값 전수 대조(ⓑ′)다.
-- `dashboard.test.tsx` 680px 단언 변경(판정 필요).
 - 접두 없는 문맥의 값 변화: 보정 규칙은 이제 `.colab-ui`·`.design-preview` 가 없는 문서에도 걸린다 — jsdom 시험(위 red 1건이 그 결과) · `audit-design.html` 을 `design` 인자 없이 연 경우(캡처 밖 · 디버그 경로). 제품(`index.html`)·캡처 33장면·제안 경로는 종전에도 접두 문맥이었다.
 - 억눌린 상태의 복원(우려 1 · 별건) · 프리미티브 추출·값 통일·게이트 e(P2b) · 토큰 값 변경(0).
 - `src/**/*.tsx` 는 주석 2곳(`Gnb.tsx` · `AccountAdminPage.tsx`)만 · `scenes.json` 무변 · 새 의존성 0 · push·PR 게시.
 
-## 판정 필요
+## 기존 시험 변경
 
-| # | 항목 | ⓐ | ⓑ |
-|---|---|---|---|
-| 1 | `dashboard.test.tsx` 「검색 히어로」 `expect(cs.maxWidth).toBe('680px')` | `'720px'` 로 한 줄(제품이 늘 렌더한 값 · 주석의 「40px 을 최대폭에서 뺀다」 논리는 보정 층이 오래전에 덮었다) | 값을 680px 로 되돌리는 시각 변경(별건) |
+| 파일:행 | 전 → 후 | 사유 |
+|---|---|---|
+| `frontend/test/dashboard.test.tsx:479`(it 「검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다」) | `expect(cs.maxWidth).toBe('680px')` → `toBe('720px')` · 위 주석 2줄을 사실로 고침 | 09-12 승인 디자인(보정 층 `design-system.css` · P2a 에서 `search.css` 로 흡수)이 `.lab-page .search-hero { max-width: 720px }` 이고 제품 body 는 늘 `.colab-ui` 라 **2026-09-12 부터 렌더값은 720px** 이다. 종전 680px(`dashboard.css` `.lab-page .search-hero`)은 이 시험의 body 에 `.colab-ui` 가 없어 jsdom 만 보던 죽은 선언이었다. 오케스트레이터 승인(판정 ⓐ). 단독 실행 25/25 통과 |
+
+- BF-8 의 「히어로 내용 폭 680px 불변」 문구는 09-12 intent 가 대체했다 — 이 레인에서는 대장(`work-items.yaml`)을 바꾸지 않았다(후속 6).
 
 ## 후속 항목
 
@@ -182,3 +183,4 @@ agent-browser 로 착수 빌드와 최종 빌드에서 같은 장면·폭 1440 �
 3. `cascade-map` 의 경쟁 판정은 선택자 키 공유라 같은 요소의 다른 클래스 조합을 못 본다(이번에 계산값 대조로 6곳 발견). 계산값 대조 도구를 `frontend/scripts/visual-baseline/` 로 올려 P2b·P3 의 정식 오라클로 쓸지 판단.
 4. `.lin-picker li > button` 규칙 2개(DS#169·#170 → `lineage.css`)는 현 `ParentPicker` DOM 에 걸리는 요소가 없다 — 죽은 규칙 후보.
 5. 같은 조건 미디어 블록이 한 파일에 둘 생긴 곳 정리(값 무변 · P2b).
+6. [오케스트레이터] BF-8 의 「히어로 내용 폭 680px 불변」 문구가 09-12 intent(720px)로 대체됐음을 대장에 반영할지 — 이 레인은 대장 무변.
