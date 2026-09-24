@@ -32,7 +32,7 @@ export function capHandoffVelocity(v0: number, x0: number, response: number = SP
 }
 
 /**
- * 닫힌 식`x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
+ * 닫힌 식 `x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
  * t = 0 에서 위치 = `from` · 속도 = `v0`. damping 1.0 이라 진동하지 않는다.
  */
 export function spring(

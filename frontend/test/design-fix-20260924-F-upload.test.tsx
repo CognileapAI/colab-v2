@@ -254,6 +254,20 @@ describe('A17 닫는 동안 모달 전체가 inert', () => {
     renderModal(onClose);
     fireEvent.click(screen.getByTestId('upload-close'));
     expect(onClose).toHaveBeenCalledTimes(1);
+    // 닫기 전환(closing)을 거치지 않았다 — 모달이 남아 있는 동안에도 inert 가 걸리지 않는다.
+    expect(backdrop()?.getAttribute('data-state')).not.toBe('closing');
+    expect(backdrop()?.hasAttribute('inert')).toBe(false);
+    expect(document.querySelector('[inert]')).toBeNull();
+  });
+
+  it('전환 시간 0 · UploadEntry — 같은 틱에 모달이 언마운트되고 문서에 inert 가 남지 않는다', async () => {
+    renderEntry();
+    await click(screen.getByTestId('gnb-upload'));
+    expect(modal()).not.toBeNull();
+    fireEvent.click(screen.getByTestId('upload-close'));
+    expect(modal()).toBeNull();
+    expect(backdrop()).toBeNull();
+    expect(document.querySelector('[inert]')).toBeNull();
   });
 });
 

@@ -315,7 +315,8 @@ textarea.inp { resize: vertical; }
 .btn-strong { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-text); }
 /* design-review 20260924 #10 — hover 는 파란 채움의 한 단 진한 값(primary-700)이다. 종전 gray-50 은 흰(다크 남색) 글자와
    1.05/1.10:1 이었다. primitives 층은 화면에 지므로 값은 여기 둔다. */
-.btn-strong:hover { background: var(--color-primary-700); }
+/* design-fix 20260924 F-final — 비활성 단추는 hover 에서 뺀다(`:where()` 안 · 특이도 무변 · primitives `.btn-primary` 선례). */
+.btn-strong:where(:not(:disabled)):hover { background: var(--color-primary-700); }
 /* WU-A4 — 누름 = hover 의 한 단 진한 값(값 17). 파란 채움은 선례 `.btn-primary:active` 와 같이 primary-700. */
 .btn-strong:active { background: var(--color-primary-700); }
 
@@ -506,7 +507,8 @@ textarea.inp { resize: vertical; }
   border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text-body);
   cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--ease);}
 .dr-nav button:hover{background:var(--color-surface-hover);}
-.dr-nav button:active{background:var(--color-gray-100);}
+/* design-fix 20260924 F-final · A21 — hover 가 surface-hover 인 누름 자리 = 값 19(다크에서 gray-100 = surface-hover). */
+.dr-nav button:active{background:var(--color-surface-pressed);}
 .dr-nav .sp{flex:1;}
 .dr-cals{display:flex;gap:20px;}
 .dr-cal{flex:1;min-width:0;}
@@ -537,7 +539,7 @@ textarea.inp { resize: vertical; }
 .dr-useg button + button{border-left:1px solid var(--color-border);}
 .dr-useg button:hover{background:var(--color-surface-hover);}
 /* WU-A4 — `.on` 규칙보다 **앞에** 둔다: 특이도가 같아 뒤의 `.on`(primary-600)이 누르는 중에도 이긴다. */
-.dr-useg button:active{background:var(--color-gray-100);}
+.dr-useg button:active{background:var(--color-surface-pressed);}
 .dr-useg button.on{background:var(--color-primary-600);color:var(--color-text-on-primary);}
 @media(max-width:760px){
   .dr-pop{width:308px;}

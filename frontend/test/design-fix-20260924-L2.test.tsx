@@ -210,7 +210,8 @@ describe('#4 CSS `.dropzone.is-dragover`', () => {
 // ═══ #10 — `.btn-strong:hover` primary-700 ═════════════════════════════════════
 describe('#10 `.btn-strong:hover`', () => {
   it('배경 var(--color-primary-700)', () => {
-    expect(hasDecl(bodyOf('.btn-strong:hover'), 'background', 'var(--color-primary-700)')).toBe(true);
+    // design-fix 20260924 F-final 3 — 비활성 제외는 `:where()` 안(특이도 무변 · A2 선례).
+    expect(hasDecl(bodyOf('.btn-strong:where(:not(:disabled)):hover'), 'background', 'var(--color-primary-700)')).toBe(true);
   });
   it('--color-on-primary 대 primary-700 대비 두 테마 ≥ 4.5', () => {
     for (const block of [LIGHT, DARK]) {
@@ -223,9 +224,10 @@ describe('#10 `.btn-strong:hover`', () => {
 describe('WU-A4 업로드 누름 피드백', () => {
   const cases: [string, string, string][] = [
     ['.btn-strong:active', 'background', 'var(--color-primary-700)'],
-    ['.dr-nav button:active', 'background', 'var(--color-gray-100)'],
+    // design-fix 20260924 F-final · A21 — hover 가 surface-hover 인 누름 자리 = 값 19.
+    ['.dr-nav button:active', 'background', 'var(--color-surface-pressed)'],
     ['.dr-cal-d:active', 'background', 'var(--color-primary-200)'],
-    ['.dr-useg button:active', 'background', 'var(--color-gray-100)'],
+    ['.dr-useg button:active', 'background', 'var(--color-surface-pressed)'],
     ['.dr-field:active', 'border-color', 'var(--color-primary-600)'],
   ];
   for (const [sel, prop, value] of cases) {
