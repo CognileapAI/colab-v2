@@ -55,6 +55,11 @@ FILE_KEYS = {"fileName", "kind", "format", "variables", "crs", "gridDescription"
 #: 들어오면 근거 판정의 오라클(J3)이 흐려지고, 그 어긋남은 아무도 세지 않는다.
 CANDIDATE_KEYS = {"datasetId", "name", "topic", "summary", "sourceLabel",
                   "processingLevel", "periodStart", "periodEnd"}
+#: 계약이 `type: string · minLength: 1` 로 적은 후보의 **선택** 열쇠들. 열쇠 집합만 닫고
+#: 값의 모양을 안 보면 숫자·배열이 그대로 아래로 흘러 `candidate_payload` 의
+#: `c.summary[:200]` 에서 `TypeError` 가 되고, **계약대로면 400 일 요청이 500 이 된다** —
+#: 소비자의 표류가 이쪽 고장으로 뒤바뀌는 자리다(게이트 ② 판정 2026-09-24).
+CANDIDATE_TEXT_KEYS = ("topic", "summary", "sourceLabel", "periodStart", "periodEnd")
 #: 계약 `candidates.maxItems`. 상한을 표면이 실제로 요구한다.
 MAX_CANDIDATES = 20
 #: `common.json#FileKind` 의 두 값.
@@ -107,6 +112,12 @@ def _candidates(raw: object) -> tuple[ParentCandidate, ...] | str:
         if level is not None and (isinstance(level, bool) or not isinstance(level, int)
                                   or level < 0):
             return "후보의 processingLevel 이 계약 밖이다 — 0 이상 정수다."
+        for key in CANDIDATE_TEXT_KEYS:
+            text = item.get(key)
+            if text is None:
+                continue                      # 모르는 값은 열쇠가 없다 — 그것이 계약이다
+            if not isinstance(text, str) or not text.strip():
+                return f"후보의 {key} 가 계약대로가 아니다 — 1자 이상 문자열이다."
         out.append(ParentCandidate(
             dataset_id=item["datasetId"], name=name, topic=item.get("topic"),
             summary=item.get("summary"), source_label=item.get("sourceLabel"),

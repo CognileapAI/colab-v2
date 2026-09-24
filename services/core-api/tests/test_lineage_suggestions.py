@@ -561,3 +561,70 @@ def test_후보_밖_ID_를_실은_제안은_버려지고_나머지는_남는다(
     assert "1" in str(getattr(rejected[0], "reason", "")), "버린 건수가 기록에 없다."
     assert "A 강우 원자료" not in line and "없는 데이터셋" not in line, \
         "기록에 데이터셋 이름을 적었다."
+
+
+# ═══════════════════ 게이트 ② 판정 2026-09-24 ═══════════════════════════════
+def test_가공_방식_제안의_부모도_후보_안이어야_남는다(p2_client, recording_ai) -> None:
+    """**부모 ID 가 실리는 자리는 둘이다.**
+
+    「가공 전 데이터」는 `parentDatasetId` 로, 「가공 방식」은 어느 부모와의 관계인지를
+    가리키는 `appliesToParentDatasetId` 로 부모를 가리킨다
+    (`core-ai.yaml ProcessingMethodSuggestion` 산문 · `DOMAINS §2 D4`). 한쪽만 보면
+    나머지 한쪽으로 **후보 밖 ID 가 그대로 화면까지 간다** — 계약 산문 ⓑ 가 막으려던 것이
+    문 하나만 잠긴 채 남는다.
+    """
+    outside = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    base, seen = recording_ai
+    _FakeAi.payload = {
+        "degraded": False,
+        "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+        "rawDataLikely": False,
+        "suggestions": [
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB0", "kind": "가공 방식",
+             "confidence": "애매", "rationale": "격자를 잘라 썼다",
+             "methodText": "0.25도 격자로 잘랐다", "appliesToParentDatasetId": DS_A1},
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB1", "kind": "가공 방식",
+             "confidence": "확실", "rationale": "지어낸 부모에 붙었다",
+             "methodText": "평균을 냈다", "appliesToParentDatasetId": outside},
+        ],
+    }
+    client = p2_client(ai_base_url=base)
+    body = _get(client, make_upload(client)["uploadId"]).json()
+    assert DS_A1 in {c["datasetId"] for c in _sent_candidates(seen)}
+    got = [s.get("appliesToParentDatasetId") for s in body["suggestions"]]
+    assert got == [DS_A1], f"후보 밖 부모를 가리킨 가공 방식이 남았거나 나머지까지 버렸다: {got}"
+
+
+def test_부모를_가리키지_않는_가공_방식은_그대로_남는다(p2_client, recording_ai) -> None:
+    """**어느 부모인지 모르면 생략한다**(계약 산문) — 생략을 「후보 밖」으로 읽어 버리면
+    참인 답이 사라진다. 버리는 것은 **가리켰는데 후보 밖일 때**뿐이다."""
+    base, seen = recording_ai
+    _FakeAi.payload = {
+        "degraded": False,
+        "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+        "rawDataLikely": False,
+        "suggestions": [
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB2", "kind": "가공 방식",
+             "confidence": "모름", "rationale": "어느 부모인지는 모른다",
+             "methodText": "단위를 바꿨다"},
+        ],
+    }
+    client = p2_client(ai_base_url=base)
+    body = _get(client, make_upload(client)["uploadId"]).json()
+    assert len(body["suggestions"]) == 1, "부모를 안 가리킨 제안까지 버렸다"
+
+
+def test_후보의_기간이_나가는_요청에_실린다(p2_client, recording_ai, sql) -> None:
+    """기간은 `d3_dataset_autometa` 가 아는 값이고 **근거 한 줄의 재료**다
+    (`LineageParentCandidate.periodStart`). 여기서 떨어뜨리면 모델은 기간을 못 보는데
+    계약도 게이트도 그 사실을 말하지 않는다 — 왕복의 한쪽 끝을 세는 자리다."""
+    sql("""UPDATE d3_dataset_autometa
+              SET period_start = CAST('2020-01-01T00:00:00Z' AS timestamptz),
+                  period_end   = CAST('2024-12-31T00:00:00Z' AS timestamptz)
+            WHERE dataset_id = :d""", {"d": DS_A1})
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    sent = _by_id(_sent_candidates(seen))[DS_A1]
+    assert sent["periodStart"].startswith("2020-01-01"), sent
+    assert sent["periodEnd"].startswith("2024-12-31"), sent

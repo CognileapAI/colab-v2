@@ -324,3 +324,35 @@ def test_후보_밖_ID_는_표면에서도_사라진다() -> None:
                                   headers=_headers()).json()
     assert body["suggestions"] == []
     assert body["degradedReason"], "0건의 사유를 응답이 스스로 말해야 한다"
+
+
+# ══════════════════ 게이트 ② 판정 2026-09-24 ══════════════════════════════
+@pytest.mark.parametrize("key", ["topic", "summary", "sourceLabel",
+                                 "periodStart", "periodEnd"])
+@pytest.mark.parametrize("bad", [7, 0.5, True, [], {}, "", "   "])
+def test_후보의_선택_문자열_열쇠가_계약_밖이면_400_이다(client, key, bad) -> None:
+    """**표면이 막지 않으면 아래에서 터진다.**
+
+    계약은 이 다섯을 `type: string · minLength: 1` 로 적었는데 표면은 `datasetId`·
+    `name`·`processingLevel` 만 검사하고 나머지는 **그대로 통과**시켰다. 그 값은
+    `suggest_wire.candidate_payload` 의 `c.summary[:200]` 까지 내려가 `TypeError` 가
+    되고, 계약대로면 **400** 일 요청이 **500** 으로 나간다 — 소비자의 표류가
+    「이쪽 고장」으로 뒤바뀌는 자리다.
+    """
+    res = client.post(PATH, json=_body(candidates=[_cand(**{key: bad})]),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_표면의_열쇠_집합이_계약_한_벌에서_온다(spec) -> None:
+    """**옮겨 적은 두 벌은 언젠가 갈린다.** 계약에 열쇠가 하나 늘어도 표면 상수를
+    같이 고치지 않으면 새 열쇠가 400 으로 되튀고, 그 어긋남은 계약 게이트가 못 본다
+    (정적 스펙만 보고 표면 상수를 보지 않는다). 여기가 그 유일한 대조다.
+    """
+    from colab_ai.app.main import CANDIDATE_KEYS, SUGGEST_KEYS
+
+    schemas = spec["components"]["schemas"]
+    assert SUGGEST_KEYS == set(schemas["LineageSuggestionRequest"]["properties"]), \
+        "표면의 요청 열쇠 집합이 계약과 갈렸다"
+    assert CANDIDATE_KEYS == set(schemas["LineageParentCandidate"]["properties"]), \
+        "표면의 후보 열쇠 집합이 계약과 갈렸다"

@@ -36,6 +36,9 @@ SEED = 20260924
 #: 정본을 새로 정하는 것이 아니라 옮겨 적는다. core-api 가 이미 잘라 보내지만 여기서도
 #: 자른다: 상한이 한 곳에만 있으면 그 한 곳이 언젠가 어긋나고, 그때 본문이 통째로 부푼다.
 MAX_CANDIDATE_SUMMARY = 200
+#: 후보 원천 표기의 상한. 계약 `LineageParentCandidate.sourceLabel.maxLength` 와 같은 값이고,
+#: 위 요약과 **같은 사유로** 여기서도 자른다.
+MAX_CANDIDATE_SOURCE_LABEL = 60
 
 
 def candidate_payload(c: ParentCandidate) -> dict:
@@ -46,7 +49,7 @@ def candidate_payload(c: ParentCandidate) -> dict:
     if c.summary:
         body["summary"] = c.summary[:MAX_CANDIDATE_SUMMARY]
     if c.source_label:
-        body["sourceLabel"] = c.source_label
+        body["sourceLabel"] = c.source_label[:MAX_CANDIDATE_SOURCE_LABEL]
     if c.processing_level is not None:
         body["processingLevel"] = c.processing_level
     if c.period_start:

@@ -450,6 +450,26 @@ class HttpDatasetSearchRelay:
         }
 
 
+#: 제안이 **부모를 가리키는 자리 전부**. 「가공 전 데이터」는 `parentDatasetId` 로,
+#: 「가공 방식」은 어느 부모와의 관계인지를 `appliesToParentDatasetId` 로 가리킨다
+#: (`core-ai.yaml ProcessingMethodSuggestion` 산문 · `DOMAINS §2 D4`).
+_PARENT_REF_KEYS = ("parentDatasetId", "appliesToParentDatasetId")
+
+
+def _within_candidates(suggestion: object, allowed: set) -> bool:
+    """후보 밖의 부모를 가리키는가. **한쪽 문만 잠그지 않는다.**
+
+    `parentDatasetId` 만 보면 「가공 방식」 제안의 `appliesToParentDatasetId` 로
+    후보 밖 ID 가 그대로 화면까지 간다 — 계약 산문 ⓑ 가 막으려던 것이 절반만 막힌다.
+    ⚠ **가리키지 않은 것은 버리지 않는다.** 어느 부모인지 모르면 생략하는 것이 계약이고
+    (그 산문), 생략을 「후보 밖」으로 읽으면 참인 답이 사라진다.
+    """
+    if not isinstance(suggestion, dict):
+        return True
+    return all(suggestion.get(key) in allowed
+               for key in _PARENT_REF_KEYS if key in suggestion)
+
+
 class HttpLineageSuggestionRelay:
     """`ports.LineageSuggestionPort` — ai-service 로 나가는 중계.
 
@@ -521,9 +541,7 @@ class HttpLineageSuggestionRelay:
         allowed = {c.get("datasetId") for c in candidates}
         suggestions = body.get("suggestions")
         if isinstance(suggestions, list):
-            kept = [s for s in suggestions
-                    if not isinstance(s, dict) or "parentDatasetId" not in s
-                    or s.get("parentDatasetId") in allowed]
+            kept = [s for s in suggestions if _within_candidates(s, allowed)]
             dropped = len(suggestions) - len(kept)
             if dropped:
                 _record_suggest_failure(

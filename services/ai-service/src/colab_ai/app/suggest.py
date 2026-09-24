@@ -169,7 +169,13 @@ class LlmLineageSuggester:
         for item in body["suggestions"]:
             if not isinstance(item, dict):
                 continue
-            candidate = known.get(item.get("parentDatasetId"))
+            parent_id = item.get("parentDatasetId")
+            # **모양부터 본다.** 배열·객체가 오면 `known.get(...)` 이 unhashable 로
+            # 터지고, 그 예외는 표면까지 새어 500 이 된다 — 「못 하면 빈 제안」이
+            # 「화면이 깨진다」로 뒤바뀌는 자리다(`main.py` 의 같은 산문).
+            if not isinstance(parent_id, str):
+                continue                      # 모델이 보낸 모양이 계약 밖이다
+            candidate = known.get(parent_id)
             if candidate is None:
                 continue                      # 후보 밖 ID — 지어낸 것이다
             rationale = item.get("rationale")

@@ -20,7 +20,12 @@ from colab_ai.app.suggest import (
     EmptyLineageSuggester,
     LlmLineageSuggester,
 )
-from colab_ai.app.suggest_wire import CALL_EVENT, MAX_CANDIDATE_SUMMARY, SUGGESTER_LOGGER
+from colab_ai.app.suggest_wire import (
+    CALL_EVENT,
+    MAX_CANDIDATE_SOURCE_LABEL,
+    MAX_CANDIDATE_SUMMARY,
+    SUGGESTER_LOGGER,
+)
 from colab_ai.domains.d10_suggestion import KIND_PARENT, Suggestion
 from colab_ai.kernel.config import Settings
 from colab_ai.ports import ParentCandidate
@@ -315,3 +320,46 @@ def test_모르는_값은_끈_쪽으로_떨어진다(typo: str) -> None:
 def test_대소문자와_공백은_같은_값으로_읽는다() -> None:
     assert Settings.from_env(
         {"COLAB_AI_LINEAGE_SUGGESTION": " LLM "}).suggest_lineage_mode == "llm"
+
+
+# ═══════════ 게이트 ② 판정 2026-09-24 — 생산자는 예외를 던지지 않는다 ═══════════
+@pytest.mark.parametrize("bad_id", [[P1], {"id": P1}, 1, True, None, 0.5])
+def test_parentDatasetId_가_문자열이_아니어도_예외가_아니라_그_장만_버린다(bad_id) -> None:
+    """**모델의 답은 신뢰하지 않는다 — 값만이 아니라 모양까지.**
+
+    `known.get(item.get("parentDatasetId"))` 는 배열·객체가 오면
+    `TypeError: unhashable type` 이다. 그 예외는 표면까지 새어 **500** 이 되고,
+    그 순간 「못 하면 빈 제안 + 사유」(`main.py` 의 「생산자는 예외를 던지지 않는다」)가
+    「업로드 화면이 깨진다」가 된다. 한 장이 규격을 어기면 **그 장만** 버린다.
+    """
+    t = FakeTransport(_reply(
+        {"parentDatasetId": bad_id, "confidence": "확실", "rationale": "모양이 틀린 답이다"},
+        {"parentDatasetId": P2, "confidence": "애매", "rationale": "DEM — 한반도 격자를 썼다"}))
+    out = _run(t)
+    assert [s.parent_dataset_id for s in out.suggestions] == [P2]
+    assert out.empty_declaration is None
+
+
+def test_후보_원천표기가_상한에서_잘린다() -> None:
+    """요약과 **같은 규율**이다 — 상한이 한 곳에만 있으면 그 한 곳이 언젠가 어긋나고,
+    그때 본문이 통째로 부푼다. 계약 `LineageParentCandidate.sourceLabel.maxLength` 와
+    같은 값을 옮겨 적는다.
+    """
+    long = ParentCandidate(dataset_id=P1, name="강수", source_label="나" * 300)
+    t = FakeTransport(_reply())
+    _run(t, candidates=(long,))
+    body = json.loads(t.payloads[0]["messages"][1]["content"])["candidates"][0]
+    assert len(body["sourceLabel"]) == MAX_CANDIDATE_SOURCE_LABEL == 60
+
+
+def test_후보의_기간이_본문까지_흐른다() -> None:
+    """core-api 가 autometa 에서 읽어 실어 보낸 기간이다(`ingestion._lineage_candidate`).
+    근거 한 줄의 재료인데 여기서 떨어뜨리면 **모델이 기간을 못 보고도 아무도 못 센다.**"""
+    dated = ParentCandidate(dataset_id=P1, name="강수 — 원자료",
+                            period_start="2020-01-01T00:00:00+00:00",
+                            period_end="2024-12-31T00:00:00+00:00")
+    t = FakeTransport(_reply())
+    _run(t, candidates=(dated,))
+    body = json.loads(t.payloads[0]["messages"][1]["content"])["candidates"][0]
+    assert body["periodStart"] == "2020-01-01T00:00:00+00:00"
+    assert body["periodEnd"] == "2024-12-31T00:00:00+00:00"

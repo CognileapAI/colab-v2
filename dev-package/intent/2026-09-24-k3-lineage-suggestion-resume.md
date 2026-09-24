@@ -86,6 +86,13 @@
 4. **후보 상한 k** — 권고 = 20.
 5. **플래그 기본값** — 권고 = `off`. `〈136〉` 이 질의 해석에 적용한 규율(「켜는 시점을 값으로 정할 수 있어야 한다」)과 같다.
 6. **화면 복원(판정문 ㉮)** — 이 intent 는 열지 않는다. 서버가 참인 제안을 내게 된 뒤 Ted 가 따로 판정한다.
+7. **O2 의 `degraded` 와 지금 코드가 어긋난다 — Ted 판정 필요** (게이트 ② 2026-09-24 · 코드 무변경으로 올린다).
+   - **O2 축자**(이 문서 15행) = 「후보가 0건이면 `degraded: false` + `suggestions: []`(살펴봤는데 없더라), 모델이 못 답하면 `degraded: true` + 사유. 지금의 세 영(零) 상태 구분을 깨지 않는다.」
+   - **지금 코드는 0건을 전부 `degraded: true` 로 낸다.** `SuggestionEnvelope.build`(`services/ai-service/src/colab_ai/domains/d10_suggestion.py:160-166`)는 `suggestions` 가 비면 **사유를 요구하고 `degraded = True` 를 세운다** — 사유가 「후보가 없다」든 「살펴봤는데 없더라」(`LlmLineageSuggester.NO_MATCH_REASON`)든 「닿지 못했다」든 **같은 값**이다.
+   - **어긋나는 지점은 두 자리다.** ⓐ 「살펴봤는데 없더라」(㈏)가 O2 대로면 `false` 인데 지금 `true` 다. ⓑ 세 영 상태의 정본 시험(`services/core-api/tests/test_lineage_suggestions.py:165-255`)은 **㈎ `nothing-to-search`·㈏ `searched-none` 을 `degraded: false`, ㈐ `not-asked` 만 `true`** 로 못박았는데, 그 시험들은 **가짜 생산자가 `degraded: false` 를 돌려주는 것을 전제**로 green 이다. 실제 생산자를 켜는 순간 셋이 전부 `not-asked` 로 접힌다 — 화면이 구별할 수 없게 되는 바로 그 상태다.
+   - **권고 = O2 쪽(`false`)으로 가른다.** 근거는 이미 집행된 `〈148〉`(`dev-package/PLAN-SoT.md:468` · 코드 쪽 표현은 `services/ai-service/src/colab_ai/app/interpret.py:125`)이다. 그 판정의 축자는 「계약이 `degraded` 를 **AI 가 제 몫을 못 했다 · true 면 결과가 비었거나 부분적이다**로 정의했다 … AI 는 그 몫을 **하지 않기로 한 것**이지 못 한 것이 아니고, 결과도 비거나 부분적이지 않다」이며, **채택된 규칙은 「결정으로 고른 상태만 `degraded=False`, 켜려 했는데 못 켠 것은 여전히 `True`」**다. 같은 자를 계보 제안에 대면 — 살펴보고 못 찾음(㈏)·플래그 `off`(결정) = **`false`**, 자격 증명 없음·닿지 못함·답을 못 읽음 = **`true`** 로 갈린다. 「AI 가 제 몫을 못 한 것은 아니다」와 「사용자는 **AI 가 살펴보지 않았다**와 구분할 필요가 있다」는 둘 다 참이고, `〈148〉`-㉱ 대로 **그 구분은 배너가 아니라 사유 한 줄이 진다.**
+   - **딸려 오는 값 하나** — `build` 는 `degradedReason` 을 `degraded` 가 참일 때만 싣는다. `false` 로 가르면 「0건인데 사유가 없다」가 되어 `services/ai-service/tests/test_http_suggestions.py` 의 `test_0건이_사유_없이_나오지_않는다`·`test_재료가_없어_못_만든_것을_찾고_못_찾은_것으로_말하지_않는다` 와, 핀으로 박힌 ㈏ 의 「`degradedReason` 이 없어야 한다」가 **정면으로 부딪친다.** 그러므로 판정은 `degraded` 값 하나가 아니라 **「0건의 사유를 `degraded` 와 분리해 항상 싣는가」**까지 함께 정해야 한다(계약 `Degradable` 개정 여부 포함).
+   - **이 회차는 코드를 바꾸지 않았다.** 지금 동작(0건 = `degraded: true` + 사유)이 그대로 남아 있고, 위 시험 어느 것도 이 회차가 고치지 않았다.
 
 ## 범위 밖 (명시 제외)
 
