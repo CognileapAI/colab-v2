@@ -1,6 +1,6 @@
 # Intent: D10 모델 호출 실행 원장 — K3·K4 공통, 별도 집행 단위
 
-메타 — 발의자: Ted(게이트 ① 결정 ⑤) · 정리: Claude(researcher) · 작성 2026-09-24 · 승인 미승인
+메타 — 발의자: Ted(게이트 ① 결정 ⑤) · 정리: Claude(researcher) · 작성 2026-09-24 · 승인 **승인 2026-09-24 (Ted) — 아래 「판정 기록」 절의 수정 조건부**
 
 ## 문제
 - `PLAN-SoT.md:78`(D10 정의)와 `PLAN-SoT.md:313`(㊷ 근거③)이 "실행 원장"에 공급자·처리 리전을
@@ -71,9 +71,18 @@
     기록한다(빈 문자열이 아니라 상태값 `unknown`). Ted 판단 필요 — 이 상태를 의무 충족으로
     볼지, 아니면 리전 고정 엔드포인트 계약이 별도로 필요하다고 볼지.
 
+## 판정 기록 (2026-09-24 Ted)
+> 「작은 데이터베이스 표 하나 만드는 건 좋으나, 어느 나라인지는 적을 필요 없다. 어떤 모델이고 캐시율부터 이런 걸 적재해야 하지 않을까? (잘 불려졌는지, 효율이 좋았는지 등을 모니터링하기 위함)」
+
+- **저장** = `db/ai` 체인의 새 표 1개(alembic 리비전 + 시드 없음). ai-service 가 붙는 유일한 저장소 규율 유지.
+- **처리 리전 필드는 만들지 않는다.** ㊷ 근거③ 「처리 리전을 필수 필드로 기록」은 이 판정으로 **개정** — PLAN-SoT ㊷ 에 추기한다(같은 커밋).
+- **목적 = 호출 품질·효율 모니터링.** 필수 필드: `called_at` · `call_site`(`search.interpret` | `lineage.suggest`) · `provider`(`openai`) · `model_requested` · `model_returned`(응답 `model`) · `outcome`(`ok` | `timeout` | `unreachable` | `unreadable` | `empty_by_model` | `not_called`) · `latency_ms` · `prompt_tokens` · `completion_tokens` · `cached_prompt_tokens`(OpenAI `usage.prompt_tokens_details.cached_tokens`, 없으면 NULL) · `cache_hit_ratio`(= cached/prompt, 파생 컬럼 또는 조회 시 계산) · `candidate_count`/`term_count`(입력 규모) · `result_count`(제안·검색어 수) · `lab_id`(범위). **넣지 않는 것**: 질의 원문·검색어·데이터셋 이름·근거 문장·API 키·리전.
+- 폴백(모델 미호출)도 한 행 — `outcome=not_called` 로 「왜 안 불렀나」가 보이게.
+- 원장 쓰기가 실패해도 검색·제안 응답은 죽지 않는다(로그 경고 후 진행). 게이트는 모델을 부르지 않고 fake transport 로 행 생성을 시험한다.
+
 ## 미해결 질문
 - 저장 위치 최종 선택 (a)/(b)/(c) 중 — 위 권장은 (b)이나 Ted 판정 필요.
-- 처리 리전 필드의 값이 항상 `unknown`일 수밖에 없는 상태를 §8.4 의무 충족으로 인정할지 — Ted 판정 필요.
+- ~~처리 리전 필드~~ — 2026-09-24 Ted 판정으로 필드 자체를 만들지 않는다(㊷ 추기).
 - 원장 보존 기간 — 이 intent는 정하지 않는다(범위 밖).
 - dev/staging에 구조화 로그를 볼 수단(로그 수집기)이 없다는 사실 자체를 별도 인프라 intent로
   뗄지, 이 intent 안에서 (b)를 택해 우회할지 — Ted 판정 필요.
