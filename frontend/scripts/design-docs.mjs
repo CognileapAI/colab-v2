@@ -21,12 +21,11 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CANON_FAMILIES, COLOR_FAMILY } from './design-families.mjs';
 
 const READINESS = 78;
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-// Same families as design-lint.mjs rules a/c (kept in sync by hand — design-lint.mjs runs on import).
-const CANON_FAMILIES = ['color', 'space', 'text', 'radius', 'font', 'shadow', 'leading', 'tracking', 'fg', 'bg', 'accent'];
-const COLOR_FAMILY = /^--(color|fg|bg|accent|shadow)-/;
+// CANON_FAMILIES · COLOR_FAMILY: design-families.mjs — the same list design-lint.mjs rules a/c read.
 const DARK_SEL = /^:root\[data-theme=["']?dark["']?\]$/;
 
 function notReady(msg) {

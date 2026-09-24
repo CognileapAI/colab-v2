@@ -99,7 +99,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P5-20260924.md` · 계획: `arch
 2. **착수 196장을 임시 되돌리기 없이 찍음** — 지시문은 `p2b-after` 재사용 또는 파일 두 개를 착수 HEAD 로 되돌려 찍는 방법을 적었다. 이 워크트리에 `p2b-after` 가 없어서 **아무것도 고치기 전 착수 HEAD 에서 바로** `p5-base196` 을 찍었다(`gitHead` `37269536` · `gitDirty` false · 명세 sha256 이 P2b 와 같음).
 3. **점검표의 게이트 밖 항목 분리** — spec 은 점검표에 「캡처 장면 추가」를 넣고 ⓓ 로 「각 항목이 게이트 조건 이름(a~h)을 가리킨다」를 요구한다. 캡처 장면·층 감싸기·글자/대비 하한은 재는 게이트가 없어 번호 목록(a~h 8항목)과 「게이트 밖 항목」 목록으로 나눴다. 없는 글자를 붙이지 않았다.
 4. **selftest 케이스 3(spec 2)** — 갈림 red · 문서 부재 78 에 더해 「블록 밖만 고친 사본 → green」 1건(spec 의 「블록 밖 문장만 고친 docs-only PR 은 green」 증명). 초과분이다.
-5. **h 의 입력은 픽스처와 무관** — 게이트의 `COLAB_FRONTEND_DIR`·목록 env 는 a~g 의 픽스처를 바꾸지만 h 는 저장소 문서 ↔ 저장소 실물만 본다(문서가 설명하는 것이 저장소다). 그래서 selftest 의 모든 트리에서 h=0 이고 갈림·부재는 `COLAB_DESIGN_LINT_DOC` 로만 만든다. 저장소 문서가 갈리면 selftest 의 green 케이스도 red 가 된다(게이트 본체와 같이 red).
+5. **h 의 입력은 픽스처와 무관** — 게이트의 `COLAB_FRONTEND_DIR`·목록 env 는 a~g 의 픽스처를 바꾸지만 h 는 저장소 문서 ↔ 저장소 실물만 본다(문서가 설명하는 것이 저장소다). 갈림·부재는 `COLAB_DESIGN_LINT_DOC` 로만 만든다. selftest 는 advisor ② 반영 뒤 저장소 문서와 떨어졌다(아래 절).
 6. **갤러리의 모달은 뒤판 없이** — `.modal-back` 은 화면 전체를 덮는 fixed 뒤판이라 갤러리를 가린다. 판(`.modal.modal--dialog` + 머리·몸·발)만 제자리에 열었다. 뒤판 모양은 `lab-dialog`·`project-dialog` 장면이 찍는다. hover·focus 는 정적 캡처가 재현하지 못해 그리지 않았다.
 7. **`visual:diff --subset`** — 지시문이 허용한 두 방법 중 도구 옵션을 택했다(문서 ⑧ · `diff.mjs` 머리 주석).
 8. 커밋 꼬리의 모델 표기는 세션 표기(Claude Opus 5.5)를 따랐다 — 지시문의 「Claude Fable 5.1」과 다르다(P2b 와 같은 처리).
@@ -125,4 +125,16 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P5-20260924.md` · 계획: `arch
 3. `.chip` 리터럴 `#eef2f7` 이 다크에서도 그대로 — 배경 수식자 없는 `.chip--off` 가 다크 화면에서 밝은 칩으로 보인다(갤러리 실측). 어느 게이트에도 걸리지 않는다(f 면제 · c 는 토큰만 본다). ⑦ 6 판정과 함께.
 4. disabled 버튼·입력의 전용 모양이 기본값에 없다 — 갤러리에서 disabled 와 기본이 같은 색이다. 어느 게이트·시험에도 걸리지 않는다. 인터랙션 하한(design-review §0)으로 판정할 항목.
 5. 캡처 장면 사각 · `tsconfig.audit.json` 게이트 · 시각 대조 게이트 승격 · 계산값 도구 승격 — `architecture.md §7` 후속 4~6.
-6. `design-docs.mjs` 의 정본 계열 접두사 목록은 `design-lint.mjs` 와 손으로 맞춘다(design-lint.mjs 가 import 시 실행돼 공유할 수 없다) — 한쪽만 바꾸면 문서의 접두사 표가 게이트와 갈린다. 어느 검사에도 걸리지 않는다.
+6. (해소 · advisor ② 4) 정본 계열 접두사 목록 이중화 — `frontend/scripts/design-families.mjs` 한 곳으로.
+
+## advisor ② 반영(accept-with-fixes 4건)
+
+| # | 지적 | 처리 |
+|---|---|---|
+| 1 | selftest 가 저장소 문서 상태에 묶여 있다 | `frontend-design-lint-selftest.sh` 시작 때 표지 두 쌍만 있는 **뼈대 문서** `$TMPD/base.md` 를 만들어 `design-docs.mjs --doc` 로 채우고, **모든 케이스**의 `COLAB_DESIGN_LINT_DOC` 기본값으로 준다(ⓧ·ⓩ 사본도 base.md 에서). 저장소 문서를 복사하지 않고 뼈대에서 만든 것은 지시(「repo doc 을 복사」)와 다르다 — 저장소 문서가 없거나 표지가 깨져도 selftest 가 h 논리만 재게 하려고. 채우기가 실패하면 selftest red. 종전 `else red "…저장소 문서가 없어…"` 분기는 필요가 없어져 지웠다. 확인: 저장소 문서의 tokens 블록을 일부러 1줄 바꾼 상태에서 selftest = `검사 26건 전건 기대대로` green · `frontend-design-lint` = red(문서 표 갈림 1) → 원복. 케이스 수 **26 그대로**(green 6 · red 14 · red(준비) 6) · `gates/README.md` selftest 행 문구 갱신 |
+| 2 | 문서 머리의 손글 날짜 | 「표를 마지막으로 다시 쓴 때: 2026-09-24(P5)」 → 「표의 기준 = 각 표지 안 입력 sha256(날짜는 적지 않는다)」 |
+| 3 | `same-in-dark.txt` f 줄 사유의 `--color-surface-alt #f4f7fb` 가 실제 값(`#f5f7fa`)과 다름 | 사유 문구를 `#f5f7fa` 로 고치고 `design-docs.mjs` 로 두 블록을 다시 씀(입력 sha256 이 바뀌어 tokens·primitives 블록 모두 갱신). 게이트 f 판정은 사유 칸 존재만 보므로 판정 무변 |
+| 4 | `CANON_FAMILIES` 이중화 | 공유 모듈 `frontend/scripts/design-families.mjs`(`CANON_FAMILIES` · `COLOR_FAMILIES` · 정규식 2)를 만들고 `design-lint.mjs`·`design-docs.mjs` 가 둘 다 import. 동등성 selftest 보다 작고, 갈릴 자리 자체를 없앤다. `design-lint.mjs` 판정 무변(selftest 26 · 게이트 요약 동일) |
+
+- 재검증: `node frontend/scripts/design-docs.mjs --check` → 문서 표 갈림 0 · exit 0. `COLAB_TASK_ID=8cfaba3b8ac34465b7ff045b610d978a bash gates/run.sh task` → **green 5 / red(판정) 0 / red(준비) 0**(selftest 26건 전건 기대대로 · test 1613 통과) · handoff 직전 같은 명령을 커밋 뒤 한 번 더 돌리며 그 run id 는 `COLAB_HANDOFF` 줄에 실린다.
+- **캡처를 다시 찍지 않았다** — 이번 변경은 게이트 스크립트 · 목록 파일의 사유 문구 · 문서 · 보고서뿐이고 CSS·TSX·audit 파일·`scenes.json` 변경이 0이다(`git diff --name-only 2177bab8..HEAD -- frontend/src frontend/audit-design.tsx frontend/scripts/visual-baseline` 0줄). `same-in-dark.txt` 는 렌더에 쓰이지 않는다.

@@ -5,7 +5,7 @@
 
 - ② 토큰 표와 ③ 프리미티브 표의 **표지 안쪽**은 `frontend/scripts/design-docs.mjs` 가 실물(`tokens.css` · `primitives.css` · 게이트 목록 파일)에서 다시 쓴다. 손으로 고치지 않는다 — 게이트 h 가 표지 안쪽이 실물과 같은지 잰다.
 - 표지 밖 문장(이 머리말 · 화면 편차 목록 · 점검표 · 판정 대기 목록)은 손글이다. 표지 밖만 고친 변경은 h 에 걸리지 않는다.
-- 표를 마지막으로 다시 쓴 때: 2026-09-24(P5). 입력 파일의 sha256 은 각 표지 안 첫 줄에 있다.
+- 표의 기준 = 각 표지 안 입력 sha256(날짜는 적지 않는다 — 같은 입력이면 같은 표다).
 - 근거: spec `dev-package/prd/specs/S-DESIGN-STRUCTURE-P5-20260924.md` · 계획과 단계 결과 `dev-package/reports/design-system/20260924/architecture.md`.
 - 실물 모양은 프리미티브 갤러리에서 본다: audit 빌드의 `/audit-design.html?design=full&scene=primitives`(⑧).
 
@@ -38,7 +38,7 @@
 입력(sha256):
 
 - `frontend/src/shell/tokens.css` `f38b9e8ec68c4163683958965f5a100a7a919ce1f57b97899e41cfd24503e0dc`
-- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `9044234beb8cd83d066ae525bb0838601009a411dde6daea49ce5acb544d4545`
+- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `5b4c93136ba7be1adb5d9eb4772a5209a7bf069437a8c0f8fa4051370f539281`
 
 라이트 `:root` 이름 81 · 다크 블록 이름 41 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
 
@@ -176,7 +176,7 @@
 - `frontend/src/shell/primitives.css` `5a5cb5334dffd0c19999cd2e7e5d032f5d562ddf65a63df71bbca96da9881f63`
 - `gates/fixtures/frontend-design-lint/primitives.txt` `82e423d8d2ffd7e4e92cab80301bcbf15e6ea87437310a0f99568aab4c14253f`
 - `gates/fixtures/frontend-design-lint/primitives-exempt.txt` `25f7aa495f529320af9ae53c064479bac5a3c08f1b07ee8cf9b631dc3f001eda`
-- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `9044234beb8cd83d066ae525bb0838601009a411dde6daea49ce5acb544d4545`
+- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `5b4c93136ba7be1adb5d9eb4772a5209a7bf069437a8c0f8fa4051370f539281`
 
 목록 클래스 22(계열 6) · `primitives.css` 규칙 32 · 선언 114
 
@@ -223,7 +223,7 @@
 
 색 리터럴 면제(`same-in-dark.txt` 의 `f` 줄 · 게이트 f): 1
 
-- `src/shell/primitives.css` `.chip` `background: #eef2f7` — 같은 값 토큰 없음(가까운 --color-gray-100 #e8ecf2 · --color-surface-alt #f4f7fb 는 값이 다르다) — 새 토큰 vs 기존 토큰으로 값 변경(시각 변경)을 Ted 판정 대기 · spec P3 우려 1
+- `src/shell/primitives.css` `.chip` `background: #eef2f7` — 같은 값 토큰 없음(가까운 --color-gray-100 #e8ecf2 · --color-surface-alt #f5f7fa 는 값이 다르다) — 새 토큰 vs 기존 토큰으로 값 변경(시각 변경)을 Ted 판정 대기 · spec P3 우려 1
 <!-- /generated:primitives -->
 
 ### 화면 편차 목록 (손글 · P2b 결과 · 값 무변)

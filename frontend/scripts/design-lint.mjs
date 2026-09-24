@@ -44,11 +44,11 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, relative, sep } from 'node:path';
+import { CANON_PREFIX, COLOR_FAMILY } from './design-families.mjs';
 
 const READINESS = 78;
 const TOKENS = 'src/shell/tokens.css';
-const CANON_PREFIX = /^--(color|space|text|radius|font|shadow|leading|tracking|fg|bg|accent)-/;
-const COLOR_FAMILY = /^--(color|fg|bg|accent|shadow)-/;
+// CANON_PREFIX · COLOR_FAMILY come from design-families.mjs (shared with design-docs.mjs · P5 advisor ②).
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(|\b(white|black)\b/;
 // CSS Color 4 named colours (148 · `transparent`/`currentcolor` are keywords, not in this list).
 const COLOR_NAMES = new Set(('aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue '
