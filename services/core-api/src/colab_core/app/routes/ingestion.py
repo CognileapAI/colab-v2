@@ -24,7 +24,8 @@ from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Respon
 from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience,
-                        d4_lineage, d5_ingestion, d6_project, d8_insight)
+                        d3_lineage_signals, d4_lineage, d5_ingestion, d6_project,
+                        d8_insight)
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.objectpath import normalize_relative_path
@@ -35,6 +36,7 @@ from ...kernel.ids import Ulid
 from ...kernel.scope import target_lab
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
+from ..relay import honest_empty_suggestions
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, enforce_parent_level_rule,
                       is_blank_summary, MISSING_CATEGORY_MESSAGE, validate_access_state,
                       validate_human_metadata, warn_if_level_mismatch)
@@ -547,6 +549,20 @@ LINEAGE_CANDIDATE_LIMIT = 20
 #: D3 의 저장값에는 상한이 없고, 본문이 부푸는 것을 막는 자리는 계약 쪽이다(그 산문).
 _CANDIDATE_SUMMARY_MAX = 200
 _CANDIDATE_SOURCE_LABEL_MAX = 60
+#: 후보 원메타 날값의 계약 상한(`LineageParentCandidate.crs`·`grid`·`fileName` `maxLength` ·
+#: `variables.maxItems`). D3 의 저장값에는 상한이 없고, 본문이 부푸는 것을 막는 자리는 계약이다.
+_CANDIDATE_AXIS_MAX = 200
+_CANDIDATE_VARIABLES_MAX = 50
+
+#: ⭑ **⟨K3 `WU-S1b` 2026-09-24 · Ted 판정 ③⟩ 네 번째 영(零) 상태의 사유 한 줄.**
+#: 가공 단계가 없으면 「부모 Lv ≤ 자기 Lv」의 기준값이 없고, 기준이 없으면 자손이 부모로
+#: 제안되는 자리가 그대로 열린다. 그때 참인 답은 **「제안이 없다」**이고 모델을 부르지 않는다.
+#:
+#: ⚠ **사유 코드 enum 을 새로 만들지 않는다.** 영 상태 사유는 오늘 `degradedReason` 문자열로만
+#: 내려가고 FE 에 그 열쇠의 소비자가 **0건**이다(제안 표시 영역이 아직 없다). 지금 여기서
+#: 코드를 정하면 읽는 쪽이 없는 두 번째 표면이 된다 — 읽는 쪽이 생기는 회차가 정한다
+#: (`R-K3-STRUCTURE.md` WU-S1 축자).
+LEVEL_REQUIRED_REASON = "가공 단계를 고르면 제안이 가능합니다."
 
 
 def _utc_iso(value: Any) -> Any:
@@ -554,12 +570,23 @@ def _utc_iso(value: Any) -> Any:
             if isinstance(value, dt.datetime) else value)
 
 
-def _lineage_candidate(candidate, period) -> dict[str, Any]:
+def _axis_text(value: Any) -> str:
+    return "" if value is None else str(value).strip()[:_CANDIDATE_AXIS_MAX]
+
+
+def _lineage_candidate(candidate, meta: dict[str, Any] | None) -> dict[str, Any]:
     """계약 `core-ai.yaml#LineageParentCandidate` 한 건.
 
-    **근거로 인용할 수 있는 값만 싣는다** — 파일 목록·변수 전체는 싣지 않는다(그 산문).
+    **근거로 인용할 수 있는 값만 싣는다** — 파일 목록은 싣지 않는다(그 산문).
     ⚠ **모르는 값은 열쇠를 만들지 않는다.** 특히 가공 단계는 판정된 것만 싣는다 —
     판정 없는 후보에 `0` 을 실으면 「아직 아무도 안 봤다」가 「원자료다」로 읽힌다.
+
+    ⭑ **⟨K3 `WU-S1b` 2026-09-24 · Ted 서명⟩ 원메타 4축(`crs`·`grid`·`variables`·`fileName`)을
+    **날값 그대로** 싣는다** — 종전 「변수 전체는 싣지 않는다」를 뒤집은 자리다. 모델이 근거를
+    **인용**하려면 대조할 날값이 있어야 하고, 없으면 이름·설명만 보고 축을 지어낸다.
+    ⚠ **파생 신호(겹침·교집합)는 싣지 않는다**(라운드 열린 권고 ① 채택) — 보내면 모델이 그대로
+    베껴 돌려주고 core-api 는 **자기가 보낸 값을 자기가 검증**하게 되어 인용 검증이 오라클
+    구실을 못 한다. 그래서 `candidate.derived_level`·비교 결과도 여기 오지 않는다.
     """
     core = candidate.core
     out: dict[str, Any] = {"datasetId": core.dataset_id, "name": core.name}
@@ -573,25 +600,50 @@ def _lineage_candidate(candidate, period) -> dict[str, Any]:
         out["sourceLabel"] = label[:_CANDIDATE_SOURCE_LABEL_MAX]
     if candidate.processing_level is not None:
         out["processingLevel"] = candidate.processing_level
-    if period:
-        if period[0] is not None:
-            out["periodStart"] = _utc_iso(period[0])
-        if period[1] is not None:
-            out["periodEnd"] = _utc_iso(period[1])
+    meta = meta or {}
+    if meta.get("period_start") is not None:
+        out["periodStart"] = _utc_iso(meta["period_start"])
+    if meta.get("period_end") is not None:
+        out["periodEnd"] = _utc_iso(meta["period_end"])
+    for key, column in (("crs", "crs"), ("grid", "grid"), ("fileName", "bundle_file_name")):
+        text = _axis_text(meta.get(column))
+        if text:
+            out[key] = text
+    variables = [v.strip()[:_CANDIDATE_AXIS_MAX] for v in (meta.get("variables") or ())
+                 if isinstance(v, str) and v.strip()]
+    if variables:
+        # 빈 배열은 **열쇠를 만들지 않는다** — 변수 행이 없는 것과 못 읽은 것을 갈라 두는 쪽이
+        # 계약의 다른 칸들과 같은 규율이다(계약은 빈 배열도 허용하지만 뜻이 하나 적다).
+        out["variables"] = variables[:_CANDIDATE_VARIABLES_MAX]
     return out
 
 
-def _lineage_candidates(db: Session, *, lab_id: str,
-                        upload_meta: dict[str, Any]) -> list[dict[str, Any]]:
+def _lineage_candidates(db: Session, *, lab_id: str, upload_meta: dict[str, Any],
+                        upload_level: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """**모집단은 사람이 고르는 후보와 같다** — `select_lineage_candidates` 한 함수만 부른다
     (`d3_catalog` 머리말). 여기서 새 질의를 만들면 화면의 후보와 AI 가 본 후보가 갈리고,
-    그 어긋남은 아무도 못 센다. 연구실 경계는 이 세션의 RLS 가 긋는다."""
+    그 어긋남은 아무도 못 센다. 연구실 경계는 이 세션의 RLS 가 긋는다.
+
+    ⭑ 자동 메타는 `autometa_of` **일괄 질의 하나**로 읽는다 — 기간·좌표계·격자·변수·파일명이
+    한 행에 있으므로 질의를 두 벌(`periods_of` + 나머지)로 열지 않는다.
+
+    ⭑ **⟨K3 `WU-S2` 2026-09-24⟩ 나가는 본문과 대조 축을 같은 행에서 만든다** — 그래서 둘을
+    함께 돌려준다. 중계가 나중에 DB 를 다시 읽으면 「보낸 값」과 「검증에 쓴 값」이 갈리고,
+    그때 인용 검증은 자기가 무엇을 검증하는지 모르게 된다."""
     picked = d3_catalog.select_lineage_candidates(
         db, lab_id=lab_id, upload_meta=upload_meta,
         strategy=LINEAGE_CANDIDATE_STRATEGY, k=LINEAGE_CANDIDATE_LIMIT,
-        lineage_summaries=d4_lineage.LineageSummaryAdapter(db))
-    periods = d3_catalog.periods_of(db, [Ulid(c.core.dataset_id) for c in picked])
-    return [_lineage_candidate(c, periods.get(c.core.dataset_id)) for c in picked]
+        lineage_summaries=d4_lineage.LineageSummaryAdapter(db),
+        upload_level=upload_level)
+    metas = d3_catalog.autometa_of(db, [Ulid(c.core.dataset_id) for c in picked])
+    payload, axes = [], {}
+    for candidate in picked:
+        dataset_id = candidate.core.dataset_id
+        meta = metas.get(dataset_id)
+        payload.append(_lineage_candidate(candidate, meta))
+        axes[dataset_id] = d3_lineage_signals.CandidateAxes.from_autometa(
+            dataset_id, meta or {})
+    return payload, axes
 
 
 # ═══════════════════ listUploadLineageSuggestions (중계) ════════════════════
@@ -600,6 +652,7 @@ def list_upload_lineage_suggestions(
         request: Request, uploadId: str,
         datasetNameDraft: str | None = Query(default=None),
         subject_q: str | None = Query(default=None, alias="subject"),
+        processingLevelUserSet: str | None = Query(default=None),
         subject: Subject = Depends(current_subject),
         db: Session = Depends(scoped_db)) -> dict:
     """AI 계보 제안 조회 — **중계만** 한다. 확정 오퍼레이션이 아니다.
@@ -611,14 +664,30 @@ def list_upload_lineage_suggestions(
 
     0건은 그대로 200 + 빈 배열이다 — **억지 제안을 만들지 않는다**(`CLAUDE.md §3` ·
     `P2.md §2-8`). 5xx 로 끝내지 않는 이유는 **AI 없이도 v2 가 완결된 제품**이기 때문이다.
+
+    ⭑ **⟨K3 `WU-S1b` 2026-09-24 · Ted 판정 ③⟩ 가공 단계를 안 고르면 모델을 부르지 않는다.**
+    「부모 Lv ≤ 자기 Lv」의 기준값이 없으면 적격을 가를 수 없고, 못 가르면 자손이 부모로
+    제안되는 자리가 그대로 열린다 — 그때 참인 답은 **제안 0건**이다. 부르고 버리는 것과
+    안 부르는 것은 다르다(토큰도 감시 기록도 다르다).
     """
     if not Ulid.is_valid(uploadId):
         raise errors.bad_request("uploadId 가 정규 ID 가 아니다.")
     if _live_upload(db, Ulid(uploadId)) is None:
         raise errors.not_found("없거나 수명이 다한 업로드다.")
+    # **문자열→정수 변환 자리는 `d3_catalog` 한 곳뿐이다**(계약 `fe-core.yaml` 축자).
+    # ⚠ 「안 골랐다」와 「계약 밖 값이다」를 접지 않는다 — 접으면 오타가 영 상태로 둔갑한다.
+    upload_level = d3_catalog.parse_user_set_level(processingLevelUserSet)
+    if processingLevelUserSet is not None and upload_level is None:
+        raise errors.bad_request(
+            f"processingLevelUserSet 는 {' · '.join(d3_catalog.USER_SET_LEVELS)} 중 하나다.")
     lab = d1_identity.find_lab(db)
     searched = d3_catalog.count_datasets(db)
     lab_id = target_lab(db)
+    if upload_level is None:
+        # 후보 선정도 중계도 하지 않는다 — **살펴볼 기준이 없는데 뒤지지 않는다.**
+        return honest_empty_suggestions(
+            lab_id=lab_id, lab_name=("" if lab is None else lab["name"]) or "연구실",
+            searched_count=searched, reason=LEVEL_REQUIRED_REASON)
     # **계약이 요구하는 것은 식별자가 아니라 읽은 값이다** — `_uploaded_file_meta` 참조.
     file_meta = _uploaded_file_meta(_ledger(db), Ulid(uploadId))
     # 후보 선정이 읽는 모양은 **계약의 요청 본문 그대로**다 — 두 벌로 옮겨 적지 않는다.
@@ -627,12 +696,18 @@ def list_upload_lineage_suggestions(
         upload_meta["datasetNameDraft"] = datasetNameDraft
     if subject_q:
         upload_meta["subject"] = subject_q
+    candidates, candidate_axes = _lineage_candidates(
+        db, lab_id=lab_id, upload_meta=upload_meta, upload_level=upload_level)
     return request.app.state.suggestions.suggest(
         lab_id=lab_id, lab_name=("" if lab is None else lab["name"]) or "연구실",
         account_id=str(subject.account_id),
         file_meta=file_meta,
-        candidates=_lineage_candidates(db, lab_id=lab_id, upload_meta=upload_meta),
+        candidates=candidates,
         searched_count=searched, dataset_name_draft=datasetNameDraft, subject=subject_q,
+        processing_level=upload_level,
+        # **요청을 만든 바로 그 값들**을 인용 검증에 넘긴다 — 중계가 DB 를 다시 읽지 않는다.
+        upload_axes=d3_lineage_signals.UploadAxes.from_file_meta(file_meta),
+        candidate_axes=candidate_axes,
     )
 
 
