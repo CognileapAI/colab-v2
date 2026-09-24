@@ -278,7 +278,7 @@ patterns 층은 이름만 선언돼 있고 파일이 없다. 아래 규칙은 `f
 - 새 CSS 파일은 `@layer screens { … }` 한 블록으로 감싸고 `styles.ts` 에 import 를 더한다(① 층 함정).
 - 새 화면·새 상태는 `frontend/scripts/visual-baseline/scenes.json` 에 캡처 장면을 더하고(3폭 × 2테마) 착수 기준 캡처와 대조한다(⑧).
 - 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상(예외 — 누르는 동안(`:active`)만의 순간 상태는 이 합격선 밖이다. 평상시·hover·초점 상태는 그대로 4.5:1 · 실측 라이트 카탈로그 행 회색 글자 on 누름 면 4.23:1 · 다크 보조 글자 on 누름 면 4.02:1 · design-fix 20260924 값 20) · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
-- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4). hover 가 `--color-surface-hover` 인 자리(카탈로그 표 행 · 상단 메뉴 링크)는 `--color-surface-pressed`(값 19) — 두 테마에서 누름 ≠ hover. 업로드 달력 `.dr-nav button` · `.dr-useg button` 은 아직 gray-100(다크 누름 = hover · F-css 미적용 · 레인 보고서).
+- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4). hover 가 `--color-surface-hover` 인 자리의 누름은 `--color-surface-pressed`(값 19)를 쓴다(예: 카탈로그 표 행 · 상단 메뉴 링크) — 두 테마에서 누름 ≠ hover. 이 규칙에 맞지 않는 자리는 ⑦ 판정 대기 17 에 둔다.
 
 ## ⑥ 게이트 `frontend-design-lint` — 조건 a~h
 
@@ -308,6 +308,7 @@ P1~P3 · P2a · P2b · P5 보고서에서 「Ted 판정」·「판정 필요」�
 | # | 항목 | 오늘 렌더 | 선택지 | 출처 |
 |---|---|---|---|---|
 | 10 | 화면 편차 통일(③ 화면 편차 목록 · 버튼 높이·모서리·칩 여백 등) | 화면마다 다름 | 편차 목록 유지 · 통일안 | P2b 우려 1 · P5 우려 1 |
+| 17 | 업로드 달력 `.dr-nav button` · `.dr-useg button` 누름(hover = `--color-surface-hover`) | 누름 gray-100 — 다크 gray-100 = surface-hover(#2b3745)라 누름 = hover | `--color-surface-pressed`(값 19) 적용 — 다크에서 `.dr-nav button` 테두리 border-strong(#45566a)이 누름 면과 같아 누르는 동안 테두리가 안 보임 · 적용 시 `design-fix-20260924-L2.test.tsx` 의 두 선택자 고정값 갱신 동반 | 수용 검토 A21 |
 
 ### 닫힘 — design-review 20260924
 
