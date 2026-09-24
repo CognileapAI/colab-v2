@@ -1,5 +1,17 @@
 # infra/staging — CoLAB v2 staging
 
+> ⭑ **⟨개정 2026-09-24 · Ted 판정⟩ 이 디렉터리는 이제 staging 이 아니라 local 환경이다.**
+> 개발자 PC(WSL2)의 `colab_v2_staging_*` 스택 · 진입 `http://127.0.0.1:3000`(nginx) · 공개 주소 없음.
+> 디렉터리·컨테이너·compose 프로젝트·스크립트 이름(`--target staging` 포함)은 **호환을 위해 그대로 둔다.**
+>
+> ⛔ **`www.colab-hydro.com` 은 prod 다**(`../prod/README.md §0`). 이 문서에서 그 주소를 터널·오리진에 (다시) 붙이거나
+> 그 주소로 확인·적재하는 절차는 **전부 폐기된 이력이다 — 따라 하지 않는다.** 따라 하면 prod 도메인이 개발자 PC 를
+> 가리키게 되거나, local 을 잰다고 믿으면서 **prod 를 재고 prod 에 쓴다.** 해당 자리마다 ⛔ 표시를 달았다.
+>
+> ⚠ **지금 local 스택은 두 compose 사본에서 나뉘어 떠 있다**(앱 서비스 쪽 · postgres＋cloudflared 쪽 — 관측 2026-09-24).
+> **한쪽에서만 `docker compose down/up` 하면 스택이 깨진다.** 손으로 compose 를 부르기 전에 `docker compose ls` 와
+> 컨테이너 label `com.docker.compose.project.working_dir` 로 각 컨테이너가 어느 사본에서 떴는지 먼저 확인한다.
+
 ## 지금 서빙되는 것 (WU-I2 이후)
 
 **walking skeleton 이다.** 5개 배포 단위(core-api · pipeline-worker · viz-render · ai-service · frontend)
@@ -14,7 +26,7 @@
 두 스크립트가 같은 프로젝트·같은 컨테이너 이름을 쓴다 — 앞뒤 교체가 대칭이고 DNS·터널을 건드리지 않는다.
 `rollback.sh` 는 pgdata 를 지우지 않고, **스키마도 되돌리지 않는다**(forward-only · `〈168〉-㉲`).
 
-공개 헬스 경로: `/healthz`(엣지) · `/healthz/{core-api,pipeline-worker,viz-render,ai-service,frontend}`.
+헬스 경로(⭑ ⟨개정 2026-09-24⟩ local 은 `http://127.0.0.1:3000` 기준 · 종전 ~~공개~~ 헬스 경로): `/healthz`(엣지) · `/healthz/{core-api,pipeline-worker,viz-render,ai-service,frontend}`.
 
 ---
 
@@ -41,6 +53,11 @@ green 이 된 것은 **사람이 따로 기다렸다 헬스 6종을 본** 덕이
 | `verify/verify-deploy.sh` | **판정기** — 헬스 6종 + 본문 대조 + 컨테이너 8개 + `0.0.0.0` 0건 |
 | `verify/verify-chains.sh` | 두 체인 head (한쪽만 확인하고 전체 성공으로 기록하지 않는다) |
 | `verify/selftest.sh` | 판정기 red fixture — 죽은 단위 · 자리표시 본문 · 대상 0건 · 면제 건수 |
+
+⛔ **⟨2026-09-24⟩ `verify/verify-deploy.sh` 의 기본 주소는 `https://www.colab-hydro.com` 이고, 그 주소는 지금 prod 다.**
+`deploy.sh`·`rollback.sh` 는 주소를 넘기지 않으므로 그대로 두면 판정기의 HTTP 검사가 local 이 아니라 **prod** 를 잰다.
+스크립트 기본값 수정은 후속이다. 그 전에는 이 판정 결과를 local 의 증거로 읽지 않는다.
+local 주소는 `COLAB_VERIFY_BASE`(또는 `--base`)로 넘길 수 있다 — 이 경로의 green 은 이번 개정에서 실측하지 않았다.
 
 ### 상태는 어디에 사는가
 
@@ -100,6 +117,7 @@ green 이 된 것은 **사람이 따로 기다렸다 헬스 6종을 본** 덕이
 `prod` 는 **선언만 있고 실행 경로가 없다.** 부르면 `㊻` 을 인용하며 즉시 거부한다(조용한 no-op 아님).
 증명되는 것은 **「승인 없이는 넘어가지 않는다」의 음성뿐**이고, 「승인하면 넘어간다」의 양성은
 건너편이 비어 있어 증명되지 않는다. 그 사실을 지우지 않는다.
+⭑ ⟨2026-09-24⟩ 이것은 **이 파이프라인의 `prod` 타깃** 얘기다. 실제 prod 배포 경로는 `infra/prod/`(`../prod/README.md §4`)다.
 
 ### 손으로 compose 를 부를 때
 
@@ -108,6 +126,8 @@ green 이 된 것은 **사람이 따로 기다렸다 헬스 6종을 본** 덕이
 ```bash
 COLAB_RELEASE_TAG=i2 docker compose -f compose.i2.yml --env-file ~/.colab-v2-staging.env ps
 ```
+
+⚠ ⟨2026-09-24⟩ 지금 스택은 두 compose 사본에서 나뉘어 떠 있다(상단 주의). `ps` 는 괜찮지만 **한쪽 사본에서만 `down`/`up` 하지 않는다.**
 
 `:i2` 는 릴리스 신원이 아니라 **호환 별칭**이다(`compose.throwaway.yml` 이 그 이름으로 찾는다).
 신원은 SHA 태그이고, 더 정확히는 digest 다 — `reference/IMAGE-DIGESTS.md` 참조.
@@ -118,8 +138,12 @@ COLAB_RELEASE_TAG=i2 docker compose -f compose.i2.yml --env-file ~/.colab-v2-sta
 
 ## 자리표시 오리진 — 이게 무엇인가
 
-WSL 호스트 위에서 도는 **최소 오리진**이다. PoC 철거로 비어 버린 Cloudflare 터널 뒤에
-v2 staging 오리진을 다시 붙여 `www.colab-hydro.com` 의 530 을 해소한다.
+WSL 호스트 위에서 도는 **최소 오리진**이다. ~~PoC 철거로 비어 버린 Cloudflare 터널 뒤에
+v2 staging 오리진을 다시 붙여 `www.colab-hydro.com` 의 530 을 해소한다.~~
+
+> ⛔ **⟨폐기 2026-09-24 · 실행 금지⟩ 위 취지 — 터널 뒤에 이 오리진을 붙여 `www.colab-hydro.com` 을 살린다 — 는 폐기다.**
+> `www.colab-hydro.com` 은 prod(CloudFront)다. 이 오리진이나 터널을 그 이름으로 다시 붙이면 **prod 도메인이 개발자 PC 를 가리킨다.**
+> 이 절과 아래 「터널 연결 구조」·「올리기 / 내리기」·「확인」의 공개 주소 관련 문장은 2026-08 당시의 기록으로만 남긴다.
 
 - **nginx 한 개뿐이다.** 안내 페이지와 `/healthz` 만 응답한다.
 - **데이터 저장소가 없다.** postgres·minio·redis 를 재현하지 않는다. 빈 오리진이다.
@@ -134,6 +158,12 @@ v2 staging 오리진을 다시 붙여 `www.colab-hydro.com` 의 530 을 해소�
 `www.colab-hydro.com → http://nginx:80` 을 가리킨다.
 그래서 **compose 의 서비스 이름을 `nginx` 로 고정**했다. 이름을 바꾸면 터널이 오리진을 못 찾는다.
 DNS·터널 설정은 건드리지 않는다.
+
+⭑ **⟨개정 2026-09-24 · 관측⟩** 이 ingress 규칙(`www.colab-hydro.com → http://nginx:80`)은 원격 설정에 **아직 남아 있고**,
+커넥터 `colab_v2_staging_cloudflared` 도 연결을 등록한 채 떠 있다. 그러나 **공개 DNS 는 `www` 를 터널로 보내지 않는다** —
+`www` 는 prod CloudFront 로 간다. 즉 이 규칙은 지금 요청을 받지 않는 잔재다.
+⛔ **이 규칙·DNS·대시보드 Public Hostname 을 되살려 `www` 를 터널로 돌리지 않는다.** 규칙 제거 여부는 별도 판정이다
+(이번 개정은 Cloudflare·DNS·컨테이너를 건드리지 않았다).
 
 그 ingress 규칙을 레포로 끌어오는 작업이 **WU-IS2** 이고, 선언과 절차는 `tunnel/` 에 있다
 (`tunnel/README.md` — 모드 근거 · 필요한 API 토큰 권한 · import→plan→apply→검증→롤백 순서).
@@ -161,8 +191,11 @@ docker compose --env-file ~/.colab-v2-staging.env logs -f    # 로그
 docker compose --env-file ~/.colab-v2-staging.env down       # 내리기 (= 롤백)
 ```
 
-내리면 커넥터가 사라지고 공개 주소는 다시 **530** 이 된다. 올리면 **200** 으로 돌아온다.
-롤백 경로는 이 한 쌍이 전부다 — DNS 전파를 기다릴 일이 없다.
+~~내리면 커넥터가 사라지고 공개 주소는 다시 **530** 이 된다. 올리면 **200** 으로 돌아온다.
+롤백 경로는 이 한 쌍이 전부다 — DNS 전파를 기다릴 일이 없다.~~
+⭑ **⟨개정 2026-09-24⟩ 이 한 쌍은 이제 공개 주소와 무관하다** — `www` 는 prod 이고 터널로 오지 않는다(관측).
+⚠ 위 명령은 자리표시 `compose.yml` 기준의 기록이다. 지금 스택은 두 compose 사본에서 나뉘어 떠 있으므로
+이 디렉터리에서 한쪽만 `up`/`down` 하지 않는다(상단 주의).
 
 ## 확인
 
@@ -170,7 +203,9 @@ docker compose --env-file ~/.colab-v2-staging.env down       # 내리기 (= 롤�
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/healthz     # 로컬
 ```
 
-셸에서 로컬 DNS 해석이 막혀 있으면 Cloudflare 프록시 IP 로 직접 친다:
+~~셸에서 로컬 DNS 해석이 막혀 있으면 Cloudflare 프록시 IP 로 직접 친다:~~
+⛔ **⟨폐기 2026-09-24⟩ 아래는 staging 이 터널로 공개되던 때의 확인법이다.** 지금 이 명령은 **prod 를 잰다** —
+local 확인으로 쓰지 않는다. local 확인은 위 `127.0.0.1:3000` 한 줄이다.
 
 ```bash
 IP=$(curl -s -H 'accept: application/dns-json' \
@@ -182,7 +217,8 @@ curl -s -o /dev/null -w '%{http_code}\n' --resolve www.colab-hydro.com:443:$IP \
 
 ## 노출 정책
 
-호스트 포트는 `127.0.0.1:3000` 으로만 연다. 외부 노출 경로는 터널 하나뿐이다.
+호스트 포트는 `127.0.0.1:3000` 으로만 연다. ~~외부 노출 경로는 터널 하나뿐이다.~~
+⭑ ⟨개정 2026-09-24 · 관측⟩ 지금은 공개 경로가 없다 — 커넥터는 떠 있지만 공개 DNS 가 터널로 오지 않는다.
 PoC 에서 5432·8100 이 의도와 달리 `0.0.0.0` 에 열려 있던 문제를 반복하지 않는다.
 
 ## `load-seed.py` — S2 초기 데이터 적재 도구
@@ -191,13 +227,16 @@ PoC 에서 5432·8100 이 의도와 달리 `0.0.0.0` 에 열려 있던 문제를
 
 ```bash
 python3 infra/staging/load-seed.py \
-  --base-url https://www.colab-hydro.com \
+  --base-url <대상 주소> \
   --token-file <홈의 0600 토큰 파일> \
   --manifest  <적재 매니페스트 .json> \
   --source-root <원천 데이터 루트>
 
 python3 infra/staging/load-seed-test.py      # 시험 16건 — staging 에 접속하지 않는다
 ```
+
+⛔ **⟨개정 2026-09-24⟩ 종전 예시 ~~`--base-url https://www.colab-hydro.com`~~ 은 지금 prod 다** — 그대로 치면 **prod 에 적재한다.**
+local 은 `http://127.0.0.1:3000` 이다(이 주소로의 적재는 이번 개정에서 실행하지 않았다). prod 적재는 별도 승인 사항이다.
 
 - **공개 API op 4건만 부른다** — `listDatasets` · `createUpload` · `createDataset` ·
   `attachUploadGridFiles`. **DB 드라이버를 import 하지 않는다** — `㊾-③`(DB 직접 INSERT 금지)

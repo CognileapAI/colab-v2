@@ -4,6 +4,29 @@
 > 절차의 정본은 `docs/DEPLOY.md §5`(재구성 절차)다 — **그 절만 보고 세우는 것이 그 문서의 인수 시험**이고,
 > 이 파일은 그 절이 말하지 않는 **prod 만의 차이**를 적는다.
 
+## 0. 공개 주소 — `www.colab-hydro.com` (⭑ ⟨신설 2026-09-24 · Ted 판정⟩)
+
+**prod 의 공개 도메인은 `https://www.colab-hydro.com` 이다.** 배포 기본 주소는 `d1aje00ns2hjsl.cloudfront.net`
+(`.agents/rules/deploy.md`). dev 는 `d31zgpff2091oh.cloudfront.net`, local 은 개발자 PC 의 `http://127.0.0.1:3000`(`../staging/`).
+종전 문서의 「`www.colab-hydro.com` = staging 터널」은 폐기다(`../staging/README.md` 상단).
+
+관측(2026-09-24 · 읽기 요청만):
+
+| 무엇 | 결과 |
+|---|---|
+| `www.colab-hydro.com` 응답 경로 | CloudFront — `server: AmazonS3` · `via … cloudfront.net` |
+| 엣지 IP | prod 배포 `d1aje00ns2hjsl.cloudfront.net` 과 같은 IP 로 해석된다 |
+| 프런트 빌드 | prod 배포와 같은 번들 `/assets/index-D-VdlUTJ.js` |
+| `/healthz/core-api` | 200 |
+| apex `colab-hydro.com` | 응답 없음 |
+| dev `d31zgpff2091oh.cloudfront.net` | 지금은 prod 와 같은 빌드를 낸다 |
+| local `127.0.0.1:3000` | 다른 빌드(`index-DLVOvsAP.js`) |
+| 터널 커넥터 `colab_v2_staging_cloudflared` | 떠 있고 원격 ingress 에 `www` 가 남아 있으나, 공개 DNS 는 `www` 를 터널로 보내지 않는다 |
+
+⚠ **미확인** — CloudFront 배포의 대체 도메인(alias)·ACM 인증서 설정 자체는 보지 못했다(`cloudfront:ListDistributions` 권한 없음).
+엣지 IP 와 빌드 hash 는 단독으로 배포를 가르지 못한다 — CloudFront 엣지 IP 는 배포끼리 공유될 수 있고, 빌드는 지금 dev 와도 같다.
+「`www` 가 prod 배포의 alias 다」는 콘솔·API 로 확인하기 전까지 **관측 근거 + Ted 판정**까지만이다.
+
 ## 1. 왜 dev 를 파라미터화하지 않고 복사했나
 
 `infra/dev/compose.yml:13-14` 가 축자로 적어 뒀다 —

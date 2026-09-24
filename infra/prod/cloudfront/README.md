@@ -1,7 +1,11 @@
-# CloudFront — dev 배포 1개 · 오리진 3 · 동작 3 (`PLAN-SoT §9 〈342〉-㉮`)
+# CloudFront — prod 배포 1개 · 오리진 3 · 동작 3 (`PLAN-SoT §9 〈342〉-㉮`)
 
 도메인 없이 기본 주소(`https://<id>.cloudfront.net`)로 HTTPS 를 얻는다. HTTPS 가 없으면 브라우저의
 `crypto.subtle`·디렉터리 선택이 보안 컨텍스트 밖이라 이어올리기가 조용히 죽는다.
+
+⭑ **⟨개정 2026-09-24 · Ted 판정⟩ prod 의 공개 도메인은 `www.colab-hydro.com` 이다** — 이 배포(`d1aje00ns2hjsl.cloudfront.net`)로
+응답한다는 관측 근거와 미확인 사항(대체 도메인·ACM 인증서 설정은 `cloudfront:ListDistributions` 권한이 없어 보지 못했다)은
+`../README.md §0`. 위 「도메인 없이」는 개통 당시 문장이다. ／ 종전 제목 ~~dev 배포 1개~~ 는 dev 사본에서 옮겨 온 잔재다.
 
 | 동작(경로) | 오리진 | 캐시 · 전달 | 함수 |
 |---|---|---|---|
