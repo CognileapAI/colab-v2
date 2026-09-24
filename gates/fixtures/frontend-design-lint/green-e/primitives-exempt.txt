@@ -1,0 +1,2 @@
+# 파일 · 선택자 · 사유
+src/components/x/x.css · .chip--legacy · 픽스처 — 사유 있는 면제 1건이 실제 맨 정의에 걸린다

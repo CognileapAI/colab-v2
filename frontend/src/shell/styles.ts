@@ -1,5 +1,13 @@
 // Product and visual fixtures use one deterministic CSS entry.
+// P2a — 층 순서를 가장 먼저 선언한다(tokens < base < primitives < patterns < screens). 층을 넘는 우선순위는
+// 이 선언이 정하고, 같은 층 안의 동률만 아래 import 순서가 정한다.
+import './layers.css';
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import './tokens.css';
+// P2b — 원소 기본(`@layer base`). 층 선언이 순위를 정하므로 import 자리는 층 안 동률 순서만 정한다.
+import './base.css';
+// P2b — 프리미티브(`@layer primitives`) · 공통 부품 기본값의 단일 소유.
+import './primitives.css';
 import '../components/catalog/catalog.css';
 import '../components/detail/detail.css';
 import '../components/project/project.css';

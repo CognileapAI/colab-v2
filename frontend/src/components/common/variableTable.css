@@ -1,3 +1,4 @@
+@layer screens {
 /* 변수 표 — ⭑ ⟨WU-B2 · PRD-16⟩ 5열(`변수 · 단위 · 값 범위 · 결측률 · 대표`).
  *
  * **한 벌뿐이다** — 등록(편집)과 상세(읽기 전용)가 같은 컴포넌트를 쓰므로 두 화면의 CSS 를
@@ -70,11 +71,6 @@
   width: 100%;
   min-width: 88px;
   height: 32px;
-  padding: 0 9px;
-  border: none;
-  border-radius: 0;
-  background: none;
-  font-size: var(--text-body-sm);
   color: var(--color-text);
 }
 
@@ -131,4 +127,5 @@
 
 .vt-add:hover {
   background: var(--color-surface-hover);
+}
 }

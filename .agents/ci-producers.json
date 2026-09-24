@@ -130,6 +130,16 @@
           "gates": [
             "frontend-fixture-reach"
           ]
+        },
+        "frontend-design-lint": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "frontend-design-lint"
+          ],
+          "gates": [
+            "frontend-design-lint"
+          ]
         }
       }
     },

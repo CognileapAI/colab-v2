@@ -157,7 +157,7 @@ export function Gnb(props: { openRequest?: SequencedOpenUploadRequest | undefine
 
       {/* ⭑ **⟨신설 2026-09-13 · `I-9` · 카드 ③ ⓒ⟩ 좁은 폭에서 기능 이름을 글자로 되돌린다.**
           위 세 자리는 반응형 사다리에서 라벨을 잃고 그림만 남는다 — 그 폭에서는 이 목록이
-          대신 서고(`design-system.css` 900px 단) 항목마다 그림과 이름을 함께 낸다.
+          대신 서고(`shell.css` 900px 단) 항목마다 그림과 이름을 함께 낸다.
           데스크톱에서는 이 버튼이 숨는다(`shell.css` `.gnb-more`). */}
       {hasMoreItems ? (
         <GnbMoreMenu>

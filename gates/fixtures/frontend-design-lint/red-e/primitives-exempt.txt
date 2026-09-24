@@ -1,0 +1,3 @@
+# 파일 · 선택자 · 사유
+src/components/x/x.css · .chip--warning ·
+src/components/x/x.css · .chip--gone · 픽스처 — 걸리는 맨 정의가 없다(낡은 항목)

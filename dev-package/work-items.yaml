@@ -2330,6 +2330,7 @@ items:
       `project.css`·`detail.css`·`shell.css` 무접촉 · `package-lock.json` 무변경.
       ⭑ **⟨통합 2026-09-05⟩ `bf-11` 위에 병합**(`dcd0a59` — `vite.config.ts` `test.css.include` 는 두 레인의 **합집합 7항**으로 풀었다) — **`main` 병합은 아직이다.**
       근거 `dev-package/reports/bf-8/lane-report.md`.
+      2026-09-24 P2a: 완료 정의의 「히어로 내용 폭 680px」는 09-12 승인 디자인(`design-system.css` → `search.css` 흡수 · `.lab-page .search-hero { max-width: 720px }`)이 720px 로 대체 · `dashboard.test.tsx` 기대값 720 (승인).
     deadline: null
     note: >-
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태였다.
@@ -2477,7 +2478,7 @@ items:
       ⑵ 갈린 자리가 실측되면 **어느 값이 정본인지 사람이 판정한 뒤** 한 값으로 모은다 — 시험이 고르지 않는다
       ⑶ 세 파일에 공통인 이름은 `tokens.css` 로 올릴지 화면 로컬로 둘지 판정한다(「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 부딪히지 않게)
       ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx`·`catalog` 시험 green).
-    evidence: "2026-09-11 독립 수용: BF-11 실제 5곳 확인으로 선행 의존 해제. 공통16개 값충돌0·화면로컬 유지·변이 음성4개 및 화면 회귀를 dev f8과 동일 frontend인 main620 CI1204건에 연결했다. 실제 CSSOM 78개·중복 이름18개 충돌0. sessions/20260911-stage12-final-verification.md. 과거: 2026-09-08 로컬 구현·음성 회귀는 sessions/20260908-product-local-verification.md BF-13."
+    evidence: "2026-09-11 독립 수용: BF-11 실제 5곳 확인으로 선행 의존 해제. 공통16개 값충돌0·화면로컬 유지·변이 음성4개 및 화면 회귀를 dev f8과 동일 frontend인 main620 CI1204건에 연결했다. 실제 CSSOM 78개·중복 이름18개 충돌0. sessions/20260911-stage12-final-verification.md. 과거: 2026-09-08 로컬 구현·음성 회귀는 sessions/20260908-product-local-verification.md BF-13. 2026-09-24 P1: 완료 정의 ⑶ 판정 = 공유 이름은 tokens.css 로(대안 B) · ⑴ 시험은 게이트 `frontend-design-lint` a 로 승계·폐기."
     deadline: null
     note: >-
       **신설 2026-09-05 · 등록만** — `PLAN-SoT §9 〈331〉`. 발견 = `BF-11` 수용 검토(`reports/bf-11/lane-report.md §2`·`§7`).

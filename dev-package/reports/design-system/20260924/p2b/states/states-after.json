@@ -1,0 +1,1786 @@
+[
+ {
+  "name": "btn-primary:hover (members.css 삭제 · .btn:hover 좁힘)",
+  "scene": "upload-link",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".modal-takeover .btn.btn-primary",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(19, 105, 233)"
+   },
+   "tag": "BUTTON.btn btn-primary"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(19, 105, 233)"
+   },
+   "tag": "BUTTON.btn btn-primary"
+  },
+  "note": ""
+ },
+ {
+  "name": "btn-secondary:hover (.btn:hover 좁힘)",
+  "scene": "lab-dialog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".btn.btn-secondary",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)"
+   },
+   "tag": "BUTTON.btn btn-secondary"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)"
+   },
+   "tag": "BUTTON.btn btn-secondary"
+  },
+  "note": ""
+ },
+ {
+  "name": "plain .btn:hover (.btn:hover 유지)",
+  "scene": "upload-link",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".modal-takeover .btn:not(.btn-primary):not(.btn-secondary)",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)"
+   },
+   "tag": "BUTTON.btn btn-ghost btn-sm pvx-open"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(249, 250, 251)"
+   },
+   "tag": "BUTTON.btn btn-ghost btn-sm pvx-open"
+  },
+  "note": ""
+ },
+ {
+  "name": "btn-primary:active (DS#83)",
+  "scene": "upload-link",
+  "width": 1440,
+  "how": "active",
+  "selector": ".modal-takeover .btn.btn-primary",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(19, 105, 233)"
+   },
+   "tag": "BUTTON.btn btn-primary"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(15, 98, 224)"
+   },
+   "tag": "BUTTON.btn btn-primary"
+  },
+  "note": ""
+ },
+ {
+  "name": "search-hero button:active (DS#83)",
+  "scene": "lab",
+  "width": 1440,
+  "how": "active",
+  "selector": ".search-hero button",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(19, 105, 233)"
+   },
+   "tag": "BUTTON."
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(15, 98, 224)"
+   },
+   "tag": "BUTTON."
+  },
+  "note": ""
+ },
+ {
+  "name": ".inp[readonly] (upload.css 삭제)",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "readonly",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "color": "rgb(18, 22, 25)"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "color": "rgb(18, 22, 25)"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": ".login-input:focus-visible (login.css 삭제)",
+  "scene": "login",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".login-input",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "border-top-color": "rgb(169, 179, 191)",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.login-input"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "border-top-color": "rgb(169, 179, 191)",
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "INPUT.login-input"
+  },
+  "note": ""
+ },
+ {
+  "name": ".pcard:focus-visible (project.css outline-offset 삭제)",
+  "scene": "projects",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".pcard",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "A.pcard"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "A.pcard"
+  },
+  "note": ""
+ },
+ {
+  "name": ".modal-takeover button:focus-visible (선택자에서 뺌)",
+  "scene": "upload",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".modal-takeover button:not(.inp):not(.sel)",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.x"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "BUTTON.x"
+  },
+  "note": ""
+ },
+ {
+  "name": ".modal-takeover .inp:focus-visible (유지)",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "border-top-color": "rgb(169, 179, 191)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "border-top-color": "rgb(169, 179, 191)",
+    "outline-offset": "2px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": "button:focus-visible 일반 (DS#129 버림)",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".tbl thead th > .thf",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.thf"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "BUTTON.thf"
+  },
+  "note": ""
+ },
+ {
+  "name": ".lin-picker li > button[aria-pressed=\"true\"] (DS#170)",
+  "scene": "lineage-picker",
+  "width": 1440,
+  "how": "pressed",
+  "selector": ".lin-picker li > button",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgba(0, 0, 0, 0)"
+   },
+   "tag": "BUTTON."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgba(105, 112, 119, 0.08)"
+   },
+   "tag": "BUTTON."
+  },
+  "note": ""
+ },
+ {
+  "name": ".lin-picker li > button:hover",
+  "scene": "lineage-picker",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".lin-picker li > button",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgba(0, 0, 0, 0)",
+    "color": "rgb(18, 22, 25)"
+   },
+   "tag": "BUTTON."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgba(0, 0, 0, 0)",
+    "color": "rgb(18, 22, 25)"
+   },
+   "tag": "BUTTON."
+  },
+  "note": ""
+ },
+ {
+  "name": ".mainnav a:hover",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".mainnav a",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgba(0, 0, 0, 0)",
+    "color": "rgb(86, 92, 99)"
+   },
+   "tag": "A."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgba(105, 112, 119, 0.08)",
+    "color": "rgb(18, 22, 25)"
+   },
+   "tag": "A."
+  },
+  "note": ""
+ },
+ {
+  "name": ".gnb-upload:hover (DS#127 color)",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".gnb-upload",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(19, 105, 233)",
+    "color": "rgb(255, 255, 255)"
+   },
+   "tag": "BUTTON.gnb-upload"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(15, 98, 224)",
+    "color": "rgb(255, 255, 255)"
+   },
+   "tag": "BUTTON.gnb-upload"
+  },
+  "note": ""
+ },
+ {
+  "name": ".tbl td.rowact .ra 행 hover (opacity 삭제)",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".tbl tbody tr.clk",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "opacity@.tbl tbody tr.clk td.rowact .ra": "1"
+   },
+   "tag": "TR.clk"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "opacity@.tbl tbody tr.clk td.rowact .ra": "1"
+   },
+   "tag": "TR.clk"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b .pj-seg button.on focus-visible",
+  "scene": "project-dialog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".pj-seg button.on",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(18, 22, 25)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(223, 227, 232)",
+    "outline-offset": "0px",
+    "outline-style": "solid",
+    "outline-width": "1px"
+   },
+   "tag": "BUTTON.on"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(18, 22, 25)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(223, 227, 232)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "1px"
+   },
+   "tag": "BUTTON.on"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-ghost :hover",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".approval-dialog .btn.btn-ghost",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(249, 250, 251)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-ghost :focus-visible",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".approval-dialog .btn.btn-ghost",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "3px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-ghost :active",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "active",
+  "selector": ".approval-dialog .btn.btn-ghost",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(249, 250, 251)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-ghost :disabled",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".approval-dialog .btn.btn-ghost",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "forced": {
+   "active": false,
+   "disabled": true,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgba(0, 0, 0, 0)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-ghost"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-strong :hover (편차 이동)",
+  "scene": "project-close",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".btn.btn-strong",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(19, 105, 233)",
+    "border-top-color": "rgb(18, 22, 25)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(255, 255, 255)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(255, 255, 255)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-strong"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(249, 250, 251)",
+    "border-top-color": "rgb(18, 22, 25)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(255, 255, 255)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(255, 255, 255)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-strong"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b btn .btn.btn-secondary :disabled",
+  "scene": "project-close",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".btn.btn-secondary",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-secondary"
+  },
+  "forced": {
+   "active": false,
+   "disabled": true,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "BUTTON.btn btn-secondary"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b field .inp :hover",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b field .inp :focus-visible",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "2px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b field .inp :active",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "active",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(19, 105, 233)",
+    "outline-offset": "2px",
+    "outline-style": "solid",
+    "outline-width": "2px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b field .inp :disabled",
+  "scene": "upload-metadata",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".modal-takeover .inp",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "text",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "forced": {
+   "active": false,
+   "disabled": true,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(169, 179, 191)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "default",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "INPUT.inp"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b chip .chip :hover",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".tbl .chip",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b chip .chip :focus-visible",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".tbl .chip",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(16, 16, 16)",
+    "outline-offset": "0px",
+    "outline-style": "auto",
+    "outline-width": "1px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b chip .chip :active",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "active",
+  "selector": ".tbl .chip",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b chip .chip :disabled",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".tbl .chip",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(232, 236, 242)",
+    "border-top-color": "rgb(232, 236, 242)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(67, 73, 80)",
+    "cursor": "pointer",
+    "opacity": "1",
+    "outline-color": "rgb(67, 73, 80)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "SPAN.chip chip--neutral"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b card .card :hover",
+  "scene": "settings",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".card",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b card .card :focus-visible",
+  "scene": "settings",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".card",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(16, 16, 16)",
+    "outline-offset": "0px",
+    "outline-style": "auto",
+    "outline-width": "1px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b card .card :active",
+  "scene": "settings",
+  "width": 1440,
+  "how": "active",
+  "selector": ".card",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b card .card :disabled",
+  "scene": "settings",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".card",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.card labinfo-card"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b table .tbl th :hover",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".tbl thead th",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b table .tbl th :focus-visible",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".tbl thead th",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(16, 16, 16)",
+    "outline-offset": "0px",
+    "outline-style": "auto",
+    "outline-width": "1px"
+   },
+   "tag": "TH."
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b table .tbl th :active",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "active",
+  "selector": ".tbl thead th",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b table .tbl th :disabled",
+  "scene": "catalog",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".tbl thead th",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(245, 247, 250)",
+    "border-top-color": "rgb(86, 92, 99)",
+    "border-top-width": "0px",
+    "box-shadow": "none",
+    "color": "rgb(86, 92, 99)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(86, 92, 99)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "TH."
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b modal .modal--dialog :hover",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "hover",
+  "selector": ".modal--dialog",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b modal .modal--dialog :focus-visible",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "focus",
+  "selector": ".modal--dialog",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": true,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(16, 16, 16)",
+    "outline-offset": "0px",
+    "outline-style": "auto",
+    "outline-width": "1px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b modal .modal--dialog :active",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "active",
+  "selector": ".modal--dialog",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "forced": {
+   "active": true,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": true,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "note": ""
+ },
+ {
+  "name": "P2b modal .modal--dialog :disabled",
+  "scene": "approval-dialog",
+  "width": 1440,
+  "how": "disabled",
+  "selector": ".modal--dialog",
+  "base": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "forced": {
+   "active": false,
+   "disabled": false,
+   "focusVisible": false,
+   "hover": false,
+   "out": {
+    "background-color": "rgb(255, 255, 255)",
+    "border-top-color": "rgb(223, 227, 232)",
+    "border-top-width": "1px",
+    "box-shadow": "none",
+    "color": "rgb(18, 22, 25)",
+    "cursor": "auto",
+    "opacity": "1",
+    "outline-color": "rgb(18, 22, 25)",
+    "outline-offset": "0px",
+    "outline-style": "none",
+    "outline-width": "3px"
+   },
+   "tag": "DIV.modal modal--dialog approval-dialog"
+  },
+  "note": ""
+ }
+]

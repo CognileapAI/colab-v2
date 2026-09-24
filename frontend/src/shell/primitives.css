@@ -1,0 +1,143 @@
+@layer primitives {
+/* 프리미티브 — 공통 부품의 **기본값** 단일 소유(P2b · spec S-DESIGN-STRUCTURE-P2B-20260924).
+   기본값 = 문맥 없는 맨 클래스 요소에서 오늘 이기던 선언 집합(흩어진 화면 파일·셸 끝 임시 블록에서 모았다 ·
+   값 무변). 층 순서 tokens < base < primitives < patterns < screens 라 여기 규칙은 화면(screens) 규칙에 특이도와
+   무관하게 진다 — 화면 편차는 그 화면의 범위 선택자(`.modal-takeover .reg-actions .btn` 류)로 적는다.
+   맨 정의(`.btn { }` · `.btn:hover { }` · `:is(.inp, .sel) { }`)는 이 파일에만 둔다 — 게이트
+   `frontend-design-lint` e 가 목록(`gates/fixtures/frontend-design-lint/primitives.txt`) 클래스로 잰다.
+   `!important` 금지(게이트 e). 같은 층 안의 동률은 순서가 정하므로 규칙 순서는 옮기기 전 캐스케이드 순서를 따른다. */
+
+/* ── btn — 버튼 ──
+   출처: members.css `.btn`(height · color · transition) · upload.css `.btn`(border · background · font · cursor) ·
+   셸 끝 임시 블록(min-height · padding · border-radius · font-size). `font: inherit` 뒤에 `font-size` 가 와야
+   오늘과 같다(굵기·행간·글꼴은 상속 · 크기만 body-sm). */
+.btn {
+  height: 32px;
+  min-height: var(--control-height);
+  padding: 10px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease);
+}
+/* primary·secondary 의 hover 배경은 오늘도 바뀌지 않는다(억눌린 hover 유지 · 되살림은 후속 판정 · P2a). */
+.btn:where(:not(.btn-primary, .btn-secondary)):hover { background: var(--color-gray-50); }
+.btn-ghost { border-color: transparent; }
+.btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
+.btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
+.btn-primary:active { background: var(--color-primary-700); }
+
+/* ── field — 입력·선택 ──
+   출처: 셸 끝 임시 블록(P2a 흡수 · 종전 보정 층). upload.css 의 `.inp, .sel`(8px 10px · 8px 모서리)은 오늘 이
+   규칙에 순서로 전부 졌다(삭제). `textarea.inp` 의 크기 조절은 업로드 화면 규칙으로 남는다. */
+:is(.inp, .sel) { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+@media (max-width: 640px) {
+  :is(.inp, .sel) { font-size: 16px; }
+}
+
+/* ── chip — 칩 ──
+   출처: upload.css `.chip`(display · align · gap · 모서리 · padding · 배경 · 글자 크기) · members.css `.chip`(height ·
+   white-space) · catalog.css `.chip`(굵기 · 행간) · project.css `.chip`(테두리 · margin-left — 전역 이름이라 모든 칩에
+   걸려 있었다) · 수식자는 approval.css `.chip--verified` · members.css `.chip--off`(색·테두리) · 셸 끝 임시 블록.
+   배경 `#eef2f7` 은 토큰 판정 대기(P3 우려 1 · 게이트 f 면제). 수식자 없는 칩만 surface-alt 배경이다. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 2px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: #eef2f7;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+.chip--off { border: 1px solid var(--color-border); color: var(--color-text-muted); }
+.chip--verified { color: var(--color-success-600); background: var(--color-success-50); }
+.chip--lineage { background: var(--color-gray-100); color: var(--color-text-muted); }
+.chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
+.chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
+.chip:where(:not([class*="chip--"])) { background: var(--color-surface-alt); color: var(--color-text-muted); }
+
+/* ── card — 카드 ──
+   출처: members.css `.card`·`.card-h`·`.card-h h3`(테두리 굵기·모양 · 머리 줄 배치 · 제목 여백) + 셸 끝 임시 블록
+   (테두리 색 · 모서리 lg · 그림자 없음 · 머리·몸 padding · 머리 gap 12px · 제목 크기). 테두리 색은 `border` 뒤에 둔다. */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+.card-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 20px var(--space-card);
+  border-bottom: 1px solid var(--color-border);
+}
+.card-h h3 { margin: 0; font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+.card-b { padding: 20px var(--space-card); }
+
+/* ── table — 표 ──
+   출처: catalog.css `.tblwrap`·`.tbl`(스크롤 · 폭 · 최소 폭 940px · 칸 병합) + 셸 끝 임시 블록(max-height 없음 ·
+   행간 · 머리 칸 색·굵기·자간 · 몸 칸 padding · 좌우 이동 안내). catalog.css 의 `.tblwrap` 높이 제한과 `.tbl th`·`.tbl td`
+   의 색·굵기·자간·padding 은 오늘 셸 규칙에 순서로 졌다(삭제). 머리 칸의 나머지(고정 · 배경 · 테두리)는 카탈로그 화면에
+   남는다. */
+.tblwrap { overflow: auto; -webkit-overflow-scrolling: touch; max-height: none; }
+.tbl { width: 100%; min-width: 940px; border-collapse: collapse; font-size: var(--text-body-sm); line-height: 1.5; }
+.tbl th { color: var(--color-text-muted); font-weight: 600; letter-spacing: 0; }
+.tbl td { padding: 10px 12px; }
+.table-scroll-hint { display: none; }
+@media (max-width: 1100px) {
+  .table-scroll-hint { display: block; margin: 0; padding: 12px 16px; font-size: var(--text-caption); color: var(--color-text-muted); }
+}
+
+/* ── modal — 모달 골격 ──
+   출처: members.css(뒤판 · 판 · 가운데 대화상자 크기 · 머리/몸/발) + 셸 끝 임시 블록(대화상자 테두리 · 모서리 lg ·
+   그림자 없음 · padding · 머리가 있으면 padding 0). 머리 제목·본문 문단(`.modal-h h3`·`.modal-b p`)은 구성원 화면에 남는다.
+   ⚠ `.modal` 은 **전역 이름**이다 — 승인·연구실 정보·업로드가 함께 쓴다. 폭은 골격이 아니라 **쓰는 자리**가
+   정한다(검수 #25 · 업로드 전체 화면 모달) — 가운데 대화상자는 `.modal--dialog` 를 붙인다. */
+.modal-back {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-overlay);
+  z-index: 200;
+}
+.modal {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.modal--dialog {
+  max-width: 520px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  padding: var(--space-card);
+}
+.modal--dialog:has(.modal-h) { padding: 0; }
+.modal-h { padding: 16px 18px; border-bottom: 1px solid var(--color-border); }
+.modal-b { padding: 16px 18px; }
+.modal-f {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--color-border);
+}
+}

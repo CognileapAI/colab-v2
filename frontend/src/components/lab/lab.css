@@ -1,3 +1,4 @@
+@layer screens {
 /* `연구실 설정 > 연구실 정보` 전용. **이름을 전부 `labinfo-` 로 접두한다** —
    전역 `.modal`·`.card` 이름을 새로 정의하지 않는다(members.css 의 `.modal` 이 업로드 모달을
    덮은 사고와 같은 모양을 만들지 않기 위해서다). 골격만 project.css 의 `pj-modal` 선례를 따른다. */
@@ -10,7 +11,7 @@
 .labinfo-error {
   margin: 8px 0;
   font-size: var(--text-body-sm);
-  color: var(--color-danger, #b42318);
+  color: var(--color-danger);
 }
 
 .labinfo-notice {
@@ -35,32 +36,24 @@
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 18px;
-  border-radius: 12px;
-  background: var(--color-surface, #fff);
+  padding: var(--space-card);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   box-shadow: none;
+  border: 1px solid var(--color-border-strong);
 }
 
-.labinfo-modal h3 { margin: 0 0 12px; font-size: var(--text-body); }
+.labinfo-modal h3 { margin: 0 0 12px; font-size: 20px; margin-bottom: 20px; }
 
 .labinfo-modal .form-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .labinfo-modal .form-row label {
   font-size: var(--text-body-sm);
   color: var(--color-text-muted);
-}
-
-.labinfo-modal .inp,
-.labinfo-modal .sel {
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font: inherit;
 }
 
 .labinfo-modal .def-note {
@@ -77,4 +70,5 @@
   margin-top: 16px;
 }
 
-@media (max-width: 640px) { .labinfo-modal .inp, .labinfo-modal .sel { font-size: 16px; min-width: 0; } }
+@media (max-width: 640px) { .labinfo-modal .inp, .labinfo-modal .sel { min-width: 0; } }
+}

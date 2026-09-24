@@ -23,7 +23,9 @@ const read = (rel: string): string =>
 
 const LOGIN = read('src/auth/login.css');
 const MEMBERS = read('src/components/members/members.css');
-const DESIGN = read('src/shell/design-system.css');
+// P2a — `.table-scroll-hint` 와 1100px 분기는 보정 층에서 shell.css 로 옮겨졌다(경로만 바꿈).
+// P2b — 프리미티브 단일 소유로 primitives.css 로 옮겨졌다(경로만 바꿈).
+const DESIGN = read('src/shell/primitives.css');
 
 /** `선택자 {` 로 시작하는 규칙 한 덩이의 **선언부**. 없으면 null — 「없어야 할 것이 없다」로 통과하지 않게 한다. */
 function rule(css: string, selector: string): string | null {
@@ -189,7 +191,7 @@ describe('⑵ 금지 조건 — 바뀌지 않아야 하는 원문이 그대로 �
     expect(rule(LOGIN, '.login-card')).toContain('padding: 32px 28px');
   });
 
-  it('공용 `.settabs`(members.css) 와 `.table-scroll-hint`(design-system.css) 를 고치지 않았다', () => {
+  it('공용 `.settabs`(members.css) 와 `.table-scroll-hint`(primitives.css) 를 고치지 않았다', () => {
     expect(rule(MEMBERS, '.settabs')).toContain('margin-bottom: 14px');
     // 이슈 제안의 1280px 분기를 새로 만들지 않는다 — 공용 1100px 분기 그대로.
     expect(DESIGN).toContain('.table-scroll-hint');

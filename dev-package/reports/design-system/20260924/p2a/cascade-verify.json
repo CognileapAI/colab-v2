@@ -1,0 +1,3070 @@
+{
+ "schema": "colab-cascade-verify/1",
+ "base": "7967e00146b8387092e94cf1c3d15efa84fb5d21",
+ "dsUnits": 621,
+ "moved": 610,
+ "dropped": [],
+ "changed": [
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 6,
+   "selector": ".catalog-page .page-head",
+   "media": "",
+   "prop": "gap",
+   "from": "10px",
+   "to": "8px 12px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 6,
+     "arg": ".catalog-page .page-head",
+     "prop": "gap",
+     "value": "8px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 6,
+   "selector": ".catalog-page .page-head",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "14px",
+   "to": "var(--space-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 6,
+     "arg": ".catalog-page .page-head",
+     "prop": "margin-bottom",
+     "value": "var(--space-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 7,
+   "selector": ".catalog-page .page-head h1",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-h2, 24px)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".page-head h1",
+     "prop": "font-size",
+     "value": "var(--text-h2)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 7,
+   "selector": ".catalog-page .page-head h1",
+   "media": "",
+   "prop": "letter-spacing",
+   "from": "-0.023em",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".page-head h1",
+     "prop": "letter-spacing",
+     "value": "-0.02em"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 9,
+   "selector": ".catalog-page .desc",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-caption)",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 7,
+     "arg": ".catalog-page .desc",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 36,
+   "selector": ".tbl .fname",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 19,
+     "arg": ".tbl .fname",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 36,
+   "selector": ".tbl .fname",
+   "media": "",
+   "prop": "letter-spacing",
+   "from": "-0.01em",
+   "to": "0",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 19,
+     "arg": ".tbl .fname",
+     "prop": "letter-spacing",
+     "value": "0"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 39,
+   "selector": ".tbl td.empty",
+   "media": "",
+   "prop": "padding",
+   "from": "36px 14px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 18,
+     "arg": ".tbl td",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 44,
+   "selector": ".tbl thead th > .thf",
+   "media": "",
+   "prop": "padding",
+   "from": "10px 14px",
+   "to": "10px 16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 17,
+     "arg": ".tbl th .thf",
+     "prop": "padding-inline",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 74,
+   "selector": ".colmenu .cm-box",
+   "media": "",
+   "prop": "width",
+   "from": "13px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 102,
+     "arg": ".colmenu .cm-box",
+     "prop": "width",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 74,
+   "selector": ".colmenu .cm-box",
+   "media": "",
+   "prop": "height",
+   "from": "13px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 102,
+     "arg": ".colmenu .cm-box",
+     "prop": "height",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 75,
+   "selector": ".colmenu .cm-box",
+   "media": "",
+   "prop": "font-size",
+   "from": "9px",
+   "to": "var(--text-caption)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 102,
+     "arg": ".colmenu .cm-box",
+     "prop": "font-size",
+     "value": "var(--text-caption)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 75,
+   "selector": ".colmenu .cm-box",
+   "media": "",
+   "prop": "color",
+   "from": "#fff",
+   "to": "var(--color-on-primary)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 102,
+     "arg": ".colmenu .cm-box",
+     "prop": "color",
+     "value": "var(--color-on-primary)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 91,
+   "selector": ".fchips",
+   "media": "",
+   "prop": "gap",
+   "from": "6px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 26,
+     "arg": ".fchips",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 91,
+   "selector": ".fchips",
+   "media": "",
+   "prop": "padding",
+   "from": "10px 14px",
+   "to": "12px var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 26,
+     "arg": ".fchips",
+     "prop": "padding",
+     "value": "12px var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 96,
+   "selector": ".fchips .fc",
+   "media": "",
+   "prop": "height",
+   "from": "24px",
+   "to": "32px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 27,
+     "arg": ".fchips .fc",
+     "prop": "height",
+     "value": "32px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 135,
+   "selector": ".tbl th.rowact, .tbl td.rowact",
+   "media": "",
+   "prop": "padding-right",
+   "from": "14px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 18,
+     "arg": ".tbl td",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 136,
+   "selector": ".tbl td.rowact .ra",
+   "media": "",
+   "prop": "opacity",
+   "from": "0",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 24,
+     "arg": ".tbl .rowact .ra",
+     "prop": "opacity",
+     "value": "1"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 139,
+   "selector": ".tbl td.rowact .rab",
+   "media": "",
+   "prop": "width",
+   "from": "26px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 25,
+     "arg": ".tbl .rowact .rab",
+     "prop": "width",
+     "value": "36px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 139,
+   "selector": ".tbl td.rowact .rab",
+   "media": "",
+   "prop": "height",
+   "from": "26px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 25,
+     "arg": ".tbl .rowact .rab",
+     "prop": "height",
+     "value": "36px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 148,
+   "selector": ".crosslink",
+   "media": "",
+   "prop": "padding",
+   "from": "13px 15px",
+   "to": "16px 20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 30,
+     "arg": ".crosslink",
+     "prop": "padding",
+     "value": "16px 20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 171,
+   "selector": ".catalog-filters",
+   "media": "",
+   "prop": "gap",
+   "from": "16px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 10,
+     "arg": ".catalog-filters",
+     "prop": "gap",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 171,
+   "selector": ".catalog-filters",
+   "media": "",
+   "prop": "padding",
+   "from": "20px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 10,
+     "arg": ".catalog-filters",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 173,
+   "selector": ".catalog-filters .axis-pick",
+   "media": "",
+   "prop": "gap",
+   "from": "6px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 11,
+     "arg": ".catalog-filters .axis-pick",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 174,
+   "selector": ".catalog-filters .axis-k",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 12,
+     "arg": ".axis-k",
+     "prop": "font-size",
+     "value": "var(--text-caption)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 175,
+   "selector": ".catalog-filters select",
+   "media": "",
+   "prop": "height",
+   "from": "38px",
+   "to": "var(--control-height)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 13,
+     "arg": ".catalog-filters select",
+     "prop": "height",
+     "value": "var(--control-height)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 181,
+   "selector": ".catalog-filters",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "16px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 10,
+     "arg": ".catalog-filters",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 182,
+   "selector": ".catalog-filters select",
+   "media": "(max-width: 640px)",
+   "prop": "height",
+   "from": "40px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 13,
+     "arg": ".catalog-filters select",
+     "prop": "height",
+     "value": "var(--control-height)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/detail/detail.css",
+   "line": 11,
+   "selector": ".detail-page .dt-header h1",
+   "media": "",
+   "prop": "font-size",
+   "from": "31px",
+   "to": "var(--text-h2)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 151,
+     "arg": ".detail-page .dt-header h1",
+     "prop": "font-size",
+     "value": "var(--text-h2)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/detail/detail.css",
+   "line": 12,
+   "selector": ".detail-page .dt-header h1",
+   "media": "",
+   "prop": "line-height",
+   "from": "1.25",
+   "to": "1.3",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 151,
+     "arg": ".detail-page .dt-header h1",
+     "prop": "line-height",
+     "value": "1.3"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 25,
+   "selector": ".project-page .page-head h1",
+   "media": "",
+   "prop": "letter-spacing",
+   "from": "-0.023em",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".page-head h1",
+     "prop": "letter-spacing",
+     "value": "-0.02em"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 60,
+   "selector": ".pj-toolbar",
+   "media": "",
+   "prop": "gap",
+   "from": "12px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 172,
+     "arg": ".pj-toolbar",
+     "prop": "gap",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 61,
+   "selector": ".pj-toolbar",
+   "media": "",
+   "prop": "padding",
+   "from": "10px 12px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 172,
+     "arg": ".pj-toolbar",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 63,
+   "selector": ".pj-toolbar",
+   "media": "",
+   "prop": "border-radius",
+   "from": "8px",
+   "to": "var(--radius-lg)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 172,
+     "arg": ".pj-toolbar",
+     "prop": "border-radius",
+     "value": "var(--radius-lg)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 64,
+   "selector": ".pj-toolbar",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "14px",
+   "to": "var(--space-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 172,
+     "arg": ".pj-toolbar",
+     "prop": "margin-bottom",
+     "value": "var(--space-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 68,
+   "selector": ".pj-ctl",
+   "media": "",
+   "prop": "display",
+   "from": "inline-flex",
+   "to": "grid",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 173,
+     "arg": ".pj-ctl",
+     "prop": "display",
+     "value": "grid"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 70,
+   "selector": ".pj-ctl",
+   "media": "",
+   "prop": "gap",
+   "from": "6px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 173,
+     "arg": ".pj-ctl",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 83,
+   "selector": ".pj-views button.on",
+   "media": "",
+   "prop": "font-weight",
+   "from": "600",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 176,
+     "arg": ".pj-views button",
+     "prop": "font",
+     "value": "inherit"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 115,
+   "selector": ".pcard:focus-visible",
+   "media": "",
+   "prop": "outline-offset",
+   "from": "2px",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 213,
+   "selector": ".pj-table",
+   "media": "",
+   "prop": "min-width",
+   "from": "900px",
+   "to": "680px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 182,
+     "arg": ".pj-table",
+     "prop": "min-width",
+     "value": "680px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 267,
+   "selector": ".project-detail .card",
+   "media": "",
+   "prop": "border",
+   "from": "1px solid var(--color-border)",
+   "to": "1px solid var(--color-border-strong)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 9,
+     "arg": ".card",
+     "prop": "border-color",
+     "value": "var(--color-border-strong)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 268,
+   "selector": ".project-detail .card",
+   "media": "",
+   "prop": "border-radius",
+   "from": "10px",
+   "to": "var(--radius-lg)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 9,
+     "arg": ".card",
+     "prop": "border-radius",
+     "value": "var(--radius-lg)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 334,
+   "selector": ".pj-modal-back",
+   "media": "",
+   "prop": "background",
+   "from": "rgb(15 20 28 / 45%)",
+   "to": "var(--color-overlay)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 60,
+     "arg": ".pj-modal-back",
+     "prop": "background",
+     "value": "var(--color-overlay)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 341,
+   "selector": ".pj-modal",
+   "media": "",
+   "prop": "width",
+   "from": "min(560px, 100%)",
+   "to": "min(600px, 100%)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 61,
+     "arg": ".pj-modal",
+     "prop": "width",
+     "value": "min(600px, 100%)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 342,
+   "selector": ".pj-modal",
+   "media": "",
+   "prop": "max-height",
+   "from": "90vh",
+   "to": "calc(100dvh - 48px)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 61,
+     "arg": ".pj-modal",
+     "prop": "max-height",
+     "value": "calc(100dvh - 48px)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 346,
+   "selector": ".pj-modal",
+   "media": "",
+   "prop": "border-radius",
+   "from": "10px",
+   "to": "var(--radius-lg)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 9,
+     "arg": ".pj-modal",
+     "prop": "border-radius",
+     "value": "var(--radius-lg)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 354,
+   "selector": ".pj-modal-h",
+   "media": "",
+   "prop": "padding",
+   "from": "14px 16px",
+   "to": "20px var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 62,
+     "arg": ".pj-modal-h",
+     "prop": "padding",
+     "value": "20px var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 360,
+   "selector": ".pj-modal-h h3",
+   "media": "",
+   "prop": "font-size",
+   "from": "15px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 63,
+     "arg": ".pj-modal-h h3",
+     "prop": "font-size",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 373,
+   "selector": ".pj-modal-b",
+   "media": "",
+   "prop": "padding",
+   "from": "16px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 65,
+     "arg": ".pj-modal-b",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 381,
+   "selector": ".pj-modal-f",
+   "media": "",
+   "prop": "padding",
+   "from": "12px 16px",
+   "to": "16px var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 66,
+     "arg": ".pj-modal-f",
+     "prop": "padding",
+     "value": "16px var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 387,
+   "selector": ".pj-row",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "14px",
+   "to": "24px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 67,
+     "arg": ".pj-row",
+     "prop": "margin-bottom",
+     "value": "24px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 392,
+   "selector": ".pj-row label",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "5px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 68,
+     "arg": ".pj-row label",
+     "prop": "margin-bottom",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 393,
+   "selector": ".pj-row label",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 68,
+     "arg": ".pj-row label",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 394,
+   "selector": ".pj-row label",
+   "media": "",
+   "prop": "color",
+   "from": "var(--color-text-muted)",
+   "to": "var(--color-text)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 68,
+     "arg": ".pj-row label",
+     "prop": "color",
+     "value": "var(--color-text)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 420,
+   "selector": ".pj-seg",
+   "media": "",
+   "prop": "border-radius",
+   "from": "6px",
+   "to": "var(--radius-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 71,
+     "arg": ".pj-seg",
+     "prop": "border-radius",
+     "value": "var(--radius-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 429,
+   "selector": ".pj-seg button",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 72,
+     "arg": ".pj-seg button",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 434,
+   "selector": ".pj-seg button.on",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-gray-100)",
+   "to": "var(--color-surface)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 73,
+     "arg": ".pj-seg button.on",
+     "prop": "background",
+     "value": "var(--color-surface)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 469,
+   "selector": ".pj-fgroup",
+   "media": "",
+   "prop": "padding",
+   "from": "12px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 75,
+     "arg": ".pj-fgroup",
+     "prop": "padding",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 478,
+   "selector": ".pj-fgroup-h",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "10px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 77,
+     "arg": ".pj-fgroup-h",
+     "prop": "margin-bottom",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 58,
+   "selector": ".btn:hover",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-gray-50)",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 64,
+   "selector": ".btn-primary:hover",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-primary-700)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 81,
+     "arg": ".btn-primary",
+     "prop": "background",
+     "value": "var(--color-primary-600)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 177,
+   "selector": ".memgrid .card-b",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "6px 12px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 111,
+     "arg": ".card-b",
+     "prop": "padding",
+     "value": "20px var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 188,
+   "selector": ".memgrid .memtbl td",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "3px 0",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 38,
+   "selector": ".labinfo-modal",
+   "media": "",
+   "prop": "padding",
+   "from": "18px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 117,
+     "arg": ".labinfo-modal",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 39,
+   "selector": ".labinfo-modal",
+   "media": "",
+   "prop": "border-radius",
+   "from": "12px",
+   "to": "var(--radius-lg)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 117,
+     "arg": ".labinfo-modal",
+     "prop": "border-radius",
+     "value": "var(--radius-lg)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 44,
+   "selector": ".labinfo-modal h3",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-body)",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 119,
+     "arg": ".labinfo-modal h3",
+     "prop": "font-size",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 49,
+   "selector": ".labinfo-modal .form-row",
+   "media": "",
+   "prop": "gap",
+   "from": "4px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 116,
+     "arg": ".form-row",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 50,
+   "selector": ".labinfo-modal .form-row",
+   "media": "",
+   "prop": "margin-bottom",
+   "from": "10px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 120,
+     "arg": ".labinfo-modal .form-row",
+     "prop": "margin-bottom",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 60,
+   "selector": ".labinfo-modal .inp, .labinfo-modal .sel",
+   "media": "",
+   "prop": "padding",
+   "from": "8px 10px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "padding",
+     "value": "10px 12px"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 61,
+   "selector": ".labinfo-modal .inp, .labinfo-modal .sel",
+   "media": "",
+   "prop": "border",
+   "from": "1px solid var(--color-border)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "border",
+     "value": "1px solid var(--color-border-control)"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "border",
+     "value": "1px solid var(--color-border-control)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 62,
+   "selector": ".labinfo-modal .inp, .labinfo-modal .sel",
+   "media": "",
+   "prop": "border-radius",
+   "from": "8px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "border-radius",
+     "value": "var(--radius-sm)"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "border-radius",
+     "value": "var(--radius-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 63,
+   "selector": ".labinfo-modal .inp, .labinfo-modal .sel",
+   "media": "",
+   "prop": "font",
+   "from": "inherit",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "font",
+     "value": "inherit"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "font",
+     "value": "inherit"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lab/lab.css",
+   "line": 80,
+   "selector": ".labinfo-modal .inp, .labinfo-modal .sel",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "from": "16px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "font",
+     "value": "inherit"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "font",
+     "value": "inherit"
+    },
+    {
+     "no": 138,
+     "arg": ".inp",
+     "prop": "font-size",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 6,
+   "selector": ".search-hero h1",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-h2, 24px)",
+   "to": "var(--text-h2)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".search-hero h1",
+     "prop": "font-size",
+     "value": "var(--text-h2)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 6,
+   "selector": ".search-hero h1",
+   "media": "",
+   "prop": "letter-spacing",
+   "from": "-0.023em",
+   "to": "-0.02em",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".search-hero h1",
+     "prop": "letter-spacing",
+     "value": "-0.02em"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 9,
+   "selector": ".search-hero input",
+   "media": "",
+   "prop": "padding",
+   "from": "12px 14px",
+   "to": "14px 16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 33,
+     "arg": ".search-hero input",
+     "prop": "padding",
+     "value": "14px 16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 18,
+   "selector": ".search-hero .hero-note",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-caption, 12px)",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 35,
+     "arg": ".search-hero .hero-note",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 24,
+   "selector": ".search-page .page-head h1",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-h2, 24px)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 5,
+     "arg": ".page-head h1",
+     "prop": "font-size",
+     "value": "var(--text-h2)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 47,
+   "selector": ".search-page .notice--empty .empty-acts .quiet, .search-page .notice--empty .empty-acts .strong",
+   "media": "",
+   "prop": "height",
+   "from": "32px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 191,
+     "arg": ".search-page .empty-acts .quiet",
+     "prop": "height",
+     "value": "auto"
+    },
+    {
+     "no": 191,
+     "arg": ".search-page .empty-acts .strong",
+     "prop": "height",
+     "value": "auto"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 54,
+   "selector": ".search-page .hits",
+   "media": "",
+   "prop": "gap",
+   "from": "10px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 115,
+     "arg": ".search-page .hits",
+     "prop": "gap",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 56,
+   "selector": ".search-page .hit",
+   "media": "",
+   "prop": "padding",
+   "from": "14px 16px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 114,
+     "arg": ".search-page .hit",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 86,
+   "selector": ".search-page .chip--warning",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-warning-50, #fff6ed)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 150,
+     "arg": ".chip--warning",
+     "prop": "background",
+     "value": "var(--color-warning-50)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/search/search.css",
+   "line": 86,
+   "selector": ".search-page .chip--warning",
+   "media": "",
+   "prop": "color",
+   "from": "var(--color-warning-600, #a85400)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 150,
+     "arg": ".chip--warning",
+     "prop": "color",
+     "value": "var(--color-warning-600)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 22,
+   "selector": ".lab-page .search-hero",
+   "media": "",
+   "prop": "max-width",
+   "from": "680px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 31,
+     "arg": ".lab-page .search-hero",
+     "prop": "max-width",
+     "value": "720px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 30,
+   "selector": ".dash-columns",
+   "media": "",
+   "prop": "gap",
+   "from": "20px",
+   "to": "var(--space-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 36,
+     "arg": ".dash-columns",
+     "prop": "gap",
+     "value": "var(--space-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 31,
+   "selector": ".dash-columns",
+   "media": "",
+   "prop": "margin-top",
+   "from": "20px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 36,
+     "arg": ".dash-columns",
+     "prop": "margin-top",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 43,
+   "selector": ".dash-col",
+   "media": "",
+   "prop": "gap",
+   "from": "16px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 37,
+     "arg": ".dash-col",
+     "prop": "gap",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 53,
+   "selector": ".dash-section-label",
+   "media": "",
+   "prop": "font-size",
+   "from": "15px",
+   "to": "var(--text-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 38,
+     "arg": ".dash-section-label",
+     "prop": "font-size",
+     "value": "var(--text-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 54,
+   "selector": ".dash-section-label",
+   "media": "",
+   "prop": "font-weight",
+   "from": "700",
+   "to": "600",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 38,
+     "arg": ".dash-section-label",
+     "prop": "font-weight",
+     "value": "600"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 66,
+   "selector": ".dash-card",
+   "media": "",
+   "prop": "padding",
+   "from": "20px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 39,
+     "arg": ".dash-card",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 79,
+   "selector": ".dash-card-head h2",
+   "media": "",
+   "prop": "font-size",
+   "from": "14px",
+   "to": "var(--text-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 41,
+     "arg": ".dash-card-head h2",
+     "prop": "font-size",
+     "value": "var(--text-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 102,
+   "selector": ".dash-bar",
+   "media": "",
+   "prop": "grid-template-columns",
+   "from": "96px minmax(0, 1fr) 48px",
+   "to": "100px minmax(0, 1fr) 40px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 42,
+     "arg": ".dash-bar",
+     "prop": "grid-template-columns",
+     "value": "100px minmax(0, 1fr) 40px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 111,
+   "selector": ".dash-bar",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 42,
+     "arg": ".dash-bar",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 116,
+   "selector": ".dash-bar-track",
+   "media": "",
+   "prop": "height",
+   "from": "8px",
+   "to": "6px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 43,
+     "arg": ".dash-bar-track",
+     "prop": "height",
+     "value": "6px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 125,
+   "selector": ".dash-bar-fill",
+   "media": "",
+   "prop": "background",
+   "from": "var(--accent-neutral, #5b7089)",
+   "to": "var(--accent-neutral)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 44,
+     "arg": ".dash-bar-fill",
+     "prop": "background",
+     "value": "var(--accent-neutral)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 144,
+   "selector": ".dash-calc",
+   "media": "",
+   "prop": "margin",
+   "from": "4px 0 12px",
+   "to": "8px 0 20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 46,
+     "arg": ".dash-calc",
+     "prop": "margin",
+     "value": "8px 0 20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 162,
+   "selector": ".dash-open-catalog",
+   "media": "",
+   "prop": "min-height",
+   "from": "38px",
+   "to": "var(--control-height)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 51,
+     "arg": ".dash-open-catalog",
+     "prop": "min-height",
+     "value": "var(--control-height)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 163,
+   "selector": ".dash-open-catalog",
+   "media": "",
+   "prop": "margin-top",
+   "from": "16px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 51,
+     "arg": ".dash-open-catalog",
+     "prop": "margin-top",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 169,
+   "selector": ".dash-open-catalog",
+   "media": "",
+   "prop": "font-size",
+   "from": "14px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 51,
+     "arg": ".dash-open-catalog",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 178,
+   "selector": ".dash-tiles",
+   "media": "",
+   "prop": "gap",
+   "from": "10px",
+   "to": "12px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 47,
+     "arg": ".dash-tiles",
+     "prop": "gap",
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 187,
+   "selector": ".dash-tile",
+   "media": "",
+   "prop": "padding",
+   "from": "10px 12px",
+   "to": "16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 48,
+     "arg": ".dash-tile",
+     "prop": "padding",
+     "value": "16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 192,
+   "selector": ".dash-tile strong",
+   "media": "",
+   "prop": "font-size",
+   "from": "22px",
+   "to": "28px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 49,
+     "arg": ".dash-tile strong",
+     "prop": "font-size",
+     "value": "28px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 234,
+   "selector": ".dash-recent button",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 52,
+     "arg": ".dash-recent button",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 254,
+   "selector": ".todo-grp h3",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 53,
+     "arg": ".todo-grp h3",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 272,
+   "selector": ".titem",
+   "media": "",
+   "prop": "gap",
+   "from": "4px 10px",
+   "to": "6px 16px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 54,
+     "arg": ".titem",
+     "prop": "gap",
+     "value": "6px 16px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 273,
+   "selector": ".titem",
+   "media": "",
+   "prop": "padding",
+   "from": "6px 0",
+   "to": "14px 0",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 54,
+     "arg": ".titem",
+     "prop": "padding",
+     "value": "14px 0"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 274,
+   "selector": ".titem",
+   "media": "",
+   "prop": "font-size",
+   "from": "13px",
+   "to": "var(--text-body-sm)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 54,
+     "arg": ".titem",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 370,
+   "selector": ".dash-steps",
+   "media": "",
+   "prop": "margin-top",
+   "from": "16px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 58,
+     "arg": ".dash-steps",
+     "prop": "margin-top",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 372,
+   "selector": ".dash-step-no",
+   "media": "",
+   "prop": "width",
+   "from": "24px",
+   "to": "28px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 59,
+     "arg": ".dash-step-no",
+     "prop": "width",
+     "value": "28px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 372,
+   "selector": ".dash-step-no",
+   "media": "",
+   "prop": "height",
+   "from": "24px",
+   "to": "28px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 59,
+     "arg": ".dash-step-no",
+     "prop": "height",
+     "value": "28px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 372,
+   "selector": ".dash-step-no",
+   "media": "",
+   "prop": "line-height",
+   "from": "24px",
+   "to": "28px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 59,
+     "arg": ".dash-step-no",
+     "prop": "line-height",
+     "value": "28px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 373,
+   "selector": ".modal.lab-info",
+   "media": "",
+   "prop": "padding",
+   "from": "24px",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 379,
+   "selector": ".dash-card",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "16px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 39,
+     "arg": ".dash-card",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 381,
+   "selector": ".dash-recent button",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "10px 0",
+   "to": "12px 0",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 52,
+     "arg": ".dash-recent button",
+     "prop": "padding-block",
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 383,
+   "selector": ".modal.lab-info",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "20px",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/preview/preview.css",
+   "line": 59,
+   "selector": ".pv-h2",
+   "media": "",
+   "prop": "font-size",
+   "from": "15px",
+   "to": "var(--text-section)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 112,
+     "arg": ".pv-h2",
+     "prop": "font-size",
+     "value": "var(--text-section)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/preview/preview.css",
+   "line": 158,
+   "selector": ".pv-control",
+   "media": "",
+   "prop": "gap",
+   "from": "4px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 116,
+     "arg": ".pv-control",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lineage/lineage.css",
+   "line": 236,
+   "selector": ".lin .chip--warning",
+   "media": "",
+   "prop": "background",
+   "from": "var(--lin-over-bg)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 150,
+     "arg": ".chip--warning",
+     "prop": "background",
+     "value": "var(--color-warning-50)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lineage/lineage.css",
+   "line": 237,
+   "selector": ".lin .chip--warning",
+   "media": "",
+   "prop": "color",
+   "from": "var(--lin-over-ink)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 150,
+     "arg": ".chip--warning",
+     "prop": "color",
+     "value": "var(--color-warning-600)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lineage/lineageGraph.css",
+   "line": 15,
+   "selector": ".detail-page .dsec-h h2",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-h2)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 152,
+     "arg": ".detail-page .dsec-h h2",
+     "prop": "font-size",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/lineage/lineageGraph.css",
+   "line": 86,
+   "selector": ".detail-page .lrow .ln-go .arw",
+   "media": "",
+   "prop": "color",
+   "from": "var(--color-gray-400)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 156,
+     "arg": ".detail-page .ln-go .arw",
+     "prop": "color",
+     "value": "var(--color-text-muted)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": "textarea.inp",
+   "media": "",
+   "prop": "line-height",
+   "from": "1.5",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "font",
+     "value": "inherit"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 252,
+   "selector": ".inp[readonly]",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-surface-alt)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "background",
+     "value": "var(--color-surface)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 252,
+   "selector": ".inp[readonly]",
+   "media": "",
+   "prop": "color",
+   "from": "var(--up-muted)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "color",
+     "value": "var(--color-text)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 559,
+   "selector": ".up-empty .up-card",
+   "media": "",
+   "prop": "border",
+   "from": "0",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 577,
+   "selector": ".up-empty .reggate",
+   "media": "",
+   "prop": "border-radius",
+   "from": "0",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 110,
+     "arg": ".reggate",
+     "prop": "border-radius",
+     "value": "var(--radius-lg)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 593,
+   "selector": ".modal-takeover .up-steps .card-b",
+   "media": "",
+   "prop": "gap",
+   "from": "12px",
+   "to": "20px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 121,
+     "arg": ".modal-takeover .up-steps .card-b",
+     "prop": "gap",
+     "value": "20px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 593,
+   "selector": ".modal-takeover .up-steps .card-b",
+   "media": "",
+   "prop": "padding",
+   "from": "20px 22px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 121,
+     "arg": ".modal-takeover .up-steps .card-b",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 594,
+   "selector": ".modal-takeover .form-row",
+   "media": "",
+   "prop": "gap",
+   "from": "5px",
+   "to": "8px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 116,
+     "arg": ".form-row",
+     "prop": "gap",
+     "value": "8px"
+    },
+    {
+     "no": 122,
+     "arg": ".modal-takeover .form-row",
+     "prop": "gap",
+     "value": "8px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 595,
+   "selector": ".modal-takeover .inp, .modal-takeover .sel",
+   "media": "",
+   "prop": "font-size",
+   "from": "14px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "font",
+     "value": "inherit"
+    },
+    {
+     "no": 105,
+     "arg": ".sel",
+     "prop": "font",
+     "value": "inherit"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 596,
+   "selector": ".modal-takeover .inp:focus-visible, .modal-takeover .sel:focus-visible, .modal-takeover button:focus-visible",
+   "media": "",
+   "prop": "outline",
+   "from": "2px solid var(--color-primary-600)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 129,
+     "arg": "button:focus-visible",
+     "prop": "outline",
+     "value": "2px solid var(--color-primary-600)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 596,
+   "selector": ".modal-takeover .inp:focus-visible, .modal-takeover .sel:focus-visible, .modal-takeover button:focus-visible",
+   "media": "",
+   "prop": "outline-offset",
+   "from": "2px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 129,
+     "arg": "button:focus-visible",
+     "prop": "outline-offset",
+     "value": "3px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 618,
+   "selector": ".modal-takeover .reg-actions .btn",
+   "media": "",
+   "prop": "height",
+   "from": "34px",
+   "to": "auto",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 123,
+     "arg": ".modal-takeover .reg-actions .btn",
+     "prop": "height",
+     "value": "auto"
+    }
+   ]
+  },
+  {
+   "file": "src/components/approval/approval.css",
+   "line": 3,
+   "selector": ".approval-dialog",
+   "media": "",
+   "prop": "padding",
+   "from": "24px",
+   "to": "var(--space-card)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 117,
+     "arg": ".approval-dialog",
+     "prop": "padding",
+     "value": "var(--space-card)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/common/variableTable.css",
+   "line": 73,
+   "selector": ".vartable td .inp",
+   "media": "",
+   "prop": "padding",
+   "from": "0 9px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/components/common/variableTable.css",
+   "line": 74,
+   "selector": ".vartable td .inp",
+   "media": "",
+   "prop": "border",
+   "from": "none",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "border",
+     "value": "1px solid var(--color-border-control)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/common/variableTable.css",
+   "line": 75,
+   "selector": ".vartable td .inp",
+   "media": "",
+   "prop": "border-radius",
+   "from": "0",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "border-radius",
+     "value": "var(--radius-sm)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/common/variableTable.css",
+   "line": 76,
+   "selector": ".vartable td .inp",
+   "media": "",
+   "prop": "background",
+   "from": "none",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "background",
+     "value": "var(--color-surface)"
+    }
+   ]
+  },
+  {
+   "file": "src/components/common/variableTable.css",
+   "line": 77,
+   "selector": ".vartable td .inp",
+   "media": "",
+   "prop": "font-size",
+   "from": "var(--text-body-sm)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".inp",
+     "prop": "font",
+     "value": "inherit"
+    }
+   ]
+  },
+  {
+   "file": "src/auth/login.css",
+   "line": 58,
+   "selector": ".login-input",
+   "media": "",
+   "prop": "padding",
+   "from": "0 12px",
+   "to": "10px 12px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".login-input",
+     "prop": "padding",
+     "value": "10px 12px"
+    }
+   ]
+  },
+  {
+   "file": "src/auth/login.css",
+   "line": 62,
+   "selector": ".login-input",
+   "media": "",
+   "prop": "border",
+   "from": "1px solid var(--color-border-strong)",
+   "to": "1px solid var(--color-border-control)",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".login-input",
+     "prop": "border",
+     "value": "1px solid var(--color-border-control)"
+    }
+   ]
+  },
+  {
+   "file": "src/auth/login.css",
+   "line": 68,
+   "selector": ".login-input:focus-visible",
+   "media": "",
+   "prop": "outline",
+   "from": "none",
+   "to": null,
+   "deadToday": false,
+   "proofs": []
+  },
+  {
+   "file": "src/auth/login.css",
+   "line": 69,
+   "selector": ".login-input:focus-visible",
+   "media": "",
+   "prop": "border-color",
+   "from": "var(--color-primary)",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 105,
+     "arg": ".login-input",
+     "prop": "border",
+     "value": "1px solid var(--color-border-control)"
+    }
+   ]
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 113,
+   "selector": ".gnb",
+   "media": "",
+   "prop": "gap",
+   "from": "10px",
+   "to": "12px",
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 125,
+     "arg": ".gnb",
+     "prop": "gap",
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 365,
+   "selector": ".gnb",
+   "media": "(max-width: 1180px)",
+   "prop": "gap",
+   "from": "8px",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 125,
+     "arg": ".gnb",
+     "prop": "gap",
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 376,
+   "selector": ".gnb-settings",
+   "media": "(max-width: 880px)",
+   "prop": "display",
+   "from": "none",
+   "to": null,
+   "deadToday": true,
+   "proofs": [
+    {
+     "no": 126,
+     "arg": ".gnb-settings",
+     "prop": "display",
+     "value": "inline-flex"
+    }
+   ]
+  }
+ ],
+ "problems": [],
+ "exempted": [
+  {
+   "kind": "changed-live",
+   "file": "src/auth/login.css",
+   "line": 68,
+   "selector": ".login-input:focus-visible",
+   "media": "",
+   "prop": "outline",
+   "from": "none",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.login-input` 은 `<input>`(LoginPage.tsx) — 오늘 DS#129(0,2,1)가 `.login-input:focus-visible { outline: none }`(0,2,0)을 이겨 초점 윤곽이 렌더된다. #129 를 버리면 none 이 되살아나므로 죽은 선언을 지웠다"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/upload/upload.css",
+   "line": 559,
+   "selector": ".up-empty .up-card",
+   "media": "",
+   "prop": "border",
+   "from": "0",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`border:0` 중 색 longhand(currentcolor)만 죽어 있었다 — 오늘 DS#9 `.card { border-color }`(접두 포함 0,2,0 · 뒤)가 덮는다(`className=\"card up-card\"`). 흡수 뒤 색이 currentcolor 로 바뀌는 것을 upload 계산값 대조로 확인해 `border-width:0; border-style:none` 으로 값을 맞췄다(폭 0 그대로)"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 383,
+   "selector": ".modal.lab-info",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "20px",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.lab-info` 는 `className=\"modal modal--dialog lab-info\"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/dashboard/dashboard.css",
+   "line": 373,
+   "selector": ".modal.lab-info",
+   "media": "",
+   "prop": "padding",
+   "from": "24px",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.lab-info` 는 `className=\"modal modal--dialog lab-info\"`(LabInfoModal.tsx) 한 곳 — 오늘 DS#117 `.modal--dialog { padding: var(--space-card) }`(접두 포함 0,2,0 · 뒤)가 이 선언 둘(기본 · 640px · 0,2,0)을 덮는다. 죽은 선언 삭제"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/members/members.css",
+   "line": 188,
+   "selector": ".memgrid .memtbl td",
+   "media": "(max-width: 640px)",
+   "prop": "padding",
+   "from": "3px 0",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.memtbl` 표는 `className=\"tbl memtbl\"`(MemberPermissionGrid.tsx) — 오늘 DS#18 `.tbl td { padding: 10px 12px }`(접두 포함 0,2,1 · 뒤)가 이 640px 선언(0,2,1)을 덮는다. 흡수 뒤 되살아나는 것을 members-375 계산값 대조로 확인해 죽은 선언을 지웠다"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/members/members.css",
+   "line": 58,
+   "selector": ".btn:hover",
+   "media": "",
+   "prop": "background",
+   "from": "var(--color-gray-50)",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "선택자를 `.btn:where(:not(.btn-primary, .btn-secondary)):hover`(특이도 0,2,0 그대로)로 좁혔다 — 오늘 DS#81 `.btn-primary`·#82 `.btn-secondary`(접두 포함 0,2,0 · 뒤)가 hover 배경을 덮는다. 흡수 뒤 둘이 0,1,0 이 되면 hover 가 되살아나는 것을 계산값 전수 대조(마우스가 놓인 upload-link·upload-metadata 의 주 버튼)로 확인했다. 그 밖의 `.btn` 에는 그대로 걸린다"
+  },
+  {
+   "kind": "changed-live",
+   "file": "src/components/project/project.css",
+   "line": 115,
+   "selector": ".pcard:focus-visible",
+   "media": "",
+   "prop": "outline-offset",
+   "from": "2px",
+   "to": null,
+   "deadToday": false,
+   "proofs": [],
+   "reason": "`.pcard` 는 `<a>`(ProjectCards.tsx) — 오늘 DS#129 `:is(button, a, input, select, textarea):focus-visible`(0,2,1)이 `.pcard:focus-visible`(0,2,0)을 이겨 초점 간격 3px 이 렌더된다. #129 를 중복으로 버리면(셸 `:where()` 규칙 0,1,0) 2px 이 되살아나므로 죽은 선언을 지웠다"
+  },
+  {
+   "kind": "flip",
+   "no": 120,
+   "arg": ".labinfo-modal .form-row",
+   "prop": "margin-bottom",
+   "value": "20px",
+   "home": "src/components/lab/lab.css:51",
+   "flips": [
+    {
+     "selector": ".dr-times .form-row",
+     "file": "src/components/upload/upload.css",
+     "line": 484,
+     "prop": "margin-bottom",
+     "value": "0",
+     "spec": "0,2,0",
+     "today": "DS won",
+     "states": []
+    },
+    {
+     "selector": ".modal-takeover .form-row",
+     "file": "src/components/upload/upload.css",
+     "line": 594,
+     "prop": "margin-bottom",
+     "value": "0",
+     "spec": "0,2,0",
+     "today": "DS won",
+     "states": []
+    }
+   ],
+   "reason": "`.labinfo-modal`(연구실 정보 모달)과 `.dr-times`(업로드 기간 선택 팝오버)는 서로 다른 컴포넌트 루트다 / `.labinfo-modal`(연구실 정보 모달)과 `.modal-takeover`(업로드 전면 모달)는 서로 다른 모달 루트다"
+  },
+  {
+   "kind": "flip",
+   "no": 73,
+   "arg": ".pj-seg button.on",
+   "prop": "color",
+   "value": "var(--color-text)",
+   "home": "src/components/project/project.css:451",
+   "flips": [
+    {
+     "selector": ".search-page .vfilter.on",
+     "file": "src/components/search/search.css",
+     "line": 135,
+     "prop": "color",
+     "value": "var(--color-success-600, #1f8b4c)",
+     "spec": "0,3,0",
+     "today": "DS won",
+     "states": []
+    },
+    {
+     "selector": ".dr-useg button.on",
+     "file": "src/components/upload/upload.css",
+     "line": 518,
+     "prop": "color",
+     "value": "var(--color-text-on-primary)",
+     "spec": "0,2,1",
+     "today": "DS won",
+     "states": []
+    }
+   ],
+   "reason": "공유 키는 상태 클래스 `.on` 하나 — `.pj-seg`(프로젝트 만들기 모달의 구분 단추)와 `.dr-useg`(업로드 기간 선택의 단위 단추)는 서로 다른 컴포넌트 루트라 한 요소에 함께 걸리지 않는다 / 공유 키는 상태 클래스 `.on` 하나 — `.vfilter` 는 검색 결과 화면(`.search-page`)의 필터 단추이고 `.pj-seg` 는 프로젝트 모달의 구분 단추다"
+  },
+  {
+   "kind": "flip",
+   "no": 73,
+   "arg": ".pj-seg button.on",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/components/project/project.css:449",
+   "flips": [
+    {
+     "selector": ".dr-useg button.on",
+     "file": "src/components/upload/upload.css",
+     "line": 518,
+     "prop": "background",
+     "value": "var(--color-primary-600)",
+     "spec": "0,2,1",
+     "today": "DS won",
+     "states": []
+    }
+   ],
+   "reason": "공유 키는 상태 클래스 `.on` 하나 — `.pj-seg`(프로젝트 만들기 모달의 구분 단추)와 `.dr-useg`(업로드 기간 선택의 단위 단추)는 서로 다른 컴포넌트 루트라 한 요소에 함께 걸리지 않는다"
+  },
+  {
+   "no": 129,
+   "arg": "textarea:focus-visible",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "textarea:focus-visible",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "select:focus-visible",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "select:focus-visible",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "input:focus-visible",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "input:focus-visible",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "a:focus-visible",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "a:focus-visible",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "button:focus-visible",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 129,
+   "arg": "button:focus-visible",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `shell.css` 의 `:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }` 와 같은 값. #129 가 오늘 이기던 경쟁 셋은 지우거나 선택자에서 뺐다(`.login-input:focus-visible` outline · `.pcard:focus-visible` outline-offset · `.modal-takeover button:focus-visible`)"
+  },
+  {
+   "no": 89,
+   "arg": ".dash-tile",
+   "prop": "padding",
+   "value": "16px",
+   "home": null,
+   "status": "missing",
+   "reason": "조사 drop — `@media (max-width: 640px) .dash-tile { padding: 16px }` 는 DS#48 `.dash-tile { padding: 16px }`(미디어 없음)과 같은 값. #48 은 dashboard.css 의 `.dash-tile` 규칙에 병합됐고 그 뒤 같은 선택자로 padding 을 다시 쓰는 규칙이 없다"
+  }
+ ],
+ "layers": {
+  "src/shell/layers.css": {
+   "layerBlocks": [],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 0
+  },
+  "src/shell/tokens.css": {
+   "layerBlocks": [
+    "tokens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 4
+  },
+  "src/components/catalog/catalog.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 103
+  },
+  "src/components/detail/detail.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 148
+  },
+  "src/components/project/project.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 116
+  },
+  "src/components/members/members.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 44
+  },
+  "src/components/lab/lab.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 12
+  },
+  "src/components/search/search.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 58
+  },
+  "src/components/dashboard/dashboard.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 69
+  },
+  "src/components/preview/preview.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 75
+  },
+  "src/components/lineage/lineage.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 73
+  },
+  "src/components/lineage/lineageGraph.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 50
+  },
+  "src/components/upload/upload.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 273
+  },
+  "src/components/approval/approval.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 17
+  },
+  "src/components/common/toast.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 1
+  },
+  "src/components/common/variableTable.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 17
+  },
+  "src/auth/login.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 58
+  },
+  "src/shell/shell.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 115
+  },
+  "src/components/detail/deletion.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "imports": 0,
+   "rules": 5
+  }
+ }
+}

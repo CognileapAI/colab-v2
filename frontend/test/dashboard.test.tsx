@@ -474,8 +474,8 @@ describe('S-01 화면 뿌리 여백 (BF-8)', () => {
     const cs = getComputedStyle(hero as Element);
     expect(parseFloat(cs.paddingLeft)).toBe(0);
     expect(parseFloat(cs.paddingRight)).toBe(0);
-    // `shell.css` 가 `* { box-sizing: border-box }` 라 720px 은 여백을 포함한 폭이다.
-    // 여백만 0 으로 두면 내용 폭이 680 → 720 으로 넓어진다 — 40px 을 최대폭에서 뺀다.
-    expect(cs.maxWidth).toBe('680px');
+    // 09-12 승인 디자인(보정 층 · P2a 에서 search.css 로 흡수)이 `.lab-page .search-hero { max-width: 720px }` 이고
+    // 제품 body 는 늘 `.colab-ui` 라 09-12 부터 렌더값은 720px 이다 — 종전 680px 은 이 시험 body 에 `.colab-ui` 가 없어 jsdom 만 보던 죽은 선언.
+    expect(cs.maxWidth).toBe('720px');
   });
 });

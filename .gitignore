@@ -56,6 +56,10 @@ dev-package/reports/dev-reseed-runs/
 /.codex/upload-preview-audit/
 /.codex/artifacts/
 
+# 시각 기준 캡처 PNG(`frontend/scripts/visual-baseline/capture.py`) — 커밋하지 않는다.
+# 보고서와 red 장면 세 장만 `dev-package/reports/design-system/<날짜>/<단계>/visual/` 로 복사한다(spec S-DESIGN-STRUCTURE-P0).
+frontend/.visual/
+
 # ELI5·판정 브리프 HTML — eli5/<YYYY-MM-DD>/ 에 쌓인다. 추적하지 않는다(Ted 2026-09-06 요청)
 eli5/
 

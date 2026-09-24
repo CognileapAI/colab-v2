@@ -127,7 +127,7 @@ function scaleOf(): number {
   return Number(layers().getAttribute('data-zoom-scale'));
 }
 /** `transform: translate(Xpx, Ypx) scale(S)` 원문에서 이동값 두 수를 읽는다. */
-function panOf(transform: string = layers().style.transform): { x: number; y: number } {
+function panOf(transform: string = layers().style.getPropertyValue('--pv-layers-transform')): { x: number; y: number } {
   const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(transform);
   expect(m, `transform 원문을 읽지 못했다: ${transform}`).toBeTruthy();
   return { x: Number(m![1]), y: Number(m![2]) };
@@ -193,12 +193,12 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     renderDetail(makeSource());
     const viewport = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    const before = layers().style.transform;
+    const before = layers().style.getPropertyValue('--pv-layers-transform');
     fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
     fireEvent.mouseMove(window, { clientX: 260, clientY: 300 });
     fireEvent.mouseUp(window);
     // 확대 뒤 중심을 잡느라 이미 이동해 있다 — **움직인 만큼**을 본다
-    expect(layers().style.transform).not.toBe(before);
+    expect(layers().style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
     // ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ 두 갈래로 갈라 **더 좁게** 잰다.
     //   ㈎ 끈 만큼(가로 −40 · 세로 0) 정확히 옮겨진다 — 이 시험이 원래 재던 것.
     //   ㈏ 확대 뒤의 자리는 **뷰포트 중심을 고정점으로 삼은 값**이다.
@@ -317,7 +317,7 @@ describe('§8 확대 조건 ⑸ — 확대·이동은 모든 층에 함께 적�
     renderDetail(makeSource());
     await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(layers().style.transform).toContain(`scale(${BASE * 2})`);
+    expect(layers().style.getPropertyValue('--pv-layers-transform')).toContain(`scale(${BASE * 2})`);
     for (const t of tiles()) {
       expect(t.style.transform).toBe('');
       expect(layers().contains(t)).toBe(true);
@@ -387,7 +387,7 @@ describe('§8 확대 조건 ⑺ — 타일 표면에서도 반응이 100 ms 안�
     const 잰값 = 재본다(20, () => {
       fireEvent.click(짝수 ? 확대 : 축소);
       짝수 = !짝수;
-      expect(layers().style.transform).toContain('scale(');
+      expect(layers().style.getPropertyValue('--pv-layers-transform')).toContain('scale(');
     });
     expect(잰값.p95).toBeLessThan(상한_밀리초);
     expect(잰값.max).toBeLessThan(상한_밀리초);
@@ -402,7 +402,7 @@ describe('§8 확대 조건 ⑺ — 타일 표면에서도 반응이 100 ms 안�
     const 잰값 = 재본다(20, () => {
       x -= 3;
       fireEvent.mouseMove(window, { clientX: x, clientY: 300 });
-      expect(layers().style.transform).toContain('translate(');
+      expect(layers().style.getPropertyValue('--pv-layers-transform')).toContain('translate(');
     });
     fireEvent.mouseUp(window);
     expect(잰값.p95).toBeLessThan(상한_밀리초);

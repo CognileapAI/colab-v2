@@ -34,7 +34,7 @@ function Bars(props: {
             <span className="dash-bar-track" aria-hidden="true">
               <span
                 className="dash-bar-fill"
-                style={{ width: props.total > 0 ? `${(row.count / props.total) * 100}%` : '0%' }}
+                style={{ '--dash-bar-w': props.total > 0 ? `${(row.count / props.total) * 100}%` : '0%' } as React.CSSProperties}
               />
             </span>
             <span className="dash-bar-count">{row.count}</span>

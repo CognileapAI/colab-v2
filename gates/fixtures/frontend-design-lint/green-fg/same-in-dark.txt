@@ -1,0 +1,3 @@
+# 이름 · 사유 (c) — f · 파일 · 선택자 · 속성 · 리터럴 · 사유 (f)
+--color-white · 테마 무관 원시 흰색
+f · src/components/x/x.css · .x-page .chip · background · #eef2f7 · 같은 값 토큰 없음(픽스처)

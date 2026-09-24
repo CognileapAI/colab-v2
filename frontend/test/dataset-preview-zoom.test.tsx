@@ -134,11 +134,11 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     renderDetail(makeSource());
     const { viewport } = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    const before = screen.getByTestId('preview-layers').style.transform;
+    const before = screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform');
     fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
     fireEvent.mouseMove(window, { clientX: 240, clientY: 260 });
     fireEvent.mouseUp(window);
-    expect(screen.getByTestId('preview-layers').style.transform).not.toBe(before);
+    expect(screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
   });
 });
 
@@ -272,7 +272,7 @@ describe('§8 확대 조건 ⑸ — 확대·이동은 모든 층에 함께 적�
     const { img } = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     const layers = screen.getByTestId('preview-layers');
-    expect(layers.style.transform).toContain('scale(2)');
+    expect(layers.style.getPropertyValue('--pv-layers-transform')).toContain('scale(2)');
     // 층(그림) 자신은 배율을 갖지 않는다 — 층마다 따로 확대하지 않는다
     expect(img.style.transform).toBe('');
     expect(layers.contains(img)).toBe(true);

@@ -3,9 +3,35 @@ import react from '@vitejs/plugin-react';
 
 declare const process: { env: Record<string, string | undefined> };
 
+// P2a — jsdom 29 는 `@layer` 블록 안 규칙을 계산값에 넣지 않는다(파싱은 한다). test 모드에서만 stylesheet 로
+// 실리는 CSS 의 `@layer a, b;` 문장을 지우고 `@layer x {` 껍질과 짝 `}` 만 벗긴다(내용·중첩 @media 그대로).
+// `?raw` 원문과 제품 빌드는 건드리지 않는다. 그래서 vitest 는 층 순서를 검증하지 못한다 — 증거는 실브라우저 캡처.
+// 한계(P2b 기록): 문자열 건너뛰기는 닫는 따옴표를 첫 같은 따옴표로 찾는다 — 이스케이프된 따옴표(`"a\"b"`)가 든
+// 문자열·`url()` 에서는 문자열 끝을 잘못 짚어 뒤의 `@layer`·`}` 판정이 어긋날 수 있다. 저장소 CSS 에 그런 문자열은 없다.
+export function stripLayerBlocks(css: string): string {
+  let out = '';
+  const shells: boolean[] = [];
+  const upTo = (j: number, len: number) => (j < 0 ? css.length : j + len);
+  for (let i = 0; i < css.length; ) {
+    const skip = css.startsWith('/*', i) ? upTo(css.indexOf('*/', i + 2), 2)
+      : css[i] === '"' || css[i] === "'" ? upTo(css.indexOf(css[i] as string, i + 1), 1) : 0;
+    if (skip) { out += css.slice(i, skip); i = skip; continue; }
+    const layer = /^@layer\b[^;{]*([;{])/.exec(css.slice(i, i + 256));
+    if (layer) { if (layer[1] === '{') shells.push(true); i += layer[0].length; continue; }
+    if (css[i] === '{') shells.push(false);
+    if (css[i] === '}' && shells.pop()) { i++; continue; }
+    out += css[i++];
+  }
+  return out;
+}
+
 // 정적 배포다 (frontend/README). SSR·서버 런타임을 두지 않는다.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    { name: 'colab-test-layer-shim', enforce: 'pre', apply: (_config, env) => env.mode === 'test',
+      transform: (code, id) => (/\.css($|\?)/.test(id) && !/[?&]raw\b/.test(id) ? stripLayerBlocks(code) : undefined) },
+  ],
   // 로컬 개발 전용 프록시(PR #1) — staging 에선 nginx 가 같은 오리진의 /api 를 core-api 로 잇는다.
   // dev 서버가 그 자리를 대신한다. 빌드 산출물에는 아무 영향이 없다.
   server: {
@@ -29,6 +55,11 @@ export default defineConfig({
         /project\.css(\?raw)?$/,
         /shell\.css(\?raw)?$/,
         /tokens\.css(\?raw)?$/,
+        // P2a — 층 순서 선언(styles.ts 첫 import). 위 껍질 제거 플러그인이 문장을 지우므로 계산값엔 영향 없다.
+        /layers\.css(\?raw)?$/,
+        // P2b — 원소 기본(`@layer base`)과 프리미티브(`@layer primitives`) — 옮긴 규칙이 계산값에 계속 실린다.
+        /base\.css(\?raw)?$/,
+        /primitives\.css(\?raw)?$/,
         /detail\.css\?raw$/,
         /dashboard\.css(\?raw)?$/,
         /search\.css(\?raw)?$/,

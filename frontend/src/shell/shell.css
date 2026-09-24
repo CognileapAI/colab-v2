@@ -1,10 +1,14 @@
-@import './tokens.css';
-@import './design-system.css';
+@layer screens {
+/* 문서 기본(P2a · 종전 보정 층 첫머리) — `.colab-ui` 루트 범위라 접두를 유지한다(특이도 강등 금지). */
+:is(.colab-ui, .design-preview) { font-size: var(--text-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); }
+:is(.colab-ui, .design-preview) :is(button, a, input, select, textarea) { -webkit-tap-highlight-color: transparent; }
+:is(.colab-ui, .design-preview) :is(input, textarea)::placeholder { color: var(--color-text-muted); opacity: 1; }
+:is(.colab-ui, .design-preview) input:is([type="checkbox"], [type="radio"]) { accent-color: var(--color-primary-600); }
 
 /* 셸 레이아웃 · GNB — 규칙과 치수의 정본은 목업 `mockups/제품_260817.html` 의 `.gnb` 블록이다.
    목업을 임의로 변형하지 않는다. 목업에 없는 요소를 여기서 발명하지 않는다. */
-
-* { box-sizing: border-box; }
+/* P2b — `*` 리셋 · 원소(button·input·select·textarea) 글꼴 · `:where()` 초점 링 · 640px 입력 글자 16px 는
+   `base.css`(`@layer base`)로 옮겼다. 원소 규칙은 primitives 층(`.btn`·`.inp` …)에 져야 하므로 screens 층에 둘 수 없다. */
 
 /* ===== 못 불러왔을 때의 한 자리 (`components/common/LoadFailure.tsx`) =====
    화면마다 다른 CSS 파일을 쓰므로 **전역인 여기**에 둔다 — 카탈로그·상세·프로젝트가
@@ -15,20 +19,20 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 14px 16px;
-  border: 1px solid var(--color-border, #dde1e6);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 .loadfail-msg {
   margin: 0;
   font-size: var(--text-body);
-  color: var(--color-text-body, #21272a);
+  color: var(--color-text-body);
 }
 .loadfail-retry {
-  border: 1px solid var(--color-border, #dde1e6);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  color: var(--color-text-body, #21272a);
+  background: var(--color-surface);
+  color: var(--color-text-body);
   padding: 5px 12px;
   font: inherit;
   cursor: pointer;
@@ -93,13 +97,6 @@ body {
   letter-spacing: var(--tracking-body);
 }
 
-/* Native controls share the application font; component sizes remain local. */
-button, input, select, textarea { font-family: inherit; letter-spacing: inherit; }
-button { font-size: var(--text-body-sm); }
-:where(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid var(--color-primary-600);
-  outline-offset: 3px;
-}
 .settings-page, .notfound { max-width: 1200px; margin: 0 auto; padding: 24px 20px 40px; }
 
 /* ===== 하나의 셸 · GNB (전원 공통, 항상 노출) ===== */
@@ -110,7 +107,7 @@ button { font-size: var(--text-body-sm); }
   height: var(--shell-gnb-height);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0 20px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-shell);
@@ -269,7 +266,7 @@ button { font-size: var(--text-body-sm); }
 
 /* ===== 「더보기」 — 좁은 폭에서 기능 이름을 글자로 되돌린다 (⟨신설 2026-09-13 · `I-9`⟩) =====
    데스크톱에서는 업로드·계정 관리·연구실 설정이 라벨과 함께 그대로 서므로 이 자리는 숨는다.
-   접는 단은 `design-system.css` 900px — 기능 버튼의 라벨이 처음 사라지는 그 단이다. */
+   접는 단은 이 파일 끝의 900px 단 — 기능 버튼의 라벨이 처음 사라지는 그 단이다. */
 .gnb-more-wrap { display: contents; }
 .gnb-more {
   display: none;
@@ -362,7 +359,7 @@ button { font-size: var(--text-body-sm); }
    라벨을 감추는 컨트롤에는 전부 `aria-label` 이 붙어 있다 (`Gnb.tsx`) — 접근성은 그대로다 */
 
 @media (max-width: 1180px) {
-  .gnb { padding: 0 14px; gap: 8px; }
+  .gnb { padding: 0 14px; }
   .labswitch { max-width: 180px; }
 }
 
@@ -373,7 +370,7 @@ button { font-size: var(--text-body-sm); }
 
 @media (max-width: 880px) {
   .brand .bn { display: none; }
-  .gnb-settings { display: none; }   /* 교수 전용 · 아바타 메뉴에서 도달 가능 */
+   /* 교수 전용 · 아바타 메뉴에서 도달 가능 */
   .avatar .nm { display: none; }
   .mainnav a { padding: 0 9px; }
 }
@@ -408,14 +405,11 @@ button { font-size: var(--text-body-sm); }
     padding-right: max(10px, env(safe-area-inset-right));
   }
   .appmain { padding-bottom: env(safe-area-inset-bottom); }
-  /* iOS 가 포커스에서 자동 확대하지 않게 입력 글자를 16px 아래로 두지 않는다 */
-  input, select, textarea { font-size: 16px; }
   .avatar { gap: 2px; padding: 0 6px; }
   /* 로그아웃은 아이콘이 없다 — 감추면 모바일에서 나가는 길이 사라진다. 좁히기만 한다. */
   .gnb-logout { margin-left: 4px; padding: 0 6px; }
-}
 
-@media (max-width: 640px) {
+
   .settings-page, .notfound { padding: 20px 16px 32px; }
   /* Keep editable controls legible without mobile browser auto-zoom. */
   /* Component font shorthands must not undo the iOS input-size floor.
@@ -424,4 +418,40 @@ button { font-size: var(--text-body-sm); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ──
+   P2b — 프리미티브 규칙(btn·field·chip·card·table·modal)은 `primitives.css` 로 옮겼다. 남은 것은 셸(GNB · 테마 전환 ·
+   모달 닫기 단추 문맥)과 **패턴** 규칙이다.
+   ▶ P5 이관 대기 — 페이지 컨테이너 `:is(.catalog-page, …)` · `.page-head h1` · `.form-row` 는 패턴(patterns 층) 후보다.
+     선택자에 화면 이름이 있어 층을 옮기면 층 함정 면이 늘고, `.page` 이름 통합(TSX 변경) 없이는 소유권 이득이 없어
+     P5 로 미뤘다(spec S-DESIGN-STRUCTURE-P2B-20260924 「패턴은 P5 로」). */
+:is(.catalog-page, .lab-page, .project-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
+.page-head h1 { font-size: var(--text-h2); line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; }
+.theme-switcher { min-height: 36px; max-width: 104px; padding: 6px 8px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-caption); cursor: pointer; }
+.modal-h button:where(:not(.btn)) { color: var(--color-text); }
+:is(.detail-page, .project-detail, .preview-page, .settings-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
+.search-page { width: 100%; max-width: 920px; padding: var(--space-page); }
+.form-row { gap: 8px; }
+@media (max-width: 900px) {
+  .gnb { height: auto; min-height: 64px; flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
+  .gnb .mainnav { order: 10; flex-basis: 100%; margin: 0; justify-content: space-between; }
+  .gnb .mainnav a { flex: 1; justify-content: center; min-height: 44px; }
+  .gnb .labswitch { margin-right: auto; }
+  .gnb .avatar-wrap { margin-left: 0; }
+  .gnb :is(.gnb-upload, .gnb-settings) { display: none; }
+  .gnb .gnb-more-wrap { position: relative; display: inline-flex; }
+  .gnb .gnb-more { display: inline-flex; }
+}
+@media (max-width: 640px) {
+  .theme-switcher { min-height: 44px; max-width: 92px; }
+  .gnb { gap: 6px; padding-inline: 12px; }
+  .gnb :is(.labswitch, .gnb-settings, .gnb-upload, .gnb-more, .avatar) { min-height: 44px; min-width: 36px; padding-inline: 6px; }
+  .gnb .avatar { display: none; }
+  .gnb .gnb-logout { min-height: 44px; }
+  /* P2b — 종전 파일 끝 같은 조건 블록을 합쳤다(사이 규칙 `.modal-h .x` 와 겹치는 요소 없음 · verify 확인). */
+  .gnb { gap: 4px; }
+  .theme-switcher { max-width: 88px; padding-inline: 6px; }
+}
+:is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
 }
