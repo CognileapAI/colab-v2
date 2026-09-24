@@ -200,3 +200,21 @@ dev-package/sessions/DR-4-run-20260924T*.md      재시드 실행 기록 2건
 ```
 
 사용자 전달본(레포 밖) — `~/workspace/00_Project/00 CoLAB/_delivered/K3-*.html` 4건.
+
+---
+
+## 8. 추기 2026-09-25 — 재개 지점
+
+- 최종 가지 **`corpus-reseed-final`** = `corpus-verify-preview-5`(`c24c03d4`) ＋ 문제 기록. `k3-resume`(`4b162d54`) 위 선형 사슬 · develop 미병합.
+- **(a) 로컬 검증 — 끝남**(`corpus-local-verify` `8f90f7d7`).
+- **(b) dev 재시드 — 데이터 적재 끝 · 검증 미달.** 28/28 등록 · 프로젝트 4 · 간선 18 · autometa 28/28(period_start 28 · grid 26 · crs 24).
+  재시드 `stage_verify` exit 1(미리보기 성립 25 · 미성립 1 · 판정불가 2) → **계정 최종화 미실행** — 운영자 4명 초기 자격 유지 ·
+  Ted 개인 계정 비밀번호 초기화는 최종화 뒤로 계속 연기.
+- 수선 재시도 **3회 소진**(Ted 규칙 — 무변경 재시도 금지 · 수선 재시도 최대 3회 · 매 시도 전 전략 서면).
+  남은 항목(seq 13·14 GeoPackage 판정불가 · seq 16 미성립)은 `corpus-expansion/dev-reseed-issues-2026-09-24.md` #21·#22.
+- 업로드 필수 칸 28행은 Ted 서명 확정(`b210ce5c` · `dev-package/tools/dev-seed/upload-classify.json`).
+- **(c) 스냅샷 재포획 · (d) 골든 재박기(Ted 서명 2건) · (e) 재측정 — 미착수.** 적재된 dev 데이터로 진행할 수 있다.
+- 최종화 재시도 여부·방법은 Ted 판단. 문제 기록 25건과 §9 개선 항목이 dev-reseed 개선 intent 의 입력이다.
+- 제품 후속 후보 6건(문제 기록 §7)은 미수선 · GitHub 이슈 등재 여부는 Ted.
+- 실행 자리 run-dir = `.claude/worktrees/agent-a9c33a67acf039b61/dev-package/reports/dev-reseed-runs/wu2-20260924T0834Z/`
+  (`preview-judgment.tsv` · `logs/verify.log` · `session-records/` 8건). 다음 실행이 `logs/*.log` 를 덮는다(문제 기록 #10).
