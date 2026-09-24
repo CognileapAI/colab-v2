@@ -133,9 +133,9 @@ describe('rev1 #6 — 뷰어 휠 확대 · 끌어 이동 · 초기화', () => {
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     const before = screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform');
     expect(before).not.toBe('');
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
-    fireEvent.mouseMove(window, { clientX: 240, clientY: 260 });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(window, { clientX: 240, clientY: 260 });
+    fireEvent.pointerUp(window);
     expect(screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
   });
 

@@ -319,9 +319,9 @@ describe('⑶ 중앙 정렬 — 훅이 내용 상자를 실제로 읽는다', ()
     expect(transformOf(layers).x).toBeCloseTo(0);
 
     // 배율 1 이상에서 아래 가장자리까지 끌어 볼 수 있다 — 범위는 내용 크기에서 온다.
-    fireEvent.mouseDown(viewport, { clientX: 0, clientY: 0, button: 0 });
-    fireEvent.mouseMove(window, { clientX: 0, clientY: -4000 });
-    fireEvent.mouseUp(window, { clientX: 0, clientY: -4000 });
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0, button: 0 });
+    fireEvent.pointerMove(window, { clientX: 0, clientY: -4000 });
+    fireEvent.pointerUp(window, { clientX: 0, clientY: -4000 });
     expect(transformOf(layers).y).toBeCloseTo(512 - 1600);
   });
 
@@ -332,9 +332,9 @@ describe('⑶ 중앙 정렬 — 훅이 내용 상자를 실제로 읽는다', ()
     sizeContent(layers, 512, 1600);
     learnNativeWidth(viewport, 4096);
 
-    fireEvent.mouseDown(viewport, { clientX: 0, clientY: 0, button: 0 });
-    fireEvent.mouseMove(window, { clientX: 0, clientY: -4000 });
-    fireEvent.mouseUp(window, { clientX: 0, clientY: -4000 });
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0, button: 0 });
+    fireEvent.pointerMove(window, { clientX: 0, clientY: -4000 });
+    fireEvent.pointerUp(window, { clientX: 0, clientY: -4000 });
     expect(transformOf(layers).y).toBeCloseTo(512 - 1600);
 
     fireEvent.click(screen.getByRole('button', { name: '기본 배율로' }));
@@ -452,7 +452,7 @@ describe('⑹ 도구 층의 이벤트 경계', () => {
     expect(source.lookupValue).toHaveBeenCalledTimes(1);
   });
 
-  it('도구 층 위 mousedown 은 드래그를 시작하지 않는다', async () => {
+  it('도구 층 위 pointerdown 은 드래그를 시작하지 않는다', async () => {
     const viewport = await mountDetail(detailSource());
     const layers = screen.getByTestId('preview-layers');
     sizeViewport(viewport, 512, 512);
@@ -463,9 +463,9 @@ describe('⑹ 도구 층의 이벤트 경계', () => {
     expect(viewport.contains(zoomRow)).toBe(true);
 
     const before = transformOf(layers);
-    fireEvent.mouseDown(zoomRow, { clientX: 100, clientY: 100, button: 0 });
-    fireEvent.mouseMove(window, { clientX: 100, clientY: -200 });
-    fireEvent.mouseUp(window, { clientX: 100, clientY: -200 });
+    fireEvent.pointerDown(zoomRow, { clientX: 100, clientY: 100, button: 0 });
+    fireEvent.pointerMove(window, { clientX: 100, clientY: -200 });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: -200 });
     expect(transformOf(layers).y).toBeCloseTo(before.y);
   });
 });
