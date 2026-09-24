@@ -95,6 +95,31 @@ def test_계약에_없는_열쇠를_실은_요청은_400_이다(client, spec) ->
     assert res.status_code == 400, res.text
 
 
+# ── 후보 목록 — WU0 계약 개정 (Ted 서명 2026-09-24 · 판정 기록 3) ────────────
+def test_요청에_후보_목록을_실을_자리가_있다(spec) -> None:
+    """후보는 **core-api 가 고른다**(`〈72〉-㉮` 와 같은 분담). ai-service 는 D3 에 닿지 않는다.
+
+    선택 필드다 — 안 보내던 소비자가 그대로 200 이어야 파괴적 변경이 아니다.
+    """
+    req = spec["components"]["schemas"]["LineageSuggestionRequest"]
+    assert "candidates" in req["properties"], "요청에 후보를 실을 자리가 없다"
+    assert "candidates" not in req["required"], "후보는 선택 필드다 — required 에 넣지 않는다"
+    candidates = req["properties"]["candidates"]
+    assert candidates["type"] == "array"
+    assert candidates["maxItems"] == 20, "후보 상한 k=20 (미해결 4 권고)"
+    assert candidates["items"]["$ref"] == "#/components/schemas/LineageParentCandidate"
+
+
+def test_후보가_지고_갈_열쇠_집합이_닫혀_있다(spec) -> None:
+    """근거로 인용할 수 있는 값만 싣는다 — J3 이 이 집합을 오라클로 쓴다(미해결 2)."""
+    cand = spec["components"]["schemas"]["LineageParentCandidate"]
+    assert cand["required"] == ["datasetId", "name"]
+    assert cand["additionalProperties"] is False
+    optional = set(cand["properties"]) - set(cand["required"])
+    assert optional == {"topic", "summary", "sourceLabel", "processingLevel",
+                        "periodStart", "periodEnd"}, f"선택 열쇠 집합이 다르다: {optional}"
+
+
 def test_scope_없이는_뒤지지_않는다(client) -> None:
     body = _body()
     del body["scope"]
