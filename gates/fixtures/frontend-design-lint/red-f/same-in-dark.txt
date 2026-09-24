@@ -1,0 +1,4 @@
+# 이름 · 사유 (c) — f · 파일 · 선택자 · 속성 · 리터럴 · 사유 (f)
+--color-white · 테마 무관 원시 흰색
+f · src/components/x/x.css · .x-page .d · background · #eef2f7 ·
+f · src/components/x/x.css · .x-page .gone · color · #000000 · 지워진 규칙(낡은 항목)

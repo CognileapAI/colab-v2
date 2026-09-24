@@ -1,0 +1,5 @@
+# 픽스처 프리미티브 목록
+.btn
+.btn-primary
+.chip
+.chip--*

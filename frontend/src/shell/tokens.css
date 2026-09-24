@@ -1,80 +1,135 @@
-/* 디자인 토큰 — 값의 정본은 목업 `mockups/제품_260817.html` 의 :root 블록이다.
-   여기에는 **셸(GNB·본문 캔버스)이 실제로 쓰는 토큰만** 옮겼다. 값은 한 자도 바꾸지 않았다.
-   화면 토큰(상태색·AI 액센트·플롯 등)은 그 화면을 만드는 WU 가 필요할 때 옮긴다 —
-   지금 통째로 복사하면 쓰지도 않는 값이 먼저 굳는다.
+@layer tokens {
+/* 디자인 토큰 — 저장소 유일의 `:root`. 값의 정본은 목업 `mockups/제품_260817.html` 의 :root 블록이다.
+   **둘 이상 화면이 쓰는 이름만 여기 둔다. 한 화면(한 컴포넌트)만 쓰는 이름은 그 화면 루트 클래스 범위에 둔다**
+   (대안 B · spec `S-DESIGN-STRUCTURE-P1-20260924`). 화면 CSS 에 `:root`·`@import` 를 다시 만들지 않는다 —
+   게이트 `frontend-design-lint` 가 정본 밖 `:root` 정의 · 미정의 참조 · 다크 누락 · 화면 `:root`/`@import` 를 잰다.
+   구조: 라이트 `:root` 한 블록(원시 눈금 → 의미 토큰) → 900px 분기 → 다크 `[data-theme="dark"]` 한 블록 → 640px 분기.
+   미디어 분기는 **반드시 기본 `:root` 뒤에** 둔다 — 특이도가 (0,1,0)으로 같아 순서가 이긴다.
+   다크에 두지 않는 색 이름은 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 에 사유와 함께 적는다.
+   ※ 2026-09-12 승인 intent 의 공통 디자인 기준(종전 `[data-design="calm"]` 블록)을 기본 `:root` 로 합쳤다 — 제품은
+     항상 그 값을 썼다(`index.html` 이 `data-design="calm"` 을 늘 붙였다). 값은 한 자도 바꾸지 않았다.
    ※ 크림슨/바이올렛 액센트는 **AI 액션 전용**이다 (Policy_공통_기반 v1.4 §4). 셸에 쓰지 않는다. */
 :root {
+  color-scheme: light;
+
+  /* ── 원시 눈금 ── */
   --color-white: #ffffff;
   --color-gray-50: #f9fafb;
+  --color-gray-100: #e8ecf2;
+  --color-gray-200: #dfe3e8;
   --color-gray-400: #848c94;
   --color-gray-500: #697077;
+  --color-gray-600: #565c63;
+  --color-gray-700: #434950;
 
+  --color-primary-50: #edf4ff;
+  --color-primary-100: #e2eeff;
+  /* ⟨WU-C11 · R-B 판정 45⟩ Lv3 칩 4단째 — 목업 `:root` 축자(blue90 · blue30).
+     `--color-primary-800` 은 목업 주석이 「밝은 틴트 위 파랑 텍스트(칩 4.5:1 확보)」로 못박은 값이다. */
+  --color-primary-200: #bad7ff;
   --color-primary-600: #1369e9; /* blue50 = primary.normal */
   --color-primary-700: #0f62e0; /* blue40 = primary.heavy — hover·pressed·링크 */
+  --color-primary-800: #0b4eb6;
+
+  --color-success-50: #efffef;
+  /* 성공 계열 테두리 — 집 토큰에 없는 한 칸이다. 종전 폴백 값을 그대로 이름 붙였다(BF-11 · project.css 에서 옮김) */
+  --color-success-100: #cde9d6;
+  --color-success-600: #067506;
+  --color-warning-50: #fff6ed;
+  --color-warning-600: #a85400;
+
+  /* AI 액센트 = Montage accent violet (목업 `:root` 축자 · 판정 48). 코랄이 아니다 */
+  --color-accent-50: #f1e8ff;
+  --color-accent-200: #d2b6ff;
+  --color-accent-500: #6742f5;
+  --color-accent-700: #4821db;
+
+  /* ── 의미 토큰 ── */
   --color-primary: var(--color-primary-600);
+  --color-on-primary: #ffffff;
+  --color-text-on-primary: var(--color-on-primary);
+  --color-ai: var(--color-accent-500);
+  --accent-neutral: #5b7089;
 
   --color-bg: #f9fafb; /* 앱 캔버스 */
   --color-surface: var(--color-white); /* 카드·셸 */
   --color-surface-hover: #69707714; /* fill.normal 8% */
+  --color-surface-alt: #f5f7fa;
+  --color-overlay: rgb(15 20 28 / 45%);
 
   --color-border: #e8ecf2; /* line.solid.normal */
   --color-border-strong: #dfe3e8; /* CG110 */
+  --color-border-control: #a9b3bf;
   /* 셸 전용 — GNB 밑줄만 한 단 진하게. 셸 외에는 쓰지 않는다 */
   --color-border-shell: #bfc6cc;
-  --shell-gnb-height: 64px;
-  --shell-gnb-offset: var(--shell-gnb-height);
 
   --color-text: #121619; /* label.normal */
   --color-text-body: #21272ae0; /* label.neutral */
   --color-text-muted: #565c63; /* coolNeutral40 */
+  --color-text-subtle: var(--color-text-muted);
 
+  --color-danger: #a3222b;
+  --color-danger-solid: #a3222b;
+  --color-on-danger: #ffffff;
+  --color-danger-600: var(--fg-danger);
+  --fg-danger: #a3222b;
+  --bg-danger: #fff0f1;
+
+  /* 어두운 띠(상세 잠금 안내 `.locked-hero`) — 다크 값 없음 · 두 테마에서 같은 값으로 렌더된다 */
+  --color-band-dark-2: #121619;
+  --color-on-dark: #ffffff;
+  --color-on-dark-muted: rgba(255, 255, 255, 0.72);
+
+  /* ── 글자 ── */
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", "Noto Sans KR", sans-serif;
-
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-data: var(--font-sans);
+
+  --text-h2: 28px;
+  --text-h3: 18px;
+  --text-section: 16px;
   --text-body: 15px;
-  --leading-body: 1.467;
-  --tracking-body: 0.0096em;
   --text-body-sm: 14px;
   --text-caption: 13px;
+  --leading-body: 1.6;
+  --leading-body-sm: 1.429;
+  --tracking-body: 0;
+  --weight-heading: 600;
+
+  /* ── 간격·치수 ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-page: 32px;
+  --space-card: 24px;
+  --space-section: 24px;
+  --control-height: 40px;
 
   --radius-sm: 8px;
   --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
 
   --shadow-sm: 0px 1px 2px -1px #1717171a;
+  --shadow-lg: 0px 6px 10px -4px #17171714, 0px 16px 24px -6px #17171714;
   --ease: 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── 셸 ── */
+  --shell-gnb-height: 64px;
+  --shell-gnb-offset: var(--shell-gnb-height);
+
+  /* P2b — 화면 접두사 별칭 9종(`--up-*` 6 · `--lin-over-*` 3)은 값이 같은 정본 이름으로 참조를 바꾸고 지웠다
+     (`--color-border` · `--color-text-muted` · `--color-text` · `--color-warning-600` · `--color-warning-50` · `--radius-lg`). */
 }
 
 @media (max-width: 900px) {
   :root { --shell-gnb-offset: 110px; }
 }
 
-/* 승인 intent 2026-09-12: 대표 화면에서 확인한 공통 디자인 기준. */
-:root[data-design="calm"], body.design-preview {
-  --text-h2: 28px;
-  --text-section: 16px;
-  --leading-body: 1.6;
-  --tracking-body: 0;
-  --space-page: 32px;
-  --space-card: 24px;
-  --space-section: 24px;
-  --control-height: 40px;
-  --color-overlay: rgb(15 20 28 / 45%);
-  --color-on-primary: #ffffff;
-  --accent-neutral: #5b7089;
-  --color-surface-alt: #f5f7fa;
-  --color-border-control: #a9b3bf;
-  --color-danger: #a3222b;
-  --color-danger-solid: #a3222b;
-  --color-on-danger: #ffffff;
-  --color-text-on-primary: var(--color-on-primary);
-  --color-text-subtle: var(--color-text-muted);
-  --color-danger-600: var(--fg-danger);
-  --fg-danger: #a3222b;
-  --bg-danger: #fff0f1;
-  color-scheme: light;
-}
-:root[data-theme="dark"], body.design-preview[data-theme="dark"] {
+:root[data-theme="dark"] {
   color-scheme: dark;
   --color-bg: #11161d;
   --color-surface: #1a222c;
@@ -119,10 +174,11 @@
   --color-overlay: rgb(3 7 12 / 65%);
 }
 @media (max-width: 640px) {
-  :root[data-design="calm"], body.design-preview {
+  :root {
     --space-page: 16px;
     --space-card: 20px;
     --space-section: 20px;
     --control-height: 44px;
   }
+}
 }

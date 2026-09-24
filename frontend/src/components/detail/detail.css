@@ -1,37 +1,7 @@
+@layer screens {
 /* S-05 데이터셋 상세 상단 — 치수·색의 정본은 목업 `mockups/데이터셋_상세_260817.html` 이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
-   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
-     여기서 잇는다. 값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다. */
-:root {
-  --color-gray-100: #e8ecf2;
-  --color-gray-600: #565c63;
-  --color-gray-700: #434950;
-  --color-warning-50: #fff6ed;
-  --color-warning-600: #a85400;
-  --color-primary-50: #edf4ff;
-  --color-primary-100: #e2eeff;
-  /* ⟨WU-C11 · 판정 45⟩ Lv3 4단째 — 목업 `:root` 축자(blue90 · blue30) */
-  --color-primary-200: #bad7ff;
-  --color-primary-800: #0b4eb6;
-  /* AI 액센트 = Montage accent violet (목업 `:root` 축자 · 판정 48). 코랄이 아니다 */
-  --color-accent-50: #f1e8ff;
-  --color-accent-200: #d2b6ff;
-  --color-accent-500: #6742f5;
-  --color-accent-700: #4821db;
-  --color-ai: var(--color-accent-500);
-  --color-band-dark-2: #121619;
-  --color-on-dark: #ffffff;
-  --color-on-dark-muted: rgba(255, 255, 255, 0.72);
-  --font-data: var(--font-sans);
-  --radius-lg: 12px;
-  --radius-pill: 9999px;
-  --text-h2: 24px;
-  --text-h3: 18px;
-  --weight-heading: 600;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-}
+   ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
 
 .detail-page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 96px; }
 
@@ -39,8 +9,14 @@
 .detail-page .dt-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: var(--space-5); }
 .detail-page .dh-main { flex: 1; min-width: 0; }
 .detail-page .dt-header h1 {
-  font-family: var(--font-data); font-size: 31px; font-weight: 700; letter-spacing: -0.03em;
-  line-height: 1.25; font-variant-numeric: tabular-nums; margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .detail-page .dh-file { font-family: var(--font-data); font-size: var(--text-body-sm); color: var(--color-text-muted); margin-top: 3px; }
 .detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
@@ -123,7 +99,7 @@
 .detail-page .filelist .fl-n { font-family: var(--font-mono, monospace); font-size: var(--text-body-sm); color: var(--color-text); overflow-wrap: anywhere; }
 .detail-page .filelist .fl-x { font-size: 13px; color: var(--color-gray-500); }
 .detail-page .filelist .fl-none { margin: 0; font-size: var(--text-body-sm); color: var(--color-gray-500); }
-.detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger, #b42318); margin: 0 0 var(--space-6); }
+.detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger); margin: 0 0 var(--space-6); }
 
 /* ── 활용 · 가져가기 (섹션 4 · `#sec-usage`) ────────────────────────────────── */
 .detail-page .use-sec .use-n { font-size: var(--text-body); font-weight: 600; color: var(--color-text); margin: 0 0 12px; }
@@ -139,7 +115,7 @@
 .detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
 /* 접근 값의 출처 한 줄 (PRD-39 ⑩) — 버튼보다 작게, 읽기는 되게 */
 .detail-page .use-sec .use-dl-note { margin: 6px 0 0; font-size: 13px; }
-.detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }
+.detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger); }
 
 /* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,
    같은 면·같은 보더로 잇고 새 색을 만들지 않는다. */
@@ -187,7 +163,7 @@
 .detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
 .detail-page .dt-edit .de-k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
 /* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */
-.detail-page .dt-edit .de-req { font-size: 13px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
+.detail-page .dt-edit .de-req { font-size: 13px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: var(--color-white); }
 .detail-page .dt-edit .de-v {
   width: 100%;
   font: inherit;
@@ -214,7 +190,7 @@
   z-index: 5;
   margin: 0 0 var(--space-4);
   padding: 8px 0;
-  background: var(--color-surface, #ffffff);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 .detail-page .dsec-menu-l { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
@@ -335,4 +311,10 @@
   margin: 0 0 8px;
   color: var(--color-gray-600);
   font-size: var(--text-caption);
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+:is(.dt-header, .dt-card) { border-radius: var(--radius-lg); box-shadow: none; }
+.dt-card h3 { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+.detail-page .dsec-h h2 { font-size: 20px; }
 }

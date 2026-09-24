@@ -160,7 +160,7 @@ function sizeContent(el: Element, width: number, height: number) {
 
 /** `transform: translate(Xpx, Ypx) scale(S)` 원문에서 세 수를 읽는다. */
 function transformOf(layers: HTMLElement): { x: number; y: number; scale: number } {
-  const t = layers.style.transform;
+  const t = layers.style.getPropertyValue('--pv-layers-transform');
   const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([-\d.]+)\)/.exec(t);
   expect(m, `transform 원문을 읽지 못했다: ${t}`).toBeTruthy();
   return { x: Number(m![1]), y: Number(m![2]), scale: Number(m![3]) };

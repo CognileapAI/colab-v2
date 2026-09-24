@@ -1,3 +1,4 @@
+@layer screens {
 /* S-05 계보 · 족보 구역 — 색·치수의 정본은 목업 `mockups/데이터셋_상세_260817.html` 이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
    ※ 목업은 그래프를 SVG 좌표로 그렸다. 여기서는 같은 가로축을 **칸 배치**로 세운다 —
@@ -12,7 +13,7 @@
 /* ⟨WU-C11 · 판정 49⟩ 구역 사이 여백은 컨테이너(`detail.css` 의 `.dt-secs`)가 gap 으로 갖는다 —
    종전에는 이 자리에서 자식이 `margin-top: 34px` 을 지고 있었다(⑩ 형태). */
 .detail-page .dsec-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-.detail-page .dsec-h h2 { font-size: var(--text-h2); font-weight: var(--weight-heading); margin: 0; }
+.detail-page .dsec-h h2 { font-weight: var(--weight-heading); margin: 0; }
 .detail-page .dsec-h .hint { font-size: 13px; color: var(--color-text-muted); }
 
 /* 확정을 지우지 않는다 — 확정일과 수정일을 나란히 놓는다 */
@@ -83,7 +84,7 @@
 .detail-page .lrow .ln-name.plain { font-family: var(--font-sans); }
 .detail-page .lrow .ln-go { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
 .detail-page .lrow .ln-go:hover .ln-name { color: var(--color-primary-600); text-decoration: underline; text-underline-offset: 2px; }
-.detail-page .lrow .ln-go .arw { color: var(--color-gray-400); margin-left: 3px; }
+.detail-page .lrow .ln-go .arw { margin-left: 3px; }
 .detail-page .lrow .ln-sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
 .detail-page .hist { font-size: 13px; color: var(--color-text-muted); }
 .detail-page .aiflag { display: inline-flex; align-items: center; gap: 4px; height: 20px; font-size: 13px; font-weight: 700; color: var(--color-accent-700); background: var(--color-accent-50); border-radius: var(--radius-pill); padding: 0 7px; }
@@ -101,3 +102,7 @@
 .detail-page .lin-empty .muted { font-size: 13px; color: var(--color-text-muted); margin-top: 10px; }
 .detail-page .lin-empty button { margin-top: 14px; }
 .detail-page .lin-act { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+.detail-page :is(.ln, .ln-go) .arw { color: var(--color-text-muted); opacity: 1; }
+}

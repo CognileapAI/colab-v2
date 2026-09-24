@@ -286,7 +286,7 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
-  frontend-typecheck frontend-test frontend-fixture-reach frontend-visual
+  frontend-typecheck frontend-test frontend-fixture-reach frontend-design-lint frontend-visual
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   backup-cron-streak ops-observability exec-bit harness-eval
   service-tests-core-api service-tests-ai-service
@@ -299,7 +299,7 @@ ALL_GATES=(
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
-  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
+  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest frontend-design-lint-selftest
   frontend-visual-selftest harness-eval-selftest harness-contract-selftest
   service-tests-selftest gate-host-mutex-selftest
 )
@@ -424,6 +424,17 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처 도달·도달 0건·별칭 선언·
     # 판정부·진입점 부재까지.
     exec "$REPO_ROOT/gates/tools/frontend-fixture-reach-selftest.sh"
+    ;;
+  frontend-design-lint)
+    # 토큰 정본 단일화(대안 B · spec S-DESIGN-STRUCTURE-P1-20260924) — a 정본 밖 `:root` 정의 ·
+    # b 미정의 var() 참조 · c 다크 누락(면제 same-in-dark.txt 건수 노출) · d 화면 CSS `:root`·`@import`.
+    # 판정부는 frontend/scripts/design-lint.mjs(zero-dependency). node·판정부·면제 목록 부재와
+    # 대상 CSS 0건은 skip 이 아니라 red(준비)다.
+    exec "$REPO_ROOT/gates/tools/frontend-design-lint.sh"
+    ;;
+  frontend-design-lint-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — green 1 · red 5 · 대상 0건·node 부재 red(준비) 2.
+    exec "$REPO_ROOT/gates/tools/frontend-design-lint-selftest.sh"
     ;;
   frontend-visual)
     # 실화면 시각 되먹임 — agent-browser 로 페이지를 열어 computed 글자 크기와 상속 배경 기준

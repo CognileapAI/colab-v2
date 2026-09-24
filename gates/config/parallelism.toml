@@ -72,6 +72,10 @@
 # `frontend-fixture-reach-selftest` — `gates/fixtures/frontend-fixture-reach/` 를 **읽기만** 한다.
 #   워커가 파일 시스템에 아무것도 쓰지 않으므로 사본을 뜨지 않고 그대로 가리켜 돈다.
 "frontend-fixture-reach-selftest" = "parallel"
+# `frontend-design-lint` — CSS·TS 원문을 읽기만 한다(산출 파일 0 · node 만 · DB·포트·잠금 없음).
+"frontend-design-lint"          = "parallel"
+# `frontend-design-lint-selftest` — `gates/fixtures/frontend-design-lint/` 를 **읽기만** 한다.
+"frontend-design-lint-selftest" = "parallel"
 "contract-selftest"         = "parallel"
 "event-selftest"            = "parallel"
 "boundary-selftest"         = "parallel"

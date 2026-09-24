@@ -1004,7 +1004,7 @@ function StepThree(props: {
         {/* ⭑ **⟨개정 2026-09-14⟩ 원천 블록 — 계보 도구 **뒤**에 선다(기획서 `srcBlock` 자리).**
             앞에 두면 「부모를 붙이면 안 물어본다」는 규칙을 읽기 전에 칸부터 보게 된다. */}
         {sourceVisible ? (
-          <div data-testid="reg-source-block" style={{ marginTop: 16 }}>
+          <div className="reg-source-block" data-testid="reg-source-block">
             <div className="fieldlbl" data-testid="reg-source-block-title">
               {SOURCE_BLOCK_TITLE}
             </div>

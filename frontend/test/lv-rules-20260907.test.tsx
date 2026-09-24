@@ -244,10 +244,11 @@ describe('PRD-08 초과 후보는 흐리게 ＋ 사유', () => {
   // ═══ ㈐ 대비 계측 ═══
   it.each([false, true])('사유 문구와 `확인 필요` 칩의 대비가 4.5:1 이상이다 (dark=%s)', (dark) => {
     const token = themeTokens(dark);
-    const ratio = contrast(token('--lin-over-ink'), token('--lin-over-bg'));
+    // P2b — 별칭 `--lin-over-ink`·`--lin-over-bg`·`--lin-over-name` 을 값이 같은 정본 이름으로 바꾸고 지웠다(이름만 바뀜).
+    const ratio = contrast(token('--color-warning-600'), token('--color-warning-50'));
     expect(ratio).toBeGreaterThanOrEqual(4.5);
     // 흐려지는 것은 **이름 버튼 하나**다 — 사유가 그것과 같은 색이면 `R-21` 이 고친 자리가 되돌아온다.
-    expect(token('--lin-over-name')).not.toBe(token('--lin-over-ink'));
+    expect(token('--color-text-muted')).not.toBe(token('--color-warning-600'));
     // 불투명도로 행 전체를 내리지 않는다(같은 이유).
     expect(CSS).not.toMatch(/\.lin-picker li\.is-over\s*\{[^}]*opacity/);
   });

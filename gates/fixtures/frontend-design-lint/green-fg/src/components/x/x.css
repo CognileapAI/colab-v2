@@ -1,0 +1,5 @@
+/* 화면 픽스처(P3) — 토큰 참조 · 제외 키워드 · 사유 있는 면제 1건은 green 이다 */
+.x-page .row { color: var(--color-link); background: transparent; border-color: currentColor; outline-color: inherit; }
+/* 이름에 색 이름이 섞여도(`--color-white` · `white-space`) 색 이름 리터럴이 아니다 */
+.x-page .cell { background: var(--color-white); white-space: nowrap; }
+.x-page .chip { background: #eef2f7; }

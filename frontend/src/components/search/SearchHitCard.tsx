@@ -57,7 +57,7 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
       {/* 관련도 막대 — `role` 도 `aria-valuenow` 도 두지 않는다. 숫자를 보조기술에도 읽히지 않는다.
           순서가 이미 관련도이고, 막대는 강도만 거든다 (`fe-core.yaml SearchResultRow.relevanceBar`). */}
       <div className="relbar" data-testid="relevance-bar" aria-hidden="true">
-        <span style={{ width }} />
+        <span style={{ '--hit-relbar-w': width } as React.CSSProperties} />
       </div>
 
       {/* ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약** — 정본 `§8 :120` 의 카드 구성에서 **관련도 막대와

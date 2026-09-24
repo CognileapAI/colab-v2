@@ -1,0 +1,5 @@
+/* 화면 픽스처(P3) — 색 리터럴 f: 직접 hex · 폴백 hex · 색 이름 · 사유 없는 면제 · 낡은 면제 */
+.x-page .a { color: #123456; }
+.x-page .b { color: var(--color-link, #abcdef); }
+.x-page .c { border: 1px solid white; }
+.x-page .d { background: #eef2f7; }

@@ -1,0 +1,3 @@
+@import './tokens.css';
+/* P2a — 셸 진입 CSS 도 정본을 `@import` 하지 않는다(styles.ts 가 싣는다) */
+.shell-row { color: var(--color-text); }

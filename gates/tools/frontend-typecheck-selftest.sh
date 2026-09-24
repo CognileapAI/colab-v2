@@ -33,10 +33,13 @@ TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" fe-typecheck-st-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
 # 사본 트리 — 소스·시험은 실물을 복사하고, 의존 트리만 링크로 빌린다(수 GB 복사를 하지 않는다).
+# `scripts/` 도 복사한다 — `test/visual-diff.test.ts` 가 `../scripts/visual-baseline/compare.mjs` 를
+# import 하므로 tsc 가 실제로 닿는 범위다. 빠뜨리면 ⓖ 깨끗한 트리가 TS2307 로 red 가 된다
+# (2026-09-24 PR #129 CI 실측 · 본 게이트는 실물 트리라 통과 · 사본만 모자랐다).
 mk_tree() { # $1 = 만들 자리
   local d="$1"; mkdir -p "$d"
   cp "$FE/package.json" "$FE/tsconfig.json" "$FE/vite.config.ts" "$FE/Dockerfile" "$d/"
-  cp -r "$FE/src" "$FE/test" "$d/"
+  cp -r "$FE/src" "$FE/test" "$FE/scripts" "$d/"
   mkdir -p "$d/../contracts/ui"
   cp "$REPO_ROOT/contracts/ui/e01-permission-gates.json" "$d/../contracts/ui/"
   ln -s "$(cd "$FE/node_modules" && pwd)" "$d/node_modules"

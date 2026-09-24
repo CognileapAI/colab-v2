@@ -1,3 +1,4 @@
+@layer screens {
 /* 삭제 확인 모달의 두 구획 (`DL-1`). 골격(`.modal-back`·`.modal`·`.modal--dialog`·
    `.modal-h/b/f`)은 전역 이름이라 여기서 다시 선언하지 않는다 (`members.css`). */
 
@@ -7,7 +8,7 @@
   margin-bottom: 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-muted, transparent);
+  background: transparent; /* 종전 `var(--color-surface-muted, transparent)` — 정의된 적 없는 이름이라 늘 폴백이 렌더됐다(P1 · 값 무변) */
 }
 .dl-keep p {
   margin: 6px 0 0;
@@ -40,4 +41,5 @@
 .detail-page .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
 }

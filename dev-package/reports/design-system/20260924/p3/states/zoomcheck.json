@@ -1,0 +1,66 @@
+{
+ "before-light": {
+  "base": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  },
+  "zoomed": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  }
+ },
+ "before-dark": {
+  "base": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  },
+  "zoomed": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  }
+ },
+ "after-light": {
+  "base": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  },
+  "zoomed": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  }
+ },
+ "after-dark": {
+  "base": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  },
+  "zoomed": {
+   "inline": null,
+   "origin": "150px 112.5px",
+   "rect": "{\"x\":105.5,\"y\":368.390625,\"width\":300,\"height\":225,\"top\":368.390625,\"right\":405.5,\"bottom\":593.390625,\"left\":105.5}",
+   "transform": "none",
+   "zoom": null
+  }
+ }
+}

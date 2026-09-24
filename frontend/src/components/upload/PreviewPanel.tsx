@@ -629,9 +629,8 @@ export function PreviewPanel(props: {
                 data-zoom-base-scale={String(zoom.baseScale)}
                 {...(zoom.rungKm !== undefined ? { 'data-scale-rung-km': String(zoom.rungKm) } : {})}
                 style={{
-                  transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
-                  transformOrigin: '0 0',
-                }}
+                  '--pv-layers-transform': `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
+                } as React.CSSProperties}
               >
                 {/* ⭑ ⟨WU-C5⟩ 자립형 벡터 배경 — 래스터 아래 · 경계 있을 때만(외부 요청 0) */}
                 {mapBounds ? <BasemapLayer bounds={mapBounds} /> : null}
@@ -792,9 +791,8 @@ export function PreviewPanel(props: {
                     ? { 'data-scale-rung-km': String(expandZoom.rungKm) }
                     : {})}
                   style={{
-                    transform: `translate(${expandZoom.x}px, ${expandZoom.y}px) scale(${expandZoom.scale})`,
-                    transformOrigin: '0 0',
-                  }}
+                    '--pv-layers-transform': `translate(${expandZoom.x}px, ${expandZoom.y}px) scale(${expandZoom.scale})`,
+                  } as React.CSSProperties}
                 >
                   {mapBounds ? <BasemapLayer bounds={mapBounds} /> : null}
                   {expandZoom.showBoundsOutline ? <BoundsOutline /> : null}

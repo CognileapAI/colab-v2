@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# frontend-design-lint 가 red fixture 로 **fail-closed** 임을 증명한다.
+#
+# 픽스처 원본 = `gates/fixtures/frontend-design-lint/` 트리 여섯. 판정부는 읽기만 하므로 사본 없이
+# 각 트리를 그대로 `COLAB_FRONTEND_DIR` 로 가리키고, 면제 목록은 트리 안의 `same-in-dark.txt` 를,
+# 프리미티브 목록·면제는 트리 안의 `primitives.txt`·`primitives-exempt.txt` 를 준다(P2b · 없는 트리는 빈 파일).
+# 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
+# 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
+#
+# 케이스 — green 6 · red 14 · red(준비) 6 = 26.
+#   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
+#   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
+#   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
+#   ⓓ red-c/       라이트에만 있는 색 이름 · 다크에만 있는 이름                  → red
+#   ⓔ red-d/       화면 CSS 와 셸 CSS(`src/shell/shell.css`)의 `@import`(P2a · 정본 밖 전 CSS) → red
+#   ⓘ green-layer/ 정본·화면 CSS 가 `@layer` 블록 안에 있어도 같은 판정(P2a)            → green
+#   ⓙ red-root-html/ 층 블록 안의 `html:root` 정의(P2a · 사각 1)                         → red
+#   ⓚ red-accent/  화면 범위의 `--accent-` 정의(P2a · 사각 2)                            → red
+#   ⓛ 판정부에 디스크에 없는 대상 파일(P2a · 사각 3 · 추적 중 삭제)                      → red(준비 · 78)
+#   ⓕ red-exempt/  면제 목록의 사유 없음 · 낡은 항목 · 다크에 이미 있는 항목     → red
+#   ⓖ empty/       대상 CSS 0건(빈 트리)                                                   → red(준비 · 78)
+#   ⓗ node 부재(COLAB_NODE_BIN 을 없는 경로로)                                  → red(준비 · 78)
+#   ⓜ green-fg/    토큰 참조 · 제외 키워드 · 사유 있는 f 면제 1건 · 변수 대입만인 인라인 2건(P3) → green
+#   ⓝ red-f/       직접 hex · 폴백 hex · 색 이름 · 사유 없는 f 면제 · 낡은 f 면제(P3)     → red
+#   ⓞ red-g/       인라인 색 · px · 축약형 `{ width }`(변수 대입만인 1건은 세지 않는다)(P3) → red
+#   ⓠ red-g-spread/ 펼침 속성 안의 `style` 키(비변수 키 1 · 변수 대입만 1)(P3)         → red
+#   ⓡ green-mix/   토큰끼리의 color-mix()(var() · transparent · currentColor)(P3)     → green
+#   ⓢ red-mix/     리터럴 색이 섞인 color-mix()(P3)                                 → red
+#   ⓟ typescript 파서 부재(COLAB_DESIGN_LINT_TYPESCRIPT 를 없는 경로로 · g 를 못 잼)(P3) → red(준비 · 78)
+#   ⓣ green-e/     primitives.css 의 맨 정의 · 화면의 문맥·섞인 compound·:not()/:has() 인자 · 사유 있는 e 면제 1건(P2b) → green
+#   ⓤ red-e/       화면 CSS 의 맨 정의 · 상태 맨 정의 · `:is()` 펼침 · 사유 없는 e 면제(면제 안 함) · 낡은 e 면제(P2b) → red
+#   ⓥ red-e-important/ primitives.css·base.css 안의 `!important`(P2b)                     → red
+#   ⓦ 프리미티브 목록 부재(COLAB_DESIGN_LINT_PRIMITIVES 를 없는 경로로)(P2b)          → red(준비 · 78)
+#   ⓧ 문서 표 갈림 — 저장소 문서 사본의 생성 블록 안 한 줄을 고쳐 COLAB_DESIGN_LINT_DOC 로(P5 · h) → red
+#   ⓨ 문서 부재 — COLAB_DESIGN_LINT_DOC 를 없는 경로로(P5 · h)                         → red(준비 · 78)
+#   ⓩ 블록 밖만 고친 문서 사본 — 손글 변경은 h 에 걸리지 않는다(P5 · h)                → green
+#   h 는 저장소 문서의 신선도와 떼어 판정한다(advisor ②): 시작할 때 표지 두 쌍만 있는 뼈대 문서를
+#   `$TMPD/base.md` 로 만들어 `design-docs.mjs --doc` 로 채우고, **모든 케이스**가 이 문서를
+#   `COLAB_DESIGN_LINT_DOC` 기본값으로 쓴다. ⓧ·ⓩ 사본도 base.md 에서 만든다. 저장소 문서
+#   `docs/design-system.md` 가 실물과 갈렸는지는 게이트 `frontend-design-lint` 만 판정한다.
+set -uo pipefail
+
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+GATE="$REPO_ROOT/gates/tools/frontend-design-lint.sh"
+FIX="$REPO_ROOT/gates/fixtures/frontend-design-lint"
+FAILED=0
+
+red() { echo "::error::frontend-design-lint-selftest red — $*"; FAILED=1; }
+
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+
+[ -x "$GATE" ] || { echo "::error::frontend-design-lint-selftest red — 판정 재료가 없다: $GATE"; exit 1; }
+[ -d "$FIX" ]  || { echo "::error::frontend-design-lint-selftest red — 픽스처 자리가 없다: $FIX"; exit 1; }
+
+# h 용 뼈대 문서 — 저장소 문서와 무관하게 표지 두 쌍만 두고 현재 실물로 채운다.
+TMPD="$(mktemp -d)"
+trap 'rm -rf "$TMPD"' EXIT
+BASE_DOC="$TMPD/base.md"
+printf '# selftest\n\n<!-- generated:tokens -->\n<!-- /generated:tokens -->\n\n손글\n\n<!-- generated:primitives -->\n<!-- /generated:primitives -->\n' > "$BASE_DOC"
+BASE_OUT="$(node "$REPO_ROOT/frontend/scripts/design-docs.mjs" --doc "$BASE_DOC" 2>&1)" || {
+  echo "::error::frontend-design-lint-selftest red — h 용 뼈대 문서를 채우지 못했다(design-docs.mjs):
+$(printf '%s\n' "$BASE_OUT" | sed 's/^/     /')"; exit 1; }
+
+expect() { # $1=기대(green|red|ready) $2=이름 $3=픽스처 디렉터리 [$4..=추가 환경]
+  local want="$1" label="$2" dir="$3" out rc
+  shift 3
+  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
+    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" \
+    COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"; rc=$?
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
+    return
+  fi
+  # 준비 실패를 기대했는데 가로채기를 지나왔다면 판정 red(rc 1) 이거나 green 이다 — 기대와 다르다(P3 · ⓟ).
+  if [ "$want" = ready ]; then
+    red "$label — red(준비 · 78) 여야 하는데 rc=$rc:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  if [ "$want" = green ] && [ "$rc" -ne 0 ]; then
+    red "$label — green 이어야 하는데 red 다(rc=$rc):
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  if [ "$want" = red ] && [ "$rc" -eq 0 ]; then
+    red "$label — red 여야 하는데 통과했다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  echo "  ✓ $label ($want)"
+}
+
+expect_line() { # $1=이름 $2=픽스처 $3=출력에 있어야 할 문자열 [$4..=추가 환경] — red 가 **그 규칙 때문**인지 확인한다.
+  local label="$1" dir="$2" needle="$3" out
+  shift 3
+  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
+    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" \
+    COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"
+  if ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
+    red "$label — 출력에 「$needle」이 없다(다른 이유로 red 일 수 있다):
+$(printf '%s\n' "$out" | sed 's/^/     /')"
+  fi
+}
+
+# ⓐ 대조군 — 이것이 green 이 아니면 아래 red 들은 아무 말도 하지 않는다.
+expect green "ⓐ 정본 짝·루트 범위·면제 1건" "$FIX/green"
+expect_line "ⓐ 면제 건수 노출" "$FIX/green" "다크 누락 0(면제 1)"
+expect_line "ⓐ h 대조군 — 뼈대 문서(base.md)가 실물과 같다" "$FIX/green" "문서 표 갈림 0"
+# ⓑ a — 화면 :root 정의와 범위 안 정본 계열 이름.
+expect red "ⓑ a 화면 :root 정의 · 범위의 정본 계열 이름" "$FIX/red-a"
+expect_line "ⓑ a 는 두 갈래를 다 센다" "$FIX/red-a" "a_root=1 a_scoped=1"
+# ⓒ b — 미정의 참조(폴백이 있어도).
+expect red "ⓒ b 미정의 var() 참조" "$FIX/red-b"
+expect_line "ⓒ b 계수" "$FIX/red-b" " b=1 "
+# ⓓ c — 다크 누락 · 다크에만 있는 이름.
+expect red "ⓓ c 다크 누락 · 다크 전용" "$FIX/red-c"
+expect_line "ⓓ c 두 갈래" "$FIX/red-c" "c_missing=1 c_dark_only=1"
+# ⓔ d — 정본 밖 CSS 의 @import(화면 + 셸).
+expect red "ⓔ d 화면·셸 CSS @import" "$FIX/red-d"
+expect_line "ⓔ d 계수" "$FIX/red-d" " d=2 "
+expect_line "ⓔ d 셸 CSS 도 센다" "$FIX/red-d" "src/shell/shell.css:1 @import"
+# ⓘ 층 블록은 투명하다 — 정본 :root·다크 짝과 화면 범위 토큰을 층 밖과 똑같이 읽는다.
+expect green "ⓘ @layer 블록 안의 정본·화면 CSS" "$FIX/green-layer"
+expect_line "ⓘ 층 안 정본도 다크 짝을 읽는다" "$FIX/green-layer" "a=0 a_root=0 a_scoped=0 b=0 c=0"
+# ⓙ html:root — `:root` 앞에 요소 이름이 붙어도 :root 다.
+expect red "ⓙ 층 블록 안 html:root 정의" "$FIX/red-root-html"
+expect_line "ⓙ a·d 계수" "$FIX/red-root-html" "a_root=1 a_scoped=0"
+expect_line "ⓙ d 계수" "$FIX/red-root-html" " d=1 "
+# ⓚ --accent- 는 정본 계열 이름이다.
+expect red "ⓚ 화면 범위 --accent- 정의" "$FIX/red-accent"
+expect_line "ⓚ a_scoped 계수" "$FIX/red-accent" "a_root=0 a_scoped=1"
+# ⓕ 면제 목록 구멍 셋.
+expect red "ⓕ 면제 사유 없음 · 낡은 항목 · 다크에 이미 있음" "$FIX/red-exempt"
+expect_line "ⓕ 구멍 셋 전부" "$FIX/red-exempt" "c_holes=3"
+# ⓖ 대상 CSS 0건 — 못 돌았음을 통과로 세지 않는다.
+expect ready "ⓖ 대상 CSS 0건" "$FIX/empty"
+# ⓗ node 부재.
+expect ready "ⓗ node 부재" "$FIX/green" COLAB_NODE_BIN=/nonexistent/node
+# ⓛ 대상 목록의 파일이 디스크에 없다(추적 중 삭제) — 조용히 건너뛰지 않는다. 게이트는 Git 목록을 주므로
+#    판정부를 직접 불러 없는 경로를 섞는다.
+MISSING_OUT="$(cd "$FIX/green" && node "${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}" --root . --same-in-dark same-in-dark.txt --primitives primitives.txt --primitives-exempt primitives-exempt.txt -- src/shell/tokens.css src/components/x/x.css src/shell/gone.css 2>&1)"; MISSING_RC=$?
+if [ "$MISSING_RC" -eq 78 ] && printf '%s\n' "$MISSING_OUT" | grep -qF "src/shell/gone.css"; then
+  echo "  ✓ ⓛ 디스크에 없는 대상 파일 (ready)"
+else
+  red "ⓛ 디스크에 없는 대상 파일 — 78 이어야 하는데 rc=$MISSING_RC:
+$(printf '%s\n' "$MISSING_OUT" | sed 's/^/     /')"
+fi
+
+# ⓜ f·g 대조군 — 이것이 green 이 아니면 아래 f·g red 는 아무 말도 하지 않는다.
+expect green "ⓜ 토큰 참조 · 제외 키워드 · f 면제 1건 · 변수 대입 인라인" "$FIX/green-fg"
+expect_line "ⓜ 요약줄 f·g 노출" "$FIX/green-fg" "색 리터럴 0(면제 1) · 인라인 0(변수 대입 2)"
+expect_line "ⓜ 면제가 실제 리터럴에 걸렸다" "$FIX/green-fg" "f_exempted_hits=1"
+# ⓝ f — 직접 · 폴백 · 색 이름 · 면제 구멍 둘(사유 없음은 면제하지 않는다).
+expect red "ⓝ f 직접 · 폴백 · 색 이름 · 면제 구멍" "$FIX/red-f"
+expect_line "ⓝ f 네 갈래" "$FIX/red-f" "f=6 f_direct=2 f_fallback=1 f_name=1 f_holes=2"
+# ⓞ g — 색 · px · 축약형은 red, 변수 대입만인 것은 v 로만 센다.
+expect red "ⓞ g 인라인 색 · px · 축약형" "$FIX/red-g"
+expect_line "ⓞ g 계수" "$FIX/red-g" " g=3 g_vars=1 "
+expect_line "ⓞ 축약형을 키로 읽었다" "$FIX/red-g" "src/components/x/X.tsx:9 width(축약형)"
+# ⓠ 펼침 속성 안의 style — 속성과 같은 판정(비변수 키는 red · 변수 대입만은 v).
+expect red "ⓠ g 펼침 속성 안의 style" "$FIX/red-g-spread"
+expect_line "ⓠ g 계수" "$FIX/red-g-spread" " g=1 g_vars=1 g_spread=2 "
+expect_line "ⓠ 펼침 속성으로 표시" "$FIX/red-g-spread" "src/components/x/X.tsx:7 transform (펼침 속성)"
+# ⓡ 토큰끼리의 color-mix() 는 리터럴이 아니다.
+expect green "ⓡ 토큰끼리의 color-mix()" "$FIX/green-mix"
+expect_line "ⓡ f 0 · 면제 0" "$FIX/green-mix" "색 리터럴 0(면제 0)"
+# ⓢ 리터럴 색이 섞인 color-mix() 는 f 다.
+expect red "ⓢ 리터럴 색이 섞인 color-mix()" "$FIX/red-mix"
+expect_line "ⓢ f 계수" "$FIX/red-mix" "f=1 f_direct=1 f_fallback=0 f_name=0 f_holes=0"
+# ⓟ typescript 부재 — g 를 잴 수 없으면 통과로 세지 않는다.
+expect ready "ⓟ typescript 파서 부재" "$FIX/green-fg" COLAB_DESIGN_LINT_TYPESCRIPT=/nonexistent/typescript
+
+# ⓣ e 대조군 — 이것이 green 이 아니면 아래 e red 는 아무 말도 하지 않는다.
+expect green "ⓣ primitives.css 의 맨 정의 · 화면 문맥 · 섞인 compound · e 면제 1건" "$FIX/green-e"
+expect_line "ⓣ 요약줄 e 노출" "$FIX/green-e" "프리미티브 맨 정의 밖 0(면제 1)"
+expect_line "ⓣ 면제가 실제 맨 정의에 걸렸다" "$FIX/green-e" "e_exempted_hits=1 primitives=4"
+# ⓤ e — 맨 정의 · 상태 맨 정의 · :is() 펼침 · 사유 없는 면제(면제 안 함) · 낡은 면제.
+expect red "ⓤ e 맨 정의 · 상태 · :is() 펼침 · 면제 구멍" "$FIX/red-e"
+expect_line "ⓤ e 계수" "$FIX/red-e" "e=6 e_bare=4 e_important=0 e_holes=2"
+expect_line "ⓤ :is() 를 펼쳐 읽었다" "$FIX/red-e" "src/components/x/x.css:4 :is(.x-go, .chip) (펼침 .chip)"
+expect_line "ⓤ 상태 맨 정의" "$FIX/red-e" "src/components/x/x.css:3 .btn-primary:hover"
+# ⓥ primitives.css·base.css 의 !important(화면 파일의 것은 e 대상이 아니다).
+expect red "ⓥ primitives.css·base.css 의 !important" "$FIX/red-e-important"
+expect_line "ⓥ e 계수" "$FIX/red-e-important" "e=2 e_bare=0 e_important=2 e_holes=0"
+# ⓦ 프리미티브 목록 부재 — 목록이 없으면 e 를 판정할 수 없다.
+expect ready "ⓦ 프리미티브 목록 부재" "$FIX/green-e" COLAB_DESIGN_LINT_PRIMITIVES=/nonexistent/primitives.txt
+
+# ⓧ·ⓨ·ⓩ h — 뼈대 문서(base.md)의 사본을 고쳐 문서 경로로 준다.
+# 생성 블록(tokens) 여는 표지 바로 다음 줄을 바꾼다 — 블록 안 1줄 갈림.
+awk '{print} /^<!-- generated:tokens -->$/ {getline; print "손으로 고친 줄"}' "$BASE_DOC" > "$TMPD/drift.md"
+# 블록 밖(문서 끝)에만 한 줄을 더한다.
+{ cat "$BASE_DOC"; printf '\n블록 밖에 더한 손글 한 줄.\n'; } > "$TMPD/outside.md"
+expect red "ⓧ h 생성 블록 안 한 줄 갈림" "$FIX/green" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+expect_line "ⓧ h 계수" "$FIX/green" "문서 표 갈림 1" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+expect_line "ⓧ 갈린 블록 이름" "$FIX/green" "h tokens 갈림" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+expect ready "ⓨ h 문서 부재" "$FIX/green" COLAB_DESIGN_LINT_DOC=/nonexistent/design-system.md
+expect green "ⓩ h 블록 밖만 고친 문서" "$FIX/green" COLAB_DESIGN_LINT_DOC="$TMPD/outside.md"
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "::error::frontend-design-lint-selftest red — 위 케이스가 기대와 다르다."
+  exit 1
+fi
+expect_readiness_verdict frontend-design-lint-selftest
+echo "frontend-design-lint-selftest green — 검사 26건 전건 기대대로 (green 6 · red 14 · red(준비) 6)."

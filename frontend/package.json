@@ -9,7 +9,9 @@
     "audit:preview": "vite preview --config audit.vite.config.ts --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "visual:capture": "python3 scripts/visual-baseline/capture.py",
+    "visual:diff": "node scripts/visual-baseline/diff.mjs"
   },
   "license": "UNLICENSED",
   "type": "module",
@@ -28,6 +30,8 @@
     "@vitejs/plugin-react": "6.1.0",
     "jsdom": "29.1.1",
     "openapi-typescript": "7.13.0",
+    "pixelmatch": "7.2.0",
+    "pngjs": "7.0.0",
     "typescript": "5.9.3",
     "vite": "8.2.2",
     "vitest": "4.1.11"

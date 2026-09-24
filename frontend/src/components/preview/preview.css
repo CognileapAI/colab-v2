@@ -1,3 +1,4 @@
+@layer screens {
 /* S-08 미등록 미리보기. 토큰은 셸(`shell/tokens.css`)의 것을 쓴다 — 여기서 색을 새로 만들지 않는다. */
 
 .preview-page {
@@ -52,12 +53,14 @@
   color: var(--color-on-primary);
   font-size: 14px;
   cursor: pointer;
+  min-height: var(--control-height);
 }
 
 .pv-h2 {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: var(--text-section);
   font-weight: 600;
+  line-height: 1.5;
 }
 
 .pv-basic-grid {
@@ -143,6 +146,8 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
+  /* 계급 색은 데이터다 — `PreviewPanels` 범례가 `--pv-swatch-bg` 로 넘긴다(P3) */
+  background: var(--pv-swatch-bg);
 }
 
 .pv-controls {
@@ -155,7 +160,7 @@
 .pv-control {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   font-size: 13px;
 }
 
@@ -281,6 +286,14 @@
   position: relative;
 }
 
+/* 확대·이동 변환 — 데이터셋 미리보기(`preview/PreviewPanels`)·업로드 미리보기·확장보기(`upload/PreviewPanel`)가
+   `--pv-layers-transform` 으로 넘긴다(P3 · 인라인 style 은 변수 대입만). `data-zoom-scale` 은 확대 상태가
+   층을 움직일 때만 같은 자리에서 붙으므로, 확대 상태가 없는 `.pv-layers` 에는 이 규칙이 걸리지 않는다. */
+.pv-layers[data-zoom-scale] {
+  transform: var(--pv-layers-transform);
+  transform-origin: 0 0;
+}
+
 /* WU-C4 — **「지금 어디를 보고 있는지」 외곽선.** 층 묶음의 좌표계에서 데이터 경계는 곧
    층 전체라 상자 하나로 끝난다. 변환은 층에 걸린 것 하나를 함께 탄다(정본 §8 조건 ⑸).
    ⚠ 배경 지도(해안선·국경)는 WU-C5 다 — 이 사각형은 자산 없이 선다. */
@@ -350,6 +363,12 @@
 }
 
 .pv-mosaic .pv-tile-piece {
+  /* 조각 자리는 `PreviewPanels` 모자이크가 px 로 넘긴다(P3 · 인라인 style 은 변수 대입만) */
+  position: absolute;
+  left: var(--pv-piece-left);
+  top: var(--pv-piece-top);
+  width: var(--pv-piece-w);
+  height: var(--pv-piece-h);
   border: 0;
   border-radius: 0;
   /* 확대는 「촘촘함을 바꿔 끼우는」 것이지 흐리게 늘리는 것이 아니다 (§8 확대·이동) */
@@ -388,16 +407,15 @@
 
 /* ── 자리 선점 틀 (WU-C1 · 축 ①) ────────────────────────────────────────────
    비율은 **여기 한 자리**에만 산다 — WU-C4(축척 사다리)·WU-C5(배경 SVG)가 같은 토큰을
-   다시 쓴다. 값을 두 곳에 두면 두 화면의 상자가 갈린다. */
-:root {
-  --pv-frame-ratio: 4 / 3;
-}
+   다시 쓴다. 값을 두 곳에 두면 두 화면의 상자가 갈린다.
+   토큰은 틀 컴포넌트(`PreviewSlot`)의 루트 `.pv-frame-wrap` 범위에 산다(대안 B · P1 에서 `:root` 에서 옮김). */
 
 /* ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 틀 **밖·틀보다 앞** 고정 줄의 컨테이너.
    고르개 줄이 틀 안 스크롤 영역의 첫 자식이라 그림이 그려지면 스크롤 위로 밀려 사라졌다.
    여백 소유 = 컨테이너 — 줄과 틀 사이 간격은 여기 gap 하나가 갖는다(자식은 margin 을 지지 않는다).
    `controls` 가 없으면 자식은 틀 하나뿐이라 화면이 달라지지 않는다. */
 .pv-frame-wrap {
+  --pv-frame-ratio: 4 / 3;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -551,14 +569,25 @@
 }
 
 .pv-basemap-coast {
-  stroke: var(--color-gray-500, #697077);
+  stroke: var(--color-gray-500);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 .pv-basemap-border {
-  stroke: var(--color-gray-400, #848c94);
+  stroke: var(--color-gray-400);
   stroke-width: 1;
   stroke-dasharray: 3 2;
   vector-effect: non-scaling-stroke;
+}
+
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+.pv-control select { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+:is(.pv-zoom, .pv-shot) button:where(:not(.btn)) { color: var(--color-text); }
+@media (max-width: 640px) {
+  .pv-control select { font-size: 16px; }
+  .pv-basic-grid { grid-template-columns: minmax(0, 1fr); }
+  .pv-basic-row dd { min-width: 0; overflow-wrap: anywhere; }
+  :is(.pv-zoom, .pv-shot, .lin) button { min-height: 44px; }
+}
 }

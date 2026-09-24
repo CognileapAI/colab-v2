@@ -303,7 +303,7 @@ export function AccountAdminPage() {
         {listError ? <p className="account-status" role="alert">{listError}</p> : null}
         {/* 표 좌우 이동 안내 ＋ 키보드 초점 래퍼 = 다른 표 3자리와 같은 공용 패턴
             (`CatalogTable`·`ProjectTable`·`ProjectDatasetTable`). 안내는 1100px 이하에서만
-            보인다(`design-system.css` 의 `.table-scroll-hint`) — 규칙을 이 화면에 다시 쓰지 않는다. */}
+            보인다(`shell.css` 의 `.table-scroll-hint`) — 규칙을 이 화면에 다시 쓰지 않는다. */}
         <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
         <div className="account-table-scroll" role="region" aria-label="계정 목록 표 스크롤" tabIndex={0}>
           <table className="account-table" aria-label="계정 목록">

@@ -1,0 +1,15 @@
+/* 픽스처 정본 — 주석 안의 :root { --color-in-comment: #000; } 은 세지 않는다 */
+:root {
+  --color-white: #ffffff;
+  --color-text: #121619;
+  --color-link: var(--color-text);
+  --space-2: 8px;
+  --color-only-light: #111111;
+}
+@media (max-width: 640px) {
+  :root { --space-2: 6px; }
+}
+:root[data-theme="dark"] {
+  --color-text: #edf2f7;
+  --color-only-dark: #222222;
+}

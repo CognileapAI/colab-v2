@@ -1,23 +1,8 @@
+@layer screens {
 /* 구성원 · 권한 격자 — 치수·색의 정본은 목업 `mockups/제품_260817.html` 의
    `.memtbl` · `.settabs` · `.modal` 블록이다. 토큰만 쓰고 새 색을 만들지 않는다. */
-@import '../../shell/tokens.css';
 
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.card-h {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
-}
-.card-h h3 {
-  margin: 0;
-  font-size: var(--text-body);
-}
+/* `.card`·`.card-h`·`.card-h h3`·`.card-b` 의 기본값은 `shell/primitives.css`(P2b). */
 /* 대표 제목 규약(`frontend/README` `## 규칙`)으로 탭 본체 제목이 `h3` → `h2` 가 됐다.
    **보이는 크기는 바뀌지 않는다** — 단계는 문서 구조의 값이고 크기는 여기서 고정한다.
    `.card-h h3` 는 등록 화면 카드가 그대로 쓰므로 지우지 않는다. */
@@ -35,7 +20,6 @@
   letter-spacing: -0.023em;
   color: var(--color-text);
 }
-.card-b { padding: 6px 18px; }
 /* 권한 격자는 스위치 4열 때문에 600px 을 넘는다. 제 스크롤 통이 없으면
    문서 전체가 옆으로 밀린다 — 가로 스크롤은 이 통 하나가 맡는다 */
 .memgrid .card-b { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -43,52 +27,23 @@
 /* 편집 액션은 카드 헤더 오른쪽 끝에 붙는다 (목업 `.memact`) */
 .memact { display: flex; gap: 8px; margin-left: auto; }
 
-.btn {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  font-family: inherit;
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: background var(--ease), border-color var(--ease);
-}
-.btn:hover { background: var(--color-gray-50); }
-.btn-primary {
-  background: var(--color-primary-600);
-  border-color: var(--color-primary-600);
-  color: var(--color-white);
-}
-.btn-primary:hover { background: var(--color-primary-700); }
-.btn-ghost { border-color: transparent; background: transparent; }
+/* `.btn` 계열의 기본값은 `shell/primitives.css`(P2b). */
 
 .memtbl { width: 100%; min-width: 640px; border-collapse: collapse; }
 .memtbl th,
 .memtbl td {
-  padding: 10px 8px;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
   font-size: var(--text-body-sm);
 }
-.memtbl th { color: var(--color-text-muted); font-weight: 600; }
+/* P2b — 몸 칸 padding(10px 8px)은 오늘 `.tbl td`(셸 끝 · 뒤 순서)에 졌다 — 이 표는 늘 `tbl memtbl` 이다.
+   `.tbl td` 가 primitives 층으로 내려가도 같게 머리 칸에만 둔다. */
+.memtbl th { padding: 10px 8px; color: var(--color-text-muted); font-weight: 600; }
 .memtbl th.pc,
 .memtbl td.pc { text-align: center; width: 116px; }
 .memtbl .mn { font-weight: 600; }
 .memtbl .me { color: var(--color-text-muted); font-size: var(--text-caption); }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: var(--color-surface-hover);
-  font-size: var(--text-caption);
-  white-space: nowrap;
-}
 
 /* 편집 중 바뀐 칸의 **표식**. 토스트를 띄우지 않는 자리다 (P-20) */
 .memtbl td.pc.is-chg { background: var(--color-surface-hover); box-shadow: inset 0 0 0 1px var(--color-primary-600); }
@@ -100,13 +55,10 @@
   font-size: var(--text-caption);
 }
 /* 비활성 계정 칩 — 「지금 쓰이지 않는다」를 역할 칩과 구분해 말한다 (D-4).
-   새 색을 만들지 않는다: 꺼진 것의 색은 이미 흐린 글자 토큰이다. */
-.chip--off {
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  margin-left: 6px;
-}
+   새 색을 만들지 않는다: 꺼진 것의 색은 이미 흐린 글자 토큰이다.
+   색·테두리는 `shell/primitives.css` 의 `.chip--off`(P2b). 배경 gray-50 은 오늘 업로드 화면의 `.chip` 배경에
+   순서로 져서 보인 적이 없다(삭제 · 후속 판정). 자리(margin-left)만 이 화면 범위에 둔다. */
+.memtbl .chip--off { margin-left: 6px; }
 
 .memlock,
 .memnotice,
@@ -118,37 +70,9 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.modal-back {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-overlay);
-  z-index: 200;
-}
-/* ⚠ `.modal` 은 이 파일이 처음 두었지만 **전역 이름**이다 — 승인·연구실 정보·업로드가 함께
-   쓴다. 종전에는 여기 `max-width: 520px` 이 붙어 있어 **업로드 전체 화면 모달을 520px 로
-   눌렀다**(검수 #25 · `upload.css` 의 `.modal.modal-takeover{width:100%}` 를 덮었다).
-   폭은 골격이 아니라 **쓰는 자리**가 정한다 — 가운데 대화상자는 `.modal--dialog` 를 붙인다. */
-.modal {
-  width: 100%;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-.modal--dialog { max-width: 520px; max-height: calc(100dvh - 32px); overflow-y: auto; }
-.modal-h { padding: 16px 18px; border-bottom: 1px solid var(--color-border); }
+/* 모달 골격(`.modal-back`·`.modal`·`.modal--dialog`·`.modal-h/-b/-f`)은 `shell/primitives.css`(P2b). */
 .modal-h h3 { margin: 0; font-size: var(--text-body); }
-.modal-b { padding: 16px 18px; }
 .modal-b p { margin: 0; font-size: var(--text-body-sm); line-height: 1.7; color: var(--color-text-body); }
-.modal-f {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 18px;
-  border-top: 1px solid var(--color-border);
-}
 
 /* 연구실 설정 두 탭 — `연구실 정보` / `구성원 · 권한` (IA_사이트맵 §3 · 목업 `.settabs`) */
 .settabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
@@ -175,7 +99,7 @@
    칸 라벨은 `data-sw` 에 실린 정본 문자열을 그대로 되쓴다 (permissions.ts).
    태블릿 폭에서는 위의 가로 스크롤 통이 그대로 맡는다 */
 @media (max-width: 640px) {
-  .memgrid .card-b { overflow-x: visible; padding: 6px 12px; }
+  .memgrid .card-b { overflow-x: visible; }
   .memgrid .memtbl { min-width: 0; display: block; }
   .memgrid .memtbl thead { display: none; }
   .memgrid .memtbl tbody,
@@ -186,7 +110,7 @@
     padding: 10px 12px;
     margin: 10px 0;
   }
-  .memgrid .memtbl td { display: block; width: auto; border-bottom: none; padding: 3px 0; }
+  .memgrid .memtbl td { display: block; width: auto; border-bottom: none; }
   .memgrid .memtbl td.pc {
     display: flex;
     align-items: center;
@@ -204,4 +128,5 @@
   }
   .memgrid .memtbl td.pc.is-chg { padding: 8px; border-radius: var(--radius-sm); }
   .memgrid .memtbl td.who { padding-bottom: 6px; }
+}
 }
