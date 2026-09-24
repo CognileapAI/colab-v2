@@ -408,9 +408,8 @@ body {
   .avatar { gap: 2px; padding: 0 6px; }
   /* 로그아웃은 아이콘이 없다 — 감추면 모바일에서 나가는 길이 사라진다. 좁히기만 한다. */
   .gnb-logout { margin-left: 4px; padding: 0 6px; }
-}
 
-@media (max-width: 640px) {
+
   .settings-page, .notfound { padding: 20px 16px 32px; }
   /* Keep editable controls legible without mobile browser auto-zoom. */
   /* Component font shorthands must not undo the iOS input-size floor.
@@ -421,7 +420,12 @@ body {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
 
-/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
+/* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ──
+   P2b — 프리미티브 규칙(btn·field·chip·card·table·modal)은 `primitives.css` 로 옮겼다. 남은 것은 셸(GNB · 테마 전환 ·
+   모달 닫기 단추 문맥)과 **패턴** 규칙이다.
+   ▶ P5 이관 대기 — 페이지 컨테이너 `:is(.catalog-page, …)` · `.page-head h1` · `.form-row` 는 패턴(patterns 층) 후보다.
+     선택자에 화면 이름이 있어 층을 옮기면 층 함정 면이 늘고, `.page` 이름 통합(TSX 변경) 없이는 소유권 이득이 없어
+     P5 로 미뤘다(spec S-DESIGN-STRUCTURE-P2B-20260924 「패턴은 P5 로」). */
 :is(.catalog-page, .lab-page, .project-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
 .page-head h1 { font-size: var(--text-h2); line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; }
 .theme-switcher { min-height: 36px; max-width: 104px; padding: 6px 8px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-caption); cursor: pointer; }
@@ -445,10 +449,9 @@ body {
   .gnb :is(.labswitch, .gnb-settings, .gnb-upload, .gnb-more, .avatar) { min-height: 44px; min-width: 36px; padding-inline: 6px; }
   .gnb .avatar { display: none; }
   .gnb .gnb-logout { min-height: 44px; }
-}
-:is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
-@media (max-width: 640px) {
+  /* P2b — 종전 파일 끝 같은 조건 블록을 합쳤다(사이 규칙 `.modal-h .x` 와 겹치는 요소 없음 · verify 확인). */
   .gnb { gap: 4px; }
   .theme-switcher { max-width: 88px; padding-inline: 6px; }
 }
+:is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
 }

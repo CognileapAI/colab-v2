@@ -666,8 +666,8 @@ textarea.inp { resize: vertical; }
   .filecard .sel { width: auto; }
   .reggate { align-items: start; gap: 12px; }
   .reggate .rg-a { flex-basis: 100%; flex-wrap: wrap; }
-}
-@media (max-width: 640px) {
+
+
   .up-empty .reggate .rg-a { flex-basis: 100%; }
 }
 }

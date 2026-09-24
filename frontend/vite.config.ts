@@ -6,6 +6,8 @@ declare const process: { env: Record<string, string | undefined> };
 // P2a — jsdom 29 는 `@layer` 블록 안 규칙을 계산값에 넣지 않는다(파싱은 한다). test 모드에서만 stylesheet 로
 // 실리는 CSS 의 `@layer a, b;` 문장을 지우고 `@layer x {` 껍질과 짝 `}` 만 벗긴다(내용·중첩 @media 그대로).
 // `?raw` 원문과 제품 빌드는 건드리지 않는다. 그래서 vitest 는 층 순서를 검증하지 못한다 — 증거는 실브라우저 캡처.
+// 한계(P2b 기록): 문자열 건너뛰기는 닫는 따옴표를 첫 같은 따옴표로 찾는다 — 이스케이프된 따옴표(`"a\"b"`)가 든
+// 문자열·`url()` 에서는 문자열 끝을 잘못 짚어 뒤의 `@layer`·`}` 판정이 어긋날 수 있다. 저장소 CSS 에 그런 문자열은 없다.
 export function stripLayerBlocks(css: string): string {
   let out = '';
   const shells: boolean[] = [];
