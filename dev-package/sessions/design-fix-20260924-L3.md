@@ -11,8 +11,8 @@
 | 단계 | 상태 | 커밋 |
 |---|---|---|
 | L3a 시험 작성(RED) | 완료 — 새 시험 14건 중 13 RED · 기존 5파일 9곳 이관 중 5건 RED(포인터 미처리) | `b6d69bd3` |
-| L3a 구현(GREEN) | 완료 — 전체 131파일 1627건 통과 · tsc 0 | (이 커밋) |
-| L3b 시험 작성(RED) | 대기 | — |
+| L3a 구현(GREEN) | 완료 — 전체 131파일 1627건 통과 · tsc 0 | `d8a1d407` |
+| L3b 시험 작성(RED) | 완료 — 새 시험 15건 · 모듈 부재로 파일 RED · 임시 스텁 대조 9 RED | (이 커밋) |
 | L3b 구현(GREEN) | 대기 | — |
 | 레인 게이트 | 대기 | — |
 
@@ -27,6 +27,9 @@
 
 - L3a: `npx vitest run` 6파일 → `Tests 18 failed | 71 passed (89)`. 대표 줄 `AssertionError: expected "vi.fn()" to be called with arguments: [ 1 ]` · `expected -544 to be close to -1088`(이관 파일 · 훅이 pointerdown 을 받지 않음) · `expected "vi.fn()" to be called +0 times, but got 1 times`(끌기 뒤 click 조회).
 - RED 가 아닌 새 시험 1건: 「주 단추가 아니면 끌기를 시작하지 않는다」(현행도 pointerdown 을 무시하므로 통과 — 구현 뒤 회귀 방지용). 이관 파일 중 `dataset-preview-zoom-latency` 3건 · `preview-map-viewport` 466 이관분은 현행에서도 통과(변환 문자열 존재 · 불변만 단언).
+
+- L3b: `design-fix-20260924-L3b.test.tsx` → `Error: Failed to resolve import "../src/components/preview/spring"`(파일 전체 RED). 동작 RED 이유를 따로 보려고 커밋하지 않는 임시 `spring.ts`(시작값 그대로 반환)를 두고 다시 돌림 → `Tests 9 failed | 6 passed (15)` · 대표 줄 `expected -531 to be greater than -531`(놓은 뒤 이어지지 않음) · `expected 1000 to be less than 0.5`(스프링 미수렴). 임시 파일은 곧바로 지웠다. 스텁으로도 통과한 6건(상수 · t=0 · 넘지 않음 · 렌더 재요청 0 · 멈춤 뒤 관성 0 · 동작 줄이기)은 구현 뒤 회귀 방지용.
+- L3b 를 별도 파일로 둔 까닭: spec §3 은 `-L3.test.tsx` 1파일을 적었지만, 없는 모듈 import 가 #3 단언 전부를 가리므로 레인 지시문의 `design-fix-20260924-L3*.test.ts(x)` 범위 안에서 `-L3b.test.tsx` 로 나눴다.
 
 ## before → after
 
