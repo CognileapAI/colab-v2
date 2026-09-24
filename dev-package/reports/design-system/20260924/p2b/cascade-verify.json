@@ -1,0 +1,3891 @@
+{
+ "schema": "colab-cascade-verify-all/1",
+ "base": "60d63683",
+ "units": 4882,
+ "unchanged": 4678,
+ "moved": 137,
+ "deleted": 67,
+ "deletedDead": 60,
+ "added": 4,
+ "exempted": [
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 456,
+   "selector": ".modal--dialog:has(.modal-h)",
+   "arg": ".modal--dialog:has(.modal-h)",
+   "media": "",
+   "prop": "padding",
+   "value": "0",
+   "home": "src/shell/primitives.css:133",
+   "flips": [
+    {
+     "kind": "co",
+     "selector": ".approval-dialog",
+     "file": "src/components/approval/approval.css",
+     "line": 4,
+     "home": "src/components/approval/approval.css:4",
+     "prop": "padding",
+     "value": "var(--space-card)",
+     "spec": "0,1,0",
+     "states": [],
+     "reason": "공존 클래스(co) 경쟁이지만 .approval-dialog 두 곳(AccessRequestPanel · VerificationAction)은 .modal-h 를 품지 않아 :has(.modal-h) 가 걸리지 않는다(TSX 확인 · h3 제목)"
+    }
+   ],
+   "reason": "공존 클래스(co) 경쟁이지만 .approval-dialog 두 곳(AccessRequestPanel · VerificationAction)은 .modal-h 를 품지 않아 :has(.modal-h) 가 걸리지 않는다(TSX 확인 · h3 제목)"
+  },
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 452,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-section)",
+   "home": "src/shell/primitives.css:87",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".pj-modal-h h3",
+     "file": "src/components/project/project.css",
+     "line": 367,
+     "home": "src/components/project/project.css:360",
+     "prop": "font-size",
+     "value": "20px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 프로젝트 모달 머리 — .card-h 와 같은 파일에 없다(요소 공유 없음) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".modal-h h3",
+     "file": "src/components/members/members.css",
+     "line": 142,
+     "home": "src/components/members/members.css:74",
+     "prop": "font-size",
+     "value": "var(--text-body)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 .card-h h3 는 모달 몸(UploadModal 생성 중·완료 카드)·설정 카드에만 있고 .modal-h 안이 아니다(TSX 확인) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".labinfo-modal h3",
+     "file": "src/components/lab/lab.css",
+     "line": 46,
+     "home": "src/components/lab/lab.css:46",
+     "prop": "font-size",
+     "value": "20px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 LabInfoPanel 의 편집 모달 제목 — .card-h 는 카드 머리에서 닫힌 뒤다(h2 사용) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".todo-grp h3",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 270,
+     "home": "src/components/dashboard/dashboard.css:270",
+     "prop": "font-size",
+     "value": "var(--text-body-sm)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 TodoInbox — .card-h 없음(dash-card-head 는 다른 클래스) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".approval-dialog h3",
+     "file": "src/components/approval/approval.css",
+     "line": 5,
+     "home": "src/components/approval/approval.css:5",
+     "prop": "font-size",
+     "value": "18px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 승인 대화상자 — .card-h 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".account-modal h3",
+     "file": "src/auth/login.css",
+     "line": 196,
+     "home": "src/auth/login.css:196",
+     "prop": "font-size",
+     "value": "var(--text-h3)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 계정 모달 — .card-h 없음 — 같은 요소에 걸리지 않는다"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 프로젝트 모달 머리 — .card-h 와 같은 파일에 없다(요소 공유 없음) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 .card-h h3 는 모달 몸(UploadModal 생성 중·완료 카드)·설정 카드에만 있고 .modal-h 안이 아니다(TSX 확인) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 LabInfoPanel 의 편집 모달 제목 — .card-h 는 카드 머리에서 닫힌 뒤다(h2 사용) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 TodoInbox — .card-h 없음(dash-card-head 는 다른 클래스) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 승인 대화상자 — .card-h 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 계정 모달 — .card-h 없음 — 같은 요소에 걸리지 않는다"
+  },
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 445,
+   "selector": ".btn-primary:active",
+   "arg": ".btn-primary:active",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-primary-700)",
+   "home": "src/shell/primitives.css:32",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".pj-views button",
+     "file": "src/components/project/project.css",
+     "line": 80,
+     "home": "src/components/project/project.css:80",
+     "prop": "background",
+     "value": "transparent",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pj-seg button",
+     "file": "src/components/project/project.css",
+     "line": 439,
+     "home": "src/components/project/project.css:432",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".search-hero button",
+     "file": "src/components/search/search.css",
+     "line": 28,
+     "home": "src/components/search/search.css:28",
+     "prop": "background",
+     "value": "var(--color-primary-600)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dash-tile--linked button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 223,
+     "home": "src/components/dashboard/dashboard.css:223",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dash-recent button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 244,
+     "home": "src/components/dashboard/dashboard.css:244",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".titem button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 306,
+     "home": "src/components/dashboard/dashboard.css:306",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pv-zoom button",
+     "file": "src/components/preview/preview.css",
+     "line": 344,
+     "home": "src/components/preview/preview.css:344",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pv-shot button",
+     "file": "src/components/preview/preview.css",
+     "line": 344,
+     "home": "src/components/preview/preview.css:344",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".lin-picker li > button",
+     "file": "src/components/lineage/lineage.css",
+     "line": 356,
+     "home": "src/components/lineage/lineage.css:356",
+     "prop": "background",
+     "value": "transparent",
+     "spec": "0,1,2",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".regsteps button",
+     "file": "src/components/upload/upload.css",
+     "line": 196,
+     "home": "src/components/upload/upload.css:199",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dr-nav button",
+     "file": "src/components/upload/upload.css",
+     "line": 489,
+     "home": "src/components/upload/upload.css:491",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dr-useg button",
+     "file": "src/components/upload/upload.css",
+     "line": 515,
+     "home": "src/components/upload/upload.css:517",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dh-menu button",
+     "file": "src/components/approval/approval.css",
+     "line": 13,
+     "home": "src/components/approval/approval.css:13",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+  },
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 440,
+   "selector": ".tbl td",
+   "arg": ".tbl td",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 12px",
+   "home": "src/shell/primitives.css:98",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".pj-table td",
+     "file": "src/components/project/project.css",
+     "line": 236,
+     "home": "src/components/project/project.css:236",
+     "prop": "padding",
+     "value": "8px 10px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-table 는 다른 표"
+    },
+    {
+     "kind": "type",
+     "selector": ".pj-ds td",
+     "file": "src/components/project/project.css",
+     "line": 236,
+     "home": "src/components/project/project.css:236",
+     "prop": "padding",
+     "value": "8px 10px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-ds 는 다른 표"
+    },
+    {
+     "kind": "type",
+     "selector": ".projtable td",
+     "file": "src/components/upload/upload.css",
+     "line": 263,
+     "home": "src/components/upload/upload.css:265",
+     "prop": "padding",
+     "value": "6px 8px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .projtable 는 다른 표"
+    },
+    {
+     "kind": "type",
+     "selector": ".vartable td",
+     "file": "src/components/common/variableTable.css",
+     "line": 30,
+     "home": "src/components/common/variableTable.css:30",
+     "prop": "padding",
+     "value": "0",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 는 다른 표"
+    },
+    {
+     "kind": "type",
+     "selector": ".vartable td",
+     "file": "src/components/common/variableTable.css",
+     "line": 59,
+     "home": "src/components/common/variableTable.css:59",
+     "prop": "padding",
+     "value": "7px 9px",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 는 다른 표"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-table 는 다른 표 / 요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-ds 는 다른 표 / 요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .projtable 는 다른 표 / 요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 는 다른 표"
+  },
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 439,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "font-weight",
+   "value": "600",
+   "home": "src/shell/primitives.css:97",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".vartable th",
+     "file": "src/components/common/variableTable.css",
+     "line": 52,
+     "home": "src/components/common/variableTable.css:52",
+     "prop": "font-weight",
+     "value": "700",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 은 다른 표"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 은 다른 표"
+  },
+  {
+   "kind": "flip",
+   "file": "src/shell/shell.css",
+   "line": 439,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:97",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".vartable th",
+     "file": "src/components/common/variableTable.css",
+     "line": 54,
+     "home": "src/components/common/variableTable.css:54",
+     "prop": "color",
+     "value": "var(--color-gray-600)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 은 다른 표"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 은 다른 표"
+  },
+  {
+   "kind": "flip",
+   "file": "src/components/members/members.css",
+   "line": 136,
+   "selector": ".modal",
+   "arg": ".modal",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:120",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": "body",
+     "file": "src/shell/shell.css",
+     "line": 92,
+     "home": "src/shell/shell.css:92",
+     "prop": "background",
+     "value": "var(--color-bg)",
+     "spec": "0,0,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 .modal 은 div 판이다(body 가 아님 · TSX 전수)"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 .modal 은 div 판이다(body 가 아님 · TSX 전수)"
+  },
+  {
+   "kind": "flip",
+   "file": "src/components/members/members.css",
+   "line": 127,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-overlay)",
+   "home": "src/shell/primitives.css:115",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": "body",
+     "file": "src/shell/shell.css",
+     "line": 92,
+     "home": "src/shell/shell.css:92",
+     "prop": "background",
+     "value": "var(--color-bg)",
+     "spec": "0,0,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 .modal-back 은 div 뒤판이다(body 가 아님 · TSX 전수)"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 .modal-back 은 div 뒤판이다(body 가 아님 · TSX 전수)"
+  },
+  {
+   "kind": "flip",
+   "file": "src/components/members/members.css",
+   "line": 60,
+   "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+   "arg": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-50)",
+   "home": "src/shell/primitives.css:28",
+   "flips": [
+    {
+     "kind": "type",
+     "selector": ".pj-views button",
+     "file": "src/components/project/project.css",
+     "line": 80,
+     "home": "src/components/project/project.css:80",
+     "prop": "background",
+     "value": "transparent",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pj-seg button",
+     "file": "src/components/project/project.css",
+     "line": 439,
+     "home": "src/components/project/project.css:432",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".search-hero button",
+     "file": "src/components/search/search.css",
+     "line": 28,
+     "home": "src/components/search/search.css:28",
+     "prop": "background",
+     "value": "var(--color-primary-600)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dash-tile--linked button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 223,
+     "home": "src/components/dashboard/dashboard.css:223",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dash-recent button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 244,
+     "home": "src/components/dashboard/dashboard.css:244",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".titem button",
+     "file": "src/components/dashboard/dashboard.css",
+     "line": 306,
+     "home": "src/components/dashboard/dashboard.css:306",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pv-zoom button",
+     "file": "src/components/preview/preview.css",
+     "line": 344,
+     "home": "src/components/preview/preview.css:344",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".pv-shot button",
+     "file": "src/components/preview/preview.css",
+     "line": 344,
+     "home": "src/components/preview/preview.css:344",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".lin-picker li > button",
+     "file": "src/components/lineage/lineage.css",
+     "line": 356,
+     "home": "src/components/lineage/lineage.css:356",
+     "prop": "background",
+     "value": "transparent",
+     "spec": "0,1,2",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".regsteps button",
+     "file": "src/components/upload/upload.css",
+     "line": 196,
+     "home": "src/components/upload/upload.css:199",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "co",
+     "selector": ".btn-strong",
+     "file": "src/components/upload/upload.css",
+     "line": 308,
+     "home": "src/components/upload/upload.css:309",
+     "prop": "background",
+     "value": "var(--color-primary-600)",
+     "spec": "0,1,0",
+     "states": [],
+     "reason": "공존 클래스(co) 뒤집힘을 upload.css .btn-strong:hover { background: var(--color-gray-50) }(screens · 0,2,0)가 같은 값으로 되돌린다 — .btn-strong 요소는 전부 .btn · primary/secondary 아님"
+    },
+    {
+     "kind": "type",
+     "selector": ".dr-nav button",
+     "file": "src/components/upload/upload.css",
+     "line": 489,
+     "home": "src/components/upload/upload.css:491",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dr-useg button",
+     "file": "src/components/upload/upload.css",
+     "line": 515,
+     "home": "src/components/upload/upload.css:517",
+     "prop": "background",
+     "value": "var(--color-surface)",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다"
+    },
+    {
+     "kind": "type",
+     "selector": ".dh-menu button",
+     "file": "src/components/approval/approval.css",
+     "line": 13,
+     "home": "src/components/approval/approval.css:13",
+     "prop": "background",
+     "value": "none",
+     "spec": "0,1,1",
+     "states": [],
+     "reason": "요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+    }
+   ],
+   "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다 / 공존 클래스(co) 뒤집힘을 upload.css .btn-strong:hover { background: var(--color-gray-50) }(screens · 0,2,0)가 같은 값으로 되돌린다 — .btn-strong 요소는 전부 .btn · primary/secondary 아님 / 요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다 / 요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+  },
+  {
+   "kind": "added",
+   "file": "src/components/upload/upload.css",
+   "line": 311,
+   "selector": ".btn-strong:hover",
+   "arg": ".btn-strong:hover",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-50)",
+   "reason": "편차 이동 — 오늘 .btn:where(:not(.btn-primary,.btn-secondary)):hover(0,2,0)가 .btn-strong 배경(0,1,0)을 이겨 hover 배경이 gray-50 이다. hover 규칙이 primitives 층으로 내려가면 .btn-strong(screens)이 이기므로 같은 값을 화면 규칙으로 둔다(.btn-strong 요소는 전부 .btn · primary/secondary 아님)"
+  },
+  {
+   "kind": "added",
+   "file": "src/components/upload/upload.css",
+   "line": 91,
+   "selector": ".up-card",
+   "arg": ".up-card",
+   "media": "",
+   "prop": "border-style",
+   "value": "solid",
+   "reason": "종전 .up-card border 단축의 모양(solid) — 값 무변"
+  },
+  {
+   "kind": "added",
+   "file": "src/components/upload/upload.css",
+   "line": 91,
+   "selector": ".up-card",
+   "arg": ".up-card",
+   "media": "",
+   "prop": "border-width",
+   "value": "1px",
+   "reason": "종전 .up-card border 단축의 굵기(1px) — 값 무변"
+  },
+  {
+   "kind": "added",
+   "file": "src/components/members/members.css",
+   "line": 61,
+   "selector": ".memtbl .chip--off",
+   "arg": ".memtbl .chip--off",
+   "media": "",
+   "prop": "margin-left",
+   "value": "6px",
+   "reason": "범위 선택자로 옮긴 편차 — 값 6px 는 기본값 .chip margin-left 와 같다 · 걸리는 요소는 구성원 표의 비활성 칩 하나(새는 문맥 없음)"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/upload/upload.css",
+   "line": 307,
+   "selector": ".btn-sm",
+   "arg": ".btn-sm",
+   "media": "",
+   "prop": "font-size",
+   "value": "13px",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "오늘 죽음 — .btn-sm 요소는 전부 .btn 을 함께 가진다 · 셸 끝 .btn font-size(뒤 순서 · 동률)가 덮었다"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/upload/upload.css",
+   "line": 307,
+   "selector": ".btn-sm",
+   "arg": ".btn-sm",
+   "media": "",
+   "prop": "padding",
+   "value": "6px 10px",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "오늘 죽음 — .btn-sm 요소는 전부 .btn 을 함께 가진다(TSX 전수 36곳) · 셸 끝 .btn padding(뒤 순서 · 동률)이 덮었다(억눌린 작은 버튼 · 후속)"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/upload/upload.css",
+   "line": 86,
+   "selector": ".up-card",
+   "arg": ".up-card",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--up-line)",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "색만 죽어 있던 단축 선언을 굵기·모양으로 나눔 — .up-card 요소는 늘 .card(FileDropCard) · 테두리 색은 셸 끝 .card border-color(뒤 순서)가 이겼다 · 굵기·모양은 .up-card { border-width; border-style } 로 남김"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/members/members.css",
+   "line": 108,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "margin-left",
+   "value": "6px",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "범위 선택자로 옮김 — 같은 값을 .memtbl .chip--off(members.css)에 둔다(spec 칩 수식자 규칙 · 레이아웃 선언은 화면 범위) · 요소는 .memtbl 표 안에만 있다(MemberPermissionGrid)"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/members/members.css",
+   "line": 105,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-50)",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "오늘 죽음 — .chip--off 요소는 .chip 을 함께 가진다(MemberPermissionGrid 1곳 chip chip--off) · upload.css .chip background #eef2f7(뒤 순서 · 동률)이 덮었다(보인 적 없는 gray-50 · 후속 판정)"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/members/members.css",
+   "line": 71,
+   "selector": ".memtbl td",
+   "arg": ".memtbl td",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 8px",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "오늘 죽음 — 구성원 표는 늘 tbl memtbl · 셸 끝 .tbl td padding 10px 12px(같은 0,1,1 · 뒤 순서)이 덮었다"
+  },
+  {
+   "kind": "deleted-live",
+   "file": "src/components/members/members.css",
+   "line": 66,
+   "selector": ".btn-ghost",
+   "arg": ".btn-ghost",
+   "media": "",
+   "prop": "background",
+   "value": "transparent",
+   "status": "missing",
+   "found": null,
+   "proof": null,
+   "reason": "오늘 죽음 — .btn-ghost 요소는 전부 .btn 을 함께 가진다(TSX 전수 btn btn-ghost …) · upload.css .btn background(뒤 순서 · 동률)가 덮었다"
+  }
+ ],
+ "problems": [],
+ "deletedList": [
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 21,
+   "selector": ".tblwrap",
+   "arg": ".tblwrap",
+   "media": "",
+   "prop": "max-height",
+   "value": "calc(100vh - 232px)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 95,
+    "selector": ".tblwrap",
+    "arg": ".tblwrap",
+    "media": "",
+    "prop": "max-height",
+    "value": "none"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 437,
+    "selector": ".tblwrap",
+    "prop": "max-height",
+    "value": "none"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 21,
+   "selector": ".tblwrap",
+   "arg": ".tblwrap",
+   "media": "",
+   "prop": "max-height",
+   "value": "calc(100dvh - 232px)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 95,
+    "selector": ".tblwrap",
+    "arg": ".tblwrap",
+    "media": "",
+    "prop": "max-height",
+    "value": "none"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 437,
+    "selector": ".tblwrap",
+    "prop": "max-height",
+    "value": "none"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 22,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body-sm)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 438,
+    "selector": ".tbl",
+    "prop": "font-size",
+    "value": "var(--text-body-sm)"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 24,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-gray-500)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 97,
+    "selector": ".tbl th",
+    "arg": ".tbl th",
+    "media": "",
+    "prop": "color",
+    "value": "var(--color-text-muted)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 439,
+    "selector": ".tbl th",
+    "prop": "color",
+    "value": "var(--color-text-muted)"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 24,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "font-weight",
+   "value": "700",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 97,
+    "selector": ".tbl th",
+    "arg": ".tbl th",
+    "media": "",
+    "prop": "font-weight",
+    "value": "600"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 439,
+    "selector": ".tbl th",
+    "prop": "font-weight",
+    "value": "600"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 24,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "0.05em",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 97,
+    "selector": ".tbl th",
+    "arg": ".tbl th",
+    "media": "",
+    "prop": "letter-spacing",
+    "value": "0"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 439,
+    "selector": ".tbl th",
+    "prop": "letter-spacing",
+    "value": "0"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 30,
+   "selector": ".tbl td",
+   "arg": ".tbl td",
+   "media": "",
+   "prop": "padding",
+   "value": "13px 14px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 98,
+    "selector": ".tbl td",
+    "arg": ".tbl td",
+    "media": "",
+    "prop": "padding",
+    "value": "10px 12px"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 440,
+    "selector": ".tbl td",
+    "prop": "padding",
+    "value": "10px 12px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "display",
+   "value": "inline-flex",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/project/project.css",
+    "line": 314,
+    "selector": ".chip",
+    "prop": "display",
+    "value": "inline-block"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "align-items",
+   "value": "center",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 84,
+    "selector": ".chip",
+    "prop": "align-items",
+    "value": "center"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "gap",
+   "value": "5px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 50,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "gap",
+    "value": "4px"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "gap",
+    "value": "4px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "height",
+   "value": "21px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 51,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "height",
+    "value": "24px"
+   },
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 85,
+    "selector": ".chip",
+    "prop": "height",
+    "value": "24px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-pill)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 54,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "border-radius",
+    "value": "9999px"
+   },
+   "proof": {
+    "file": "src/components/project/project.css",
+    "line": 316,
+    "selector": ".chip",
+    "prop": "border-radius",
+    "value": "999px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "padding",
+   "value": "0 9px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 52,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "padding",
+    "value": "2px 10px"
+   },
+   "proof": {
+    "file": "src/components/project/project.css",
+    "line": 315,
+    "selector": ".chip",
+    "prop": "padding",
+    "value": "1px 7px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "font-size",
+   "value": "13px",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/project/project.css",
+    "line": 318,
+    "selector": ".chip",
+    "prop": "font-size",
+    "value": "13px"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "white-space",
+   "value": "nowrap",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 90,
+    "selector": ".chip",
+    "prop": "white-space",
+    "value": "nowrap"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 126,
+   "selector": ".chip--neutral",
+   "arg": ".chip--neutral",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-100)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 475,
+    "selector": ".chip--neutral",
+    "prop": "background",
+    "value": "var(--color-gray-100)"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 126,
+   "selector": ".chip--neutral",
+   "arg": ".chip--neutral",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-gray-700)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 475,
+    "selector": ".chip--neutral",
+    "prop": "color",
+    "value": "var(--color-gray-700)"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 127,
+   "selector": ".chip--warning",
+   "arg": ".chip--warning",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-warning-50)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 476,
+    "selector": ".chip--warning",
+    "prop": "background",
+    "value": "var(--color-warning-50)"
+   }
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 127,
+   "selector": ".chip--warning",
+   "arg": ".chip--warning",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-warning-600)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 476,
+    "selector": ".chip--warning",
+    "prop": "color",
+    "value": "var(--color-warning-600)"
+   }
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 314,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "display",
+   "value": "inline-block",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 48,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "display",
+    "value": "inline-flex"
+   },
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 83,
+    "selector": ".chip",
+    "prop": "display",
+    "value": "inline-flex"
+   }
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 315,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "padding",
+   "value": "1px 7px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 52,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "padding",
+    "value": "2px 10px"
+   },
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 86,
+    "selector": ".chip",
+    "prop": "padding",
+    "value": "0 9px"
+   }
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 316,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "border-radius",
+   "value": "999px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 54,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "border-radius",
+    "value": "9999px"
+   },
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 87,
+    "selector": ".chip",
+    "prop": "border-radius",
+    "value": "999px"
+   }
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 318,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "font-size",
+   "value": "13px",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/members/members.css",
+    "line": 89,
+    "selector": ".chip",
+    "prop": "font-size",
+    "value": "var(--text-caption)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 6,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 436,
+    "selector": ".card",
+    "prop": "background",
+    "value": "var(--color-surface)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 8,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-md)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 76,
+    "selector": ".card",
+    "arg": ".card",
+    "media": "",
+    "prop": "border-radius",
+    "value": "var(--radius-lg)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 436,
+    "selector": ".card",
+    "prop": "border-radius",
+    "value": "var(--radius-lg)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 13,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "gap",
+   "value": "10px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 82,
+    "selector": ".card-h",
+    "arg": ".card-h",
+    "media": "",
+    "prop": "gap",
+    "value": "12px"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 453,
+    "selector": ".card-h",
+    "prop": "gap",
+    "value": "12px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 14,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "padding",
+   "value": "14px 18px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 84,
+    "selector": ".card-h",
+    "arg": ".card-h",
+    "media": "",
+    "prop": "padding",
+    "value": "20px var(--space-card)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 451,
+    "selector": ":is(.card-h, .card-b)",
+    "prop": "padding",
+    "value": "20px var(--space-card)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 19,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 87,
+    "selector": ".card-h h3",
+    "arg": ".card-h h3",
+    "media": "",
+    "prop": "font-size",
+    "value": "var(--text-section)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 452,
+    "selector": ".card-h h3",
+    "prop": "font-size",
+    "value": "var(--text-section)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 38,
+   "selector": ".card-b",
+   "arg": ".card-b",
+   "media": "",
+   "prop": "padding",
+   "value": "6px 18px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 88,
+    "selector": ".card-b",
+    "arg": ".card-b",
+    "media": "",
+    "prop": "padding",
+    "value": "20px var(--space-card)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 451,
+    "selector": ":is(.card-h, .card-b)",
+    "prop": "padding",
+    "value": "20px var(--space-card)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 48,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "padding",
+   "value": "0 12px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 17,
+    "selector": ".btn",
+    "arg": ".btn",
+    "media": "",
+    "prop": "padding",
+    "value": "10px 18px"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "padding",
+    "value": "8px 14px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 49,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-sm)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "border-radius",
+    "value": "8px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 50,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border-strong)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 18,
+    "selector": ".btn",
+    "arg": ".btn",
+    "media": "",
+    "prop": "border",
+    "value": "1px solid var(--color-border)"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "border",
+    "value": "1px solid var(--up-line)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 51,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "background",
+    "value": "var(--color-surface)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 52,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "font-family",
+   "value": "inherit",
+   "status": "missing",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "font",
+    "value": "inherit"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 53,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body-sm)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "font",
+    "value": "inherit"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 54,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "font-weight",
+   "value": "600",
+   "status": "missing",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "font",
+    "value": "inherit"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 56,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "cursor",
+   "value": "pointer",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 306,
+    "selector": ".btn",
+    "prop": "cursor",
+    "value": "pointer"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 62,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-primary-600)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 308,
+    "selector": ".btn-primary",
+    "prop": "background",
+    "value": "var(--color-primary-600)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 63,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "border-color",
+   "value": "var(--color-primary-600)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 308,
+    "selector": ".btn-primary",
+    "prop": "border-color",
+    "value": "var(--up-ink)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 64,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-white)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 30,
+    "selector": ".btn-primary",
+    "arg": ".btn-primary",
+    "media": "",
+    "prop": "color",
+    "value": "var(--color-on-primary)"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 308,
+    "selector": ".btn-primary",
+    "prop": "color",
+    "value": "var(--color-on-primary)"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 66,
+   "selector": ".btn-ghost",
+   "arg": ".btn-ghost",
+   "media": "",
+   "prop": "border-color",
+   "value": "transparent",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 309,
+    "selector": ".btn-ghost",
+    "prop": "border-color",
+    "value": "transparent"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 66,
+   "selector": ".btn-ghost",
+   "arg": ".btn-ghost",
+   "media": "",
+   "prop": "background",
+   "value": "transparent",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 71,
+   "selector": ".memtbl td",
+   "arg": ".memtbl td",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 8px",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 83,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "display",
+   "value": "inline-flex",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "display",
+    "value": "inline-flex"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 84,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "align-items",
+   "value": "center",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "align-items",
+    "value": "center"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 86,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "padding",
+   "value": "0 9px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 52,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "padding",
+    "value": "2px 10px"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "padding",
+    "value": "2px 10px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 87,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "border-radius",
+   "value": "999px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 54,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "border-radius",
+    "value": "9999px"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "border-radius",
+    "value": "9999px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 88,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface-hover)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 55,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "background",
+    "value": "#eef2f7"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "background",
+    "value": "#eef2f7"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 89,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-caption)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 56,
+    "selector": ".chip",
+    "arg": ".chip",
+    "media": "",
+    "prop": "font-size",
+    "value": "13px"
+   },
+   "proof": {
+    "file": "src/components/upload/upload.css",
+    "line": 256,
+    "selector": ".chip",
+    "prop": "font-size",
+    "value": "13px"
+   }
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 105,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-50)",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 108,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "margin-left",
+   "value": "6px",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 86,
+   "selector": ".up-card",
+   "arg": ".up-card",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--up-line)",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".inp",
+   "arg": ".inp",
+   "media": "",
+   "prop": "padding",
+   "value": "8px 10px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".inp",
+    "media": "",
+    "prop": "padding",
+    "value": "10px 12px"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "padding",
+    "value": "10px 12px"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".inp",
+   "arg": ".inp",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--up-line)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".inp",
+    "media": "",
+    "prop": "border",
+    "value": "1px solid var(--color-border-control)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "border",
+    "value": "1px solid var(--color-border-control)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".inp",
+   "arg": ".inp",
+   "media": "",
+   "prop": "border-radius",
+   "value": "8px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".inp",
+    "media": "",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".inp",
+   "arg": ".inp",
+   "media": "",
+   "prop": "font",
+   "value": "inherit",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "font",
+    "value": "inherit"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".sel",
+   "arg": ".sel",
+   "media": "",
+   "prop": "padding",
+   "value": "8px 10px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".sel",
+    "media": "",
+    "prop": "padding",
+    "value": "10px 12px"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "padding",
+    "value": "10px 12px"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".sel",
+   "arg": ".sel",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--up-line)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".sel",
+    "media": "",
+    "prop": "border",
+    "value": "1px solid var(--color-border-control)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "border",
+    "value": "1px solid var(--color-border-control)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".sel",
+   "arg": ".sel",
+   "media": "",
+   "prop": "border-radius",
+   "value": "8px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 37,
+    "selector": ":is(.inp, .sel)",
+    "arg": ".sel",
+    "media": "",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 251,
+   "selector": ".sel",
+   "arg": ".sel",
+   "media": "",
+   "prop": "font",
+   "value": "inherit",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 447,
+    "selector": ":is(.inp, .sel)",
+    "prop": "font",
+    "value": "inherit"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "border-radius",
+   "value": "8px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 19,
+    "selector": ".btn",
+    "arg": ".btn",
+    "media": "",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 442,
+    "selector": ".btn",
+    "prop": "border-radius",
+    "value": "var(--radius-sm)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "padding",
+   "value": "8px 14px",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 17,
+    "selector": ".btn",
+    "arg": ".btn",
+    "media": "",
+    "prop": "padding",
+    "value": "10px 18px"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 442,
+    "selector": ".btn",
+    "prop": "padding",
+    "value": "10px 18px"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 307,
+   "selector": ".btn-sm",
+   "arg": ".btn-sm",
+   "media": "",
+   "prop": "padding",
+   "value": "6px 10px",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 307,
+   "selector": ".btn-sm",
+   "arg": ".btn-sm",
+   "media": "",
+   "prop": "font-size",
+   "value": "13px",
+   "status": "missing",
+   "found": null,
+   "proof": null
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 308,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-primary-600)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 443,
+    "selector": ".btn-primary",
+    "prop": "background",
+    "value": "var(--color-primary-600)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 308,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-on-primary)",
+   "status": "ok",
+   "found": null,
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 443,
+    "selector": ".btn-primary",
+    "prop": "color",
+    "value": "var(--color-on-primary)"
+   }
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 308,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "border-color",
+   "value": "var(--up-ink)",
+   "status": "value-differs",
+   "found": {
+    "file": "src/shell/primitives.css",
+    "line": 30,
+    "selector": ".btn-primary",
+    "arg": ".btn-primary",
+    "media": "",
+    "prop": "border-color",
+    "value": "var(--color-primary-600)"
+   },
+   "proof": {
+    "file": "src/shell/shell.css",
+    "line": 443,
+    "selector": ".btn-primary",
+    "prop": "border-color",
+    "value": "var(--color-primary-600)"
+   }
+  }
+ ],
+ "movedList": [
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 21,
+   "selector": ".tblwrap",
+   "arg": ".tblwrap",
+   "media": "",
+   "prop": "overflow",
+   "value": "auto",
+   "home": "src/shell/primitives.css:95",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 21,
+   "selector": ".tblwrap",
+   "arg": ".tblwrap",
+   "media": "",
+   "prop": "-webkit-overflow-scrolling",
+   "value": "touch",
+   "home": "src/shell/primitives.css:95",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 22,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "width",
+   "value": "100%",
+   "home": "src/shell/primitives.css:96",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 22,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "min-width",
+   "value": "940px",
+   "home": "src/shell/primitives.css:96",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 22,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "border-collapse",
+   "value": "collapse",
+   "home": "src/shell/primitives.css:96",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "font-weight",
+   "value": "600",
+   "home": "src/shell/primitives.css:57",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/catalog/catalog.css",
+   "line": 125,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "line-height",
+   "value": "1",
+   "home": "src/shell/primitives.css:58",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 317,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:53",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/project/project.css",
+   "line": 319,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "margin-left",
+   "value": "6px",
+   "home": "src/shell/primitives.css:60",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 7,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:74",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 11,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "display",
+   "value": "flex",
+   "home": "src/shell/primitives.css:80",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 12,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "align-items",
+   "value": "center",
+   "home": "src/shell/primitives.css:81",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 15,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "border-bottom",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:85",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 18,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "margin",
+   "value": "0",
+   "home": "src/shell/primitives.css:87",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 47,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "height",
+   "value": "32px",
+   "home": "src/shell/primitives.css:15",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 55,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text)",
+   "home": "src/shell/primitives.css:23",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 57,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "transition",
+   "value": "background var(--ease), border-color var(--ease)",
+   "home": "src/shell/primitives.css:25",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 60,
+   "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+   "arg": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-50)",
+   "home": "src/shell/primitives.css:28",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 85,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "height",
+   "value": "24px",
+   "home": "src/shell/primitives.css:51",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 90,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "white-space",
+   "value": "nowrap",
+   "home": "src/shell/primitives.css:59",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 106,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:62",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 107,
+   "selector": ".chip--off",
+   "arg": ".chip--off",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:62",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 122,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "position",
+   "value": "fixed",
+   "home": "src/shell/primitives.css:110",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 123,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "inset",
+   "value": "0",
+   "home": "src/shell/primitives.css:111",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 124,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "display",
+   "value": "flex",
+   "home": "src/shell/primitives.css:112",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 125,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "align-items",
+   "value": "center",
+   "home": "src/shell/primitives.css:113",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 126,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "justify-content",
+   "value": "center",
+   "home": "src/shell/primitives.css:114",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 127,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-overlay)",
+   "home": "src/shell/primitives.css:115",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 128,
+   "selector": ".modal-back",
+   "arg": ".modal-back",
+   "media": "",
+   "prop": "z-index",
+   "value": "200",
+   "home": "src/shell/primitives.css:116",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 135,
+   "selector": ".modal",
+   "arg": ".modal",
+   "media": "",
+   "prop": "width",
+   "value": "100%",
+   "home": "src/shell/primitives.css:119",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 136,
+   "selector": ".modal",
+   "arg": ".modal",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:120",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 137,
+   "selector": ".modal",
+   "arg": ".modal",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-md)",
+   "home": "src/shell/primitives.css:121",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 138,
+   "selector": ".modal",
+   "arg": ".modal",
+   "media": "",
+   "prop": "box-shadow",
+   "value": "var(--shadow-sm)",
+   "home": "src/shell/primitives.css:122",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 140,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "max-width",
+   "value": "520px",
+   "home": "src/shell/primitives.css:125",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 140,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "max-height",
+   "value": "calc(100dvh - 32px)",
+   "home": "src/shell/primitives.css:126",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 140,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "overflow-y",
+   "value": "auto",
+   "home": "src/shell/primitives.css:127",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 141,
+   "selector": ".modal-h",
+   "arg": ".modal-h",
+   "media": "",
+   "prop": "padding",
+   "value": "16px 18px",
+   "home": "src/shell/primitives.css:134",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 141,
+   "selector": ".modal-h",
+   "arg": ".modal-h",
+   "media": "",
+   "prop": "border-bottom",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:134",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 143,
+   "selector": ".modal-b",
+   "arg": ".modal-b",
+   "media": "",
+   "prop": "padding",
+   "value": "16px 18px",
+   "home": "src/shell/primitives.css:135",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 146,
+   "selector": ".modal-f",
+   "arg": ".modal-f",
+   "media": "",
+   "prop": "display",
+   "value": "flex",
+   "home": "src/shell/primitives.css:137",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 147,
+   "selector": ".modal-f",
+   "arg": ".modal-f",
+   "media": "",
+   "prop": "justify-content",
+   "value": "flex-end",
+   "home": "src/shell/primitives.css:138",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 148,
+   "selector": ".modal-f",
+   "arg": ".modal-f",
+   "media": "",
+   "prop": "gap",
+   "value": "8px",
+   "home": "src/shell/primitives.css:139",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 149,
+   "selector": ".modal-f",
+   "arg": ".modal-f",
+   "media": "",
+   "prop": "padding",
+   "value": "14px 18px",
+   "home": "src/shell/primitives.css:140",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/members/members.css",
+   "line": 150,
+   "selector": ".modal-f",
+   "arg": ".modal-f",
+   "media": "",
+   "prop": "border-top",
+   "value": "1px solid var(--color-border)",
+   "home": "src/shell/primitives.css:141",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "display",
+   "value": "inline-flex",
+   "home": "src/shell/primitives.css:48",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "align-items",
+   "value": "center",
+   "home": "src/shell/primitives.css:49",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "gap",
+   "value": "4px",
+   "home": "src/shell/primitives.css:50",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "border-radius",
+   "value": "9999px",
+   "home": "src/shell/primitives.css:54",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "padding",
+   "value": "2px 10px",
+   "home": "src/shell/primitives.css:52",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "background",
+   "value": "#eef2f7",
+   "home": "src/shell/primitives.css:55",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 256,
+   "selector": ".chip",
+   "arg": ".chip",
+   "media": "",
+   "prop": "font-size",
+   "value": "13px",
+   "home": "src/shell/primitives.css:56",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--up-line)",
+   "home": "src/shell/primitives.css:18",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:20",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "font",
+   "value": "inherit",
+   "home": "src/shell/primitives.css:21",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 306,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "cursor",
+   "value": "pointer",
+   "home": "src/shell/primitives.css:24",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/upload/upload.css",
+   "line": 309,
+   "selector": ".btn-ghost",
+   "arg": ".btn-ghost",
+   "media": "",
+   "prop": "border-color",
+   "value": "transparent",
+   "home": "src/shell/primitives.css:29",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/approval/approval.css",
+   "line": 16,
+   "selector": ".chip--verified",
+   "arg": ".chip--verified",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-success-600)",
+   "home": "src/shell/primitives.css:63",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/components/approval/approval.css",
+   "line": 16,
+   "selector": ".chip--verified",
+   "arg": ".chip--verified",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-success-50)",
+   "home": "src/shell/primitives.css:63",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 11,
+   "selector": "*",
+   "arg": "*",
+   "media": "",
+   "prop": "box-sizing",
+   "value": "border-box",
+   "home": "src/shell/base.css:7",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "button",
+   "arg": "button",
+   "media": "",
+   "prop": "font-family",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "button",
+   "arg": "button",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "input",
+   "arg": "input",
+   "media": "",
+   "prop": "font-family",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "input",
+   "arg": "input",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "select",
+   "arg": "select",
+   "media": "",
+   "prop": "font-family",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "select",
+   "arg": "select",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "textarea",
+   "arg": "textarea",
+   "media": "",
+   "prop": "font-family",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 101,
+   "selector": "textarea",
+   "arg": "textarea",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "inherit",
+   "home": "src/shell/base.css:10",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 102,
+   "selector": "button",
+   "arg": "button",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body-sm)",
+   "home": "src/shell/base.css:11",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 104,
+   "selector": ":where(button, a, input, select, textarea):focus-visible",
+   "arg": ":where(button, a, input, select, textarea):focus-visible",
+   "media": "",
+   "prop": "outline",
+   "value": "2px solid var(--color-primary-600)",
+   "home": "src/shell/base.css:13",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 105,
+   "selector": ":where(button, a, input, select, textarea):focus-visible",
+   "arg": ":where(button, a, input, select, textarea):focus-visible",
+   "media": "",
+   "prop": "outline-offset",
+   "value": "3px",
+   "home": "src/shell/base.css:14",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 416,
+   "selector": "input",
+   "arg": "input",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "value": "16px",
+   "home": "src/shell/base.css:19",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 416,
+   "selector": "select",
+   "arg": "select",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "value": "16px",
+   "home": "src/shell/base.css:19",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 416,
+   "selector": "textarea",
+   "arg": "textarea",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "value": "16px",
+   "home": "src/shell/base.css:19",
+   "layer": "base"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 436,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "box-shadow",
+   "value": "none",
+   "home": "src/shell/primitives.css:77",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 436,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:73",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 436,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "border-color",
+   "value": "var(--color-border-strong)",
+   "home": "src/shell/primitives.css:75",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 436,
+   "selector": ".card",
+   "arg": ".card",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-lg)",
+   "home": "src/shell/primitives.css:76",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 437,
+   "selector": ".tblwrap",
+   "arg": ".tblwrap",
+   "media": "",
+   "prop": "max-height",
+   "value": "none",
+   "home": "src/shell/primitives.css:95",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 438,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body-sm)",
+   "home": "src/shell/primitives.css:96",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 438,
+   "selector": ".tbl",
+   "arg": ".tbl",
+   "media": "",
+   "prop": "line-height",
+   "value": "1.5",
+   "home": "src/shell/primitives.css:96",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 439,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:97",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 439,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "font-weight",
+   "value": "600",
+   "home": "src/shell/primitives.css:97",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 439,
+   "selector": ".tbl th",
+   "arg": ".tbl th",
+   "media": "",
+   "prop": "letter-spacing",
+   "value": "0",
+   "home": "src/shell/primitives.css:97",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 440,
+   "selector": ".tbl td",
+   "arg": ".tbl td",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 12px",
+   "home": "src/shell/primitives.css:98",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 441,
+   "selector": ".chip--lineage",
+   "arg": ".chip--lineage",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-100)",
+   "home": "src/shell/primitives.css:64",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 441,
+   "selector": ".chip--lineage",
+   "arg": ".chip--lineage",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:64",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 442,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "min-height",
+   "value": "var(--control-height)",
+   "home": "src/shell/primitives.css:16",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 442,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 18px",
+   "home": "src/shell/primitives.css:17",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 442,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-body-sm)",
+   "home": "src/shell/primitives.css:22",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 442,
+   "selector": ".btn",
+   "arg": ".btn",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-sm)",
+   "home": "src/shell/primitives.css:19",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 443,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-primary-600)",
+   "home": "src/shell/primitives.css:30",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 443,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-on-primary)",
+   "home": "src/shell/primitives.css:30",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 443,
+   "selector": ".btn-primary",
+   "arg": ".btn-primary",
+   "media": "",
+   "prop": "border-color",
+   "value": "var(--color-primary-600)",
+   "home": "src/shell/primitives.css:30",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 444,
+   "selector": ".btn-secondary",
+   "arg": ".btn-secondary",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:31",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 444,
+   "selector": ".btn-secondary",
+   "arg": ".btn-secondary",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text)",
+   "home": "src/shell/primitives.css:31",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 444,
+   "selector": ".btn-secondary",
+   "arg": ".btn-secondary",
+   "media": "",
+   "prop": "border-color",
+   "value": "var(--color-border-control)",
+   "home": "src/shell/primitives.css:31",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 445,
+   "selector": ".btn-primary:active",
+   "arg": ".btn-primary:active",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-primary-700)",
+   "home": "src/shell/primitives.css:32",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "min-height",
+   "value": "var(--control-height)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "min-height",
+   "value": "var(--control-height)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 12px",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "padding",
+   "value": "10px 12px",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border-control)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border-control)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-sm)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-sm)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text)",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "",
+   "prop": "font",
+   "value": "inherit",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 447,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "",
+   "prop": "font",
+   "value": "inherit",
+   "home": "src/shell/primitives.css:37",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 451,
+   "selector": ":is(.card-h, .card-b)",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "padding",
+   "value": "20px var(--space-card)",
+   "home": "src/shell/primitives.css:84",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 451,
+   "selector": ":is(.card-h, .card-b)",
+   "arg": ".card-b",
+   "media": "",
+   "prop": "padding",
+   "value": "20px var(--space-card)",
+   "home": "src/shell/primitives.css:88",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 452,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "font-size",
+   "value": "var(--text-section)",
+   "home": "src/shell/primitives.css:87",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 452,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "line-height",
+   "value": "1.5",
+   "home": "src/shell/primitives.css:87",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 452,
+   "selector": ".card-h h3",
+   "arg": ".card-h h3",
+   "media": "",
+   "prop": "font-weight",
+   "value": "600",
+   "home": "src/shell/primitives.css:87",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 453,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "gap",
+   "value": "12px",
+   "home": "src/shell/primitives.css:82",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 453,
+   "selector": ".card-h",
+   "arg": ".card-h",
+   "media": "",
+   "prop": "flex-wrap",
+   "value": "wrap",
+   "home": "src/shell/primitives.css:83",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 455,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "border",
+   "value": "1px solid var(--color-border-strong)",
+   "home": "src/shell/primitives.css:128",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 455,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "border-radius",
+   "value": "var(--radius-lg)",
+   "home": "src/shell/primitives.css:129",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 455,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "box-shadow",
+   "value": "none",
+   "home": "src/shell/primitives.css:130",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 455,
+   "selector": ".modal--dialog",
+   "arg": ".modal--dialog",
+   "media": "",
+   "prop": "padding",
+   "value": "var(--space-card)",
+   "home": "src/shell/primitives.css:131",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 456,
+   "selector": ".modal--dialog:has(.modal-h)",
+   "arg": ".modal--dialog:has(.modal-h)",
+   "media": "",
+   "prop": "padding",
+   "value": "0",
+   "home": "src/shell/primitives.css:133",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 468,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".inp",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "value": "16px",
+   "home": "src/shell/primitives.css:39",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 468,
+   "selector": ":is(.inp, .sel)",
+   "arg": ".sel",
+   "media": "(max-width: 640px)",
+   "prop": "font-size",
+   "value": "16px",
+   "home": "src/shell/primitives.css:39",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 475,
+   "selector": ".chip--neutral",
+   "arg": ".chip--neutral",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-gray-100)",
+   "home": "src/shell/primitives.css:65",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 475,
+   "selector": ".chip--neutral",
+   "arg": ".chip--neutral",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-gray-700)",
+   "home": "src/shell/primitives.css:65",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 476,
+   "selector": ".chip--warning",
+   "arg": ".chip--warning",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-warning-50)",
+   "home": "src/shell/primitives.css:66",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 476,
+   "selector": ".chip--warning",
+   "arg": ".chip--warning",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-warning-600)",
+   "home": "src/shell/primitives.css:66",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 477,
+   "selector": ".chip:where(:not([class*=\"chip--\"]))",
+   "arg": ".chip:where(:not([class*=\"chip--\"]))",
+   "media": "",
+   "prop": "background",
+   "value": "var(--color-surface-alt)",
+   "home": "src/shell/primitives.css:67",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 477,
+   "selector": ".chip:where(:not([class*=\"chip--\"]))",
+   "arg": ".chip:where(:not([class*=\"chip--\"]))",
+   "media": "",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:67",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 479,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "",
+   "prop": "display",
+   "value": "none",
+   "home": "src/shell/primitives.css:99",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 481,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "(max-width: 1100px)",
+   "prop": "display",
+   "value": "block",
+   "home": "src/shell/primitives.css:101",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 481,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "(max-width: 1100px)",
+   "prop": "margin",
+   "value": "0",
+   "home": "src/shell/primitives.css:101",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 481,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "(max-width: 1100px)",
+   "prop": "padding",
+   "value": "12px 16px",
+   "home": "src/shell/primitives.css:101",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 481,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "(max-width: 1100px)",
+   "prop": "font-size",
+   "value": "var(--text-caption)",
+   "home": "src/shell/primitives.css:101",
+   "layer": "primitives"
+  },
+  {
+   "file": "src/shell/shell.css",
+   "line": 481,
+   "selector": ".table-scroll-hint",
+   "arg": ".table-scroll-hint",
+   "media": "(max-width: 1100px)",
+   "prop": "color",
+   "value": "var(--color-text-muted)",
+   "home": "src/shell/primitives.css:101",
+   "layer": "primitives"
+  }
+ ],
+ "layers": {
+  "src/shell/layers.css": {
+   "layerBlocks": [],
+   "unlayeredRules": 0,
+   "rules": 0
+  },
+  "src/shell/tokens.css": {
+   "layerBlocks": [
+    "tokens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 4
+  },
+  "src/shell/base.css": {
+   "layerBlocks": [
+    "base"
+   ],
+   "unlayeredRules": 0,
+   "rules": 5
+  },
+  "src/shell/primitives.css": {
+   "layerBlocks": [
+    "primitives"
+   ],
+   "unlayeredRules": 0,
+   "rules": 32
+  },
+  "src/components/catalog/catalog.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 98
+  },
+  "src/components/detail/detail.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 148
+  },
+  "src/components/project/project.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 115
+  },
+  "src/components/members/members.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 29
+  },
+  "src/components/lab/lab.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 12
+  },
+  "src/components/search/search.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 58
+  },
+  "src/components/dashboard/dashboard.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 69
+  },
+  "src/components/preview/preview.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 76
+  },
+  "src/components/lineage/lineage.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 73
+  },
+  "src/components/lineage/lineageGraph.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 50
+  },
+  "src/components/upload/upload.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 272
+  },
+  "src/components/approval/approval.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 16
+  },
+  "src/components/common/toast.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 1
+  },
+  "src/components/common/variableTable.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 17
+  },
+  "src/auth/login.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 58
+  },
+  "src/shell/shell.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 88
+  },
+  "src/components/detail/deletion.css": {
+   "layerBlocks": [
+    "screens"
+   ],
+   "unlayeredRules": 0,
+   "rules": 5
+  }
+ }
+}
