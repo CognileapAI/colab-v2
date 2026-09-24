@@ -1,10 +1,11 @@
-# K4 골든 12건 — `gpt-5.6-luna` 질의 해석 실측 (2026-09-22 · 해석 절반)
+# K4 골든 12건 — `gpt-5.6-luna` 질의 해석 실측 (해석 절반 2026-09-22 · 검색 절반 2026-09-24)
 
 intent: `dev-package/intent/2026-09-22-k4-luna-interpreter-probe.md` (미승인) · 러너: `eval/k4-search/llm_interpreter_probe.py`
 task: `24cfc3a8acef4298a9960f451872c9af` (researcher) · 원시 결과: `interp-01.json`
 
-**이 문서는 해석 절반만 담는다.** 검색 절반(해석 결과 → dev D3 조회 → retrieval 판정)은
-dev 플랫폼 DB 가 비어 있어(아래 §블로커) 이번 회차에 실행하지 못했다. retrieval pass/fail·정답 순위는 **미실측**이다.
+**두 절반이 다 있다.** 해석 절반은 `interp-01.json`(luna 실호출 24회), 검색 절반은 `retrieval-01.json`
+(기록된 해석을 **참조 코퍼스 일회용 DB** 에서 실제 검색 API 로 재생 · 모델 호출 0회 · `services/core-api/tests/test_k4_interpreter_probe.py`).
+검색 절반을 dev 가 아닌 일회용 DB 에서 잰 이유와 한계는 §검색 절반 에 있다.
 
 ## 무엇을 돌렸나
 - 모델 `gpt-5.6-luna` · 제품 `LlmQueryInterpreter` 그대로(`SYSTEM_PROMPT`·`response_format json_object`·고정 seed·timeout 8초) · 파서 `_read` 그대로(세 값만).
@@ -40,22 +41,50 @@ dev 플랫폼 DB 가 비어 있어(아래 §블로커) 이번 회차에 실행�
 | 011 | 결측률·0%·검증된·2023년·5월·식생 | 결측률이·0%로·검증된·2023년·5월·식생·자료·찾아줘 | 조사 제거 |
 | 012 | 100m·직접 관측한·천리안·월평균·NDVI | 100m로·직접·관측한·천리안·월평균·NDVI·자료·찾아줘 | 조사 제거 |
 
-## 검색 절반에서 반드시 재봐야 할 자리 (해석만으로는 판정 불가)
+## 검색 절반 — 참조 코퍼스 9건 (2026-09-24)
+코퍼스 = `eval/k4-search/fixtures/reference/dev-data-snapshot.json` 의 9건을 **고정 ID 그대로** 일회용 Postgres 에 적재 + 근거 패킷(`stage-evidence-packet-02.json`). 기존 `search_golden` 참조 시험과 같은 적재 헬퍼(`seed_reference_corpus`)를 쓴다.
+해석은 `interp-01.json` 의 luna 2회분과 literal 을 각각 frozen AI double 로 흘려 `POST /dataset-searches` 를 실제로 친다. 사전·그래프 확장은 넣지 않았다(순수 해석기 ↔ 검색).
+
+| 실행 | retrieval pass (판정 10건: retrieval 9 + empty 1) | 실패 문항 | 필수 정답 순위 중앙값 |
+|---|---|---|---|
+| luna 1회차 | **10 / 10** | — | **1.0** |
+| luna 2회차 | **10 / 10** | — | **1.0** |
+| literal | 9 / 10 | 010 (「없는 산출물」 문항에 8건을 냄) | 2.0 |
+
+문항별로 luna 가 앞선 자리: 002·003·008 은 literal 이 정답을 2~4위에 두던 것을 1위로, 009 는 SPEI 제외로 4건→1건, 010 은 기능어 제거로 8건→0건(정직한 빈 결과). 004 는 「원자료」를 버렸는데도 pass · 1위(우려는 이 코퍼스에서 실현되지 않음). luna 2회차의 terms 차이(002·004·007·008)는 **검색 결과를 바꾸지 않았다.**
+luna 가 뒤진 자리: **006 만** — 필수 정답 하나가 literal 1위 → luna 2위(총 건수는 10→6 으로 줄어 후보는 더 좁다). 복합어 「레이더 반사도」「강우 추정」 구 질의의 영향으로 보이나 1문항·1순위 차라 항목화 근거는 아니다.
+
+### 합격선 대조 (intent 「충분」 조건 셋)
+| 조건 | 결과 |
+|---|---|
+| ① pass 건수 ≥ literal | 10 ≥ 9 — 충족 |
+| ② 순위 중앙값 ≤ literal | 1.0 ≤ 2.0 — 충족 |
+| ③ timeout 0/24 | `interp-01` 은 0/24 충족. 단 첫 실행(`run-01`, 미보존)에서 2/24 timeout 이 있었다 — 48회 표본으로 보면 2회(4%). **조건 ③은 조건부 충족**으로 적는다 |
+
+**이 코퍼스에서 luna 는 「충분」 조건을 만족한다.** 한계 셋을 같이 읽어야 한다 — ⓐ 후보 9건뿐, dev·prod 의 나머지 distractor 가 없다(literal 의 010 실패가 9건에서 8건을 낸 것을 보면 distractor 가 늘수록 luna 의 이득은 커질 가능성이 있으나 이는 추정이다) ⓑ 10문항·2회로 terra 승격이나 켜기(〈136〉)를 결정하지 않는다 ⓒ K3(계보 제안) 절반은 미실측이다.
+
+### 재실행
+```
+# 해석 절반 (모델 실호출 · OPENAI_API_KEY 필요)
+~/.config/colab-platform/with-dev-env.sh python3 eval/k4-search/llm_interpreter_probe.py --repeats 2 --skip-remote --output dev-package/reports/k4-luna-probe/interp-02.json
+# 검색 절반 (일회용 DB · 모델 호출 없음)
+COLAB_K4_PROBE_INTERP=$PWD/dev-package/reports/k4-luna-probe/interp-02.json COLAB_K4_PROBE_OUT=$PWD/dev-package/reports/k4-luna-probe/retrieval-02.json \
+  bash gates/tools/service-tests.sh core-api k4_probe
+```
+
+## (2026-09-22 시점의 우려 — 검색 절반으로 닫힘 여부를 위에 적었다)
 1. **복합어는 D3 에서 구 질의가 된다.** `d3_catalog.py:719` — 낱말마다 `phraseto_tsquery` 를 태우고 끝에 `:*` 를 붙인다. 「경기 남부」는 `'경기' <-> '남부':*` 로 나가 **인접**을 요구한다. literal 의 「경기」「남부와」 두 접두 질의와 매칭 규칙이 다르므로, luna 가 복합어를 낸 문항(001·002·006·007·008·012)의 retrieval 은 해석의 좋고 나쁨과 별개로 갈릴 수 있다. 이건 프롬프트가 아니라 **해석기 ↔ D3 계약**의 문제다.
 2. **004 「원자료」 탈락.** 골든 004 는 월평균의 원자료를 찾는 문항이라 「원자료」가 정답을 가르는 낱말일 수 있다. luna 가 이를 기능어로 본 것이 pass/fail 을 바꾸는지 실측이 필요하다.
 3. **009 SPEI 제외**는 해석 품질의 명백한 이득이지만, 결과 집합이 실제로 줄어드는지는 자료가 있어야 보인다.
 
-## 블로커 — dev 플랫폼 DB 가 비어 있다 (2026-09-22 확인)
-core-api 컨테이너가 보는 RDS `colab_platform` 에서 `d3_dataset` 0건 · `d1_account` 0건 · `d1_lab` 1건 · `/etc/colab/subjects.json` 3바이트(`{}`).
-그래서 `golden_baseline.py --mode literal` 도 지금은 `subject absent` 로 준비 실패(78)한다. 2026-09-15 보고서의 「살아 있는 28개 자료」 상태가 아니다.
-복구는 제품 데이터를 만드는 작업이라 이 task(researcher·읽기 전용)의 권한 밖이며 Ted 판단 대상이다. 절차는 `.agents/skills/dev-reseed/SKILL.md`.
-복구 뒤 실행 명령(같은 러너, `--skip-remote` 만 뺀다):
-```
-COLAB_DEV_KEY_FILE=~/.config/colab-platform/dev-key.pem ~/.config/colab-platform/with-dev-env.sh \
-  python3 eval/k4-search/llm_interpreter_probe.py --repeats 2 --output dev-package/reports/k4-luna-probe/run-02.json
-```
+## dev 경로가 막힌 이유 — 「DB 가 비어서」가 아니다 (어드바이저 2026-09-23 교정)
+2026-09-22 에 dev RDS 가 비어 있음(`d3_dataset` 0 · subjects `{}`)을 보고 재시드를 차단 해제로 제안했으나 원인 오인이었다.
+골든 정답 ID(`01M1SC…`)는 2026-09-05 생성분이고 DR-4 재적재(2026-09-14) 뒤 dev 는 `01M2F4…` ID 를 갖는다. 재시드는 화면 업로드라 ID 가 다시 나므로
+dev 를 채워도 `golden_baseline.REMOTE` 의 `missing gold dataset` 단언에서 준비 실패한다. dev 에서 골든셋을 다시 재려면 **골든 ID 재고정(골든셋 편집 · 승인 대상)**이 선행해야 한다. 이 회차는 열지 않았다.
+`llm_interpreter_probe.py --skip-remote` 없는 dev 경로는 그때까지 쓰지 않는다.
 
 ## 이 실측이 말하지 않는 것
-- luna 가 「충분」한가(결정 ㊷ 잔여 조건)의 최종 답. retrieval 없이는 반쪽이다.
+- 결정 ㊷ 잔여 조건의 **완결**. K4 는 참조 코퍼스 9건에서 충족했고, K3 는 미실측이다. ㊷ 추기 문안에 「K3 미실측」을 명시한다.
+- dev·prod 코퍼스에서의 값. 9건 코퍼스의 결과를 25~28건 코퍼스로 외삽하지 않는다.
 - 프롬프트를 고치면 어떻게 되는가. 제품 프롬프트 그대로만 쟀다.
 - Haiku 등 다른 모델과의 비교. Ted 가 「gpt로 하자」로 닫았다.

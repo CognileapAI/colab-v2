@@ -26,4 +26,7 @@ markers = [
   # (`-m "not e2e"`). 표식이 없으면 뺄 방법이 없어 조용히 skip 하고 싶어진다.
   "e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다",
   "search_golden: 모델 호출 없는 검색 public API 골든 회귀",
+  # 측정 전용 — 기록된 모델 해석을 참조 코퍼스에 재생한다. 게이트 선택자(`search_golden`·`not e2e`)에
+  # 들어가지 않으며 환경변수 둘(COLAB_K4_PROBE_INTERP·_OUT)이 없으면 skip 이 아니라 error 다.
+  "k4_probe: K4 질의 해석 프로브 — 기록된 해석의 검색 절반 재생(측정 · 판정 게이트 아님)",
 ]
