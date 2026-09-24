@@ -1340,6 +1340,10 @@ export function UploadModal(props: {
       className={`modal-back mb-takeover${!registerOpen && !attach && !showingEarlyPreview && !previewFinalNotice ? ' up-empty' : ''}`}
       data-testid="upload-backdrop"
       data-state={closing ? 'closing' : undefined}
+      // design-fix 20260924 A17 — 닫는 동안 배경과 그 안 **모든** 요소가 누름·초점을 받지 않는다.
+      //   배경의 `pointer-events: none`(값 2)은 안쪽에서 `auto` 를 명시한 패널(미리보기 도구 등)을 덮지 못한다.
+      //   `inert` 는 하위 전체를 hit-test 에서 빼므로 누름은 뒤 화면으로 통과한다. 다시 열면(`closing` 해제) 풀린다.
+      inert={closing ? true : undefined}
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
       //   `event.target === event.currentTarget` 이라 모달 **안쪽** 클릭은 여기 닿지 않는다.
