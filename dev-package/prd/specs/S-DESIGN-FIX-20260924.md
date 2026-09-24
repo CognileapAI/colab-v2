@@ -31,7 +31,7 @@
 | 17 | ⓐ | 「색 배경 위 글자」 토큰 신설(라이트·다크) · `.de-req` 글자색 치환 | `shell/tokens.css` · `components/detail/detail.css:166` | CSS | L1 | 13 |
 | 15 | ⓐ | 코드 값 무변(9px 유지). `catalog.css:48` 에 「장식 글리프 · 합격선 예외 #15」 주석 · 정본 예외 기록(§6) | `components/catalog/catalog.css` · 문서 | 주석 · 문서 | L1 | — |
 | 16 | ⓐ | `.lvl-mismatch` 12px → `var(--text-caption)` | `components/catalog/catalog.css:138` | CSS | L1 | — |
-| 19 | ⓐ | 안내 줄 주석을 렌더(`--color-warning-600` · 흰 면 5.34:1)에 맞춤 | `components/lineage/lineage.css:165` | 주석 | L1 | — |
+| 19 | ⓐ | 안내 줄 주석을 렌더에 맞춤 — 〔정정 2026-09-25 · 수용 검토 A1〕 실제 「안내 줄」은 `.lin-scope-lv`(`--color-text-muted` #565c63 on `--color-surface-alt` #f5f7fa = 6.30:1). 초안의 「`--color-warning-600` · 흰 면 5.34:1」 전제는 틀렸다(`.lin-over-why` 는 warning-50 면 5.00:1 · `.lin-unknown-why` 는 소비처 없음) | `components/lineage/lineage.css:165` | 주석 | L1 | — |
 | WU-A2 | 즉시 후보(값 선행) | 셸 대화형 10종 `:active` | `shell/shell.css` | CSS | L1 | 15 |
 | WU-A3 | 즉시 후보(값 선행) | `.tbl tr.clk:active td` | `components/catalog/catalog.css` | CSS | L1 | 16 |
 | 1 | ⓐ | `@keyframes up-rise` → `transition` ＋ `@starting-style` · 닫기 상태 `data-state="closing"` · 전환이 끝난 뒤 언마운트(전환 시간 0 이면 즉시) · 닫는 중 다시 열기(값 2) | `components/upload/upload.css:18`–`32` · `upload/UploadModal.tsx` · (값 2 = 제안이면) `upload/UploadEntry.tsx:92` · `upload/GridAttachEntry.tsx:53` | TSX ＋ CSS | L2 | 1 · 2 |
@@ -117,7 +117,7 @@
 | 17 | 라이트 · 다크 블록 모두 값 13 이름 정의 · `detail.css` `.de-req` 블록 `color: var(<값 13 이름>)` · 그 글자 대 `--color-text-body`(라이트는 `#21272ae0` 를 흰 면에 합성) 대비 두 테마 ≥ 4.5 |
 | 15 | 회귀 고정 — `.tbl thead th > .thf::before` 의 `font-size: 9px` 불변(예외 · 고치지 않음) |
 | 16 | `.lvl-mismatch` 블록 `font-size: var(--text-caption)` · `catalog.css` 에 `font-size: 12px` 0 |
-| 19 | `lineage.css` **주석 포함 원문**에 `#5b6472` 0 · 안내 줄 주석에 `--color-warning-600` |
+| 19 | `lineage.css` **주석 포함 원문**에 `#5b6472` 0 · 안내 줄 주석이 `.lin-scope-lv` 의 실제 색쌍(`--color-text-muted` on `--color-surface-alt` 6.30:1)을 적는다 〔정정 2026-09-25 · A1〕 |
 | WU-A2 | `shell.css` 10개 선택자(`.backlink` 문맥 · `.mainnav a` · `.gnb-settings` · `.gnb-upload` · `.gnb-more` · `.gnb-more-item` · `.gnb-logout` · `.loadfail-retry` · `.theme-switcher` · 모달 닫기 `.x` 문맥) 각각에 `:active` 블록과 선언 1개 이상(값 15) · reduced-motion 블록 원문 불변 · 기존 `:hover` 블록 원문 불변 |
 | WU-A3 | `.tbl tr.clk:active td` 블록 `background: var(<값 16>)` · `.tbl tr.clk td` transition 원문 불변 |
 | 문서 | `design-docs.mjs --check` 종료 0 — 게이트 `frontend-design-lint` h 가 잰다(시험에서 다시 부르지 않는다) |
@@ -392,3 +392,15 @@ L1·L2·L3 병합(충돌 0) 뒤, 수용 검토 워크플로 2건이 확정한 �
 
 - 오케스트레이터(통합 단계): A9 · A16 · A20 · A32 보고서 정정 · A36 캡처 대조 · A38 통합 게이트 · A15 조치 없음.
 - 하네스 후속(이 PR 밖 · 별도 브랜치): A37 `live_audit.sh` 파일명 60자 절단 · A39 `frontend-visual` 이 띄운 agent-browser 가 호스트 게이트 잠금 fd 를 물려받아 게이트 뒤에도 쥠 · `live_probe.js` 가 `@layer` 안 규칙을 세지 못함 · `COLAB_FIX_LANE` 이 레인 훅에 전달되지 않아 test-file-guard 미작동(세 레인 공통).
+
+### 잔여 정리 레인 F-final (2026-09-25 · 수정 워크플로 결과)
+
+F-css · F-upload · F-preview 병합 뒤(충돌 0) 남은 것. 단일 레인(유일 쓰기 주체) · RED → GREEN.
+
+| # | 항목 | 파일 |
+|---|---|---|
+| 1 | A21 — `.dr-nav button:active` · `.dr-useg button:active` = `var(--color-surface-pressed)`(값 19). 시험 작성 단계에서 `design-fix-20260924-L2.test.tsx` 의 두 고정값을 바꾸고 F-css 「누름 ≠ hover」 표에 두 자리를 넣는다 | `upload.css` · `design-fix-20260924-L2.test.tsx` · `design-fix-20260924-F-css.test.ts` |
+| 2 | F-css 보수 라운드가 넣은 `docs/design-system.md` ⑦ 「판정 대기」 17번 행(A21)과 ⑤ 누름 줄의 「⑦ 판정 대기 17 에 둔다」 지시, 그 임시 상태를 못박은 F-css 시험 두 번째 경우를 지운다 — 값 19 는 Ted 확정이라 판정 대기가 아니다 | `docs/design-system.md` · `design-fix-20260924-F-css.test.ts` |
+| 3 | `.btn-strong:hover` 에 `:disabled` 제외(A2 와 같은 결함 · 새 값 없음) | `upload.css` · 시험 |
+| 4 | F-upload 시험 제목이 단언과 다름(FU-1 · 「inert 가 남지 않는다」인데 inert 를 재지 않음) — 단언을 제목에 맞춘다 | `design-fix-20260924-F-upload.test.tsx` |
+| 5 | `spring.ts` 문서 주석 공백 복원(FP-3) · F-preview 보고서의 A41 서술 정정(효과 정리 stopInertia 는 언마운트 때만 · A41 은 remeasure 가 담당 · FP-2) | `spring.ts` · `dev-package/sessions/design-fix-20260924-F-preview.md` |
