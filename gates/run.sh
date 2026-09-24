@@ -840,8 +840,10 @@ case "$GATE" in
           printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
           return 0
         fi
+        # 부모가 잠금을 쥔 채 기다리므로 자식은 fd 가 필요 없다. 자식 게이트가 띄운 데몬이
+        # fd 를 물려받아 게이트 뒤에도 잠금을 쥐지 않도록 닫고 부른다(`_lock.sh` gate_mutex_spawn).
         if COLAB_GATE_JOBS="$ij" COLAB_GATE_INNER_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 \
-           COLAB_GATE_MUTEX_HELD=1 "$REPO_ROOT/gates/run.sh" "$g" >>"$outdir/$g.out" 2>&1
+           COLAB_GATE_MUTEX_HELD=1 gate_mutex_spawn "$REPO_ROOT/gates/run.sh" "$g" >>"$outdir/$g.out" 2>&1
         then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
         gate_host_mutex_release
       else

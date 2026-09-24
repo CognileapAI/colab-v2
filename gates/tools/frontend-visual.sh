@@ -32,6 +32,9 @@ set -uo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
+# 판정부 호출에 호스트 뮤텍스 fd 를 넘기지 않는 헬퍼(`gate_mutex_spawn`)만 쓴다 — 잠금을 잡지 않는다.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_lock.sh"
 
 AUDIT="${COLAB_VISUAL_AUDIT:-$REPO_ROOT/.agents/skills/design-review/scripts/live_audit.sh}"
 ALLOW="${COLAB_VISUAL_ALLOW:-$REPO_ROOT/gates/fixtures/frontend-visual/allow.txt}"
@@ -72,8 +75,13 @@ OUT="$OUTBASE/frontend-visual"
 mkdir -p "$OUT" || ready_red "$OUT" "근거 배출 자리를 만들지 못했다."
 
 # ── ⑶ 계측 — 판정부를 그대로 돈다 (읽기 전용) ────────────────────────────────
+# ⚠ 판정부는 agent-browser 데몬·chrome 을 띄운다. 그 데몬이 serial 잠금 fd 를 물려받으면 게이트가
+#   끝난 뒤에도 잠금을 쥔다 — `gate_mutex_spawn` 으로 fd 를 닫고 부른다(spec F1).
+# 안전망: 판정부의 trap 이 돌지 않는 SIGKILL·절단 경로용 유휴 종료 상한. 호출자가 준 값은 존중한다.
+#   이 값은 게이트가 새로 띄우는 데몬에만 든다(호출자가 준 `AB_SESSION` 의 기존 데몬에는 안 든다).
+export AGENT_BROWSER_IDLE_TIMEOUT_MS="${AGENT_BROWSER_IDLE_TIMEOUT_MS:-600000}"
 # shellcheck disable=SC2086
-AUDIT_OUT="$(bash "$AUDIT" "$OUT" $URLS 2>&1)"; arc=$?
+AUDIT_OUT="$(gate_mutex_spawn bash "$AUDIT" "$OUT" $URLS 2>&1)"; arc=$?
 if [ "$arc" -eq 78 ]; then
   ready_red "agent-browser" "판정부가 78 로 끝났다(설치 부재). 출력:
 $(printf '%s\n' "$AUDIT_OUT" | tr '\n' ' ')"
