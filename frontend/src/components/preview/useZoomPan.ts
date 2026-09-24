@@ -18,7 +18,7 @@
 // 여기 상수로 박힌 것은 사람이 한 번에 얼마나 들어가는가(`STEP`) 하나다.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { baseScaleFor, needsBoundsOutline, snapWidthKm, boundsWidthKm, type GeoBounds } from './scaleLadder';
-import { SETTLE_PX, VELOCITY_WINDOW_MS, projectedDistance, spring } from './spring';
+import { SETTLE_PX, VELOCITY_WINDOW_MS, capHandoffVelocity, projectedDistance, spring } from './spring';
 
 /** 한 번 누를 때 들어가는 정도. 화면 조작의 단위이지 상한이 아니다. */
 const STEP = 2;
@@ -190,17 +190,25 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   // 화면 크기는 **상태로도 들고 있어야 한다** — 타일 모자이크가 그 값으로 조각을 세우는데
   // ref 를 그때그때 읽으면 크기가 늦게 잡혀도 다시 그려지지 않는다.
   const [boxSize, setBoxSize] = useState<{ width: number; height: number } | undefined>();
-  /** 누른 포인터 · 누른 자리(`sx`·`sy`) · 마지막 반영 자리(`x`·`y`) · 임계를 넘었는가. */
-  const drag = useRef<{ id: number; sx: number; sy: number; x: number; y: number; active: boolean } | null>(null);
+  /**
+   * 누른 포인터 · 누른 자리(`sx`·`sy`) · 마지막 반영 자리(`x`·`y`) · 임계를 넘었는가 ·
+   * 관성을 잡은 누름인가(`caught` — 그 탭 뒤의 click 은 값 조회가 아니다 · F-preview A35).
+   */
+  const drag = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    x: number;
+    y: number;
+    active: boolean;
+    caught: boolean;
+  } | null>(null);
   /** 끌기가 성립한 뒤 따라오는 click 한 번을 버린다(값 조회가 끌기 끝에서 새지 않게). */
   const dragged = useRef(false);
   /** 이동 기록(시각 ms · 자리) — 놓을 때 마지막 100ms 의 평균 속도를 낸다(#5 · 값 6). */
   const samples = useRef<Array<{ t: number; x: number; y: number }>>([]);
   /** 놓은 뒤 관성 프레임 번호. 새 누르기 · 휠 · 확대 단추 · 더블클릭이 끊는다. */
   const inertia = useRef<number | null>(null);
-  /** 관성이 출발할 자리 — 놓는 순간의 상태. */
-  const viewNow = useRef(view);
-  viewNow.current = view;
 
   /** 관성을 **그 프레임 값에서** 멈춘다 — 자리를 다시 쓰지 않으므로 튀지 않는다. */
   const stopInertia = useCallback(() => {
@@ -393,9 +401,21 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       currentTarget?: EventTarget | null;
     }) => {
       if (e.button !== undefined && e.button !== 0) return;
+      // 끌기 중 다른 포인터(두 번째 손가락)의 누름은 무시한다 — 첫 포인터가 끝날 때까지(A27).
+      if (drag.current && drag.current.id !== e.pointerId) return;
+      // 관성 중의 누름은 관성을 잡는 탭이다 — 놓은 뒤 click 을 값 조회로 넘기지 않는다(A35).
+      const caught = inertia.current !== null;
       stopInertia();
       dragged.current = false;
-      drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, active: false };
+      drag.current = {
+        id: e.pointerId,
+        sx: e.clientX,
+        sy: e.clientY,
+        x: e.clientX,
+        y: e.clientY,
+        active: false,
+        caught,
+      };
       samples.current = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
       // 캡처가 있으면 뷰포트 밖으로 나가도 이동이 이어진다. 없으면(jsdom) 창 리스너가 받는다.
       (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
@@ -425,7 +445,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     function up(e: PointerEvent) {
       const from = drag.current;
       if (!from || e.pointerId !== from.id) return;
-      dragged.current = from.active;
+      dragged.current = from.active || from.caught;
       drag.current = null;
       if (!from.active) return;
       // 놓을 때 속도 = 마지막 100ms 이동 기록의 평균(px/s · 확정 값 6). 기록이 한 점뿐이면
@@ -443,38 +463,83 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       const vx = ((last.x - first.x) / (last.t - first.t)) * 1000;
       const vy = ((last.y - first.y) / (last.t - first.t)) * 1000;
       // 목표 = 투영 자리를 이동 범위로 자른 값. 스프링이 놓은 속도를 이어받아 그리로 간다.
-      const start = viewNow.current;
-      const goal = clampView({
-        scale: start.scale,
-        x: start.x + projectedDistance(vx),
-        y: start.y + projectedDistance(vy),
-      });
+      // 출발 자리는 **첫 프레임의 갱신 함수가 받은 최신 값(`cur`)** 이다 — 렌더 시점의 값을 쓰면
+      // 아직 커밋되지 않은 마지막 이동이 빠져 한 걸음 뒤에서 출발한다(A24/A28/A34).
+      // 목표가 잘렸으면 인계 속도를 |v0| ≤ ω·|x0| 로 줄여 끝에서 넘쳤다 잘리지 않게 한다(A26).
       const t0 = now;
+      let launch: {
+        x: number;
+        y: number;
+        goal: { x: number; y: number };
+        vx: number;
+        vy: number;
+      } | null = null;
+      let settled = false;
       const frame = () => {
+        if (settled) {
+          inertia.current = null;
+          return;
+        }
         const t = (performance.now() - t0) / 1000;
-        const sx = spring(start.x, goal.x, vx, t).value;
-        const sy = spring(start.y, goal.y, vy, t).value;
-        const done = Math.abs(sx - goal.x) < SETTLE_PX && Math.abs(sy - goal.y) < SETTLE_PX;
-        setView((cur) => clampView({ ...cur, x: done ? goal.x : sx, y: done ? goal.y : sy }));
-        inertia.current = done ? null : requestAnimationFrame(frame);
+        setView((cur) => {
+          // 갱신 함수는 멱등이어야 한다 — StrictMode(DEV)는 몰아 처리하는 갱신을 두 번 부르고
+          // 첫 결과를 버린다. 멈춘 뒤의 호출도 앞 프레임 값이 아니라 목표를 돌려준다(FP-1).
+          // `settled` 는 rAF 루프의 멈춤 판단에만 쓴다.
+          if (settled && launch) return clampView({ ...cur, x: launch.goal.x, y: launch.goal.y });
+          if (!launch) {
+            const goal = clampView({
+              scale: cur.scale,
+              x: cur.x + projectedDistance(vx),
+              y: cur.y + projectedDistance(vy),
+            });
+            launch = {
+              x: cur.x,
+              y: cur.y,
+              goal,
+              vx: capHandoffVelocity(vx, cur.x - goal.x),
+              vy: capHandoffVelocity(vy, cur.y - goal.y),
+            };
+          }
+          const { goal } = launch;
+          const sx = spring(launch.x, goal.x, launch.vx, t).value;
+          const sy = spring(launch.y, goal.y, launch.vy, t).value;
+          const done = Math.abs(sx - goal.x) < SETTLE_PX && Math.abs(sy - goal.y) < SETTLE_PX;
+          if (done) settled = true;
+          return clampView({ ...cur, x: done ? goal.x : sx, y: done ? goal.y : sy });
+        });
+        // 갱신 함수가 렌더까지 미뤄지면 `settled` 는 다음 프레임에 읽힌다 — 빈 프레임 하나가 더 돈다.
+        inertia.current = settled ? null : requestAnimationFrame(frame);
       };
       inertia.current = requestAnimationFrame(frame);
     }
+    // pointercancel 은 놓기가 아니다 — 관성 없이 끝내고 취소 이벤트의 좌표는 표본에 넣지 않는다
+    // (A23/A25/A33). 취소 뒤에는 click 이 오지 않으므로 버릴 click 도 없다.
+    function cancel(e: PointerEvent) {
+      const from = drag.current;
+      if (!from || e.pointerId !== from.id) return;
+      drag.current = null;
+      samples.current = [];
+      dragged.current = false;
+    }
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
+    window.addEventListener('pointercancel', cancel);
     return () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
+      window.removeEventListener('pointercancel', cancel);
+      // 도는 관성 프레임은 놓을 때의 `clampView` 를 쥐고 있다 — 리스너를 새로 걸 때 멈춘다(A41).
+      stopInertia();
     };
-  }, [clampView]);
+  }, [clampView, stopInertia]);
 
   // **원본 해상도는 한 번 알면 계속 유효하다** — 결과가 바뀌지 않는 한 다시 묻지 않는다.
   // 화면 크기 쪽은 바뀔 수 있으므로 둘을 갈라 들고, 크기가 바뀌면 한계를 다시 센다.
   const nativeWidth = useRef(0);
 
   const remeasure = useCallback(() => {
+    // 화면 크기·한계 배율이 바뀌면 이동 범위도 바뀐다 — 놓을 때의 목표로 가던 관성을 멈춘다(A41).
+    stopInertia();
     const size = box();
     if (!size || !nativeWidth.current) return;
     setBoxSize((prev) =>
@@ -485,7 +550,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     //   여기를 `baseScale` 로 내리면 「데이터에 맞춤」보다 덜 들어간 곳이 한계가 된다.
     setMaxScale(Math.max(1, nativeWidth.current / size.width));
     setMeasured(true);
-  }, [box]);
+  }, [box, stopInertia]);
 
   const learn = useCallback(
     (natural: number) => {
@@ -505,10 +570,13 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
 
   // **시작 자리는 사다리가 정한다.** 경계가 없으면(`baseScale === 1`) 아무 것도 하지
   // 않는다 — ②비지도형의 거동을 한 글자도 바꾸지 않기 위해서다.
+  // 경계가 바뀌면(기본 배율 변화) 도는 관성을 먼저 멈춘다 — 멈추지 않으면 다음 프레임이
+  // 옛 배율의 목표로 시작 자리를 덮는다(A29).
   useEffect(() => {
+    stopInertia();
     if (baseScale >= 1) return;
     setView((cur) => (cur.scale === baseScale ? cur : { scale: baseScale, x: 0, y: 0 }));
-  }, [baseScale]);
+  }, [baseScale, stopInertia]);
 
   const onImageLoad = useCallback(
     (e: { currentTarget: HTMLImageElement }) => learn(e.currentTarget.naturalWidth),

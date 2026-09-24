@@ -20,7 +20,19 @@ export function projectedDistance(velocity: number): number {
 }
 
 /**
- * 닫힌 식 `x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
+ * 인계 속도 상한 `|v0| ≤ ω·|x0|`(design-fix 20260924 F-preview A26 · `x0 = from − to`).
+ * damping 1.0 스프링은 `v0` 가 이 상한을 넘을 때만 목표를 한 번 지나친다. 목표가 `clampView` 로
+ * 잘린 자리(이동 범위 끝)면 그 넘침이 「움직이던 채로 끝에서 잘림」으로 보이므로 속도를 줄인다.
+ * 잘리지 않은 투영 목표는 `|x0| ≈ 0.5 s × |v0|` 라 상한(≈ 7.8·|v0|)에 걸리지 않는다.
+ */
+export function capHandoffVelocity(v0: number, x0: number, response: number = SPRING_RESPONSE): number {
+  const limit = ((2 * Math.PI) / response) * Math.abs(x0);
+  if (Math.abs(v0) <= limit) return v0;
+  return limit === 0 ? 0 : Math.sign(v0) * limit;
+}
+
+/**
+ * 닫힌 식`x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
  * t = 0 에서 위치 = `from` · 속도 = `v0`. damping 1.0 이라 진동하지 않는다.
  */
 export function spring(

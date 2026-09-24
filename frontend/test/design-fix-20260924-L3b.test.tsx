@@ -219,7 +219,8 @@ describe('#5 놓은 뒤 관성 — 속도를 이어받아 clampView(투영 목�
     expect(yOf(layers)).toBeGreaterThan(Y0 + released);
     advance(3 * SPRING_RESPONSE * 1000);
     expect(yOf(layers)).toBeCloseTo(Y0 + HALF, 3);
-    // 경계를 넘어갔다 돌아오지 않는다 — 매 프레임 범위 안이다.
+    // 경계를 넘어갔다 돌아오지 않는다 — 두 시점 표본이다. 매 프레임 범위 검사는
+    // `design-fix-20260924-F-preview.test.tsx` A26/A31(끝까지 50px · 2000px/s)에 있다.
     advance(500);
     expect(yOf(layers)).toBeCloseTo(Y0 + HALF, 3);
   });
