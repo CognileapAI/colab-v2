@@ -25,6 +25,9 @@
 # ⓒ 잠금 디렉터리 쓰기 불가 → 78            ⓕ 레인 경로(배출처 선언)에서 `::gate-waiting::` 이 부모 출력에
 #                                           ⓖ 표를 못 읽으면 단독 호출도 메모를 찍고 안전한 쪽으로 잠근다
 #                                           ⓗ `task` 경로(CHILD=1)의 stdout 에도 잠금 사실이 남는다(1회)
+# ⑴ 잠금 보유 중 데몬성 자식을 그대로 띄우면 해제 뒤에도 다음 잠금이 막힌다(결함 재현 · 오라클 확인)
+# ⑵ `gate_mutex_spawn` 으로 띄우면 해제 뒤 다음 잠금 즉시 획득 · 자식 env 의 `COLAB_GATE_MUTEX_FD` 빈 값
+#    · 자식 fd 목록(`/proc/self/fd`)에 잠금 파일 없음 (spec `S-HARNESS-LANE-HYGIENE-20260924` F1)
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -34,7 +37,14 @@ RUN="$REPO_ROOT/gates/run.sh"
 . "$REPO_ROOT/gates/tools/_expect.sh"
 
 TD="$(mktemp -d -p "${TMPDIR:-/tmp}" gate-host-mutex-selftest-XXXXXX)"
-trap 'rm -rf "$TD"' EXIT INT TERM
+# ⑴⑵ 의 가짜 데몬은 **이 셀프테스트가 띄운 pid 만** 죽인다 — 호스트의 다른 agent-browser 는 건드리지 않는다.
+DAEMON_PIDS=()
+cleanup() {
+  local p
+  for p in ${DAEMON_PIDS[@]+"${DAEMON_PIDS[@]}"}; do kill "$p" 2>/dev/null; done
+  rm -rf "$TD"
+}
+trap cleanup EXIT INT TERM
 
 CTMP="$TD/tmp"; mkdir -p "$CTMP"                 # 자식들이 물려받을 TMPDIR = 잠금 키
 LOCK_DIR="$CTMP/colab-v2-gate-host-mutex"
@@ -234,7 +244,74 @@ n_lines="$(printf '%s\n' "$OUT" | grep -c '호스트 뮤텍스 :' || true)"
 if [ "$n_lines" = 1 ]; then ok "ⓗ 호스트 뮤텍스 줄이 정확히 1회"
 else fail "ⓗ 호스트 뮤텍스 줄이 ${n_lines}회 — 인쇄 자리가 둘이다"; fi
 
+# ── ⑴⑵ 잠금 fd 가 데몬을 띄우는 자식에 넘어가는가 ────────────────────────────
+# 보유자(`_lock.sh` 를 source 한 bash)가 잠금을 잡고, agent-browser 처럼 **데몬을 남기고 끝나는**
+# 자식을 부른 뒤 잠금을 놓고 끝난다. 데몬은 `exec -a` 로 이름만 바꾼 `sleep` 이다 — 실제
+# agent-browser 를 띄우지 않는다. 모두 전경 실행이라 동기화 신호가 필요 없다.
+HOLDER="$TD/holder.sh"; SPAWNER="$TD/spawner.sh"
+cat > "$HOLDER" <<'SH'
+. "$1/gates/tools/_lock.sh"
+gate_host_mutex_acquire spawn-selftest >/dev/null 2>&1 || exit 9
+printf '%s' "${COLAB_GATE_MUTEX_FD-}" > "$2/holder.env"
+if [ "$3" = spawn ]; then gate_mutex_spawn bash "$4" "$2" || exit 8
+else bash "$4" "$2"; fi
+gate_host_mutex_release
+printf '%s' "${COLAB_GATE_MUTEX_FD-}" > "$2/holder.after"
+SH
+cat > "$SPAWNER" <<'SH'
+printf '%s' "${COLAB_GATE_MUTEX_FD-unset}" > "$1/child.env"
+for f in /proc/$$/fd/*; do readlink "$f"; done > "$1/child.fds" 2>/dev/null
+( exec -a fake-agent-browser-daemon sleep 60 ) </dev/null >/dev/null 2>&1 &
+echo $! > "$1/daemon.pid"
+SH
+# $1 = plain | spawn → DPID · SPAWN_RC · HOLDER_ENV · HOLDER_ENV_AFTER · SPAWN_DIR 를 채운다.
+spawn_case() {
+  local d="$TD/spawn-$1"; mkdir -p "$d"
+  env -u COLAB_GATE_MUTEX_FD -u COLAB_GATE_MUTEX_HELD TMPDIR="$CTMP" \
+    bash "$HOLDER" "$REPO_ROOT" "$d" "$1" "$SPAWNER" >/dev/null 2>&1
+  SPAWN_RC=$?
+  DPID="$(cat "$d/daemon.pid" 2>/dev/null || true)"
+  [ -n "$DPID" ] && DAEMON_PIDS+=("$DPID")
+  HOLDER_ENV="$(cat "$d/holder.env" 2>/dev/null || echo '(없음)')"
+  HOLDER_ENV_AFTER="$(cat "$d/holder.after" 2>/dev/null || echo '(없음)')"
+  SPAWN_DIR="$d"
+}
+# 다음 게이트 자리 — 같은 잠금 파일을 **즉시** 잡을 수 있는가(대기 없음).
+next_lock_free() { flock -n "$LOCK" true 2>/dev/null; }
+daemon_alive() { [ -n "$DPID" ] && kill -0 "$DPID" 2>/dev/null; }
+
+echo "══ ⑴ 잠금 보유 중 그대로 띄운 데몬은 해제 뒤에도 잠금을 쥔다 ════════"
+spawn_case plain
+if daemon_alive; then ok "⑴ 가짜 데몬 생존 (pid $DPID)"
+else fail "⑴ 가짜 데몬이 뜨지 않았다 (보유자 rc=$SPAWN_RC) — 이 케이스는 아무것도 재지 않았다"; fi
+if next_lock_free; then fail "⑴ 그대로 띄운 데몬이 있는데 다음 잠금이 잡혔다 — 오라클이 결함을 못 본다"
+else ok "⑴ 보유자 해제 뒤에도 다음 잠금 BLOCKED — 데몬이 상속 fd 로 잠금을 쥔다(결함 재현)"; fi
+# 데몬은 이 셸의 자식이 아니라 `wait` 할 수 없다 — 종료 반영은 상한 5초의 잠금 대기로 받는다.
+[ -n "$DPID" ] && kill "$DPID" 2>/dev/null
+if flock -w 5 "$LOCK" true 2>/dev/null; then ok "⑴ 가짜 데몬을 끝내면 다음 잠금 획득 — 막은 것은 그 데몬이었다"
+else fail "⑴ 데몬을 끝냈는데도 다음 잠금이 막혀 있다 — 다른 보유자가 있다"; fi
+
+echo "══ ⑵ gate_mutex_spawn 으로 띄운 데몬은 잠금을 물려받지 않는다 ══════"
+spawn_case spawn
+if daemon_alive; then ok "⑵ 가짜 데몬 생존 (pid $DPID)"
+else fail "⑵ 가짜 데몬이 뜨지 않았다 (보유자 rc=$SPAWN_RC) — gate_mutex_spawn 이 없거나 자식을 못 띄웠다"; fi
+case "$HOLDER_ENV" in
+  ''|*[!0-9]*) fail "⑵ 잠금을 잡은 보유자에게 COLAB_GATE_MUTEX_FD 가 숫자로 export 되지 않았다 (값=${HOLDER_ENV:-빈 값})" ;;
+  *)           ok "⑵ 잠금 획득 뒤 COLAB_GATE_MUTEX_FD=${HOLDER_ENV} export" ;;
+esac
+if [ -z "$HOLDER_ENV_AFTER" ]; then ok "⑵ 해제 뒤 COLAB_GATE_MUTEX_FD 비워짐"
+else fail "⑵ 해제 뒤 COLAB_GATE_MUTEX_FD=${HOLDER_ENV_AFTER} — 닫힌 번호가 남는다"; fi
+if daemon_alive && next_lock_free; then ok "⑵ 데몬이 살아 있는 동안 다음 잠금 즉시 획득"
+else fail "⑵ 데몬 생존 중 다음 잠금 즉시 획득이 성립하지 않았다 — fd 가 상속됐거나 데몬이 없다"; fi
+cenv="$(cat "$SPAWN_DIR/child.env" 2>/dev/null || echo '(파일 없음)')"
+if [ -z "$cenv" ]; then ok "⑵ 자식이 본 COLAB_GATE_MUTEX_FD 는 빈 값"
+else fail "⑵ 자식이 본 COLAB_GATE_MUTEX_FD='${cenv}' (기대 빈 값) — 손자가 무관한 fd 를 닫을 수 있다"; fi
+if [ ! -s "$SPAWN_DIR/child.fds" ]; then fail "⑵ 자식 fd 목록을 읽지 못했다 — 판정 재료가 없다"
+elif grep -qF "$LOCK" "$SPAWN_DIR/child.fds"; then fail "⑵ 자식 /proc/self/fd 에 잠금 파일이 있다: $LOCK"
+else ok "⑵ 자식 /proc/self/fd 에 잠금 파일 없음"; fi
+[ -n "$DPID" ] && kill "$DPID" 2>/dev/null
+
 echo "── gate-host-mutex-selftest 요약 ───────────────────────────────"
-echo "  케이스 8건(ⓐ~ⓗ) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
+echo "  케이스 10건(ⓐ~ⓗ · ⑴⑵) · 잠금 키 TMPDIR=$CTMP (실제 호스트 잠금 무접촉)"
 expect_readiness_verdict "gate-host-mutex-selftest" "호스트 뮤텍스 케이스의 실행 환경"
-echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제된다(ⓐ~ⓗ)."
+echo "gate-host-mutex-selftest green — serial 선언이 프로세스 경계를 넘어 강제되고, 데몬을 띄우는 자식은 잠금을 물려받지 않는다(ⓐ~ⓗ · ⑴⑵)."

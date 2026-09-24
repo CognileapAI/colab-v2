@@ -57,5 +57,6 @@ task evidence. You measure. You do not fix what you measured.
 - **red 목록** — 이름과 상태 줄. `::gate-readiness-failure::` 와 `::gate-failure::` 표식 줄은
   **원문 그대로** 옮긴다(값의 절반이 그 안에 있다).
 - **회차** — 몇 회 돌았고 각 회차가 무엇을 냈는지. 「3회 중 2회 green」을 green 이라 적지 않는다.
-- 경로는 저장소 루트 기준 상대경로. 절대경로를 적지 않는다.
+- **증거 경로** — 최종 메시지에 이 task 의 gate-summary **절대경로**를 적는다. 오케스트레이터가 advisor ② 에 그대로 넘긴다 (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
+- 그 밖의 경로는 저장소 루트 기준 상대경로. 파일·문서에 절대경로를 적지 않는다.
 - 판정·원인 추정을 하지 않는다. 값과 원문 인용만 적는다.

@@ -102,7 +102,7 @@ gate_host_mutex_acquire() { # $1=게이트 이름 → 0=잡았다 / 78=red(준�
     return "$GATE_LOCK_READINESS_EXIT"; }
   # 비어 있으면 표식을 찍지 않는다 — 안 기다린 회차에 대기 로그를 남기면 값이 값을 못 한다.
   if flock -n "$GATE_HOST_MUTEX_FD" 2>/dev/null; then
-    GATE_HOST_MUTEX_PATH="$path"; return 0
+    GATE_HOST_MUTEX_PATH="$path"; export COLAB_GATE_MUTEX_FD="$GATE_HOST_MUTEX_FD"; return 0
   fi
   # 대기는 **보인다.** 조용히 900초 기다리면 멈춘 것과 구분되지 않는다(intent Q5).
   # 찍는 자리는 둘뿐이다 — 시도 직전 1회 ＋ 결과 1회. 값 두 개면 충분하고 로그가 안 는다.
@@ -113,7 +113,7 @@ gate_host_mutex_acquire() { # $1=게이트 이름 → 0=잡았다 / 78=red(준�
     now="$(date +%s)"; GATE_HOST_MUTEX_WAITED=$(( now - started ))
     printf '::gate-waiting::gate=%s|waited=%s|limit=%s|lock=%s\n' \
       "$gate" "$GATE_HOST_MUTEX_WAITED" "$wait_s" "$path"
-    GATE_HOST_MUTEX_PATH="$path"; return 0
+    GATE_HOST_MUTEX_PATH="$path"; export COLAB_GATE_MUTEX_FD="$GATE_HOST_MUTEX_FD"; return 0
   fi
   # ⑶ 상한 초과. ⚠ 여기서 상한을 늘려 green 을 만들지 않는다 — 78 이 나면 그 값이 곧 실측이다.
   now="$(date +%s)"; GATE_HOST_MUTEX_WAITED=$(( now - started ))
@@ -128,4 +128,19 @@ gate_host_mutex_release() {
   [ -n "$GATE_HOST_MUTEX_FD" ] || return 0
   eval "exec ${GATE_HOST_MUTEX_FD}>&-" 2>/dev/null || true
   GATE_HOST_MUTEX_FD=""
+  unset COLAB_GATE_MUTEX_FD
+}
+
+# ── 잠금 fd 를 데몬을 띄우는 자식에 넘기지 않는다 ────────────────────────────
+# ⭑ ⟨2026-09-24 신설 · spec `S-HARNESS-LANE-HYGIENE-20260924` F1⟩
+# 왜: 잠금 fd 는 `{VAR}>` 로 열려 CLOEXEC 가 없다. 잠금을 쥔 동안 처음 뜬 agent-browser 데몬·chrome 은
+#   그 fd 를 물려받아 **게이트가 끝난 뒤에도** 잠금을 쥔다 — 다음 serial 게이트가 상한까지 기다려 78 이 된다.
+# 무엇을: 획득 직후 fd 번호를 `COLAB_GATE_MUTEX_FD` 로 export 하고(해제 시 unset), 이 헬퍼로 부른 명령은
+#   그 fd 를 닫은 채 돈다. 자식 env 의 `COLAB_GATE_MUTEX_FD` 는 **비운다** — 닫힌 번호가 자식에서 다른 파일에
+#   재할당된 뒤 손자가 그 번호로 무관한 fd 를 닫는 것을 막는다.
+# 본체(`gates/run.sh` 가 exec 하는 게이트)는 fd 를 쥔 채 둔다 — 잠금 보유자이기 때문이다.
+# ⚠ 「변수가 있을 때만」은 「비어 있지 않을 때만」이다. `set -u` 아래 빈 `{var}>&-` 는 오류다.
+gate_mutex_spawn() {
+  local fd="${COLAB_GATE_MUTEX_FD:-}"
+  if [ -n "$fd" ]; then COLAB_GATE_MUTEX_FD='' "$@" {fd}>&-; else "$@"; fi
 }

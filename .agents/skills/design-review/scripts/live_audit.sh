@@ -2,16 +2,23 @@
 # live_audit.sh — 실화면 계측 (agent-browser). 읽기 전용: 페이지를 열고 재고 찍는다. 아무것도 쓰지 않는다.
 # 사용:  live_audit.sh <out_dir> <url> [<url> ...]
 # 전제:  agent-browser 설치(`npm i -g agent-browser && agent-browser install`) · 대상 앱이 떠 있음(로컬 스택 또는 Ted 지정 URL).
-#        로그인 상태가 필요하면 먼저 `agent-browser --session design auth login <name>` 으로 상태를 저장한다.
+#        로그인 세션을 쓰려면 먼저 `agent-browser --session design auth login <name>` 으로 상태를 저장하고
+#        `AB_SESSION=design scripts/live_audit.sh …` 처럼 넘긴다 — 넘기지 않으면 새 세션(로그아웃 상태)으로 잰다.
+# 세션:  `AB_SESSION` 을 넘기면 호출자 소유 — 닫지 않는다. 넘기지 않으면 고유 세션(`la-<pid>-<epoch>`)을
+#        만들어 쓰고 종료 시 닫는다(데몬·chrome 을 남기지 않는다).
 # 산출:  <out_dir>/<slug>.light.png · .dark.png · .probe.json · <out_dir>/index.md (요약표)
 set -euo pipefail
 OUT="${1:?out_dir}"; shift
 [ $# -ge 1 ] || { echo "usage: $0 <out_dir> <url>..." >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
-S="${AB_SESSION:-design}"
+S="${AB_SESSION:-la-$$-$(date +%s)}"
 VW="${AB_VIEWPORT_W:-1440}"; VH="${AB_VIEWPORT_H:-900}"
 mkdir -p "$OUT"
 command -v agent-browser >/dev/null || { echo "agent-browser not installed" >&2; exit 78; }
+# 자기가 만든 세션만 닫는다 — 호출자가 준 세션(로그인 선행 흐름)은 호출자 것이다.
+if [ -z "${AB_SESSION:-}" ]; then
+  trap 'agent-browser --session "$S" close >/dev/null 2>&1 || true' EXIT
+fi
 {
   echo "# live_audit — $(date +%F) · viewport ${VW}x${VH} · session $S"
   echo

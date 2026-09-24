@@ -45,7 +45,7 @@
     "roles": ["advisor", "gate-runner", "lane-worker", "measurement-lane", "researcher"],
     "config": ".agents/harness.yaml",
     "judges": "scripts/harness",
-    "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],
+    "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "ponytail-inject.sh", "researcher-task.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],
     "codex_only_skills": ["slack-completion"]
   },
   "adapters": {

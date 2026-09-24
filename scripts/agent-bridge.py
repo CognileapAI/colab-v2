@@ -252,7 +252,7 @@ def codex_payloads(data: dict) -> list[dict]:
     if not isinstance(command, str) or not command.strip():
         raise ValueError("missing tool_input.command")
     base = {"cwd": str(cwd), "hook_event_name": data["hook_event_name"]}
-    for key in ("agent_id", "task_id", "run_id"):
+    for key in ("session_id", "agent_id", "task_id", "run_id"):
         if data.get(key):
             base[key] = data[key]
     if tool == "Bash":
@@ -293,6 +293,14 @@ def codex_event() -> int:
         return 2
 
 
+def hook_context(stdout: str) -> str:
+    """A hook may already emit Claude's additionalContext JSON; carry only its text."""
+    try:
+        return json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    except (ValueError, TypeError, KeyError):
+        return stdout
+
+
 def dispatch_event(data: dict) -> dict:
     """Translate every registered lifecycle event; keep the existing shell judges."""
     if not isinstance(data, dict):
@@ -328,12 +336,13 @@ def dispatch_event(data: dict) -> dict:
             if result.returncode:
                 raise ValueError(f"{hook.name}: {result.stderr.strip() or 'hook failed'} (exit {result.returncode})")
             if result.stdout.strip():
-                messages.append(result.stdout.strip())
+                messages.append(hook_context(result.stdout.strip()))
             if result.stderr.strip():
                 messages.append(result.stderr.strip())
     if event == "SessionStart":
         messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. Use the user's explicit task, PR summary and local plan first. The user's selected round takes precedence over the mtime suggestion above. Verify Git history against the current request; consult work-items.yaml only for unmigrated product items. Claude tools and hooks are not assumed available.")
-    if event == "SubagentStart":
+    if event == "SubagentStart" and data.get("agent_type") != "researcher":
+        # Lane-oriented note; a researcher start carries only its own task instructions.
         messages.append("Confirm the assigned checkout, branch and HEAD before writing. This hook prepares dependencies; it does not create an isolated checkout.")
     if not messages:
         return {}

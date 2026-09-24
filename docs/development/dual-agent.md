@@ -66,17 +66,26 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
 
 ### 자동 훅 등록 상태
 
-`.codex/hooks.json`은 기존 9개 셸 훅의 5개 이벤트를 `scripts/agent-bridge.py codex-event`로 연결한다.
+`.codex/hooks.json`은 기존 11개 셸 훅의 5개 이벤트를 `scripts/agent-bridge.py codex-event`로 연결한다.
 Windows 명령은 현재 Git 루트에서 Python 진입점을 찾고 WSL에 JSON stdin을 그대로 전달한다.
 Linux도 Git 루트에서 같은 진입점을 실행한다. 하위 폴더에서 시작해도 상대 경로가 어긋나지 않는다.
 PreToolUse의 patch 전체 경로(삭제·이동 목적지 포함)를 검사하고, PostToolUse CSS 출력은
 additionalContext JSON으로, SubagentStop 성공 출력은 systemMessage JSON으로 변환한다.
+`ponytail-inject.sh`는 코드 경로의 첫 Edit·Write 뒤에 `colab-ponytail` 요지를 세션·에이전트당
+한 번 additionalContext로 싣는다. 막지 않으며 준수 판정은 하지 않는다. 훅이 이미 낸
+`hookSpecificOutput.additionalContext` JSON은 bridge가 본문만 꺼내 다시 싣는다.
+`researcher-task.sh`(SubagentStart · matcher `researcher`)는 스폰 시 cwd 체크아웃에서
+`lifecycle begin --role researcher`를 `--agent-id` 없이 실행하고 task_id·run_id·payload agent_id·handoff 명령을
+평문으로 싣는다(Codex는 additionalContext). begin이 실패해도 exit 0이며 사유와 직접 begin 명령을 출력한다.
 실행 오류는 차단으로 전달한다. H2는 환경 준비이며 격리 사본 생성이나 성공 보장이 아니다.
 프로젝트 trust와 `/hooks`의 정의별 review가 필요하다. 이 PC에서는 2026-09-09 확인 시
 7개 등록 항목 모두 enabled/trusted이며 SessionStart 실행과 PreToolUse 차단을 실측했다.
 다른 PC·새 훅 정의·다른 절대경로의 작업 사본에는 이 신뢰가 자동 이전되지 않는다.
 새 사본에서는 프로젝트 신뢰와 별도로 7개 정의를 검토한다. 기존 승인 정의와 해시가 같아도
 정상 CLI review가 필요하다. wrapper 내부 변경은 정의 해시만으로 검출되지 않으므로 코드 snapshot도 비교한다.
+2026-09-24 SubagentStart `researcher` 정의가 Claude `.claude/settings.json`과 `.codex/hooks.json`에 추가됐다.
+새 정의이므로 병합 뒤 각 PC에서 `/hooks` 재신뢰가 필요하다(사용자 몫). 재신뢰 전에는 자동 task가 열리지 않으므로
+researcher는 역할 문서의 직접 begin 절차를 따른다.
 공식 이벤트 계약: https://learn.chatgpt.com/docs/hooks
 
 - Claude `Read/Grep/Glob/Edit/Write/Bash`는 현재 Codex 세션의 파일·검색·패치·셸 도구에 대응한다.

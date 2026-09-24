@@ -66,7 +66,15 @@ not find is reported as not found, not as a guess.
 
 ## 작업별 시작·종료 증거 (H6)
 
-작업 시작 전에 `docs/development/lifecycle-evidence.md`의 `begin --role researcher`를 실행한다.
+스폰 시 SubagentStart 훅(`researcher-task.sh`)이 read-only task를 자동으로 열고 맥락 첫머리에
+`task_id`·`run_id`·`agent_id`와 마지막 단계 handoff 명령을 싣는다. 그 출력이 있으면 begin을 다시 하지 않고
+그 task로 `handoff --task <task_id> --mode read-only`를 실행해 출력된 `COLAB_HANDOFF` 줄을 최종 메시지 마지막 줄에 그대로 붙인다.
+파일 산출물이 필요하면 출력된 `begin --role researcher --agent-id <agent_id> --artifact runtime:artifacts/<파일>`로
+task를 하나 더 열고 그 task로 `artifacts` handoff를 한다(최종 메시지의 `COLAB_HANDOFF`는 한 줄뿐이다). 자동 task가 열린 동안 같은 체크아웃에 커밋하면 인계가 거부된다. 산출물 task로 인계하면 자동 task는 인계 없이 열린 채 남는다 — H6는 최종 메시지 `COLAB_HANDOFF`의 task_id로만 판정하므로(`lifecycle_contract.py` `stop()`) 다른 task 판정에 쓰이지 않는다.
+출력이 없거나 「researcher-task: begin 실패」가 보이면 아래 직접 begin 절차를 따른다.
+산출 파일을 8번째 도구 호출 전에 쓴다(뼈대 포함) · 질문이 3개를 넘으면 부모에게 분할을 요청한다.
+
+작업 시작 전에(자동 task가 없으면) `docs/development/lifecycle-evidence.md`의 `begin --role researcher`를 실행한다.
 파일 산출물은 `--artifact`로 미리 선언한다. 다른 writer가 있는 사본에서는 파일 대신 초안을 부모에게 반환한다.
 종료 시 `handoff`가 생성한 `COLAB_HANDOFF` 한 줄을 실제 결과와 함께 최종 메시지에 포함한다.
 읽기 전용은 `read-only`, 파일을 쓰지 않은 미승인 초안 반환은 `draft-return`, 파일 인계는 `artifacts` 모드다.
