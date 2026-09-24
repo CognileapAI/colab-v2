@@ -212,6 +212,9 @@ describe('누름 ≠ hover(두 테마) — 회색 계열 누름 자리 전부', 
     ['shell', SHELL, ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active', ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x'],
     ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td'],
     ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover'],
+    // F-final 1 · A21 — 업로드 달력 누름(값 19).
+    ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover'],
+    ['upload', UPLOAD, '.dr-useg button:active', '.dr-useg button:hover'],
   ];
   for (const [file, css, active, other] of pairs) {
     for (const theme of THEMES) {
@@ -339,7 +342,7 @@ describe('A11 · 값 20 · 누르는 동안(`:active`) 대비 예외를 정본�
   });
 });
 
-describe('수정 라운드 F2 · 정본 ⑤ 누름 줄은 규칙만 — 남은 자리는 ⑦ 판정 대기', () => {
+describe('수정 라운드 F2 · 정본 ⑤ 누름 줄은 규칙만', () => {
   const DOC = raw('../docs/design-system.md');
   const section = (head: string): string => {
     const from = DOC.indexOf(`\n## ${head}`);
@@ -350,10 +353,5 @@ describe('수정 라운드 F2 · 정본 ⑤ 누름 줄은 규칙만 — 남은 �
     const line = section('⑤').split('\n').find((l) => l.startsWith('- 누름 피드백')) ?? '';
     expect(line).toContain('--color-surface-pressed');
     expect(line).not.toMatch(/미적용|레인 보고서|아직/);
-  });
-  it('⑦ 판정 대기에 업로드 달력 누름 자리(A21)가 한 행으로 있다', () => {
-    const row = section('⑦').split('\n').find((l) => l.startsWith('|') && l.includes('.dr-nav button')) ?? '';
-    expect(row).toContain('.dr-useg button');
-    expect(row).toContain('A21');
   });
 });
