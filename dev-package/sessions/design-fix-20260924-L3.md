@@ -30,6 +30,7 @@
 - RED 가 아닌 새 시험 1건: 「주 단추가 아니면 끌기를 시작하지 않는다」(현행도 pointerdown 을 무시하므로 통과 — 구현 뒤 회귀 방지용). 이관 파일 중 `dataset-preview-zoom-latency` 3건 · `preview-map-viewport` 466 이관분은 현행에서도 통과(변환 문자열 존재 · 불변만 단언).
 
 - L3b: `design-fix-20260924-L3b.test.tsx` → `Error: Failed to resolve import "../src/components/preview/spring"`(파일 전체 RED). 동작 RED 이유를 따로 보려고 커밋하지 않는 임시 `spring.ts`(시작값 그대로 반환)를 두고 다시 돌림 → `Tests 9 failed | 6 passed (15)` · 대표 줄 `expected -531 to be greater than -531`(놓은 뒤 이어지지 않음) · `expected 1000 to be less than 0.5`(스프링 미수렴). 임시 파일은 곧바로 지웠다. 스텁으로도 통과한 6건(상수 · t=0 · 넘지 않음 · 렌더 재요청 0 · 멈춤 뒤 관성 0 · 동작 줄이기)은 구현 뒤 회귀 방지용.
+  - 〔정정 2026-09-25 · 통합 F-int〕 커밋된 RED(`4f137bbb`)의 사유는 import 해석 실패(모듈 부재) 하나다. 동작 수준 RED(`9 failed | 6 passed`)는 커밋하지 않고 지운 임시 스텁에서 나왔으므로 이력에서 재현되지 않는다(acceptance A32).
 - L3b 를 별도 파일로 둔 까닭: spec §3 은 `-L3.test.tsx` 1파일을 적었지만, 없는 모듈 import 가 #3 단언 전부를 가리므로 레인 지시문의 `design-fix-20260924-L3*.test.ts(x)` 범위 안에서 `-L3b.test.tsx` 로 나눴다.
 
 ## before → after
@@ -90,5 +91,6 @@
 - 보고서 커밋(`f3d198e3`) 뒤 같은 호출을 두 번 돌렸다.
   - run 2: **green 4 / red(판정) 0 / red(준비) 1** — `frontend-test` 가 호스트 뮤텍스를 900초 기다리다 준비 실패(판정 안 됨 · 종료 78).
   - run `ec36f40a3d7a460090fad7577292d909`(커밋 `f3d198e3`): **green 5 / red(판정) 0 / red(준비) 0** · vitest 1642 통과 · `frontend-visual` 근거 `/tmp/frontend-visual-VVLpUd/frontend-visual`. `lifecycle handoff --mode complete` 가 이 run 으로 통과했다.
+  - 〔정정 2026-09-25 · 통합 F-int〕 run `ec36f40a` 는 이 추기 커밋(`cfaa1344`) 전 파일 hash 의 run 이라 최종 증거가 아니다. 유효한 최종 run = 같은 task 의 `6b3eef0a034748edb93ee6b8b1dd54dc`(커밋 `cfaa1344` · tree `5db6e156`): **green 5 / red(판정) 0 / red(준비) 0**. 근거: Git common `colab-harness/88de758c9a42632bdfc3970d1e651d3e/352411c5f72c489398365b8bc347ebb4/6b3eef0a034748edb93ee6b8b1dd54dc/gate-summary.json`.
 - run 2 준비 실패의 원인 = **`frontend-visual` 이 띄운 agent-browser 데몬이 뮤텍스 잠금 fd 를 물려받아, 게이트가 끝난 뒤에도(ppid 1 고아) 잠금을 쥐고 있었다.** `fuser /tmp/colab-v2-gate-host-mutex/host` 가 이 레인 run 1 의 데몬(77분 경과)을 가리켰다. 그동안 다른 레인의 게이트도 같은 잠금에서 기다렸다. 이 레인은 자기 게이트가 띄운 데몬(cwd = 이 워크트리 · ppid 1)만 세 번 종료했다. 다른 사본의 고아 데몬(`30 CoLAB-v2/…/agent-a52182c640380b63e`)은 건드리지 않았다.
 - 이 결함이 걸리는 검사: 확인된 것 없음 — `gate-host-mutex-selftest` 가 자식 프로세스의 fd 상속을 재는지는 확인하지 않았다. 후속: `gates/tools/frontend-visual.sh`(또는 `live_audit.sh`)가 agent-browser 를 띄울 때 잠금 fd(11)를 닫거나 끝에 데몬을 닫아야 한다.

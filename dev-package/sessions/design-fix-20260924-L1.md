@@ -15,7 +15,7 @@
 | 구현 2 | `735285dd` | 버튼·칩·누름 — WU-A1–A3 · #9 · #11 · #12 · #13 · #15 · #16 · #19 |
 | 문서 | `d5925018` | `docs/design-system.md` ②③⑤⑦ · `design-review/SKILL.md` §0 |
 
-RED 확인(시험 작성 단계 · 구현 전): `Tests 38 failed | 17 passed (55)`. 실패 사유는 모두 선택자 블록 부재 · 값 불일치(예 `expected '28px' to be '1.75rem'` · `선택자 블록 수: .btn-sm : expected +0 to be 1` · `expected 'z-index: 120' to be 'z-index: 200'`). 구현 전 green 17 = 회귀 고정(#13 원문 · 기존 hover 7 · reduced-motion · `.tbl tr.clk td` transition) ＋ 대비(#9 · #11 두 테마) ＋ same-in-dark f 줄 0(같은 커밋에서 지움).
+RED 확인(시험 작성 단계 · 구현 전): `Tests 38 failed | 17 passed (55)`. 실패 사유는 모두 선택자 블록 부재 · 값 불일치(예 `expected '28px' to be '1.75rem'` · `선택자 블록 수: .btn-sm : expected +0 to be 1` · `expected 'z-index: 120' to be 'z-index: 200'`). 구현 전 green 17 = 회귀 고정(#13 원문 · 기존 hover 7 · reduced-motion · `.tbl tr.clk td` transition) ＋ 대비(#9 · #11 두 테마) ＋ same-in-dark f 줄 0(같은 커밋에서 지움) ＋ `.btn-primary:active` 불변(그대로 primary-700) ＋ `primitives.css` `!important` 0. 〔정정 2026-09-25 · 통합 F-int〕 목록이 15건만 적어 17 과 어긋났다 — 뒤 두 건(`frontend/test/design-fix-20260924-L1.test.ts`:176 · :179)이 빠져 있었다(acceptance A9).
 
 ## 2. before → after (항목별)
 

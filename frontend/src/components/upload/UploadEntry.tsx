@@ -9,7 +9,7 @@
 // 규칙이 유지되게** 한다(두 겹이어도 결과는 같다).
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { UploadModal } from './UploadModal';
+import { UploadModal, useUploadModalPresence } from './UploadModal';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
 import { apiProjectSource } from './projectSource';
@@ -41,14 +41,9 @@ export function UploadEntry(props: {
   variant?: 'gnb' | 'menu' | undefined;
 }) {
   const inMenu = props.variant === 'menu';
-  // design-review 20260924 #1 값 2 — 「열림」과 「그려 둠」을 따로 든다. 닫기 전환 동안에는 열림 false · 그려 둠 true 이고,
-  // 그 사이 단추를 다시 누르면 열림만 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(onClose) 언마운트한다.
-  const [open, setOpen] = useState(false);
-  const [rendered, setRendered] = useState(false);
-  const openModal = () => {
-    setOpen(true);
-    setRendered(true);
-  };
+  // design-review 20260924 #1 값 2 · design-fix 20260924 F-int — 「열림」·「그려 둠」·세션 번호는 `useUploadModalPresence` 한 벌이다.
+  //   닫는 도중 다시 누르면 입력을 둔 채 되돌아오고, 등록 확정 뒤의 닫기 도중이면 새 모달(①)이 선다.
+  const { open, rendered, session, openModal, onCloseStart, onClose } = useUploadModalPresence();
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
   // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
   const seq = props.openRequest?.seq ?? 0;
@@ -97,18 +92,16 @@ export function UploadEntry(props: {
       </button>
       {rendered && (
         <UploadModal
+          key={session}
           open={open}
-          onCloseStart={() => setOpen(false)}
+          onCloseStart={onCloseStart}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.openRequest?.targetLabId}
           lineageStep={props.lineageStep}
           resumeRequest={resumeRequest ?? undefined}
           registerRequest={registerRequest ?? undefined}
-          onClose={() => {
-            setOpen(false);
-            setRendered(false);
-          }}
+          onClose={onClose}
         />
       )}
     </PermissionGate>

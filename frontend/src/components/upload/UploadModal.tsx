@@ -174,6 +174,39 @@ export interface GridAttachTarget {
   onAttached?: (() => void) | undefined;
 }
 
+/**
+ * 진입 컴포넌트(`UploadEntry` · `GridAttachEntry`)가 드는 모달의 「열림」·「그려 둠」·세션 번호 한 벌.
+ *
+ * design-review 20260924 #1 값 2 — 닫기 전환 동안에는 열림 false · 그려 둠 true 이고, 그 사이 다시 열면 열림만
+ * 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(`onClose`) 언마운트한다.
+ * design-fix 20260924 F-int — 등록·반영 확정 뒤의 닫기(`completed`) 도중 다시 열면 되살리지 않고 세션 번호를 올려
+ * **새 모달**(① · PRD-13)을 세운다. 부모는 `key={session}` 으로 모달을 건다.
+ */
+export function useUploadModalPresence() {
+  const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const [session, setSession] = useState(0);
+  const completedClosing = useRef(false);
+  const openModal = useCallback(() => {
+    if (completedClosing.current) {
+      completedClosing.current = false;
+      setSession((n) => n + 1);
+    }
+    setOpen(true);
+    setRendered(true);
+  }, []);
+  const onCloseStart = useCallback((close: { completed: boolean }) => {
+    completedClosing.current = close.completed;
+    setOpen(false);
+  }, []);
+  const onClose = useCallback(() => {
+    completedClosing.current = false;
+    setOpen(false);
+    setRendered(false);
+  }, []);
+  return { open, rendered, session, openModal, onCloseStart, onClose };
+}
+
 export function UploadModal(props: {
   sources: UploadSources;
   apiSources?: boolean | undefined;
@@ -191,8 +224,12 @@ export function UploadModal(props: {
    * (입력 유지). 주지 않으면 열림으로 본다.
    */
   open?: boolean | undefined;
-  /** 닫기 전환이 **시작될 때** 부른다 — 부모가 「열림」을 내린다. 「그려 둠」은 `onClose` 에서 내린다. */
-  onCloseStart?: (() => void) | undefined;
+  /**
+   * 닫기 전환이 **시작될 때** 부른다 — 부모가 「열림」을 내린다. 「그려 둠」은 `onClose` 에서 내린다.
+   * `completed` = 등록·반영이 확정된 뒤의 닫기다. 값 2 의 되살리기는 사람이 닫은 **미완** 세션에만 적용되므로,
+   * 이때 닫는 도중 다시 열면 부모는 이 모달을 되살리지 않고 **새 모달**(① · PRD-13)을 세운다.
+   */
+  onCloseStart?: ((close: { completed: boolean }) => void) | undefined;
   /** 닫기 전환이 **끝난 뒤** 한 번 부른다(전환 시간 0 이면 곧바로). 부모는 여기서 언마운트한다. */
   onClose: () => void;
 }) {
@@ -363,6 +400,8 @@ export function UploadModal(props: {
   const modalRef = useRef<HTMLDivElement>(null);
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
+  /** 지금 진행 중인 닫기가 등록·반영 확정 뒤의 닫기인가(`closeAfterCommit`). */
+  const completedCloseRef = useRef(false);
   const closeTimer = useRef(0);
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
@@ -394,6 +433,7 @@ export function UploadModal(props: {
    * ⚠ 모달을 DOM 에 남기는 구현으로 바꾸려면 **그 커밋이** 이 리셋을 다시 세워야 한다.
    * ⭑ design-review 20260924 #1 — 닫기 전환 동안(0.3초)만 DOM 에 남는다. 전환이 끝나면 `onClose` 에서 부모가
    *   언마운트하므로 **완전히 닫힌 뒤** 다시 열면 여전히 ① 이다. 그 사이 다시 열면 입력을 둔 채 돌아온다(값 2).
+   *   단 등록·반영 확정 뒤의 닫기(`closeAfterCommit`)는 완료된 닫기다 — 그 사이 다시 열어도 부모가 새 모달(①)을 세운다.
    */
 
   const attach = props.attach;
@@ -983,7 +1023,7 @@ export function UploadModal(props: {
 
   /**
    * ⭑ design-review 20260924 #1 · advisor ① F6 — **모든 닫기 경로의 한 곳.** ×·Esc·배경(확인 없이) ·
-   * 닫기 확인의 두 단추 · 등록/반영 성공 · 계정 전환 보호(`discard`)가 모두 이것만 부른다.
+   * 닫기 확인의 두 단추 · 등록/반영 성공(`closeAfterCommit` 경유) · 계정 전환 보호(`discard`)가 모두 이것만 부른다.
    * `props.onClose` 는 전환이 끝난 뒤 `finishClose` 한 곳에서만 부른다.
    *
    * 계산된 전환 시간이 0 이면 같은 틱에 끝낸다(jsdom 기본 · 전역 reduced-motion 규칙). 아니면
@@ -1000,9 +1040,16 @@ export function UploadModal(props: {
       return;
     }
     setClosing(true);
-    props.onCloseStart?.();
+    props.onCloseStart?.({ completed: completedCloseRef.current });
     window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(finishClose, ms + 50);
+  }
+
+  /** 등록·반영이 확정된 뒤의 닫기 — 같은 `beginClose` 를 타되 부모에게 완료된 닫기라고 알린다. */
+  function closeAfterCommit() {
+    if (closingRef.current) return;
+    completedCloseRef.current = true;
+    beginClose();
   }
 
   function finishClose() {
@@ -1057,7 +1104,7 @@ export function UploadModal(props: {
     try {
       await upload.attachGrid(attach.datasetId, uploadId);
       attach.onAttached?.();
-      beginClose();
+      closeAfterCommit();
     } catch (e) {
       setRegisterError(
         e instanceof UploadGone
@@ -1152,7 +1199,7 @@ export function UploadModal(props: {
           await upload.putRepresentativeImage(createdDatasetId, representativeFile);
         }
         if (lifecycle !== mutationLifecycle.current) return;
-        beginClose();
+        closeAfterCommit();
         navigate(`/datasets/${createdDatasetId}`);
       } catch (e) {
         if (lifecycle === mutationLifecycle.current) {
@@ -1311,7 +1358,7 @@ export function UploadModal(props: {
         }
       }
       if (lifecycle !== mutationLifecycle.current) return;
-      beginClose();
+      closeAfterCommit();
       navigate(`/datasets/${made.datasetId}`);
     } catch (e) {
       if (lifecycle !== mutationLifecycle.current) return;

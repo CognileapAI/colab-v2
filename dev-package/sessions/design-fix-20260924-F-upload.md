@@ -46,6 +46,7 @@
 | `ea9c7ee532f24f63b2e8dfc6643403c3` | `6d254ff4` | 3 | 1 | 0 | `frontend-test` 1건 실패 — `test/dataset-preview-source-grid.test.tsx` 「격자 해상도와 원본 배열 크기를 함께 캡션으로 낸다」 `findByTestId('preview-map')` 기본 1000ms 대기 초과(`Tests 1 failed \| 1739 passed (1740)`). 같은 파일 단독 실행 `Tests 5 passed (5)` · 기준 전수 실행에서도 green |
 
 - 최종 판정 run 은 이 보고서 커밋 뒤 같은 task 로 실행하며, run_id 와 3계수는 레인 최종 메시지의 `COLAB_HANDOFF` 행에 적는다(보고서를 게이트 뒤에 고치면 H7 파일 hash 대조가 깨진다).
+- 〔정정 2026-09-25 · 통합 F-int〕 최종 판정 run = `75767f9bbbfe4707bb2797f0eed2947a`(커밋 `50bab4d6` · tree `432b8947`): **green 4 / red(판정) 0 / red(준비) 0** — frontend-typecheck · frontend-test · frontend-fixture-reach · frontend-design-lint 모두 종료 0. 근거: 위 증거 위치의 `<run_id>` = `75767f9bbbfe4707bb2797f0eed2947a`.
 - `frontend-visual` 은 선언·실행하지 않았다 — agent-browser 를 띄우지 않았다.
 
 ## 6. 하지 않은 것
