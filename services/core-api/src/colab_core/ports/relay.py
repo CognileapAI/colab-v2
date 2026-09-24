@@ -94,12 +94,21 @@ class LineageSuggestionPort(Protocol):
     Lv」의 기준값이고 **거르는 것은 core-api 다**(`〈72〉-㉮` 분담) — 저쪽은 해석 단서로만 쓴다.
     ⚠ 안 골랐으면 **이 표면에 오지 않는다**: 기준값이 없으면 적격을 가를 수 없어 라우트가
     중계를 부르지 않고 정직한 빈 상태로 답한다(`routes/ingestion.LEVEL_REQUIRED_REASON`).
+
+    ⭑ **⟨K3 `WU-S2` 2026-09-24⟩ `upload_axes`·`candidate_axes` 는 요청을 만든 그 값들이다.**
+    되받은 제안의 `evidence` 를 **실제 값에 대조**하는 데 쓴다 — 중계가 DB 를 다시 읽지
+    않는다(읽으면 「보낸 값」과 「검증에 쓴 값」이 갈려 인용 검증이 오라클 구실을 못 한다).
+    ⚠ **타입을 `Any` 로 적는다.** 구체 타입은 `domains.d3_lineage_signals` 의
+    `UploadAxes`·`CandidateAxes` 인데, Port 는 domains **아래 층**이라 그 모듈을 import 하면
+    층 계약(`gates/config/importlinter.ini` core-layers)이 깨진다. 이름을 여기 적어 두는 것으로
+    갈음한다 — 조립 루트(`app/relay.py`)는 그 타입을 그대로 부른다.
     """
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
                 file_meta: dict[str, Any], candidates: list[dict[str, Any]],
                 searched_count: int, dataset_name_draft: str | None,
-                subject: str | None, processing_level: int) -> dict[str, Any]:
+                subject: str | None, processing_level: int,
+                upload_axes: Any, candidate_axes: dict[str, Any]) -> dict[str, Any]:
         ...
 
 

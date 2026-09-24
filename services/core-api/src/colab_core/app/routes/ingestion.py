@@ -24,7 +24,8 @@ from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Respon
 from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience,
-                        d4_lineage, d5_ingestion, d6_project, d8_insight)
+                        d3_lineage_signals, d4_lineage, d5_ingestion, d6_project,
+                        d8_insight)
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.objectpath import normalize_relative_path
@@ -618,20 +619,31 @@ def _lineage_candidate(candidate, meta: dict[str, Any] | None) -> dict[str, Any]
 
 
 def _lineage_candidates(db: Session, *, lab_id: str, upload_meta: dict[str, Any],
-                        upload_level: int) -> list[dict[str, Any]]:
+                        upload_level: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """**모집단은 사람이 고르는 후보와 같다** — `select_lineage_candidates` 한 함수만 부른다
     (`d3_catalog` 머리말). 여기서 새 질의를 만들면 화면의 후보와 AI 가 본 후보가 갈리고,
     그 어긋남은 아무도 못 센다. 연구실 경계는 이 세션의 RLS 가 긋는다.
 
     ⭑ 자동 메타는 `autometa_of` **일괄 질의 하나**로 읽는다 — 기간·좌표계·격자·변수·파일명이
-    한 행에 있으므로 질의를 두 벌(`periods_of` + 나머지)로 열지 않는다."""
+    한 행에 있으므로 질의를 두 벌(`periods_of` + 나머지)로 열지 않는다.
+
+    ⭑ **⟨K3 `WU-S2` 2026-09-24⟩ 나가는 본문과 대조 축을 같은 행에서 만든다** — 그래서 둘을
+    함께 돌려준다. 중계가 나중에 DB 를 다시 읽으면 「보낸 값」과 「검증에 쓴 값」이 갈리고,
+    그때 인용 검증은 자기가 무엇을 검증하는지 모르게 된다."""
     picked = d3_catalog.select_lineage_candidates(
         db, lab_id=lab_id, upload_meta=upload_meta,
         strategy=LINEAGE_CANDIDATE_STRATEGY, k=LINEAGE_CANDIDATE_LIMIT,
         lineage_summaries=d4_lineage.LineageSummaryAdapter(db),
         upload_level=upload_level)
     metas = d3_catalog.autometa_of(db, [Ulid(c.core.dataset_id) for c in picked])
-    return [_lineage_candidate(c, metas.get(c.core.dataset_id)) for c in picked]
+    payload, axes = [], {}
+    for candidate in picked:
+        dataset_id = candidate.core.dataset_id
+        meta = metas.get(dataset_id)
+        payload.append(_lineage_candidate(candidate, meta))
+        axes[dataset_id] = d3_lineage_signals.CandidateAxes.from_autometa(
+            dataset_id, meta or {})
+    return payload, axes
 
 
 # ═══════════════════ listUploadLineageSuggestions (중계) ════════════════════
@@ -684,14 +696,18 @@ def list_upload_lineage_suggestions(
         upload_meta["datasetNameDraft"] = datasetNameDraft
     if subject_q:
         upload_meta["subject"] = subject_q
+    candidates, candidate_axes = _lineage_candidates(
+        db, lab_id=lab_id, upload_meta=upload_meta, upload_level=upload_level)
     return request.app.state.suggestions.suggest(
         lab_id=lab_id, lab_name=("" if lab is None else lab["name"]) or "연구실",
         account_id=str(subject.account_id),
         file_meta=file_meta,
-        candidates=_lineage_candidates(db, lab_id=lab_id, upload_meta=upload_meta,
-                                       upload_level=upload_level),
+        candidates=candidates,
         searched_count=searched, dataset_name_draft=datasetNameDraft, subject=subject_q,
         processing_level=upload_level,
+        # **요청을 만든 바로 그 값들**을 인용 검증에 넘긴다 — 중계가 DB 를 다시 읽지 않는다.
+        upload_axes=d3_lineage_signals.UploadAxes.from_file_meta(file_meta),
+        candidate_axes=candidate_axes,
     )
 
 
