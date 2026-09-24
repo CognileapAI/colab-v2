@@ -27,9 +27,10 @@
 #      로그인 화면·빈 화면은 「성립」이 아니라 「판정불가」이며, id 없는 행은 이름을 지킨다.
 #      왜 = 4회차 `20260914T035058Z` 의 verify 가 로그인 화면 27건을 전건 「성립」으로 적었다
 #      (환경변수 세션 미반영 · 계수 0 = 성립 · 탭 접힘). 셋 다 실모드로 돈 적이 없었다.
-#   ⓖ `tests/reset-gate.sh` **reset 정지 게이트**를 판정한다 — BYPASSRLS 전수 계수가 0 이 아니면
-#      이번 계수 파일의 sha256(ack 토큰) 없이 앱 정지·DROP·S3 호출이 0 건이고, 지난 토큰·꼴 틀린 토큰·
-#      판정 불가 계수를 거부하며, s3 계획이 같은 토큰으로 DB 참조 키를 대조한다.
+#   ⓖ `tests/reset-gate.sh` **reset 정지 게이트**를 판정한다 — BYPASSRLS 전수·지문 계수가 비어 있지 않으면
+#      (고아 `uploads/` 객체 포함) 그 회차의 1회용 challenge 토큰 ＋ GO 근거 없이 앱 정지·DROP·S3 호출이 0 건이고,
+#      지난·소진·만료·nonce 없는 토큰과 판정 불가 계수를 거부하며, 거부 메시지가 완성 명령을 찍지 않는다.
+#      `--from s3` 는 같은 실행 자리의 reset 판정 없이 계획을 세우지 않고, 계획은 DROP 직전 재계수 sha256 에 묶인다.
 #      왜 = 2026-09-24 08:33Z 재시드가 d3_file 585 · d3_dataset 35 가 센 dev 를 `test -s` 만 보고 지웠다.
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
@@ -114,5 +115,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수 계수·ack 토큰·S3 참조 키)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수·지문 계수·1회용 사용자 GO·고아 객체·s3 계획 reset 묶임)"
 exit 0

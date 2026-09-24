@@ -76,6 +76,10 @@ case " ${cmd[*]} " in
   *" --phase s3-plan "*)
       out="$(unmap /out)"
       exec python3 "$FIXTURE_PLANGEN" "$out/plan.json" ;;
+  *" --phase count "*)
+      # 리허설 ⑸ 의 계수 — 계획이 참조 키로 받을 파일만 세운다(내용은 계획 대역이 읽지 않는다).
+      out="$(unmap /out)"
+      ( umask 077; printf '{}\n' > "$out/count.json" ); exit 0 ;;
   *"/tmp/review.py"*)
       exec python3 "$FIXTURE_UIDRUN" "$(unmap "${cmd[1]}")" "$(unmap "${cmd[2]}")" ;;
 esac
@@ -147,6 +151,7 @@ S3_REGION=ap-northeast-2
 EC2_SECRETS_DIR="$TMP/secrets"
 mkdir -p "$EC2_SECRETS_DIR"
 : > "$EC2_SECRETS_DIR/backup-platform-db.url"
+: > "$EC2_SECRETS_DIR/backup-ai-db.url"
 DEV_URL='https://dev.invalid'
 EXPECT_DATASETS=28
 MD_ROOT=""
@@ -181,6 +186,10 @@ if ! declare -F s3_review_script >/dev/null; then
 fi
 
 reset_logs() { : > "$FIXTURE_SSH_LOG"; : > "$STAGE_LOG"; rm -f "$RUN_DIR/blocked.jsonl"; }
+
+# `stage_s3` 는 같은 실행 자리의 reset 판정과 DROP 직전 계수에만 묶인다(`reset-gate.sh` ⓙⓚ 가 판정한다).
+printf '{"decision": "empty"}\n' > "$RUN_DIR/reset-ack.json"
+printf '{}\n' > "$RUN_DIR/count-at-drop.json"
 
 # `stage_s3` 를 통째로 돌린다 — ① 계획 → ② 검토 → ③ 적용 → ④ 계수.
 run_s3() {
@@ -241,6 +250,9 @@ printf '%s' "$out" | grep -qE '✓ reset_tool_s3_plan' \
   || note "ⓖ′ 리허설 ⑸ 원문 로그에 검토 본문의 판정줄이 정확히 한 번 있지 않다"
 grep -q 's3-apply' "$FIXTURE_SSH_LOG" \
   && note "ⓖ″ 리허설이 s3-apply 를 냈다 — 리허설은 계획까지다"
+# 시드된 dev 에서 실행 모드 계획은 (지금 DB 참조 키 때문에) 거부된다 — 리허설은 적용 불가 dry-run 계획을 쓴다.
+grep -q -- '--phase s3-plan --dry-run .*--referenced-sha256' "$FIXTURE_SSH_LOG" \
+  || note "ⓖ‴ 리허설 ⑸ 계획이 dry-run ＋ 참조 키 sha256 묶음으로 서지 않는다"
 
 # ── ⓗ 호스트 쪽에서 계획 파일을 여는 자리 0건 ─────────────────────────────
 bad="$(grep -nF 'python3 - "$REMOTE_OUT/plan.json"' "$RESEED_DIR/stages.sh" || true)"
