@@ -1,0 +1,90 @@
+{
+  "bucket": "colab-platform-data-dev",
+  "db": {
+    "ai": {
+      "countPath": "bypassrls:row_security=off",
+      "schemas": [
+        "public"
+      ],
+      "tables": {
+        "public.d10_model_call": {
+          "md5": "d41d8cd98f00b204e9800998ecf8427e",
+          "rows": 0
+        }
+      }
+    },
+    "platform": {
+      "countPath": "bypassrls:row_security=off",
+      "labs": 1,
+      "rows": {
+        "account_admin.login_credential": 5,
+        "d1_account": 5,
+        "d3_dataset": 35,
+        "d3_file": 585,
+        "d4_lineage_edge": 22,
+        "d5_upload": 40,
+        "d6_project": 6
+      },
+      "schemas": [
+        "account_admin",
+        "public"
+      ],
+      "tables": {
+        "account_admin.login_credential": {
+          "md5": "93fdd6a6f9f37a1d29d26cbd3182855d",
+          "rows": 5
+        },
+        "public.d1_account": {
+          "md5": "44d3061b5bc0a4fead721f621f2c9ede",
+          "rows": 5
+        },
+        "public.d3_dataset": {
+          "md5": "9182e1987ec5579d2a82c2c3fc4c73f7",
+          "rows": 35
+        },
+        "public.d3_dataset_description": {
+          "md5": "0ec37645387585c136b0223fb497901e",
+          "rows": 35
+        },
+        "public.d3_file": {
+          "md5": "039260dcabbf07aa737609e56eb3ed40",
+          "rows": 585
+        },
+        "public.d4_lineage_edge": {
+          "md5": "0a21b811b28518cab02cb0807b92609b",
+          "rows": 22
+        },
+        "public.d5_upload": {
+          "md5": "6a29d0bb5d9d89a57f6670e90ce5e8aa",
+          "rows": 40
+        },
+        "public.d6_project": {
+          "md5": "6bb005a23ac00a240c8ce34db7a9e00e",
+          "rows": 6
+        }
+      }
+    }
+  },
+  "phase": "count",
+  "referencedKeys": {
+    "count": 3,
+    "keys": [
+      "uploads/FIXTURELAB/a.nc",
+      "uploads/FIXTURELAB/b.nc",
+      "uploads/FIXTURELAB/c.tif"
+    ]
+  },
+  "s3": {
+    "multipartSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "multipartUploads": 0,
+    "objects": {
+      "previews/": 1,
+      "uploads/": 3
+    },
+    "objectsSha256": {
+      "previews/": "0204de557a17e3db163c0a3572f39a0dc1ddeb631e94341cb5a95f30e6944ca9",
+      "uploads/": "5b930e7673debac00385220bd5a91715ea651f4640ecb4c7ee068ea9a7847fa5"
+    }
+  },
+  "schema": "colab-dev-reset-report/1"
+}

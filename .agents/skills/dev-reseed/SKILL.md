@@ -52,7 +52,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --dry-run          # 명령만 찍�
 bash dev-package/tools/dev-reseed/reseed.sh --preflight-only    # 검사만 — dev 를 읽기만 한다
 bash dev-package/tools/dev-reseed/reseed.sh --rehearse           # 원격 원시동작 10 을 실모드로 한 번씩 — 바꾸지 않는다
 bash dev-package/tools/dev-reseed/reseed.sh                     # 10단계 무인 실행
-bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부터 재개
+bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 실행 자리>   # 그 단계부터 재개
 ```
 
 ### 기본 계정 5개
@@ -85,8 +85,8 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
   reset ①″). `--dry-run` 은 명령을 찍기만 하므로 그 줄을 원격 셸이 어떻게 읽는지는 파괴 단계를 밟고 나서야
   드러났다. 리허설이 그 순서를 끊는다. 원시동작 열 — (⑷ 는 체인 둘이라 두 벌이다)
   ⑴ `psql:master`(작은따옴표가 든 SQL) ⑵ `ssh_script`(따옴표·`$`·백틱 되받기) ⑶ compose `ps`(정지·기동과 같은
-  compose·env 한 벌) ⑷ 마이그레이터 이미지 `alembic current` 두 체인 ⑸ 초기화 도구 `--phase s3-plan`
-  (임시 폴더 · **적용 없음**) ⑹ `postgres:16-alpine` 로 소유자 URL `select 1` ⑺ `deploy_doctor` 1회를
+  compose·env 한 벌) ⑷ 마이그레이터 이미지 `alembic current` 두 체인 ⑸ 초기화 도구 BYPASSRLS `--phase count` ＋
+  그 계수에 묶인 `--phase s3-plan --dry-run`(임시 폴더 · 적용 불가 표지 계획 · **적용 없음**) ＋ 계획 검토 ⑹ `postgres:16-alpine` 로 소유자 URL `select 1` ⑺ `deploy_doctor` 1회를
   `doctor_summary_line` 으로 읽기 ⑻ 러너 `--phase report` ⑼ `agent-browser` 제목 읽기.
   원시동작마다 한 줄을 찍고 **기대와 대조**한다 — 어긋나면 그 **이름을 대고** 비영 종료한다(fail-closed).
   `--dry-run` 과 함께 주면 원격에 한 바이트도 내지 않는다.
@@ -110,12 +110,34 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 
 ## 승인
 
-- **dev 한정 상시 승인**이다 — `.agents/rules/deploy.md` 11번 증보 문단(2026-09-14 개정). 회차별 Ted GO 가 필요 없다.
-- 조건 = 게이트 넷 충족(`--target dev`＋`--yes-reset-dev` · 버킷 정확 일치 · 두 DB URL 호스트에 `-dev` ·
-  계획 키가 `uploads/`·`previews/` 안). 하나라도 어긋나면 아무것도 지우지 않고 비영 종료한다.
+- 정본 = `.agents/rules/deploy.md` 11번 증보 문단(2026-09-25 개정). **빈 dev 만** dev 한정 상시 승인이다.
+  ⛔ **비어 있지 않은 dev 는 상시 승인 밖이다** — 매 회차 Ted 가 현재 대화에서 표별 계수를 보고 준 명시 GO 로만 지운다.
+- 조건 = 게이트 다섯 충족(`--target dev`＋`--yes-reset-dev` · 버킷 정확 일치 · 두 DB URL 호스트에 `-dev` ·
+  계획 키가 `uploads/`·`previews/` 안 · BYPASSRLS 계수가 비었거나 그 계수에 대한 사용자 GO). 하나라도 어긋나면
+  아무것도 지우지 않고 비영 종료한다.
 - `reset` 단계 직전에 `approval-record.json`(누가·언제·어느 sha·어느 게이트)이 실행 자리에 먼저 선다.
+- ⛔ **reset 정지 게이트** — `reset` ① 은 먼저 원격의 옛 계수·계획 파일을 지우고, BYPASSRLS 읽기 롤 두 체인
+  (`$COLAB_RESEED_EC2_SECRETS_DIR/backup-platform-db.url`·`backup-ai-db.url` · `colab_backup`)과 `row_security=off` 로 센다.
+  계수 파일(= 토큰의 재료)이 덮는 것 — 두 체인 **모든** 기본 표의 행수와 행 내용 지문 · DB 가 가리키는 저장 키 ·
+  `uploads/`·`previews/` 키·크기 목록 sha256 · 멀티파트 목록 sha256. 행 추가·삭제·내용 편집·키 교체는 토큰을 바꾼다.
+  **같은 키·같은 크기의 객체 덮어쓰기는 보지 못한다**(목록 조회가 ETag 를 모은다면 덮는다 · 업로드 키는 ULID 라 제품 경로에서 재사용하지 않는다).
+  「비어 있다」 = 사람 자료 표 일곱 행 0 · 참조 키 0 · `uploads/` 객체 0 · 멀티파트 0 — 고아 객체도 비어 있지 않다.
+  비어 있지 않으면 **앱 정지·DROP·S3 전에** 비영 종료하고 첫 줄에 시드 기준선 대비 초과분(표별 +N), 이어서 표별 계수 ·
+  고아 객체 건수 · 1회용 토큰을 찍는다. 토큰 = sha256(계수 바이트 ‖ 그 회차가 원격에 남긴 nonce) · 만료 30분 · 한 번 쓰면 소진.
+  붙여 넣을 완성 명령은 찍지 않는다. **토큰은 stdout 이 터미널일 때만(`[ -t 1 ]`) 그 터미널에 찍고** 단계 로그·실행 기록에는
+  남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프) 토큰 없이 「자기 터미널에서 다시 열어야 보인다」만 남긴다.
+- 넘기는 것은 **사용자**다 — Ted 가 계수를 보고 GO 를 준 뒤 사용자 터미널에서 `COLAB_RESEED_ACK_NONEMPTY`(그 토큰)와
+  `COLAB_RESEED_ACK_BASIS`(GO 근거 — 누가 · 어디서 · 언제)를 두고 `--from reset` 으로 다시 연다. 판정·근거는 `reset-ack.json` 에 남는다.
+  ⛔ 에이전트는 두 값을 채우지 않는다. 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)은 Claude·Codex 에서 할당 꼴
+  명령을 거부하고, 위 터미널 한정 출력은 거부 출력을 읽는 경로를 줄인다 — 둘 다 우발적 읽기·주입 경로를 줄일 뿐
+  **자동 보안 경계가 아니다**(`AGENTS.md`). 남는 경로: 의사 터미널(pty)로 stdout 받기 · 실행 자리 `count-before.json` ＋
+  원격 challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입. 지키는 것은 규칙(deploy.md 11번)이다.
+- 도구도 스스로 막는다 — `--phase schema` 는 DROP 직전 같은 프로세스에서 다시 세어 비어 있지 않은데 재계수 sha256 과 같은
+  ack 가 없으면 지우지 않는다. `--phase s3-plan` 은 이번 reset 의 DROP 직전 계수(`count-at-drop.json`)와 그 sha256 을 필수로
+  받고, **지금** DB 가 가리키는 키가 1건이라도 있으면 계획을 쓰지 않는다. 런북대로 손으로 불러도 같다.
+  preflight `backup-size` 는 최근 백업 크기를 빈 스키마 기준(gz ~15~21 KB)과 대조해 **알림만** 낸다.
 - ⛔ **에이전트가 몰아서 실행할 때는 `reset` 앞에 advisor 게이트 ③(go/no-go)을 붙인다.**
-  상시 승인은 회차별 Ted GO 를 대체하지 advisor 판정을 대체하지 않는다(`R-DATA-CANON §7`).
+  상시 승인(빈 dev)은 advisor 판정을 대체하지 않는다(`R-DATA-CANON §7`). advisor 판정도 사용자 GO 를 대체하지 않는다.
 - dev 실행기는 dev 식별자 밖에서 어느 조건으로도 돌지 않는다. product 최초 초기화는 위의 별도 경로와 현재 대화의 명시 승인을 따른다. staging에는 dev 상시 승인을 적용하지 않는다.
 
 ## 결과를 읽는 법
@@ -135,7 +157,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
   `--preflight-only`·preflight 에서 멈춘 회차는 실행 자리에만 남는다. 원장·대장·HANDOFF 갱신은 오케스트레이터가 한다.
 - 검사기 = `bash gates/run.sh dev-reseed-selftest`(요약줄 파서 · preflight fail-closed · 계획 요약줄 ·
   `result.json` · `--from` · `--preflight-only` · `die` 복귀 · 미리보기 판정불가 · **원격 전송로** ·
-  **정지 뒤 자동 재기동** · **리허설 fail-closed**). dev 무접촉이다.
+  **정지 뒤 자동 재기동** · **리허설 fail-closed** · **reset 정지 게이트** `tests/reset-gate.sh`). dev 무접촉이다.
 
 ## 멈췄을 때
 
@@ -143,5 +165,9 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - ⭑ **`reset` 이 앱을 정지(①′)한 뒤 실패하면 도구가 앱을 스스로 되살린다**(같은 compose·env 로 `start`).
   그 사실은 `result.json` 의 `recovery` 와 회차 기록 §4-1 에 남는다. 사람이 dev 를 올리러 들어갈 일이 없다.
   정지는 **되돌릴 수 없는 걸음(② 스키마 DROP) 직전**에만 내린다 — 읽기 전용 계수는 그보다 먼저 끝난다.
+- `reset` ①ᵇ 정지 게이트에서 멈췄으면 dev 는 **아무것도 바뀌지 않았다**(앱도 돌고 있다). 표별 계수와 기준선 초과분을
+  사용자에게 그대로 보이고 멈춘다. 지울지는 사용자가 정하고 넘기는 것도 사용자다(위 「승인」).
 - 출력 마지막 줄이 멈춘 단계 이름과 로그 경로를 낸다. 원인을 본 뒤 `--from <그 단계>` 로 잇는다.
+  ⚠ `reset` 뒤 단계(`bootstrap`·`up`·`s3`)에서 이을 때는 **그 reset 을 돈 `--run-dir`** 을 그대로 준다 —
+  `s3` 는 그 실행 자리의 `reset-ack.json`·`count-at-drop.json` 없이 계획을 세우지 않는다.
 - `preflight` 미달은 이름으로 나온다. 이름을 고치기 전에 다음 단계로 넘어가지 않는다.

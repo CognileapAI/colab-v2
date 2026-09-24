@@ -325,6 +325,31 @@ class LifecycleRedTests(unittest.TestCase):
                                             capture_output=True,cwd=self.root,env=dict(self.env,COLAB_FIX_LANE='1'))
                     self.assertEqual(result.returncode,expected,result.stdout+result.stderr)
 
+    def test_reseed_ack_values_are_filled_only_by_the_user(self):
+        """2026-09-25 — 비어 있지 않은 dev 삭제 GO 는 사용자 몫이다. ack 값 할당 꼴 Bash 는 Claude·Codex 모두 거부된다(우발적 주입 경로 축소 · 자동 보안 경계 아님)."""
+        token = 'a' * 64
+        blocked = (f'COLAB_RESEED_ACK_NONEMPTY={token} bash dev-package/tools/dev-reseed/reseed.sh --from reset',
+                   f'cd /tmp && export COLAB_RESEED_ACK_NONEMPTY={token}; bash reseed.sh --from reset',
+                   'env COLAB_RESEED_ACK_BASIS="GO" bash reseed.sh --from reset')
+        allowed = ('grep -n "COLAB_RESEED_ACK_NONEMPTY=" dev-package/tools/dev-reseed/stages.sh',
+                   'bash dev-package/tools/dev-reseed/tests/reset-gate.sh')
+        for command, expected in [(c, 2) for c in blocked] + [(c, 0) for c in allowed]:
+            payload = dict(cwd=str(self.root), hook_event_name='PreToolUse', tool_name='Bash',
+                           tool_input=dict(command=command))
+            with self.subTest(route='claude', command=command):
+                result = subprocess.run(['bash', str(ROOT/'.claude/hooks/git-guard.sh')], input=json.dumps(payload),
+                                        text=True, capture_output=True, cwd=self.root, env=self.env)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                if expected:
+                    self.assertIn('COLAB_RESEED_ACK', result.stderr)
+            with self.subTest(route='codex', command=command), patch.object(bridge, 'ROOT', self.root), \
+                    patch.object(bridge, 'registered_hooks', return_value=[ROOT/'.claude/hooks/git-guard.sh']):
+                if expected:
+                    with self.assertRaises(ValueError):
+                        bridge.dispatch_event(payload)
+                else:
+                    bridge.dispatch_event(payload)
+
     def test_declared_multiple_gates_complete_in_one_run_and_failure_is_not_hidden(self):
         runner = self.put('gates/run.sh', '#!/usr/bin/env bash\nprintf "ran %s\\n" "$1"\nif [ "$1" = "second" ]; then exit "${FIXTURE_GATE_EXIT:-0}"; fi\n')
         task = contract.begin(self.root, 'lane-worker', legacy=True, gates=['first', 'second'],

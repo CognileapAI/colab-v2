@@ -142,21 +142,31 @@ ssh -o BatchMode=yes -i "$COLAB_DEV_KEY_FILE" "$COLAB_DEV_SSH" 'sudo bash /opt/c
 
 ### ① `count` — 실행 전 계수
 
+⭑ ⟨개정 2026-09-25 · 2026-09-24 08:33Z 사고⟩ **이 절은 사람이 손으로 밟을 때의 한 벌이고, 실행형은
+`dev-package/tools/dev-reseed/reseed.sh` 다.** 손으로 돌려도 도구가 같은 판정을 한다 — ① 은 BYPASSRLS 계수,
+② 는 DROP 직전 재계수와 ack 대조, ⑥ 은 이번 reset 의 재계수 sha256 과 지금 DB 참조 키 0 을 요구한다.
+⛔ **비어 있지 않은 dev 는 상시 승인 밖이다**(`.agents/rules/deploy.md` 11번 증보 2026-09-25 개정) — ① 의 표별 계수를
+Ted 에게 보이고 현재 대화의 명시 GO 를 받기 전에는 ② 로 가지 않는다.
+
 ```bash
+sudo rm -f /tmp/out/count-before.json /tmp/out/count-at-drop.json /tmp/out/schema.json /tmp/out/plan.json /tmp/out/s3-plan.json
 docker run --rm --network host --user 0 \
   -v /etc/colab/platform-owner-db.url:/s/platform.url:ro \
   -v /etc/colab/ai-owner-db.url:/s/ai.url:ro \
+  -v /etc/colab/backup-platform-db.url:/s/count.url:ro \
+  -v /etc/colab/backup-ai-db.url:/s/count-ai.url:ro \
   -v /opt/colab-repo/services/core-api/ops/reset_dev_environment.py:/tmp/reset.py:ro \
   -v /tmp/out:/out \
   -e COLAB_CORE_S3_BUCKET -e COLAB_CORE_S3_REGION \
   colab-v2/core-api:dev-<MAIN_SHA> python /tmp/reset.py \
     --target dev --yes-reset-dev --phase count \
-    --platform-url-file /s/platform.url --ai-url-file /s/ai.url --report /out/count-before.json
+    --platform-url-file /s/platform.url --ai-url-file /s/ai.url \
+    --count-url-file /s/count.url --count-ai-url-file /s/count-ai.url --report /out/count-before.json
 ```
 
-- 기대 출력 = `── 계수 (연구실 경계를 건 상태에서 센 값)` ＋ 체인별 스키마 ＋ `S3 uploads/`·`previews/` 객체 수 ＋ `S3 진행 중 멀티파트 N` ＋ `── 보고서: /out/count-before.json` · exit 0.
-- 계수는 `d1_lab` 전 행을 돌며 `set_config('app.current_lab', …)` 를 걸고 센다(`_row_counts`) — 경계 없는 `count(*)` 는 조용히 0 이다. 대상 표 = `d3_dataset`·`d3_file`·`d6_project`·`d4_lineage_edge`.
-- **보고서 파일 존재를 확인한 뒤 다음 명령을 낸다**(라운드 §5 WU-R2 1′). 없으면 멈춘다. **실패 시 멈춤 · 재시도 금지.**
+- 기대 출력 = `── 계수 (BYPASSRLS 롤 · row_security=off · 두 체인 모든 기본 표의 행수·내용 지문)` ＋ 체인별 스키마·표 수 ＋ 정지 판정 표 일곱의 행수 ＋ `DB 가 가리키는 저장 키 N` ＋ `S3 uploads/`·`previews/` 객체 수 ＋ `S3 진행 중 멀티파트 N` ＋ `── 보고서: /out/count-before.json` · exit 0.
+- 계수 롤은 BYPASSRLS 읽기 롤(`colab_backup` · 백업 cron 과 같은 URL 파일)이다. 소유자 롤로 연구실마다 `app.current_lab` 을 걸던 종전 경로는 경계 밖 행·`d3_file` RESTRICTIVE 정책에 잠긴 파일·`account_admin` 을 못 봐 **거짓 0** 을 냈다(10번 증보) — 그 경로는 도구에서 지웠고, 우회 못 하는 롤이면 exit 3 이다.
+- 판정 = 보고서 `db.platform.rows` 의 표 일곱 · `referencedKeys.count` · `s3.objects["uploads/"]` · `s3.multipartUploads` 가 **모두 0** 이면 빈 dev 다. 하나라도 0 이 아니면 표별 계수를 Ted 에게 보이고 명시 GO 를 받는다. GO 가 없으면 여기서 멈춘다(앱은 돌고 있다). **실패 시 멈춤 · 재시도 금지.**
 
 ### ①′ 앱 4단위 정지 ＋ 활성 트랜잭션 0 확인
 
@@ -190,8 +200,9 @@ select count(*) from pg_stat_activity
 
 ### ② `schema` — 두 체인 스키마 재생성
 
-- ① 과 같은 마운트에서 `--phase count` 를 `--phase schema` 로, `--report` 를 `/out/schema.json` 으로 바꾼다. S3 를 부르지 않으므로 AWS 자격이 필요 없다.
-- 기대 출력 = `── 두 체인 스키마 재생성 COMMIT.` ＋ `── 다음은 이 도구가 하지 않는다. 사람이 이 순서로 낸다` 목록 4줄 ＋ `⚠ 각 명령이 비영 종료하면 그 자리에서 멈춘다 — 다음 명령을 내지 않는다.` · exit 0.
+- ① 과 같은 마운트에서 `--phase count` 를 `--phase schema` 로, `--report` 를 `/out/schema.json` 으로 바꾸고 `--count-report /out/count-at-drop.json` 을 더한다. 빈 dev 면 ack 없이, 비어 있지 않은 dev 면 **Ted 의 명시 GO 를 받은 뒤에만** `--ack-sha256 <① count-before.json 의 sha256>` 을 더한다. 도구가 DROP 직전 재계수에 S3 목록을 싣으므로 AWS 자격(인스턴스 프로파일)이 필요하다.
+- 도구는 DROP 직전 같은 프로세스에서 다시 세어 `/out/count-at-drop.json` 에 쓰고, 비어 있지 않은데 ack 가 그 재계수의 sha256 과 다르면(① 뒤 자료가 바뀌었거나 지난 값) **아무것도 지우지 않고 exit 3** 이다.
+- 기대 출력 = `── 두 체인 스키마 재생성 COMMIT.` ＋ `── DROP 직전 재계수 /out/count-at-drop.json · sha256 <64자리>` ＋ `── 다음은 이 도구가 하지 않는다. 사람이 이 순서로 낸다` 목록 4줄 ＋ `⚠ 각 명령이 비영 종료하면 그 자리에서 멈춘다 — 다음 명령을 내지 않는다.` · exit 0. **그 sha256 을 적어 둔다** — ⑥ 이 받는다.
 - 선조건 = platform 의 비시스템 스키마가 정확히 `{public, account_admin}` · ai 가 `{public}`. 어긋나면 exit 3 이고 아무것도 지우지 않는다.
 - 재생성 DDL 은 `COMMENT ON SCHEMA public IS 'standard public schema'` 까지 낸다 — 없으면 `schema-diff` 가 red 다(도구 주석 실측).
 - **실패 시 멈춤 · 재시도 금지.**
@@ -296,9 +307,10 @@ sudo bash /opt/colab-v2/up.sh
 
 ### ⑥ `s3-plan` — 삭제 계획 생성
 
-- ① 의 마운트에 `--phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json` 을 준다.
-- 기대 출력 = `── 계획 /out/plan.json — 키 N 건 · 진행 중 멀티파트 M 건` ＋ `sha256 <64자리>` ＋ `적용은 \`--phase s3-apply --apply-plan <위 파일> --plan-sha256 <위 값>\` 이다.` · exit 0.
-- `--plan-out` 없이 부르면 exit 2.
+- ① 의 마운트에 `--phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json --referenced-keys /out/count-at-drop.json --referenced-sha256 <② 가 찍은 재계수 sha256>` 을 준다(앞서 `sudo rm -f /tmp/out/plan.json /tmp/out/s3-plan.json`).
+- 도구가 먼저 본다 — ⓐ 참조 키 파일의 sha256 이 인자와 같은가(지난 회차 파일 거부 · exit 2) ⓑ **지금** DB 가 가리키는 저장 키가 0 인가(1건이라도 있으면 ② 뒤에 올라온 자료다 · exit 3) ⓒ 계획이 재계수의 참조 키와 겹치면 그 파일 sha256 을 `--ack-sha256` 로 받았는가(Ted GO 가 있었던 회차만).
+- 기대 출력 = `지금 DB 가 가리키는 키 0 건` ＋ `── 계획 /out/plan.json — 키 N 건 · 진행 중 멀티파트 M 건` ＋ `sha256 <64자리>` ＋ `적용은 \`--phase s3-apply --apply-plan <위 파일> --plan-sha256 <위 값>\` 이다.` · exit 0.
+- `--plan-out`·`--referenced-keys`·`--referenced-sha256`·`--count-url-file` 중 하나라도 없으면 exit 2.
 - **실패 시 멈춤 · 재시도 금지.**
 
 ### ⑦ 계획 검토 (사람 · 적용 전 정지점)

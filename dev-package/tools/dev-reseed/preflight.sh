@@ -333,6 +333,27 @@ pf_seed_inputs() {
   fi
 }
 
+# ⑿ 최근 BYPASSRLS 백업 크기 — **보고만 한다**(통과·미달에 세지 않는다).
+#    `colab_backup` 롤 `pg_dump` 는 행 전수를 담으므로 크기가 「DB 가 비어 있지 않다」의 값싼 신호다.
+#    빈 스키마 덤프는 gz 15~21 KB 였다(2026-09-24 사고 조사). 그보다 크면 경고 한 줄을 남긴다.
+#    판정은 reset ①ᵇ 정지 게이트(전수 계수 ＋ ack 토큰)가 한다 — 이 줄은 그 앞의 미리 알림이다.
+pf_backup_size() {
+  local prefix="_ops/backups/dev/" limit="${COLAB_RESEED_EMPTY_BACKUP_MAX_BYTES:-21504}"
+  pf_dry backup-size "aws s3api list-objects-v2 ${S3_BUCKET:-<버킷>}/$prefix — 최근 colab_platform 덤프 크기 · 빈 스키마 기준 ≤ ${limit}B 대비(보고만)" && return
+  local listing latest size key
+  listing="$(run_capture aws s3api list-objects-v2 --bucket "${S3_BUCKET:-}" --prefix "$prefix" \
+    --query "Contents[?ends_with(Key, '-colab_platform.sql.gz')].[LastModified,Size,Key]" --output text 2>/dev/null || true)"
+  latest="$(printf '%s\n' "$listing" | grep -E $'^[0-9]{4}-[^\t]+\t[0-9]+\t' | sort | tail -1 || true)"
+  size="$(printf '%s' "$latest" | cut -f2)"; key="$(printf '%s' "$latest" | cut -f3)"
+  if [ -z "$size" ]; then
+    pf_note backup-size "최근 BYPASSRLS 백업 크기 조회 불가 — 경고 신호 없음(판정은 reset 정지 게이트가 한다)"
+  elif [ "$size" -gt "$limit" ]; then
+    pf_note backup-size "⚠ 최근 백업 ${key##*/} ${size}B > 빈 스키마 기준 ${limit}B — dev DB 에 자료가 있다는 신호다. reset 은 전수 계수 ack 토큰 없이 멈춘다"
+  else
+    pf_note backup-size "최근 백업 ${key##*/} ${size}B ≤ 빈 스키마 기준 ${limit}B"
+  fi
+}
+
 stage_preflight() {
   PF_PASS=(); PF_FAIL=(); PF_NOTE=()
   pf_announce
@@ -347,6 +368,7 @@ stage_preflight() {
   pf_resources
   pf_build_plan
   pf_seed_inputs
+  pf_backup_size
   if [ "$DRY_RUN" != 1 ] && [ "${#PF_FAIL[@]}" = 0 ] &&
       [ "${PREFLIGHT_ONLY:-0}" != 1 ] && [ "${REHEARSE:-0}" != 1 ]; then
     prepare_seed_password || pf_fail seed-password-preparation '초기 비밀번호 파일 준비 실패 (기존 파일 덮어쓰기 없음)'

@@ -1,0 +1,86 @@
+{
+  "bucket": "colab-platform-data-dev",
+  "db": {
+    "ai": {
+      "countPath": "bypassrls:row_security=off",
+      "schemas": [
+        "public"
+      ],
+      "tables": {
+        "public.d10_model_call": {
+          "md5": "d41d8cd98f00b204e9800998ecf8427e",
+          "rows": 0
+        }
+      }
+    },
+    "platform": {
+      "countPath": "bypassrls:row_security=off",
+      "labs": 0,
+      "rows": {
+        "account_admin.login_credential": 0,
+        "d1_account": 0,
+        "d3_dataset": 0,
+        "d3_file": 0,
+        "d4_lineage_edge": 0,
+        "d5_upload": 0,
+        "d6_project": 0
+      },
+      "schemas": [
+        "account_admin",
+        "public"
+      ],
+      "tables": {
+        "account_admin.login_credential": {
+          "md5": "951651fc8ed3a98471d69183cba3dc93",
+          "rows": 0
+        },
+        "public.d1_account": {
+          "md5": "e53b6d145ed19947523809a9c7c36259",
+          "rows": 0
+        },
+        "public.d3_dataset": {
+          "md5": "394fe3071e49482a29b582505381f529",
+          "rows": 0
+        },
+        "public.d3_dataset_description": {
+          "md5": "49f0f544e7a6b7e5d42251adf812c016",
+          "rows": 0
+        },
+        "public.d3_file": {
+          "md5": "7e95cfb314c910a93e8ef5b761f9f85a",
+          "rows": 0
+        },
+        "public.d4_lineage_edge": {
+          "md5": "e5e95fd468b11c31ca63dd508abbf000",
+          "rows": 0
+        },
+        "public.d5_upload": {
+          "md5": "f90f4b394fb9419bed0f6f0f83625495",
+          "rows": 0
+        },
+        "public.d6_project": {
+          "md5": "40490d95dae8c7bed787a5b7aa9c4084",
+          "rows": 0
+        }
+      }
+    }
+  },
+  "phase": "count",
+  "referencedKeys": {
+    "count": 0,
+    "keys": []
+  },
+  "s3": {
+    "multipartSha256": "ff59c0db44255d7dfd133348d16f2f3a8c41aee03590fad0c77e66ed8bd5c6c1",
+    "multipartUploads": 1,
+    "objects": {
+      "previews/": 0,
+      "uploads/": 5
+    },
+    "objectsSha256": {
+      "previews/": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uploads/": "97dce0d3cae847d174c0cf91fa2f5325fbfba350aabd6c329a48e1dda786ba13"
+    }
+  },
+  "schema": "colab-dev-reset-report/1"
+}
