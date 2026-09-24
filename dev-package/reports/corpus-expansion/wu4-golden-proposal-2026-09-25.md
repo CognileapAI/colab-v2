@@ -1,6 +1,6 @@
-# WU4 — 골든셋·계보 정답 재박기 서명 제안 (2026-09-25 · 서명 전)
+# WU4 — 골든셋·계보 정답 재박기 서명 제안 (2026-09-25 · 서명 ①② 완료)
 
-**⛔ 이 문서는 제안이다. 골든 파일(`eval/`)은 수정하지 않았다.** Ted 서명 ①(옛→새 대응)·②(12문항 scope/required)를 받은 뒤 WU4 재박기를 시작한다.
+**서명 ①②는 사용자가 2026-09-25 에 받았다(§1·§2 머리의 서명 줄).** 골든 파일(`eval/` 의 골든·K3 정답)은 이 문서에서 수정하지 않았다 — WU4 재박기가 서명본으로 한다. 선행 조건 O4·O7 의 dev 보정 결과는 §7.
 
 메타 — 가지 `corpus-wu4-golden`(`origin/corpus-wu3-snapshot` `a60e3fa0` 위) · dev 무접촉 · 검색·모델 호출 0회.
 기계 판독본 = 같은 폴더 `wu4-golden-proposal-2026-09-25.json`(스키마 `colab-wu4-golden-proposal/1`). 이 문서의 표·ID 는 그 파일과 같은 생성 과정에서 나왔다.
@@ -25,6 +25,8 @@
 - K3 제안 4건의 부모·역할·Lv 가 v2 스냅샷과 일치하고 method 는 전부 빈 값.
 
 ## 1. 서명 ① — 옛 → 새 대응
+
+**서명 ① — 사용자 · 2026-09-25 · 승인.** 1-1 옛→새 대응 9행과 1-2 이름→ID 28행을 그대로 받는다.
 
 ### 1-1. 옛 9건 → 새 데이터셋 (9행)
 
@@ -83,6 +85,8 @@ relation 은 옛 데이터셋 기준. 대조는 본체 파일 이름·크기 전
 | 28 | hdf4 MOD15A2H h28v05 변환 결과 | `01M39ZK1YKQRT84W0PSJFD89SJ` | 포멧테스트 | Lv1 | — |
 
 ## 2. 서명 ② — 12문항 scope · required
+
+**서명 ② — 사용자 · 2026-09-25 · 승인.** required·mode 는 제안대로(두 제안 12/12 일치). scope 는 001 = S-VEG(7건), 002~012 = 선택지 A(S-LD · level-data 14건). `golden-set.md` 는 수치만 재박는다(예: 55·66·171~173·198~199행의 9 → 14, 010 기대 응답의 9 → 14). 의미 기준 문장은 바꾸지 않는다.
 
 ### 2-0. 한눈에
 
@@ -375,3 +379,140 @@ method 는 4건 모두 빈 값(WU3 · intent 판정 기준 3). upload_level 은 
 - 계보 역할의 원본(DATASETS.md) 대조는 두 제안의 인용에 기댔고 이 문서에서 원문을 다시 읽지 않았다.
 - CRS 표기 동치 판정(LIN-002)·seq23·24 crs 빈 값 원인은 미확인.
 - 증거 패킷 `--verify` 는 실행하지 않았다(WU4 ⑸ 몫).
+
+## 7. dev 보정(O4·O7) — 2026-09-25
+
+### 7-1. 되돌리기용 이전 상태 (쓰기 전 기록)
+
+읽기 = BYPASSRLS 백업 URL · `begin read only; … rollback;`(`transaction_read_only = on`) · 2026-09-24T19:26:47Z(UTC) · 배포 `dev-ea21d8c2aa54` · 데이터셋 28 · 간선 18(주입력 16 · 보조입력 2). 같은 값을 제품 API `GET /datasets/{id}`·`GET /datasets/{id}/lineage` 로 다시 읽어 일치를 확인했다.
+
+간선(대상 자식 3건의 부모 전부 · method 전부 NULL · origin 전부 `manual` · 확인 계정 = 데이터셋 소유자):
+
+| 자식 | 부모 | 역할(이전) | 간선 ID(이전) | confirmed_at(이전, UTC) | 이번 변경 |
+|---|---|---|---|---|---|
+| rn15_sample | rn15 15분 누적강수 | 주입력 | `01M39TB4Q65R4Z0C17V2F79GW6` | 2026-09-24T13:40:38Z | 없음 |
+| pred_sample | hsr_sample | 주입력 | `01M39TCASYVJR5MW2CRMSCTAA0` | 2026-09-24T13:41:17Z | 없음 |
+| pred_sample | rn15_sample | 주입력 | `01M39TCAT1HV1AJVWXGHMGVPZE` | 2026-09-24T13:41:17Z | → 보조입력 |
+| Prediction (공간상세화) | GK2A_NDVI_mean_202305 | 주입력 | `01M39TZ0YADJ2AXTDNDSX52MAN` | 2026-09-24T13:51:30Z | 없음 |
+| Prediction (공간상세화) | HLS_S30_NDVI_mean_202305 | 주입력 | `01M39TZ0YE71NTNG636JX3KD89` | 2026-09-24T13:51:30Z | → 보조입력 |
+| Prediction (공간상세화) | DEM | 보조입력 | `01M39TZ995E1F21KS6P40GMGW0` | 2026-09-24T13:51:38Z | 없음 |
+| Prediction (공간상세화) | Aspect | 보조입력 | `01M39TZ9G5MN8793E81AFHF9GE` | 2026-09-24T13:51:38Z | 없음 |
+| Prediction (공간상세화) | LULC_2023 | 주입력 | `01M39TZ0YH28F87RBSY6QWAP4F` | 2026-09-24T13:51:30Z | → 보조입력 |
+
+설명(summary) 이전 값:
+
+| seq | 이름 | ID | 이전 summary | updated_at(이전, UTC) |
+|---|---|---|---|---|
+| 3 | hsr_sample | `01M39TA6QY5NEAR8ZPZ6AF9KNE` | WGS84 변환·crop 한 HSR 전처리 자료 | 2026-09-24T13:40:08Z |
+| 4 | rn15_sample | `01M39TB4NTBCFC8TSTNB93N5YP` | WGS84 변환·crop 한 rn15 전처리 자료 | 2026-09-24T13:40:38Z |
+| 5 | pred_sample | `01M39TCARM2C2NJ8S9SA4QBSER` | U-Net 기반 강수 예측 결과 | 2026-09-24T13:41:17Z |
+| 6 | GK-2A 일 단위 식생자료 | `01M39TK0F5P3W4APB91N08KTMY` | GK-2A AMI 일 단위 식생 원본 | 2026-09-24T13:44:56Z |
+| 7 | GK2A_NDVI_mean_202305 | `01M39TSEPR820QBZ1DBBFKDJEP` | GK-2A 기반 2023-05 월평균 NDVI | 2026-09-24T13:48:27Z |
+| 8 | HLS_S30_NDVI_mean_202305 | `01M39TT0S5PSJ0DQNR0XMTHFNW` | 검증용 HLS S30 2023-05 월평균 NDVI | 2026-09-24T13:48:46Z |
+| 12 | Prediction (공간상세화) | `01M39TZ0SCEYHHMBWZ991M1QGN` | U-Net 기반 100 m 일 단위 NDVI 예측 | 2026-09-24T13:51:30Z |
+| 13 | SPI-4weeks | `01M39V005J6SQ9SW8MZ8D16ZWK` | 4주 SPI 유의구간 벡터 (L1 Calibrated) | 2026-09-24T13:52:02Z |
+| 14 | SPEI-4weeks | `01M39V0T17DHQ5PF5XSSERTZ8H` | 4주 SPEI 유의구간 벡터 (L1 Calibrated) | 2026-09-24T13:52:28Z |
+
+되돌리는 법(같은 공식 API) — 역할: `DELETE /api/v1/datasets/{자식}/lineage/parents/{부모}` → `POST /api/v1/datasets/{자식}/lineage/parents` `{"parentDatasetId": 부모, "parentRole": "주입력"}`. 설명: `PATCH /api/v1/datasets/{id}` `{"summary": 이전 값}`. 간선 ID·confirmed_at 은 API 로 되살릴 수 없다(새 관계가 새 ID·새 시각을 받는다).
+
+### 7-2. 쓴 경로 — 배포 코드 `ea21d8c2aa54` 의 공식 API
+
+| 목적 | API | 근거(`git show ea21d8c2aa54:<경로>`) |
+|---|---|---|
+| 로그인 | `POST /api/v1/sessions` `{accountName, password}` → 201 `token` | `services/core-api/src/colab_core/app/routes/session.py:66` · 접두 `main.py:47` `API_PREFIX = "/api/v1"` |
+| 역할 변경 ⑴ 관계 제거 | `DELETE /datasets/{자식}/lineage/parents/{부모}` → 204 | `routes/lineage.py:238-252` |
+| 역할 변경 ⑵ 관계 재부착 | `POST /datasets/{자식}/lineage/parents` `{parentDatasetId, parentRole}` → 201. 역할 2값 검사 214-216행, 부모 Lv ≤ 자기 Lv 검사 224-226행, origin 은 언제나 `manual` | `routes/lineage.py:192-235` |
+| (역할 수정 전용 op 없음) | `PATCH …/lineage/parents/{부모}` 는 `method` 만 받는다 — 「`parentRole` 을 받지 않는다 … 관계를 다시 세우는 일이다(`removeLineageParent` → `addLineageParent`)」 | `routes/lineage.py:255-289`(축자 265-266행) |
+| 설명 수정 | `PATCH /datasets/{id}` `{summary}` → 200 | `routes/catalog.py:1227` · 허용 열쇠 809행 · 빈 값·공백 거절 1278-1281행(`is_blank_summary` 954행) |
+| 설명 상한 | 서버·계약에 상한 없음(`contracts/seams/fe-core.yaml:5095-5105` `type: string` · `minLength: 1`). 화면 등록 칸만 3000자(`frontend/src/components/upload/RegisterArea.tsx:662` · 6705675d) | — |
+| 역할 값 집합 | `주입력`·`보조입력` 2값 — 「검증자료」는 역할로 표현 불가, 설명 문장에만 적었다 | `db/platform/schema.sql:1043-1044` |
+
+로그인 계정 = 재시드 러너가 쓴 연구실 교수 계정(데이터셋 소유자). 러너 작업 자리의 계정 목록·상태 파일에서 읽었고, 교수 역할 계정이 1건 · 러너 로그인 계정과 같음 · 스냅샷 v2 의 소유자와 같음 세 가지를 쓰기 전에 대조했다(값은 출력하지 않음). 세션은 끝에 `DELETE /api/v1/sessions/current`(204)로 닫았다.
+
+### 7-3. 요청 기록 (KST · 본문 값·토큰 없음)
+
+확인 실행(쓰기 없음) 14건 — 04:26 경 `POST /sessions` 201 · `GET /datasets/{id}` 9건 200 · `GET …/lineage` 3건 200 · `DELETE /sessions/current` 204.
+
+쓰기 실행 29건 — 2026-09-25 04:28:45~04:28:48:
+
+| # | 요청 | 상태 |
+|---|---|---|
+| 1 | `POST /api/v1/sessions` | 201 |
+| 2~10 | `PATCH /api/v1/datasets/{id}` `{summary}` — seq 3·4·5·6·7·8·12·13·14 (ID 는 7-1 표) | 200 × 9 |
+| 11 | `DELETE /api/v1/datasets/01M39TZ0SCEYHHMBWZ991M1QGN/lineage/parents/01M39TT0S5PSJ0DQNR0XMTHFNW` (Prediction ← HLS) | 204 |
+| 12 | `POST /api/v1/datasets/01M39TZ0SCEYHHMBWZ991M1QGN/lineage/parents` `{parentDatasetId: HLS, parentRole: 보조입력}` | 201 |
+| 13 | `DELETE /api/v1/datasets/01M39TZ0SCEYHHMBWZ991M1QGN/lineage/parents/01M39TW21793T8631ATHJREHK5` (Prediction ← LULC_2023) | 204 |
+| 14 | `POST /api/v1/datasets/01M39TZ0SCEYHHMBWZ991M1QGN/lineage/parents` `{parentDatasetId: LULC_2023, parentRole: 보조입력}` | 201 |
+| 15 | `DELETE /api/v1/datasets/01M39TCARM2C2NJ8S9SA4QBSER/lineage/parents/01M39TB4NTBCFC8TSTNB93N5YP` (pred_sample ← rn15_sample) | 204 |
+| 16 | `POST /api/v1/datasets/01M39TCARM2C2NJ8S9SA4QBSER/lineage/parents` `{parentDatasetId: rn15_sample, parentRole: 보조입력}` | 201 |
+| 17~25 | `GET /api/v1/datasets/{id}` 9건 — 저장된 summary = 보낸 문장 9/9 | 200 × 9 |
+| 26~28 | `GET /api/v1/datasets/{id}/lineage` — Prediction · pred_sample · rn15_sample | 200 × 3 |
+| 29 | `DELETE /api/v1/sessions/current` | 204 |
+
+SQL 쓰기 0 · reseed/reset 실행 0 · 다른 계정 로그인 0.
+
+### 7-4. 쓴 설명 문장 (정확한 저장값)
+
+출처 = `DATASETS.md` 기계 블록의 `description`(레포 사본 `dev-package/reports/reference-data/datasets-md/`). 원문과 다른 곳은 굵게 표시한 두 가지뿐이다.
+
+| seq | 이름 | 저장한 summary | 원문과 다른 점 |
+|---|---|---|---|
+| 3 | hsr_sample | HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다. | **끝 문장 추가** — 강수 md 판정 ㈏ 확정(설명 칸에 「연속 계열 아님」 명시)·원자료 시각 10점·`canonical-metadata.json` 기간 근거 「10개 불연속 표본」. 골든 007 오답 「연속 시계열로 단정」의 판정 재료 |
+| 4 | rn15_sample | rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다. | **끝 문장 추가**(seq3 과 같은 근거) |
+| 5 | pred_sample | 레이더 반사도 격자를 입력으로 받아 같은 격자의 강우 분포를 출력하는 U-Net 기반 모델의 예측 결과. 입력은 hsr_sample.npy, 검증은 rn15_sample.npy 다. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다. | **끝 두 문장 추가** — 형태는 md 상세 「파일」 줄, 나머지는 seq3 과 같은 근거 |
+| 6 | GK-2A 일 단위 식생자료 | 국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다. | 없음(축자) |
+| 7 | GK2A_NDVI_mean_202305 | DQF 로 품질 저하 픽셀을 NaN 으로 바꾸고 유효 범주 -1~1 밖을 NaN 처리한 뒤, 원자료 좌표계 LCC 를 WGS84 로 변환해 NDVI 레이어만 TIF 로 저장한 자료. 경기도 남부~충청권 일대로 영역을 추출하고 2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환했다. | 없음(축자) |
+| 8 | HLS_S30_NDVI_mean_202305 | Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다. | 없음(축자) |
+| 12 | Prediction (공간상세화) | U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다. | 없음(축자) |
+| 13 | SPI-4weeks | 대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다. | **끝 날짜 2025-12-31 → 2025-12-20** — `canonical-metadata.json` 기간 근거 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」, dev 기간 칸과 일치 |
+| 14 | SPEI-4weeks | 대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다. | **끝 날짜 2025-12-31 → 2025-12-20**(seq13 과 같은 근거) |
+
+- 길이 89~189자 — 상한(화면 3000자) 안이라 사실 발췌 없이 전문을 넣었다.
+- 지시문 최소 범위(seq 3·4·5·7·8·12·13·14) ＋ **seq6 추가**: 004(「가공 과정에서 NDVI 추출」)·012(천리안 일별 2 km)의 근거 공백(§2-3)이 seq6 의 옛 한 줄 요약에 있었다.
+- seq 1·2·9·10·11·15~28 은 바꾸지 않았다(9·10 은 `registrationNote` 를 러너 검증이 요구한다).
+
+### 7-5. 검증
+
+- API — 쓰기 뒤 `GET /datasets/{id}` 9건의 summary = 보낸 문장 9/9. `GET …/lineage`: Prediction ← GK2A_NDVI_mean_202305 주입력 · HLS·DEM·Aspect·LULC_2023 보조입력 / pred_sample ← hsr_sample 주입력 · rn15_sample 보조입력 / rn15_sample ← rn15 주입력(무변경). method 전부 null. `processingLevel` 무변화(pred_sample·Prediction 2 · 나머지 0/1).
+- BYPASSRLS 읽기(2026-09-24T19:28:54Z · `transaction_read_only = on` · 배포 `dev-ea21d8c2aa54`) — 데이터셋 28 · 간선 18(주입력 13 · 보조입력 5). 새 간선 ID: pred_sample ← rn15_sample `01M3AE8MRWX9HKE1ZSWCGGB1JD` · Prediction ← HLS `01M3AE8MHD8GQX87H7GRNJ73VY` · Prediction ← LULC_2023 `01M3AE8MN0CCDM2GRC9NK4XED3`(origin `manual` · 확인 계정 = 소유자 · method NULL). 나머지 5간선은 ID·confirmed_at 무변화. summary 9/9 가 보낸 문장과 같음. `d4_lineage_unknown` 대상 0건.
+- 관측 — `PATCH` 뒤에도 `d3_dataset_description.updated_at` 이 바뀌지 않았다(9건 모두 이전 값 그대로). 아래 7-9 후속.
+
+### 7-6. 재시드 정본 반영 (다음 재시드가 같은 상태를 만든다)
+
+| 파일 | 변경 |
+|---|---|
+| `dev-package/tools/dev-seed/canonical-metadata.json` | `auxiliaryParents` 2 → 5건(pred_sample ← rn15_sample · Prediction ← HLS·DEM·Aspect·LULC_2023). seq 3·4·5·6·7·8·12·13·14 행에 `registrationSummary`(7-4 의 문장과 글자 단위 동일) |
+| `dev-package/tools/dev-seed/build_plan.py` | 보조입력 정본 집합을 상수 `EXPECTED_AUXILIARY`(5건)로. `registrationSummary` 가 있으면 md 한 줄 요약을 대체(빈 값·3000자 초과는 거절), 그 뒤 `registrationNote` 를 기존대로 덧붙인다 |
+| `dev-package/tools/dev-seed/tests/test_build_plan.py` | 보조입력 5건 결합 · 옛 2건 집합 거절 · 대체·덧붙임 · 빈 값/초과 거절 · 커밋된 정본의 역할·설명 사실 확인 — red 6건 확인 뒤 green |
+| `dev-package/tools/dev-seed/README.md` | 정본 사슬의 예외 셋(기간·보조입력·등록 설명) 한 단락 |
+
+- `plan-manifest.yaml` 은 바꾸지 않았다 — 등재표는 md 한 줄 요약을 싣는 생성물이고(`build_manifest`), 러너는 덧씌운 값이 실린 `upload-plan.json` 을 친다. md 정본(참조자료 뿌리)도 바꾸지 않았다.
+- 러너는 부모별 역할을 이미 일반화해 처리한다(`runner.py` `split_lineage_parents` → 등록 카드엔 주입력만, 보조입력은 공식 계보 API 로 추가 · 검증 단계가 역할까지 대조).
+- 레포 md 사본 ＋ 새 정본으로 계획 행을 결합해 dev 쓰기 뒤 상태와 대조 — summary 9/9 · 대상 간선 8/8 역할 일치(시험 밖 일회 대조).
+
+### 7-7. 스냅샷 재포획 (`eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json`)
+
+`recapture_snapshot.py` 읽기 전용 재실행(2026-09-24T19:31:04Z) · 검증 11건 전부 통과(`edge_roles_vs_plan` 은 새 `auxiliaryParents` 기준). 옛 v2 와의 차이:
+
+- ID 28건·순서·`dev-name-id-v2.json` 동일(이름→ID 표는 다시 쓰지 않음).
+- `counts.edges_by_role` 보조입력 2 · 주입력 16 → 보조입력 5 · 주입력 13. 그 밖의 계수 동일(부모 있는 자식 13 · 간선 18 · Lv0 10/Lv1 16/Lv2 2).
+- `summary` 9건(seq 3·4·5·6·7·8·12·13·14)이 7-4 문장으로.
+- `parents` 2건 — pred_sample: rn15_sample 주입력 → 보조입력 / Prediction: HLS·LULC_2023 주입력 → 보조입력(정렬 = 역할 → 부모 ID).
+- `captured_at` 만 그 밖에 바뀜. 배포 `ea21d8c2aa54` 동일.
+
+§3 표·같은 폴더 JSON 의 K3 부모 역할과 §4-2 「계보 역할 충돌」 행은 보정 **전** 상태다. 재박기는 이 스냅샷의 역할을 쓴다.
+
+### 7-8. 재박기로 넘기는 결정 (이 커밋에서 골든·K3 파일은 수정하지 않음)
+
+- O3·O5·O6 승인 — 001·002 에서 seq8 HLS 는 허용 동반 후보 · 012 에서 「100 m 관측」으로 제시하면 오답 · 006 에서 seq2 는 관련 후보(오답 아님).
+- 010 (scope A) — 수동 판정 문구의 「실제 검색 범위 고지」를 14건에 맞춰 다시 적는다.
+- K3 — 제안 4건 유지 ＋ 5번째 케이스. `sample_limits` 에 `snapshot_children_with_parents` 13 · `snapshot_edges` 18 을 두고 `test_k3_candidate_recall.py` 104~106행 대조를 그 값으로 해 드리프트 검출을 유지. `services/core-api/tests/test_k3_lineage_probe.py:92` `_siblings` graph 갈래에 `other not in mine` 누락(형제에 부모가 섞임) 수정.
+- ⚠ 5번째 케이스의 지시 축자는 「4 ← 2 as 보조입력 after the role fix」다. 이번 보정(O4) 뒤에도 dev 의 4 ← 2(rn15_sample ← rn15)는 **주입력**이다 — O4 대상이 아니고, rn15_sample 의 유일한 부모라 보조입력이면 주입력 부모가 없어진다. 보정 뒤 보조입력인 강수 간선은 5 ← 4(pred_sample ← rn15_sample)다. 재박기 전 사용자 확인 필요.
+- K3-LIN-003(pred_sample)·K3-LIN-004(Prediction)의 정답 역할은 7-7 스냅샷 기준으로 바뀐다 — LIN-003: hsr_sample 주입력 · rn15_sample 보조입력 / LIN-004: GK2A_NDVI 주입력 · HLS·DEM·Aspect·LULC_2023 보조입력.
+
+### 7-9. 하지 않은 것 · 후속
+
+- 골든(`golden-cases.json`·`golden-set.md`·`golden_baseline.py`)·K3(`lineage-cases.json`·시험) 재박기 — WU4 본 작업 몫. 이 커밋은 선행 조건 O4·O7 과 서명 기록까지.
+- 설명 칸 보강은 검색 순위에 쓰이는 설명 벡터·색인이 새 문장으로 다시 계산됐는지 확인하지 않았다(검색·모델 호출 0회). WU5 재측정 전에 확인 필요.
+- `PATCH /datasets/{id}` 가 `d3_dataset_description.updated_at` 을 올리지 않는다(7-5). 어느 게이트·시험도 이 열의 갱신을 보지 않는다 — 별건 후속.
+- 사라진 설명 문서 6개(docx·pptx·ipynb) 적재·증거 패킷 재수집(O7 의 다른 선택지)은 하지 않았다.

@@ -1,7 +1,12 @@
 {
   "schema": "colab-wu4-golden-proposal/1",
   "date": "2026-09-25",
-  "status": "unsigned-proposal",
+  "status": "signed",
+  "signatures": {
+    "signature_1": {"signedBy": "사용자", "signedOn": "2026-09-25", "decision": "approved — old_to_new 9 rows and new_name_id 28 rows"},
+    "signature_2": {"signedBy": "사용자", "signedOn": "2026-09-25", "decision": "required and mode as proposed (12/12); scope 001 = S-VEG, 002~012 = A:S-LD (14 datasets); golden-set.md re-pins numbers only (9 -> 14), meaning criteria unchanged"},
+    "dev_correction": "md §7 — O4 lineage roles and O7 descriptions applied on dev 2026-09-25 through the product API; k3_lineage parent roles in this file are the pre-correction state"
+  },
   "base": {
     "branch": "corpus-wu3-snapshot",
     "commit": "a60e3fa0"

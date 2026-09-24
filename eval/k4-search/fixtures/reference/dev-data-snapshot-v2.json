@@ -1,7 +1,7 @@
 {
   "format_version": 2,
   "environment": "dev",
-  "captured_at": "2026-09-24T18:35:25.451793+00:00",
+  "captured_at": "2026-09-24T19:31:04.05975+00:00",
   "deployed_revision": "ea21d8c2aa54",
   "source": "read-only SQL (begin read only / rollback) via BYPASSRLS backup URL; names matched to dev-package/tools/dev-seed/plan-manifest.yaml",
   "subject": {
@@ -16,8 +16,8 @@
     "project_links": 28,
     "lineage_edges": 18,
     "edges_by_role": {
-      "보조입력": 2,
-      "주입력": 16
+      "보조입력": 5,
+      "주입력": 13
     },
     "edges_with_method": 0,
     "files_by_kind": {
@@ -358,7 +358,7 @@
       "id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
       "name": "hsr_sample",
       "topic": null,
-      "summary": "WGS84 변환·crop 한 HSR 전처리 자료",
+      "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
       "source_label": null,
       "category": "기상·기후 인자",
       "data_type": "지상관측자료",
@@ -428,7 +428,7 @@
       "id": "01M39TB4NTBCFC8TSTNB93N5YP",
       "name": "rn15_sample",
       "topic": null,
-      "summary": "WGS84 변환·crop 한 rn15 전처리 자료",
+      "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
       "source_label": null,
       "category": "기상·기후 인자",
       "data_type": "관측 기반 산출물",
@@ -498,7 +498,7 @@
       "id": "01M39TCARM2C2NJ8S9SA4QBSER",
       "name": "pred_sample",
       "topic": null,
-      "summary": "U-Net 기반 강수 예측 결과",
+      "summary": "레이더 반사도 격자를 입력으로 받아 같은 격자의 강우 분포를 출력하는 U-Net 기반 모델의 예측 결과. 입력은 hsr_sample.npy, 검증은 rn15_sample.npy 다. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
       "source_label": null,
       "category": "기상·기후 인자",
       "data_type": "관측 기반 산출물",
@@ -564,7 +564,7 @@
         },
         {
           "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
-          "parent_role": "주입력",
+          "parent_role": "보조입력",
           "method": null
         }
       ]
@@ -573,7 +573,7 @@
       "id": "01M39TK0F5P3W4APB91N08KTMY",
       "name": "GK-2A 일 단위 식생자료",
       "topic": null,
-      "summary": "GK-2A AMI 일 단위 식생 원본",
+      "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
       "source_label": null,
       "category": "식생·탄소 인자",
       "data_type": "위성자료",
@@ -889,7 +889,7 @@
       "id": "01M39TSEPR820QBZ1DBBFKDJEP",
       "name": "GK2A_NDVI_mean_202305",
       "topic": null,
-      "summary": "GK-2A 기반 2023-05 월평균 NDVI",
+      "summary": "DQF 로 품질 저하 픽셀을 NaN 으로 바꾸고 유효 범주 -1~1 밖을 NaN 처리한 뒤, 원자료 좌표계 LCC 를 WGS84 로 변환해 NDVI 레이어만 TIF 로 저장한 자료. 경기도 남부~충청권 일대로 영역을 추출하고 2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환했다.",
       "source_label": null,
       "category": "식생·탄소 인자",
       "data_type": "위성자료",
@@ -941,7 +941,7 @@
       "id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
       "name": "HLS_S30_NDVI_mean_202305",
       "topic": null,
-      "summary": "검증용 HLS S30 2023-05 월평균 NDVI",
+      "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
       "source_label": null,
       "category": "식생·탄소 인자",
       "data_type": "위성자료",
@@ -1131,7 +1131,7 @@
       "id": "01M39TZ0SCEYHHMBWZ991M1QGN",
       "name": "Prediction (공간상세화)",
       "topic": null,
-      "summary": "U-Net 기반 100 m 일 단위 NDVI 예측",
+      "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
       "source_label": null,
       "category": "식생·탄소 인자",
       "data_type": "관측 기반 산출물",
@@ -1467,12 +1467,7 @@
         },
         {
           "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
-          "parent_role": "주입력",
-          "method": null
-        },
-        {
-          "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
-          "parent_role": "주입력",
+          "parent_role": "보조입력",
           "method": null
         },
         {
@@ -1484,6 +1479,11 @@
           "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
           "parent_role": "보조입력",
           "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "parent_role": "보조입력",
+          "method": null
         }
       ]
     },
@@ -1491,7 +1491,7 @@
       "id": "01M39V005J6SQ9SW8MZ8D16ZWK",
       "name": "SPI-4weeks",
       "topic": null,
-      "summary": "4주 SPI 유의구간 벡터 (L1 Calibrated)",
+      "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
       "source_label": null,
       "category": "기상·기후 인자",
       "data_type": "관측 기반 산출물",
@@ -1537,7 +1537,7 @@
       "id": "01M39V0T17DHQ5PF5XSSERTZ8H",
       "name": "SPEI-4weeks",
       "topic": null,
-      "summary": "4주 SPEI 유의구간 벡터 (L1 Calibrated)",
+      "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
       "source_label": null,
       "category": "기상·기후 인자",
       "data_type": "관측 기반 산출물",

@@ -49,6 +49,18 @@ DEFAULT_CLASSIFY = TOOL_DIR / "upload-classify.json"
 CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
 DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
 INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+# 등록 설명 칸 상한 = RegisterArea.tsx `reg-summary` maxLength(6705675d · 3000자). 서버·계약에는 상한이 없다.
+SUMMARY_MAX_CHARS = 3000
+# 보조입력 간선 정본. DEM·Aspect 는 첫 등재, 나머지 셋은 O4(사용자 서명 2026-09-25) —
+# 검증자료(HLS·rn15_sample)와 토지피복(LULC)은 주입력이 아니다. 역할 enum 이 2값뿐이라
+# 「검증」은 설명 칸(`registrationSummary`)에만 적는다(`db/platform/schema.sql` d4_lineage_edge).
+EXPECTED_AUXILIARY = {
+    ("Prediction (공간상세화)", "HLS_S30_NDVI_mean_202305", "보조입력"),
+    ("Prediction (공간상세화)", "DEM", "보조입력"),
+    ("Prediction (공간상세화)", "Aspect", "보조입력"),
+    ("Prediction (공간상세화)", "LULC_2023", "보조입력"),
+    ("pred_sample", "rn15_sample", "보조입력"),
+}
 
 # md 4건의 자리. 순서가 계획의 프로젝트 순서이고 seq 순서와 같다.
 MD_RELATIVE = [
@@ -169,18 +181,22 @@ def bind_canonical_metadata(datasets, path=DEFAULT_METADATA):
             raise SystemExit("기간 범위·근거가 잘못됐다: %s" % d["name"])
         d["period"] = {"start": start, "end": end, "granularity": unit,
                        "basis": row["basis"]}
+        if "registrationSummary" in row:
+            # O7 (사용자 서명 2026-09-25) — the md one-liner is replaced by the DATASETS.md
+            # description the dev edit wrote, so a reseed reproduces the corrected dev text.
+            text = row["registrationSummary"]
+            if not isinstance(text, str) or not text.strip() or len(text) > SUMMARY_MAX_CHARS:
+                raise SystemExit("등록 설명이 비었거나 %d자를 넘는다: %s" % (SUMMARY_MAX_CHARS, d["name"]))
+            d["summary"] = text.strip()
         note = str(row.get("registrationNote") or "").strip()
         if note:
             d["summary"] = (str(d.get("summary") or "").strip() + " · " + note).strip(" ·")
 
-    expected_aux = {
-        ("Prediction (공간상세화)", "DEM", "보조입력"),
-        ("Prediction (공간상세화)", "Aspect", "보조입력"),
-    }
     got_aux = {(x.get("child"), x.get("parent"), x.get("role"))
                for x in doc.get("auxiliaryParents") or []}
-    if got_aux != expected_aux:
-        raise SystemExit("보조입력 대상은 Prediction (공간상세화)의 DEM·Aspect 두 건이어야 한다")
+    if got_aux != EXPECTED_AUXILIARY:
+        raise SystemExit("보조입력 대상은 Prediction (공간상세화)의 HLS·DEM·Aspect·LULC 네 건과 "
+                         "pred_sample 의 rn15_sample 한 건이어야 한다")
     by_name = {d["name"]: d for d in datasets}
     for child, parent, role in got_aux:
         if child not in by_name or parent not in by_name[child].get("parents", []):

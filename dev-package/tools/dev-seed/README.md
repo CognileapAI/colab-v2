@@ -13,6 +13,11 @@
 
 - **정본 사슬 = `DATASETS.md` 4건 → `build_plan.py` → `plan-manifest.yaml` ＋ `upload-plan.json`.**
   값을 고칠 자리는 md 하나뿐이고, 뒤의 둘은 생성물이다.
+- 예외 셋은 `canonical-metadata.json`(레포 정본)이 계획 행에 덧씌운다 — 기간 · 보조입력 간선
+  (`auxiliaryParents` 5건) · 등록 설명(`registrationSummary` · seq 3·4·5·6·7·8·12·13·14 는 md 한 줄 요약 대신
+  md `description` 기반 문장). 등재표(`plan-manifest.yaml`)는 md 한 줄 요약을 그대로 두고,
+  러너 입력(`upload-plan.json`)만 덧씌운 값을 싣는다. 근거 = 2026-09-25 dev 보정(O4·O7) ·
+  `dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md` §7.
 - md 4건의 자리(참조자료 뿌리 기준) = `01.level-data/01.precipitation/DATASETS.md` ·
   `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` ·
   `02.File-format/DATASETS.md`. 레포 안 거울 사본은 `dev-package/reports/reference-data/datasets-md/`.

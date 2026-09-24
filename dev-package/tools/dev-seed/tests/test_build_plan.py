@@ -233,26 +233,101 @@ def test_canonical_metadata_requires_a_period_for_every_dataset(tmp_path):
         build_plan.bind_canonical_metadata(datasets, path)
 
 
-def test_dem_and_aspect_keep_user_month_precision(tmp_path):
-    datasets = [{"seq": 9, "name": "DEM", "parents": []},
-                {"seq": 10, "name": "Aspect", "parents": ["DEM"]},
-                {"seq": 12, "name": "Prediction (공간상세화)",
-                 "parents": ["DEM", "Aspect"]}]
-    rows = [{"seq": seq, "name": name, "start": "2023-05", "end": "2023-05",
+SIGNED_AUX = [
+    {"child": "pred_sample", "parent": "rn15_sample", "role": "보조입력"},
+    {"child": "Prediction (공간상세화)", "parent": "HLS_S30_NDVI_mean_202305", "role": "보조입력"},
+    {"child": "Prediction (공간상세화)", "parent": "DEM", "role": "보조입력"},
+    {"child": "Prediction (공간상세화)", "parent": "Aspect", "role": "보조입력"},
+    {"child": "Prediction (공간상세화)", "parent": "LULC_2023", "role": "보조입력"},
+]
+
+
+def lineage_fixture():
+    names = [(3, "hsr_sample", []), (4, "rn15_sample", []),
+             (5, "pred_sample", ["hsr_sample", "rn15_sample"]),
+             (7, "GK2A_NDVI_mean_202305", []), (8, "HLS_S30_NDVI_mean_202305", []),
+             (9, "DEM", []), (10, "Aspect", ["DEM"]), (11, "LULC_2023", []),
+             (12, "Prediction (공간상세화)",
+              ["GK2A_NDVI_mean_202305", "HLS_S30_NDVI_mean_202305", "DEM", "Aspect", "LULC_2023"])]
+    datasets = [{"seq": s, "name": n, "summary": "md 요약 " + n, "parents": list(p)}
+                for s, n, p in names]
+    rows = [{"seq": s, "name": n, "start": "2023-05", "end": "2023-05",
              "granularity": "월", "basis": "사용자 제공 맥락",
              **({"registrationNote": "기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음"}
-                if name in ("DEM", "Aspect") else {})}
-            for seq, name in [(9, "DEM"), (10, "Aspect"),
-                              (12, "Prediction (공간상세화)")]]
-    path = metadata_file(tmp_path, rows, [
-        {"child": "Prediction (공간상세화)", "parent": "DEM", "role": "보조입력"},
-        {"child": "Prediction (공간상세화)", "parent": "Aspect", "role": "보조입력"},
-    ])
-    build_plan.bind_canonical_metadata(datasets, path)
-    assert [(d["period"]["start"], d["period"]["granularity"])
-            for d in datasets[:2]] == [("2023-05", "월"), ("2023-05", "월")]
-    assert datasets[2]["parent_roles"] == {"DEM": "보조입력", "Aspect": "보조입력"}
-    assert "파일 내부 날짜 정보는 없음" in datasets[0]["summary"]
+                if n in ("DEM", "Aspect") else {})}
+            for s, n, _ in names]
+    return datasets, rows
+
+
+def test_dem_and_aspect_keep_user_month_precision(tmp_path):
+    datasets, rows = lineage_fixture()
+    build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+    by = {d["name"]: d for d in datasets}
+    assert [(by[n]["period"]["start"], by[n]["period"]["granularity"])
+            for n in ("DEM", "Aspect")] == [("2023-05", "월"), ("2023-05", "월")]
+    assert "파일 내부 날짜 정보는 없음" in by["DEM"]["summary"]
+
+
+def test_signed_auxiliary_roles_cover_verification_and_landcover_parents(tmp_path):
+    """O4 (사용자 서명 2026-09-25) — 검증자료·토지피복은 보조입력, 주입력은 GK2A·hsr_sample 만 남는다."""
+    datasets, rows = lineage_fixture()
+    build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+    by = {d["name"]: d for d in datasets}
+    assert by["Prediction (공간상세화)"]["parent_roles"] == {
+        "HLS_S30_NDVI_mean_202305": "보조입력", "DEM": "보조입력",
+        "Aspect": "보조입력", "LULC_2023": "보조입력"}
+    assert by["pred_sample"]["parent_roles"] == {"rn15_sample": "보조입력"}
+    assert "parent_roles" not in by["Aspect"]
+
+
+def test_auxiliary_role_rejects_the_pre_o4_two_edge_set(tmp_path):
+    datasets, rows = lineage_fixture()
+    with pytest.raises(SystemExit, match="보조입력 대상"):
+        build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX[2:4]))
+
+
+def test_registration_summary_replaces_md_summary_and_keeps_note(tmp_path):
+    datasets, rows = lineage_fixture()
+    by_row = {r["name"]: r for r in rows}
+    by_row["GK2A_NDVI_mean_202305"]["registrationSummary"] = "정본 설명 문장."
+    by_row["DEM"]["registrationSummary"] = "DEM 정본 설명."
+    build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+    by = {d["name"]: d for d in datasets}
+    assert by["GK2A_NDVI_mean_202305"]["summary"] == "정본 설명 문장."
+    assert by["DEM"]["summary"] == ("DEM 정본 설명. · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, "
+                                    "파일 내부 날짜 정보는 없음")
+    assert by["hsr_sample"]["summary"] == "md 요약 hsr_sample"
+
+
+def test_registration_summary_rejects_blank_and_over_limit(tmp_path):
+    for bad in ("   ", "가" * 3001):
+        datasets, rows = lineage_fixture()
+        rows[0]["registrationSummary"] = bad
+        with pytest.raises(SystemExit, match="등록 설명"):
+            build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+
+
+def test_repo_canonical_metadata_carries_the_dev_o4_o7_corrections():
+    """커밋된 정본이 dev 보정(2026-09-25)과 같은 역할·설명을 재시드에 싣는다."""
+    doc = json.loads((TOOL_DIR / "canonical-metadata.json").read_text(encoding="utf-8"))
+    assert sorted((a["child"], a["parent"], a["role"]) for a in doc["auxiliaryParents"]) == \
+        sorted((a["child"], a["parent"], a["role"]) for a in SIGNED_AUX)
+    summaries = {r["seq"]: r.get("registrationSummary") for r in doc["datasets"]}
+    assert sorted(s for s, v in summaries.items() if v) == [3, 4, 5, 6, 7, 8, 12, 13, 14]
+    facts = {
+        3: ["WGS84", "연구대상지", "연속 계열이 아니다"],
+        4: ["WGS84", "연구대상지", "15분", "연속 계열이 아니다"],
+        5: ["U-Net", "입력은 hsr_sample.npy", "검증은 rn15_sample.npy"],
+        6: ["NDVI", "DQF", "2 km"],
+        7: ["DQF", "경기도 남부~충청권", "2 km 를 100 m 로 균등 분할", "월 단위 평균"],
+        8: ["검증자료", "HLS S30", "100 m"],
+        12: ["U-Net", "검증자료", "토지피복지도"],
+        13: ["시군구", "4주 SPI", "2025-12-20"],
+        14: ["시군구", "4주 SPEI", "2025-12-20"],
+    }
+    for seq, needles in facts.items():
+        for needle in needles:
+            assert needle in summaries[seq], (seq, needle)
 
 
 def test_auxiliary_role_rejects_the_wrong_ndvi_target(tmp_path):
