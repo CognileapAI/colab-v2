@@ -25,7 +25,8 @@
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
 #   COLAB_RESEED_ACK_NONEMPTY · COLAB_RESEED_ACK_BASIS — **사용자만** 넣는다(에이전트 Bash 는 훅이 막는다).
-#     reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **그 회차의 1회용 토큰**(만료 30분 · 한 번 쓰면 소진)과
+#     reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **그 회차의 1회용 토큰**(만료 30분 · 한 번 쓰면 소진 ·
+#     stdout 이 터미널일 때만 보인다)과
 #     GO 근거(누가 · 어디서 · 언제). 없거나 다르면 앱 정지·DROP·S3 전에 멈춘다(2026-09-24 사고 · `stages.sh` 정지 게이트).
 #   ⚠ `--from bootstrap|up|s3` 는 **reset 을 돈 같은 `--run-dir`** 로만 잇는다 — s3 계획은 그 실행 자리의
 #     reset 판정과 DROP 직전 계수에 묶이고, 없으면 멈춘다.

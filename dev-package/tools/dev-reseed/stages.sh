@@ -220,6 +220,19 @@ RESET_ACK_TTL_SECONDS=1800
 # 옛 회차가 남긴 원격 파일 — reset ① 이 계수 전에 지운다(`--from s3` 가 지난 계수로 겹침 0 을 내던 자리).
 RESET_STALE_FILES="count-before.json count-at-drop.json schema.json plan.json s3-plan.json s3-apply.json count-after.json"
 
+# 토큰은 **stdout 이 터미널일 때만** 그 터미널에 찍는다(`[ -t 1 ]`). 단계 로그·stderr·blocked.jsonl 에는
+#   남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프 · 리다이렉트) 토큰 없이 「자기 터미널에서
+#   다시 열어야 보인다」만 남긴다 — 에이전트가 거부 출력을 읽어 토큰을 채우는 경로를 닫는다(2026-09-25 검토 조건).
+RESET_TOKEN_MARK="@@colab-reseed-reset-token@@"
+reset_show_token() {
+  if [ -t 1 ]; then
+    printf '   토큰 = %s\n' "$1"
+    log "   토큰은 이 터미널(stdout)에만 찍었다 — 단계 로그·실행 기록에는 남기지 않는다"
+  else
+    log "   토큰은 찍지 않았다 — stdout 이 터미널이 아니다. 사용자가 자기 터미널에서 reset 을 다시 열어야 이번 회차 토큰이 보인다"
+  fi
+}
+
 reset_nonempty_gate() {
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 정지 게이트 — ssh <dev> sudo base64 -w0 $REMOTE_OUT/count-before.json → 실행 자리 count-before.json"
@@ -240,7 +253,7 @@ reset_nonempty_gate() {
   ( umask 077; printf '%s' "$chal" | base64 -d > "$RUN_DIR/challenge-in.json" 2>/dev/null ) || : > "$RUN_DIR/challenge-in.json"
   rm -f "$RUN_DIR/challenge-out.json"
   local out; rc=0
-  out="$(python3 - "$RUN_DIR" "$RUN_ID" "${COLAB_RESEED_OPERATOR:-$(id -un)}" "$RESET_GATE_TABLES" \
+  out="$(RESET_TOKEN_MARK="$RESET_TOKEN_MARK" python3 - "$RUN_DIR" "$RUN_ID" "${COLAB_RESEED_OPERATOR:-$(id -un)}" "$RESET_GATE_TABLES" \
       "${COLAB_RESEED_ACK_NONEMPTY-}" "${COLAB_RESEED_ACK_BASIS-}" "$RESET_ACK_TTL_SECONDS" \
       "d3_dataset=${EXPECT_DATASETS:-} d6_project=${EXPECT_PROJECTS:-} d4_lineage_edge=${EXPECT_EDGES:-}" <<'PY'
 import datetime, hashlib, json, os, secrets, sys
@@ -251,6 +264,7 @@ content = hashlib.sha256(raw).hexdigest()
 now = datetime.datetime.now(datetime.timezone.utc)
 stamp = lambda t: t.isoformat(timespec="seconds")
 def token_of(nonce): return hashlib.sha256(raw + b"\n" + nonce.encode("ascii")).hexdigest()
+TOKEN_MARK = os.environ["RESET_TOKEN_MARK"]
 
 nonempty, refs, orphans, excess, challenge = {}, None, None, {}, None
 def done(decision, lines, code, **extra):
@@ -342,16 +356,21 @@ done("refused", [
     f"   {s3line}",
     f"   {why}. 앱 정지·DROP·S3 는 하나도 하지 않았다.",
     f"   이번 계수 = 실행 자리 count-before.json · 1회용 challenge 만료 {challenge['expiresAt']}",
-    f"   토큰 = {token_of(nonce)}",
-    "   넘기는 것은 **사용자**가 이 계수를 보고 명시 GO 를 준 뒤 **사용자 터미널에서** 한다 —",
-    "   COLAB_RESEED_ACK_NONEMPTY 에 위 토큰, COLAB_RESEED_ACK_BASIS 에 GO 근거(누가 · 어디서 · 언제)를 두고",
+    f"{TOKEN_MARK}{token_of(nonce)}",
+    "   넘기는 것은 **사용자**가 이 계수를 보고 명시 GO 를 준 뒤 **자기 터미널에서** 한다 —",
+    "   COLAB_RESEED_ACK_NONEMPTY 에 이번 토큰, COLAB_RESEED_ACK_BASIS 에 GO 근거(누가 · 어디서 · 언제)를 두고",
     "   reset 부터 다시 연다. 에이전트는 이 값을 채우지 않는다(.agents/rules/deploy.md 11번 증보).",
 ], 1)
 PY
 )" || rc=$?
-  printf '%s\n' "$out" | while IFS= read -r line; do log "$line"; done
+  printf '%s\n' "$out" | while IFS= read -r line; do
+    case "$line" in
+      "$RESET_TOKEN_MARK"*) reset_show_token "${line#"$RESET_TOKEN_MARK"}" ;;
+      *) log "$line" ;;
+    esac
+  done
   if [ "$rc" -ne 0 ]; then
-    blocked_add reset "$(printf '%s\n' "$out" | head -2 | tr '\n' ' ')"
+    blocked_add reset "$(printf '%s\n' "$out" | grep -vF -- "$RESET_TOKEN_MARK" | head -2 | tr '\n' ' ')"
     if [ -s "$RUN_DIR/challenge-out.json" ]; then
       ssh_dev "printf '%s' '$(base64 -w0 < "$RUN_DIR/challenge-out.json")' | base64 -d | sudo tee $REMOTE_OUT/$RESET_CHALLENGE >/dev/null && sudo chmod 600 $REMOTE_OUT/$RESET_CHALLENGE" \
         || warn "1회용 challenge 를 원격에 남기지 못했다 — 위 토큰은 통하지 않는다. 다시 연다"

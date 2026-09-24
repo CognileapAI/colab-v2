@@ -9,7 +9,8 @@
 #   DB 0 · 고아 객체를 빈 DB 로 읽고, 거부 메시지가 붙여 넣을 명령을 찍고, 토큰이 회차·시각에 묶이지 않았다.
 #
 # 무엇을 증명하는가 —
-#   ⓐ 비어 있지 않고 토큰이 없으면 비영 ＋ 파괴 호출 0 ＋ 표별 계수 · 시드 기준선 초과분(첫 줄) · 토큰을 찍는다.
+#   ⓐ 비어 있지 않고 토큰이 없으면 비영 ＋ 파괴 호출 0 ＋ 표별 계수 · 시드 기준선 초과분(첫 줄)을 찍는다.
+#      stdout 이 터미널이 아니면 토큰은 출력에도 단계 로그에도 없고 「자기 터미널에서」 다시 열라는 말만 있다.
 #      붙여 넣을 완성 명령(`COLAB_RESEED_ACK_NONEMPTY=…` · `reseed.sh --from reset`)은 찍지 않는다.
 #      1회용 challenge(nonce · 만료)가 원격에 선다.
 #   ⓑ 지난 challenge 의 토큰 · nonce 없는 sha256(계수) · 꼴 틀린 토큰은 거부한다 — 파괴 호출 0
@@ -23,6 +24,7 @@
 #   ⓘ 초기화 도구가 **실제로 쓴** 계수 파일(가짜 DB·S3 위 `--phase count`)을 게이트가 같은 뜻으로 읽는다
 #   ⓙ `--from s3` 가 같은 실행 자리의 reset 판정 없이 s3-plan 을 부르지 않는다(지난 회차 파일 · 내보낸 토큰)
 #   ⓚ s3-plan 은 이번 reset 의 DROP 직전 계수와 그 sha256 · 계수 URL 을 받고, 환경의 토큰을 쓰지 않는다
+#   ⓛ stdout 이 터미널(pty)이면 이번 challenge 토큰이 그 터미널에 보이고, 단계 로그 파일에는 남지 않는다
 #
 # 실물 무접촉 = `ssh`·`docker`·`sudo` 를 PATH 대역으로 가린다. 원격 자리는 임시 폴더다 — argv 명령
 # (읽기·지우기·challenge 쓰기)은 그 폴더 위에서 로컬로 돌고, `bash -s` 본문은 적기만 한다
@@ -123,9 +125,14 @@ n="$(destructive_calls)"
 TOKEN1="$( [ -s "$CHALLENGE" ] && token_for "$NONEMPTY" )"
 for want in "d3_dataset 35" "d3_file 585" "d6_project 6" "d4_lineage_edge 22" "d1_account 5" \
             "account_admin.login_credential 5" "d5_upload 40" "참조 키 3" "COLAB_RESEED_ACK_NONEMPTY" \
-            "COLAB_RESEED_ACK_BASIS" "${TOKEN1:-<토큰 없음>}"; do
+            "COLAB_RESEED_ACK_BASIS" "자기 터미널에서"; do
   printf '%s' "$out" | grep -qF -- "$want" || note "ⓐ‴ 정지 메시지에 「$want」 이 없다"
 done
+# stdout 이 터미널이 아니면(에이전트·파이프) 토큰을 어디에도 찍지 않는다 — 출력에도 단계 로그에도.
+[ -n "$TOKEN1" ] && printf '%s' "$out" | grep -qF -- "$TOKEN1" \
+  && note "ⓐᵗ stdout 이 터미널이 아닌데 토큰을 찍었다 — 에이전트가 읽어 채우는 자리다"
+[ -n "$TOKEN1" ] && grep -qF -- "$TOKEN1" "$STAGE_LOG" \
+  && note "ⓐᵗ′ 토큰이 단계 로그 파일에 남았다"
 first="$(printf '%s\n' "$out" | grep -m1 '⛔' || true)"
 for want in "d3_dataset +7" "d4_lineage_edge +4" "d6_project +2"; do
   printf '%s' "$first" | grep -qF -- "$want" || note "ⓐ⁗ 정지 메시지 첫 줄에 시드 기준선 초과분 「$want」 이 없다: $first"
@@ -376,8 +383,33 @@ after="$(declare -f stage_s3 | grep -c 'reset_count_cmd' || true)"
 unset COLAB_RESEED_ACK_NONEMPTY
 CURRENT_STAGE=reset
 
+# ── ⓛ stdout 이 터미널이면 토큰을 그 터미널에만 찍는다 ─────────────────────
+#   같은 설정으로 stage_reset 을 의사 터미널(pty) 위에서 돌린다. 터미널에는 토큰이 보이고,
+#   단계 로그 파일에는 남지 않는다.
+fresh_remote; reset_case
+unset COLAB_RESEED_ACK_NONEMPTY COLAB_RESEED_ACK_BASIS
+export FIXTURE_COUNT_BEFORE="$NONEMPTY"
+{
+  declare -p REPO_ROOT RUN_DIR RUN_ID DRY_RUN TARGET_SHA S3_BUCKET S3_REGION EC2_SECRETS_DIR \
+    EXPECT_DATASETS EXPECT_EDGES EXPECT_PROJECTS COLAB_DEV_SSH COLAB_DEV_KEY_FILE CURRENT_STAGE STAGE_LOG
+  printf 'relpath() { printf %%s "$1"; }\n'
+  printf '. %q\n. %q\n' "$RESEED_DIR/lib.sh" "$RESEED_DIR/stages.sh"
+  printf 'REMOTE_OUT=%q\nstage_reset\n' "$FIXTURE_REMOTE"
+} > "$TMP/tty-case.sh"
+tty_out="$(python3 -c 'import os, pty, sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(["bash", sys.argv[1]])))' \
+  "$TMP/tty-case.sh" < /dev/null)"; rc=$?
+[ "$rc" -ne 0 ] || note "ⓛ 터미널 실행에서 비어 있지 않은 계수인데 stage_reset 이 0 으로 끝났다"
+n="$(destructive_calls)"; [ "$n" = 0 ] || note "ⓛ′ 터미널 실행에서 파괴 호출이 $n 건 나갔다"
+if [ -s "$CHALLENGE" ]; then
+  TOKEN3="$(token_for "$NONEMPTY")"
+  printf '%s' "$tty_out" | grep -qF -- "$TOKEN3" || note "ⓛ″ stdout 이 터미널인데 이번 challenge 토큰이 보이지 않는다"
+  grep -qF -- "$TOKEN3" "$STAGE_LOG" && note "ⓛ‴ 터미널 실행의 토큰이 단계 로그 파일에 남았다"
+else
+  note "ⓛ″ 터미널 실행이 원격에 1회용 challenge 를 남기지 않았다"
+fi
+
 if [ "$fail" -eq 0 ]; then
-  echo "reset-gate — green (비어 있음 정지 · 기준선 초과 첫 줄 · 완성 명령 무출력 · 1회용 challenge · 지난·옛 꼴 토큰 거부 · 근거 필수 · 소진·만료 · 빈 DB 무토큰 · 고아 객체 정지 · 판정 불가 정지 · BYPASSRLS 두 체인 · 옛 원격 파일 삭제 · 도구 계수 ↔ 게이트 · --from s3 무판정 거부 · s3 계획 이번 reset 묶임)"
+  echo "reset-gate — green (비어 있음 정지 · 기준선 초과 첫 줄 · 완성 명령 무출력 · 토큰은 터미널 stdout 에만 · 1회용 challenge · 지난·옛 꼴 토큰 거부 · 근거 필수 · 소진·만료 · 빈 DB 무토큰 · 고아 객체 정지 · 판정 불가 정지 · BYPASSRLS 두 체인 · 옛 원격 파일 삭제 · 도구 계수 ↔ 게이트 · --from s3 무판정 거부 · s3 계획 이번 reset 묶임)"
   exit 0
 fi
 echo "reset-gate — red" >&2

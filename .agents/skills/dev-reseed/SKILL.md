@@ -124,7 +124,8 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 �
   「비어 있다」 = 사람 자료 표 일곱 행 0 · 참조 키 0 · `uploads/` 객체 0 · 멀티파트 0 — 고아 객체도 비어 있지 않다.
   비어 있지 않으면 **앱 정지·DROP·S3 전에** 비영 종료하고 첫 줄에 시드 기준선 대비 초과분(표별 +N), 이어서 표별 계수 ·
   고아 객체 건수 · 1회용 토큰을 찍는다. 토큰 = sha256(계수 바이트 ‖ 그 회차가 원격에 남긴 nonce) · 만료 30분 · 한 번 쓰면 소진.
-  붙여 넣을 완성 명령은 찍지 않는다.
+  붙여 넣을 완성 명령은 찍지 않는다. **토큰은 stdout 이 터미널일 때만(`[ -t 1 ]`) 그 터미널에 찍고** 단계 로그·실행 기록에는
+  남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프) 토큰 없이 「자기 터미널에서 다시 열어야 보인다」만 남긴다.
 - 넘기는 것은 **사용자**다 — Ted 가 계수를 보고 GO 를 준 뒤 사용자 터미널에서 `COLAB_RESEED_ACK_NONEMPTY`(그 토큰)와
   `COLAB_RESEED_ACK_BASIS`(GO 근거 — 누가 · 어디서 · 언제)를 두고 `--from reset` 으로 다시 연다. 판정·근거는 `reset-ack.json` 에 남는다.
   ⛔ 에이전트는 두 값을 채우지 않는다 — 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)이 Claude·Codex 모두에서 막는다.
