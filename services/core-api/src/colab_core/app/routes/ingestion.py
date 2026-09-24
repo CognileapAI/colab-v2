@@ -534,6 +534,66 @@ def _uploaded_file_meta(ledger, upload_id: Ulid) -> dict[str, Any]:
     return meta
 
 
+# ──────────────────── AI 제안에 넘길 「살펴볼 후보」 (K3 `WU1b`) ──────────────
+#: 후보 선정 전략 — **잠정 기본값 `filtered`**(주제 ∪ 이름·파일명 토큰).
+#: 근거는 J1 실측이다(엣지 6 · recall@5 `filtered` 6/6 vs `recent` 2/6 —
+#: `dev-package/reports/k3-lineage-probe/README.md`, Ted 결정 ① 2026-09-24).
+#: ⛔ **환경변수로 갈아끼우는 자리를 두지 않는다.** 전략은 측정으로 바뀔 값이지 배포마다
+#:   다를 값이 아니다 — 켜고 끄는 플래그는 생산자 쪽(`WU3`)에 하나만 둔다.
+LINEAGE_CANDIDATE_STRATEGY = d3_catalog.FILTERED_CANDIDATES
+#: 후보 상한 k. 계약 `LineageSuggestionRequest.candidates.maxItems` 와 **같은 값**이다.
+LINEAGE_CANDIDATE_LIMIT = 20
+#: 계약 `LineageParentCandidate` 의 상한. 넘치면 **core-api 가 잘라 보낸다** —
+#: D3 의 저장값에는 상한이 없고, 본문이 부푸는 것을 막는 자리는 계약 쪽이다(그 산문).
+_CANDIDATE_SUMMARY_MAX = 200
+_CANDIDATE_SOURCE_LABEL_MAX = 60
+
+
+def _utc_iso(value: Any) -> Any:
+    return (value.astimezone(dt.timezone.utc).isoformat()
+            if isinstance(value, dt.datetime) else value)
+
+
+def _lineage_candidate(candidate, period) -> dict[str, Any]:
+    """계약 `core-ai.yaml#LineageParentCandidate` 한 건.
+
+    **근거로 인용할 수 있는 값만 싣는다** — 파일 목록·변수 전체는 싣지 않는다(그 산문).
+    ⚠ **모르는 값은 열쇠를 만들지 않는다.** 특히 가공 단계는 판정된 것만 싣는다 —
+    판정 없는 후보에 `0` 을 실으면 「아직 아무도 안 봤다」가 「원자료다」로 읽힌다.
+    """
+    core = candidate.core
+    out: dict[str, Any] = {"datasetId": core.dataset_id, "name": core.name}
+    if core.topic:
+        out["topic"] = core.topic
+    summary = (core.summary or "").strip()
+    if summary:
+        out["summary"] = summary[:_CANDIDATE_SUMMARY_MAX]
+    label = (core.source_label or "").strip()
+    if label:
+        out["sourceLabel"] = label[:_CANDIDATE_SOURCE_LABEL_MAX]
+    if candidate.processing_level is not None:
+        out["processingLevel"] = candidate.processing_level
+    if period:
+        if period[0] is not None:
+            out["periodStart"] = _utc_iso(period[0])
+        if period[1] is not None:
+            out["periodEnd"] = _utc_iso(period[1])
+    return out
+
+
+def _lineage_candidates(db: Session, *, lab_id: str,
+                        upload_meta: dict[str, Any]) -> list[dict[str, Any]]:
+    """**모집단은 사람이 고르는 후보와 같다** — `select_lineage_candidates` 한 함수만 부른다
+    (`d3_catalog` 머리말). 여기서 새 질의를 만들면 화면의 후보와 AI 가 본 후보가 갈리고,
+    그 어긋남은 아무도 못 센다. 연구실 경계는 이 세션의 RLS 가 긋는다."""
+    picked = d3_catalog.select_lineage_candidates(
+        db, lab_id=lab_id, upload_meta=upload_meta,
+        strategy=LINEAGE_CANDIDATE_STRATEGY, k=LINEAGE_CANDIDATE_LIMIT,
+        lineage_summaries=d4_lineage.LineageSummaryAdapter(db))
+    periods = d3_catalog.periods_of(db, [Ulid(c.core.dataset_id) for c in picked])
+    return [_lineage_candidate(c, periods.get(c.core.dataset_id)) for c in picked]
+
+
 # ═══════════════════ listUploadLineageSuggestions (중계) ════════════════════
 @router.get("/uploads/{uploadId}/lineage-suggestions", name="listUploadLineageSuggestions")
 def list_upload_lineage_suggestions(
@@ -544,10 +604,13 @@ def list_upload_lineage_suggestions(
         db: Session = Depends(scoped_db)) -> dict:
     """AI 계보 제안 조회 — **중계만** 한다. 확정 오퍼레이션이 아니다.
 
-    `ai-service` 가 아직 비어 있으므로 지금 이 op 이 낼 수 있는 참인 답은 **0건**이다.
-    그것을 200 + `degraded: true` + 빈 배열로 말한다 — **억지 제안을 만들지 않는다**
-    (`CLAUDE.md §3` · `P2.md §2-8`). 5xx 로 끝내지 않는 이유는 **AI 없이도 v2 가
-    완결된 제품**이기 때문이다.
+    **찾는 것은 여기, 매기는 것은 저쪽이다** (`〈72〉-㉮` 검색과 같은 분담 · K3 `WU1b`).
+    D3 의 주인인 core-api 가 「살펴볼 가공 전 데이터」 후보를 골라 요청에 싣고, ai-service 는
+    그 후보만 놓고 순위·근거·확신도를 붙인다. 저쪽은 카탈로그에 닿지 못하므로 후보를 못
+    받으면 낼 수 있는 참인 답이 언제나 0건이다.
+
+    0건은 그대로 200 + 빈 배열이다 — **억지 제안을 만들지 않는다**(`CLAUDE.md §3` ·
+    `P2.md §2-8`). 5xx 로 끝내지 않는 이유는 **AI 없이도 v2 가 완결된 제품**이기 때문이다.
     """
     if not Ulid.is_valid(uploadId):
         raise errors.bad_request("uploadId 가 정규 ID 가 아니다.")
@@ -555,11 +618,20 @@ def list_upload_lineage_suggestions(
         raise errors.not_found("없거나 수명이 다한 업로드다.")
     lab = d1_identity.find_lab(db)
     searched = d3_catalog.count_datasets(db)
+    lab_id = target_lab(db)
     # **계약이 요구하는 것은 식별자가 아니라 읽은 값이다** — `_uploaded_file_meta` 참조.
+    file_meta = _uploaded_file_meta(_ledger(db), Ulid(uploadId))
+    # 후보 선정이 읽는 모양은 **계약의 요청 본문 그대로**다 — 두 벌로 옮겨 적지 않는다.
+    upload_meta: dict[str, Any] = {"file": file_meta}
+    if datasetNameDraft:
+        upload_meta["datasetNameDraft"] = datasetNameDraft
+    if subject_q:
+        upload_meta["subject"] = subject_q
     return request.app.state.suggestions.suggest(
-        lab_id=target_lab(db), lab_name=("" if lab is None else lab["name"]) or "연구실",
+        lab_id=lab_id, lab_name=("" if lab is None else lab["name"]) or "연구실",
         account_id=str(subject.account_id),
-        file_meta=_uploaded_file_meta(_ledger(db), Ulid(uploadId)),
+        file_meta=file_meta,
+        candidates=_lineage_candidates(db, lab_id=lab_id, upload_meta=upload_meta),
         searched_count=searched, dataset_name_draft=datasetNameDraft, subject=subject_q,
     )
 

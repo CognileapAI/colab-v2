@@ -83,11 +83,18 @@ class LineageSuggestionPort(Protocol):
     두고 `additionalProperties: false` 다. 업로드 식별자는 그 계약 어디에도 없다 —
     ai-service 는 업로드 원장을 읽지 못하므로 식별자만으로는 아무것도 할 수 없다.
     **읽는 것은 core-api 의 일이고, 넘기는 것은 읽은 값이다.**
+
+    ⭑ **⟨K3 `WU1b` 2026-09-24⟩ `candidates` 도 읽은 값이다.** ai-service 는 카탈로그에
+    닿지 못하므로(`CLAUDE.md §3-1`) 스스로 후보를 찾을 수 없다 — **찾는 것은 D3 의 주인인
+    core-api 이고 매기는 것만 저쪽 일이다**(`〈72〉-㉮` 검색과 같은 분담). 그래서 되받은
+    제안의 `parentDatasetId` 가 **보낸 후보 밖**이면 구현이 그것을 버린다: 신뢰하지 않는
+    쪽에서 거르는 것이 계약 표류를 잡는 유일한 자리다(응답 `scope` 를 버리는 그 자리와 같다).
     """
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
-                file_meta: dict[str, Any], searched_count: int,
-                dataset_name_draft: str | None, subject: str | None) -> dict[str, Any]:
+                file_meta: dict[str, Any], candidates: list[dict[str, Any]],
+                searched_count: int, dataset_name_draft: str | None,
+                subject: str | None) -> dict[str, Any]:
         ...
 
 

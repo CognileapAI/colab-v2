@@ -460,8 +460,8 @@ class HttpLineageSuggestionRelay:
         self._base = None if not base_url else base_url.rstrip("/")
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
-                file_meta: dict[str, Any], searched_count: int,
-                dataset_name_draft: str | None,
+                file_meta: dict[str, Any], candidates: list[dict[str, Any]],
+                searched_count: int, dataset_name_draft: str | None,
                 subject: str | None) -> dict[str, Any]:
         """⭑ **⟨정정 2026-08-30⟩ 나가는 본문이 계약과 어긋나 있었다.**
 
@@ -486,6 +486,10 @@ class HttpLineageSuggestionRelay:
             payload["datasetNameDraft"] = dataset_name_draft
         if subject:
             payload["subject"] = subject
+        # **후보가 0건이면 열쇠를 만들지 않는다** — 계약이 선택 필드로 열어 둔 자리이고,
+        # 저쪽은 후보가 없으면 모델을 부르지 않고 빈 제안으로 답한다(토큰을 태우지 않는다).
+        if candidates:
+            payload["candidates"] = candidates
         try:
             status, body = _request(f"{self._base}/lineage-suggestions", method="POST",
                                     headers=_scope_headers(lab_id, account_id), body=payload)
@@ -510,6 +514,22 @@ class HttpLineageSuggestionRelay:
             _record_suggest_failure(rejected=True, lab_id=lab_id, status=status, reason=reason)
             return honest_empty_suggestions(
                 lab_id=lab_id, lab_name=lab_name, searched_count=searched_count, reason=reason)
+        # **후보 밖의 부모를 실은 제안만 버린다** (`core-ai.yaml candidates` 산문 ⓑ).
+        # 한 건이 밖이라고 응답 전체를 버리지 않는다 — 나머지는 후보 안에서 나온 참인 답이고,
+        # 통째로 버리면 저쪽의 표류 한 건이 제품의 0건이 된다.
+        # ⚠ 기록에는 **건수만** 적는다. 데이터셋 이름을 적으면 감시 로그가 카탈로그 사본이 된다.
+        allowed = {c.get("datasetId") for c in candidates}
+        suggestions = body.get("suggestions")
+        if isinstance(suggestions, list):
+            kept = [s for s in suggestions
+                    if not isinstance(s, dict) or "parentDatasetId" not in s
+                    or s.get("parentDatasetId") in allowed]
+            dropped = len(suggestions) - len(kept)
+            if dropped:
+                _record_suggest_failure(
+                    rejected=True, lab_id=lab_id, status=status,
+                    reason=f"후보 목록 밖의 부모를 실은 제안 {dropped}건을 버렸다.")
+                body = {**body, "suggestions": kept}
         # **여기부터가 정직한 빈 상태의 자리다** — 저쪽이 답했고 0건이면 그것이 참인 답이다.
         # 그 자리에는 실패 기록을 남기지 않는다. 남기면 「없다」와 「못 물어봤다」가
         # 기록에서 다시 붙고, 감시가 매 업로드마다 울어 아무도 보지 않게 된다.
