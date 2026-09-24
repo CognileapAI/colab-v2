@@ -1,0 +1,171 @@
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[31m [ 70%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                                           [100%][0m
+=================================== FAILURES ===================================
+[31m[1m__________________________ test_후보가_지고_갈_열쇠_집합이_닫혀_있다 __________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_후보가_지고_갈_열쇠_집합이_닫혀_있다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""근거로 인용할 수 있는 값만 싣는다 — J3 이 이 집합을 오라클로 쓴다(미해결 2)."""[39;49;00m[90m[39;49;00m
+        cand = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mLineageParentCandidate[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        [94massert[39;49;00m cand[[33m"[39;49;00m[33mrequired[39;49;00m[33m"[39;49;00m] == [[33m"[39;49;00m[33mdatasetId[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mname[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        [94massert[39;49;00m cand[[33m"[39;49;00m[33madditionalProperties[39;49;00m[33m"[39;49;00m] [95mis[39;49;00m [94mFalse[39;49;00m[90m[39;49;00m
+        optional = [96mset[39;49;00m(cand[[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m]) - [96mset[39;49;00m(cand[[33m"[39;49;00m[33mrequired[39;49;00m[33m"[39;49;00m])[90m[39;49;00m
+>       [94massert[39;49;00m optional == {[33m"[39;49;00m[33mtopic[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33msummary[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33msourceLabel[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mprocessingLevel[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                            [33m"[39;49;00m[33mperiodStart[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mperiodEnd[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                            [90m# ⭑ `WU-S0` — 인용 가능한 원메타 4축(`R-K3-STRUCTURE` 판정 2)[39;49;00m[90m[39;49;00m
+                            [33m"[39;49;00m[33mcrs[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mgrid[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mvariables[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mfileName[39;49;00m[33m"[39;49;00m}, \
+            [33mf[39;49;00m[33m"[39;49;00m[33m선택 열쇠 집합이 다르다: [39;49;00m[33m{[39;49;00moptional[33m}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: 선택 열쇠 집합이 다르다: {'topic', 'summary', 'periodStart', 'sourceLabel', 'periodEnd', 'processingLevel'}[0m
+[1m[31mE       assert {'periodEnd',...ary', 'topic'} == {'crs', 'file...ngLevel', ...}[0m
+[1m[31mE         [0m
+[1m[31mE         Extra items in the right set:[0m
+[1m[31mE         [0m[33m'[39;49;00m[33mvariables[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [0m[33m'[39;49;00m[33mfileName[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [0m[33m'[39;49;00m[33mgrid[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [0m[33m'[39;49;00m[33mcrs[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         Use -v to get more diff[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:119: AssertionError
+[31m[1m_________________________ test_요청에_업로드_가공단계를_실을_자리가_있다 _________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_요청에_업로드_가공단계를_실을_자리가_있다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""사람이 등록 폼 ① 에서 고른 자기 Lv. 적격 필터의 기준값이고 필터는 core-api 가 건다.[39;49;00m
+    [33m[39;49;00m
+    [33m    ⚠ **`common.json#/$defs/ProcessingLevel` 을 `$ref` 하지 않는다** — 그 타입은[39;49;00m
+    [33m    `readOnly: true`(응답 전용)라고 스스로 적었고, 요청 본문에 실으면 그 산문이 거짓이 된다.[39;49;00m
+    [33m    """[39;49;00m[90m[39;49;00m
+        req = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mLineageSuggestionRequest[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+>       [94massert[39;49;00m [33m"[39;49;00m[33mprocessingLevel[39;49;00m[33m"[39;49;00m [95min[39;49;00m req[[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m], [33m"[39;49;00m[33m요청에 업로드 Lv 를 실을 자리가 없다[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: 요청에 업로드 Lv 를 실을 자리가 없다[0m
+[1m[31mE       assert 'processingLevel' in {'candidates': {'description': '⭑ **⟨2026-09-24 · K3 `WU0` — Ted 서명⟩ 살펴볼 가공 전 데이터 후보.** 선택 필드다.\n\nⓐ **후보는 core-api 가 ...ile': {'$ref': '#/components/schemas/UploadedFileMeta'}, 'scope': {'$ref': '#/components/schemas/RequestedScope'}, ...}[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:377: AssertionError
+[31m[1m__________________________ test_후보가_인용_가능한_원메타를_지고_간다 __________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_후보가_인용_가능한_원메타를_지고_간다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""`d3_dataset_autometa` 에 저장된 **날값 그대로**. 파생 신호는 싣지 않는다(판정 2)."""[39;49;00m[90m[39;49;00m
+        schemas = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        props = schemas[[33m"[39;49;00m[33mLineageParentCandidate[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        [94mfor[39;49;00m key [95min[39;49;00m ([33m"[39;49;00m[33mcrs[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mgrid[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mfileName[39;49;00m[33m"[39;49;00m):[90m[39;49;00m
+>           [94massert[39;49;00m props[key][[33m"[39;49;00m[33mtype[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mstring[39;49;00m[33m"[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33m{[39;49;00mkey[33m}[39;49;00m[33m 는 문자열이다[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                   ^^^^^^^^^^[90m[39;49;00m
+[1m[31mE           KeyError: 'crs'[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:392: KeyError
+[31m[1m__________________________ test_제안이_모델의_인용_근거를_지고_간다 ___________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_제안이_모델의_인용_근거를_지고_간다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""모델이 하는 일은 **인용까지**다. 대조·폐기는 core-api 가 한다."""[39;49;00m[90m[39;49;00m
+        node = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mParentCandidateSuggestion[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mallOf[39;49;00m[33m"[39;49;00m][[94m1[39;49;00m][90m[39;49;00m
+>       [94massert[39;49;00m [33m"[39;49;00m[33mevidence[39;49;00m[33m"[39;49;00m [95min[39;49;00m node[[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m], [33m"[39;49;00m[33m인용 근거를 실을 자리가 없다[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: 인용 근거를 실을 자리가 없다[0m
+[1m[31mE       assert 'evidence' in {'kind': {'const': '가공 전 데이터'}, 'parentDatasetId': {'$ref': '../schemas/common.json#/$defs/Ulid'}, 'parentDatasetName'...값은 열쇠\n자체를 만들지 않는다」와 같은 규율).\n⚠ **제안이지 판정이 아니다** — 정본값은 D3 에 있고 core 가 다시 붙인다\n(`parentDatasetName` 과 같은 자리).\n'}, ...}[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:414: AssertionError
+[31m[1m________________________ test_근거가_주장이지_판정이_아니라고_계약이_적는다 ________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_근거가_주장이지_판정이_아니라고_계약이_적는다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+>       ev = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mParentCandidateSuggestion[39;49;00m[33m"[39;49;00m][[90m[39;49;00m
+            [33m"[39;49;00m[33mallOf[39;49;00m[33m"[39;49;00m][[94m1[39;49;00m][[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mevidence[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+[1m[31mE       KeyError: 'evidence'[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:431: KeyError
+[31m[1m______________________ test_확신도와_근거_문장의_산지가_계약_산문에_적혀_있다 _______________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_확신도와_근거_문장의_산지가_계약_산문에_적혀_있다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""**계약이 거짓말하면 안 된다.** ai-service 가 싣는 두 값은 required 를 채우는[39;49;00m
+    [33m    잠정값이고 core-api 가 덮어쓴다(판정 4). 그 사실이 산문에 없으면 소비자는[39;49;00m
+    [33m    모델이 판정한 값으로 읽는다.[39;49;00m
+    [33m    """[39;49;00m[90m[39;49;00m
+        base = spec[[33m"[39;49;00m[33mcomponents[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mschemas[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mAiSuggestionBase[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mproperties[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        [94mfor[39;49;00m key [95min[39;49;00m ([33m"[39;49;00m[33mconfidence[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mrationale[39;49;00m[33m"[39;49;00m):[90m[39;49;00m
+            desc = [96mstr[39;49;00m(base[key].get([33m"[39;49;00m[33mdescription[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33m"[39;49;00m))[90m[39;49;00m
+>           [94massert[39;49;00m [33m"[39;49;00m[33m잠정값[39;49;00m[33m"[39;49;00m [95min[39;49;00m desc, [33mf[39;49;00m[33m"[39;49;00m[33m{[39;49;00mkey[33m}[39;49;00m[33m 산문에 잠정값이라는 사실이 없다[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE           AssertionError: confidence 산문에 잠정값이라는 사실이 없다[0m
+[1m[31mE           assert '잠정값' in '3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.**'[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:445: AssertionError
+[31m[1m_________________________ test_오퍼레이션_산문이_인용_검증_모형을_적는다 _________________________[0m
+
+spec = {'components': {'responses': {'Error': {'content': {'application/json': {'schema': {...}}}, 'description': '모든 4xx/5xx...rror'}, '401': {'$ref': '#/components/responses/Error'}, '503': {'$ref': '#/components/responses/Error'}}, ...}}}, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_오퍼레이션_산문이_인용_검증_모형을_적는다[39;49;00m(spec) -> [94mNone[39;49;00m:[90m[39;49;00m
+        desc = [33m"[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+        [94mfor[39;49;00m path, item [95min[39;49;00m spec[[33m"[39;49;00m[33mpaths[39;49;00m[33m"[39;49;00m].items():[90m[39;49;00m
+            [94mif[39;49;00m [33m"[39;49;00m[33mlineage[39;49;00m[33m"[39;49;00m [95min[39;49;00m path:[90m[39;49;00m
+                desc = [96mstr[39;49;00m(item[[33m"[39;49;00m[33mpost[39;49;00m[33m"[39;49;00m].get([33m"[39;49;00m[33mdescription[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33m"[39;49;00m))[90m[39;49;00m
+>       [94massert[39;49;00m [33m"[39;49;00m[33m인용[39;49;00m[33m"[39;49;00m [95min[39;49;00m desc [95mand[39;49;00m [33m"[39;49;00m[33mcore-api[39;49;00m[33m"[39;49;00m [95min[39;49;00m desc, \
+            [33m"[39;49;00m[33m적격 필터·인용 검증의 주인이 오퍼레이션 산문에 없다[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: 적격 필터·인용 검증의 주인이 오퍼레이션 산문에 없다[0m
+[1m[31mE       assert ('인용' in '업로드된 파일에서 읽은 메타(헤더 자동 추출값)와 **core-api 가 실어 보낸 후보\n목록**(`candidates`)만을 근거로 순위·근거 한 줄·확신도를 낸다. 후보 밖의\n데이터셋을 만들지 않는다 —... + `rawDataLikely`\n+ `scope.searchedCount: 0`. 억지 제안을 만들지 않는다\n(`Policy_업로드와_계보_확정 §3.2 · §8 AI 제안 영역 — 정직한 빈 상태`).\n')[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:454: AssertionError
+[31m[1m__________________________ test_요청의_가공단계_열쇠를_표면이_받는다 ___________________________[0m
+
+client = <starlette.testclient.TestClient object at 0x77945fb55a90>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_요청의_가공단계_열쇠를_표면이_받는다[39;49;00m(client) -> [94mNone[39;49;00m:[90m[39;49;00m
+        res = client.post(PATH, json=_body(processingLevel=[94m2[39;49;00m), headers=_headers())[90m[39;49;00m
+>       [94massert[39;49;00m res.status_code == [94m200[39;49;00m, res.text[90m[39;49;00m
+[1m[31mE       AssertionError: {"code":"bad_request","message":"계약에 없는 열쇠다: ['processingLevel'] — 계약이 닫혀 있다."}[0m
+[1m[31mE       assert 400 == 200[0m
+[1m[31mE        +  where 400 = <Response [400 Bad Request]>.status_code[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:461: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"duration_ms":0.506,"event":"http.server.request","level":"INFO","method":"POST","path":"/lineage-suggestions","schema":"colab.ops.v1","service":"ai-service","span_id":"09fb8f5884a3cf96","status":400,"timestamp":"2026-09-24T04:01:56.218Z","trace_id":"2bd7963474c8a855c6308554d772151d"}
+[31m[1m___________________________ test_후보의_원메타_열쇠를_표면이_받는다 ___________________________[0m
+
+client = <starlette.testclient.TestClient object at 0x77945fbf4500>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_후보의_원메타_열쇠를_표면이_받는다[39;49;00m(client) -> [94mNone[39;49;00m:[90m[39;49;00m
+        res = client.post(PATH, json=_body(candidates=[_cand([90m[39;49;00m
+            crs=[33m"[39;49;00m[33mEPSG:4326[39;49;00m[33m"[39;49;00m, grid=[33m"[39;49;00m[33m0.25도 격자[39;49;00m[33m"[39;49;00m, variables=[[33m"[39;49;00m[33mpr[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mlat[39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+            fileName=[33m"[39;49;00m[33mrain_2024.nc[39;49;00m[33m"[39;49;00m)]), headers=_headers())[90m[39;49;00m
+>       [94massert[39;49;00m res.status_code == [94m200[39;49;00m, res.text[90m[39;49;00m
+[1m[31mE       AssertionError: {"code":"bad_request","message":"후보에 계약에 없는 열쇠다: ['crs', 'fileName', 'grid', 'variables'] — 계약이 닫혀 있다."}[0m
+[1m[31mE       assert 400 == 200[0m
+[1m[31mE        +  where 400 = <Response [400 Bad Request]>.status_code[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:468: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"duration_ms":0.569,"event":"http.server.request","level":"INFO","method":"POST","path":"/lineage-suggestions","schema":"colab.ops.v1","service":"ai-service","span_id":"cae5a8e95f24981b","status":400,"timestamp":"2026-09-24T04:01:56.228Z","trace_id":"7f9c04c7748c787775cb02e218f6a842"}
+[31m[1m____________________________ test_후보의_빈_변수_목록은_정상이다 ____________________________[0m
+
+client = <starlette.testclient.TestClient object at 0x779460820a70>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_후보의_빈_변수_목록은_정상이다[39;49;00m(client) -> [94mNone[39;49;00m:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""변수 행이 한 줄도 없는 데이터셋이 실재한다 — `minItems` 를 여기 걸지 않는 이유다."""[39;49;00m[90m[39;49;00m
+        res = client.post(PATH, json=_body(candidates=[_cand(variables=[])]),[90m[39;49;00m
+                          headers=_headers())[90m[39;49;00m
+>       [94massert[39;49;00m res.status_code == [94m200[39;49;00m, res.text[90m[39;49;00m
+[1m[31mE       AssertionError: {"code":"bad_request","message":"후보에 계약에 없는 열쇠다: ['variables'] — 계약이 닫혀 있다."}[0m
+[1m[31mE       assert 400 == 200[0m
+[1m[31mE        +  where 400 = <Response [400 Bad Request]>.status_code[0m
+
+[1m[31mtests/test_http_suggestions.py[0m:490: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"duration_ms":0.409,"event":"http.server.request","level":"INFO","method":"POST","path":"/lineage-suggestions","schema":"colab.ops.v1","service":"ai-service","span_id":"558b15ff4d5c5d2b","status":400,"timestamp":"2026-09-24T04:01:56.335Z","trace_id":"53f663641f7c1d660e23ec42833a70f5"}
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_후보가_지고_갈_열쇠_집합이_닫혀_있다[0m - AssertionError: 선택 열쇠 집합이 다르다: {'topic', 'summary', 'periodStart'...
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_요청에_업로드_가공단계를_실을_자리가_있다[0m - AssertionError: 요청에 업로드 Lv 를 실을 자리가 없다
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_후보가_인용_가능한_원메타를_지고_간다[0m - KeyError: 'crs'
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_제안이_모델의_인용_근거를_지고_간다[0m - AssertionError: 인용 근거를 실을 자리가 없다
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_근거가_주장이지_판정이_아니라고_계약이_적는다[0m - KeyError: 'evidence'
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_확신도와_근거_문장의_산지가_계약_산문에_적혀_있다[0m - AssertionError: confidence 산문에 잠정값이라는 사실이 없다
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_오퍼레이션_산문이_인용_검증_모형을_적는다[0m - AssertionError: 적격 필터·인용 검증의 주인이 오퍼레이션 산문에 없다
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_요청의_가공단계_열쇠를_표면이_받는다[0m - AssertionError: {"code":"bad_request","message":"계약에 없는 열쇠다: ['proc...
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_후보의_원메타_열쇠를_표면이_받는다[0m - AssertionError: {"code":"bad_request","message":"후보에 계약에 없는 열쇠다:...
+[31mFAILED[0m tests/test_http_suggestions.py::[1mtest_후보의_빈_변수_목록은_정상이다[0m - AssertionError: {"code":"bad_request","message":"후보에 계약에 없는 열쇠다:...
+[31m[31m[1m10 failed[0m, [32m92 passed[0m[31m in 0.96s[0m[0m

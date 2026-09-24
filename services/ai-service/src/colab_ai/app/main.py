@@ -48,19 +48,26 @@ from colab_ai.ports import REASON_NO_CREDENTIALS, LineageSuggesterPort, ParentCa
 MAX_QUERY = 200
 #: `core-ai.yaml LineageSuggestionRequest` 의 열쇠 전부. 계약이 `additionalProperties: false`
 #: 라 **여기 없는 열쇠가 오면 400 이다** — 소비자의 표류를 표면이 잡는다.
-SUGGEST_KEYS = {"scope", "datasetNameDraft", "subject", "file", "candidates"}
+#: ⭑ ⟨2026-09-24 · K3 `WU-S0`⟩ `processingLevel` 은 **받기만 한다** — 적격 필터는
+#: core-api 가 건다(`〈72〉-㉮` 분담). 거르는 자리가 둘이면 어느 쪽이 걸렀는지 셀 수 없다.
+SUGGEST_KEYS = {"scope", "datasetNameDraft", "subject", "file", "candidates",
+                "processingLevel"}
 #: `UploadedFileMeta` 의 열쇠 전부. 같은 이유로 닫혀 있다.
 FILE_KEYS = {"fileName", "kind", "format", "variables", "crs", "gridDescription",
              "periodStart", "periodEnd", "partCount", "sourceNoteDraft"}
 #: `LineageParentCandidate` 의 열쇠 전부. **후보 항목도 닫혀 있다** — 바깥 열쇠가 섞여
 #: 들어오면 근거 판정의 오라클(J3)이 흐려지고, 그 어긋남은 아무도 세지 않는다.
+#: ⭑ ⟨2026-09-24 · K3 `WU-S0`⟩ 원메타 4축(`crs`·`grid`·`variables`·`fileName`)이
+#: 더해졌다 — 모델이 축을 **스스로 대조해 인용**하려면 날값이 있어야 한다.
 CANDIDATE_KEYS = {"datasetId", "name", "topic", "summary", "sourceLabel",
-                  "processingLevel", "periodStart", "periodEnd"}
+                  "processingLevel", "periodStart", "periodEnd",
+                  "crs", "grid", "variables", "fileName"}
 #: 계약이 `type: string · minLength: 1` 로 적은 후보의 **선택** 열쇠들. 열쇠 집합만 닫고
 #: 값의 모양을 안 보면 숫자·배열이 그대로 아래로 흘러 `candidate_payload` 의
 #: `c.summary[:200]` 에서 `TypeError` 가 되고, **계약대로면 400 일 요청이 500 이 된다** —
 #: 소비자의 표류가 이쪽 고장으로 뒤바뀌는 자리다(게이트 ② 판정 2026-09-24).
-CANDIDATE_TEXT_KEYS = ("topic", "summary", "sourceLabel", "periodStart", "periodEnd")
+CANDIDATE_TEXT_KEYS = ("topic", "summary", "sourceLabel", "periodStart", "periodEnd",
+                       "crs", "grid", "fileName")
 #: 계약 `candidates.maxItems`. 상한을 표면이 실제로 요구한다.
 MAX_CANDIDATES = 20
 #: `common.json#FileKind` 의 두 값.
@@ -124,11 +131,22 @@ def _candidates(raw: object) -> tuple[ParentCandidate, ...] | str:
                 continue                      # 모르는 값은 열쇠가 없다 — 그것이 계약이다
             if not isinstance(text, str) or not text.strip():
                 return f"후보의 {key} 가 계약대로가 아니다 — 1자 이상 문자열이다."
+        # 계약은 `array · items {type: string, minLength: 1}` 이다. **빈 배열은 정상이다** —
+        # 변수 행이 한 줄도 없는 데이터셋이 실재한다(계약 산문 축자).
+        variables = item.get("variables")
+        if variables is not None:
+            if not isinstance(variables, list) or isinstance(variables, bool):
+                return "후보의 variables 가 계약대로가 아니다 — 문자열 배열이다."
+            if any(not isinstance(v, str) or not v.strip() for v in variables):
+                return "후보의 variables 항목이 계약대로가 아니다 — 1자 이상 문자열이다."
+            variables = tuple(variables)
         out.append(ParentCandidate(
             dataset_id=item["datasetId"], name=name, topic=item.get("topic"),
             summary=item.get("summary"), source_label=item.get("sourceLabel"),
             processing_level=level, period_start=item.get("periodStart"),
-            period_end=item.get("periodEnd")))
+            period_end=item.get("periodEnd"), crs=item.get("crs"),
+            grid=item.get("grid"), variables=variables,
+            file_name=item.get("fileName")))
     return tuple(out)
 
 

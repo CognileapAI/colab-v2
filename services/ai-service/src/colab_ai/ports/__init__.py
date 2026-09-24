@@ -78,6 +78,14 @@ class ParentCandidate:
     processing_level: int | None = None
     period_start: str | None = None
     period_end: str | None = None
+    #: ⭑ ⟨2026-09-24 · K3 `WU-S0`⟩ `d3_dataset_autometa` 의 **날값 그대로**.
+    #: 겹침·교집합 같은 파생 신호는 오지 않는다 — 그것을 보내면 모델이 베껴 돌려주고
+    #: core-api 가 자기가 보낸 값을 자기가 검증하게 된다(라운드 열린 권고 ① 채택).
+    #: **표면이 받아 여기까지 싣는 것이 이 회차의 일이다** — 본문 조립은 `WU-S3` 가 연다.
+    crs: str | None = None
+    grid: str | None = None
+    variables: tuple[str, ...] | None = None
+    file_name: str | None = None
 
 
 @dataclass(frozen=True)

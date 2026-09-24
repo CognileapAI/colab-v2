@@ -117,7 +117,10 @@ def test_후보가_지고_갈_열쇠_집합이_닫혀_있다(spec) -> None:
     assert cand["additionalProperties"] is False
     optional = set(cand["properties"]) - set(cand["required"])
     assert optional == {"topic", "summary", "sourceLabel", "processingLevel",
-                        "periodStart", "periodEnd"}, f"선택 열쇠 집합이 다르다: {optional}"
+                        "periodStart", "periodEnd",
+                        # ⭑ `WU-S0` — 인용 가능한 원메타 4축(`R-K3-STRUCTURE` 판정 2)
+                        "crs", "grid", "variables", "fileName"}, \
+        f"선택 열쇠 집합이 다르다: {optional}"
 
 
 def test_scope_없이는_뒤지지_않는다(client) -> None:
@@ -356,3 +359,132 @@ def test_표면의_열쇠_집합이_계약_한_벌에서_온다(spec) -> None:
         "표면의 요청 열쇠 집합이 계약과 갈렸다"
     assert CANDIDATE_KEYS == set(schemas["LineageParentCandidate"]["properties"]), \
         "표면의 후보 열쇠 집합이 계약과 갈렸다"
+
+
+# ══════════════ WU-S0 계약 개정 (R-K3-STRUCTURE · Ted 서명 2026-09-24) ═══════
+#: `evidence.field` 의 축 이름. **`WU-S1` 비교기의 축 이름과 같은 문자열이다** —
+#: 두 벌이 되는 순간 「모델이 인용한 축」과 「core-api 가 검증하는 축」이 갈린다.
+EVIDENCE_FIELDS = ["period", "crs", "grid", "variables", "fileName"]
+
+
+def test_요청에_업로드_가공단계를_실을_자리가_있다(spec) -> None:
+    """사람이 등록 폼 ① 에서 고른 자기 Lv. 적격 필터의 기준값이고 필터는 core-api 가 건다.
+
+    ⚠ **`common.json#/$defs/ProcessingLevel` 을 `$ref` 하지 않는다** — 그 타입은
+    `readOnly: true`(응답 전용)라고 스스로 적었고, 요청 본문에 실으면 그 산문이 거짓이 된다.
+    """
+    req = spec["components"]["schemas"]["LineageSuggestionRequest"]
+    assert "processingLevel" in req["properties"], "요청에 업로드 Lv 를 실을 자리가 없다"
+    assert "processingLevel" not in req["required"], "선택 필드다 — required 에 넣지 않는다"
+    lv = req["properties"]["processingLevel"]
+    assert "$ref" not in lv and "allOf" not in lv, \
+        "readOnly 인 응답 전용 타입을 요청 본문에 참조했다"
+    assert lv["type"] == "integer"
+    assert (lv["minimum"], lv["maximum"]) == (0, 3), "LV_CAP=3 (`ports/lineage.py` LV_CAP)"
+    assert "readOnly" in lv["description"], "인라인으로 적은 사유가 산문에 없다"
+
+
+def test_후보가_인용_가능한_원메타를_지고_간다(spec) -> None:
+    """`d3_dataset_autometa` 에 저장된 **날값 그대로**. 파생 신호는 싣지 않는다(판정 2)."""
+    schemas = spec["components"]["schemas"]
+    props = schemas["LineageParentCandidate"]["properties"]
+    for key in ("crs", "grid", "fileName"):
+        assert props[key]["type"] == "string", f"{key} 는 문자열이다"
+        assert props[key]["minLength"] == 1, f"{key} 는 빈 문자열을 받지 않는다"
+    variables = props["variables"]
+    assert variables["type"] == "array"
+    assert variables["items"] == \
+        schemas["UploadedFileMeta"]["properties"]["variables"]["items"], \
+        "업로드 쪽 변수 항목과 모양이 두 벌이다 — 같은 값을 대조하는데 규격이 갈렸다"
+    assert isinstance(variables["maxItems"], int) and variables["maxItems"] > 0, \
+        "본문이 부풀지 않게 상한을 계약이 건다"
+
+
+def test_후보_원메타에_파생_신호를_싣지_않는다(spec) -> None:
+    """모델이 축 대조를 **스스로** 해야 J3' 오라클이 산다 — 우리가 답을 보내면 자기 값을
+    자기가 검증하게 된다(열린 권고 ① 채택)."""
+    props = spec["components"]["schemas"]["LineageParentCandidate"]["properties"]
+    for forbidden in ("signals", "periodOverlap", "variableOverlap", "score"):
+        assert forbidden not in props, f"파생 신호를 후보에 실었다: {forbidden}"
+
+
+def test_제안이_모델의_인용_근거를_지고_간다(spec) -> None:
+    """모델이 하는 일은 **인용까지**다. 대조·폐기는 core-api 가 한다."""
+    node = spec["components"]["schemas"]["ParentCandidateSuggestion"]["allOf"][1]
+    assert "evidence" in node["properties"], "인용 근거를 실을 자리가 없다"
+    assert "evidence" not in node["required"], "선택 필드다 — 안 보내던 생산자가 그대로 유효하다"
+    ev = node["properties"]["evidence"]
+    assert ev["type"] == "array"
+    assert ev["maxItems"] == 5, "축이 5개다 — 같은 축을 여러 번 인용해 채우지 못한다"
+    item = ev["items"]
+    assert item["type"] == "object"
+    assert item["additionalProperties"] is False, "근거 항목도 닫혀 있다"
+    assert item["required"] == ["field", "uploadValue", "candidateValue"]
+    assert item["properties"]["field"]["enum"] == EVIDENCE_FIELDS
+    for key in ("uploadValue", "candidateValue"):
+        assert item["properties"][key]["type"] == "string"
+        assert item["properties"][key]["minLength"] == 1
+        assert item["properties"][key]["maxLength"] == 200
+
+
+def test_근거가_주장이지_판정이_아니라고_계약이_적는다(spec) -> None:
+    ev = spec["components"]["schemas"]["ParentCandidateSuggestion"][
+        "allOf"][1]["properties"]["evidence"]
+    desc = ev["description"]
+    assert "core-api" in desc and "버린다" in desc, "검증·폐기의 주인이 산문에 없다"
+
+
+def test_확신도와_근거_문장의_산지가_계약_산문에_적혀_있다(spec) -> None:
+    """**계약이 거짓말하면 안 된다.** ai-service 가 싣는 두 값은 required 를 채우는
+    잠정값이고 core-api 가 덮어쓴다(판정 4). 그 사실이 산문에 없으면 소비자는
+    모델이 판정한 값으로 읽는다.
+    """
+    base = spec["components"]["schemas"]["AiSuggestionBase"]["properties"]
+    for key in ("confidence", "rationale"):
+        desc = str(base[key].get("description", ""))
+        assert "잠정값" in desc, f"{key} 산문에 잠정값이라는 사실이 없다"
+        assert "core-api" in desc, f"{key} 산문에 누가 다시 쓰는지가 없다"
+
+
+def test_오퍼레이션_산문이_인용_검증_모형을_적는다(spec) -> None:
+    desc = ""
+    for path, item in spec["paths"].items():
+        if "lineage" in path:
+            desc = str(item["post"].get("description", ""))
+    assert "인용" in desc and "core-api" in desc, \
+        "적격 필터·인용 검증의 주인이 오퍼레이션 산문에 없다"
+
+
+# ── 표면이 새 열쇠를 실제로 받는다 ──────────────────────────────────────────
+def test_요청의_가공단계_열쇠를_표면이_받는다(client) -> None:
+    res = client.post(PATH, json=_body(processingLevel=2), headers=_headers())
+    assert res.status_code == 200, res.text
+
+
+def test_후보의_원메타_열쇠를_표면이_받는다(client) -> None:
+    res = client.post(PATH, json=_body(candidates=[_cand(
+        crs="EPSG:4326", grid="0.25도 격자", variables=["pr", "lat"],
+        fileName="rain_2024.nc")]), headers=_headers())
+    assert res.status_code == 200, res.text
+
+
+@pytest.mark.parametrize("key", ["crs", "grid", "fileName"])
+@pytest.mark.parametrize("bad", [7, 0.5, True, [], {}, "", "   "])
+def test_후보의_원메타_문자열이_계약_밖이면_400_이다(client, key, bad) -> None:
+    res = client.post(PATH, json=_body(candidates=[_cand(**{key: bad})]),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+@pytest.mark.parametrize("bad", ["pr", 7, True, {}, [""], ["   "], [1], [None]])
+def test_후보의_변수_목록이_계약_밖이면_400_이다(client, bad) -> None:
+    res = client.post(PATH, json=_body(candidates=[_cand(variables=bad)]),
+                      headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_후보의_빈_변수_목록은_정상이다(client) -> None:
+    """변수 행이 한 줄도 없는 데이터셋이 실재한다 — `minItems` 를 여기 걸지 않는 이유다."""
+    res = client.post(PATH, json=_body(candidates=[_cand(variables=[])]),
+                      headers=_headers())
+    assert res.status_code == 200, res.text
