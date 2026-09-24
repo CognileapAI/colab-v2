@@ -97,7 +97,7 @@ describe('WU-C1 ⑴ — 파일을 고른 직후 4:3 틀이 이미 서 있다', (
   });
 
   it('비율은 CSS 한 자리(토큰)에서 온다 — 4 / 3', () => {
-    expect(block(CSS, ':root')).toContain('--pv-frame-ratio: 4 / 3');
+    expect(block(CSS, '.pv-frame-wrap {')).toContain('--pv-frame-ratio: 4 / 3');
     expect(block(CSS, '.pv-frame {')).toContain('aspect-ratio: var(--pv-frame-ratio)');
   });
 

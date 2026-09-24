@@ -12,9 +12,9 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 | 2 게이트 `frontend-design-lint` + selftest · 등록 · 착수 CSS red 기록 | 완료 |
 | 3 `tokens.css` 재구성 · 화면 `:root` 제거 | 완료 — 게이트 green(a 0 · b 0 · c 0(면제 6) · d 0) |
 | 4 preview 경로(Q7) | 완료 — 제안 × 어둡게 agent-browser 확인 |
-| 5 시험 · 대장 | BF-13 시험 폐기 · 대장 1줄 · **`preview-slot-4x3` 1건 red — 멈춤(판정 대기)** |
+| 5 시험 · 대장 | BF-13 시험 폐기 · 대장 1줄 · `preview-slot-4x3` 셀렉터 1줄 변경(오케스트레이터 승인) |
 | 6 시각 변경 0 대조 | 완료 — 196장 엄격 차이 0 · exit 0 |
-| 7 게이트 | green 5 · red(판정) 1(`frontend-test` · 단계 5 멈춘 항목) · red(준비) 0 |
+| 7 게이트 | 시험 변경 뒤 재실행(「최종」 표) |
 
 ## ⓐ 게이트 — 착수 red
 
@@ -138,7 +138,15 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
   ```
 
   시험이 `preview.css` 안의 `:root` 블록에서 `--pv-frame-ratio: 4 / 3` 를 찾는다. spec 은 화면 CSS 의 `:root` 를 0 으로 만들라고 하고(게이트 d), 이 이름을 preview 루트 범위로 옮기라고 한다 — **두 요구가 동시에 참일 수 없다.** spec 이 예상한 실패(`css-residual-rc11` 의 죽은 값)가 아니므로 spec 의 규칙(「그 밖의 실패는 시험을 넓히지 말고 멈추고 보고한다」)대로 시험을 고치지 않았다. 값·렌더는 같다(`.pv-frame` 의 `aspect-ratio: var(--pv-frame-ratio)` 무변 · 값 `4 / 3` 은 `.pv-frame-wrap` 범위로 이동 · 시각 대조는 단계 6).
-  제안(판정 뒤 1줄): `expect(block(CSS, ':root'))` → `expect(block(CSS, '.pv-frame-wrap {'))`. 오라클(비율이 CSS 한 자리 토큰에서 온다 · 값 4 / 3)은 그대로다.
+  제안(판정 뒤 1줄): `expect(block(CSS, ':root'))` → `expect(block(CSS, '.pv-frame-wrap {'))`. 오라클(비율이 CSS 한 자리 토큰에서 온다 · 값 4 / 3)은 그대로다. → 승인되어 적용(아래 「기존 시험 변경」).
+
+### 기존 시험 변경
+
+| 시험 | 변경 | 사유 |
+|---|---|---|
+| `frontend/test/shared-css-tokens.test.ts`(BF-13) | 삭제 | 대상(화면 `:root`) 0건 · 오라클은 게이트 `frontend-design-lint` a 가 승계 |
+| `frontend/test/preview-slot-4x3.test.tsx:100` | `block(CSS, ':root')` → `block(CSS, '.pv-frame-wrap {')` 한 줄(오케스트레이터 승인) | spec 규칙 = 화면 CSS 에 `:root` 없음. 시험은 값이 아니라 **옛 위치**(`:root`)를 잠그고 있었다. 오라클 「비율은 CSS 한 자리 토큰에서 오고 4 / 3 이다」는 그대로 — 토큰은 이제 `.pv-frame` 의 조상인 `.pv-frame-wrap` 에 있다. 단독 실행 8/8 통과 |
+| `css-residual-rc11.test.ts` | 무변 | 죽은 값을 읽는 기대값이 없었다 |
 - `dev-package/work-items.yaml` BF-13 `evidence` 끝에 한 문장 추가: 「2026-09-24 P1: 완료 정의 ⑶ 판정 = 공유 이름은 tokens.css 로(대안 B) · ⑴ 시험은 게이트 `frontend-design-lint` a 로 승계·폐기.」 `status`·번호·다른 필드 무변. `gates/run.sh work-item-consistency` → exit 0 「대장과 산문의 불일치 0」.
 
 ## ⓒ 시각 변경 0(단계 6)
@@ -159,14 +167,12 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
 ## 하지 않은 것
 
 - `frontend/src/**/*.tsx` · `design-system.css` · `scenes.json` 변경 0. 토큰 값 변경 0 · 새 토큰 이름 0 · 다크 값 신설 0.
-- `test/preview-slot-4x3.test.tsx:100` 수정 — 멈춘 항목(단계 5).
 - `deletion.css` `.dl-keep` 바탕을 토큰으로 채우는 결정 — Ted 판정 항목.
 - `tsconfig.audit.json` 을 `frontend-typecheck` 에 넣기(spec 우려 3 · 범위 밖) · 시각 대조 게이트 승격(우려 4 · P3 뒤 판정).
 - 커밋 push · PR 게시 · 병합.
 
 ## 후속 항목
 
-1. `preview-slot-4x3.test.tsx:100` 의 셀렉터를 `.pv-frame-wrap {` 로 바꿀지 판정(위 단계 5). 이 1건이 남는 동안 `frontend-test` 는 red(판정)다.
 2. `deletion.css:10` `.dl-keep` 바탕 — 이름(`--color-surface-muted`)이 뜻한 채움이 한 번도 렌더되지 않았다. `--color-surface-alt` 로 채울지 Ted 판정(시각 변경이 생긴다).
 3. `lineage.css` 의 `var(--lin-over-ink, #5b6472)` 3곳 — 주석은 안내 줄을 `#5b6472` 로 설명하지만 이름이 늘 정의돼 있어 실제로는 `--color-warning-600` 이 렌더된다. 폴백 정리(P3) 때 의도를 확인한다. 어느 검사에도 걸리지 않는다(게이트 b 는 정의 여부만 본다).
 4. `--up-*` 6종은 업로드 CSS 의 전역 셀렉터(`.btn`·`.muted`·`.inp`·`.sel`)가 읽어서 정본에 올렸다. P2 에서 이 셀렉터들이 프리미티브로 흡수되면 정본 의미 토큰으로 바꾸고 `--up-*` 를 없앨 수 있다.
