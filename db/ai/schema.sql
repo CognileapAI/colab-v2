@@ -5,10 +5,14 @@
 -- 범위 정본 = dev-package/ONTOLOGY-SCOPE.md (G8, Ted 승인 2026-08-23)
 --             결정 기록 = dev-package/PLAN-SoT.md §9-㊸ · 규율 = §9-㊴-②
 --
--- 이 체인이 아는 것은 **작은 사전 셋뿐**이다 (㊸-④-4).
+-- D9 가 아는 것은 **작은 사전 셋뿐**이다 (㊸-④-4).
 --   ① d9_method_term    가공 방식 후보 어휘 — 제안 문장·자동완성용. 값을 닫지 않는다 (㊸-④-1 하이브리드)
 --   ② d9_topic_synonym  주제 동의어 — 질의어 → 주제 4값 (㊸-④-2)
 --   ③ d9_place_alias    지명 별칭 — 질의의 공간 축 인식용. **위계가 아니라 별칭만** (ONTOLOGY-SCOPE §2.4)
+-- 그 위에 개념 그래프 두 표(§4·§5)가 얹혀 있고, **D10 은 표 하나를 갖는다** —
+-- `d10_model_call`(§6), 모델 호출 자체의 운영 메타데이터다. ⚠ **그것이 제안을 담는 것은
+-- 아니다**: 제안은 여전히 D10 안에서 나고 응답과 함께 죽는다 (CLAUDE.md §3-2). 원장이 담는
+-- 것은 「무엇을 제안했나」가 아니라 「불렀나 · 얼마나 걸렸나 · 몇 개를 주고 받았나」다.
 --
 -- 여기에 **없는 것이 결정의 실물이다.**
 --   · 그래프 구조·개념 유형 체계·관계 테이블 없음 (㊸-④-4: 정본이 준 값의 양이 그래프를 정당화하지 않는다)
@@ -24,15 +28,19 @@
 --   · 여기에 D1~D8 테이블을 넣지 않는다. 넣으면 온톨로지 한 줄 추가가 기록 쪽 마이그레이션을 기다린다.
 --   · 이 체인의 테이블은 기록 체인의 어떤 테이블도 FK 로 참조하지 않는다 — 애초에 다른 DB 다.
 --
--- ID 정책: **자연키를 쓴다.** ULID 를 쓰지 않는 이유는 셋이다 —
+-- ID 정책: **사전 세 표는 자연키를 쓴다.** ULID 를 쓰지 않는 이유는 셋이다 —
 --   ⑴ 이 표들은 사전이고, 사전의 정체성은 어휘 그 자체다 (같은 어휘가 두 번 들어오면 그것이 중복이다)
 --   ⑵ 이 표의 행을 밖에서 id 로 가리키는 곳이 없다 — 소비자는 D10 하나이고, 오가는 값은 문자열이다
 --   ⑶ K2 시드 적재가 어휘 기준으로 멱등해진다 (ON CONFLICT (term) …)
 --   contracts/schemas/common.json 의 Ulid 는 여전히 정규 ID 타입 정본이다 (CLAUDE.md §3-6).
 --   여기서 그 타입을 쓰지 않는 것이지, 다른 ID 타입을 새로 만드는 것이 아니다.
 --
--- RLS: 세 표 전부 **연구실 공통 지식**이라 테넌트별로 갈리지 않는다 (DOMAINS.md D9 · 아래 각 표의 근거).
---   그래서 lab_id 컬럼이 하나도 없고, RLS 를 걸지 않는다.
+-- RLS: D9 다섯 표는 전부 **연구실 공통 지식**이라 테넌트별로 갈리지 않는다
+--   (DOMAINS.md D9 · 아래 각 표의 근거). 그래서 그 표들에는 lab_id 컬럼이 하나도 없다.
+--   ⚠ **`d10_model_call`(§6)에는 lab_id 가 있다** — 이 체인에서 처음이다. 그래도 RLS 를
+--   걸지 않는 근거는 §6 머리말과 rls-allowlist 의 그 줄에 적었고, 「연구실 데이터라서 면제」가
+--   아니라 「제품 조회 경로가 없는 운영 기록이라서」다. 그 전제가 깨지는 날 그 줄은 목록에서
+--   내려가고 RLS 를 받는다.
 --   면제는 **접두사가 아니라 이름 하나씩** gates/config/rls-allowlist.toml 에 적는다 —
 --   테이블이 생길 때마다 사람이 판단을 한 번 내리게 하려는 것이다.
 
@@ -207,7 +215,110 @@ CREATE INDEX d9_concept_edge_dst_idx ON d9_concept_edge (relation, dst);
 -- 트리거를 쓰지 않는 이유 = 세 시드 표에 트리거가 하나도 없고, d9 표는 **선언만으로 읽히는 것**이 규약이다.
 
 -- ════════════════════════════════════════════════════════════════════════════
--- 6. 마이그레이션 체인 상태 테이블
+-- 6. D10 — 모델 호출 실행 원장 (intent dev-package/intent/2026-09-24-d10-model-call-ledger.md)
+--    판정 = Ted 2026-09-24 「판정 기록」 · 근거 = dev-package/PLAN-SoT.md §9-㊷ 추기 ②
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- **이 체인에서 D10 이 소유하는 첫 표이고, 이 단위가 쓰는 유일한 표다.**
+-- 서두의 「이 체인이 아는 것은 작은 사전 셋뿐이다」는 D9 쪽 이야기이고, 여기는 D10 이
+-- 자기 호출을 세는 자리다. 사전 조회는 여전히 READ ONLY 다 (app/dictionaries.py).
+--
+-- **무엇을 담는가** = 호출 자체의 운영 메타데이터. 목적은 「잘 불려졌는가 · 효율이 좋았는가」
+-- 한 줄이다(판정 기록 축자). 그래서 남는 값은 전부 **세는 값**이다 —
+-- 무엇을 물었는지가 아니라 몇 개를 주고 몇 개를 받았는지.
+--
+-- **여기 없는 것이 판정의 실물이다** (판정 기록 「넣지 않는 것」 축자):
+--   · 질의 원문 · 질의에서 뽑은 검색어 — 넣으면 검색 원장이 사실상 **사용자 질의 로그**가
+--     되고 최소 수집 원칙과 부딪힌다. app/interpret.py 머리말이 코드로 못 박은 태도를
+--     저장 계층에도 그대로 적용한다
+--   · 데이터셋 이름 · 근거 문장 · 확신도 — 그것은 **제안**이고, 제안은 응답과 함께 죽는다
+--   · API 키
+--   · **처리 위치(리전) 칸을 만들지 않는다.** ㊷ 근거③의 「처리 리전을 필수 필드로 기록」은
+--     2026-09-24 Ted 판정으로 철회됐다 — OpenAI 공개 API 는 리전을 노출하지 않아 그 칸은
+--     항상 미상이 되고, 미상을 값으로 적으면 기록 의무를 충족한 것처럼 보인다
+--   · **캐시율(cache_hit_ratio) 칸도 없다.** 파생값은 조회 때 계산한다:
+--       SELECT call_site, sum(cached_prompt_tokens)::numeric
+--                         / nullif(sum(prompt_tokens), 0) AS cache_hit_ratio
+--         FROM d10_model_call WHERE outcome = 'ok' GROUP BY call_site;
+--     저장하면 토큰 둘과 비율 하나가 갈릴 자리가 생기고, 갈렸을 때 어느 쪽이 사실인지
+--     아무도 모른다. 생성 컬럼도 쓰지 않는다 — 이 체인의 다섯 표에 파생 컬럼이 하나도 없고
+--     (d9_concept_edge 의 「가중치·점수 열이 없다」와 같은 규율), prompt_tokens 가 NULL·0 일
+--     때의 값을 스키마가 혼자 정하게 된다.
+--
+-- **ID 는 ULID 다.** 서두의 「이 체인은 자연키를 쓴다」는 사전 세 표의 근거이고(어휘가
+-- 정체성이다), 여기는 **사건 기록**이라 같은 호출이 두 번 들어오는 것이 중복이 아니다 —
+-- 정체성이 될 자연키가 없다. contracts/schemas/common.json 의 Ulid 가 그 형태의 정본이고
+-- (CLAUDE.md §3-6), 여기서는 그것을 옮겨 적는다. d9_concept 이 대리키를 쓰는 것과 같은 예외다.
+--
+-- **lab_id 가 있는 이 체인의 첫 표다.** RLS 를 걸지 않는 근거는 접두사가 아니라 이름 하나로
+-- gates/config/rls-allowlist.toml 에 적었다 — 값이 제품 조회 범위가 아니라 운영 범위 표시이고,
+-- 이 표를 읽는 제품 경로가 한 줄도 없다(운영자의 psql 이 읽는다). login_session 과 같은 배치다.
+--
+-- **행은 적재 실패해도 응답을 막지 않는다** (app/ledger.py — best-effort · 트랜잭션 밖).
+-- 그래서 「행 수 = 호출 수」를 불변식으로 쓰지 않는다. **「행 0건」을 실패로 재지도 않는다**:
+-- 두 호출 지점의 기본 설정이 모델을 부르지 않으므로 게이트가 도는 동안 이 표는 비어 있다.
+CREATE TABLE d10_model_call (
+  id                   text        PRIMARY KEY
+                       CHECK (id ~ '^[0-9A-HJKMNP-TV-Z]{26}$'),
+  called_at            timestamptz NOT NULL,
+  -- 닫힌 두 값. 코드 쪽 사본은 colab_ai.ports.CALL_SITES 이고 드리프트 시험이 대조한다.
+  call_site            text        NOT NULL
+                       CHECK (call_site IN ('search.interpret', 'lineage.suggest')),
+  provider             text        NOT NULL
+                       CHECK (btrim(provider) = provider AND length(provider) BETWEEN 1 AND 40),
+  model_requested      text        NOT NULL
+                       CHECK (btrim(model_requested) = model_requested
+                              AND length(model_requested) BETWEEN 1 AND 120),
+  -- 응답이 실어 보낸 model. 못 닿았거나 안 불렀으면 NULL — 요청한 이름으로 채우지 않는다.
+  model_returned       text        NULL
+                       CHECK (model_returned IS NULL OR length(btrim(model_returned)) > 0),
+  -- not_called 를 따로 두는 것이 이 목록의 요지다 — 「불렀는데 빈 답」과 「안 불렀다」는
+  -- 다른 사실이고, 접으면 「왜 안 불렀나」가 원장에서 사라진다.
+  outcome              text        NOT NULL
+                       CHECK (outcome IN ('ok', 'timeout', 'unreachable', 'unreadable',
+                                          'empty_by_model', 'not_called')),
+  -- **안정된 코드다. 자유 문장을 넣지 않는다** — 문구가 바뀌면 같은 사유가 두 값이 되고
+  -- 집계가 조용히 갈린다.
+  not_called_reason    text        NULL
+                       CHECK (not_called_reason IS NULL
+                              OR not_called_reason IN ('no_credentials', 'no_candidates',
+                                                       'mode_off')),
+  latency_ms           integer     NULL CHECK (latency_ms IS NULL OR latency_ms >= 0),
+  prompt_tokens        integer     NULL CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
+  completion_tokens    integer     NULL CHECK (completion_tokens IS NULL OR completion_tokens >= 0),
+  -- OpenAI usage.prompt_tokens_details.cached_tokens. 안 실려 오면 NULL —
+  -- 0 으로 채우면 「캐시가 안 걸렸다」와 「공급자가 안 알려줬다」가 같은 값이 된다.
+  cached_prompt_tokens integer     NULL
+                       CHECK (cached_prompt_tokens IS NULL OR cached_prompt_tokens >= 0),
+  -- 입력 규모 = 제안이 받은 후보 수. 해석은 NULL 이다 — 그 자리의 입력은 질의 그 자체이고,
+  -- 그것을 세는 것은 질의를 재는 것이라 담지 않는다.
+  input_count          integer     NULL CHECK (input_count IS NULL OR input_count >= 0),
+  -- 결과 수 = 해석은 검색어 수, 제안은 남긴 제안 수. **값이 아니라 개수다.**
+  result_count         integer     NULL CHECK (result_count IS NULL OR result_count >= 0),
+  lab_id               text        NULL
+                       CHECK (lab_id IS NULL OR lab_id ~ '^[0-9A-HJKMNP-TV-Z]{26}$'),
+  -- 사유는 not_called 의 것이다. 양쪽으로 건다: 사유 없는 not_called 는 「왜 안 불렀나」가
+  -- 비어 미호출 행을 세는 의미가 사라지고, not_called 아닌 행의 사유는 거짓말이다.
+  CONSTRAINT d10_model_call_reason_iff_not_called
+               CHECK ((outcome = 'not_called') = (not_called_reason IS NOT NULL)),
+  -- 캐시 토큰은 프롬프트 토큰의 부분집합이다 — 넘으면 캐시율이 1 을 넘고, 그 수를 본 사람은
+  -- 계산식을 의심하지 표를 의심하지 않는다.
+  CONSTRAINT d10_model_call_cached_within_prompt
+               CHECK (cached_prompt_tokens IS NULL OR prompt_tokens IS NULL
+                      OR cached_prompt_tokens <= prompt_tokens),
+  -- 부르지 않은 호출에는 잴 지연도 쓸 토큰도 없다. 0 으로 적히면 평균 지연이 조용히 낮아진다.
+  CONSTRAINT d10_model_call_not_called_has_no_measures
+               CHECK (outcome <> 'not_called'
+                      OR (latency_ms IS NULL AND prompt_tokens IS NULL
+                          AND completion_tokens IS NULL AND cached_prompt_tokens IS NULL
+                          AND model_returned IS NULL))
+);
+-- 조회 둘. 시계열 전체와 자리별 시계열 — 원장을 읽는 모양이 이 둘이다.
+CREATE INDEX d10_model_call_called_at_idx ON d10_model_call (called_at);
+CREATE INDEX d10_model_call_site_time_idx ON d10_model_call (call_site, called_at);
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 7. 마이그레이션 체인 상태 테이블
 --    alembic 이 만드는 것과 **같은 형태**를 여기 선언해 둔다 — 그래야 선언 = 적용이 성립한다.
 --    이름이 다른 체인과 다른 것이 체인 분리의 실물이다 (CLAUDE.md §3-3).
 -- ════════════════════════════════════════════════════════════════════════════

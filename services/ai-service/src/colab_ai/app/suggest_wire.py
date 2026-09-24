@@ -17,7 +17,7 @@ import time
 import urllib.request
 from typing import Callable
 
-from colab_ai.ports import ParentCandidate
+from colab_ai.ports import ModelReply, ParentCandidate
 
 #: 운영자가 기계로 긁을 이름. `interpret.INTERPRETER_LOGGER` 와 **같은 규약·같은 채널**이다.
 SUGGESTER_LOGGER = "colab_ai.degraded"
@@ -82,7 +82,13 @@ def build_payload(*, model: str, system_prompt: str, file_meta: dict,
 
 def http_transport(*, base_url: str, api_key: str | None,
                    timeout: float) -> Callable[[dict], str]:
-    """OpenAI chat completions 왕복 한 번. 실패는 **호출자가** 잡는다(여기서 삼키지 않는다)."""
+    """OpenAI chat completions 왕복 한 번. 실패는 **호출자가** 잡는다(여기서 삼키지 않는다).
+
+    ⭑ **돌려주는 것은 여전히 문자열이다** — `ModelReply` 는 `str` 의 하위형이고 더해진
+    것은 응답 `model` 과 `usage` 뿐이다(실행 원장이 읽는다). 이 전송을 감싸는
+    `eval/k3-lineage/llm_lineage_probe.py` 의 `RecordingTransport` 는 답을 `raw` 로
+    그대로 들고 `json.dumps` 하는데, 별도 객체로 바꿨다면 그 자리가 조용히 깨진다.
+    """
 
     def send(payload: dict) -> str:
         req = urllib.request.Request(
@@ -92,7 +98,7 @@ def http_transport(*, base_url: str, api_key: str | None,
                      "Authorization": f"Bearer {api_key}"})
         with urllib.request.urlopen(req, timeout=timeout) as res:
             body = json.loads(res.read() or b"{}")
-        return body["choices"][0]["message"]["content"]
+        return ModelReply.from_openai(body)
 
     return send
 

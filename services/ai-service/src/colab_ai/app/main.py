@@ -34,6 +34,7 @@ from fastapi.responses import JSONResponse
 
 from colab_ai.app.dictionaries import SqlDictionaries
 from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
+from colab_ai.app.ledger import build_ledger
 from colab_ai.app.suggest import EmptyLineageSuggester, LlmLineageSuggester
 from colab_ai.domains.d10_ai_services import SearchService
 from colab_ai.domains.d10_suggestion import SuggestionEnvelope
@@ -41,7 +42,7 @@ from colab_ai.kernel.config import Settings
 from colab_ai.kernel.db import make_engine
 from colab_ai.kernel.ids import is_valid_ulid
 from colab_ai.kernel.observability import TraceMiddleware
-from colab_ai.ports import LineageSuggesterPort, ParentCandidate
+from colab_ai.ports import REASON_NO_CREDENTIALS, LineageSuggesterPort, ParentCandidate
 
 #: `Policy_데이터_찾기 §5 검색 질문 — 1~200자`. 계약(`SearchRequest.query`)과 같은 값이다.
 MAX_QUERY = 200
@@ -68,19 +69,24 @@ MAX_LIMIT = 100
 DEFAULT_LIMIT = 20
 
 
-def build_suggester(settings: Settings) -> LineageSuggesterPort:
+def build_suggester(settings: Settings, ledger=None) -> LineageSuggesterPort:
     """제안 생산자 고르기 — **설정이 정한다.** 키 유무가 아니다 (`〈136〉` 과 같은 규율).
 
     ⚠ 조립 규칙이 해석기와 같다 — `llm` 인데 키가 없으면 「켜려 했으나 못 켰다」이므로
     고장 쪽 문구가 맞고, `off` 는 **결정으로 고른 상태**라 고장을 뜻하는 말을 쓰지 않는다
     (`interpret.py:111-136`).
+
+    ⭑ **실행 원장도 같은 선에서 갈린다** — `llm` 두 갈래에만 붙는다. `off` 는 부를 생각이
+    없던 회차라 「왜 안 불렀나」를 적을 호출 자체가 없다.
     """
     if settings.suggest_lineage_mode == "llm":
         if settings.openai_api_key:
             return LlmLineageSuggester(
                 api_key=settings.openai_api_key, model=settings.model,
-                timeout_seconds=settings.model_timeout_seconds)
-        return EmptyLineageSuggester(EmptyLineageSuggester.NO_CREDENTIALS_REASON)
+                timeout_seconds=settings.model_timeout_seconds, ledger=ledger)
+        return EmptyLineageSuggester(
+            EmptyLineageSuggester.NO_CREDENTIALS_REASON, ledger=ledger,
+            not_called_reason=REASON_NO_CREDENTIALS, model=settings.model)
     return EmptyLineageSuggester(EmptyLineageSuggester.BY_DESIGN_REASON)
 
 
@@ -163,17 +169,29 @@ def create_app(settings: Settings | None = None,
     # 이번 릴리즈의 기본은 `literal` 이고, 그건 고장이 아니라 결정이라 사유 문구도 다르다.
     # LLM 은 **스위치와 키가 둘 다** 있어야 선다 — 스위치만 켜고 키가 없으면 낱말 검색으로
     # 남되, 그때는 「쓰기로 했는데 못 썼다」이므로 기본(고장) 문구가 맞다.
+    # **실행 원장은 모델을 부를 수 있는 조립에만 붙는다** (intent
+    # `2026-09-24-d10-model-call-ledger`). 주소가 없으면 빈 원장이고, 빈 원장은
+    # 터지지 않는다 — 「설정이 하나도 없어도 뜬다」가 원장 때문에 거짓이 되지 않는다.
+    ledger = build_ledger(settings)
     use_llm = settings.query_interpretation == "llm" and bool(settings.openai_api_key)
     if use_llm:
         interpreter = LlmQueryInterpreter(
             api_key=settings.openai_api_key, model=settings.model,
-            timeout_seconds=settings.model_timeout_seconds)
+            timeout_seconds=settings.model_timeout_seconds, ledger=ledger)
     elif settings.query_interpretation == "llm":
-        interpreter = LiteralInterpreter()          # 켜려 했으나 키가 없다 = 고장 문구
+        # 켜려 했으나 키가 없다 = 고장 문구.
+        #
+        # ⚠ **알고 남긴 비대칭이다.** 제안 쪽의 같은 갈래(`build_suggester`)는
+        # `not_called / no_credentials` 행을 남기는데 여기는 남기지 않는다 — 이 자리에서
+        # 행을 남기려면 `LlmQueryInterpreter(api_key=None, …)` 를 세워야 하고, 그러면
+        # 사용자가 읽는 `degradedReason` 문구가 바뀐다(「쓰지 않았다」→「자격 증명이 없다」).
+        # 원장 회차가 화면 문구를 바꾸지 않는다. **Ted 판정 대기** — 문구를 정정할지,
+        # 이 갈래는 행 없이 둘지.
+        interpreter = LiteralInterpreter()
     else:
         interpreter = LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON)
     service = SearchService(interpreter=interpreter, dictionaries=dictionaries)
-    suggester = suggester or build_suggester(settings)
+    suggester = suggester or build_suggester(settings, ledger)
 
     @app.get("/healthz")
     def healthz() -> dict:

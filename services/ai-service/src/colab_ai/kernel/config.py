@@ -68,7 +68,12 @@ def resolve_env_or_file(env: Mapping[str, str], name: str) -> str | None:
 
 @dataclass(frozen=True)
 class Settings:
-    #: D9 사전 3종(`db/ai` 체인) URL. **이 단위가 붙는 유일한 저장소다.**
+    #: `db/ai` 체인 URL. **이 단위가 붙는 유일한 저장소다** — 이름은 사전 3종에서 왔지만
+    #: 같은 체인에 개념 그래프 두 표와 **D10 모델 호출 실행 원장**(`d10_model_call`)이 함께
+    #: 산다(⟨개정 2026-09-24⟩ intent `2026-09-24-d10-model-call-ledger`). **이름을 바꾸지
+    #: 않는다** — `COLAB_AI_DB_URL` 은 이미 배선돼 있고(`infra/`·compose·`_FILE` 갈래),
+    #: 읽는 쪽 이름을 고치면 배선은 있는데 아무도 안 읽는 상태가 되며 그것은 에러를 내지 않는다.
+    #: 주소가 없으면 사전 조회도 원장 적재도 **조용히 없는 것**이 되고 프로세스는 그대로 뜬다.
     dict_db_url: str | None = None
     openai_api_key: str | None = None
     model: str = "gpt-5.6-luna"

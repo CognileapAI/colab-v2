@@ -26,6 +26,7 @@ import time
 import urllib.error
 from typing import Callable
 
+from colab_ai.app.ledger import failure_outcome, record_call
 from colab_ai.app.suggest_wire import (
     build_payload,
     http_transport,
@@ -34,7 +35,16 @@ from colab_ai.app.suggest_wire import (
 )
 from colab_ai.domains.d10_suggestion import KIND_PARENT, Suggestion
 from colab_ai.kernel.ids import new_ulid
-from colab_ai.ports import ParentCandidate, SuggestionOutcome
+from colab_ai.ports import (
+    CALL_SITE_SUGGEST,
+    PROVIDER_OPENAI,
+    REASON_NO_CANDIDATES,
+    REASON_NO_CREDENTIALS,
+    ModelCallEntry,
+    ModelUsage,
+    ParentCandidate,
+    SuggestionOutcome,
+)
 
 #: 근거에서 금지되는 표기. 정본이 퍼센트를 금지했고(`Policy §1.3-6`), 숫자 확신도는
 #: 계약에 칸이 없다. `d10_suggestion` 이 enum·한 줄·필수를 막으므로 **여기서는 그 밖만** 본다.
@@ -74,12 +84,28 @@ class EmptyLineageSuggester:
     NO_CREDENTIALS_REASON = (
         "계보 제안 모델 자격 증명이 없다 — 제안 없이 직접 골라 등록할 수 있다.")
 
-    def __init__(self, reason: str | None = None) -> None:
+    def __init__(self, reason: str | None = None, *, ledger=None,
+                 not_called_reason: str | None = None, model: str | None = None,
+                 lab_id: str | None = None) -> None:
         self._reason = reason or self.NO_CREDENTIALS_REASON
+        # ⭑ **원장은 「켜려 했으나 못 켰다」일 때만 붙는다** (`main.build_suggester`).
+        #   `off` 는 **결정으로 고른 상태**라 「부르지 못한 호출」이 아니다 — 그 회차에
+        #   행이 쌓이면 원장이 「모델이 계속 실패한다」로 읽히고, 게이트가 도는 동안
+        #   행이 없는 것이 정상이라는 intent 의 전제도 깨진다.
+        self._ledger = ledger
+        self._not_called_reason = not_called_reason
+        self._model = model
+        self._lab_id = lab_id
 
     def suggest(self, *, file_meta: dict, candidates: tuple[ParentCandidate, ...],
                 dataset_name_draft: str | None = None,
                 subject: str | None = None) -> SuggestionOutcome:
+        if self._ledger is not None and self._not_called_reason and self._model:
+            record_call(self._ledger, ModelCallEntry(
+                call_site=CALL_SITE_SUGGEST, provider=PROVIDER_OPENAI,
+                model_requested=self._model, outcome="not_called",
+                not_called_reason=self._not_called_reason,
+                input_count=len(candidates), result_count=0, lab_id=self._lab_id))
         return SuggestionOutcome(suggestions=(), empty_declaration=self._reason)
 
 
@@ -107,19 +133,40 @@ class LlmLineageSuggester:
     def __init__(self, *, api_key: str | None, model: str,
                  transport: Callable[[dict], str] | None = None,
                  timeout_seconds: float = 8.0,
-                 base_url: str = "https://api.openai.com/v1/chat/completions") -> None:
+                 base_url: str = "https://api.openai.com/v1/chat/completions",
+                 ledger=None, lab_id: str | None = None) -> None:
         self._api_key = api_key
         self._model = model
         self._transport = transport or http_transport(
             base_url=base_url, api_key=api_key, timeout=timeout_seconds)
+        # **어느 갈래로 끝나도 실행 원장에 행 하나** (intent `2026-09-24-d10-model-call-ledger`).
+        # 실려 가는 것은 세는 값뿐이다 — 후보 이름도 근거 문장도 원장에 가지 않는다.
+        self._ledger = ledger
+        self._lab_id = lab_id
+
+    def _record(self, *, outcome: str, candidates: int, reason: str | None = None,
+                started: float | None = None, raw: object = None,
+                result_count: int = 0) -> None:
+        usage = getattr(raw, "usage", None) or ModelUsage()
+        record_call(self._ledger, ModelCallEntry(
+            call_site=CALL_SITE_SUGGEST, provider=PROVIDER_OPENAI,
+            model_requested=self._model, outcome=outcome, not_called_reason=reason,
+            model_returned=getattr(raw, "model", None),
+            latency_ms=None if started is None else int((time.monotonic() - started) * 1000),
+            prompt_tokens=usage.prompt_tokens, completion_tokens=usage.completion_tokens,
+            cached_prompt_tokens=usage.cached_prompt_tokens,
+            input_count=candidates, result_count=result_count, lab_id=self._lab_id))
 
     def suggest(self, *, file_meta: dict, candidates: tuple[ParentCandidate, ...],
                 dataset_name_draft: str | None = None,
                 subject: str | None = None) -> SuggestionOutcome:
         if not self._api_key:
+            self._record(outcome="not_called", reason=REASON_NO_CREDENTIALS,
+                         candidates=len(candidates))
             return SuggestionOutcome(empty_declaration=self.NO_CREDENTIALS_REASON)
         # **토큰을 태우지 않는다.** 살펴볼 것이 없는데 물어볼 이유가 없다 (계약 산문 ⓒ).
         if not candidates:
+            self._record(outcome="not_called", reason=REASON_NO_CANDIDATES, candidates=0)
             return SuggestionOutcome(empty_declaration=self.NO_CANDIDATES_REASON)
 
         known = {c.dataset_id: c for c in candidates}
@@ -134,14 +181,27 @@ class LlmLineageSuggester:
         except (urllib.error.URLError, TimeoutError, OSError, KeyError,
                 ValueError, IndexError) as e:
             log_unreachable(e)
+            # ⚠ **계수 줄은 `unreachable` 로 둔다 — 원장만 더 잘게 가른다.**
+            # 이 줄은 이미 나가 있는 표면이고(`eval/k3-lineage` 와 운영이 같은 줄을 긁는다),
+            # 원장 회차가 그 어휘를 바꾸면 기존 실측 산출물과 대조가 끊긴다. 원장 쪽은
+            # `timeout` 과 `unreachable` 을 가른다 — 고칠 곳이 다르기 때문이다(`ledger.failure_outcome`).
             self._count(started, len(candidates), 0, "unreachable")
+            self._record(outcome=failure_outcome(e), candidates=len(candidates),
+                         started=started)
             return SuggestionOutcome(empty_declaration=self.MODEL_UNREACHABLE_REASON)
 
         drafts = self._read(raw, known)
         if drafts is None:
             self._count(started, len(candidates), 0, "unreadable")
+            self._record(outcome="unreadable", candidates=len(candidates),
+                         started=started, raw=raw)
             return SuggestionOutcome(empty_declaration=self.UNREADABLE_REASON)
         self._count(started, len(candidates), len(drafts), "ok" if drafts else "empty")
+        # 계수 줄의 `empty` 와 원장의 `empty_by_model` 은 **같은 사실의 두 표기**다 —
+        # 원장 쪽은 어휘가 `db/ai/schema.sql` 의 CHECK 에 닫혀 있어 이름이 다르다.
+        self._record(outcome="ok" if drafts else "empty_by_model",
+                     candidates=len(candidates), started=started, raw=raw,
+                     result_count=len(drafts))
         if not drafts:
             # 모델이 **모른다고 말한 것**이다 — 답을 못 읽은 것과 다르다.
             return SuggestionOutcome(empty_declaration=self.NO_MATCH_REASON)
