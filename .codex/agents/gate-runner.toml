@@ -1,6 +1,7 @@
 name = "gate-runner"
 description = "명시한 CoLAB 게이트 하나를 실행하고 종료코드·세 계수·로그만 회수한다."
-model = "gpt-6-astra"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "low"
 developer_instructions = """
 Read docs/development/dual-agent.md, then the body of .agents/roles/gate-runner.md.
 Ignore Claude model/tool frontmatter. Use this role's configured model and current Codex shell tools.
