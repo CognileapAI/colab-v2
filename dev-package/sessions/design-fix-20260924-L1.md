@@ -77,7 +77,16 @@ vitest 전체: 시험 작성 단계 직후 `Tests 38 failed | 1630 passed (1668)
 
 `frontend-visual` 대상 = audit 빌드(`npm run audit:build` → `audit:preview --port 4187`) · 장면 12 × (라이트 · `&theme=dark`) = URL 24(spec §5 L1 목록). **픽스처 화면**이다(실데이터 아님). `live_audit.sh` 의 `set media dark` 는 probe 뒤에 스크린샷만 찍어 다크 계측이 안 되므로 `&theme=dark` URL 을 따로 선언했다(spec §5 지시).
 
-task 증거 실행(`COLAB_TASK_ID=1659c1675fd8404d84d97b8f07cb0e3a bash gates/run.sh task` · 선언 게이트 6 한 번에): 아래 §4-1.
+### 4-1. task 증거 실행
+
+`COLAB_TASK_ID=1659c1675fd8404d84d97b8f07cb0e3a bash gates/run.sh task`(선언 게이트 6 · 한 번에 · 위 URL 24 선언).
+
+| run_id | 커밋(보고서 기재 전) | 계 | 증거 |
+|---|---|---|---|
+| `3634da1442634e0ba0c951717163b88d` | `1a73ec78` | green 6 / red(판정) 0 / red(준비) 0 | `.git/colab-harness/d37b49847bbd17cdfae1cb5ec5bc1bd8/1659c1675fd8404d84d97b8f07cb0e3a/3634da1442634e0ba0c951717163b88d/logs/0.log`–`5.log` |
+
+- 게이트별: typecheck 오류 0 · frontend-test 1668 통과 · 실패 0(호스트 뮤텍스 대기 662s — 아래 §6 뮤텍스 누수) · fixture-reach 도달 207 · 금지 0 · design-lint 전 조건 0 · 문서 표 갈림 0 · selftest 26건 기대대로 · visual 페이지 20 · 13px 미만 0 · 대비<4.5 0.
+- 이 run 뒤 이 보고서에 run_id 를 적어 파일 hash 가 바뀐다. 인계(`handoff --mode complete`) 증거는 이 커밋 뒤 같은 명령을 다시 돌린 run 이며 그 run_id 는 레인 최종 메시지의 `COLAB_HANDOFF` 줄에 있다. 제품 파일은 두 run 사이에 같다.
 
 ## 5. 하지 않은 것
 
@@ -110,4 +119,5 @@ task 증거 실행(`COLAB_TASK_ID=1659c1675fd8404d84d97b8f07cb0e3a bash gates/ru
 - **`.chip--off` 의 테두리** — `.chip--off { border: 1px solid var(--color-border) }` 단축 선언이 값 18 의 `.chip` `border-color: var(--color-border-strong)` 를 같은 층·같은 특이도·뒤 순서로 되돌린다. 그래서 판정 행 자체인 `.chip--off` 는 라이트에서 테두리 `#e8ecf2` = 배경 gray-100 `#e8ecf2` 로 윤곽이 안 보인다(값 18 이 푼 문제가 `.chip--off` 에만 남음). 확정 값 밖이라 고치지 않았다 — 선택지: `.chip--off` 의 `border` 선언 삭제(테두리는 `.chip` 이 이미 준다) 또는 그대로. Ted 판정 필요.
 - `live_probe.js` 의 `activeRules` · `reducedMotionBlocks` 는 최상위 `cssRules` 만 훑는다(`.agents/skills/design-review/scripts/live_probe.js:39`–`42`). 모든 CSS 가 `@layer` 블록 안이라 audit 빌드에서 둘 다 0 으로 나온다(이번 실행 24 URL 전부 `:active rules 0` · `reduced-motion blocks 0` — `shell.css` 에 reduced-motion 블록이 실제로 있다). spec §4 실화면 증거의 「activeRules 가 기준값 2 보다 크다」는 이 probe 로는 판정할 수 없다. 어느 게이트도 이 값을 판정하지 않는다(`frontend-visual` 은 small · lowContrast 만 잰다) — 후속.
 - `live_audit.sh` 의 파일 이름(slug)이 60자에서 잘려 `&theme=dark` URL 4개(primitives · project-detail · account-admin · lineage-picker)가 라이트 URL 과 같은 이름이 된다. 증거 파일이 덮이고 `frontend-visual` 요약의 「페이지」가 24 가 아니라 20 으로 찍힌다. index 표에는 24행 모두 small 0 · lowContrast 0 으로 남는다. `frontend-visual` 게이트 판정부 쪽 결함 — 후속.
+- **호스트 뮤텍스 누수** — `frontend-visual` 이 부른 `live_audit.sh` 의 `agent-browser --session design` 데몬(와 chrome)이 게이트 종료 뒤에도 살아 남아 뮤텍스 fd(`/tmp/colab-v2-gate-host-mutex/host`)를 물려받은 채 쥐고 있었다. 이 레인의 사전 `frontend-visual`(00:40) 뒤 약 13분 동안 다른 레인의 `frontend-test` 와 이 레인 task run 이 `flock -w 900` 에서 대기했다(대기 누계 662s). `agent-browser --session design close` 로 풀었고, 이후 visual 실행마다 같은 명령으로 닫았다. `live_audit.sh`/`frontend-visual.sh` 가 데몬에 fd 를 넘기지 않거나 끝에서 세션을 닫아야 한다 — 어느 게이트도 이 누수를 재지 않는다 — 후속.
 - 판정표 밖 잔여 대화상자 그림자 2종(§5).
