@@ -18,11 +18,13 @@ ROOT=Path(__file__).resolve().parents[3]
 REPORTS=ROOT/'eval/k4-search/fixtures/reference'
 
 
-def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql,fake_ai):
+def seed_reference_corpus(p2_client,sql,fake_ai):
+    """Snapshot 9 datasets (fixed IDs) + evidence packet into the throwaway DB. Returns (client, datasets).
+
+    Shared with `test_k4_interpreter_probe.py` so the K4 probe measures on the same corpus.
+    """
     datasets=json.loads((REPORTS/'dev-data-snapshot.json').read_text())['datasets']
     packet=json.loads((REPORTS/'stage-evidence-packet-02.json').read_text())['items']
-    cases=json.loads((ROOT/'eval/k4-search/golden-cases.json').read_text())['cases']
-    interpretations=json.loads((REPORTS/'expanded-normalized-02.json').read_text())['expansion']['responses']
     for dataset in datasets:
         sql('''INSERT INTO d3_dataset(id,lab_id,owner_account_id,uploader_account_id,source_label)
                VALUES(:id,:lab,:account,:account,:source)''',
@@ -53,6 +55,13 @@ def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql
             headers=auth(TOKEN_RES),json={'expectedRevision':0,'expectedFileRevision':1,
                 'facts':item['facts'],'source':item['source'],'status':'reviewed'})
         assert response.status_code==200,(item['dataset_key'],item['file_name'],response.text)
+    return client,datasets
+
+
+def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql,fake_ai):
+    cases=json.loads((ROOT/'eval/k4-search/golden-cases.json').read_text())['cases']
+    interpretations=json.loads((REPORTS/'expanded-normalized-02.json').read_text())['expansion']['responses']
+    client,datasets=seed_reference_corpus(p2_client,sql,fake_ai)
     failures=[]; responses={}
     for case,interpretation in zip(cases,interpretations,strict=True):
         fake_ai['body']={k:v for k,v in copy.deepcopy(interpretation).items() if k!='id'}

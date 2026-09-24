@@ -1,0 +1,885 @@
+{
+  "kind": "K4 retrieval half on reference corpus (9 datasets, fixed IDs); recorded interpretations replayed through the real search API with a frozen AI double; no model call; not a gate",
+  "model": "gpt-5.6-luna",
+  "interp_source": "dev-package/reports/k4-luna-probe/interp-01.json",
+  "interp_runner_sha256": "4bc4f25fdd4febbe20254e90699ff387704a97929ac2cd091345b6f0125fb1de",
+  "interp_local_sha": "12f5e31d48922a191a404967651701c507ad6c49",
+  "corpus_size": 9,
+  "judgments": {
+    "gpt-5.6-luna#1": [
+      {
+        "id": "SEARCH-GOLD-001",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 1
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식생",
+          "월평균",
+          "위성"
+        ],
+        "topic": "식생·NDVI",
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-002",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 1
+        },
+        "terms": [
+          "2023년 5월",
+          "경기 남부",
+          "충청권",
+          "식물",
+          "푸른지",
+          "월평균"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-003",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCKW76AZQCHT5HAMZH9KH0": 1
+        },
+        "terms": [
+          "2023년 5월 1일",
+          "식생지수",
+          "U-Net"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-004",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCCM2Q4ST81GZK3YM0PFZR": 1
+        },
+        "terms": [
+          "GK2A_NDVI_mean_202305.tif",
+          "천리안",
+          "202305"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-005",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB": 2
+        },
+        "terms": [
+          "U-Net",
+          "식생지수",
+          "지형",
+          "토지피복",
+          "검증용",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-006",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCJTXHXT37CZD22TKMJ13P": 2,
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 4
+        },
+        "terms": [
+          "레이더 반사도",
+          "강우 추정",
+          "검증",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "total": 6
+      },
+      {
+        "id": "SEARCH-GOLD-007",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCJTXHXT37CZD22TKMJ13P"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 2
+        },
+        "terms": [
+          "WGS84",
+          "연구대상지",
+          "15분",
+          "누적",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "total": 6
+      },
+      {
+        "id": "SEARCH-GOLD-008",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 1
+        },
+        "terms": [
+          "2000년",
+          "2025년",
+          "대한민국",
+          "시군구",
+          "4주",
+          "가뭄지수",
+          "주간"
+        ],
+        "topic": "가뭄",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-009",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 1
+        },
+        "terms": [
+          "시군구별",
+          "주간",
+          "SPI-4weeks",
+          "SPI"
+        ],
+        "topic": "가뭄",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-010",
+        "retrieval": "pass",
+        "scoped_ids": [],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "U-Net",
+          "가뭄지수"
+        ],
+        "topic": "가뭄",
+        "total": 0
+      },
+      {
+        "id": "SEARCH-GOLD-011",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "결측률",
+          "0%",
+          "검증된",
+          "2023년",
+          "5월",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "total": 4
+      },
+      {
+        "id": "SEARCH-GOLD-012",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "100m",
+          "직접 관측한",
+          "천리안",
+          "월평균",
+          "NDVI"
+        ],
+        "topic": "식생·NDVI",
+        "total": 4
+      }
+    ],
+    "gpt-5.6-luna#2": [
+      {
+        "id": "SEARCH-GOLD-001",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 1
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식생",
+          "월평균",
+          "위성"
+        ],
+        "topic": "식생·NDVI",
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-002",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 1
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "경기 남부",
+          "충청권",
+          "식물이 얼마나 푸른지",
+          "월평균"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-003",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCKW76AZQCHT5HAMZH9KH0": 1
+        },
+        "terms": [
+          "2023년 5월 1일",
+          "식생지수",
+          "U-Net"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-004",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCCM2Q4ST81GZK3YM0PFZR": 1
+        },
+        "terms": [
+          "GK2A_NDVI_mean_202305.tif",
+          "천리안"
+        ],
+        "topic": "식생·NDVI",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-005",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB": 2
+        },
+        "terms": [
+          "U-Net",
+          "식생지수",
+          "지형",
+          "토지피복",
+          "검증용",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-006",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCJTXHXT37CZD22TKMJ13P": 2,
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 4
+        },
+        "terms": [
+          "레이더 반사도",
+          "강우 추정",
+          "검증",
+          "강수"
+        ],
+        "topic": "강우·강수",
+        "total": 6
+      },
+      {
+        "id": "SEARCH-GOLD-007",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCJTXHXT37CZD22TKMJ13P"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 2
+        },
+        "terms": [
+          "WGS84",
+          "연구대상지",
+          "잘라 둔",
+          "15분",
+          "누적",
+          "강수",
+          "표본"
+        ],
+        "topic": "강우·강수",
+        "total": 6
+      },
+      {
+        "id": "SEARCH-GOLD-008",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 1
+        },
+        "terms": [
+          "2000년부터 2025년까지",
+          "대한민국",
+          "시군구",
+          "4주 가뭄지수",
+          "주간"
+        ],
+        "topic": "가뭄",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-009",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 1
+        },
+        "terms": [
+          "시군구별",
+          "주간",
+          "SPI-4weeks",
+          "SPI"
+        ],
+        "topic": "가뭄",
+        "total": 1
+      },
+      {
+        "id": "SEARCH-GOLD-010",
+        "retrieval": "pass",
+        "scoped_ids": [],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "U-Net",
+          "가뭄지수"
+        ],
+        "topic": "가뭄",
+        "total": 0
+      },
+      {
+        "id": "SEARCH-GOLD-011",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "결측률",
+          "0%",
+          "검증된",
+          "2023년",
+          "5월",
+          "식생"
+        ],
+        "topic": "식생·NDVI",
+        "total": 4
+      },
+      {
+        "id": "SEARCH-GOLD-012",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "100m",
+          "직접 관측한",
+          "천리안",
+          "월평균",
+          "NDVI"
+        ],
+        "topic": "식생·NDVI",
+        "total": 4
+      }
+    ],
+    "literal": [
+      {
+        "id": "SEARCH-GOLD-001",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 1
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "경기",
+          "남부와",
+          "충청권의",
+          "식생",
+          "상태를",
+          "살펴볼",
+          "수",
+          "있는",
+          "월평균",
+          "위성",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-002",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCGX4PFD796VX8093WQMS7": 2
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "경기",
+          "남부와",
+          "충청권에서",
+          "식물이",
+          "얼마나",
+          "푸른지",
+          "월평균으로",
+          "볼",
+          "수",
+          "있는",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-003",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCKW76AZQCHT5HAMZH9KH0": 2
+        },
+        "terms": [
+          "2023년",
+          "5월",
+          "1일의",
+          "식생지수를",
+          "U-Net",
+          "예측한",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 3
+      },
+      {
+        "id": "SEARCH-GOLD-004",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1"
+        ],
+        "required_ranks": {
+          "01M1SCCM2Q4ST81GZK3YM0PFZR": 1
+        },
+        "terms": [
+          "GK2A_NDVI_mean_202305",
+          "tif",
+          "만드는",
+          "데",
+          "쓴",
+          "천리안",
+          "원자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 5
+      },
+      {
+        "id": "SEARCH-GOLD-005",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB": 2
+        },
+        "terms": [
+          "U-Net",
+          "식생지수",
+          "모델에",
+          "쓴",
+          "지형·토지피복",
+          "보조자료와",
+          "검증용",
+          "식생자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 2
+      },
+      {
+        "id": "SEARCH-GOLD-006",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCJTXHXT37CZD22TKMJ13P": 1,
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 4
+        },
+        "terms": [
+          "레이더",
+          "반사도로",
+          "만든",
+          "강우",
+          "추정",
+          "결과와",
+          "검증에",
+          "쓴",
+          "강수",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 10
+      },
+      {
+        "id": "SEARCH-GOLD-007",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [
+          "0000000000000000000000DSA1",
+          "0000000000000000000000DSA2"
+        ],
+        "required_ranks": {
+          "01M1SCGM0K7FACRYTCWVMDDBY8": 2
+        },
+        "terms": [
+          "WGS84",
+          "바꾸고",
+          "연구대상지에",
+          "맞춰",
+          "잘라",
+          "둔",
+          "15분",
+          "누적",
+          "강수",
+          "표본",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 8
+      },
+      {
+        "id": "SEARCH-GOLD-008",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH9DF18DXH793JTP01W61"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 4
+        },
+        "terms": [
+          "2000년부터",
+          "2025년까지",
+          "대한민국",
+          "시군구의",
+          "4주",
+          "가뭄지수를",
+          "주간으로",
+          "비교할",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 4
+      },
+      {
+        "id": "SEARCH-GOLD-009",
+        "retrieval": "pass",
+        "scoped_ids": [
+          "01M1SCH9DF18DXH793JTP01W61",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "outside_ids": [],
+        "required_ranks": {
+          "01M1SCH9DF18DXH793JTP01W61": 1
+        },
+        "terms": [
+          "시군구별",
+          "주간",
+          "SPI-4weeks",
+          "자료",
+          "찾아줘",
+          "SPEI",
+          "말고",
+          "SPI",
+          "필요해"
+        ],
+        "topic": null,
+        "total": 4
+      },
+      {
+        "id": "SEARCH-GOLD-010",
+        "retrieval": "fail",
+        "scoped_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "검색",
+          "대상",
+          "자료",
+          "중",
+          "U-Net",
+          "예측한",
+          "가뭄지수",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 8
+      },
+      {
+        "id": "SEARCH-GOLD-011",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "결측률이",
+          "0%로",
+          "검증된",
+          "2023년",
+          "5월",
+          "식생",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 4
+      },
+      {
+        "id": "SEARCH-GOLD-012",
+        "retrieval": "not_applicable",
+        "scoped_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "outside_ids": [],
+        "required_ranks": {},
+        "terms": [
+          "100m로",
+          "직접",
+          "관측한",
+          "천리안",
+          "월평균",
+          "NDVI",
+          "자료",
+          "찾아줘"
+        ],
+        "topic": null,
+        "total": 4
+      }
+    ]
+  },
+  "summary": {
+    "gpt-5.6-luna#1": {
+      "passed": 10,
+      "judged": 10,
+      "failed": [],
+      "rank_median": 1.0,
+      "ranks_found": 10,
+      "required_total": 10
+    },
+    "gpt-5.6-luna#2": {
+      "passed": 10,
+      "judged": 10,
+      "failed": [],
+      "rank_median": 1.0,
+      "ranks_found": 10,
+      "required_total": 10
+    },
+    "literal": {
+      "passed": 9,
+      "judged": 10,
+      "failed": [
+        "SEARCH-GOLD-010"
+      ],
+      "rank_median": 2.0,
+      "ranks_found": 10,
+      "required_total": 10
+    }
+  }
+}
