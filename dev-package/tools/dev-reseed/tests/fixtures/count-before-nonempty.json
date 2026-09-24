@@ -1,0 +1,45 @@
+{
+  "bucket": "colab-platform-data-dev",
+  "db": {
+    "ai": {
+      "schemas": [
+        "public"
+      ]
+    },
+    "platform": {
+      "countPath": "bypassrls:row_security=off",
+      "labs": 1,
+      "rows": {
+        "account_admin.login_credential": 5,
+        "d1_account": 5,
+        "d3_dataset": 35,
+        "d3_file": 585,
+        "d4_lineage_edge": 22,
+        "d5_upload": 40,
+        "d6_project": 6
+      },
+      "schemas": [
+        "account_admin",
+        "public"
+      ]
+    }
+  },
+  "dryRun": false,
+  "phase": "count",
+  "referencedKeys": {
+    "count": 3,
+    "keys": [
+      "uploads/FIXTURELAB/a.nc",
+      "uploads/FIXTURELAB/b.nc",
+      "uploads/FIXTURELAB/c.tif"
+    ]
+  },
+  "s3": {
+    "multipartUploads": 0,
+    "objects": {
+      "previews/": 1,
+      "uploads/": 3
+    }
+  },
+  "schema": "colab-dev-reset-report/1"
+}

@@ -114,6 +114,17 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - 조건 = 게이트 넷 충족(`--target dev`＋`--yes-reset-dev` · 버킷 정확 일치 · 두 DB URL 호스트에 `-dev` ·
   계획 키가 `uploads/`·`previews/` 안). 하나라도 어긋나면 아무것도 지우지 않고 비영 종료한다.
 - `reset` 단계 직전에 `approval-record.json`(누가·언제·어느 sha·어느 게이트)이 실행 자리에 먼저 선다.
+- ⛔ **reset 정지 게이트(2026-09-24 사고 뒤)** — `reset` ① 은 BYPASSRLS 읽기 롤
+  (`$COLAB_RESEED_EC2_SECRETS_DIR/backup-platform-db.url` · `colab_backup`)과 `row_security=off` 로
+  `d1_account`·`account_admin.login_credential`·`d3_dataset`·`d3_file`·`d5_upload`·`d6_project`·`d4_lineage_edge`
+  행 **전수**와 DB 가 가리키는 저장 키를 센다(연구실 경계 경로·`colab_app` 계수는 FORCE RLS 아래 거짓 0 이다).
+  하나라도 0 이 아니면 **앱 정지·DROP·S3 전에** 비영 종료하고 표별 계수와 ack 토큰
+  (= 실행 자리 `count-before.json` 의 sha256)을 찍는다. 지워도 된다고 사람이 판단했을 때만
+  `COLAB_RESEED_ACK_NONEMPTY=<그 토큰> … reseed.sh --from reset` 으로 넘긴다. 계수 파일에 시각이 없어
+  같은 상태면 같은 토큰이고, 자료가 바뀌었거나 지난 회차 토큰이면 거부된다. 판정은 `reset-ack.json` 에 남는다.
+  `s3` 계획이 그 계수의 참조 키와 겹치면 **같은 토큰** 없이 계획을 쓰지 않는다(겹침 건수를 찍는다).
+  preflight `backup-size` 는 최근 백업 크기를 빈 스키마 기준(gz ~15~21 KB)과 대조해 **알림만** 낸다.
+  ⚠ 토큰은 상시 승인을 대신하지 않는다 — 비어 있지 않은 dev 를 지우는 결정은 매번 사람이 내린다.
 - ⛔ **에이전트가 몰아서 실행할 때는 `reset` 앞에 advisor 게이트 ③(go/no-go)을 붙인다.**
   상시 승인은 회차별 Ted GO 를 대체하지 advisor 판정을 대체하지 않는다(`R-DATA-CANON §7`).
 - dev 실행기는 dev 식별자 밖에서 어느 조건으로도 돌지 않는다. product 최초 초기화는 위의 별도 경로와 현재 대화의 명시 승인을 따른다. staging에는 dev 상시 승인을 적용하지 않는다.
@@ -135,7 +146,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
   `--preflight-only`·preflight 에서 멈춘 회차는 실행 자리에만 남는다. 원장·대장·HANDOFF 갱신은 오케스트레이터가 한다.
 - 검사기 = `bash gates/run.sh dev-reseed-selftest`(요약줄 파서 · preflight fail-closed · 계획 요약줄 ·
   `result.json` · `--from` · `--preflight-only` · `die` 복귀 · 미리보기 판정불가 · **원격 전송로** ·
-  **정지 뒤 자동 재기동** · **리허설 fail-closed**). dev 무접촉이다.
+  **정지 뒤 자동 재기동** · **리허설 fail-closed** · **reset 정지 게이트** `tests/reset-gate.sh`). dev 무접촉이다.
 
 ## 멈췄을 때
 
@@ -143,5 +154,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - ⭑ **`reset` 이 앱을 정지(①′)한 뒤 실패하면 도구가 앱을 스스로 되살린다**(같은 compose·env 로 `start`).
   그 사실은 `result.json` 의 `recovery` 와 회차 기록 §4-1 에 남는다. 사람이 dev 를 올리러 들어갈 일이 없다.
   정지는 **되돌릴 수 없는 걸음(② 스키마 DROP) 직전**에만 내린다 — 읽기 전용 계수는 그보다 먼저 끝난다.
+- `reset` ①ᵇ 정지 게이트에서 멈췄으면 dev 는 **아무것도 바뀌지 않았다**(앱도 돌고 있다). 표별 계수를
+  보고 지울지 사람이 정한다. 에이전트가 토큰을 스스로 채워 넘기지 않는다.
 - 출력 마지막 줄이 멈춘 단계 이름과 로그 경로를 낸다. 원인을 본 뒤 `--from <그 단계>` 로 잇는다.
 - `preflight` 미달은 이름으로 나온다. 이름을 고치기 전에 다음 단계로 넘어가지 않는다.

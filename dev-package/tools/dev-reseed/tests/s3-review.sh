@@ -143,7 +143,10 @@ DRY_RUN=0
 TARGET_SHA=deadbeefcafe
 S3_BUCKET=colab-platform-data-dev
 S3_REGION=ap-northeast-2
-EC2_SECRETS_DIR=/etc/colab
+# ④ 실행 후 계수가 BYPASSRLS URL 파일의 존재를 원격에서 먼저 본다 — 픽스처 자리에 빈 파일을 둔다.
+EC2_SECRETS_DIR="$TMP/secrets"
+mkdir -p "$EC2_SECRETS_DIR"
+: > "$EC2_SECRETS_DIR/backup-platform-db.url"
 DEV_URL='https://dev.invalid'
 EXPECT_DATASETS=28
 MD_ROOT=""

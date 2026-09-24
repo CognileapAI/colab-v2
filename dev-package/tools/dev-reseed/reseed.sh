@@ -22,6 +22,8 @@
 #   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
+#   COLAB_RESEED_ACK_NONEMPTY — reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **이번 계수의** sha256.
+#     그 값이 없거나 다르면 앱 정지·DROP·S3 전에 멈춘다(2026-09-24 사고 · `stages.sh` 정지 게이트).
 #
 # ⚠ **`COLAB_DEV_SECRETS_DIR` 를 읽지 않는다.** 그 이름은 운영자 기계의 `dev-operator.env` 에서
 #   **개발 기계의 로컬 폴더**를 가리키고, `infra/dev/README.md` 의 같은 이름은 EC2 의 `dev.env`

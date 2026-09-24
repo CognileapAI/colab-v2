@@ -1,0 +1,41 @@
+{
+  "bucket": "colab-platform-data-dev",
+  "db": {
+    "ai": {
+      "schemas": [
+        "public"
+      ]
+    },
+    "platform": {
+      "countPath": "bypassrls:row_security=off",
+      "labs": 0,
+      "rows": {
+        "account_admin.login_credential": 0,
+        "d1_account": 0,
+        "d3_dataset": 0,
+        "d3_file": 0,
+        "d4_lineage_edge": 0,
+        "d5_upload": 0,
+        "d6_project": 0
+      },
+      "schemas": [
+        "account_admin",
+        "public"
+      ]
+    }
+  },
+  "dryRun": false,
+  "phase": "count",
+  "referencedKeys": {
+    "count": 0,
+    "keys": []
+  },
+  "s3": {
+    "multipartUploads": 0,
+    "objects": {
+      "previews/": 0,
+      "uploads/": 0
+    }
+  },
+  "schema": "colab-dev-reset-report/1"
+}
