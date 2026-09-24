@@ -12,10 +12,10 @@
 |---|---:|
 | DS 규칙 | 192 |
 | (선택자 인자 × 선언) 단위 | 621 |
-| 오늘 어떤 경쟁 규칙에 지는 선언 단위(값 다름) | 47 |
-| 되살아남 후보(값 다름) | 390 |
+| 오늘 어떤 경쟁 규칙에 지는 선언 단위(값 다름) | 49 |
+| 되살아남 후보(값 다름) | 394 |
 | 그중 상태 선택자(:hover·:focus·[readonly]·[aria-*] 등) | 5 |
-| 요소·전체 compound 호환 후보(`type`·`universal` · 표 밖 · 렌더 대조로 확인) | 6808 |
+| 요소·전체 compound 호환 후보(`type`·`universal` · 표 밖 · 렌더 대조로 확인) | 6804 |
 
 ## 되살아남 후보 (값 다름)
 
@@ -78,6 +78,8 @@
 | 16 | `.tbl th` | 0,1,1 | letter-spacing | `0` | `.tbl th` | components/catalog/catalog.css:23 | 0,1,1 | - | `0.05em` | 순서 | - | 예 |
 | 17 | `.tbl th .thf` | 0,2,1 | padding-inline | `16px` | `.tbl thead th > .thf` | components/catalog/catalog.css:44 | 0,2,2 | - | `10px 14px` | 필연 | - | 예 |
 | 18 | `.tbl td` | 0,1,1 | padding | `10px 12px` | `.tbl td` | components/catalog/catalog.css:29 | 0,1,1 | - | `13px 14px` | 순서 | - | 예 |
+| 18 | `.tbl td` | 0,1,1 | padding | `10px 12px` | `.tbl td.empty` | components/catalog/catalog.css:39 | 0,2,1 | - | `36px 14px` | 필연 | - | 예 |
+| 18 | `.tbl td` | 0,1,1 | padding | `10px 12px` | `.tbl td.rowact` | components/catalog/catalog.css:135 | 0,2,1 | - | `14px` | 필연 | - | 예 |
 | 19 | `.tbl .fname` | 0,2,0 | font-size | `var(--text-body-sm)` | `.tbl .fname` | components/catalog/catalog.css:36 | 0,2,0 | - | `13px` | 순서 | - | 예 |
 | 19 | `.tbl .fname` | 0,2,0 | letter-spacing | `0` | `.tbl .fname` | components/catalog/catalog.css:36 | 0,2,0 | - | `-0.01em` | 순서 | - | 예 |
 | 24 | `.tbl .rowact .ra` | 0,3,0 | opacity | `1` | `.tbl td.rowact .ra` | components/catalog/catalog.css:136 | 0,3,1 | - | `0` | 필연 | - | 예 |
@@ -328,6 +330,7 @@
 | 138 | `.sel` | 0,1,0 | font-size | `16px` | `:is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select)` | shell/design-system.css:117 | 0,2,1 | - | `inherit` | DS쌍(특이도) | - | 아니오 |
 | 138 | `.login-input` | 0,1,0 | font-size | `16px` | `.login-input` | auth/login.css:59 | 0,1,0 | - | `inherit` | 순서 | - | 아니오 |
 | 138 | `.login-input` | 0,1,0 | font-size | `16px` | `:is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select)` | shell/design-system.css:117 | 0,2,1 | - | `inherit` | DS쌍(특이도) | - | 아니오 |
+| 138 | `.pv-control select` | 0,1,1 | font-size | `16px` | `:is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select)` | shell/design-system.css:117 | 0,2,1 | - | `inherit` | DS쌍(순서) | - | 아니오 |
 | 139 | `.theme-switcher` | 0,1,0 | min-height | `44px` | `.theme-switcher` | shell/design-system.css:115 | 0,1,0 | - | `36px` | DS쌍(순서) | - | 아니오 |
 | 139 | `.theme-switcher` | 0,1,0 | max-width | `92px` | `.theme-switcher` | shell/design-system.css:115 | 0,1,0 | - | `104px` | DS쌍(순서) | - | 아니오 |
 | 140 | `.gnb` | 0,1,0 | gap | `6px` | `:is(.colab-ui, .design-preview) .gnb` | shell/design-system.css:137 | 0,2,0 | - | `12px` | DS쌍(순서) | - | 아니오 |
@@ -386,6 +389,7 @@
 | 172 | `.pj-toolbar` | 0,1,0 | margin-bottom | `var(--space-section)` | `.pj-toolbar` | components/project/project.css:64 | 0,1,0 | - | `14px` | 순서 | - | 예 |
 | 173 | `.pj-ctl` | 0,1,0 | display | `grid` | `.pj-ctl` | components/project/project.css:68 | 0,1,0 | - | `inline-flex` | 순서 | - | 예 |
 | 173 | `.pj-ctl` | 0,1,0 | gap | `8px` | `.pj-ctl` | components/project/project.css:70 | 0,1,0 | - | `6px` | 순서 | - | 예 |
+| 176 | `.pj-views button` | 0,1,1 | font | `inherit` | `.pj-views button.on` | components/project/project.css:83 | 0,2,1 | - | `600` | 필연 | - | 예 |
 | 178 | `.pj-views button:last-child` | 0,2,1 | border-radius | `0 var(--radius-sm) var(--radius-sm) 0` | `:is(.colab-ui, .design-preview) .pj-views button:first-child` | shell/design-system.css:202 | 0,3,1 | - | `var(--radius-sm) 0 0 var(--radius-sm)` | DS쌍(순서) | :first-child | 아니오 |
 | 179 | `.pj-new` | 0,1,0 | padding | `8px 14px` | `.pj-new` | components/project/project.css:536 | 0,1,0 | - | `0` | 순서 | - | 예 |
 | 179 | `.pj-new` | 0,1,0 | border | `1px solid var(--color-primary-600)` | `.pj-new` | components/project/project.css:532 | 0,1,0 | - | `0` | 순서 | - | 예 |
@@ -600,7 +604,7 @@
 | 15 | 16 | - | `.tbl` | 0,2,0→0,1,0 | 2 | - | - | primitive:table | primitives.css .table |
 | 16 | 17 | - | `.tbl th` | 0,2,1→0,1,1 | 3 | - | color(1) font-weight(1) letter-spacing(1) | primitive:table | primitives.css .table |
 | 17 | 18 | - | `.tbl th .thf` | 0,3,1→0,2,1 | 2 | - | padding-inline(1) | screen | catalog.css |
-| 18 | 19 | - | `.tbl td` | 0,2,1→0,1,1 | 1 | - | padding(1) | primitive:table | primitives.css .table |
+| 18 | 19 | - | `.tbl td` | 0,2,1→0,1,1 | 1 | - | padding(3) | primitive:table | primitives.css .table |
 | 19 | 20 | - | `.tbl .fname` | 0,3,0→0,2,0 | 5 | - | font-size(1) letter-spacing(1) | screen | catalog.css |
 | 20 | 21 | - | `.fname .catalog-open` | 0,3,0→0,2,0 | 4 | - | - | screen | catalog.css |
 | 21 | 22 | - | `.fname .chip` | 0,3,0→0,2,0 | 1 | - | - | screen | catalog.css |
@@ -697,7 +701,7 @@
 | 105 | 117 | - | `.inp` | 0,2,1→0,1,0 | 7 | font(1) | padding(3) border(4) border-radius(3) background(2) color(1) font(4) | primitive:field | primitives.css .field |
 | 105 | 117 | - | `.sel` | 0,2,1→0,1,0 | 7 | font(1) | padding(2) border(3) border-radius(2) font(2) | primitive:field | primitives.css .field |
 | 105 | 117 | - | `.login-input` | 0,2,1→0,1,0 | 7 | font(1) | padding(1) border(2) | primitive:field | primitives.css .field |
-| 105 | 117 | - | `.pv-control select` | 0,2,1→0,1,1 | 7 | - | - | primitive:field | primitives.css .field |
+| 105 | 117 | - | `.pv-control select` | 0,2,1→0,1,1 | 7 | font(1) | - | primitive:field | primitives.css .field |
 | 106 | 118 | - | `.lin button:where(:not(.btn))` | 0,2,1→0,1,1 | 1 | - | - | mixed | primitives.css .modal + lineage.css + preview.css |
 | 106 | 118 | - | `.pv-zoom button:where(:not(.btn))` | 0,2,1→0,1,1 | 1 | - | - | mixed | primitives.css .modal + lineage.css + preview.css |
 | 106 | 118 | - | `.pv-shot button:where(:not(.btn))` | 0,2,1→0,1,1 | 1 | - | - | mixed | primitives.css .modal + lineage.css + preview.css |
@@ -757,7 +761,7 @@
 | 138 | 157 | (max-width: 640px) | `.inp` | 0,2,1→0,1,0 | 1 | - | font-size(5) | primitive:field | primitives.css .field |
 | 138 | 157 | (max-width: 640px) | `.sel` | 0,2,1→0,1,0 | 1 | - | font-size(4) | primitive:field | primitives.css .field |
 | 138 | 157 | (max-width: 640px) | `.login-input` | 0,2,1→0,1,0 | 1 | - | font-size(2) | primitive:field | primitives.css .field |
-| 138 | 157 | (max-width: 640px) | `.pv-control select` | 0,2,1→0,1,1 | 1 | - | - | primitive:field | primitives.css .field |
+| 138 | 157 | (max-width: 640px) | `.pv-control select` | 0,2,1→0,1,1 | 1 | - | font-size(1) | primitive:field | primitives.css .field |
 | 139 | 158 | (max-width: 640px) | `.theme-switcher` | 0,1,0→0,1,0 | 2 | max-width(1) | min-height(1) max-width(1) | shell | shell.css |
 | 140 | 159 | (max-width: 640px) | `.gnb` | 0,2,0→0,1,0 | 2 | gap(1) | gap(5) padding-inline(6) | shell | shell.css |
 | 141 | 160 | (max-width: 640px) | `.gnb .labswitch` | 0,3,0→0,2,0 | 3 | - | - | shell | shell.css |
@@ -796,7 +800,7 @@
 | 167 | 191 | - | `.lin-findbar > label` | 0,2,1→0,1,1 | 1 | - | - | screen | lineage.css |
 | 168 | 192 | - | `.lin-findbar input` | 0,2,1→0,1,1 | 3 | - | - | screen | lineage.css |
 | 168 | 192 | - | `.lin-findbar select` | 0,2,1→0,1,1 | 3 | - | - | screen | lineage.css |
-| 169 | 193 | - | `.lin-picker li > button` | 0,2,2→0,1,2 | 5 | - | - | screen | lineage.css |
+| 169 | 193 | - | `.lin-picker li > button` | 0,2,2→0,1,2 | 5 | background(1) | - | screen | lineage.css |
 | 170 | 194 | - | `.lin-picker li > button[aria-pressed="true"]` | 0,3,2→0,2,2 | 1 | - | - | screen | lineage.css |
 | 171 | 195 | - | `.lin-find .modal-h .x` | 0,4,0→0,3,0 | 9 | - | background(1) font-size(1) | primitive:modal | primitives.css .modal-x |
 | 171 | 195 | - | `.lin-fix .modal-h .x` | 0,4,0→0,3,0 | 9 | - | background(1) font-size(1) | primitive:modal | primitives.css .modal-x |
@@ -805,7 +809,7 @@
 | 173 | 198 | - | `.pj-ctl` | 0,2,0→0,1,0 | 3 | - | display(1) gap(1) | screen | project.css |
 | 174 | 199 | - | `.pj-ctl select` | 0,2,1→0,1,1 | 8 | font(1) font-size(1) | - | screen | project.css |
 | 175 | 200 | - | `.pj-views` | 0,2,0→0,1,0 | 2 | - | - | screen | project.css |
-| 176 | 201 | - | `.pj-views button` | 0,2,1→0,1,1 | 4 | - | - | screen | project.css |
+| 176 | 201 | - | `.pj-views button` | 0,2,1→0,1,1 | 4 | - | font(1) | screen | project.css |
 | 177 | 202 | - | `.pj-views button:first-child` | 0,3,1→0,2,1 | 1 | border-radius(1) | - | screen | project.css |
 | 178 | 203 | - | `.pj-views button:last-child` | 0,3,1→0,2,1 | 1 | - | border-radius(1) | screen | project.css |
 | 179 | 204 | - | `.pj-new` | 0,2,0→0,1,0 | 9 | - | padding(1) border(1) background(1) color(1) font-size(1) | screen | project.css |
