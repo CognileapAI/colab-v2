@@ -1,0 +1,59 @@
+WU1 리허설(실모드) 발췌 — 2026-09-24
+원본 = dev-package/reports/dev-reseed-runs/wu1-rehearse/logs/{preflight,rehearse}.log (추적 제외)
+명령 = reseed.sh --rehearse --release-plan <계획> · 대상 ref ea21d8c2aa54 · HEAD ea21d8c2aa54(분리)
+바꾸는 단계 0건. 원격 쓰기는 ⑸ 가 만들고 같은 스크립트가 지우는 EC2 임시 폴더뿐이다.
+
+── preflight (통과 11 · 미달 0) ─────────────────────────────────────────────
+  · 마운트 자리 — EC2 시크릿 폴더 = /etc/colab (값은 읽지 않는다)
+  ✓ git — 대상 ea21d8c2aa54 ∈ origin/develop · 작업 트리 깨끗
+  ✓ dev-sha — dev 실행 sha ea21d8c2aa54 = 대상 sha
+  ✓ aws — sts 갈래 성립 · 계정 …7146(deploy 단계 없음 — 환경변수 갈래 불요)
+  ✓ qemu — binfmt qemu-aarch64 등록 · buildx PLATFORMS 에 linux/arm64
+  ✓ leftovers — 진행 중 배포 0 · 임시 컨테이너 0
+  ✓ ref-root — DATASETS.md 4건 존재
+  ✓ agent-browser — doctor fail 0
+  ✓ secrets — 9 건 존재 · 전건 0600
+  ✓ resources — 메모리 18353 MiB · 로컬 디스크 831 GiB · EC2 디스크 2930540544 B
+  ✓ build-plan — datasets 28 edges 18
+  ✓ seed-inputs — 계정·비밀번호 입력 검증 완료 (값 미기록)
+
+── rehearse (원시동작 10 · 통과 9 · 어긋남 1) ───────────────────────────────
+  ✓ executor --check — 후보 계획·pre-evidence 통과; build/ship/tree 실제 실행 준비성 미측정
+  ✓ psql_master_query   — 기대 응답과 일치
+  ✓ ssh_script          — 기대 응답과 일치
+  ✓ compose_ps          — 기대 응답과 일치
+  ✓ migrator_platform   — 기대 응답과 일치   (alembic current = (head))
+  ✓ migrator_ai         — 기대 응답과 일치   (alembic current = (head))
+  ✓ reset_tool_s3_plan  — 기대 응답과 일치
+        ── 계획 /out/plan.json — 키 1778 건 · 진행 중 멀티파트 0 건
+        계획 검토 ok — 키 1778 건 · 멀티파트 0 건 · 접두사 ['previews/', 'uploads/']
+          · sha256 2de0ac82545ed6ee93863a0f220c899d12a6176355ee37f46e3fcbdc00ebad2d
+  ✓ psql_owner_url      — 기대 응답과 일치
+  ✗ doctor_summary_line — 기대 [항목 15 — ✓ 15 · ✗ 0 · ─ 0] 미검출
+        실측 = 항목 15 — ✓ 13 · ✗ 2 · ─ 0
+        ⑥ 스키마 head (platform)
+          ✗ head  DB 0033_admin_body_access ≠ 레포 head 0032_labless_operator — migrate-platform 을 돌린다
+        ⑭ 백업 24h
+          ✗ 최신  139.6시간 전 · 객체 83건 — 24h 를 넘겼다
+        ⑮ 실행 sha ∈ 환경별 원천
+          ✓ 일치  ea21d8c2aa54 ∈ develop (origin/develop=ea21d8c2aa54 · 반입 시 조상 확인됨)
+  ✓ runner_phase_report — 기대 응답과 일치
+        완료 0 / 28 · 계획 총량 5,176,422,065 B
+  ✓ agent_browser_title — 기대 응답과 일치
+  리허설 — 원시동작 10 · 통과 9 · 어긋남 1
+  어긋난 원시동작: doctor_summary_line
+  ── 단계 rehearse 종료 code=1 11s
+
+── result.json ──────────────────────────────────────────────────────────────
+  outcome=failed · failedStage=rehearse · targetSha=ea21d8c2aa54
+  stages: preflight ok(3s) · rehearse failed exit 1 (11s) · 나머지 9 skipped
+  blocked[1] = {stage: rehearse, name: rehearse:doctor_summary_line,
+                reason: "기대 [항목 15 — ✓ 15 · ✗ 0 · ─ 0] 미검출"}
+  counts {} · doctorSummary null (요약줄이 15/15 가 아니면 기록하지 않는다)
+
+── dev 원격 읽기 실측 (같은 날 · 읽기 전용 ssh) ─────────────────────────────
+  docker images  colab-v2/core-api:dev-ea21d8c2aa54 · colab-v2/migrator:dev-ea21d8c2aa54 존재
+                 (dev-6db30323a78a · dev-b955bece7384 · dev-d5cd6ca971df · dev-e9ca26b15bd1 · :dev 도 남아 있다)
+                 ⛔ colab-v2/core-api:dev-02d251d81b54 는 **없다**
+  /opt/colab-v2/CURRENT_SHA          = ea21d8c2aa54
+  /opt/colab-repo/db/platform/versions 최신 = 0032_labless_operator.py (0033 부재 · git 아님 · tar 사본)
