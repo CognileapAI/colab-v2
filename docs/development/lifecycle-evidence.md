@@ -36,6 +36,14 @@ python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate contra
 시작 뒤 baseline을 재설정해 이 작업의 미인계 파일을 기존 파일처럼 만들지 않는다.
 이전 작업 기록을 새 작업에 재사용하지 않는다. 실제 런타임의 agent_id 제공 여부는 별도 검증 대상이다.
 
+researcher는 예외로 자동 시작 기록이 있다. SubagentStart 훅 `researcher-task.sh`(matcher `researcher`)가
+스폰 시 cwd의 체크아웃 루트에서 `lifecycle begin --role researcher`를 **`--agent-id` 없이** 실행하고,
+`task_id`·`run_id`·payload `agent_id`·`handoff --task <task_id> --mode read-only` 명령을 맥락에 싣는다.
+SubagentStart와 SubagentStop payload의 agent_id 일치가 증명되지 않았으므로 자동 task는 정지 시 ID를 대조하지 않는다.
+파일 산출물이 필요하면 출력된 agent_id로 `begin --role researcher --agent-id <agent_id> --artifact runtime:artifacts/<파일>`
+task를 하나 더 열고 그 task로 인계한다. 자동 task가 열린 동안 같은 체크아웃에 커밋하면 인계가 거부된다.
+begin이 실패하면 훅은 exit 0으로 「researcher-task: begin 실패 · 사유 · 직접 begin 명령」을 출력하고, researcher는 위 명령을 직접 실행한다.
+
 ## 게이트
 
 ```bash
