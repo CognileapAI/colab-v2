@@ -4,6 +4,8 @@
 import './layers.css';
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './tokens.css';
+// P2b — 원소 기본(`@layer base`). 층 선언이 순위를 정하므로 import 자리는 층 안 동률 순서만 정한다.
+import './base.css';
 import '../components/catalog/catalog.css';
 import '../components/detail/detail.css';
 import '../components/project/project.css';

@@ -19,7 +19,8 @@ for (const f of files) {
     if (raw.trim() !== '@layer tokens, base, primitives, patterns, screens;') red.push(`${f}: 층 선언 문장이 다르다`);
     continue;
   }
-  const want = f === 'src/shell/tokens.css' ? 'tokens' : 'screens';
+  // P2b — base.css → base · primitives.css → primitives.
+  const want = { 'src/shell/tokens.css': 'tokens', 'src/shell/base.css': 'base', 'src/shell/primitives.css': 'primitives' }[f] || 'screens';
   const t = raw.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   if (!t.startsWith(`@layer ${want} {`) || !t.endsWith('}')) red.push(`${f}: @layer ${want} { … } 로 시작·끝나지 않는다`);
   else wrapped++;

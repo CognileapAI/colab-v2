@@ -4,7 +4,11 @@
 //
 // Usage (cwd = frontend/):
 //   node scripts/cascade-map.mjs map    [--rev <git-rev>] [--out <dir>]
-//   node scripts/cascade-map.mjs verify --base <git-rev> [--out <dir>]
+//   node scripts/cascade-map.mjs verify --base <git-rev> [--out <dir>] [--exempt <json>]
+//   node scripts/cascade-map.mjs family --name <n> --classes .a,.b,.c--* [--out <dir>]
+//
+// `verify` keeps the P2a (design-system.css) judgement when the base tree still has design-system.css; from P2b
+// on (no design-system.css in the base) it checks every declaration unit — see verifyAll below.
 //
 // map    — parses every CSS file under src/ in load order and, for every declaration of every
 //          design-system.css rule (per selector-list entry and per top-level `:is()` argument),
@@ -33,6 +37,7 @@ const READINESS = 78;
 const DS = 'src/shell/design-system.css';
 const STYLES = 'src/shell/styles.ts';
 const DEFAULT_OUT = '../dev-package/reports/design-system/20260924/p2a';
+const P2B_OUT = '../dev-package/reports/design-system/20260924/p2b';
 
 // ---------------------------------------------------------------- file access (disk or git rev)
 function lister(rev) {
@@ -46,7 +51,7 @@ function lister(rev) {
       read: (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null),
     };
   }
-  const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 64 << 20 });
+  const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'pipe'] });
   const prefix = git('rev-parse', '--show-prefix').trim();
   return {
     files: () => git('ls-tree', '-r', '--name-only', rev, 'src').split('\n').filter(Boolean)
@@ -237,6 +242,9 @@ function specificity(sel) {
   return sp;
 }
 const fmt3 = (s) => s.join(',');
+// memoise the pure selector helpers (verifyAll compares every unit with every rule)
+const memo = (fn) => { const cache = new Map(); return (x) => { if (!cache.has(x)) cache.set(x, fn(x)); return cache.get(x); }; };
+specificity = memo(specificity);
 
 // Tokens of the subject (last) compound: classes, types, attribute names; descends into
 // :is/:where/:matches (not :not/:has). Returns {tokens:Set, hasKey, types:Set, pseudoElement, states}.
@@ -269,6 +277,7 @@ function subjectInfo(sel) {
   for (const c of compounds) walk(c.simples);
   return { tokens, types, hasKey, pseudoElement: last.pseudoElement, states, allKeys };
 }
+subjectInfo = memo(subjectInfo);
 
 // Is every element matched by `inner` also matched by `outer`? (conservative: true only when provable)
 function subsetOf(inner, outer) {
@@ -336,7 +345,12 @@ function longhands(p) {
   if (!l) return [p];
   return [...new Set(l.flatMap((x) => (x === p ? [x] : longhands(x))))];
 }
-function overlap(p, q) { const a = new Set(longhands(p)); return longhands(q).some((x) => a.has(x)); }
+const overlapCache = new Map();
+function overlap(p, q) {
+  const k = `${p}|${q}`;
+  if (!overlapCache.has(k)) { const a = new Set(longhands(p)); overlapCache.set(k, longhands(q).some((x) => a.has(x))); }
+  return overlapCache.get(k);
+}
 // Longhand → value for the shorthands the absorption touches (null = cannot expand).
 const BORDER_STYLE = /^(none|hidden|solid|dashed|dotted|double|groove|ridge|inset|outset)$/;
 function expandValue(p, v) {
@@ -432,14 +446,41 @@ function expandIs(s) {
   return args.flatMap((a) => expandIs(before + a + after));
 }
 
-function competitorsFor(model, dsRule, sel, decl, opts = {}) {
+// Selector-compatible (rule, selector) pairs for a subject selector under a media context — cached per model,
+// then filtered per declaration (property overlap) in competitorsFor.
+// Co-classes (P2b): class names that share one `className` expression in src/**/*.tsx. Selector key sharing cannot
+// see that `.btn-strong` styles the same element as `.btn`; with CO_CLASSES set (verifyAll) such rules compete as
+// kind `co`. Over-approximate on purpose (ternary branches are merged) — more competitors, never fewer.
+let CO_CLASSES = null;
+function readCoClasses() {
+  const co = new Map();
+  const walk = (d) => readdirSync(d).flatMap((n) => { const q = join(d, n); return statSync(q).isDirectory() ? walk(q) : [q]; });
+  for (const f of walk('src').filter((x) => x.endsWith('.tsx'))) {
+    const t = readFileSync(f, 'utf8');
+    for (const m of t.matchAll(/className\s*=\s*/g)) {
+      let i = m.index + m[0].length; let expr = '';
+      if (t[i] === '"' || t[i] === "'") { const q = t[i]; const j = t.indexOf(q, i + 1); expr = t.slice(i, j + 1); }
+      else if (t[i] === '{') { let d = 0; let j = i; for (; j < t.length; j++) { if (t[j] === '{') d++; else if (t[j] === '}') { d--; if (d === 0) break; } } expr = t.slice(i, j + 1); }
+      const words = new Set();
+      for (const lit of expr.matchAll(/(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g)) for (const w of lit[2].replace(/\$\{[^}]*\}/g, ' ').split(/\s+/)) if (/^-?[A-Za-z_][\w-]*$/.test(w)) words.add(`.${w}`);
+      for (const a of words) { if (!co.has(a)) co.set(a, new Set()); for (const b of words) if (b !== a) co.get(a).add(b); }
+    }
+  }
+  return co;
+}
+const compatCache = new WeakMap();
+function compatibleRules(model, media, sel) {
+  let m = compatCache.get(model);
+  if (!m) { m = new Map(); compatCache.set(model, m); }
+  const key = `${mediaKey(media)}@@${sel}@@${CO_CLASSES ? 'co' : ''}`;
+  if (m.has(key)) return m.get(key);
   const info = subjectInfo(sel);
-  const out = [];
+  const coTokens = new Set();
+  if (CO_CLASSES) for (const x of info.tokens) for (const y of CO_CLASSES.get(x) || []) if (!info.tokens.has(y)) coTokens.add(y);
+  const list = [];
   for (const r of model.rules) {
-    if (r === dsRule && !opts.includeSelf) continue;
-    if (!mediaOverlap(r.media, dsRule.media)) continue;
+    if (!mediaOverlap(r.media, media)) continue;
     for (const t of r.selectors) {
-      if (opts.skip && opts.skip(r, t)) continue;
       const ti = subjectInfo(t);
       if ((ti.pseudoElement || null) !== (info.pseudoElement || null)) continue;
       const shared = [...ti.tokens].filter((x) => info.tokens.has(x));
@@ -449,13 +490,24 @@ function competitorsFor(model, dsRule, sel, decl, opts = {}) {
       else if (shared.length) kind = 'type';
       else if (!ti.hasKey && (ti.types.size === 0 || info.types.size === 0 || [...ti.types].some((x) => info.types.has(x)))) kind = ti.types.size ? 'type' : 'universal';
       else if (!info.hasKey && info.types.size && ti.types.size && [...ti.types].some((x) => info.types.has(x))) kind = 'type';
+      else if (coTokens.size && [...ti.tokens].some((x) => coTokens.has(x))) kind = 'co';
       if (!kind) continue;
       if (exclusiveRoots(info, ti)) continue;
       if (info.types.size && ti.types.size && ![...ti.types].some((x) => info.types.has(x)) && !shared.length) continue;
-      for (const d of r.decls) {
-        if (!overlap(d.prop, decl.prop)) continue;
-        out.push({ rule: r, selector: t, decl: d, spec: specificity(t), kind, states: ti.states });
-      }
+      list.push({ r, t, kind, states: ti.states });
+    }
+  }
+  m.set(key, list);
+  return list;
+}
+function competitorsFor(model, dsRule, sel, decl, opts = {}) {
+  const out = [];
+  for (const { r, t, kind, states } of compatibleRules(model, dsRule.media, sel)) {
+    if (r === dsRule && !opts.includeSelf) continue;
+    if (opts.skip && opts.skip(r, t)) continue;
+    for (const d of r.decls) {
+      if (!overlap(d.prop, decl.prop)) continue;
+      out.push({ rule: r, selector: t, decl: d, spec: specificity(t), kind, states });
     }
   }
   return out;
@@ -754,6 +806,194 @@ function verify(out, baseRev, exemptFile) {
   return problems.length || dropped.length ? 1 : 0;
 }
 
+// ---------------------------------------------------------------- verify (P2b · every declaration)
+// P2b (spec S-DESIGN-STRUCTURE-P2B-20260924) moves rules between layers (screens → base / primitives) and
+// between files, deletes dead declarations and merges media blocks. There is no design-system.css in the
+// base tree any more, so `verify` checks EVERY base declaration unit (rule × selector-list argument after
+// `:is()` expansion × declaration):
+//   · home  = the last working-tree rule carrying the same argument (or the same whole selector) · same media ·
+//             same property · same value (token aliases below normalised). No home = deleted.
+//   · moved  → recompute each competitor outcome with working-tree positions (layer rank · order · the home
+//             selector's specificity). A competitor the unit beat today (value differs) that now beats it = flip.
+//             Competitors are those of the P2a map: subject compound shares a class/attribute/id (`key`) or is a
+//             type/universal compound compatible with it (`type`·`universal` — reported, exemptible with a reason).
+//             Because every unit is checked, a unit that newly wins shows up as the other unit's flip.
+//   · deleted → dead today: some competitor that covers all its longhands beats it today and the unit's argument
+//             and media are contained in the competitor's (⊆ proof). Otherwise red unless exempted (reason).
+//   · added   = a working-tree declaration that is no unit's home (a new selector such as a scoped deviation) —
+//             red unless exempted (reason); leaks are then judged by the computed-style comparison.
+// Custom-property declarations of the retired aliases below are skipped (P2b step 5 deletes them; gate b proves
+// no reference is left). Exit 0 green · 1 red · 78 readiness.
+const VALUE_ALIASES = { '--up-line': '--color-border', '--up-muted': '--color-text-muted', '--lin-over-name': '--color-text-muted',
+  '--up-ink': '--color-text', '--up-warn': '--color-warning-600', '--lin-over-ink': '--color-warning-600',
+  '--up-warn-bg': '--color-warning-50', '--lin-over-bg': '--color-warning-50', '--up-radius': '--radius-lg' };
+const normValue = (v) => v.replace(/var\(\s*(--[\w-]+)/g, (m, n) => `var(${VALUE_ALIASES[n] || n}`).replace(/\s+/g, ' ').trim();
+function verifyAll(out, baseRev, exemptFile) {
+  CO_CLASSES = readCoClasses();
+  const base = buildModel(lister(baseRev));
+  const cur = buildModel(lister(null));
+  const unitsOf = (model) => {
+    const units = [];
+    for (const r of model.rules) for (const t of r.selectors) {
+      const args = [...new Set(expandIs(t))];
+      for (const d of r.decls) {
+        if (d.prop.startsWith('--') && VALUE_ALIASES[d.prop]) continue;
+        for (const arg of args) units.push({ rule: r, selector: t, arg, decl: d, spec: specificity(t), value: normValue(d.value) });
+      }
+    }
+    return units;
+  };
+  const baseUnits = unitsOf(base);
+  const curUnits = unitsOf(cur);
+  // index working-tree units by (argument, media, property) and (whole selector, media, property)
+  const idx = new Map();
+  const put = (k, u) => { if (!idx.has(k)) idx.set(k, []); idx.get(k).push(u); };
+  for (const u of curUnits) {
+    const m = mediaKey(u.rule.media);
+    put(`a|${normSel(u.arg)}|${m}|${u.decl.prop}`, u);
+    put(`s|${normSel(u.selector)}|${m}|${u.decl.prop}`, u);
+  }
+  // identity first: same file · rule selector · media · property · value · argument (ordinal among equals)
+  const strong = (units) => { const seen = new Map(); const out = new Map();
+    for (const u of units) { const k0 = `${u.rule.file}|${normSel(u.rule.selectorText)}|${mediaKey(u.rule.media)}|${u.decl.prop}|${u.value}|${normSel(u.arg)}`;
+      const n = seen.get(k0) || 0; seen.set(k0, n + 1); out.set(`${k0}|${n}`, u); }
+    return out; };
+  const baseStrong = strong(baseUnits); const curStrong = strong(curUnits);
+  const homes = new Map(); // base unit -> home
+  const used = new Set();
+  for (const [k, u] of baseStrong) { const h = curStrong.get(k); if (h) { homes.set(u, h); used.add(h); } }
+  // moved: the last-positioned working-tree unit with the same argument (or whole selector) · media · property · value
+  const homeOf = (u) => {
+    const m = mediaKey(u.rule.media);
+    const hs = [...new Set([...(idx.get(`a|${normSel(u.arg)}|${m}|${u.decl.prop}`) || []), ...(idx.get(`s|${normSel(u.selector)}|${m}|${u.decl.prop}`) || [])])]
+      .sort((x, y) => x.rule.pos - y.rule.pos || x.decl.line - y.decl.line);
+    if (!hs.length) return null;
+    const same = hs.filter((h) => h.value === u.value);
+    if (!same.length) return { status: 'value-differs', found: hs.at(-1) };
+    return { status: 'ok', home: same.filter((h) => !used.has(h)).at(-1) || same.at(-1) };
+  };
+  for (const u of baseUnits) {
+    if (homes.has(u)) continue;
+    const h = homeOf(u);
+    if (h && h.status === 'ok') homes.set(u, h.home);
+  }
+  for (const h of homes.values()) used.add(h);
+  const problems = []; const deleted = []; const moved = []; let unchanged = 0;
+  function desc(u) { return { file: u.rule.file, line: u.decl.line, selector: u.selector, arg: u.arg, media: mediaKey(u.rule.media), prop: u.decl.prop, value: u.decl.value }; }
+  const homeByDecl = new Map(); // base (rule, selector, decl) -> home unit, for competitor lookup
+  for (const [u, h] of homes) homeByDecl.set(`${u.rule.pos}|${u.selector}|${u.decl.line}|${u.decl.prop}`, h);
+  for (const u of baseUnits) {
+    const h = homes.get(u);
+    const comps = competitorsFor(base, u.rule, u.arg, u.decl).filter((c) => c.rule !== u.rule);
+    const todayBeats = (c) => beats(u.spec, u.rule.pos, u.decl.important, c.spec, c.rule.pos, c.decl.important);
+    if (!h) {
+      // deleted: dead-today proof
+      const need = longhands(u.decl.prop);
+      const proof = comps.find((c) => !todayBeats(c) && need.every((x) => longhands(c.decl.prop).includes(x))
+        && mediaSubset(u.rule.media, c.rule.media) && (subsetOf(u.arg, c.selector) || expandIs(c.selector).some((a) => subsetOf(u.arg, a))));
+      const same = homeOf(u);
+      const d = { ...desc(u), status: same ? same.status : 'missing', found: same?.found ? desc(same.found) : null, proof: proof ? { file: proof.rule.file, line: proof.decl.line, selector: proof.selector, prop: proof.decl.prop, value: proof.decl.value } : null };
+      deleted.push(d);
+      if (!proof) problems.push({ kind: 'deleted-live', ...d });
+      continue;
+    }
+    const movedUnit = h.rule.file !== u.rule.file || h.rule.layer !== u.rule.layer || h.selector !== u.selector;
+    if (movedUnit) moved.push({ ...desc(u), home: `${h.rule.file}:${h.decl.line}`, layer: h.rule.layer });
+    const flips = [];
+    const homeSpec = specificity(h.selector);
+    for (const c of comps) {
+      const cv = normValue(c.decl.value);
+      if (cv === u.value || valuesAgree(u.decl.prop, u.value, c.decl.prop, cv)) continue;
+      if (!todayBeats(c)) continue;
+      const ch = homeByDecl.get(`${c.rule.pos}|${c.selector}|${c.decl.line}|${c.decl.prop}`);
+      if (!ch) continue; // competitor deleted — its own unit carries the proof
+      const cSpec = specificity(ch.selector);
+      if (beats(homeSpec, h.rule.pos, h.decl.important, cSpec, ch.rule.pos, ch.decl.important)) continue;
+      flips.push({ kind: c.kind, selector: c.selector, file: c.rule.file, line: c.decl.line, home: `${ch.rule.file}:${ch.decl.line}`, prop: c.decl.prop, value: c.decl.value, spec: fmt3(cSpec), states: c.states });
+    }
+    if (flips.length) problems.push({ kind: 'flip', ...desc(u), home: `${h.rule.file}:${h.decl.line}`, flips });
+    else if (!movedUnit) unchanged++;
+  }
+  const added = [];
+  for (const u of curUnits) if (!used.has(u)) added.push(desc(u));
+  const addedKeys = new Set();
+  for (const a of added) { const k = `${a.file}|${a.line}|${a.prop}`; if (addedKeys.has(k)) continue; addedKeys.add(k); problems.push({ kind: 'added', ...a }); }
+  // exemptions (reason required) — counted and printed, never silent
+  const exemptions = exemptFile && existsSync(exemptFile) ? JSON.parse(readFileSync(exemptFile, 'utf8')) : [];
+  const exempted = [];
+  for (const x of exemptions) if (!x.reason) problems.push({ kind: 'exemption-without-reason', ...x });
+  const hit = (x, p) => x.reason && x.kind === p.kind && (x.file == null || x.file === p.file) && (x.prop == null || x.prop === p.prop)
+    && (x.selector == null || normSel(x.selector) === normSel(p.selector) || normSel(x.selector) === normSel(p.arg || ''))
+    && (x.competitor == null || (p.flips || []).every((f) => normSel(f.selector) === normSel(x.competitor)));
+  for (let i = problems.length - 1; i >= 0; i--) {
+    const p = problems[i];
+    const xs = exemptions.filter((x) => hit(x, p));
+    if (!xs.length) continue;
+    xs.forEach((x) => { x.used = (x.used || 0) + 1; });
+    exempted.push({ ...p, reason: xs.map((x) => x.reason).join(' / ') });
+    problems.splice(i, 1);
+  }
+  for (const x of exemptions) if (x.reason && !x.used) problems.push({ kind: 'stale-exemption', ...x });
+  mkdirSync(out, { recursive: true });
+  const res = { schema: 'colab-cascade-verify-all/1', base: baseRev, units: baseUnits.length, unchanged, moved: moved.length, deleted: deleted.length,
+    deletedDead: deleted.filter((d) => d.proof).length, added: added.length, exempted, problems, deletedList: deleted, movedList: moved,
+    layers: Object.fromEntries(Object.entries(cur.files).map(([f, v]) => [f, { layerBlocks: v.stats.layerBlocks.map((b) => b.name), unlayeredRules: v.stats.unlayeredRules, rules: v.ruleCount }])) };
+  writeFileSync(join(out, 'cascade-verify.json'), JSON.stringify(res, null, 1));
+  const rel = (f) => f.replace(/^src\//, '');
+  const lines = ['# P2b cascade verify (전 선언 단위)', '', `기준 \`${baseRev}\` → 작업 트리 · 선언 단위 ${res.units} · 자리 무변 ${unchanged} · 옮겨짐 ${moved.length} · 삭제 ${deleted.length}(오늘 죽음 증명 ${res.deletedDead}) · 새 선언 ${added.length} · 면제 ${exempted.length} · 문제 ${problems.length}`, ''];
+  lines.push('판정: 단위 = 규칙 × 선택자 인자(`:is()` 펼침) × 선언. 새 자리 = 같은 인자(또는 같은 선택자)·미디어·속성·값(토큰 별칭 9종은 정본 이름으로 맞춰 비교)의 작업 트리 선언 중 마지막. 뒤집힘 = 오늘 이기던 경쟁(값 다름 · `key`/`type`/`universal`)에 새 자리(층·순서·특이도)로 지는 것. 삭제 = 오늘 모든 문맥에서 지는 것(경쟁 선택자·미디어 포함 관계로 증명). 새 선언 = 어떤 단위의 새 자리도 아닌 것(면제 사유 · 계산값 대조로 판정).', '');
+  lines.push('## 면제', '', '| 종류 | 대상 | 사유 |', '|---|---|---|');
+  for (const x of exempted) lines.push(`| ${x.kind} | ${rel(x.file || '')}:${x.line ?? ''} \`${x.selector || x.arg || ''}\` ${x.prop || ''} | ${x.reason} |`);
+  lines.push('', '## 삭제 (오늘 죽음 증명)', '', '| 파일:행 | 선택자 인자 | 미디어 | 속성 | 값 | 증명(이기는 경쟁) |', '|---|---|---|---|---|---|');
+  for (const d of deleted) lines.push(`| ${rel(d.file)}:${d.line} | \`${d.arg}\` | ${d.media || '-'} | ${d.prop} | \`${d.value}\` | ${d.proof ? `\`${d.proof.selector}\` ${rel(d.proof.file)}:${d.proof.line} ${d.proof.prop}=\`${d.proof.value}\`` : '**없음**'} |`);
+  lines.push('', '## 옮겨짐', '', '| 원래 | 선택자 인자 | 미디어 | 속성 | 값 | 새 자리 | 층 |', '|---|---|---|---|---|---|---|');
+  for (const m of moved) lines.push(`| ${rel(m.file)}:${m.line} | \`${m.arg}\` | ${m.media || '-'} | ${m.prop} | \`${m.value}\` | ${rel(m.home)} | ${m.layer} |`);
+  lines.push('', '## 문제', '', '| 종류 | 내용 |', '|---|---|');
+  for (const p of problems) lines.push(`| ${p.kind} | ${p.kind === 'flip' ? `${rel(p.file)}:${p.line} \`${p.arg}\` ${p.prop}=\`${p.value}\` @ ${rel(p.home)} ← ${p.flips.map((f) => `\`${f.selector}\` ${rel(f.file)}:${f.line}→${rel(f.home)} ${f.prop}=\`${f.value}\` (${f.spec} · ${f.kind})`).join(' · ')}` : p.file ? `${rel(p.file)}:${p.line} \`${p.arg || p.selector}\` ${p.media || ''} ${p.prop}=\`${p.value}\`` : JSON.stringify(p)} |`);
+  writeFileSync(join(out, 'cascade-verify.md'), lines.join('\n') + '\n');
+  console.log(`cascade-verify(all): units ${res.units} · unchanged ${unchanged} · moved ${moved.length} · deleted ${deleted.length} (dead ${res.deletedDead}) · added ${added.length} · exempted ${exempted.length} · problems ${problems.length} -> ${relative('.', join(out, 'cascade-verify.md'))}`);
+  return problems.length ? 1 : 0;
+}
+
+// family — every rule that can style an element carrying one of the given classes: bare compounds of those
+// classes (today's default sources), scoped/compound selectors with them in the subject, and type/universal
+// compounds (lower specificity) — with media, layer, specificity and declarations. Input for the per-family
+// default (기본값) judgement.
+function familyReport(out, classes, name) {
+  const model = buildModel(lister(null));
+  const set = new Set(classes.map((c) => c.replace(/^\./, '')));
+  const isFam = (n) => set.has(n) || [...set].some((c) => c.endsWith('*') && n.startsWith(c.slice(0, -1)));
+  const rows = [];
+  for (const r of model.rules) for (const t of r.selectors) {
+    for (const arg of new Set(expandIs(t))) {
+      const { compounds } = parseSelector(arg);
+      const last = compounds.at(-1);
+      if (!last) continue;
+      const cls = last.simples.filter((x) => x.kind === 'class').map((x) => x.name);
+      const fam = cls.filter(isFam);
+      let kind = null;
+      if (fam.length && compounds.length === 1 && cls.every(isFam) && !last.simples.some((x) => x.kind === 'type' || x.kind === 'id')) kind = 'bare';
+      else if (fam.length) kind = 'context';
+      else if (!cls.length && !last.simples.some((x) => x.kind === 'id' || x.kind === 'attr')) kind = 'element';
+      if (!kind) continue;
+      rows.push({ kind, file: r.file, line: r.line, layer: r.layer, media: mediaKey(r.media), selector: t, arg, spec: fmt3(specificity(t)), pos: r.pos,
+        pseudo: last.pseudoElement || null, decls: r.decls.map((d) => `${d.prop}: ${d.value}${d.important ? ' !important' : ''}`) });
+    }
+  }
+  mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, `family-${name}.json`), JSON.stringify(rows, null, 1));
+  const lines = [`# family ${name} (${classes.join(' ')})`, ''];
+  for (const k of ['bare', 'context', 'element']) {
+    const rs = rows.filter((x) => x.kind === k);
+    lines.push(`## ${k} ${rs.length}`, '');
+    for (const x of rs) lines.push(`- ${x.file.replace(/^src\//, '')}:${x.line} [${x.layer}${x.media ? ` @${x.media}` : ''}] \`${x.arg}\`${x.arg !== x.selector ? ` (of \`${x.selector}\`)` : ''} ${x.spec} { ${x.decls.join('; ')} }`);
+    lines.push('');
+  }
+  writeFileSync(join(out, `family-${name}.md`), lines.join('\n'));
+  console.log(`family ${name}: bare ${rows.filter((x) => x.kind === 'bare').length} · context ${rows.filter((x) => x.kind === 'context').length} · element ${rows.filter((x) => x.kind === 'element').length} -> ${relative('.', join(out, `family-${name}.md`))}`);
+  return 0;
+}
+
 // ---------------------------------------------------------------- main
 function main() {
   const argv = process.argv.slice(2);
@@ -771,13 +1011,19 @@ function main() {
     if (mode === 'verify') {
       const base = opt('--base');
       if (!base) { console.error('::cascade-map:: verify needs --base <rev>'); return READINESS; }
+      if (lister(base).read(DS) == null) return verifyAll(opt('--out') || P2B_OUT, base, opt('--exempt'));
       return verify(out, base, opt('--exempt'));
+    }
+    if (mode === 'family') {
+      const classes = (opt('--classes') || '').split(',').map((x) => x.trim()).filter(Boolean);
+      if (!classes.length || !opt('--name')) { console.error('::cascade-map:: family needs --name <n> --classes .a,.b'); return READINESS; }
+      return familyReport(opt('--out') || `${P2B_OUT}/families`, classes, opt('--name'));
     }
   } catch (e) {
     console.error(`::cascade-map:: ${e.stack || e.message}`);
     return READINESS;
   }
-  console.error('usage: cascade-map.mjs map [--rev R] [--out D] | verify --base R [--out D]');
+  console.error('usage: cascade-map.mjs map [--rev R] [--out D] | verify --base R [--out D] [--exempt J] | family --name N --classes .a,.b');
   return READINESS;
 }
 // Run only as a script (importing the module for its helpers must not run the CLI).

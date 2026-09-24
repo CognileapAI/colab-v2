@@ -55,6 +55,9 @@ export default defineConfig({
         /tokens\.css(\?raw)?$/,
         // P2a — 층 순서 선언(styles.ts 첫 import). 위 껍질 제거 플러그인이 문장을 지우므로 계산값엔 영향 없다.
         /layers\.css(\?raw)?$/,
+        // P2b — 원소 기본(`@layer base`)과 프리미티브(`@layer primitives`) — 옮긴 규칙이 계산값에 계속 실린다.
+        /base\.css(\?raw)?$/,
+        /primitives\.css(\?raw)?$/,
         /detail\.css\?raw$/,
         /dashboard\.css(\?raw)?$/,
         /search\.css(\?raw)?$/,
