@@ -64,6 +64,7 @@ CASES=(
   "$RESEED_DIR/tests/verify-session.sh"
   "$RESEED_DIR/tests/deploy-rehearsal.sh"
   "$RESEED_DIR/tests/operator-window.sh"
+  "$RESEED_DIR/tests/upload-classify.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -115,5 +116,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · 업로드 필수 칸 값 서명)"
 exit 0

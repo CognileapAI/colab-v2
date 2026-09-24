@@ -42,6 +42,13 @@ TOOL_DIR = Path(__file__).resolve().parent
 DEFAULT_MANIFEST_OUT = TOOL_DIR / "plan-manifest.yaml"
 DEFAULT_WORK_DIR = TOOL_DIR / ".work"
 DEFAULT_METADATA = TOOL_DIR / "canonical-metadata.json"
+# 업로드 마법사 필수 칸 값(분류·유형·관측 간격·Lv0 출처). 서명 전(`status != signed`)이면 계획을 쓰지 않는다.
+DEFAULT_CLASSIFY = TOOL_DIR / "upload-classify.json"
+# 저장값 원본 = frontend/src/components/upload/axisDict.ts `CATEGORIES`·`DATA_TYPES` ·
+# RegisterArea.tsx `INTERVAL_UNITS`. 러너(`runner.py`)도 같은 값으로 다시 검사한다.
+CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
+DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
+INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
 
 # md 4건의 자리. 순서가 계획의 프로젝트 순서이고 seq 순서와 같다.
 MD_RELATIVE = [
@@ -179,6 +186,82 @@ def bind_canonical_metadata(datasets, path=DEFAULT_METADATA):
         if child not in by_name or parent not in by_name[child].get("parents", []):
             raise SystemExit("보조입력 부모가 계획 계보에 없다: %s <- %s" % (child, parent))
         by_name[child].setdefault("parent_roles", {})[parent] = role
+    return datasets
+
+
+def _is_calendar_date(value):
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return False
+    try:
+        return datetime.datetime.strptime(value, "%Y-%m-%d").strftime("%Y-%m-%d") == value
+    except ValueError:
+        return False
+
+
+def bind_upload_classify(datasets, path=DEFAULT_CLASSIFY, allow_unsigned=False):
+    """업로드 마법사 필수 칸 값을 계획 행에 싣는다 — 한 칸이라도 비면 행 이름을 대고 멈춘다.
+
+    - ① 분류·유형(6705675d 부터 비어 시작 · 안 고르면 「다음 →」 비활성)
+    - ② 관측 간격 숫자·단위 · ③ Lv0 출처 주소·내려받은 날(e171c5c2 부터 제출 시 필수)
+    - 서명(`status: signed` ＋ `signedBy`·`signedOn`) 전이면 거절한다. `allow_unsigned` 는
+      로컬 배관 시험 전용이고 `stage_seed`·preflight 는 넘기지 않는다.
+    """
+    try:
+        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit("업로드 필수 칸 값 파일을 읽지 못했다: %s" % path) from exc
+    if doc.get("schema") != "colab-dev-seed-classify/1":
+        raise SystemExit("업로드 필수 칸 값 스키마가 아니다: %s" % path)
+    signed = (doc.get("status") == "signed" and str(doc.get("signedBy") or "").strip()
+              and _is_calendar_date(doc.get("signedOn")))
+    if not signed and not allow_unsigned:
+        raise SystemExit("업로드 필수 칸 값이 서명 전이다(status=%s) — %s 의 표에 서명한 뒤 "
+                         "status=signed·signedBy·signedOn 을 채운다: %s"
+                         % (doc.get("status"), doc.get("document") or "제안 문서", path))
+    rows = doc.get("datasets") or []
+    by_key = {(x.get("seq"), x.get("name")): x for x in rows}
+    if len(by_key) != len(rows):
+        raise SystemExit("업로드 필수 칸 값에 seq/name 중복이 있다")
+    expected = {(d["seq"], d["name"]) for d in datasets}
+    if set(by_key) != expected:
+        missing = sorted(name for _, name in expected - set(by_key))
+        extra = sorted(name for _, name in set(by_key) - expected)
+        raise SystemExit("업로드 필수 칸 값과 계획이 다르다: 누락=%s 초과=%s" % (missing, extra))
+    bad = []
+    for d in datasets:
+        row = by_key[(d["seq"], d["name"])]
+        name = d["name"]
+        basis = row.get("basis") or {}
+        interval = row.get("interval") or {}
+        source = row.get("source")
+        lv0 = d.get("processing_level") == "Lv0"
+        if row.get("category") not in CATEGORIES:
+            bad.append("%s · 분류 %r 가 5값 밖이다" % (name, row.get("category")))
+        if row.get("dataType") not in DATA_TYPES:
+            bad.append("%s · 유형 %r 가 6값 밖이다" % (name, row.get("dataType")))
+        if not re.fullmatch(r"[1-9]\d*", str(interval.get("value") or "")) \
+                or interval.get("unit") not in INTERVAL_UNITS:
+            bad.append("%s · 관측 간격 %r 는 양의 정수와 %s 중 하나다" % (name, interval, "/".join(INTERVAL_UNITS)))
+        if lv0:
+            if not isinstance(source, dict) or not str(source.get("url") or "").strip() \
+                    or not _is_calendar_date(source.get("downloadedOn")):
+                bad.append("%s · Lv0 출처(주소·내려받은 날 YYYY-MM-DD)가 비었거나 틀렸다" % name)
+        elif source is not None:
+            bad.append("%s · Lv0 가 아닌 행에 출처를 두지 않는다(화면이 받지 않는 값)" % name)
+        for axis in ("category", "dataType", "interval") + (("source",) if lv0 else ()):
+            if not str(basis.get(axis) or "").strip():
+                bad.append("%s · %s 근거가 비었다" % (name, axis))
+    if bad:
+        raise SystemExit("업로드 필수 칸 값이 틀렸다 — " + " / ".join(bad))
+    for d in datasets:
+        row = by_key[(d["seq"], d["name"])]
+        d["category"] = row["category"]
+        d["data_type"] = row["dataType"]
+        d["observation_interval"] = {"value": str(row["interval"]["value"]),
+                                     "unit": row["interval"]["unit"]}
+        if d.get("processing_level") == "Lv0":
+            d["source"] = {"url": row["source"]["url"].strip(),
+                           "downloaded_on": row["source"]["downloadedOn"]}
     return datasets
 
 
@@ -408,6 +491,12 @@ def main(argv=None):
     ap.add_argument("--allow-nondefault-expect", action="store_true",
                     help="기대값을 기본값에서 바꾼 채 생성물을 쓰는 것을 허용한다. "
                          "도구 폴더 밖을 가리키는 --out 과 함께 줘야 한다")
+    ap.add_argument("--classify", default=str(DEFAULT_CLASSIFY),
+                    help="업로드 필수 칸 값 파일(분류·유형·관측 간격·Lv0 출처)")
+    ap.add_argument("--allow-unsigned-classify", action="store_true",
+                    help="서명 전 제안값으로 계획을 쓴다 — 로컬 배관 시험 전용. dev 경로는 넘기지 않는다")
+    ap.add_argument("--require-signed-classify", action="store_true",
+                    help="--dry-run 에서도 업로드 필수 칸 값의 서명을 요구한다(preflight ⑽)")
     ap.add_argument("--dry-run", action="store_true",
                     help="파일을 쓰지 않고 계수만 출력. 뿌리가 없으면 블록 계수만 센다")
     args = ap.parse_args(argv)
@@ -463,6 +552,12 @@ def main(argv=None):
     if (len(datasets) == args.expect_datasets and len(edges) == args.expect_edges
             and args.expect_datasets == EXPECT_DATASETS and args.expect_edges == EXPECT_EDGES):
         bind_canonical_metadata(datasets)
+        # 값 형상·28행 대응은 언제나 본다. **서명**은 계획을 쓸 때(seed ①)와
+        # `--require-signed-classify`(preflight ⑽)에서만 요구한다 — `seed-plan-drift` 의 실물 대조
+        # (`--dry-run`)는 md↔나무 판정이라 서명과 섞지 않는다.
+        need_signed = (not args.dry_run) or args.require_signed_classify
+        bind_upload_classify(datasets, args.classify,
+                             allow_unsigned=args.allow_unsigned_classify or not need_signed)
 
     print("datasets %d edges %d" % (len(datasets), len(edges)))
     print("expected datasets %s edges %s" % (args.expect_datasets, args.expect_edges))

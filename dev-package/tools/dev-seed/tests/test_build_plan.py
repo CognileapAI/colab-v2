@@ -279,3 +279,91 @@ def test_canonical_metadata_rejects_duplicate_rows_and_impossible_dates(tmp_path
     impossible = dict(duplicate, start="2023-02-31", end="2023-02-31", granularity="일")
     with pytest.raises(SystemExit, match="정밀도"):
         build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, [impossible]))
+
+
+# ── 업로드 필수 칸 값(`upload-classify.json`) — 서명 전에는 계획을 쓰지 않는다 ─────────
+
+def classify_row(seq, name, level="Lv0", **over):
+    row = {"seq": seq, "name": name, "category": "기상·기후 인자", "dataType": "지상관측자료",
+           "interval": {"value": "5", "unit": "분"},
+           "source": ({"url": "https://apihub.kma.go.kr/", "downloadedOn": "2025-08-13"}
+                      if level == "Lv0" else None),
+           "basis": {"category": "fixture", "dataType": "fixture", "interval": "fixture", "source": "fixture"}}
+    row.update(over)
+    return row
+
+
+def classify_file(tmp_path, rows, status="signed", signed_by="Ted", signed_on="2026-09-25"):
+    path = tmp_path / "upload-classify.json"
+    path.write_text(json.dumps({"schema": "colab-dev-seed-classify/1", "status": status,
+                                "signedBy": signed_by, "signedOn": signed_on, "datasets": rows},
+                               ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def plan_rows():
+    return [{"seq": 1, "name": "raw", "processing_level": "Lv0", "parents": []},
+            {"seq": 2, "name": "derived", "processing_level": "Lv1", "parents": ["raw"]}]
+
+
+def test_서명된_값은_계획_행에_실린다(tmp_path):
+    datasets = plan_rows()
+    path = classify_file(tmp_path, [classify_row(1, "raw"), classify_row(2, "derived", level="Lv1")])
+    build_plan.bind_upload_classify(datasets, path)
+    assert datasets[0]["category"] == "기상·기후 인자"
+    assert datasets[0]["data_type"] == "지상관측자료"
+    assert datasets[0]["observation_interval"] == {"value": "5", "unit": "분"}
+    assert datasets[0]["source"] == {"url": "https://apihub.kma.go.kr/", "downloaded_on": "2025-08-13"}
+    assert "source" not in datasets[1]
+
+
+def test_서명_전_제안은_거절하고_명시_허용일_때만_싣는다(tmp_path):
+    rows = [classify_row(1, "raw"), classify_row(2, "derived", level="Lv1")]
+    path = classify_file(tmp_path, rows, status="proposal", signed_by=None, signed_on=None)
+    with pytest.raises(SystemExit, match="서명"):
+        build_plan.bind_upload_classify(plan_rows(), path)
+    datasets = plan_rows()
+    build_plan.bind_upload_classify(datasets, path, allow_unsigned=True)
+    assert datasets[1]["category"] == "기상·기후 인자"
+
+
+@pytest.mark.parametrize("over,needle", [
+    ({"category": None}, "분류"), ({"category": "기상 인자"}, "분류"),
+    ({"dataType": "레이더자료"}, "유형"),
+    ({"interval": {"value": "1", "unit": "주"}}, "관측 간격"),
+    ({"interval": {"value": "0", "unit": "일"}}, "관측 간격"),
+    ({"source": None}, "출처"),
+    ({"source": {"url": "https://x.invalid/", "downloadedOn": "2025-02-31"}}, "출처"),
+    ({"basis": {"category": ""}}, "근거"),
+])
+def test_값이_비었거나_사전_밖이면_행_이름을_대고_멈춘다(tmp_path, over, needle):
+    path = classify_file(tmp_path, [classify_row(1, "raw", **over), classify_row(2, "derived", level="Lv1")])
+    with pytest.raises(SystemExit, match=needle) as exc:
+        build_plan.bind_upload_classify(plan_rows(), path)
+    assert "raw" in str(exc.value)
+
+
+def test_Lv0_가_아닌_행에_출처를_두면_멈춘다(tmp_path):
+    path = classify_file(tmp_path, [classify_row(1, "raw"), classify_row(2, "derived", level="Lv1",
+                         source={"url": "https://x.invalid/", "downloadedOn": "2025-08-13"})])
+    with pytest.raises(SystemExit, match="출처"):
+        build_plan.bind_upload_classify(plan_rows(), path)
+
+
+def test_계획과_행_집합이_다르면_멈춘다(tmp_path):
+    path = classify_file(tmp_path, [classify_row(1, "raw")])
+    with pytest.raises(SystemExit, match="derived"):
+        build_plan.bind_upload_classify(plan_rows(), path)
+
+
+def test_커밋된_제안_파일은_계획_28행과_맞고_서명_전이면_멈춘다():
+    import yaml
+    manifest = yaml.safe_load((TOOL_DIR / "plan-manifest.yaml").read_text(encoding="utf-8"))
+    datasets = [{"seq": d["seq"], "name": d["name"], "processing_level": d["level"],
+                 "parents": list(d.get("parents") or [])} for d in manifest["datasets"]]
+    doc = json.loads(build_plan.DEFAULT_CLASSIFY.read_text(encoding="utf-8"))
+    if doc.get("status") != "signed":
+        with pytest.raises(SystemExit, match="서명"):
+            build_plan.bind_upload_classify([dict(d) for d in datasets])
+    build_plan.bind_upload_classify(datasets, allow_unsigned=True)
+    assert len(datasets) == 28 and all(d.get("category") and d.get("data_type") for d in datasets)
