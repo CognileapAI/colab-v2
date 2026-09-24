@@ -1,7 +1,7 @@
 # Spec: design-review 20260924 fix — Ted 판정 21건 반영
 출처 intent: `dev-package/intent/2026-09-25-design-fix-20260924.md`(Ted 판정·값 확정 2026-09-25).
 판정표: `dev-package/sessions/design-review-20260924.md`(커밋 f07b7378 · §7 「Ted 판정 결과」 · §8 WU-A1–A4 · §9).
-기준 트리: 브랜치 `worktree-design-review-apple-20260924` HEAD f07b7378(develop `7acd0fce` ＋ audit 커밋 5건). 레인 워크트리는 **이 HEAD 에서** 딴다(main 아님).
+기준 트리: 브랜치 `worktree-design-review-apple-20260924` HEAD(레인 지시문이 SHA 를 명시 · advisor ① 반영 커밋 이후)(develop `7acd0fce` ＋ audit 커밋 5건). 레인 워크트리는 **이 HEAD 에서** 딴다(main 아님).
 값: 열린 값 17건은 `values-to-confirm.md` 번호(값 n)로 가리킨다. **2026-09-25 Ted 확정 — 아래 「확정 값」 절.**
 
 ## 문제 진술
@@ -75,11 +75,14 @@
 - `docs/design-system.md` 는 L1 만 쓴다. L2 의 #10 결과(편차 목록 `.btn-strong:hover`)도 L1 이 판정 값(primary-700)으로 적는다. 한 PR 로 묶이므로 중간 불일치는 브랜치 안에만 있다.
 - L3 가 고치는 기존 시험 5파일(시험 작성 단계에서만): `frontend/test/dataset-preview-zoom-latency.test.tsx:137` · `dataset-preview-tiles.test.tsx:197,400` · `preview-map-viewport-20260918.test.tsx:322,335,466` · `dataset-preview-zoom.test.tsx`(2곳) · `rev1-keep-regression.test.tsx:136` — 마우스 이벤트 끌기 9곳을 포인터 이벤트로 옮긴다. 단언 값은 바꾸지 않는다.
 
+- 감시(수정 없이 green 확인): `prd39-rev2-build-20260906.test.tsx:497,512`(뷰포트 `mouseMove` = 커서 HUD · 끌기 아님 · L3) · `prd34-close-copy-20260907.test.tsx:352`(모달 배경 mouseDown · L2 #1 회귀) (advisor ① F7).
+
 ### 순서 · 의존
 
 1. 값 17건 Ted 확정.
 2. advisor ① — fan-out 전 계획 검토.
-3. 기준 캡처 1회 — `frontend/` 에서 visual:capture 를 라벨 `fix0924-base` 로(HEAD f07b7378).
+3-0. 레인 워크트리 준비 — `frontend/` 에서 `npm ci` · capture.py 브라우저 확인. 준비 실패는 78(준비)로 보고하고 진행하지 않는다(advisor ① F2).
+3. 기준 캡처 1회 — `frontend/` 에서 visual:capture 를 라벨 `fix0924-base` 로(HEAD(레인 지시문이 SHA 를 명시 · advisor ① 반영 커밋 이후)).
 4. L1 · L2 · L3a(#3) 구현 — 격리 워크트리 3개, 동시 가능. 각자 시험 작성(RED) → 구현(GREEN).
 5. L3b(#5) — L3a GREEN 뒤 같은 레인에서.
 6. 레인 게이트 — 한 번에 한 레인씩(아래).
@@ -121,6 +124,8 @@
 
 ### L2
 
+- #1 추가 단언: `UploadModal.tsx` 안 `props.onClose` 직접 호출 0 — `useWorkProtection.discard` 등 모든 닫기 경로가 닫기 요청 함수 하나(closing → transitionend/타이머 → onClose)만 부른다(advisor ① F6).
+
 | # | 단언 |
 |---|---|
 | 1 CSS | `upload.css` 에 `@keyframes up-rise` 0 · `animation: up-rise` 0 · `.modal.modal-takeover` 블록에 transform · opacity `transition`(값 1) · `@starting-style` 안 같은 선택자에 시작 모양(값 1) · `[data-state="closing"]` 규칙에 같은 끝 모양 · (값 2 = 제안) 닫는 중 배경 `pointer-events: none` |
@@ -132,12 +137,16 @@
 
 ### L3
 
+- #3: `setPointerCapture` 는 optional-call(`?.`)로 부른다 — jsdom 29.1.1 은 PointerEvent 는 있고 capture 는 없다. 기존 5파일은 스텁 없이 green 이어야 한다(advisor ① F5).
+
 | # | 단언 |
 |---|---|
 | 3 | RTL(상세 미리보기 · 업로드 미리보기 둘 다). pointerDown(pointerId 1 · 300,300 · button 0) → pointerMove 305 → 변환 불변 → pointerMove 311 → 이동량 = 누른 자리 기준 11px · `setPointerCapture(1)` 호출(jsdom 에 없으면 시험이 스텁) · pointerType touch · pen 도 같다 · 끌기가 성립한 뒤의 click 은 값 조회를 부르지 않고 임계 안의 click 은 부른다 · `useZoomPan.ts` 와 호출부 3곳에 `onMouseDown` 0 · 확대 도구 줄(`PreviewOverlay`) 위 pointerDown 은 뷰포트로 새지 않는다(`preview-map-viewport-20260918.test.tsx:466` 이관분) · 기존 5파일 단언 값 불변 |
 | 5 | 단위 — 스프링 함수(값 5): t=0 위치 = 시작 · 속도 = 놓은 속도 · damping 1.0 에서 목표를 넘지 않는다 · response(값 6)의 정해진 배수 안에 0.5px 안으로 선다. 동작 — 가짜 rAF 로 끌기 → 놓기 → 놓은 뒤에도 같은 방향으로 이어지다 `clampView(투영 목표)` 에 선다 · 관성 중 pointerDown → 그 프레임 값에서 멈춤(튀지 않음) · 휠 · 확대 단추 · 더블클릭도 멈춤 · reduced-motion 매체 질의가 참이면 관성 0 · `dataset-preview-zoom-latency` 의 「끌기 중 렌더 재요청 0」 유지. (값 5 = 대안) `package.json` 에 `motion` 고정 버전 1개 · 다른 의존성 증감 0 |
 
-### 실화면 증거 (agent-browser · 판정은 사람)
+### 실화면 증거 (agent-browser · 판정은 사람) — **통합 단계에서 1회**(advisor ① F3)
+
+- 레인은 vitest ＋ §5 게이트만 돈다. 아래 표의 「레인」 칸은 증거를 요구한 출처 표시이며, 실제 측정은 합치기(L1 → L2 → L3) 뒤 audit 빌드 1회에서 오케스트레이터가 한다 — 레인 트리는 다른 레인의 토큰 변경이 없어 출하 화면이 아니다.
 
 - 도구 = `.agents/skills/agent-browser/SKILL.md` ＋ `.agents/skills/design-review/scripts/live_audit.sh`. 산출 = `dev-package/reports/design-review/20260924/fix/live/`(스크린샷 커밋).
 - 대상 = 로컬 스택이 있으면 그 화면. 없으면 audit 빌드(`frontend/` 의 audit:build → audit:preview 포트 4187 · `/audit-design.html?design=full&scene=<장면>`). audit 장면은 픽스처 화면이라고 보고서에 적는다. staging · dev 에 쓰지 않는다.
@@ -154,6 +163,8 @@
 | 7 · 8 | 제목 3곳 computed letter-spacing · `--text-h2` 요소 computed 28px(기본 글자 16px) | L1 |
 
 ## 5. 게이트 (레인별)
+
+- `audit:preview`(포트 4187)는 한 번에 하나만 띄우고, 레인 게이트가 끝나면 종료한다(advisor ① F3).
 
 실행 = 저장소 루트에서 `bash gates/run.sh <게이트>` 를 하나씩, `gate-runner` 로 3계수(green · red(판정) · red(준비 78))를 회수한다. 레인 사이 · 게이트 사이 모두 순차. 병렬 실행 결과는 판정에 쓰지 않는다.
 
@@ -214,7 +225,7 @@
 | 7 | `frontend-visual` 대상 서버 — 로컬 스택이 꺼져 있으면 audit 빌드에 기대는데, 픽스처 화면이라 실제 데이터 상태(D23 류)는 못 본다 | 픽스처라고 보고서에 적는다 · 실데이터 확인은 §9 목록으로 남긴다 |
 | 8 | #13 을 적용하면 가운데 대화상자 2종(`.confirm-back .modal` · `.modal.pvx`)이 그림자를 가진 채 남는다(판정표 행 밖) | 고치지 않고 L1 보고서 · 다음 회차 이월 입력에 적는다 |
 | 9 | L1 이 14항목 · 약 16파일로 크다 — 레인 턴 한도에서 잘릴 수 있다 | 레인 보고서 골격을 먼저 쓰고 항목마다 채운다 · 잘리면 남은 항목만 좁혀 재개 |
-| 10 | 레인 워크트리 기준 브랜치 — 기본 `fresh` 는 main 기준이다 | 스폰 전에 기준을 f07b7378(이 브랜치 HEAD)로 확인한다 |
+| 10 | 레인 워크트리 기준 브랜치 — 기본 `fresh` 는 main 기준이다 | 스폰 전에 기준을 레인 지시문의 SHA(이 브랜치 HEAD · advisor ① 반영 spec 포함)로 확인한다 |
 
 ## 정책 대조
 
@@ -231,8 +242,9 @@
 
 - 값 5 = **직접 구현**(`components/preview/spring.ts` · 새 의존성 0). 판정 #5 ⓐ 문구 「라이브러리를 들여」와 다르며 Ted 가 명시 확정했다(질문 「무엇으로 만들까요?」 → 「직접 구현」). 동작(스프링 ＋ 속도 인계)은 판정 ⓐ 그대로.
 - 값 11 = **29px**(v2 목업값 · 640px 이하 44px 하한 유지).
-- 값 12 = **`--color-gray-100`**(제안값 · Ted 「권고대로」). 라이트에서 칩 테두리(`--color-border` #e8ecf2)와 바탕이 같아 테두리가 보이지 않는 변화는 advisor ③ 화면 대조 확인 항목.
+- 값 12 = **`--color-gray-100`**(제안값 · Ted 「권고대로」). 라이트에서 칩 테두리(`--color-border` #e8ecf2)와 바탕이 같아지는 문제는 값 18 로 해소.
 - 값 1–4 · 6–10 · 13–17 = **제안값 그대로**(Ted 「전부 제안대로」).
+- 값 18(신규 · advisor ① F4 · Ted 「테두리 진하게」 2026-09-25) = `.chip` `border-color: var(--color-border-strong)`(기존 토큰 · L #dfe3e8 · D #45566a). 칩 윤곽 대비 L 1.09:1(오늘 #eef2f7 대 #e8ecf2 = 1.05:1 보다 뚜렷) · D 1.61:1. L1 · `primitives.css`. 수용 단언: `.chip` 블록 `border-color: var(--color-border-strong)`.
 - 착수 조건 충족: 값 17건 확정. 남은 것은 advisor ① 뿐.
 
 ## 부록 — 값 목록(확정 전 제안 원문)
