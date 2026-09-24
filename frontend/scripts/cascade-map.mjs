@@ -452,8 +452,12 @@ function expandIs(s) {
 // see that `.btn-strong` styles the same element as `.btn`; with CO_CLASSES set (verifyAll) such rules compete as
 // kind `co`. Over-approximate on purpose (ternary branches are merged) — more competitors, never fewer.
 let CO_CLASSES = null;
+// Tags (P2b): the intrinsic JSX tag(s) each class is written on (`<button className="btn …">`). A class also written
+// on a component (`<Foo className=…>`) or only through a variable has no known tag set — every tag stays possible.
+let CLASS_TAGS = null;
 function readCoClasses() {
   const co = new Map();
+  CLASS_TAGS = new Map(); const anyTag = new Set();
   const walk = (d) => readdirSync(d).flatMap((n) => { const q = join(d, n); return statSync(q).isDirectory() ? walk(q) : [q]; });
   for (const f of walk('src').filter((x) => x.endsWith('.tsx'))) {
     const t = readFileSync(f, 'utf8');
@@ -464,9 +468,29 @@ function readCoClasses() {
       const words = new Set();
       for (const lit of expr.matchAll(/(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g)) for (const w of lit[2].replace(/\$\{[^}]*\}/g, ' ').split(/\s+/)) if (/^-?[A-Za-z_][\w-]*$/.test(w)) words.add(`.${w}`);
       for (const a of words) { if (!co.has(a)) co.set(a, new Set()); for (const b of words) if (b !== a) co.get(a).add(b); }
+      const open = t.lastIndexOf('<', m.index); const tag = /^<([A-Za-z][\w.]*)/.exec(t.slice(open, m.index))?.[1];
+      for (const a of words) {
+        if (!tag || !/^[a-z]/.test(tag)) anyTag.add(a);
+        else { if (!CLASS_TAGS.has(a)) CLASS_TAGS.set(a, new Set()); CLASS_TAGS.get(a).add(tag); }
+      }
     }
   }
+  for (const a of anyTag) CLASS_TAGS.delete(a);
+  // a class word that also appears in a string literal outside any className expression (variables, helpers,
+  // `classList`) may land on any tag — drop its tag set.
+  for (const f of walk('src').filter((x) => /\.tsx?$/.test(x))) {
+    const t = readFileSync(f, 'utf8').replace(/className\s*=\s*("[^"]*"|'[^']*')/g, '');
+    for (const lit of t.matchAll(/(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g)) for (const w of lit[2].split(/\s+/)) if (CLASS_TAGS.has(`.${w}`) && !/className\s*=\s*\{/.test(t.slice(Math.max(0, lit.index - 200), lit.index))) anyTag.add(`.${w}`);
+  }
+  for (const a of anyTag) CLASS_TAGS.delete(a);
   return co;
+}
+// Could an element carrying the subject's classes have one of these tag names? (unknown → yes)
+function tagsPossible(info, types) {
+  if (!CLASS_TAGS || !types.size) return true;
+  const cls = [...info.tokens].filter((x) => x.startsWith('.'));
+  if (!cls.length) return true;
+  return cls.every((c) => !CLASS_TAGS.has(c) || [...types].some((t) => CLASS_TAGS.get(c).has(t)));
 }
 const compatCache = new WeakMap();
 function compatibleRules(model, media, sel) {
@@ -492,6 +516,7 @@ function compatibleRules(model, media, sel) {
       else if (!info.hasKey && info.types.size && ti.types.size && [...ti.types].some((x) => info.types.has(x))) kind = 'type';
       else if (coTokens.size && [...ti.tokens].some((x) => coTokens.has(x))) kind = 'co';
       if (!kind) continue;
+      if (CO_CLASSES && (kind === 'type' || kind === 'universal') && !tagsPossible(info, ti.types)) continue;
       if (exclusiveRoots(info, ti)) continue;
       if (info.types.size && ti.types.size && ![...ti.types].some((x) => info.types.has(x)) && !shared.length) continue;
       list.push({ r, t, kind, states: ti.states });
@@ -828,6 +853,17 @@ const VALUE_ALIASES = { '--up-line': '--color-border', '--up-muted': '--color-te
   '--up-ink': '--color-text', '--up-warn': '--color-warning-600', '--lin-over-ink': '--color-warning-600',
   '--up-warn-bg': '--color-warning-50', '--lin-over-bg': '--color-warning-50', '--up-radius': '--radius-lg' };
 const normValue = (v) => v.replace(/var\(\s*(--[\w-]+)/g, (m, n) => `var(${VALUE_ALIASES[n] || n}`).replace(/\s+/g, ' ').trim();
+// declaration position: rule position, then source line inside the rule (a merged rule keeps declaration order)
+const P = (rule, decl) => rule.pos + decl.line / 1e5;
+// cascade with layers: !important first, then layer rank (normal: later layer wins · important: earlier layer wins),
+// then specificity, then position. (`beats` above compares specificity before position only — P2a had one layer.)
+const RANK = 1e6;
+function beatsL(aSpec, aPos, aImp, bSpec, bPos, bImp) {
+  if (aImp !== bImp) return aImp;
+  const ra = Math.floor(aPos / RANK); const rb = Math.floor(bPos / RANK);
+  if (ra !== rb) return aImp ? ra < rb : ra > rb;
+  return (cmp3(aSpec, bSpec) || aPos - bPos) > 0;
+}
 function verifyAll(out, baseRev, exemptFile) {
   CO_CLASSES = readCoClasses();
   const base = buildModel(lister(baseRev));
@@ -877,6 +913,12 @@ function verifyAll(out, baseRev, exemptFile) {
     const h = homeOf(u);
     if (h && h.status === 'ok') homes.set(u, h.home);
   }
+  // one home, one owner: when several base units (identical declarations in several files) land on one working-tree
+  // declaration, the home belongs to the one that won today (latest in cascade order); the others are deletions and
+  // must carry their own dead-today proof.
+  const owners = new Map();
+  for (const [u, h] of homes) { const o = owners.get(h); if (!o || P(u.rule, u.decl) > P(o.rule, o.decl)) owners.set(h, u); }
+  for (const [u, h] of [...homes]) if (owners.get(h) !== u) homes.delete(u);
   for (const h of homes.values()) used.add(h);
   const problems = []; const deleted = []; const moved = []; let unchanged = 0;
   function desc(u) { return { file: u.rule.file, line: u.decl.line, selector: u.selector, arg: u.arg, media: mediaKey(u.rule.media), prop: u.decl.prop, value: u.decl.value }; }
@@ -885,7 +927,7 @@ function verifyAll(out, baseRev, exemptFile) {
   for (const u of baseUnits) {
     const h = homes.get(u);
     const comps = competitorsFor(base, u.rule, u.arg, u.decl).filter((c) => c.rule !== u.rule);
-    const todayBeats = (c) => beats(u.spec, u.rule.pos, u.decl.important, c.spec, c.rule.pos, c.decl.important);
+    const todayBeats = (c) => beatsL(u.spec, P(u.rule, u.decl), u.decl.important, c.spec, P(c.rule, c.decl), c.decl.important);
     if (!h) {
       // deleted: dead-today proof
       const need = longhands(u.decl.prop);
@@ -908,7 +950,7 @@ function verifyAll(out, baseRev, exemptFile) {
       const ch = homeByDecl.get(`${c.rule.pos}|${c.selector}|${c.decl.line}|${c.decl.prop}`);
       if (!ch) continue; // competitor deleted — its own unit carries the proof
       const cSpec = specificity(ch.selector);
-      if (beats(homeSpec, h.rule.pos, h.decl.important, cSpec, ch.rule.pos, ch.decl.important)) continue;
+      if (beatsL(homeSpec, P(h.rule, h.decl), h.decl.important, cSpec, P(ch.rule, ch.decl), ch.decl.important)) continue;
       flips.push({ kind: c.kind, selector: c.selector, file: c.rule.file, line: c.decl.line, home: `${ch.rule.file}:${ch.decl.line}`, prop: c.decl.prop, value: c.decl.value, spec: fmt3(cSpec), states: c.states });
     }
     if (flips.length) problems.push({ kind: 'flip', ...desc(u), home: `${h.rule.file}:${h.decl.line}`, flips });
@@ -923,11 +965,26 @@ function verifyAll(out, baseRev, exemptFile) {
   const exempted = [];
   for (const x of exemptions) if (!x.reason) problems.push({ kind: 'exemption-without-reason', ...x });
   const hit = (x, p) => x.reason && x.kind === p.kind && (x.file == null || x.file === p.file) && (x.prop == null || x.prop === p.prop)
-    && (x.selector == null || normSel(x.selector) === normSel(p.selector) || normSel(x.selector) === normSel(p.arg || ''))
-    && (x.competitor == null || (p.flips || []).every((f) => normSel(f.selector) === normSel(x.competitor)));
+    && (x.selector == null || normSel(x.selector) === normSel(p.selector) || normSel(x.selector) === normSel(p.arg || ''));
+  // flips: an exemption with `competitor` removes only the flips against that competitor selector (a competitor that can
+  // never hold the unit's element · reason says why); the problem stays while other flips remain.
   for (let i = problems.length - 1; i >= 0; i--) {
     const p = problems[i];
-    const xs = exemptions.filter((x) => hit(x, p));
+    if (p.kind !== 'flip') continue;
+    const cut = [];
+    p.flips = p.flips.filter((f) => {
+      const xs = exemptions.filter((x) => x.competitor && hit(x, p) && normSel(f.selector) === normSel(x.competitor));
+      if (!xs.length) return true;
+      xs.forEach((x) => { x.used = (x.used || 0) + 1; });
+      cut.push({ ...f, reason: xs.map((x) => x.reason).join(' / ') });
+      return false;
+    });
+    if (cut.length) exempted.push({ ...p, flips: cut, reason: [...new Set(cut.map((f) => f.reason))].join(' / ') });
+    if (!p.flips.length) problems.splice(i, 1);
+  }
+  for (let i = problems.length - 1; i >= 0; i--) {
+    const p = problems[i];
+    const xs = exemptions.filter((x) => !x.competitor && hit(x, p));
     if (!xs.length) continue;
     xs.forEach((x) => { x.used = (x.used || 0) + 1; });
     exempted.push({ ...p, reason: xs.map((x) => x.reason).join(' / ') });
@@ -943,7 +1000,7 @@ function verifyAll(out, baseRev, exemptFile) {
   const lines = ['# P2b cascade verify (전 선언 단위)', '', `기준 \`${baseRev}\` → 작업 트리 · 선언 단위 ${res.units} · 자리 무변 ${unchanged} · 옮겨짐 ${moved.length} · 삭제 ${deleted.length}(오늘 죽음 증명 ${res.deletedDead}) · 새 선언 ${added.length} · 면제 ${exempted.length} · 문제 ${problems.length}`, ''];
   lines.push('판정: 단위 = 규칙 × 선택자 인자(`:is()` 펼침) × 선언. 새 자리 = 같은 인자(또는 같은 선택자)·미디어·속성·값(토큰 별칭 9종은 정본 이름으로 맞춰 비교)의 작업 트리 선언 중 마지막. 뒤집힘 = 오늘 이기던 경쟁(값 다름 · `key`/`type`/`universal`)에 새 자리(층·순서·특이도)로 지는 것. 삭제 = 오늘 모든 문맥에서 지는 것(경쟁 선택자·미디어 포함 관계로 증명). 새 선언 = 어떤 단위의 새 자리도 아닌 것(면제 사유 · 계산값 대조로 판정).', '');
   lines.push('## 면제', '', '| 종류 | 대상 | 사유 |', '|---|---|---|');
-  for (const x of exempted) lines.push(`| ${x.kind} | ${rel(x.file || '')}:${x.line ?? ''} \`${x.selector || x.arg || ''}\` ${x.prop || ''} | ${x.reason} |`);
+  for (const x of exempted) lines.push(`| ${x.kind} | ${rel(x.file || '')}:${x.line ?? ''} \`${x.arg || x.selector || ''}\` ${x.prop || ''}${x.flips ? ` ← ${x.flips.map((f) => `\`${f.selector}\``).join(' · ')}` : ''} | ${x.reason} |`);
   lines.push('', '## 삭제 (오늘 죽음 증명)', '', '| 파일:행 | 선택자 인자 | 미디어 | 속성 | 값 | 증명(이기는 경쟁) |', '|---|---|---|---|---|---|');
   for (const d of deleted) lines.push(`| ${rel(d.file)}:${d.line} | \`${d.arg}\` | ${d.media || '-'} | ${d.prop} | \`${d.value}\` | ${d.proof ? `\`${d.proof.selector}\` ${rel(d.proof.file)}:${d.proof.line} ${d.proof.prop}=\`${d.proof.value}\`` : '**없음**'} |`);
   lines.push('', '## 옮겨짐', '', '| 원래 | 선택자 인자 | 미디어 | 속성 | 값 | 새 자리 | 층 |', '|---|---|---|---|---|---|---|');

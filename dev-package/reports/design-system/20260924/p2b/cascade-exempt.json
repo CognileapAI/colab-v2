@@ -1,0 +1,192 @@
+[
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".pj-views button",
+  "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".pj-seg button",
+  "reason": "요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".search-hero button",
+  "reason": "요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".dash-tile--linked button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".dash-recent button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".titem button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".pv-zoom button",
+  "reason": "요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".pv-shot button",
+  "reason": "요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".lin-picker li > button",
+  "reason": "요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".regsteps button",
+  "reason": "요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".dr-nav button",
+  "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".dr-useg button",
+  "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".dh-menu button",
+  "reason": "요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".pj-views button",
+  "reason": "요소 호환(type) 경쟁이지만 ProjectsPage 의 보기 전환 버튼 — className 에 btn 없음(TSX 전수) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".pj-seg button",
+  "reason": "요소 호환(type) 경쟁이지만 ProjectFormModal 의 유형 세그먼트 — .pj-seg 안에 .btn 없음(btn 은 모달 발 footer) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".search-hero button",
+  "reason": "요소 호환(type) 경쟁이지만 SearchHero 의 검색 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".dash-tile--linked button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 타일 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".dash-recent button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 최근 목록 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".titem button",
+  "reason": "요소 호환(type) 경쟁이지만 대시보드 목록 항목 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".pv-zoom button",
+  "reason": "요소 호환(type) 경쟁이지만 미리보기 확대 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".pv-shot button",
+  "reason": "요소 호환(type) 경쟁이지만 미리보기 스크린샷 버튼 — 같은 파일에 btn 클래스 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".lin-picker li > button",
+  "reason": "요소 호환(type) 경쟁이지만 ParentPicker 의 .btn 은 li 의 자식이 아니다(오류·더 보기·발 버튼 · TSX 확인) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".regsteps button",
+  "reason": "요소 호환(type) 경쟁이지만 RegisterArea 의 단계 버튼 — className 은 is-active 뿐(.btn 없음) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".dr-nav button",
+  "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 달 이동 버튼 — .btn 없음(.btn 은 팝오버 발) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".dr-useg button",
+  "reason": "요소 호환(type) 경쟁이지만 PeriodCalendarPopover 의 단위 세그먼트 — className 은 on 뿐 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn-primary:active",
+  "competitor": ".dh-menu button",
+  "reason": "요소 호환(type) 경쟁이지만 VerificationAction 의 메뉴 항목 — className 없음(.btn 은 확인 모달 안) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/members/members.css",
+  "selector": ".btn-ghost",
+  "prop": "background",
+  "reason": "오늘 죽음 — .btn-ghost 요소는 전부 .btn 을 함께 가진다(TSX 전수 btn btn-ghost …) · upload.css .btn background(뒤 순서 · 동률)가 덮었다"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/upload/upload.css",
+  "selector": ".btn-sm",
+  "prop": "padding",
+  "reason": "오늘 죽음 — .btn-sm 요소는 전부 .btn 을 함께 가진다(TSX 전수 36곳) · 셸 끝 .btn padding(뒤 순서 · 동률)이 덮었다(억눌린 작은 버튼 · 후속)"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/upload/upload.css",
+  "selector": ".btn-sm",
+  "prop": "font-size",
+  "reason": "오늘 죽음 — .btn-sm 요소는 전부 .btn 을 함께 가진다 · 셸 끝 .btn font-size(뒤 순서 · 동률)가 덮었다"
+ },
+ {
+  "kind": "added",
+  "file": "src/components/upload/upload.css",
+  "selector": ".btn-strong:hover",
+  "prop": "background",
+  "reason": "편차 이동 — 오늘 .btn:where(:not(.btn-primary,.btn-secondary)):hover(0,2,0)가 .btn-strong 배경(0,1,0)을 이겨 hover 배경이 gray-50 이다. hover 규칙이 primitives 층으로 내려가면 .btn-strong(screens)이 이기므로 같은 값을 화면 규칙으로 둔다(.btn-strong 요소는 전부 .btn · primary/secondary 아님)"
+ },
+ {
+  "kind": "flip",
+  "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
+  "competitor": ".btn-strong",
+  "reason": "공존 클래스(co) 뒤집힘을 upload.css .btn-strong:hover { background: var(--color-gray-50) }(screens · 0,2,0)가 같은 값으로 되돌린다 — .btn-strong 요소는 전부 .btn · primary/secondary 아님"
+ }
+]

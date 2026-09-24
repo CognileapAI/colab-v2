@@ -303,10 +303,10 @@ textarea.inp { resize: vertical; }
 .confirm-back .modal-h, .confirm-back .modal-b, .confirm-back .modal-f { padding: 16px 20px; }
 .confirm-back .modal-f { display: flex; justify-content: flex-end; gap: 8px; }
 
-.btn { border: 1px solid var(--up-line); background: var(--color-surface); border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
-.btn-sm { padding: 6px 10px; font-size: 13px; }
-.btn-strong, .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
-.btn-ghost { border-color: transparent; }
+/* `.btn` 계열의 기본값은 `shell/primitives.css`(P2b). `.btn-strong` 은 이 화면의 강조 버튼이다. */
+.btn-strong { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
+/* P2b — 오늘의 hover 배경(기본값 .btn hover 가 특이도로 이기던 값)을 화면 쪽에 그대로 둔다(primitives 층은 화면에 진다). */
+.btn-strong:hover { background: var(--color-gray-50); }
 
 
 /* 격자 업로드 블록 (`S1-PLAN-REFOUND §E`) — 미리보기 패널 **안**에서 열린다.

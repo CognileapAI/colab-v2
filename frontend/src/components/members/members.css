@@ -43,27 +43,7 @@
 /* 편집 액션은 카드 헤더 오른쪽 끝에 붙는다 (목업 `.memact`) */
 .memact { display: flex; gap: 8px; margin-left: auto; }
 
-.btn {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  font-family: inherit;
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: background var(--ease), border-color var(--ease);
-}
-/* P2a — primary·secondary 의 배경은 보정 층이 hover 에서도 덮고 있었다(억눌린 hover 유지 · 되살림은 후속 판정). */
-.btn:where(:not(.btn-primary, .btn-secondary)):hover { background: var(--color-gray-50); }
-.btn-primary {
-  background: var(--color-primary-600);
-  border-color: var(--color-primary-600);
-  color: var(--color-white);
-}
-.btn-ghost { border-color: transparent; background: transparent; }
+/* `.btn` 계열의 기본값은 `shell/primitives.css`(P2b). */
 
 .memtbl { width: 100%; min-width: 640px; border-collapse: collapse; }
 .memtbl th,

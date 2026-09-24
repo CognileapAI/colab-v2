@@ -2,3 +2,10 @@
 # 한 줄에 클래스 하나 · 접두 표기 `.chip--*` 허용. 목록의 클래스는 frontend/src/shell/primitives.css 밖에서
 # 맨 정의(문맥 없는 `.btn { }` · `.btn:hover { }` · `:is(.inp, .sel) { }`)를 가질 수 없다.
 # 계열을 primitives.css 로 옮긴 커밋마다 그 계열 클래스만 더한다 — 모든 계열 경계에서 green.
+# btn
+.btn
+.btn-primary
+.btn-secondary
+.btn-ghost
+.btn-danger
+.btn-sm

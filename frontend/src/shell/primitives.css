@@ -1,0 +1,33 @@
+@layer primitives {
+/* 프리미티브 — 공통 부품의 **기본값** 단일 소유(P2b · spec S-DESIGN-STRUCTURE-P2B-20260924).
+   기본값 = 문맥 없는 맨 클래스 요소에서 오늘 이기던 선언 집합(흩어진 화면 파일·셸 끝 임시 블록에서 모았다 ·
+   값 무변). 층 순서 tokens < base < primitives < patterns < screens 라 여기 규칙은 화면(screens) 규칙에 특이도와
+   무관하게 진다 — 화면 편차는 그 화면의 범위 선택자(`.modal-takeover .reg-actions .btn` 류)로 적는다.
+   맨 정의(`.btn { }` · `.btn:hover { }` · `:is(.inp, .sel) { }`)는 이 파일에만 둔다 — 게이트
+   `frontend-design-lint` e 가 목록(`gates/fixtures/frontend-design-lint/primitives.txt`) 클래스로 잰다.
+   `!important` 금지(게이트 e). 같은 층 안의 동률은 순서가 정하므로 규칙 순서는 옮기기 전 캐스케이드 순서를 따른다. */
+
+/* ── btn — 버튼 ──
+   출처: members.css `.btn`(height · color · transition) · upload.css `.btn`(border · background · font · cursor) ·
+   셸 끝 임시 블록(min-height · padding · border-radius · font-size). `font: inherit` 뒤에 `font-size` 가 와야
+   오늘과 같다(굵기·행간·글꼴은 상속 · 크기만 body-sm). */
+.btn {
+  height: 32px;
+  min-height: var(--control-height);
+  padding: 10px 18px;
+  border: 1px solid var(--up-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease);
+}
+/* primary·secondary 의 hover 배경은 오늘도 바뀌지 않는다(억눌린 hover 유지 · 되살림은 후속 판정 · P2a). */
+.btn:where(:not(.btn-primary, .btn-secondary)):hover { background: var(--color-gray-50); }
+.btn-ghost { border-color: transparent; }
+.btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
+.btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
+.btn-primary:active { background: var(--color-primary-700); }
+}
