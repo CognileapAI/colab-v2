@@ -20,10 +20,10 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P2A-20260924.md` · 조사: `p2/
 | 2 판정 도구 `cascade-map.mjs` · 지도 | 완료 | `088f6be6` · `7e85d0e6` |
 | 3 흡수 · `design-system.css` 삭제 | 완료 | `d9aafcee` · 잔여 되살아남 6곳 `f78f878c` |
 | 4 `@layer` · 게이트 d 범위 · lint 사각 3건 | 완료 | `f8e99708` |
-| 5 vitest 껍질 제거 플러그인 · 시험 경로 | 완료(판정 1건 승인 뒤 기대값 변경) | `5e85c477` · 기대값 __CT__ |
+| 5 vitest 껍질 제거 플러그인 · 시험 경로 | 완료(판정 1건 승인 뒤 기대값 변경) | `5e85c477` · 기대값 `3323376c` |
 | 6 상태 계측 | 완료(16건 동일) | `f78f878c` |
 | 7 시각 변경 0 | 완료 — 196장 엄격 차이 0 · exit 0 | `12b29144` |
-| 8 게이트 | 실행 — green 4 / red(판정) 1(`frontend-test` · 판정 필요 1건) / red(준비) 0 · exit 1 | — |
+| 8 게이트 | 완료 — green 5 / red(판정) 0 / red(준비) 0 · exit 0 | — |
 | 9 보고서 | 이 문서 | 이 커밋 |
 
 ## 단계 1 — 착수 캡처
@@ -131,15 +131,17 @@ agent-browser 로 착수 빌드와 최종 빌드에서 같은 장면·폭 1440 �
 
 ## ⓔ 게이트(단계 8)
 
-`COLAB_TASK_ID=b3a0acddb8904144b566f2539b3f93fb bash gates/run.sh task` → **exit 1 · 계 green 4 / red(판정) 1 / red(준비) 0**(`~/.colab-v2-test.env` 존재 확인 뒤 · 커밋 `12b29144`). 요약 JSON = git common dir 기준 `colab-harness/ff506810e27eac7102dde603ee891bb2/b3a0acddb8904144b566f2539b3f93fb/65a7b22525034bafbaf87c1811cc7311/gate-summary.json`. 이 보고서를 커밋한 뒤 handoff 용으로 같은 명령을 한 번 더 돌리며 그 run id 는 `COLAB_HANDOFF` 줄에 실린다.
+`COLAB_TASK_ID=b3a0acddb8904144b566f2539b3f93fb bash gates/run.sh task` → **exit 0 · 계 green 5 / red(판정) 0 / red(준비) 0**(커밋 `3323376c` · `~/.colab-v2-test.env` 존재 확인 뒤). 요약 JSON = git common dir 기준 `colab-harness/ff506810e27eac7102dde603ee891bb2/b3a0acddb8904144b566f2539b3f93fb/8c8a8d4ae56d42e1a4abe69f822821b4/gate-summary.json`. 이 표를 적은 커밋 뒤 handoff 용으로 같은 명령을 한 번 더 돌리며 그 run id 는 `COLAB_HANDOFF` 줄에 실린다.
 
 | 게이트 | 결과 | 요약 |
 |---|---|---|
 | `frontend-design-lint` | green | 파일 19 · :root 정의 밖 0 · 미정의 참조 0 · 다크 누락 0(면제 6) · :root/@import 0 · 범위 색 토큰 0 |
 | `frontend-design-lint-selftest` | green | 검사 12건 전건 기대대로 (green 2 · red 7 · red(준비) 3) |
 | `frontend-typecheck` | green | tsc --noEmit 오류 0건 |
-| `frontend-test` | **red(판정)** | Test Files 1 failed · 129 passed (130) · Tests 1 failed · 1612 passed (1613) — `dashboard.test.tsx:479` 680px 기대 · 720px(판정 필요 1) |
+| `frontend-test` | green | Test Files 130 passed (130) · Tests 1613 passed (1613) = P1 1610 + `layer-shim` 3 · 폐기 0 |
 | `frontend-fixture-reach` | green | 진입점 src/main.tsx 도달 205(진입점 제외 204) · 금지 모듈 0 |
+
+이전 실행(기대값 변경 전 · 커밋 `12b29144`·`3a00bfe8`): exit 1 · green 4 / red(판정) 1(`dashboard.test.tsx:479`) / red(준비) 0.
 
 ## 시험 변경
 
