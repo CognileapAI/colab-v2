@@ -5,6 +5,7 @@
 - 레인 브랜치: `worktree-agent-abbf1561508ff5c53`
 - lifecycle task: `32e822fa377b4f23b5daf376f5f1b192` (lane-worker · 선언 게이트 5종: frontend-typecheck · frontend-test · frontend-fixture-reach · frontend-design-lint · frontend-visual)
 - 준비(3-0): `frontend/` 에서 `npm ci` 종료 0
+- 상태: 구현 5항목 완료 · vitest 전부 green · task 게이트 red(준비) 2(호스트 뮤텍스) — 레인 완료 조건(게이트 green) 미충족
 
 ## 1. 항목별 before → after
 
@@ -59,7 +60,14 @@
 
 ### 4-2. task 결합 실행(최종 증거)
 
-- `COLAB_TASK_ID=32e822fa377b4f23b5daf376f5f1b192 bash gates/run.sh task` — 선언 5종을 순차 1회. 결과 3계수와 run_id 는 레인 최종 메시지의 `COLAB_HANDOFF` 줄에 있다(이 보고서 커밋 뒤에 돌리므로 여기 적지 않는다 — 적으면 실행 전후 파일 hash 가 갈린다).
+- `COLAB_TASK_ID=32e822fa377b4f23b5daf376f5f1b192 bash gates/run.sh task`(커밋 `3d1cbb2e` · run_id `9e65e0d6e59a4a3294bc4a283338d22e` · 종료 78) — 선언 5종 순차 1회.
+- 계: **green 3 / red(판정) 0 / red(준비) 2**
+  - green: frontend-typecheck · frontend-fixture-reach · frontend-design-lint
+  - red(준비 · 78): frontend-test · frontend-visual — 둘 다 호스트 뮤텍스 900초 대기 초과. 같은 호스트에서 다른 저장소 사본(`32 CoLAB-v2`)의 `agent-bridge` · `selftest` serial 게이트가 잡고 있었다. 판정되지 않았다(green 아님).
+- 근거: `.git/colab-harness/5af0e21c0d963561dd0058c710309a0e/32e822fa377b4f23b5daf376f5f1b192/9e65e0d6e59a4a3294bc4a283338d22e/gate-summary.json`(git common 디렉터리 · 저장소 밖 runtime).
+- `lifecycle handoff --mode=complete` → 종료 78 `lifecycle evidence blocked: gate failures remain`. **COLAB_HANDOFF 없음.** 호스트가 비었을 때 같은 task 로 `gates/run.sh task` 재측정이 남았다(상한 연장·재시도 루프는 하지 않았다).
+- 이 레인이 띄운 audit:preview(4187)는 게이트 뒤 종료했다.
+- 이 절은 task 결합 실행 **뒤** 고쳤다 — 재측정은 이 커밋 위에서 해야 한다.
 
 ## 5. 하지 않은 것
 
