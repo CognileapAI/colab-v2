@@ -67,8 +67,10 @@ paths:
       operationId: suggestLineage
       summary: 업로드된 파일의 계보를 제안한다 (제안만 — 저장하지 않는다)
       description: |
-        업로드된 파일에서 읽은 메타(헤더 자동 추출값)와 D9 지식 그래프 조회를 근거로
-        **가공 전 데이터 후보**와 **가공 방식**을 제안한다.
+        업로드된 파일에서 읽은 메타(헤더 자동 추출값)와 **core-api 가 실어 보낸 후보
+        목록**(`candidates`)만을 근거로 순위·근거 한 줄·확신도를 낸다. 후보 밖의
+        데이터셋을 만들지 않는다 — 찾는 것은 D3 의 주인인 core-api 이고, 매기는 것이
+        이 표면의 일이다.
 
         이 오퍼레이션은 **읽기다.** `POST` 인 이유는 파일 메타가 본문에 실리기 때문이고,
         ai-service 쪽에 계보가 만들어지지 않는다. 반환된 `suggestionId` 는 화면이 항목을
@@ -200,6 +202,84 @@ components:
           minLength: 1
         file:
           $ref: "#/components/schemas/UploadedFileMeta"
+        candidates:
+          type: array
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU0` — Ted 서명⟩ 살펴볼 가공 전 데이터 후보.** 선택 필드다.
+
+            ⓐ **후보는 core-api 가 고른다** — D3 의 주인이 모집단을 정하고, 매기는 것만
+            이쪽으로 온다(`〈72〉-㉮` 검색과 같은 분담). ai-service 는 카탈로그에 닿지
+            않으므로 스스로 후보를 찾을 수 없다(`CLAUDE.md §3-1`). 모집단은 사람이
+            고르는 후보(`listLineageCandidates`)와 **같아야 한다** — 두 벌이 되면 화면의
+            후보와 AI 가 본 후보가 갈리고 그 어긋남은 아무도 못 센다.
+
+            ⓑ 응답의 `parentDatasetId` 는 **이 목록 안의 값**이어야 한다. 밖의 값을 실은
+            제안은 core-api 가 버린다(응답 `scope` 가 다르면 버리는 것과 같은 자리).
+            그러므로 여기 없는 데이터셋은 제안될 수 없다.
+
+            ⓒ 생략하거나 빈 배열이면 ai-service 는 **모델을 부르지 않고** 빈 제안으로
+            답한다(`suggestions: []` + 사유). 살펴볼 것이 없는데 토큰을 태우지 않는다.
+            안 보내던 소비자가 그대로 200 을 받는 자리이기도 하다.
+          maxItems: 20
+          items: { $ref: "#/components/schemas/LineageParentCandidate" }
+
+    LineageParentCandidate:
+      type: object
+      description: |
+        ⭑ **⟨2026-09-24 · K3 `WU0` — 사용자 승인(Ted 서명)⟩ core-api 가 D3 에서 골라
+        실어 보낸 후보 한 건.** 찾는 것은 D3 의 주인이고 매기는 것만 D10 이다
+        (`CLAUDE.md §3-1` · `DOMAINS §2 D3·D10`). 화면에서 사람이 고르는 후보
+        (`Policy_업로드와_계보_확정 §5 가공 전 데이터`)와 **같은 모집단**이다.
+
+        **근거로 인용할 수 있는 값만 싣는다.** 파일 목록·변수 전체는 싣지 않는다 —
+        본문이 커지고 근거 판정이 흐려진다. 여기 실린 말이 곧 근거 한 줄의 재료이고,
+        `rationale` 이 이 집합 밖의 말을 쓰면 지어낸 것이다.
+
+        ⚠ **모르는 값은 열쇠를 만들지 않는다.** 판정하지 못한 항목은 **생략한다** —
+        `null` 이나 빈 문자열로 채우면 "못 읽음"과 "값 없음"이 갈리지 않는다
+        (`UploadedFileMeta` 머리말과 같은 규율).
+      required: [datasetId, name]
+      additionalProperties: false
+      properties:
+        datasetId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+        name:
+          type: string
+          description: 사람이 적은 묶음 이름(`DataModel §4.3`). 정본값은 D3 에 있다.
+          minLength: 1
+        topic:
+          type: string
+          description: |
+            주제. 값 집합은 DB CHECK 4값이 지킨다(`〈55〉`) — 계약 층 enum 을 만들지 않는다
+            (`sessions/D2c.md §9 NB-E`). 안 고른 데이터셋이면 생략한다.
+          minLength: 1
+        summary:
+          type: string
+          description: |
+            연구자가 직접 쓴 설명(`DatasetCreate.summary`). 후보를 가늠하는 가장 두꺼운
+            단서다. 상한은 본문이 부풀지 않게 이쪽에서 건다 — 넘치면 core-api 가 잘라
+            보낸다(D3 의 저장값에는 상한이 없다).
+          minLength: 1
+          maxLength: 200
+        sourceLabel:
+          type: string
+          description: |
+            원천 표기 — **데이터셋이 아니라 표기다**(`Policy §4 용어` · `DatasetCreate`
+            의 같은 이름 열쇠와 같은 상한).
+          minLength: 1
+          maxLength: 60
+        processingLevel:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/ProcessingLevel" }]
+          description: |
+            후보의 **가공 단계**. 「부모 Lv ≤ 자기 Lv」 를 사람이 화면에서 가늠하는 값이다.
+
+            ⚠ **판정된 것만 싣는다** — 판정이 없는 후보에 `0` 이나 `null` 을 실으면
+            「Lv0 이다」로 읽힌다. 미지와 Lv0 은 다른 사실이다
+            (`ParentCandidateSuggestion.parentProcessingLevel` 과 같은 규율).
+        periodStart:
+          $ref: "../schemas/common.json#/$defs/Timestamp"
+        periodEnd:
+          $ref: "../schemas/common.json#/$defs/Timestamp"
 
     UploadedFileMeta:
       type: object
