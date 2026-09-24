@@ -371,3 +371,24 @@
 - #14 = `.account-modal-back { z-index: 200; }`.
 
 열린 값 = 17건(1–17).
+
+## 통합 수정 (2026-09-25 · 수용 검토 반영)
+
+L1·L2·L3 병합(충돌 0) 뒤, 수용 검토 워크플로 2건이 확정한 결함 41건(`dev-package/sessions/design-fix-20260924-acceptance.md` A1–A41)을 수정 레인 3개가 RED → GREEN 으로 고친다. 파일 면 겹침 0.
+
+### 추가 확정 값 (Ted · 2026-09-25)
+
+- 값 19 = 새 토큰 `--color-surface-pressed`(라이트 `--color-gray-100` 과 같은 값 #e8ecf2 · 다크 `--color-gray-200` 과 같은 값 #45566a). hover 가 `--color-surface-hover` 인 누름 자리(카탈로그 표 행 · 상단 메뉴 링크 · 업로드 `.dr-nav button` · `.dr-useg button`, 그리고 다크에서 누름 값 = hover 값이 되는 그 밖의 `:active`)에 쓴다. 다크 누름 대 hover 1.61:1.
+- 값 20 = 누르는 동안(`:active`)만의 순간 상태는 대비 4.5:1 합격선의 예외로 정본(`docs/design-system.md` 합격선 절 · design-review SKILL §0)에 적는다. 평상시·hover·초점 상태는 기준 그대로. 실측 — 라이트 카탈로그 행 회색 글자 4.23:1 · 다크 보조 글자 on pressed 4.02:1.
+- 값 21 = 파일을 끌어 오는 동안(`.dropzone.is-dragover`) 드롭 아이콘 동그라미 바탕 = `--color-surface`.
+
+### 수정 레인
+
+| 레인 | 파일 면 | 항목(acceptance id) |
+|---|---|---|
+| F-css | `frontend/src/shell/{tokens,primitives,shell}.css` · `components/{catalog,search,lineage,upload}/*.css`(upload 는 `upload.css` 만) · `docs/design-system.md` · `.agents/skills/design-review/SKILL.md` §0 · `gates/fixtures/frontend-design-lint/*`(필요 시) · 새 시험 `frontend/test/design-fix-20260924-F-css.test.ts` · 기존 `design-fix-20260924-L1.test.ts`(시험 작성 단계에서만) | A1 계보 주석을 실제 요소(`.lin-scope-lv` 등)에 맞춤 · A2/A5/A13 hover 에 `:not(:disabled)` · A3/A10/A21 값 19 · A4 `.btn-sm` 에 `display:inline-flex; align-items:center`(`label.btn` 정렬) · A6/A7/A14 `.chip--off` 의 `border` 단축형이 값 18 을 덮지 않게 · A12 `.search-page .chip` 동일 · A8 `.mainnav a.is-active:active` 누름 · A11 값 20 문서 · A18 값 21 · A22 주석 정정 |
+| F-upload | `frontend/src/components/upload/{UploadModal,GridAttachEntry}.tsx` · 새 시험 `frontend/test/design-fix-20260924-F-upload.test.tsx` | A17 닫히는 동안 모달 안 모든 요소가 누름을 받지 않게(`inert` 등 · 안쪽 `pointer-events:auto` 패널 포함) · A19 `GridAttachEntry` 다시 열기 경로 동작 시험 |
+| F-preview | `frontend/src/components/preview/{useZoomPan.ts,spring.ts}` · 새 시험 `frontend/test/design-fix-20260924-F-preview.test.tsx` · 기존 `design-fix-20260924-L3*.test.tsx`(시험 작성 단계에서만) | A23/A25/A33/A40 `pointercancel` = 관성 없이 끝냄 · 취소 좌표를 표본에서 제외 · A26/A31 목표가 잘리면 넘침이 없도록 인계 속도 상한(\|v0\| ≤ ω·\|x0\|) 또는 도달 시 종료 · 매 프레임 범위 시험 · A24/A28/A34 관성 시작점 = 최신 값 · A27 끌기 중 두 번째 포인터 무시 · A29/A41 `clampView`·`baseScale` 변화 때 관성 정지 · A30 속도 인계 시험 · A35 관성 중 탭으로 멈추면 값 조회 안 함 |
+
+- 오케스트레이터(통합 단계): A9 · A16 · A20 · A32 보고서 정정 · A36 캡처 대조 · A38 통합 게이트 · A15 조치 없음.
+- 하네스 후속(이 PR 밖 · 별도 브랜치): A37 `live_audit.sh` 파일명 60자 절단 · A39 `frontend-visual` 이 띄운 agent-browser 가 호스트 게이트 잠금 fd 를 물려받아 게이트 뒤에도 쥠 · `live_probe.js` 가 `@layer` 안 규칙을 세지 못함 · `COLAB_FIX_LANE` 이 레인 훅에 전달되지 않아 test-file-guard 미작동(세 레인 공통).
