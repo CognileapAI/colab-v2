@@ -14,7 +14,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 | 4 preview 경로(Q7) | 완료 — 제안 × 어둡게 agent-browser 확인 |
 | 5 시험 · 대장 | BF-13 시험 폐기 · 대장 1줄 · **`preview-slot-4x3` 1건 red — 멈춤(판정 대기)** |
 | 6 시각 변경 0 대조 | 완료 — 196장 엄격 차이 0 · exit 0 |
-| 7 게이트 | 진행 전 |
+| 7 게이트 | green 5 · red(판정) 1(`frontend-test` · 단계 5 멈춘 항목) · red(준비) 0 |
 
 ## ⓐ 게이트 — 착수 red
 
@@ -39,6 +39,21 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 파일 19 · :root 정의 밖 77 · 미정의 참조 2 · 다크 누락 17(면제 2) · :root/@import 9 · 범위 색 토큰 0(다크 미검사)
 design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dark_only=17 c_holes=0 exempt=2 d=9 scoped_color=0 tokens=1
 ```
+
+## ⓐ 게이트 — 최종(단계 7)
+
+`COLAB_TASK_ID=8e021e5608634778b0a905bf52a206d1 gates/run.sh task` → **exit 1 · 계 green 5 / red(판정) 1 / red(준비) 0**. 요약 JSON = git common dir 기준 `colab-harness/1e175b30943cec0a49a50bc054005cf7/8e021e5608634778b0a905bf52a206d1/<run>/gate-summary.json`(run id 는 최종 실행의 것 · handoff 줄에 실린다). `~/.colab-v2-test.env` 존재 확인 뒤 실행.
+
+| 게이트 | 결과 | 요약 |
+|---|---|---|
+| `frontend-design-lint` | green | 파일 19 · :root 정의 밖 0 · 미정의 참조 0 · 다크 누락 0(면제 6) · :root/@import 0 · 범위 색 토큰 0(다크 미검사) |
+| `frontend-design-lint-selftest` | green | 검사 8건 전건 기대대로 (green 1 · red 5 · red(준비) 2) |
+| `frontend-typecheck` | green | tsc --noEmit 오류 0건 |
+| `frontend-test` | **red(판정)** | Test Files 1 failed · 128 passed (129) · Tests 1 failed · 1609 passed (1610) — `preview-slot-4x3.test.tsx` 「비율은 CSS 한 자리(토큰)에서 온다」 1건(단계 5 멈춘 항목) |
+| `frontend-fixture-reach` | green | 도달 203(진입점 제외 202) · 금지 모듈 0 |
+| `work-item-consistency` | green | 대장과 산문의 불일치 0 |
+
+착수 → 최종: a 77 → 0 · b 2 → 0 · c 17(면제 2 · 목록 없이 19) → 0(면제 6) · d 9 → 0.
 
 ## ⓑ selftest
 
