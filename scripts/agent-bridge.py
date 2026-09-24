@@ -252,7 +252,7 @@ def codex_payloads(data: dict) -> list[dict]:
     if not isinstance(command, str) or not command.strip():
         raise ValueError("missing tool_input.command")
     base = {"cwd": str(cwd), "hook_event_name": data["hook_event_name"]}
-    for key in ("agent_id", "task_id", "run_id"):
+    for key in ("session_id", "agent_id", "task_id", "run_id"):
         if data.get(key):
             base[key] = data[key]
     if tool == "Bash":

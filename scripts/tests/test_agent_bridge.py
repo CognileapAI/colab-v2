@@ -161,6 +161,11 @@ class LifecycleTests(unittest.TestCase):
         self.assertIn('[ponytail] x', context)
         self.assertNotIn('hookSpecificOutput', context)
 
+    def test_codex_payloads_carry_session_id_for_per_session_hooks(self):
+        payloads = bridge.codex_payloads(self.event('PostToolUse', tool_name='apply_patch', session_id='codex-s9', tool_input={
+            'command': '*** Begin Patch\n*** Update File: services/core-api/app.py\n@@\n-a\n+b\n*** End Patch'}))
+        self.assertEqual({p['session_id'] for p in payloads}, {'codex-s9'})
+
     def test_ponytail_inject_fires_once_per_agent_on_code_paths_only(self):
         hook = bridge.ROOT / '.claude/hooks/ponytail-inject.sh'
         with tempfile.TemporaryDirectory() as tmp:
