@@ -1,0 +1,958 @@
+{
+  "schema": "colab-visual-scenes/1",
+  "spec": "dev-package/prd/specs/S-DESIGN-STRUCTURE-P0-20260924.md",
+  "viewport": {
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "scrollbars": "native",
+  "notes": [
+    "30 scene names are inherited from dev-package/reports/design-consistency/20260912/full/scenes.json; account-admin, password-change, gnb-more are new.",
+    "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
+    "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector).",
+    "gnb-more has widths 375/768 only: .gnb-more is visible at <= 900px."
+  ],
+  "scenes": [
+    {
+      "name": "catalog",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "catalog",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "lab",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "lab",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "empty",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "empty",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "projects",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "projects",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "project-table",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "project-table",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [
+        {
+          "click": "button[role=radio][aria-label=\"표\"]"
+        }
+      ],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "project-detail",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "project-detail",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "project-dialog",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "project-dialog",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "project-close",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "project-close",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "detail",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "detail",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "settings",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "settings",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "members",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "members",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "lab-dialog",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "lab-dialog",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "search",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "search",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "search-empty",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "search-empty",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "search-down",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "search-down",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "search-degraded",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "search-degraded",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "preview",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "preview",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 1000,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "preview-done",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "preview-done",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 1000,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "preview-expired",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "preview-expired",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 1000,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "access",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "access",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "pending",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "pending",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "approval",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "approval",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "approval-dialog",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "approval-dialog",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "click": ".dh-more > button"
+        },
+        {
+          "click": ".dh-menu [role=menuitem]"
+        }
+      ],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "lineage-picker",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "lineage-picker",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "login",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "login",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "not-found",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "not-found",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload",
+      "entry": "audit-upload.html",
+      "query": {},
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [],
+      "settleMs": 800,
+      "account": {
+        "upload": true,
+        "labSettings": false,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload-classify",
+      "entry": "audit-upload.html",
+      "query": {},
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "pickFile": {
+            "selector": "input[type=file]",
+            "name": "design-audit.nc",
+            "bytes": 1024
+          }
+        },
+        {
+          "waitFor": "[data-testid=reg-open]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=reg-open]"
+        },
+        {
+          "select": [
+            "[data-testid=reg-category]",
+            "기상·기후 인자"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-datatype]",
+            "재분석자료"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-level]",
+            "Lv2"
+          ]
+        },
+        {
+          "scrollIntoView": ".up-steps"
+        }
+      ],
+      "settleMs": 800,
+      "account": {
+        "upload": true,
+        "labSettings": false,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload-metadata",
+      "entry": "audit-upload.html",
+      "query": {},
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "pickFile": {
+            "selector": "input[type=file]",
+            "name": "design-audit.nc",
+            "bytes": 1024
+          }
+        },
+        {
+          "waitFor": "[data-testid=reg-open]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=reg-open]"
+        },
+        {
+          "select": [
+            "[data-testid=reg-category]",
+            "기상·기후 인자"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-datatype]",
+            "재분석자료"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-level]",
+            "Lv2"
+          ]
+        },
+        {
+          "click": "[data-testid=reg-next]"
+        },
+        {
+          "scrollIntoView": ".up-steps"
+        }
+      ],
+      "settleMs": 800,
+      "account": {
+        "upload": true,
+        "labSettings": false,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload-link",
+      "entry": "audit-upload.html",
+      "query": {},
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "pickFile": {
+            "selector": "input[type=file]",
+            "name": "design-audit.nc",
+            "bytes": 1024
+          }
+        },
+        {
+          "waitFor": "[data-testid=reg-open]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=reg-open]"
+        },
+        {
+          "select": [
+            "[data-testid=reg-category]",
+            "기상·기후 인자"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-datatype]",
+            "재분석자료"
+          ]
+        },
+        {
+          "select": [
+            "[data-testid=reg-level]",
+            "Lv2"
+          ]
+        },
+        {
+          "click": "[data-testid=reg-next]"
+        },
+        {
+          "click": "[data-testid=reg-next]"
+        },
+        {
+          "scrollIntoView": ".up-steps"
+        }
+      ],
+      "settleMs": 800,
+      "account": {
+        "upload": true,
+        "labSettings": false,
+        "operator": false
+      }
+    },
+    {
+      "name": "account-admin",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "account-admin",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": true
+      }
+    },
+    {
+      "name": "password-change",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "password-change",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "gnb-more",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "gnb-more",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "click": ".gnb-more"
+        }
+      ],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    }
+  ]
+}
