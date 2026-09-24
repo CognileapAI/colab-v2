@@ -21,30 +21,33 @@
 
 ## 구현 결정
 - **토큰 정본 `frontend/src/shell/tokens.css`**
-  - 구조: 머리말(개정) → `:root { … }`(라이트 전부 · 원시 눈금 → 의미 토큰 순으로 정렬 · 이름 무변) → `:root[data-theme="dark"] { … }` → `@media (max-width: 640px) { :root { … } }`. `body.design-preview` 별칭과 `[data-design="calm"]` 스코프는 지운다. 머리말은 「셸 토큰만 옮긴다 · 통째로 복사하면 안 쓰는 값이 굳는다」를 「둘 이상 화면이 쓰는 이름만 정본에 둔다 · 한 화면 전용은 그 화면 루트 범위」로 고쳐 쓴다(대안 B 의 규칙을 파일이 스스로 말하게).
+  - 구조: 머리말(개정) → `:root { … }`(라이트 전부 · 원시 눈금 → 의미 토큰 순으로 정렬 · 이름 무변) → `@media (max-width: 900px) { :root { --shell-gnb-offset } }`(기존 유지) → `:root[data-theme="dark"] { … }` → `@media (max-width: 640px) { :root { … } }`. **미디어 블록은 반드시 기본 `:root` 블록 뒤에** 둔다 — 합친 뒤 특이도가 (0,1,0)으로 같아져 순서가 이긴다. 다크 블록 (0,2,0)은 계속 이긴다. `body.design-preview` 별칭과 `[data-design="calm"]` 스코프는 지운다. 머리말은 「셸 토큰만 옮긴다 · 통째로 복사하면 안 쓰는 값이 굳는다」를 「둘 이상 화면이 쓰는 이름만 정본에 둔다 · 한 화면 전용은 그 화면 루트 범위」로 고쳐 쓴다(대안 B 의 규칙을 파일이 스스로 말하게).
   - 이동 목록(실측 2026-09-24 · HEAD a98b084b · 레인이 착수 시 재계측해 표로 남긴다):
     - 라이트 값 이동 17: `--color-accent-50/200/500/700` · `--color-gray-100/200/600/700` · `--color-primary-50/100/200/800` · `--color-success-50/100/600` · `--color-warning-50/600` — 화면 파일의 값을 `:root` 로 옮긴다(값 무변 · 파일 간 값 동일은 BF-13 시험이 보증).
     - 죽은 선언 삭제 5: `--color-border-control`(catalog·upload) · `--color-surface-alt`(catalog·project) · `--text-h2`(detail·project) · `--color-danger-600`(upload) · `--color-text-subtle`(upload) — 정본 값이 이미 이기고 있으므로 화면 값은 지운다.
     - 중복 삭제 1: `--color-text-on-primary`(upload).
     - 공유 승격 7: `--font-data` · `--radius-lg` · `--radius-pill` · `--shadow-lg` · `--color-ai` · `--text-h3` · `--weight-heading` — 정본 `:root` 로.
-    - 한 화면 전용 22(upload 9 · detail 6 · lineage 3 · toast 3 · preview 1): 그 파일의 루트 클래스 블록으로(`.up { --up-…: }` · `.detail-page { … }` · toast·lineage·preview 는 레인이 실제 최상위 클래스를 확인해 정한다). 루트 밖에서 참조되는 이름이 있으면 그 이름은 승격 목록으로 올리고 표에 적는다.
+    - 한 화면 전용 22(2026-09-24 실측: 타 파일 참조 0건 · `src/` 에 `createPortal` 0건)는 둘로 가른다 —
+      - **정본 계열 이름 9종은 승격**(값 무변): `--space-1`·`--space-2`·`--leading-body-sm`(upload) · `--space-4`·`--space-5`·`--space-6`·`--color-on-dark`·`--color-on-dark-muted`·`--color-band-dark-2`(detail). 눈금·의미 토큰 이름을 한 화면 범위에 가두지 않는다(advisor ① 권고 · 눈금 **확정**은 범위 밖이라 값은 그대로).
+      - **접두사 이름 13종은 화면 루트 범위로**: `--up-ink`·`--up-line`·`--up-muted`·`--up-radius`·`--up-warn`·`--up-warn-bg`(→ `.up { }`) · `--lin-over-bg`·`--lin-over-ink`·`--lin-over-name`(lineage 루트 · 레인 확인) · `--toast-bg`·`--toast-fg`·`--toast-radius`(`.toast` 루트 · body 직속이어도 자기 루트 안이면 된다) · `--pv-frame-ratio`(preview 루트). 루트 밖에서 참조되는 이름이 나오면 승격 목록으로 올리고 표에 적는다.
+      - 따라서 최종 계수 = 정본으로 17+7+9 = 33 이름 이동/승격 · 삭제 6 · 범위 13.
   - `members.css` 의 `@import '../../shell/tokens.css'` 를 지운다(`styles.ts` 가 이미 싣는다).
   - 다크 블록: 라이트에만 있는 색 계열 이름이 0 이 되게 한다. 별칭(`var()` 값) 토큰은 대상이 덮이면 덮인 것으로 본다. 테마 무관 이름(`--color-white` · `--shadow-sm` 등)은 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 에 사유와 함께 적는다(면제 건수 노출).
-- **`index.html` · audit 진입점**: `data-design="calm"` 속성과 `audit-design.tsx` 의 `design=calm|full` 분기 중 토큰 스코프에 기대던 부분을 정리한다(`full` 의 GNB 포함 여부는 유지). `design-preview.html` 의 「기존 복구 화면」(`design=before`) 선택지를 지운다(Q7). `README-audit.md` 의 URL 예시를 맞춘다. **`scenes.json` 은 바꾸지 않는다**(명세 sha256 이 바뀌면 P0 기준과 대조 불가 · 쿼리 `design=full` 은 그대로 동작해야 한다).
+- **`index.html` · audit 진입점**: `data-design="calm"` 속성과 `audit-design.tsx` 의 `design=calm|full` 분기 중 토큰 스코프에 기대던 부분을 정리한다(`full` 의 GNB 포함 여부는 유지). **`design=calm` 분기(`design-preview.html` 의 「제안」 선택지가 쓴다)는 `body.design-preview` 클래스와 `document.body.dataset.theme` 에 기대고 있다** — `body.design-preview[data-theme="dark"]` 별칭을 지우면 이 경로의 다크가 사라진다. 그러므로 calm 분기가 `document.documentElement.dataset.theme` 를 쓰게 고치거나 calm 분기를 「GNB 없는 full」로 합친다. 고친 뒤 `design-preview.html` 의 제안 × 어둡게 조합을 agent-browser 로 1회 실제 확인해 보고서에 적는다(P0 명세 29장면은 전부 `design=full` 이라 대조가 이 경로를 보지 못한다). `design-preview.html` 의 「기존 복구 화면」(`design=before`) 선택지를 지운다(Q7). `README-audit.md` 의 URL 예시를 맞춘다. **`scenes.json` 은 바꾸지 않는다**(명세 sha256 이 바뀌면 P0 기준과 대조 불가 · 쿼리 `design=full` 은 그대로 동작해야 한다).
 - **`design-system.css`** 는 P1 에서 건드리지 않는다(P2). `.design-preview` 클래스 선택자는 남아도 무해하다.
 - **게이트 `frontend-design-lint`** (`gates/tools/frontend-design-lint.sh` + 판정부 `frontend/scripts/design-lint.mjs` · zero-dependency · `frontend-fixture-reach.sh` 와 같은 골격):
   - 대상 = `git ls-files 'frontend/src/**/*.css'`(주석 제거 뒤 계측). 대상 0건 → red(준비 · 78). `node` 부재 → 78.
-  - a. `tokens.css` 밖 파일의 `:root` 블록 안 `--*:` 정의 > 0 → red(파일·이름 열거). 화면 루트 클래스 범위의 `--*` 정의는 허용.
+  - a. `tokens.css` 밖 파일의 `:root` 블록 안 `--*:` 정의 > 0 → red(파일·이름 열거). 화면 루트 클래스 범위의 `--*` 정의는 허용하되 **정본 계열 접두사**(`--color-`·`--space-`·`--text-`·`--radius-`·`--font-`·`--shadow-`·`--leading-`·`--tracking-`·`--fg-`·`--bg-`)를 쓰면 red — 계열 이름은 정본에만 있다(`project-css-tokens.test.ts` 의 「계열」 규칙을 뒤집어 적용).
   - b. 어느 파일에서든 `var(--x[, …])` 의 `--x` 가 저장소 어디에도(정본 `:root`·다크·화면 루트 범위 포함) 정의되지 않으면 red(폴백 유무 무관). 오늘 값 2(`--text-title-sm` · `--color-surface-muted`)와 정본 밖 이름 참조 8건은 레인이 정본 이름으로 고치거나 이름을 정의한다 — 값을 지어내지 않고, 뜻이 같은 기존 토큰이 없으면 Ted 판정 항목으로 올린다.
-  - c. 라이트 `:root` 의 색 계열 이름(`--color-*`·`--fg-*`·`--bg-*`·`--accent-*`·`--shadow-*`)이 다크 블록에 없고 `same-in-dark.txt` 에도 없으면 red. 다크 블록에만 있는 이름도 red. 면제 목록은 건수와 사유를 요약줄에 낸다.
+  - c. 라이트 `:root` 의 색 계열 이름(`--color-*`·`--fg-*`·`--bg-*`·`--accent-*`·`--shadow-*`)이 다크 블록에 없고 `same-in-dark.txt` 에도 없으면 red. 다크 블록에만 있는 이름도 red. 면제 목록은 건수와 사유를 요약줄에 낸다. **면제 목록의 구멍 막기 셋** — 사유 칸이 비면 red · 라이트 `:root` 에 없는 이름이 목록에 있으면(낡은 항목) red · 다크 블록에 이미 있는 이름이 목록에 있으면 red. **사각을 숨기지 않는다** — 화면 루트 범위로 내린 색 값 토큰(`--up-*`·`--toast-*`·`--lin-*` 등 리터럴 색)은 c 의 대상이 아니므로 그 건수를 요약줄에 「범위 색 토큰 n(다크 미검사)」로 따로 낸다. `gates/README.md` 행의 「못 보는 것」에 같은 문장을 적는다.
   - d. `tokens.css` 밖 CSS 의 `:root` 셀렉터 · `@import` → red.
   - 요약줄: `파일 N · :root 정의 밖 a · 미정의 참조 b · 다크 누락 c(면제 m) · :root/@import d` · exit 0/1/78. `COLAB_GATE_REPORT_DIR` 배출 규약 준수.
-  - selftest `frontend-design-lint-selftest.sh`: `gates/fixtures/frontend-design-lint/{green,red-a,red-b,red-c,red-d}/` 트리를 `COLAB_FRONTEND_DIR` 로 가리켜 대조군 green 1 + red 4 + 대상 0건 78 + node 부재 78 을 증명한다(`frontend-fixture-reach-selftest` 와 같은 꼴).
+  - selftest `frontend-design-lint-selftest.sh`: `gates/fixtures/frontend-design-lint/{green,red-a,red-b,red-c,red-d,red-exempt}/` 트리를 `COLAB_FRONTEND_DIR` 로 가리켜 대조군 green 1 + red 5(`red-exempt` = 사유 없는 면제·낡은 면제·다크에 이미 있는 면제) + 대상 0건 78 + node 부재 78 = **8 케이스**를 증명한다(`frontend-fixture-reach-selftest` 와 같은 꼴).
   - 등록: `gates/run.sh` case 2개 · `ALL_GATES`·selftest 목록 · `gates/README.md` 행 2개(왜 있는가 · red 조건 · 78 조건 · 세는 단위) · `.github/workflows/ci.yml` `frontend-gates` 잡에 step 1개(`verify_evidence.py record --check frontend-design-lint`).
 - **기존 시험**
   - `frontend/test/shared-css-tokens.test.ts`(BF-13) 폐기 — 대상이 0건이 된다. 오라클은 게이트 a 가 승계.
   - `dev-package/work-items.yaml` BF-13 `evidence` 에 한 줄 추가: 「2026-09-24 P1: 완료 정의 ⑶ 판정 = 공유 이름은 tokens.css 로(대안 B) · ⑴ 시험은 게이트 `frontend-design-lint` a 로 승계·폐기」. `status`·번호·다른 필드 무변. `work-item-consistency` 게이트 green 확인.
-  - `project-css-tokens.test.ts` · `css-residual-rc11.test.ts` · `design-fix-20260908.test.ts` 는 `:root { }` 평문 블록에서 토큰을 읽으므로 정본 `:root` 로 합치면 그대로 통과해야 한다. 깨지면 **시험을 넓히지 말고** 원인을 보고한다(시험이 잡은 것이 실제 회귀일 수 있다).
+  - `project-css-tokens.test.ts` · `css-residual-rc11.test.ts` · `design-fix-20260908.test.ts` 는 `:root { }` 평문 블록(또는 파일 안 전 선언)에서 토큰을 읽으므로 정본 `:root` 로 합치면 대체로 그대로 통과한다. 단 `css-residual-rc11` 의 `tokenHex` 는 `[TOKENS, CATALOG, DETAIL]` 순으로 평문 `:root` 만 읽어 **지금은 catalog 의 죽은 값**(`--color-surface-alt` #f4f7fb · `--color-border-control` #848c94)을 읽고 있을 수 있다. 처리 기준: **기대값이 삭제 대상 죽은 선언의 값과 같으면, 실제로 렌더되던 calm 값으로 기대값을 고치고 보고서에 이름을 적는다**(판정 기준은 캡처 차이 0). 그 밖의 실패는 시험을 넓히지 말고 멈추고 보고한다(시험이 잡은 것이 실제 회귀일 수 있다).
 - 스키마 · 마이그레이션: 없음. API 계약: 비파괴 · 변경 없음.
 
 ## 시험 결정
@@ -52,7 +55,7 @@
   - ⓐ 게이트 `frontend-design-lint` green — 요약줄에 `:root 정의 밖 0 · 미정의 참조 0 · 다크 누락 0(면제 m) · :root/@import 0`. 착수 HEAD 에서는 같은 게이트가 **red(a=77 · b=2 · c=17+ · d=8)** 임을 먼저 기록한다(게이트가 실제로 재는 증거).
   - ⓑ selftest 6 케이스 전부 기대 종료코드.
   - ⓒ 시각 변경 0 — 착수 HEAD 에서 `npm run visual:capture -- --label p1-before`(빌드 포함), 수정 뒤 `--label p1-after --skip-build`, `visual:diff` **196장 엄격 차이 0 · exit 0**. 차이가 있으면 장면·픽셀·원인을 표로 내고 멈춘다(Ted 판정 · 「의도한 정정」으로 넘기지 않는다).
-  - ⓓ `frontend-typecheck` · `frontend-test`(BF-13 시험 폐기 뒤 건수를 적는다) · `frontend-fixture-reach` · `work-item-consistency` green.
+  - ⓓ `frontend-typecheck` · `frontend-test`(BF-13 시험 폐기 뒤 건수를 적는다) · `frontend-fixture-reach` · `work-item-consistency` green. `work-item-consistency` 는 `~/.colab-v2-test.env` 가 없고 CI 도 아니면 dispatch 전에 red(준비 · 78)다(`gates/README.md` 「돌리기 전」) — 착수 전 파일 존재를 확인하고, 없으면 준비 실패 78 로 보고하며 green 으로 적지 않는다.
   - ⓔ 정본 파일 실측표 — 이동·삭제·승격·범위 이동 각 건수와 이름이 spec 의 목록과 같은지, 다르면 무엇이 달랐는지.
   - ⓕ 09-12 `full/visual-review.md` 의 「전부 tokens.css로 물리적으로 옮겼다고 주장하지 않는다」에 대응하는 결과 문장을 보고서에 둔다(옮긴 것 · 범위로 내린 것 · 남긴 것).
 - 재사용 seam: P0 캡처·대조 · `css_audit.py`(계측 참고) · `frontend-fixture-reach.sh` 골격 · vitest CSS 원문 시험. 신설 seam: 게이트 1 + selftest 1 + 면제 목록 파일 1.
