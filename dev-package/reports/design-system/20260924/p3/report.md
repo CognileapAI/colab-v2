@@ -23,7 +23,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P3-20260924.md` · 조사: `p3/l
 | 5 캡처 범위 표 | 완료(캡처 미도달 자리는 실브라우저 probe · 나머지 [미검증] 표기) | (이 커밋) |
 | 6 대장 BF-8 | 완료 | `67ce0608` |
 | 7 시각 변경 0 | 완료 — 196장 엄격 차이 0 · 계산값 196 페이지 차이 0 | (이 커밋) |
-| 8 게이트 | 아래 ⓓ | |
+| 8 게이트 | 완료 — green 6 / red(판정) 0 / red(준비) 0 | (이 커밋) |
 
 ## 단계 1 — 착수 캡처 · 재계측
 
@@ -179,7 +179,19 @@ design-lint-counts files=19 a=0 … f=69 f_direct=5 f_fallback=64 f_name=0 f_hol
 
 ## ⓓ 게이트(단계 8)
 
-(아래 표는 게이트 실행 뒤 적는다)
+`COLAB_TASK_ID=a48a85df6e19492ba20254a0ad6135bf bash gates/run.sh task` → **계 green 6 / red(판정) 0 / red(준비) 0** · 게이트 6개 exit 0(커밋 `202f1da5` · `~/.colab-v2-test.env` 존재 확인 뒤). 요약 JSON = git common dir 기준 `colab-harness/ed554caca049d79663e1502a60aea7ab/a48a85df6e19492ba20254a0ad6135bf/4dc1ecf412224b8e9e547ba1fe7be633/gate-summary.json`. 이 표를 적은 커밋 뒤 handoff 용으로 같은 명령을 한 번 더 돌리며 그 run id 는 `COLAB_HANDOFF` 줄에 실린다.
+
+| 게이트 | 결과 | 요약 |
+|---|---|---|
+| `frontend-design-lint` | green | 파일 19 · :root 정의 밖 0 · 미정의 참조 0 · 다크 누락 0(면제 6) · :root/@import 0 · 범위 색 토큰 0 · **색 리터럴 0(면제 3) · 인라인 0(변수 대입 6)** · 참고 펼침 속성 style 1 |
+| `frontend-design-lint-selftest` | green | 검사 16건 전건 기대대로 (green 3 · red 9 · red(준비) 4) |
+| `frontend-typecheck` | green | tsc --noEmit 오류 0건 |
+| `frontend-test` | green | Test Files 130 passed (130) · Tests 1613 passed (1613) — P2a 와 같은 건수 · 폐기 0 · 변경 1줄(`search.test.tsx:175`) |
+| `frontend-fixture-reach` | green | 진입점 src/main.tsx 도달 205(진입점 제외 204) · 금지 모듈 0 |
+| `work-item-consistency` | green | 대장 236건 · 불일치 0 |
+
+- ⓐ 착수 → 최종: f **69 → 0(면제 3)** · g **7 → 0(변수 대입 6)** · selftest 12 → 16.
+- 시험 변경: 제품 시험 1줄(`search.test.tsx:175` · 판정 요청) · selftest 픽스처 3트리(`green-fg` · `red-f` · `red-g`) · selftest 셸 · 새 시험 파일 0.
 
 ## spec 과 다르게 한 점
 
