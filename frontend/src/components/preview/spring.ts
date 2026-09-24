@@ -20,7 +20,15 @@ export function projectedDistance(velocity: number): number {
 }
 
 /**
- * 닫힌 식 `x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
+ * 인계 속도 상한(design-fix 20260924 F-preview A26) — 시험 작성 단계의 자리표시.
+ * 구현 단계에서 |v0| ≤ ω·|x0| 로 채운다.
+ */
+export function capHandoffVelocity(v0: number, _x0: number, _response: number = SPRING_RESPONSE): number {
+  return v0;
+}
+
+/**
+ * 닫힌 식`x(t) = to + (x0 + (v0 + ω·x0)·t)·e^(−ω·t)` · `x0 = from − to`.
  * t = 0 에서 위치 = `from` · 속도 = `v0`. damping 1.0 이라 진동하지 않는다.
  */
 export function spring(
