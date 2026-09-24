@@ -101,6 +101,9 @@
   border-radius: var(--radius-lg);
   cursor: pointer;
 }
+/* design-review 20260924 #4 — 파일을 끌어 오는 동안(`FileDropCard` 가 `is-dragover` 를 붙인다) 놓을 자리가 먼저 반응한다(값 7).
+   점선은 그대로 두고 색만 바꾼다. 선례 = 같은 화면의 열린 칸 `.dr-field[aria-expanded="true"]` 테두리 primary-600. */
+.dropzone.is-dragover { border-color: var(--color-primary-600); background: var(--color-primary-50); }
 .dropzone .big { font-size: 16px; font-weight: 600; }
 .dropzone .muted, .muted { color: var(--color-text-muted); font-size:13px; }
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -575,6 +578,9 @@ textarea.inp { resize: vertical; }
 .up-empty .up-body { flex:initial; padding:20px 22px; }
 .up-empty .up-card { border-width:0; border-style:none; padding:0; }
 .up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background: var(--color-surface-alt); }
+/* #4 — 위 줄(바탕 surface-alt)과 같은 특이도로 한 줄 더 둔다. 분석 장면(아래 `[data-scene="analyze"] .dropzone` · 테두리 0)은
+   같은 특이도에 뒤에 서므로 그대로 이긴다. */
+.up-empty .dropzone.is-dragover { border-color: var(--color-primary-600); background: var(--color-primary-50); }
 .up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:var(--color-primary-50); color:var(--color-text); font-size:36px; margin-bottom:12px; }
 .up-file-choose { margin-top:14px; }
 .up-file-management { color:var(--color-text-muted); font-size:13px; }
