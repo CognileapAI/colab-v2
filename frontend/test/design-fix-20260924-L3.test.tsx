@@ -201,6 +201,9 @@ describe('#3 끌기 뒤 click 버림 — 임계 안의 click 은 조회한다', 
 
     fireEvent.pointerDown(viewport, { pointerId: 1, clientX: 256, clientY: 256, button: 0 });
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 256, clientY: 267 });
+    // 멈췄다 놓는다(마지막 100ms 이동 없음 → 관성 0). 관성이 돌면 다음 탭은 「관성을 잡는 탭」이라
+    // 조회하지 않는다(F-preview A35) — 이 시험의 둘째 탭은 평소 탭이어야 한다.
+    await new Promise((r) => setTimeout(r, 150));
     fireEvent.pointerUp(window, { pointerId: 1, clientX: 256, clientY: 267 });
     fireEvent.click(viewport, { clientX: 256, clientY: 267 });
     await tick();
