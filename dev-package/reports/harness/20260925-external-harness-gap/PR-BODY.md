@@ -13,7 +13,7 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 - 보류 7(재검토 조건 기록 · `docs/development/dual-agent.md`) · 불채택 4(로컬 전용 이력 · 해시 승인 · 셸 차단 · PR 형태 훅).
 
 ## 계획
-- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 4회차 → 모두 수정. 회차별 확정 결함: 1회차 16 · 2회차 8(+ 한 명 유지 1건 함께 수정 · 비평 신규 ADR 1건) · 3회차 3 · 4회차 8. 로컬 검증 상태는 「부분 검증」 — CI 는 게시 뒤에 돈다.
+- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 6회차 → 모두 수정(6회차 수정은 재검토 없이 Ted 결정으로 검토 종료). 회차별 확정 결함: 1회차 16 · 2회차 8(+ 한 명 유지 1건 함께 수정 · 비평 신규 ADR 1건) · 3회차 3 · 4회차 8 · 5회차 1 · 6회차 4(게시 스크립트·기록). 로컬 검증 상태는 「부분 검증」 — CI 는 게시 뒤에 돈다.
 - 검토 기록: `dev-package/reports/harness/20260925-external-harness-gap/REVIEW.md`.
 
 ## 결정
@@ -22,7 +22,7 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 
 ## 검증
 게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 131 OK(skip 10 · Windows 전용) · PR 계약 `pr_contract.py --mode draft` PASS(게시 절차대로 Head-SHA 채움).
-측정 커밋 `d63c18f3`(이후 커밋은 기록 문서만): `gates/run.sh all` **green 76 / red(판정) 0 / red(준비) 0** · 게이트 합집합 8 green · 단위 시험 131 OK. (`4a3a046a` 에서도 green 76 / 0 / 0.) (1회차 트리 `cf0114d7` 에서는 green 75 / red(판정) 1 — `frontend-test` 부하 시간 초과 · 단독 재실행 1613/1613 통과.)
+측정 커밋 `d63c18f3`(이후 커밋은 기록 문서와 게시 스크립트 `publish.sh` — 그 뒤 exec-bit · 게시 스크립트 3경로를 따로 확인): `gates/run.sh all` **green 76 / red(판정) 0 / red(준비) 0** · 게이트 합집합 8 green · 단위 시험 131 OK. (`4a3a046a` 에서도 green 76 / 0 / 0.) (1회차 트리 `cf0114d7` 에서는 green 75 / red(판정) 1 — `frontend-test` 부하 시간 초과 · 단독 재실행 1613/1613 통과.)
 단독 `harness-contract-selftest` 1회는 다른 프로세스가 호스트 게이트 잠금을 900초 넘게 쥐어 red(준비) 였고, 기본 대기 상한 그대로 재실행해 green 1/0/0.
 
 | 원한 결과 (intent) | 실제 | 근거 | 가치 상태 |
@@ -46,7 +46,7 @@ CI-Ref: 게시 뒤
 - 30·31 저장소가 같은 게이트 잠금 경로를 쓰면 #130 의 잠금 수정이 없는 쪽 데몬이 잠금을 쥘 수 있다(레인 L 관측 · 별건).
 
 ## 게시 절차 (사용자)
-전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다.
+전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). — 2026-09-24 병합됨(`23cdf03c`). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다.
 저장소 안 어느 체크아웃에서나 한 줄로 실행한다(브랜치를 꺼내지 않는다). 스크립트가 #131 병합을 확인하고, Head-SHA 를 채우고, 저장소 PR 계약(`pr_contract.py --mode draft`)을 통과시킨 뒤에만 PR 을 연다. 실패하면 이유를 내고 멈춘다. bash 로 파이프해 실행하므로 zsh 에 붙여 넣어도 된다:
 ```bash
 git fetch origin && git show origin/claude/harness-external-gap:dev-package/reports/harness/20260925-external-harness-gap/publish.sh | bash
