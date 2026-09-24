@@ -194,9 +194,9 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     const viewport = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     const before = layers().style.getPropertyValue('--pv-layers-transform');
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
-    fireEvent.mouseMove(window, { clientX: 260, clientY: 300 });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(window, { clientX: 260, clientY: 300 });
+    fireEvent.pointerUp(window);
     // 확대 뒤 중심을 잡느라 이미 이동해 있다 — **움직인 만큼**을 본다
     expect(layers().style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
     // ⭑ ⟨개정 2026-09-18 · `#120` intent⟩ 두 갈래로 갈라 **더 좁게** 잰다.
@@ -397,14 +397,14 @@ describe('§8 확대 조건 ⑺ — 타일 표면에서도 반응이 100 ms 안�
     renderDetail(makeSource());
     const viewport = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
     let x = 300;
     const 잰값 = 재본다(20, () => {
       x -= 3;
-      fireEvent.mouseMove(window, { clientX: x, clientY: 300 });
+      fireEvent.pointerMove(window, { clientX: x, clientY: 300 });
       expect(layers().style.getPropertyValue('--pv-layers-transform')).toContain('translate(');
     });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerUp(window);
     expect(잰값.p95).toBeLessThan(상한_밀리초);
     expect(잰값.max).toBeLessThan(상한_밀리초);
   });

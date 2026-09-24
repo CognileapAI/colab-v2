@@ -134,14 +134,14 @@ describe('§8 확대 조건 ⑺ — 확대·이동 반응은 100 ms 이내다', 
     renderDetail(makeSource());
     const viewport = await drawn();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
     let x = 300;
     const 잰값 = 재본다(20, () => {
       x -= 3;
-      fireEvent.mouseMove(window, { clientX: x, clientY: 300 });
+      fireEvent.pointerMove(window, { clientX: x, clientY: 300 });
       expect(transformOf()).toContain('translate(');
     });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerUp(window);
     expect(잰값.p95).toBeLessThan(상한_밀리초);
     expect(잰값.max).toBeLessThan(상한_밀리초);
   });

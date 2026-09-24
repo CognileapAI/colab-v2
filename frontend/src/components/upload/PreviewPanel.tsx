@@ -616,7 +616,7 @@ export function PreviewPanel(props: {
               className="pv-viewport"
               data-testid="up-preview-viewport"
               ref={zoom.viewportRef}
-              onMouseDown={zoom.onMouseDown}
+              onPointerDown={zoom.onPointerDown}
               /* 더블클릭 = 데이터 경계에 맞춤(여백 0). 상세와 같은 규칙이다. */
               onDoubleClick={zoom.fitToData}
               data-zoomable="true"
@@ -777,7 +777,7 @@ export function PreviewPanel(props: {
                 className="pv-viewport"
                 data-testid="pv-expand-viewport"
                 ref={expandZoom.viewportRef}
-                onMouseDown={expandZoom.onMouseDown}
+                onPointerDown={expandZoom.onPointerDown}
                 onDoubleClick={expandZoom.fitToData}
                 data-zoomable="true"
               >
