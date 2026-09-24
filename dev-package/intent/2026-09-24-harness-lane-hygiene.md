@@ -1,49 +1,60 @@
-# Intent: 하네스 고도화 — 턴 한도 재단 · 증거 경로 규격 · 레인 뒤처리 훅 · 작은 단계의 advisor ① 생략 기준
-메타 — 발의자: Ted · 작성 2026-09-24 · 승인: **2026-09-24 Ted 원문 "권고대로 해서 하네스고도화하고. 좋아. 작업은계속하자"**(디자인 구조 프로그램의 하네스 평가에서 낸 권고 4건을 그대로 승인)
+# Intent: 하네스 고도화 — 방향 기록 (구현 전 검토 대기)
+메타 — 발의자: Ted · 작성 2026-09-24 · 상태: **방향만 기록 · 구현 미승인**
+- 1차: Ted 원문 "권고대로 해서 하네스고도화하고. 좋아. 작업은계속하자" (2026-09-24 · 권고 4건 수용)
+- 2차(우선): Ted 원문 "저하네스에 인텐트로 어떻게 해야할지만같이기록해두자 저대로만 개선하기보다 진지하게 따져보고 개선하는게좋을듯하니" (2026-09-24) — **권고를 그대로 구현하지 말고, 이 문서에 「어떻게 해야 할지」를 기록해 둔 뒤 진지하게 따져 보고 개선한다.** 착수했던 구현 레인은 중단했다(커밋 0).
 
-## 문제
-- 디자인 구조 프로그램(P0~P3 · 2026-09-24) 실측: researcher 가 30턴을 조사에 다 쓰고 **0바이트**로 끝난 사례 2회 · advisor 12턴 잘림 2회 · lane-worker 200턴 잘림 1회. 매번 「먼저 쓰고 좁혀서 재개」로 살렸으나 재개 비용이 붙었다. 원인은 지시 범위가 턴 한도보다 컸던 것이다(6개 절 조사 · 7계열 레인).
-- 레인의 게이트 증거는 Git common dir 의 task runtime(`colab-harness/<checkout>/<task>/<run>/gate-summary.json`)에만 있다. advisor ② 는 그 자리를 몰라 「증거 없음」으로 판정했고(P0), 이후엔 오케스트레이터가 매번 먼저 열어 확인하고 「재실행 금지」를 프롬프트에 박아야 했다.
-- 레인이 끝난 뒤 agent-browser 데몬 · chrome 34개 · `vite preview` 가 남는다. 이 데몬이 호스트 게이트 잠금을 쥐면 다음 회차가 exit 78 이 난다(메모리 `gate-lanes-cannot-run-in-parallel`). 매번 오케스트레이터가 손으로 죽였다.
-- 단계마다 spec + advisor ① + lane + advisor ② + 오케스트레이터 대조 = 60~80만 토큰. 작은 단계(P3 규모)에도 같은 절차가 붙는다. 다만 advisor ① 이 이번 프로그램에서 가장 많은 결함을 잡았으므로(spec 5건 중 5건 approve-with-changes · 차단급 결함 3건) 「작다」의 기준 없이 생략하면 안 된다.
+## 문제 (실측 · 2026-09-24 디자인 구조 프로그램 P0~P3)
+- 서브에이전트가 턴 한도에서 산출물 없이 끝난다 — researcher 30턴 0바이트 2회 · advisor 12턴 잘림 2회 · lane-worker 200턴 잘림 1회. 매번 「먼저 쓰고 좁혀서 재개」로 살렸다.
+- 레인 게이트 증거는 Git common dir 의 task runtime(`colab-harness/<checkout>/<task>/<run>/gate-summary.json`)에만 있어 advisor ② 가 「증거 없음」으로 판정했다(P0). 이후엔 오케스트레이터가 먼저 열어 확인하고 「재실행 금지」를 프롬프트에 박았다.
+- 레인 종료 뒤 agent-browser 데몬 · chrome 34개 · `vite preview` 가 남는다. 매번 손으로 죽였다. 이 데몬이 호스트 게이트 잠금을 쥐면 다음 회차가 exit 78 이 난다.
+- 단계당 spec + advisor ① + lane + advisor ② + 대조 = 60~80만 토큰. 작은 단계에도 같은 절차가 붙는다. 반면 advisor ① 은 spec 5건 전부에서 approve-with-changes 를 냈고 차단급 결함 3건(대조 도구 부재 · jsdom `@layer` 미계산 · 다크 값 불일치 치환)을 잡았다.
 
-## 원한 결과 (proposed outcome)
-- **① 지시 범위 재단 규칙**이 공통 규칙·역할·스킬 본문에 있다: researcher 는 2~3개 절/건, lane 은 계열(파일 면) 2~3개/건, 지시문에 「N번째 도구 호출 전에 산출 파일을 한 번 쓴다」를 수치로, advisor 에는 「도구 호출 8회 이하 뒤 판정」. Codex 역할(`.codex/agents/*.toml`)에도 같은 문장이 적용된다.
-- **② 증거 경로 규격**: lane-worker·measurement-lane 의 최종 메시지 규격에 「runtime `gate-summary.json` 경로(git-common-dir 상대) + task·run id」가 필수 항목으로 있고, `lifecycle handoff --mode complete` 의 `COLAB_HANDOFF` JSON 이 그 경로를 담는다. advisor 역할 본문에 「게이트 증거는 그 경로에 있다 · 오케스트레이터가 확인했다고 적힌 것은 재실행하지 않는다」가 있다.
-- **③ 레인 뒤처리 훅**: `SubagentStop`(lane-worker · measurement-lane · researcher) 에서 **그 워크트리를 cwd 로 가진** agent-browser 데몬 · chrome · `vite preview` 프로세스를 종료하고 종료 건수를 systemMessage 로 낸다. 비차단(exit 0). 다른 워크트리·세션의 브라우저는 건드리지 않는다. Codex 브리지(`.codex/hooks.json`)에도 같은 이벤트가 연결된다.
-- **④ advisor ① 생략 기준**: 공통 스킬 §2 어드바이저 게이트 표에 「① 생략 가능 조건」이 수치로 있다 — spec 60행 이하 **그리고** 새 게이트·훅·마이그레이션·계약 변경 없음 **그리고** 제품 코드 변경 파일 3개 이하 **그리고** 시각 변경 0 증명 도구(캡처 대조)나 동등한 기계 판정이 적용됨. 넷 중 하나라도 깨지면 ① 을 건다. ② 는 항상.
-- 위 넷이 실제로 동작함을 셀프테스트·실행으로 보인다(훅은 red 픽스처 · 규격은 `harness-contract-selftest` 류 기존 게이트로).
+## 권고 4건 (1차 — 그대로 구현하지 않는다 · 검토 대상)
+1. 조사·레인 지시 범위를 턴 한도로 재단(researcher 2~3절/건 · lane 계열 2~3개/건 · 「N번째 도구 호출 전 파일 쓰기」 · advisor 「도구 8회 이하 뒤 판정」).
+2. 레인 최종 메시지·handoff JSON 에 게이트 증거 경로 필수 · advisor ② 에 전달.
+3. SubagentStop 훅으로 워크트리 cwd 의 브라우저·프리뷰 프로세스 정리.
+4. 작은 단계의 advisor ① 생략 기준(spec 60행/4,000자 · 새 게이트·훅·계약 없음 · 제품 파일 3개 이하 · 변경 면을 재는 게이트 명시).
 
-## 영향 범위
-- 파일: `.agents/rules/colab-rules.md`(§1·§2 절 추가) · `.agents/roles/{lane-worker,measurement-lane,researcher,advisor}.md` · `.agents/skills/colab-v2-work/SKILL.md §1·§2` · `scripts/harness/hooks/lane-cleanup.sh`(신설) + `.claude/hooks/lane-cleanup.sh`(어댑터) · `.claude/settings.json`(SubagentStop 등록 1건) · `.codex/hooks.json`(브리지 1건) · `scripts/harness/hooks/lifecycle_contract.py`(handoff JSON 에 evidence 경로) · `docs/development/dual-agent.md`·`lifecycle-evidence.md`(규격 반영) · `.codex/agents/*.toml`(역할 문장 반영 여부 확인) · 기존 게이트 selftest 갱신.
-- 서비스 · 스키마 · 계약: 없음. 제품 코드 변경 0.
-- 계약 파괴 여부: 아니오.
+## 진지하게 따질 것 (검토 질문 · 구현 전에 답한다)
+### ① 턴 한도 재단
+- **증상 대 원인**: 잘림의 원인이 지시 범위인가, 에이전트가 「쓰기 전에 다 읽으려는」 행동인가, 턴 한도 자체(30/12/200)가 낮은가? 세 가지는 처방이 다르다(범위 재단 · 역할 본문의 「먼저 쓰기」 규율 · `maxTurns` 상향). 실측: 재개 지시 한 줄(「첫 턴에 한 번의 Write」)로 세 번 다 살아났다 → 원인은 **행동**일 가능성이 크다. 그러면 범위 재단보다 역할 본문의 행동 규율이 먼저다.
+- **turn 이 아니라 tool call 로 세는가**: 한도는 턴, 실제 소모는 도구 호출·읽은 바이트다. 「10번째 도구 호출 전 파일 쓰기」가 맞는 단위인지, 아니면 「읽은 파일 N개 뒤」인지.
+- **대안**: (a) 역할 본문에 「먼저 쓰기」 규율만 (b) 오케스트레이터 지시문 템플릿에 범위 상한 (c) `maxTurns` 상향 (d) 조사자를 절 단위로 여러 번 스폰. 비용·부작용(짧은 조사가 늘면 취합 비용이 는다) 비교.
+- **모을 증거**: 이번 세션의 잘린 에이전트 3건의 transcript 에서 「몇 번째 도구 호출에서 무엇을 읽고 있었나」. 잘리지 않은 에이전트(advisor 7건 · lane 3건)와의 차이.
 
-## 제약
-- 훅은 **비차단**(exit 0) · 대상은 「종료하는 서브에이전트의 워크트리를 cwd 로 가진 프로세스」로 한정(`/proc/<pid>/cwd` 대조) · 잡음 대신 요약 한 줄.
-- `.claude/settings.json` 훅 정의 변경은 이 PC 의 `/hooks` 재신뢰가 필요하다(`docs/development/dual-agent.md`) — 레인은 등록까지 하고, 신뢰 확인은 사용자 몫으로 보고서에 적는다.
-- 하네스 본문 수정은 원본(`.agents/**` · `scripts/harness/**`)에서 한 번만, Claude 어댑터(`.claude/**`)는 연결만(`dual-agent.md` 표).
-- 규칙 문장은 수치로 적는다(「적당히」 금지). 생략 기준 ④ 는 보수적으로 — advisor ① 이 이번에 잡은 결함이 근거.
-- 게이트 우회·축소 없음. `harness-eval` 은 면제 모드 그대로(승격 별건).
+### ② 증거 경로 규격
+- **왜 저장소 밖에 두었나**: `lifecycle-evidence.md` 는 runtime 보고서를 run 디렉터리에만 쓰고 저장소에 사본을 두지 않는다고 못박았다(재실행 갈음·hash 결합 때문). 경로를 JSON 에 싣는 것은 그 설계와 충돌하지 않지만, **advisor 가 그 파일을 읽을 권한·경로 해석이 되는가**(다른 워크트리에서 `gate-snapshot` 은 거절된다 — 실측). 읽기 전용 접근 경로를 하네스가 제공해야 하는지, 오케스트레이터가 확인한 계수를 프롬프트에 옮기는 현재 방식으로 충분한지.
+- **대안**: (a) handoff JSON 에 경로+sha256 (b) `lifecycle gate-snapshot --task --any-checkout` 같은 읽기 전용 조회 명령 (c) 오케스트레이터가 계수·경로를 advisor 프롬프트에 적는 현재 관행을 규칙으로만.
+- **모을 증거**: advisor ② 4건 중 증거 문제로 판정이 갈린 것 1건(P0)뿐 — 이후 3건은 프롬프트 한 줄로 해결됐다. 훅·JSON 변경(계약 변경 · 재신뢰)이 그 비용을 정당화하는가.
 
-## 설계트리
-- Q1 재단 규칙을 어디에 두나 → 공통 규칙 `.agents/rules/colab-rules.md` 에 절 1개(수치) + 역할 본문 각 1문장 + 스킬 §1 지시문 항목. 세 곳이 같은 수치를 가리킨다(복제 아님 · 규칙이 정본).
-- Q2 증거 경로를 어디서 만드나 → `lifecycle handoff` 가 이미 run id 를 안다 → JSON 에 `evidence` 키 추가 · 역할 규격은 그 값을 옮겨 적으라고만.
-- Q3 뒤처리 훅의 대상 판정 → cwd 기준. 이름 패턴만으로 죽이면 다른 세션의 브라우저를 잡는다. 대상 0건이면 「정리 0」을 낸다(조용히 통과 아님).
-- Q4 ① 생략 조건 → 네 조건 AND. 「spec 60행」은 이번 P3 spec(≈70행 · 정정 뒤)보다 작다 — P3 도 ① 이 필요했던 단계이므로 그 아래로.
+### ③ 뒤처리 훅
+- **왜 남는가**: agent-browser 는 데몬형이라 마지막 명령 뒤에도 산다. `capture.py` 는 프리뷰 서버를 스스로 닫지만 데몬은 닫지 않는다. **도구 쪽에서 닫는 것**(capture.py 종료 시 `agent-browser … close`/데몬 stop · `frontend-visual` 게이트도 같은 문제 — 메모리 실측)이 훅보다 근본에 가깝다.
+- **훅의 위험**: SubagentStop 훅은 같은 이벤트의 다른 훅(H7)과 병렬이라 순서가 없다 · 주 체크아웃에서 도는 조사자에 걸리면 접두어 판정으로 전 워크트리의 브라우저를 죽인다(advisor ① 차단급 지적) · chrome 자손은 cwd 가 `/` 일 수 있다 · 훅 정의 변경은 PC 마다 `/hooks` 재신뢰. 
+- **대안**: (a) 훅 (b) 브라우저를 쓰는 도구(`capture.py` · `live_audit.sh` · `frontend-visual.sh`)가 자기 세션·데몬을 닫는다 (c) 게이트 실행기가 잠금을 잡기 전에 잔존 데몬을 검출해 78 대신 정리+경고 (d) 오케스트레이터 절차(메모리)로만. 
+- **모을 증거**: 잔존 데몬이 실제로 게이트 잠금을 쥔 사례의 로그(메모리에 한 줄 있음 · 재현 필요) · agent-browser 0.27.0 의 데몬 종료 명령 유무.
+
+### ④ advisor ① 생략 기준
+- **전제 재검토**: 이번 프로그램에서 ① 은 한 번도 「깨끗하다」를 내지 않았다(5/5 approve-with-changes). 그러면 생략 기준을 만들 근거가 아직 없다 — 생략해도 됐을 spec 이 실제로 있었는가? P3(리터럴 정리 · 가장 작은 단계)도 ① 이 다크 값 불일치를 잡았다.
+- **비용의 실체**: advisor 1건 = 6~9만 토큰 · 1.5~2.5분. 단계 비용 60~80만의 10% 안팎. 줄일 자리가 ① 인지, 레인(30~50만)인지, 오케스트레이터 대조인지.
+- **대안**: (a) 기준 없이 항상 ① (b) 「깨끗하다」가 연속 N회 나온 뒤에만 생략 후보 (c) 경량 ①(도구 호출 3회 · 한 메시지) 등급 신설.
+- **모을 증거**: 향후 spec 3~5건의 ① 판정 결과(깨끗/변경)와 잡은 결함의 등급.
+
+## 어떻게 진행할지 (제안 · Ted 판정)
+1. 디자인 구조 프로그램(P2b · P5)이 끝나 실측이 더 쌓인 뒤, 위 네 절의 「모을 증거」를 researcher 로 모은다(읽기 전용 · transcript·로그 대조).
+2. 그 증거로 `/grill-me` 를 돌려 네 항목을 하나씩 따진다 — 원인이 행동인지 범위인지, 훅인지 도구인지, 생략 기준이 필요한지. 프론티어 공집합까지 간 뒤 이 intent 를 개정해 승인한다.
+3. 그 뒤 spec 을 다시 쓴다. 현재 `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md` 는 1차 권고 기준의 초안이며 **보류**(참고용 · 구현 근거 아님).
+
+## 영향 범위 (구현 시 · 참고)
+- `.agents/rules/colab-rules.md` · `.agents/roles/*.md` · `.agents/skills/colab-v2-work/SKILL.md` · `scripts/harness/hooks/*` · `.claude/settings.json` · `.codex/hooks.json` · `docs/development/*.md` · 브라우저 도구 스크립트. 제품 코드 0.
 
 ## 미해결 질문
-- 없음.
-
-## 범위 밖 (명시 제외)
-- 턴 한도 자체 변경(`.claude/agents/*.md` maxTurns) · `harness-eval` 실행 모드 승격 · 디자인 구조 프로그램의 코드 · 커밋·push·PR 게시(사용자).
+- 위 「진지하게 따질 것」 전부. 답하기 전에는 구현하지 않는다.
 
 ## 확인
-- Ted 확인 문장(원문 그대로): "권고대로 해서 하네스고도화하고. 좋아. 작업은계속하자" (2026-09-24)
-- 권고 원문: 이 대화의 하네스 평가 답변 「판정」 절 1~4.
-- 재개봉 금지: 예.
+- Ted 확인 문장(원문 그대로): "저하네스에 인텐트로 어떻게 해야할지만같이기록해두자 저대로만 개선하기보다 진지하게 따져보고 개선하는게좋을듯하니" (2026-09-24)
+- 재개봉 금지: 아니오(검토 뒤 개정 예정).
 
 ## 참조
-- 실측 근거: `dev-package/reports/design-system/20260924/p0/report.md`(advisor ② 증거 부재 판정) · 메모리 `subagent-turn-limits-truncate-results` · `gate-lanes-cannot-run-in-parallel` · `issue-pr-workflow-shape`
-- 훅 스펙: `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` C절 · `docs/development/dual-agent.md`
-- spec: `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`
+- 실측: `dev-package/reports/design-system/20260924/p0/report.md`(advisor ② 증거 판정) · P1~P3 보고서의 「spec 과 다르게 한 점」 · 메모리 `subagent-turn-limits-truncate-results` · `gate-lanes-cannot-run-in-parallel` · `issue-pr-workflow-shape`
+- 하네스 설계: `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` · `docs/development/dual-agent.md` · `docs/development/lifecycle-evidence.md`
+- 보류 spec: `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`
