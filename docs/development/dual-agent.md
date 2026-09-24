@@ -101,9 +101,11 @@ researcher는 역할 문서의 직접 begin 절차를 따른다.
   비활성화된 것을 확인했다. 상위 폴더의 신뢰만으로는 이 저장소 설정이 로드되지 않았다.
   프로젝트 신뢰 변경은 사용자 승인 후 이 저장소 경로에만 적용하고, 권한·sandbox는 별도로 유지한다.
 - `.codex/agents/*.toml`의 `model`·`model_reasoning_effort`는 부모 설정보다 우선한다
-  (2026-09-24 CLI 0.154.0 역할 스폰 실측: 자식 `turn_context`가 역할 파일 값). 배정은 역할 성격이 아니라
+  (CLI 0.154.0 역할 스폰 실측 · 2026-09-24 gate-runner 1역할 · 2026-09-25 5역할: 자식의 마지막 `turn_context`가 역할 파일 값). 배정은 역할 성격이 아니라
   Claude 역할의 난이도 순서(Fable > Opus > Sonnet > Haiku)에 맞춘 GPT 등급과 effort를 따른다.
-  이 계정에서 `gpt-6-sol`·`gpt-6-luna`는 선택되지 않아(400) spec 대체 순서로 `gpt-5.6-sol`을 쓴다.
+  이 계정(ChatGPT 로그인)에서 `gpt-6-sol`·`gpt-6-luna`는 선택되지 않는다(400). 선택되는 모델은
+  `gpt-6-astra`·`gpt-5.6-sol`·`gpt-5.6-terra`·`gpt-5.6-luna`이고, GPT-5.6 안의 순서는 Luna < Terra < Sol 이다.
+  그래서 등급을 Fable = `gpt-6-astra` · Opus = `gpt-5.6-sol` · Sonnet = `gpt-5.6-terra` · Haiku = `gpt-5.6-luna` 로 맞춘다.
   근거는 `dev-package/reports/harness/20260924-agent-model-tiering/`의 M3·X-codex-smoke다.
   모델을 지정하지 않은 다른 역할만 부모 설정을 상속한다. Claude 모델 별칭을 Codex 설정으로 복사하지 않는다.
 
@@ -112,10 +114,10 @@ researcher는 역할 문서의 직접 begin 절차를 따른다.
   | advisor | fable · high | `gpt-6-astra` · high | `gpt-6-astra` · high · read-only |
   | lane-worker | opus · high | `gpt-6-sol` · high | `gpt-5.6-sol` · high |
   | researcher | opus · medium | `gpt-6-sol` · medium | `gpt-5.6-sol` · medium |
-  | measurement-lane | sonnet · low | `gpt-6-sol` · low | `gpt-5.6-sol` · low |
-  | gate-runner | haiku · low | `gpt-6-luna` · low | `gpt-5.6-sol` · low |
+  | measurement-lane | sonnet · low | `gpt-6-sol` · low | `gpt-5.6-terra` · low |
+  | gate-runner | haiku · low | `gpt-6-luna` · low | `gpt-5.6-luna` · low |
 
-  lane-worker 품질 미달 시 `gpt-6-sol`·xhigh → `gpt-6-astra`·medium 순으로 올린다(M3 §3 · Opus 5.5 가 GPT-6 Sol 보다 벤치마크가 높다).
+  lane-worker 품질 미달 시 `gpt-5.6-sol`·xhigh → `gpt-6-astra`·medium 순으로 올린다(M3 §3). `gpt-6-sol` 이 이 계정에서 선택되면 목표 열로 옮긴다.
 - 공통 문서에 있는 옛 단계·모델·도구 규약이 실제 실행 환경과 다르면 이 연결 규칙으로 도구 차이만
   해결한다. 제품 결정의 충돌은 실물·대장·승인 기록을 대조하고 임의로 재정의하지 않는다.
 
