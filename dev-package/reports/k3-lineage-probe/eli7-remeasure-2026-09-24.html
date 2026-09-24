@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>거울은 치웠는데, 이번엔 아이를 부모라고 한다 — 두 번째 시험과 결정 2가지</title>
+<style>
+:root{
+  --bg:#fbf8f1; --ink:#23211c; --muted:#6b665c; --card:#ffffff; --line:#e6e0d2;
+  --a:#2f7d5b; --a-bg:#e3f3ea; --b:#b8541f; --b-bg:#fbe8dc; --c:#2d5fa6; --c-bg:#e2ecfa; --warn:#8a6d00; --warn-bg:#fff4c2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181d; --ink:#ece9e1; --muted:#a29d92; --card:#1f2229; --line:#33373f;
+    --a:#7fd1a6; --a-bg:#183327; --b:#f0a172; --b-bg:#3a2417; --c:#8fb4f0; --c-bg:#1b2a44; --warn:#f2d264; --warn-bg:#3a3110;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#ece9e1; --muted:#a29d92; --card:#1f2229; --line:#33373f;
+  --a:#7fd1a6; --a-bg:#183327; --b:#f0a172; --b-bg:#3a2417; --c:#8fb4f0; --c-bg:#1b2a44; --warn:#f2d264; --warn-bg:#3a3110;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Pretendard,'Noto Sans KR',-apple-system,'Segoe UI',sans-serif;line-height:1.7;font-size:17px}
+main{max-width:760px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:1.6rem;line-height:1.3;margin:0 0 8px}
+h2{font-size:1.25rem;margin:40px 0 12px;padding-left:12px;border-left:5px solid var(--a)}
+p{margin:10px 0}
+.sub{color:var(--muted);font-size:.95rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+.talk{display:flex;gap:12px;align-items:flex-start;margin:12px 0}
+.talk .who{flex:0 0 46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;background:var(--c-bg)}
+.talk .bubble{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.85rem;font-weight:600}
+.ok{background:var(--a-bg);color:var(--a)} .no{background:var(--b-bg);color:var(--b)} .hm{background:var(--warn-bg);color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+.tw{overflow-x:auto;margin:12px 0}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--c-bg)}
+svg{max-width:100%;height:auto;display:block;margin:12px auto}
+.q{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:14px 16px;margin:18px 0}
+.q h3{margin:0 0 6px;font-size:1.1rem;color:var(--c)}
+.q .rec{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--a-bg)}
+.q .alt{margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--b-bg)}
+.toggle{position:fixed;top:12px;right:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:.9rem}
+.swing{animation:swing 2.2s ease-in-out infinite alternate;transform-origin:50% 0}
+@keyframes swing{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+@media (prefers-reduced-motion: reduce){.swing{animation:none}}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<button class="toggle" id="t" aria-label="테마 바꾸기">☀️ / 🌙</button>
+<main>
+<h1>거울은 치웠는데, 이번엔 아이를 부모라고 한다</h1>
+<p class="sub">두 번째 시험 결과와, 어른이 정할 2가지. 2026-09-24 (재실측).</p>
+
+<h2>1. 지난번에 정한 걸 다 했어?</h2>
+<div class="card">
+<p>응. 네 가지 다 진행했어.</p>
+<ul>
+<li><span class="tag ok">끝</span> <b>「나 자신」 빼기</b> — 이름과 파일 이름이 둘 다 같은 자료는 후보에서 빼. 4개 자료 모두 자기 자신이 후보에서 사라졌고, 진짜 부모는 하나도 안 떨어졌어.</li>
+<li><span class="tag hm">진행 중</span> <b>AI 호출 장부</b> — 작은 표 하나 만들고 있어. 나라 칸은 없고, 모델·걸린 시간·토큰·<b>캐시 토큰</b>·결과를 적어.</li>
+<li><span class="tag hm">대기</span> <b>「살펴봤는데 없다」를 고장에서 분리</b> — 장부 작업이 같은 파일을 만지고 있어서 그 뒤에 해.</li>
+<li><span class="tag hm">대기</span> <b>큰 나무(develop)에 붙이기</b> — 위 둘이 끝난 뒤.</li>
+</ul>
+<p>그리고 「나 자신」을 뺀 상태로 <b>AI 시험을 다시</b> 봤어.</p>
+</div>
+
+<h2>2. 두 번째 성적표</h2>
+<div class="tw"><table>
+<tr><th>본 것</th><th>1차</th><th>2차(지금)</th><th>판정</th></tr>
+<tr><td>이유가 진짜 자료에 있는 말로만 쓰였나</td><td>2개 어긋남</td><td><b>0개</b></td><td><span class="tag ok">고쳐짐</span></td></tr>
+<tr><td>부모를 위 3등 안에 넣었나</td><td>4~5 / 6</td><td>3~5 / 6</td><td><span class="tag hm">경계</span></td></tr>
+<tr><td><b>함정 시험</b>에서 「모르겠어요」 했나</td><td>2 / 8</td><td><b>1 / 8</b></td><td><span class="tag no">여전히 빨강</span></td></tr>
+<tr><td>후보에 없는 걸 지어냈나 · 답 모양 · 시간</td><td>전부 좋음</td><td>전부 좋음</td><td><span class="tag ok">좋음</span></td></tr>
+</table></div>
+
+<div class="talk"><div class="who">🧒</div><div class="bubble">거울을 치웠는데 왜 함정 시험을 또 틀려?</div></div>
+<div class="talk"><div class="who">🤖</div><div class="bubble">이번엔 거울이 아니라 <b>자기 아이</b>를 가리켰어. 「월평균 NDVI 지도(1단계)」의 부모가 누구냐고 물었더니, 그 지도로 <b>만든</b> 「NDVI 예측 그림(2단계)」을 골랐어. 순서가 거꾸로지 — 아이가 부모를 낳을 수는 없잖아.</div></div>
+<div class="talk"><div class="who">🧒</div><div class="bubble">왜 그런 걸 골라?</div></div>
+<div class="talk"><div class="who">🤖</div><div class="bubble">두 가지 이유야. <b>①</b> 후보 목록에 「더 나중 단계」 자료가 그대로 남아 있어. 새 자료가 몇 단계인지 우리가 AI 에게 <b>말해 주지 않기로</b> 했거든(지난 결정). <b>②</b> AI 가 「없어요」라고 말하기를 싫어해. 16번 물었는데 「모름」이라고 한 적이 <b>한 번도 없어.</b> 주제만 비슷하면 뭐라도 골라.</div></div>
+
+<svg viewBox="0 0 640 210" role="img" aria-label="가공 단계 사다리에서 아래 단계 자료의 부모로 위 단계 자료를 고른 그림">
+  <line x1="60" y1="30" x2="60" y2="190" stroke="var(--line)" stroke-width="4"/>
+  <g font-size="14" fill="var(--ink)">
+    <rect x="90" y="150" width="200" height="36" rx="8" fill="var(--c-bg)" stroke="var(--c)"/><text x="190" y="174" text-anchor="middle">원자료 (0단계)</text>
+    <rect x="90" y="90" width="200" height="36" rx="8" fill="var(--a-bg)" stroke="var(--a)"/><text x="190" y="114" text-anchor="middle">월평균 지도 (1단계) ← 새 자료</text>
+    <rect x="90" y="30" width="200" height="36" rx="8" fill="var(--b-bg)" stroke="var(--b)"/><text x="190" y="54" text-anchor="middle">예측 그림 (2단계)</text>
+  </g>
+  <g class="swing"><path d="M300 108 C 380 108, 400 60, 300 48" fill="none" stroke="var(--b)" stroke-width="3" stroke-dasharray="6 5"/><text x="420" y="84" font-size="14" fill="var(--b)" font-weight="700">AI: "이게 부모!" ✗</text></g>
+  <path d="M300 168 C 360 168, 360 108, 300 108" fill="none" stroke="var(--a)" stroke-width="3"/>
+  <text x="420" y="150" font-size="14" fill="var(--a)" font-weight="700">진짜 부모는 아래 ✓</text>
+</svg>
+
+<h2>3. 어른이 정할 2가지</h2>
+
+<div class="q"><h3>결정 A · AI 에게 「말」로 두 가지 규칙을 더 가르쳐서 다시 시험할까?</h3>
+<p>AI 에게 주는 지시문에 두 문장을 넣는 거야. <b>「후보 중 어느 것도 이 자료를 만드는 데 쓰였다는 근거가 없으면 빈 목록을 내라」</b>, <b>「가공 단계가 더 높은 후보는 부모가 아니다」</b>. 후보에는 각자의 단계가 적혀 있고, 새 자료 이름에도 「(Lv.1)」 같은 힌트가 있어서 AI 가 비교할 수 있어.</p>
+<div class="rec">권고: <b>한다.</b> 비용이 거의 없고(지시문 두 줄), 16번 다시 물어보면 몇 십 원이야. 이걸로 「없어요」를 말하기 시작하는지 바로 보여.</div>
+<div class="alt">조심할 점: 말로 가르치는 건 <b>확률</b>이지 <b>보장</b>이 아니야. 결과가 좋아도 「항상 그렇다」고 하면 안 되고, 후보 목록 쪽 수정(결정 B)이 진짜 울타리야.</div></div>
+
+<div class="q"><h3>결정 B · 후보 목록에서 「더 나중 단계」 자료를 <b>컴퓨터가</b> 미리 뺄까?</h3>
+<p>AI 에게 맡기지 않고, 후보를 뽑는 쪽(core-api)이 새 자료보다 단계가 높은 후보를 <b>아예 안 보여주는</b> 거야. 그러려면 새 자료가 몇 단계인지 알아야 하는데, 지금 주문서에는 그 칸이 없어. 세 가지 길이 있어.</p>
+<ul>
+<li><b>(1) 지금은 안 함</b> — 결정 A 결과를 먼저 보고 정한다.</li>
+<li><b>(2) 이름 힌트로 임시 처리</b> — 이름 초안의 「(Lv.n)」 글자를 읽어서 거른다. 빠르지만, 이름에 그 글자가 없는 자료에선 아무 효과가 없어.</li>
+<li><b>(3) 주문서에 「새 자료의 단계」 칸 추가</b> — 제대로 된 길. 하지만 주문서를 또 고치는 거라 서명이 필요하고, 화면(폼)에서 사람이 고른 단계 값을 서버까지 <b>실어 보내는 배선</b>도 필요해.</li>
+</ul>
+<div class="rec">권고: <b>(1) 지금은 A 결과를 먼저 보고</b>, 그다음 주문서를 고칠 일이 생기면 <b>(3)을 그 개정에 묶어서</b> 한 번에. (2)는 이름에 의존해서 반쪽짜리라 권하지 않아.</div>
+<div class="alt">반대 의견: 울타리는 말이 아니라 코드여야 하니 (3)을 지금 바로 하자. 맞는 말인데, 그러면 주문서 개정·폼 배선·시험까지 이번 회차가 커져. Ted 가 고를 몫이야.</div></div>
+
+<h2>4. 한 줄 요약</h2>
+<div class="card">
+<p>「나 자신」 문제는 고쳐졌고 <b>이유 문장도 전부 진짜 말</b>로 쓰게 됐어. 남은 빨강 하나는 <b>「아이를 부모라고 하는 것」</b>이고, 원인은 우리가 단계를 안 알려준 것 + AI 가 「없어요」를 안 하는 것. <b>말로 먼저 가르쳐 보고(A), 진짜 울타리(B-3)는 다음 주문서 개정에 묶자</b>는 게 권고야.</p>
+<p><small>근거: dev-package/reports/k3-lineage-probe/README.md 「재실측」 절 · luna-2026-09-24b.json · 브랜치 k3-resume c17bc5d0</small></p>
+</div>
+</main>
+<script>
+(function(){
+  var b=document.getElementById('t'), r=document.documentElement;
+  try{var s=localStorage.getItem('theme'); if(s) r.setAttribute('data-theme',s);}catch(e){}
+  b.addEventListener('click',function(){
+    var cur=r.getAttribute('data-theme');
+    var dark = cur ? cur==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = dark ? 'light' : 'dark';
+    r.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
