@@ -1,5 +1,6 @@
 # ⚠ 보류 — 이 spec 은 1차 권고 기준의 초안이며 구현 근거가 아니다
 Ted 결정 2026-09-24: "저대로만 개선하기보다 진지하게 따져보고 개선하는게좋을듯하니" → intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md` 의 「진지하게 따질 것」에 답한 뒤 다시 쓴다. 착수했던 레인은 중단(커밋 0).
+3차 검토(2026-09-24): ③ SubagentStop 훅안 기각 · ② handoff 계약 변경 대신 규칙화 · ④ 생략 기준 미채택을 권고했다(intent 「답」「권고」). 이 초안은 intent 판정 뒤 spec v2 로 **대체된다**.
 
 # Spec: 하네스 고도화 — 턴 한도 재단 규칙 · 증거 경로 규격 · 레인 뒤처리 훅 · advisor ① 생략 기준
 출처 intent: `dev-package/intent/2026-09-24-harness-lane-hygiene.md` (승인 2026-09-24 · Ted 원문 "권고대로 해서 하네스고도화하고")
