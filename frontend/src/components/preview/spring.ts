@@ -20,11 +20,15 @@ export function projectedDistance(velocity: number): number {
 }
 
 /**
- * 인계 속도 상한(design-fix 20260924 F-preview A26) — 시험 작성 단계의 자리표시.
- * 구현 단계에서 |v0| ≤ ω·|x0| 로 채운다.
+ * 인계 속도 상한 `|v0| ≤ ω·|x0|`(design-fix 20260924 F-preview A26 · `x0 = from − to`).
+ * damping 1.0 스프링은 `v0` 가 이 상한을 넘을 때만 목표를 한 번 지나친다. 목표가 `clampView` 로
+ * 잘린 자리(이동 범위 끝)면 그 넘침이 「움직이던 채로 끝에서 잘림」으로 보이므로 속도를 줄인다.
+ * 잘리지 않은 투영 목표는 `|x0| ≈ 0.5 s × |v0|` 라 상한(≈ 7.8·|v0|)에 걸리지 않는다.
  */
-export function capHandoffVelocity(v0: number, _x0: number, _response: number = SPRING_RESPONSE): number {
-  return v0;
+export function capHandoffVelocity(v0: number, x0: number, response: number = SPRING_RESPONSE): number {
+  const limit = ((2 * Math.PI) / response) * Math.abs(x0);
+  if (Math.abs(v0) <= limit) return v0;
+  return limit === 0 ? 0 : Math.sign(v0) * limit;
 }
 
 /**
