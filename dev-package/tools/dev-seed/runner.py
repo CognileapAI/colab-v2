@@ -77,6 +77,27 @@ PREVIEW_FORMAT_SEQS = set(x[0] for x in PREVIEW_SEQS)
 
 ULID_RE = re.compile(r"/datasets/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 ANALYZE_DONE_CSS = '[data-testid="up-analyze"][data-stage="3"]'
+
+# ── 기준 격자 — 서버 수용과 전체 파일 렌더를 따로 본다 ─────────────────────────
+# 「예상 영역」(up-grid-expected-bounds)은 grid-options 의 currentGrid 로 선다
+# (UploadModal.tsx `status.ready` → `upload.gridOptions` · GridUploadBlock.tsx).
+# 서버가 격자 쌍을 받아 격자 프로파일을 세웠다는 뜻이고 렌더와 무관하다.
+# 「맞습니다」(up-grid-accept)는 전체 파일 렌더가 성공해야만 선다(gridFlow.ts `위치 확인`).
+# 렌더가 RENDER_TIMEOUT 으로 실패하면 up-preview-error 만 남고 판정 표시는 끝내 오지 않는다
+# (dev 4회차 seq 18 · 143파일 463MB npy · 846s 정체).
+GRID_ACCEPTED_CSS = '[data-testid="up-grid-expected-bounds"]'
+PREVIEW_ERROR_CSS = '[data-testid="up-preview-error"]'
+PREVIEW_BUSY_CSS = ('[data-testid="up-preview-stage"],[data-testid="up-grid-spinner"],'
+                    '[data-testid="up-grid-progress"]')
+# 서버 수용 뒤 렌더 판정을 기다리는 상한(s). dev 실측 RENDER_TIMEOUT 139~147s 보다 넉넉히.
+GRID_RENDER_WAIT_S = int(os.environ.get("COLAB_SEED_GRID_RENDER_WAIT_S") or 300)
+
+
+def preview_required(ds):
+    """계획이 렌더 성립을 요구하는 행인가(`preview_expected` 가 「렌더 성립…」)."""
+    return str(ds.get("preview_expected") or "").strip().startswith("렌더 성립")
+
+
 PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 
 # ── 「가공 단계」(Lv) ────────────────────────────────────────────────────────
@@ -1257,7 +1278,10 @@ def ensure_step_two(st):
 
 
 def do_grid(st, ds):
-    """기준 격자 — 쌍 지정 또는 건너뛰기. 불일치는 자동 진행하지 않는다."""
+    """기준 격자 — 쌍 지정 또는 건너뛰기. 불일치는 자동 진행하지 않는다.
+
+    반환 = 미리보기 없이 등록으로 잇는 사유(전체 파일 렌더 미확인) 또는 None.
+    """
     grid = ds.get("grid_files") or []
     if ds.get("grid_skip") or not grid:
         log("  · 기준 격자 건너뛰기")
@@ -1283,13 +1307,41 @@ def do_grid(st, ds):
     reject_css = ('[data-testid="up-grid-block"][data-grid-state="형상 불일치"],'
                   '[data-testid="up-grid-block"][data-grid-state="축 판별 실패"],'
                   '[data-testid="up-grid-block"][data-grid-state="짝 불일치"]')
-    outcome = wait_any([
+    verdicts = [
         ["mismatch", lambda: count('[data-testid="up-grid-mismatch"]') > 0],
         ["reject", lambda: count(reject_css) > 0],
         ["bounds", lambda: count(bound_css) > 0],
         ["gate", lambda: count('[data-testid="grid-attach-confirm"]') > 0],
         ["accept", lambda: count('[data-testid="up-grid-accept"]') > 0],
+    ]
+    # 1단 — 판정 표시 또는 서버 격자 수용(예상 영역). 불일치는 같은 응답으로 서므로 먼저 본다.
+    started = time.time()
+    outcome = wait_any(verdicts + [
+        ["accepted", lambda: count(GRID_ACCEPTED_CSS) > 0],
     ], limit, label="격자 판정", dry="accept")
+    if outcome == "accepted":
+        # 2단 — 전체 파일 렌더 판정을 상한 안에서 본다. 렌더 성립을 요구하는 행은
+        # 종전 상한을 그대로 쓰고, 그 밖의 행은 GRID_RENDER_WAIT_S 까지만 본다.
+        strict = preview_required(ds)
+        left = max(1, int(limit - (time.time() - started)))
+        bound = left if strict else min(left, GRID_RENDER_WAIT_S)
+        log("  · 격자 서버 수용(예상 영역) — 전체 파일 렌더 판정 대기 상한 " + str(bound) + "s")
+        outcome = wait_any(verdicts + [
+            ["render_failed", lambda: count(PREVIEW_ERROR_CSS) > 0
+                and count(PREVIEW_BUSY_CSS) == 0],
+        ], bound, label="격자 렌더 판정")
+        if outcome in (None, "render_failed"):
+            render_reason = ("전체 파일 렌더 " + ("실패" if outcome else "미도착("
+                             + str(bound) + "s)") + " — 격자는 서버 수용, 위치 확인 없이 등록")
+            if strict:
+                dump_failure(str(ds["seq"]).zfill(2) + "-grid-render", render_reason)
+                raise Fail("렌더 성립을 요구하는 행인데 " + render_reason)
+            log("  ! " + render_reason + "(seq " + str(ds["seq"]) + ")")
+            st.setdefault("grid_render_unverified", [])
+            if ds["seq"] not in st["grid_render_unverified"]:
+                st["grid_render_unverified"].append(ds["seq"])
+            save_state(st)
+            return render_reason
     if outcome == "bounds":
         # 화면 축자 — 「격자를 적용했지만 결과 위치가 한반도 밖으로 나왔습니다.
         # 지도형을 만들지 않았습니다.」 등록 자체는 막히지 않는다 — 기록하고 이어간다.
@@ -1574,7 +1626,7 @@ def do_dataset(st, ds):
     st["datasets"][seq]["processing_level"] = select_level(st, ds)
     select_classify(ds)
     save_state(st)
-    do_grid(st, ds)
+    grid_no_preview = do_grid(st, ds)
     ensure_step_two(st)
 
     spot(st, "reg-name", [("testid", "reg-name"), ("label", "데이터셋 이름")],
@@ -1629,9 +1681,12 @@ def do_dataset(st, ds):
     elapsed = round(time.time() - started, 1)
     SHOT_DIR.mkdir(parents=True, exist_ok=True)
     ab(["screenshot", str(SHOT_DIR / (seq.zfill(2) + ".png"))], expect_ok=False)
-    st["datasets"][seq]["status"] = "registered_no_preview" if no_preview else "done"
+    st["datasets"][seq]["status"] = ("registered_no_preview"
+                                     if no_preview or grid_no_preview else "done")
     if no_preview:
         st["datasets"][seq]["analysis_failure_reason"] = no_preview
+    if grid_no_preview:
+        st["datasets"][seq]["no_preview_reason"] = grid_no_preview
     st["datasets"][seq]["dataset_id"] = did
     st["datasets"][seq]["auxiliary_verified"] = auxiliary_verified
     st["datasets"][seq]["finished"] = now()

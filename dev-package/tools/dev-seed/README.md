@@ -203,6 +203,14 @@ python3 runner.py --phase datasets --from-seq <실패 순번> --base-url <주소
   **다시** 누르지 않으면 기준 격자가 붙지 않는다(러너가 등록 직전에 한 번 더 확인한다).
 - 경계 위생 실패(한반도 밖)는 등록을 막지 않는다 — 지도형만 안 생긴다. 기록하고 이어간다.
   형상·축·짝 불일치와 `up-grid-mismatch` 는 판정이 필요하므로 멈춘다.
+- **격자 대기는 두 단이다**(⭑ 2026-09-24 · dev 4회차 seq 18 846초 정체). 1단은 판정 표시 또는
+  서버 격자 수용 = 「예상 영역」(`up-grid-expected-bounds`, grid-options `currentGrid` · 렌더와 무관)을
+  기다린다. 수용 뒤 2단은 전체 파일 렌더의 판정(「맞습니다」 등)을 상한 안에서 본다.
+  렌더가 실패(`up-preview-error` · 진행 표시 없음)하거나 상한(`COLAB_SEED_GRID_RENDER_WAIT_S`,
+  기본 300초)을 넘기면 — 계획 `preview_expected` 가 「렌더 성립…」인 행은 **멈추고**, 그 밖의 행은
+  등록을 잇는다. 상태 `registered_no_preview` · 사유 `no_preview_reason` · 목록 `grid_render_unverified`.
+  「맞습니다」는 미리보기 칸의 표시 상태만 바꾸고(`UploadModal` 이 `onAccept` 을 넘기지 않는다)
+  격자 파일은 업로드에 이미 「기준 격자 파일」로 실려 등록된다.
 
 ### 6-4. 계보 행 지목
 
