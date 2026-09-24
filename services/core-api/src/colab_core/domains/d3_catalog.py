@@ -336,8 +336,14 @@ def list_lineage_candidate_cores(
 # ⚠ **여기까지가 이 함수의 일이다.** 순위·근거·확신도는 D10 의 몫이고(`〈72〉-㉮` 와 같은 분담),
 #   계약·중계 본문은 `WU1b`·`WU0` 의 자리다 — 이 모듈은 계약을 알지 못한다.
 #
-# ⛔ **업로드 자신을 빼지 않는다**(`exclude_id=None`). 제안을 묻는 시점의 업로드는 아직
-#   데이터셋이 아니라 뺄 ID 자체가 없다(`routes/ingestion.py:538-562` — 인자는 `uploadId` 다).
+# ⛔ **뺄 ID 가 없다**(`exclude_id=None`). 제안을 묻는 시점의 업로드는 아직 데이터셋이 아니다
+#   (`routes/ingestion.py:538-562` — 인자는 `uploadId` 다). 그래서 **ID 대신 값으로** 가른다 —
+#   ⭑ ⟨2026-09-24 · Ted 결정 ⑦⟩ **이름 초안과 파일명이 둘 다 같은 후보는 뺀다.** 근거는 luna
+#   실측이다: J5 대조군의 억지 선택 6건 중 **5건이 자식 자신**이었고, 본군에서도 한 번 났다
+#   (`dev-package/reports/k3-lineage-probe/README.md` 「luna 실측」). 같은 자료가 이미 등록돼
+#   있으면 그 데이터셋이 후보에 서고, 정답 부모가 사라진 자리를 「글자가 가장 많이 겹치는 후보
+#   = 자기 자신」이 채운다. 모델에게 그것은 후보 밖 ID 가 아니라 **오답**이라 아무 방어선에도
+#   안 걸린다. ⚠ **이름 하나로는 빼지 않는다** — 같은 이름의 다음 판은 이전 판의 부모일 수 있다.
 # ════════════════════════════════════════════════════════════════════════════
 
 #: 전략 두 벌. **둘 다 구현해 나란히 잰다** — Ted 결정 ③(후보 필터)이 열려 있고,
@@ -402,6 +408,31 @@ def lineage_candidate_tokens(upload_meta: dict) -> list[str]:
     return tokens[:_MAX_FILTER_TOKENS]
 
 
+def _self_candidate_ids(session: Session, upload_meta: dict,
+                        cores: list[DatasetCore]) -> set[str]:
+    """후보 중 **업로드 자신**인 것의 ID. 둘 다 같을 때만 자신이다(머리말 · Ted 결정 ⑦).
+
+    ⑴ 이름 초안(`datasetNameDraft`)이 후보 이름과 같고, ⑵ 업로드 파일 이름이 그 후보의
+    **본체 파일 이름 중 하나**와 같다. 둘 중 하나만 같으면 빼지 않는다 — 이름만 같은 것은
+    다른 판본이고, 파일명만 같은 것은 같은 원본을 쓴 남의 자료다.
+
+    파일 이름은 이미 있는 질의(`candidate_body_files`)로 읽는다. **새 SQL 을 만들지 않는다** —
+    그 질의는 이 세션의 RLS 를 그대로 타므로 잠긴 데이터셋의 본체는 보이지 않고, 그때는
+    「확인할 수 없으니 남긴다」로 떨어진다. 후보 하나를 덜 빼는 쪽이 진짜 부모를 지우는 쪽보다
+    싸다. 같은 이유로 이름·파일명은 **원문 그대로** 견준다(양끝 공백만 버린다).
+    """
+    draft = (upload_meta.get("datasetNameDraft") or "").strip()
+    file_name = ((upload_meta.get("file") or {}).get("fileName") or "").strip()
+    if not draft or not file_name:
+        return set()
+    # 이름이 같은 후보만 파일을 읽는다 — 보통 0~1건이라 질의가 모집단을 따라 커지지 않는다.
+    same_name = [c.dataset_id for c in cores if (c.name or "").strip() == draft]
+    if not same_name:
+        return set()
+    files = candidate_body_files(session, [Ulid(i) for i in same_name])
+    return {i for i in same_name if file_name in files.get(i, ())}
+
+
 def _candidate_page(session: Session, *, query: str | None = None,
                     topic: str | None = None, limit: int) -> list[DatasetCore]:
     """사람이 고르는 후보와 **같은 질의**. 여기서 새 SQL 을 만들지 않는다."""
@@ -422,6 +453,8 @@ def select_lineage_candidates(session: Session, *, lab_id, upload_meta: dict,
         끼워 넣는 순간 경계가 두 벌이 되고, 두 벌이 된 경계는 언젠가 갈린다.
     :param upload_meta: 계약 `LineageSuggestionRequest` 와 같은 모양의 dict —
         `datasetNameDraft`(선택) · `subject`(선택) · `file`(`UploadedFileMeta`).
+        **이름 초안과 파일 이름이 둘 다 같은 후보는 빠진다**(`_self_candidate_ids` · 머리말).
+        두 값 중 하나라도 없으면 자신을 가릴 수 없으므로 아무것도 빼지 않는다.
     :param strategy: `"recent"` = 오늘의 모집단 그대로(무필터 최근순).
         `"filtered"` = 같은 모집단을 **주제 ∪ 이름/파일명 토큰**으로 좁힌 것.
         합집합인 이유는 recall 이 이 회차의 판정 대상이기 때문이다 — 교집합으로 좁히면
@@ -447,6 +480,17 @@ def select_lineage_candidates(session: Session, *, lab_id, upload_meta: dict,
         if why not in reasons:
             reasons.append(why)
 
+    def drop_self() -> None:
+        """모은 뒤·상한 k 로 자르기 **전에** 뺀다.
+
+        모은 것이 k 보다 많으면 빈 자리를 뒤의 진짜 후보가 채운다. ⚠ 다만 질의 하나가
+        k행만 읽어 오므로(위 주석) **늘 채워지지는 않는다** — 결과는 뺀 건수만큼 짧아질 수
+        있고, **어느 쪽이든 k 를 넘지는 않는다.**
+        """
+        for dataset_id in _self_candidate_ids(session, upload_meta, list(cores.values())):
+            cores.pop(dataset_id, None)
+            matched.pop(dataset_id, None)
+
     if strategy == FILTERED_CANDIDATES:
         topic = (upload_meta.get("subject") or "").strip() or None
         if topic:
@@ -457,10 +501,14 @@ def select_lineage_candidates(session: Session, *, lab_id, upload_meta: dict,
             # 합집합 상위 k 안이면 자기를 끌어온 질의 안에서도 상위 k 안이다.
             for core in _candidate_page(session, query=token, limit=k):
                 take(core, f"token:{token}")
+        # 자신을 뺀 뒤 0건이면 아래 최근순 폴백으로 떨어진다 — 「자신 하나만 걸렸다」를
+        # 「살펴볼 후보가 없다」로 접지 않는다(:param strategy: 의 0건 규율과 같은 자리).
+        drop_self()
 
     if not cores:
         for core in _candidate_page(session, limit=k):
             take(core, RECENT_CANDIDATES)
+        drop_self()
 
     ordered = sorted(cores.values(), key=lambda c: c.dataset_id)
     ordered.sort(key=lambda c: c.last_modified_at, reverse=True)

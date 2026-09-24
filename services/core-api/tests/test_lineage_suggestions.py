@@ -501,6 +501,57 @@ def test_주제를_고른_업로드는_그_주제의_후보만_받는다(p2_clie
         "주제를 고른 업로드가 모집단 전체를 받았다 — 필터가 배선되지 않았다."
 
 
+# ─── 자식 자신은 요청에 실리지 않는다 (Ted 결정 ⑦ · intent 「판정 기록 2회차」 7) ───
+#
+# luna 실측 J5 에서 억지 선택 6건 중 5건이 **자식 자신**이었다. 같은 자료가 이미 등록돼
+# 있으면 그 데이터셋이 후보에 서고, 모델에게는 후보 밖 ID 가 아니라 **오답**으로 보인다.
+# 빼는 조건은 이름 초안과 파일명이 **둘 다** 같을 때뿐이다(`d3_catalog` 의 같은 이름 절).
+_TWIN_SEED = "00000000000000000000DSTWN1"
+_TWIN_NAME = "A 강우 재적재 표본"
+_TWIN_FILE = "twin_sample.npy"
+
+
+def _seed_body_file(sql, dataset_id, file_id, *, file_name) -> None:
+    sql("""INSERT INTO d3_file (id, lab_id, dataset_id, kind, file_name,
+                                size_bytes, storage_key)
+           VALUES (:id, :lab, :dataset, '본체', :file_name, 7, :key)""",
+        {"id": file_id, "lab": LAB_A, "dataset": dataset_id,
+         "file_name": file_name, "key": f"k/{file_id}"})
+
+
+def test_이름과_파일명이_둘_다_같은_데이터셋은_후보로_나가지_않는다(
+        p2_client, recording_ai, sql) -> None:
+    """**중계까지 배선됐는가**가 이 시험의 전부다 — 도메인 단위 시험은
+    `test_lineage_candidate_selection.py` 의 같은 이름 절이 따로 본다."""
+    from test_uploads import one_body
+
+    _seed_dataset(sql, _TWIN_SEED, name=_TWIN_NAME, topic="강우·강수",
+                  source_label="기상청", modified="2026-05-01T00:00:00Z")
+    _seed_body_file(sql, _TWIN_SEED, "00000000000000000000000FT1", file_name=_TWIN_FILE)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    receipt = make_upload(client, files=one_body(_TWIN_FILE))
+    _get(client, receipt["uploadId"], datasetNameDraft=_TWIN_NAME)
+    sent = _by_id(_sent_candidates(seen))
+    assert _TWIN_SEED not in sent, "업로드와 이름·파일명이 둘 다 같은 데이터셋을 후보로 실었다."
+    assert DS_A1 in sent, "자기 자신을 빼면서 남의 후보까지 지웠다."
+
+
+def test_이름만_같은_다른_판본은_후보로_그대로_나간다(
+        p2_client, recording_ai, sql) -> None:
+    from test_uploads import one_body
+
+    _seed_dataset(sql, _TWIN_SEED, name=_TWIN_NAME, topic="강우·강수",
+                  source_label="기상청", modified="2026-05-01T00:00:00Z")
+    _seed_body_file(sql, _TWIN_SEED, "00000000000000000000000FT1", file_name=_TWIN_FILE)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    receipt = make_upload(client, files=one_body("다른_표본.npy"))
+    _get(client, receipt["uploadId"], datasetNameDraft=_TWIN_NAME)
+    assert _TWIN_SEED in _by_id(_sent_candidates(seen)), \
+        "이름만 같은 다른 판본을 뺐다 — 사람이 고를 수 있는 부모가 사라진다."
+
+
 def test_후보가_0건이면_후보를_싣지_않고_응답은_여전히_200_0건이다(
         p2_client, recording_ai, monkeypatch) -> None:
     """빈 연구실의 첫 업로드는 **정상 응답**이다 — 5xx 로 끝내지 않는다."""

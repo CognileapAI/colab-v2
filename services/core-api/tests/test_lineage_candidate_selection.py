@@ -149,3 +149,102 @@ def test_모르는_전략과_0_이하_k_는_거부한다(session_factory, sql):
 ])
 def test_토큰은_확장자와_두글자_라틴_조각을_버린다(meta, expected):
     assert d3_catalog.lineage_candidate_tokens(meta) == expected
+
+
+# ═══════ 자식 자신 제외 — Ted 결정 ⑦ (intent 「판정 기록 2회차」 7 · 2026-09-24) ═══════
+#
+# luna 실측의 J5 대조군에서 **억지 선택 6건 중 5건이 자식 자신**이었다
+# (`dev-package/reports/k3-lineage-probe/README.md` 「luna 실측」). 제안을 묻는 시점의
+# 업로드는 아직 데이터셋이 아니라 뺄 ID 가 없는데, 같은 자료가 이미 등록돼 있으면 그
+# 데이터셋이 후보에 서고, 정답 부모가 사라진 자리에서 모델이 그것을 고른다.
+#
+# ⛔ 빼는 조건은 **이름 초안과 파일명이 둘 다 같을 때뿐**이다 — 이름만 같은 다른 판본은
+#   사람이 실제로 고를 수 있는 부모라 남긴다(같은 이름의 다음 판이 이전 판의 자식인 경우).
+TWIN_NAME = "A 강우 재적재 표본"
+TWIN_FILE = "twin_sample.npy"
+#: LAB_A 의 쌍둥이 — 업로드와 이름·파일명이 둘 다 같다. **모집단에서 가장 최근**이라
+#: 상한 k 앞에서 빠지는지를 이 한 건이 가른다.
+DS_TWIN = "00000000000000000000DSTWN1"
+#: LAB_B 의 같은 이름·같은 파일명. 경계가 한 벌이면 어느 쪽 세션에서도 남의 것은 안 보인다.
+DS_TWIN_B = "00000000000000000000DSTWNB"
+
+
+def _seed_file(sql, dataset_id, file_id, *, file_name, kind="본체",
+               lab=LAB_A, account=ACC_A_RES):
+    sql("""INSERT INTO d3_file (id, lab_id, dataset_id, kind, file_name,
+                                size_bytes, storage_key)
+           VALUES (:id, :lab, :dataset, :kind, :file_name, 7, :key)""",
+        {"id": file_id, "lab": lab, "dataset": dataset_id, "kind": kind,
+         "file_name": file_name, "key": f"k/{file_id}"},
+        account_id=account, lab_id=lab)
+
+
+def _seed_twin(sql, dataset_id=DS_TWIN, file_id="00000000000000000000000FT1", *,
+               name=TWIN_NAME, file_name=TWIN_FILE, modified="2026-05-01T00:00:00Z",
+               lab=LAB_A, account=ACC_A_RES):
+    _seed(sql, dataset_id, name=name, topic=TOPIC_RAIN, modified=modified,
+          source_label="기상청", lab=lab, account=account)
+    _seed_file(sql, dataset_id, file_id, file_name=file_name, lab=lab, account=account)
+
+
+@pytest.mark.parametrize("strategy", ["recent", "filtered"])
+def test_이름과_파일명이_둘_다_같은_후보는_두_전략에서_모두_빠진다(
+        strategy, session_factory, sql):
+    _seed_twin(sql)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy=strategy, k=20,
+                           upload_meta=_upload(TWIN_NAME, subject=TOPIC_RAIN,
+                                               file_name=TWIN_FILE)))
+    assert DS_TWIN not in got, "이름·파일명이 둘 다 같은 후보가 남았다 — 모델이 자기 자신을 고른다"
+    assert DS_A1 in got, "자기 자신을 빼면서 남의 후보까지 지웠다"
+
+
+def test_이름만_같은_다른_판본은_남는다(session_factory, sql):
+    """같은 이름의 다음 판은 이전 판의 **부모일 수 있다** — 이름 하나로 빼지 않는다."""
+    _seed_twin(sql)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy="recent", k=20,
+                           upload_meta=_upload(TWIN_NAME, file_name="other_sample.npy")))
+    assert DS_TWIN in got, "이름만 같은 다른 판본을 뺐다 — 사람이 고를 수 있는 부모가 사라진다"
+
+
+def test_파일명만_같은_후보는_남는다(session_factory, sql):
+    _seed_twin(sql)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy="recent", k=20,
+                           upload_meta=_upload("A 강우 다른 판본", file_name=TWIN_FILE)))
+    assert DS_TWIN in got, "파일명만 같은 후보를 뺐다"
+
+
+def test_자기_자신을_빼도_후보는_상한_k_를_넘지_않는다(session_factory, sql):
+    """쌍둥이가 **모집단에서 가장 최근**이라 빼지 않으면 k=2 의 첫 자리에 선다.
+
+    빼는 자리는 상한으로 자르기 **전**이다 — 자른 뒤에 빼면 k 자리 안에서만 사라진다.
+    질의 하나가 k행만 읽어 오므로 빈 자리가 늘 채워지지는 않는다. 이 시험이 지키는
+    불변식은 **「넘지 않는다」**이지 「언제나 k건」이 아니다.
+    """
+    _seed_twin(sql)
+    meta = _upload(TWIN_NAME, file_name=TWIN_FILE)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        filtered = _ids(_select(session, strategy="filtered", k=2, upload_meta=meta))
+        recent = _ids(_select(session, strategy="recent", k=2, upload_meta=meta))
+    assert DS_TWIN not in filtered and DS_TWIN not in recent, "자신이 남았다"
+    assert len(filtered) <= 2 and len(recent) <= 2, \
+        f"상한 k=2 를 넘겼다: filtered={filtered} recent={recent}"
+    assert recent == [DS_A2], f"자신을 뺀 자리가 아니라 다른 후보가 사라졌다: {recent}"
+
+
+def test_자기_자신_제외는_세션_경계_안에서_판정된다(session_factory, sql):
+    """파일명을 읽는 질의도 이 세션의 RLS 를 그대로 탄다 — 경계를 두 벌로 만들지 않는다."""
+    _seed_twin(sql)
+    _seed_twin(sql, DS_TWIN_B, "00000000000000000000000FTB",
+               lab=LAB_B, account=ACC_B_PROF)
+    meta = _upload(TWIN_NAME, file_name=TWIN_FILE)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        a_side = _ids(_select(session, strategy="recent", k=20, upload_meta=meta))
+    with scoped_ro(session_factory, ACC_B_PROF, LAB_B) as session:
+        b_side = _ids(_select(session, lab_id=LAB_B, strategy="recent", k=20,
+                              upload_meta=meta))
+    assert DS_TWIN not in a_side and DS_TWIN_B not in a_side
+    assert DS_TWIN_B not in b_side and DS_TWIN not in b_side
+    assert DS_A1 in a_side and DS_B1 in b_side

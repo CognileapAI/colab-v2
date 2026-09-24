@@ -76,9 +76,11 @@ def test_k3_계보_제안_요청에_실을_후보를_적어_둔다(p2_client, sq
         seed_rows_note=("일회용 DB 에는 시험 시드(DSA1·DSA2)가 같은 연구실에 함께 서 있다."
                         " 그 둘도 사람이 고를 수 있는 진짜 후보라 후보에 세고, 케이스마다"
                         " `candidates_outside_corpus` 로 몇 건인지 드러낸다."),
-        child_itself_note=("제안을 묻는 시점의 업로드는 아직 데이터셋이 아니라 뺄 ID 가 없다"
-                           "(`exclude_id` 없음). 그래서 자식 자신이 후보에 남는다 — 모델이 그것을"
-                           " 고르면 후보 밖 ID 가 아니라 **오답**이다."),
+        child_itself_note=("⭑ 2026-09-24 Ted 결정 ⑦ 뒤 — 업로드의 **이름 초안과 파일명이 둘 다**"
+                           " 같은 데이터셋은 후보에서 빠진다(`d3_catalog._self_candidate_ids`)."
+                           " 이 코퍼스의 자식은 넷 다 이미 등록돼 있으므로 넷 다 자기 자신이"
+                           " 빠진 채로 후보를 받는다 — `child_itself_in_candidates` 가 그 증거다."
+                           " 이름만 같은 다른 판본은 남는다."),
         local_sha=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         cases=rows)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,3 +89,9 @@ def test_k3_계보_제안_요청에_실을_후보를_적어_둔다(p2_client, sq
     # 기록 자체가 산출물이다 — 구조 무결성만 단언한다. 수치로 합격/불합격을 가르지 않는다.
     assert len(rows) == 4 and sum(len(r["parents"]) for r in rows) == 6
     assert all(1 <= r["candidate_count"] <= _ing.LINEAGE_CANDIDATE_LIMIT for r in rows)
+    # ⭑ 결정 ⑦ — 업로드 메타는 자식의 **실제 이름·실제 파일명**이라(`_upload_meta`) 자기 자신은
+    #   중계가 부르는 그 함수 안에서 빠진다. 여기서 남으면 J5 가 잰 그 자리가 그대로다.
+    assert not any(r["child_itself_in_candidates"] for r in rows), \
+        "자식 자신이 후보에 남았다 — 정답 부모가 없을 때 모델이 고르는 것이 바로 그것이다."
+    assert all(r["upload_meta"]["file"]["fileName"] for r in rows), \
+        "파일명 없는 업로드 메타로는 자기 자신을 가릴 수 없다."
