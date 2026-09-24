@@ -6,6 +6,7 @@
 - lifecycle task: `32e822fa377b4f23b5daf376f5f1b192` (lane-worker · 선언 게이트 5종: frontend-typecheck · frontend-test · frontend-fixture-reach · frontend-design-lint · frontend-visual)
 - 준비(3-0): `frontend/` 에서 `npm ci` 종료 0
 - 상태: 구현 5항목 완료 · vitest 전부 green · task 게이트 red(준비) 2(호스트 뮤텍스) — 레인 완료 조건(게이트 green) 미충족
+  - 〔정정 2026-09-25 · 통합 F-int〕 뒤이은 재측정 run `9e10e397e0294bda9418d9033f1b92c8`(커밋 `1b263dae`)이 **green 5 / red(판정) 0 / red(준비) 0** 이다 — §4-2 정정.
 
 ## 1. 항목별 before → after
 
@@ -34,6 +35,7 @@
 | WU-A4 — 5개 선택자 `:active`(값 17) | `WU-A4` 6건(＋ `.on` 순서) | green |
 
 - RED 확인(시험 작성 커밋 `8ae40b65` 시점): 35건 중 31 실패 · 4 통과(회귀 고정 — #10 대비 · 전환 0 즉시 닫기 2 · dragOver 버블 차단). 실패 사유 예: `규칙 부재: .modal.modal-takeover (starting-style)` · `expected [ 'props.onClose', …(6) ] to have a length of 1 but got 7` · `expected "vi.fn()" to be called +0 times, but got 1 times`.
+  - 〔정정 2026-09-25 · 통합 F-int〕 `#1 값 2` 「완전히 닫힌 뒤 다시 열면 처음(파일 고르기) 장면이다 (PRD-13)」의 RED 는 단언 실패가 아니다 — 시험 작성 시점에는 닫기가 곧바로 언마운트해 모달이 남지 않았고, 그래서 시험 고정물(`fireEvent.transitionEnd(modal() as HTMLElement, …)` 에 null)이 던졌다. 이 시험이 고정하는 동작(완전히 닫힌 뒤 ①)은 기준에서도 성립했다(acceptance A20).
 
 ## 3. 시험 수
 
@@ -68,6 +70,7 @@
 - `lifecycle handoff --mode=complete` → 종료 78 `lifecycle evidence blocked: gate failures remain`. **COLAB_HANDOFF 없음.** 호스트가 비었을 때 같은 task 로 `gates/run.sh task` 재측정이 남았다(상한 연장·재시도 루프는 하지 않았다).
 - 이 레인이 띄운 audit:preview(4187)는 게이트 뒤 종료했다.
 - 이 절은 task 결합 실행 **뒤** 고쳤다 — 재측정은 이 커밋 위에서 해야 한다.
+- 〔정정 2026-09-25 · 통합 F-int〕 위 run `9e65e0d6` 은 커밋 `3d1cbb2e` 에서 잰 run 이고 그 뒤 이 보고서가 바뀌었으므로(`1b263dae`) 최종 증거가 아니다. 유효한 최종 run = 같은 task 의 `9e10e397e0294bda9418d9033f1b92c8`(커밋 `1b263dae` · tree `07ef14e4`): **green 5 / red(판정) 0 / red(준비) 0** — frontend-typecheck · frontend-test · frontend-fixture-reach · frontend-design-lint · frontend-visual 모두 종료 0. 근거: Git common `colab-harness/5af0e21c0d963561dd0058c710309a0e/32e822fa377b4f23b5daf376f5f1b192/9e10e397e0294bda9418d9033f1b92c8/gate-summary.json`(acceptance A16). §5 의 캡처 대조 미실행은 그대로다.
 
 ## 5. 하지 않은 것
 
@@ -82,6 +85,7 @@
 
 - 닫기 동작이 0.3초 늦어진다(전환 시간이 있을 때). 그 동안 모달은 DOM 에 남고 `data-state="closing"` 이다 — 이 속성을 읽는 기존 코드·시험은 없다.
 - 등록·반영 성공 뒤 닫기도 같은 전환을 탄다(`beginClose(); navigate(…)`). 성공 직후 0.3초 안에 업로드 단추를 다시 누르면 방금 끝난 모달이 되돌아온다(값 2 의 일반 규칙). 확인 필요 여부는 advisor ③ 입력.
+  - 〔정정 2026-09-25 · 통합 F-int〕 advisor ② 판정으로 바뀌었다 — 값 2 의 되살리기는 사람이 닫은 미완 세션에만 적용된다. 등록·반영 확정 뒤의 닫기 도중 다시 누르면 새 모달(①)이 선다(`dev-package/sessions/design-fix-20260924-F-int.md`).
 - 닫기 전환 중 `.modal-takeover` 에 transform 이 걸려 안쪽 `position: fixed` 요소(`.reg-actions` · 640px 이하 `.dr-pop`)의 기준이 0.3초 동안 모달이 된다. 쉬는 상태(transform 없음)에서는 종전과 같다.
 - 막(overlay)은 전환하지 않아 닫기 끝에 한 번에 사라진다 · 열기 때도 막은 즉시 선다(종전과 같음).
 - 간격·치수 변화 0 — 이 레인의 CSS 변경은 색·전환·기준점만이다.
