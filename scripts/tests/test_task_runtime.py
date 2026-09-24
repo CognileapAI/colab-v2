@@ -377,6 +377,7 @@ class ResearcherTaskHookTests(unittest.TestCase):
         task_id = self.printed(context, 'task_id')
         self.assertIn('codex-aid', context)
         self.assertIn(f'lifecycle handoff --task {task_id} --mode read-only', context)
+        self.assertNotIn('prepares dependencies', context)
         self.assertIsNone(contract.load_task(self.root.resolve(), task_id)['agent_id'])
 
     def test_codex_payload_without_agent_id_still_begins_without_agent_id(self):
