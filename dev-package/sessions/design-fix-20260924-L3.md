@@ -84,3 +84,11 @@
 - 놓을 때 속도는 누른 자리 · 임계 전 이동 · 놓은 자리를 모두 이동 기록으로 센다(마지막 100ms 창). 놓기 전 100ms 이상 멈춰 있었으면 속도 0 → 관성 없음.
 - 기존 끌기 시험(실시간 rAF)에서도 놓은 뒤 관성이 돈다. 단언은 모두 놓은 직후 동기라 값이 바뀌지 않고, 언마운트 때 프레임을 취소한다. act 경고 0건.
 - 새 파일: `frontend/src/components/preview/spring.ts`(38줄 · 의존성 0) · 시험 2파일(`-L3.test.tsx` 14건 · `-L3b.test.tsx` 15건).
+
+## 추기 — 최종 게이트 run · 호스트 뮤텍스 결함 (handoff 뒤 · 이 보고서만 바뀜)
+
+- 보고서 커밋(`f3d198e3`) 뒤 같은 호출을 두 번 돌렸다.
+  - run 2: **green 4 / red(판정) 0 / red(준비) 1** — `frontend-test` 가 호스트 뮤텍스를 900초 기다리다 준비 실패(판정 안 됨 · 종료 78).
+  - run `ec36f40a3d7a460090fad7577292d909`(커밋 `f3d198e3`): **green 5 / red(판정) 0 / red(준비) 0** · vitest 1642 통과 · `frontend-visual` 근거 `/tmp/frontend-visual-VVLpUd/frontend-visual`. `lifecycle handoff --mode complete` 가 이 run 으로 통과했다.
+- run 2 준비 실패의 원인 = **`frontend-visual` 이 띄운 agent-browser 데몬이 뮤텍스 잠금 fd 를 물려받아, 게이트가 끝난 뒤에도(ppid 1 고아) 잠금을 쥐고 있었다.** `fuser /tmp/colab-v2-gate-host-mutex/host` 가 이 레인 run 1 의 데몬(77분 경과)을 가리켰다. 그동안 다른 레인의 게이트도 같은 잠금에서 기다렸다. 이 레인은 자기 게이트가 띄운 데몬(cwd = 이 워크트리 · ppid 1)만 세 번 종료했다. 다른 사본의 고아 데몬(`30 CoLAB-v2/…/agent-a52182c640380b63e`)은 건드리지 않았다.
+- 이 결함이 걸리는 검사: 확인된 것 없음 — `gate-host-mutex-selftest` 가 자식 프로세스의 fd 상속을 재는지는 확인하지 않았다. 후속: `gates/tools/frontend-visual.sh`(또는 `live_audit.sh`)가 agent-browser 를 띄울 때 잠금 fd(11)를 닫거나 끝에 데몬을 닫아야 한다.
