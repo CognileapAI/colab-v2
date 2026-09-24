@@ -187,6 +187,63 @@ class IntentRefGateTests(unittest.TestCase):
                      "dev-package/intent/2026-01-02-draft.md": DRAFT.replace("draft line", "rewritten")})
         self.assertExit(self.run_gate(root, base), 0)
 
+    def test_intent_approved_on_base_after_the_fork_is_protected(self):
+        # advisor-review 2026-09-25: protection was decided at the fork only, so a PR that
+        # forked before develop approved an intent could rewrite it and stay green.
+        root, _ = self.repo()
+        draft = "dev-package/intent/2026-01-02-draft.md"
+        git(root, "branch", "-M", "main")
+        git(root, "checkout", "-q", "-b", "feature")
+        self.commit(root, "rewrite draft\n\n" + TRAILER,
+                    {draft: DRAFT.replace("- draft line", "- draft line REWRITTEN")})
+        git(root, "checkout", "-q", "main")
+        self.commit(root, "approve draft", {draft: DRAFT.replace("승인 **미승인**", "승인 2026-01-03 Ted")})
+        result = self.run_gate(root, base=git(root, "rev-parse", "main"), head=git(root, "rev-parse", "feature"))
+        self.assertExit(result, 1)
+        self.assertIn(draft, result.stdout)
+
+    def test_the_approval_commit_itself_is_green(self):
+        root, base = self.repo()
+        draft = "dev-package/intent/2026-01-02-draft.md"
+        self.commit(root, "approve and edit\n\n" + TRAILER,
+                    {draft: DRAFT.replace("승인 **미승인**", "승인 2026-01-03 Ted").replace("draft line", "final line")})
+        self.assertExit(self.run_gate(root, base), 0)
+
+    def test_pure_insertion_between_existing_lines_is_green(self):
+        # difflib reported some pure insertions as replacements; git's diff does not.
+        root, base = self.repo()
+        self.commit(root, "insert\n\n" + TRAILER,
+                    {INTENT: APPROVED.replace("- first line\n", "- first line\n- second line\n- inserted\n")})
+        self.assertExit(self.run_gate(root, base), 0)
+
+    def test_non_utf8_path_in_range_does_not_crash(self):
+        root, base = self.repo()
+        raw = os.path.join(os.fsencode(root), b"scripts", b"caf\xe9.txt")
+        os.makedirs(os.path.dirname(raw), exist_ok=True)
+        with open(raw, "wb") as handle:
+            handle.write(b"x\n")
+        self.commit(root, "latin-1 name\n\n" + TRAILER)
+        result = self.run_gate(root, base)
+        self.assertExit(result, 0)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_ci_intent_ref_job_is_wired_for_pr_base_to_head(self):
+        # advisor review 2026-09-25: nothing guarded the CI job, and a disabled job would
+        # count as an allowed skip in ci-required.
+        import yaml
+        ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+        job = ci["jobs"]["intent-ref"]
+        self.assertEqual(job["if"], "github.event_name == 'pull_request' && github.base_ref != 'product'")
+        checkout = next(s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout"))
+        self.assertEqual(checkout["with"]["fetch-depth"], 0)
+        run = next(s for s in job["steps"] if "run" in s and "intent-ref" in s["run"])
+        self.assertEqual(run["run"].strip(), "./gates/run.sh intent-ref")
+        self.assertEqual(run["env"]["COLAB_INTENT_REF_BASE"], "${{ github.event.pull_request.base.sha }}")
+        self.assertEqual(run["env"]["COLAB_INTENT_REF_HEAD"], "${{ github.event.pull_request.head.sha }}")
+        required = ci["jobs"]["ci-required"]
+        self.assertIn("intent-ref", required["needs"])
+        self.assertIn("'intent-ref'", required["steps"][0]["run"])
+
     def test_docs_only_range_is_out_of_scope_and_green(self):
         root, base = self.repo()
         self.commit(root, "docs", {"docs/guide.md": "text\n", "dev-package/sessions/x.md": "x\n"})

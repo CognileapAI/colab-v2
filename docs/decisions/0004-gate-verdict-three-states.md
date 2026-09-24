@@ -11,7 +11,7 @@ v1 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했다. `gates/README.m
 v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 반복하지 않는다.」
 같은 계열의 두 번째 사고는 셀프테스트 쪽이었다. `gates/README.md:124-126` 「⭑ **⟨2026-09-03 · 코드리뷰 #6⟩ 준비 실패(종료코드 78)를 「기대한 red」로 세지 않는다.**
 자체 `expect()` 를 가진 셀프테스트 12개 중 **10개가 78 을 그냥 red 로 접고 있었다.**」 그 결과는 `gates/README.md:128-129` 「**판정된 적이 없는데 출력은 「red OK」라고 말한다** — 검사기가 아무것도 검사하지 않은 채 통과를 / 보고하는 모양이다.」
-종료코드 값은 `AGENTS.md:45` · `docs/development/dual-agent.md:103` · `.agents/harness.yaml:29`에 한 줄씩 적혀 있으나, 왜 셋인지와 미선언 입력을 왜 통과로 접지 않는지는 결정으로 승격된 적이 없다.
+종료코드 값은 `AGENTS.md:45` · `docs/development/dual-agent.md:126` · `.agents/harness.yaml:30`에 한 줄씩 적혀 있으나, 왜 셋인지와 미선언 입력을 왜 통과로 접지 않는지는 결정으로 승격된 적이 없다.
 
 ## 결정
 게이트 판정은 셋뿐이다 — `green`(exit 0) · `red_판정`(exit 1) · `red_준비`(exit 78). `SKIP`을 만들지 않는다.
@@ -38,14 +38,14 @@ v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 
 
 ## 재검토 조건
 - 세 상태로 표현되지 않는 판정 결과가 실제로 나타날 때(예: 부분 판정을 기록해야 하는 게이트 신설). 그때도 `SKIP` 은 후보가 아니다.
-- `colab-gate-summary/1` 스키마가 `/2`로 올라가 `counts` 키 집합이 바뀔 때(`.agents/harness.yaml:30` `report_schema`).
+- `colab-gate-summary/1` 스키마가 `/2`로 올라가 `counts` 키 집합이 바뀔 때(`.agents/harness.yaml:31` `report_schema`).
 - 병합 진입 조건에서 `red_준비 == 0` 이 빠질 때 — 이 ADR의 전제가 무너진다.
-- `.agents/harness.yaml:29` `"states": {"green": 0, "red_judgment": 1, "red_readiness": 78}` 의 값이 바뀔 때.
+- `.agents/harness.yaml:30` `"states": {"green": 0, "red_judgment": 1, "red_readiness": 78}` 의 값이 바뀔 때.
 
 ## 근거
 - `gates/run.sh:4-5`(green-by-skip 금지 원칙) · `:11-19`(요약 JSON 스키마 `colab-gate-summary/1` 주석).
 - `gates/README.md:99-102,112,117,122,124-129,131-143`.
 - `docs/superpowers/specs/2026-09-06-harness-fable51-design.md:299-316`(§D) · `:410-412`(§J 확정 판정 — 승인 문장).
 - `AGENTS.md:45-46` · `docs/development/dual-agent.md:103-104`.
-- `.agents/harness.yaml:29`(`states`) · `:30`(`report_schema`) · `:36`(`required_counts`).
+- `.agents/harness.yaml:30`(`states`) · `:31`(`report_schema`) · `:37`(`required_counts`). (2026-09-25 키 추가로 줄 번호 갱신)
 - 관련: [ADR-0003](0003-human-approval-machine-checks-form.md) · [ADR-0005](0005-harness-controls-are-declarative.md).

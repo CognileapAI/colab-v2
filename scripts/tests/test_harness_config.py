@@ -226,6 +226,24 @@ class HarnessConfigTests(unittest.TestCase):
             self.assertEqual(errors, [])
             self.assertIsNotNone(readiness, 'an unreadable file list is readiness, not green')
 
+    def test_readiness_from_home_scan_still_prints_judged_parallel_errors(self):
+        # advisor review 2026-09-25: when only the home-path scan hit readiness, judged
+        # parallel-safety errors were dropped from the output.
+        import contextlib, io
+        sys.path.insert(0, str(ROOT / "scripts/harness"))
+        self.addCleanup(sys.path.remove, str(ROOT / "scripts/harness"))
+        spec = importlib.util.spec_from_file_location("harness_check_cli", ROOT / "scripts/harness/check.py")
+        check = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(check)
+        check.check_home_paths = lambda root, value, stats=None: ([], "home scan unreadable (fixture)")
+        check.check_gate_parallelism = lambda root: (["parallel-safety fixture error"], None, 1)
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+            code = check.main(["--root", str(ROOT)])
+        self.assertEqual(code, 78)
+        self.assertIn("red(판정): parallel-safety fixture error", err.getvalue())
+        self.assertIn("home scan unreadable (fixture)", err.getvalue())
+
     def run_check(self, contract):
         return subprocess.run(
             [sys.executable, str(ROOT / "scripts/harness/check.py"),

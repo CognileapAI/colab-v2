@@ -268,13 +268,17 @@ def check_always_on_lines(root: Path, value: dict) -> list[str]:
     return errors
 
 
-def check_home_paths(root: Path, value: dict) -> tuple[list[str], str | None]:
+def check_home_paths(root: Path, value: dict, stats: dict | None = None) -> tuple[list[str], str | None]:
     """Reject user home absolute paths in harness documents.
 
     Returns (judgement errors, readiness reason). The file list comes from Git (tracked plus
     untracked-but-not-ignored), so nested worktrees and ignored runtime files are not read.
-    Binary files are skipped. Not being able to list or read the files is readiness, not green.
+    Binary, non-UTF-8 and symlinked files are skipped and counted in `stats` (scanned/skipped)
+    so the caller can print what was not read. Not being able to list or read the files is
+    readiness, not green.
     """
+    stats = {} if stats is None else stats
+    stats.update(scanned=0, skipped=0)
     hygiene = value["hygiene"]
     allowed = set(hygiene["home_path_allow"])
     try:
@@ -290,19 +294,25 @@ def check_home_paths(root: Path, value: dict) -> tuple[list[str], str | None]:
     errors, scanned = [], 0
     for name in names:
         path = root / name
-        if path.is_symlink() or not path.is_file():
+        if path.is_symlink():
+            stats["skipped"] += 1
+            continue
+        if not path.is_file():
             continue
         try:
             data = path.read_bytes()
         except OSError as exc:
             return errors, f"cannot read harness document {name}: {exc}"
         if b"\0" in data:
+            stats["skipped"] += 1
             continue
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError:
+            stats["skipped"] += 1
             continue
         scanned += 1
+        stats["scanned"] = scanned
         for number, line in enumerate(text.splitlines(), 1):
             for match in HOME_PATH.finditer(line):
                 if match.group(0) not in allowed:

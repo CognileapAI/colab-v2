@@ -89,9 +89,13 @@ def main(argv: list[str] | None = None) -> int:
         return 78
     errors = check_contract(root, value)
     errors += check_always_on_lines(root, value)
-    home_errors, home_readiness = check_home_paths(root, value)
+    home_stats: dict = {}
+    home_errors, home_readiness = check_home_paths(root, value, home_stats)
     errors += home_errors
     parallelism_errors, readiness, judged_gates = check_gate_parallelism(root)
+    # Judged parallel-safety errors are printed even when another check could not read
+    # its target (advisor review 2026-09-25): a readiness exit must not hide judgements.
+    errors += parallelism_errors
     readiness = readiness or home_readiness
     if readiness is not None:
         # We could not read the judgement target. Everything we *did* judge is still
@@ -100,7 +104,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"red(판정): {error}", file=sys.stderr)
         print(f"::gate-readiness-failure:: harness-contract: {readiness}", file=sys.stderr)
         return 78
-    errors += parallelism_errors
     if errors:
         for error in errors:
             print(f"red(판정): {error}", file=sys.stderr)
@@ -111,7 +114,8 @@ def main(argv: list[str] | None = None) -> int:
         f"adapters {len(value['adapters']['required_files'])}, "
         f"hook registrations {len(value['sources']['hook_registrations'])}, "
         f"always-on line budget {value['hygiene']['always_on_max_lines']}, "
-        f"home-path roots {len(value['hygiene']['home_path_roots'])}, "
+        f"home-path roots {len(value['hygiene']['home_path_roots'])} "
+        f"(scanned {home_stats.get('scanned', 0)}, skipped {home_stats.get('skipped', 0)} binary/non-UTF-8/symlink), "
         f"parallel-safety declarations {judged_gates}"
     )
     return 0

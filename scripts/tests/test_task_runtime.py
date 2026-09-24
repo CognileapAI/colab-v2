@@ -262,6 +262,22 @@ class TaskRuntimeTests(unittest.TestCase):
         self.write('keep.txt', 'baseline')
         self.assertEqual(self.complete_lane(task['task_id']), 'H7')
 
+    def test_lane_scope_counts_committed_changes_after_the_working_copy_is_restored(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('docs/other.md', 'out of scope')
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        subprocess.run(git + ['add', 'docs/other.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'out of scope'], check=True)
+        (self.root / 'docs/other.md').unlink()  # working copy back to the baseline, commit remains
+        with self.assertRaisesRegex(ValueError, 'docs/other.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_scope_rejects_forms_that_match_no_file(self):
+        self.write('src/a.py')
+        for bad in (['src/'], ['src']):
+            with self.subTest(scope=bad), self.assertRaisesRegex(ValueError, r'src/\*\*'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+
     def test_lane_scope_default_allowed_paths_need_no_declaration(self):
         task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
         self.write('src/a.py')

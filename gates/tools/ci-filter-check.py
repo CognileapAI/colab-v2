@@ -15,7 +15,7 @@
   ㈒ `changes` 잡 `outputs` 에 `harness` 항목이 있다(필터만 있고 출력이 없으면 소비처가 못 읽는다)
   ㈓ 잡 `harness-eval` 이 `needs.changes.outputs.harness == 'true'` 로 걸린다
   ㈔ 그 잡에 `continue-on-error` 가 없고 로컬 평가 방침대로 API 키 없이 명시 면제·회귀 검사를 한다
-  ㈕ `docs/decisions/<ADR>.md` 가 `dev-package` 필터에 잡힌다 — ADR 만 바꾼 PR 도 `adr-records` 를 깨운다
+  ㈕ `docs/decisions/<ADR>.md` · `scripts/harness/adr_gate.py` · `.agents/harness.yaml` 이 `dev-package` 필터에 잡힌다 — 어느 것만 바꾼 PR 도 `adr-records` 를 깨운다
      (`harness` 필터는 모델 호출 잡을 깨우므로 손대지 않는다 · 위 ㈏ 축자 대조 대상)
 
 ⚠ **이 대조는 근사다.** 여기서 재는 것은 glob 문법의 뜻이고, `dorny/paths-filter` 가 실제 PR 의
@@ -65,7 +65,9 @@ MUST_NOT_MATCH = [
 ]
 JOB = "harness-eval"
 ADR_FILTER = "dev-package"
-ADR_MUST_MATCH = "docs/decisions/0001-lane-worktree-base-ref-head.md"
+# ADR records, their judge and its config (`adr_gate` key) — a change to any of them must re-run
+# `adr-records` (advisor review 2026-09-25: judge/config changes never re-ran the gate).
+ADR_MUST_MATCH = ["docs/decisions/0001-lane-worktree-base-ref-head.md", "scripts/harness/adr_gate.py", ".agents/harness.yaml"]
 
 
 def ready_red(missing: str, detail: str) -> None:
@@ -153,9 +155,10 @@ def main() -> int:
 
     # ㈕ ADR 경로가 `dev-package` 필터(= `adr-records` 를 도는 planning-gates 잡)에 잡힌다
     adr_regexes = [glob_to_re(p) for p in (filters.get(ADR_FILTER) or [])]
-    if not any(r.match(ADR_MUST_MATCH) for r in adr_regexes):
-        fails.append("㈕ `%s` 가 `%s` 필터에 안 잡힌다 — ADR 만 바꾼 PR 에서 adr-records 가 안 돈다."
-                     % (ADR_MUST_MATCH, ADR_FILTER))
+    for path in ADR_MUST_MATCH:
+        if not any(r.match(path) for r in adr_regexes):
+            fails.append("㈕ `%s` 가 `%s` 필터에 안 잡힌다 — 그 파일만 바꾼 PR 에서 adr-records 가 안 돈다."
+                         % (path, ADR_FILTER))
 
     # ㈒ outputs
     outputs = changes.get("outputs") or {}

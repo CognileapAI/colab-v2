@@ -102,10 +102,13 @@ jobs:
               - '.github/workflows/ci.yml'
             # 상태 대장과 그 반영본(산문). 게이트 자체가 바뀌어도 다시 판정한다 —
             # 판정기를 고치고 대상을 안 보는 것이 이 레포의 대표 실패형이다.
-            # `docs/decisions/**` — ADR 만 바꾼 PR 도 `adr-records` 를 깨운다(대조 = ci-filter-check ㈕).
+            # `docs/decisions/**` · 판정기 `scripts/harness/adr_gate.py` · 그 설정 `.agents/harness.yaml`(`adr_gate`)
+            # — 어느 것만 바꾼 PR 도 `adr-records` 를 깨운다(대조 = ci-filter-check ㈕).
             dev-package:
               - 'dev-package/**'
               - 'docs/decisions/**'
+              - 'scripts/harness/adr_gate.py'
+              - '.agents/harness.yaml'
               - 'gates/**'
               - 'scripts/tests/test_planning_gate.py'
               - '.github/workflows/ci.yml'
@@ -556,7 +559,7 @@ jobs:
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
       # ADR 구조·대체 연결 전수 검사(ADR-0003 · 게이트로만 붙인다). 산출 증거 등록부
-      # `.agents/ci-producers.json` 에 아직 없는 검사라 `verify_evidence.py record` 로 감싸지 않는다 —
+      # `.agents/ci-producers.json` `planning-gates` 에 등록돼 `verify_evidence.py record` 로 감싼다 —
       # red 는 이 잡을 실패시키고 `ci-required` 가 막는다.
       - name: ADR 구조·대체 연결 전수 검사
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "adr-records" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh adr-records

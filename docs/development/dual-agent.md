@@ -36,8 +36,9 @@ PR 게시는 사용자가 수행한다. 에이전트는 로컬 요약·검증 �
 Claude의 paths·모델·도구·격리 frontmatter는 해당 어댑터에 그대로 보존한다.
 Codex 역할은 `.agents/roles`를 직접 읽으며 Claude frontmatter를 적용하지 않는다.
 공통 본문 수정은 원본에서 한 번만 한다.
-공통 스킬 17개와 Codex 전용 완료 알림 스킬 1개(`slack-completion`)를 `.agents/skills/<이름>/SKILL.md`로 등록한다(2026-09-25 실측 · `harness-contract`가 원본 18개·Claude 어댑터 17개를 대조).
-`grill-me`·`grilling`·`to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
+공통 스킬 17개와 Codex 전용 완료 알림 스킬 1개(`slack-completion`)를 `.agents/skills/<이름>/SKILL.md`로 등록한다(2026-09-25 실측 · `scripts/agent-bridge.py check`가 원본 18개·Claude 어댑터 17개를 대조).
+`harness-contract`는 계약 파일 외에 훅 등록 누락(`sources.hook_registrations` ↔ `.claude/settings.json`) · 자동 로드 문서 줄 상한(`hygiene.always_on_max_lines`) · 하네스 문서의 사용자 홈 절대경로(`hygiene.home_path_roots`)도 판정한다.
+`grill-me`와 `to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다(`grilling`의 openai.yaml 은 표시 이름만 둔다).
 Codex에서는 `$grill-me`, `$to-spec`로 호출한다. 개인 `$intent`는 grill-me의 별칭이다.
 각 스킬을 읽으면 **그 원본 디렉터리**를 기준으로 상대 링크·스크립트 경로를 해석한다.
 `docs/`, `dev-package/`, `.claude/`, `.agents/`, `scripts/`, `gates/`로 시작하는 저장소 경로는

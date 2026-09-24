@@ -12,7 +12,9 @@ on:
       - '.claude/hooks/**'
       - '.claude/rules/**'
       - '.claude/settings.json'
-      - 'docs/development/**'
+      # harness-contract 의 홈 절대경로 검사 뿌리(`.claude`·`docs`) 전체 — 일부만 걸면 CI 가 그 밖을 안 본다.
+      - '.claude/**'
+      - 'docs/**'
       - 'scripts/agent-bridge.py'
       - 'scripts/harness/**'
       - 'scripts/codex-harness-eval.py'

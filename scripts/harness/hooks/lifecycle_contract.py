@@ -78,13 +78,18 @@ def scope_regex(glob):
     return re.compile(''.join(out))
 
 
-def check_scope_declarations(scope):
+def check_scope_declarations(scope, root=None):
     if len(set(scope)) != len(scope):
         raise ValueError('duplicate task declaration')
     for glob in scope:
         if (not isinstance(glob, str) or not glob or '\x00' in glob or '\\' in glob
                 or glob.startswith(('/', './')) or '..' in glob.split('/')):
             raise ValueError('lane scope must be a repository-relative POSIX glob: ' + repr(glob))
+        # Forms that match no file would only surface at handoff (advisor review 2026-09-25).
+        if glob.endswith('/'):
+            raise ValueError(f'lane scope {glob!r} ends with "/" and matches no file — use {glob}**')
+        if root is not None and not any(ch in glob for ch in '*?') and (Path(root) / glob).is_dir():
+            raise ValueError(f'lane scope {glob!r} is a directory and matches no file — use {glob}/**')
 
 
 def out_of_scope(task, changed):
@@ -209,7 +214,7 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
         raise ValueError('unsupported task role')
     if scope and role not in GATE_ROLES:
         raise ValueError('research task declares artifacts, not a lane scope')
-    check_scope_declarations(scope)
+    check_scope_declarations(scope, root)
     # Only a declared scope adds the key, so an undeclared task keeps the current record and behaviour.
     extra = dict(scope=list(scope)) if scope else {}
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
@@ -386,6 +391,12 @@ def stop(data, expected_role):
             # tracked and untracked non-ignored file (commits since begin still count as changes).
             now = task_snapshot(root, task)
             changed = {p for p in set(now) | set(task['baseline']) if now.get(p) != task['baseline'].get(p)}
+            # Committed changes since begin count too: committing an out-of-scope change and then
+            # restoring the working copy must not hide it (advisor review 2026-09-25).
+            started = (task.get('started_identity') or {}).get('commit')
+            if started:
+                changed |= {p for p in git(root, 'diff', '--no-renames', '--name-only', '-z',
+                                           started, 'HEAD').split('\0') if p}
             outside = out_of_scope(task, changed)
             if outside:
                 raise ValueError(

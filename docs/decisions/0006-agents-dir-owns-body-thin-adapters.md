@@ -43,7 +43,7 @@ Claude와 Codex 두 도구가 같은 규칙·역할·스킬을 읽는다. 각 �
 
 ## 근거
 - `docs/development/dual-agent.md:15-20`(「원본과 도구별 연결」 절 머리와 전환 순서 제약). ⚠ 표 본문은 이 ADR에 복제하지 않는다.
-- `.agents/harness.yaml:39-50`(`sources`) · `:51-61`(`adapters`, `required_files` 5건).
+- `.agents/harness.yaml:40-64`(`sources`) · `:65-75`(`adapters`, `required_files` 5건). (2026-09-25 키 추가로 줄 번호 갱신)
 - `gates/README.md:9`(`harness-contract` 게이트가 검사하는 범위).
 - `AGENTS.md:34`.
 - `docs/development/harness-transition-handoff.md:8` · `:26`(2026-09-15 사용자 승인).

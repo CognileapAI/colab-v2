@@ -5,8 +5,10 @@
    `Intent-Ref: dev-package/intent/<file>.md` trailer naming a file that exists at head.
    An empty commit carrying only the trailer counts (retroactive path for old branches).
    A range that touches no subject path is out of scope: printed with counts, green.
-⑵ An intent that is approved at the base (its meta line says 승인 and not 미승인) may only
-   gain lines in the range. Deleting, renaming or editing any existing line is red.
+⑵ An intent that is approved at the base OR at the fork point (its meta line says 승인 and not
+   미승인) may only gain lines in the range. Deleting, renaming or editing any existing line is red.
+   Both points count: a PR that forked before develop approved an intent must not rewrite it.
+   Additions-only is judged by git's own diff (fork..head): any `-` line is red.
 
 Base: COLAB_INTENT_REF_BASE (CI passes the PR base sha). Undeclared → merge-base(HEAD,
 origin/develop), and the output says so. Head: COLAB_INTENT_REF_HEAD, default HEAD.
@@ -15,7 +17,6 @@ exit 0 green · 1 red(판정) · 78 red(준비: base unresolvable / not a reposi
 from __future__ import annotations
 
 import argparse
-import difflib
 import os
 from pathlib import Path, PurePosixPath
 import re
@@ -90,7 +91,7 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
 
     commits = [c for c in git(root, "rev-list", f"{fork}..{head}").stdout.decode().split() if c]
     changed = sorted({p for p in git(root, "diff", "--no-renames", "--name-only", "-z", fork, head)
-                      .stdout.decode("utf-8").split("\0") if p})
+                      .stdout.decode("utf-8", "replace").split("\0") if p})
     subject = [p for p in changed if p.startswith(SUBJECT_PREFIXES)]
     red: list[str] = []
 
@@ -98,7 +99,7 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
     valid, broken = [], []
     if commits:
         log = git(root, "log", "-z", "--format=%H%n%(trailers:key=Intent-Ref,valueonly,unfold)",
-                  f"{fork}..{head}").stdout.decode("utf-8")
+                  f"{fork}..{head}").stdout.decode("utf-8", "replace")
         for record in filter(None, log.split("\0")):
             sha, _, values = record.partition("\n")
             for value in (v.strip() for v in values.splitlines() if v.strip()):
@@ -122,28 +123,32 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
         red.append("   고치는 법: 해당 intent 를 가리키는 트레일러를 커밋에 단다. 이미 올린 브랜치는 "
                    "`git commit --allow-empty -m \"…\" -m \"Intent-Ref: dev-package/intent/<파일>.md\"` 1개.")
 
-    # ⑵ approved intents at the fork point stay append-only
-    names = [n for n in git(root, "ls-tree", "-z", "--name-only", fork, INTENT_ROOT + "/")
-             .stdout.decode("utf-8").split("\0") if n.endswith(".md")]
+    # ⑵ approved intents (at the base OR at the fork point) stay append-only in fork..head
+    def intent_names(commit: str) -> set[str]:
+        return {n for n in git(root, "ls-tree", "-z", "--name-only", commit, INTENT_ROOT + "/")
+                .stdout.decode("utf-8", "replace").split("\0") if n.endswith(".md")}
+
     protected = 0
-    for path in sorted(names):
-        before = show(root, fork, path)
-        if before is None or not is_protected(PurePosixPath(path).name, before):
+    for path in sorted(intent_names(base) | intent_names(fork)):
+        name = PurePosixPath(path).name
+        approved_at = [c for c in dict.fromkeys((base, fork))
+                       if (text := show(root, c, path)) is not None and is_protected(name, text)]
+        if not approved_at:
             continue
         protected += 1
         if path not in changed:
             continue
-        after = show(root, head, path)
-        if after is None:
+        if show(root, head, path) is None:
             red.append(f"⑵ 승인 intent 가 삭제·이동됐다: {path} — 재개봉 금지 · 새 intent 를 쓴다")
             continue
-        old, new = before.splitlines(), after.splitlines()
-        for tag, i1, i2, _, _ in difflib.SequenceMatcher(None, old, new, autojunk=False).get_opcodes():
-            if tag in ("replace", "delete"):
-                red.append(f"⑵ 승인 intent 의 기존 줄이 {'변경' if tag == 'replace' else '삭제'}됐다: "
-                           f"{path}:{i1 + 1} `{old[i1][:60]}` — 줄 추가만 허용한다 · 필요하면 새 intent")
-                break
-    info.append(f"⑵ 기준 시점 승인 intent {protected}건 대조")
+        if show(root, fork, path) is None:
+            continue  # created in the range: nothing existing to protect
+        diff = git(root, "diff", "--no-renames", "--unified=0", fork, head, "--", path).stdout.decode("utf-8", "replace")
+        removed = [line[1:] for line in diff.splitlines() if line.startswith("-") and not line.startswith("---")]
+        if removed:
+            red.append(f"⑵ 승인 intent 의 기존 줄이 변경·삭제됐다: {path} `{removed[0][:60]}` "
+                       f"(삭제·변경 {len(removed)}줄) — 줄 추가만 허용한다 · 필요하면 새 intent")
+    info.append(f"⑵ 기준·분기 시점 승인 intent {protected}건 대조")
     return info, red
 
 
