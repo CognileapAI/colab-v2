@@ -21,8 +21,9 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 - 나머지 검사는 ADR-0003(판정은 CLI·게이트 · 훅 없음) · ADR-0005 개정(조용한 exit 0 없음)에 맞춰 게이트로만 붙였다. ADR-0004·0006 은 줄 참조만 갱신.
 
 ## 검증
-게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 129 OK(skip 10 · Windows 전용).
-`gates/run.sh all` 1회(1회차 검토 중): green 75 / red(판정) 1 / red(준비) 0 — red 1 은 `frontend-test` 부하 시간 초과(단독 재실행 1613/1613 통과 · frontend 무변경).
+게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 130 OK(skip 10 · Windows 전용) · PR 계약 `pr_contract.py --mode draft` PASS(게시 절차대로 Head-SHA 채움).
+`gates/run.sh all` 1회(최종 트리 `4a3a046a`): **green 76 / red(판정) 0 / red(준비) 0**. (1회차 트리 `cf0114d7` 에서는 green 75 / red(판정) 1 — `frontend-test` 부하 시간 초과 · 단독 재실행 1613/1613 통과.)
+단독 `harness-contract-selftest` 1회는 다른 프로세스가 호스트 게이트 잠금을 900초 넘게 쥐어 red(준비) 였고, 기본 대기 상한 그대로 재실행해 green 1/0/0.
 
 | 원한 결과 (intent) | 실제 | 근거 | 가치 상태 |
 |---|---|---|---|

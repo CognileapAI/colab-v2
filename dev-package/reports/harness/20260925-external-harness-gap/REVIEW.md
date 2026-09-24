@@ -42,3 +42,7 @@ advisor ② 자리를 반증 워크플로 두 회차가 맡았다(검토자 → 
 | 1회차 수정 | 새 시험 8건이 이전 코드에서 red — 분기 뒤 승인 intent · UTF-8 경로 · 준비 실패 시 판정 누락 · 커밋 뒤 복원 우회 · 범위 형태 2 · ci-filter ㈕ 2 | green |
 | 2회차 수정 | 새 시험 10건 red(9 실패 · 1 오류) — `---`/`--` 줄 · 끝 줄바꿈 · `-diff`·색상 · UTF-8 이름 intent · 옛 스키마 범위 · 앞 공백·스테이징 · 0건 ADR · ADR 보존 · UTF-8 파일 이름 | green |
 | 3회차 수정 | `ValueError: changes outside declared lane scope: notes/parent.md …` (begin 이전 스테이징) | green |
+
+## 최종 측정(4a3a046a)
+- `gates/run.sh all`: green 76 / red(판정) 0 / red(준비) 0.
+- 게이트 합집합 8개 green(단독 `harness-contract-selftest` 1회는 다른 프로세스의 잠금 점유로 red(준비) → 기본 상한 재실행 green) · ci-filter-check green · 단위 시험 130 OK(skip 10).
