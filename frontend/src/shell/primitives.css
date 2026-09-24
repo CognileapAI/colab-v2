@@ -100,4 +100,44 @@
 @media (max-width: 1100px) {
   .table-scroll-hint { display: block; margin: 0; padding: 12px 16px; font-size: var(--text-caption); color: var(--color-text-muted); }
 }
+
+/* ── modal — 모달 골격 ──
+   출처: members.css(뒤판 · 판 · 가운데 대화상자 크기 · 머리/몸/발) + 셸 끝 임시 블록(대화상자 테두리 · 모서리 lg ·
+   그림자 없음 · padding · 머리가 있으면 padding 0). 머리 제목·본문 문단(`.modal-h h3`·`.modal-b p`)은 구성원 화면에 남는다.
+   ⚠ `.modal` 은 **전역 이름**이다 — 승인·연구실 정보·업로드가 함께 쓴다. 폭은 골격이 아니라 **쓰는 자리**가
+   정한다(검수 #25 · 업로드 전체 화면 모달) — 가운데 대화상자는 `.modal--dialog` 를 붙인다. */
+.modal-back {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-overlay);
+  z-index: 200;
+}
+.modal {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.modal--dialog {
+  max-width: 520px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  padding: var(--space-card);
+}
+.modal--dialog:has(.modal-h) { padding: 0; }
+.modal-h { padding: 16px 18px; border-bottom: 1px solid var(--color-border); }
+.modal-b { padding: 16px 18px; }
+.modal-f {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--color-border);
+}
 }

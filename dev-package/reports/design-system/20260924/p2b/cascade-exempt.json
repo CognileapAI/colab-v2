@@ -303,5 +303,23 @@
   "selector": ".memtbl td",
   "prop": "padding",
   "reason": "오늘 죽음 — 구성원 표는 늘 tbl memtbl · 셸 끝 .tbl td padding 10px 12px(같은 0,1,1 · 뒤 순서)이 덮었다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".modal-back",
+  "competitor": "body",
+  "reason": "요소 호환(type) 경쟁이지만 .modal-back 은 div 뒤판이다(body 가 아님 · TSX 전수)"
+ },
+ {
+  "kind": "flip",
+  "selector": ".modal",
+  "competitor": "body",
+  "reason": "요소 호환(type) 경쟁이지만 .modal 은 div 판이다(body 가 아님 · TSX 전수)"
+ },
+ {
+  "kind": "flip",
+  "selector": ".modal--dialog:has(.modal-h)",
+  "competitor": ".approval-dialog",
+  "reason": "공존 클래스(co) 경쟁이지만 .approval-dialog 두 곳(AccessRequestPanel · VerificationAction)은 .modal-h 를 품지 않아 :has(.modal-h) 가 걸리지 않는다(TSX 확인 · h3 제목)"
  }
 ]

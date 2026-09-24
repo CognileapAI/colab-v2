@@ -23,3 +23,10 @@
 .tbl
 .tblwrap
 .table-scroll-hint
+# modal
+.modal-back
+.modal
+.modal--dialog
+.modal-h
+.modal-b
+.modal-f
