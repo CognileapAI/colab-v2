@@ -597,8 +597,14 @@ def main() -> int:
         recorded = json.loads(args.candidates.read_text())
         cases = recorded['cases']
         edges = sum(len(c['parents']) for c in cases)
-        if len(cases) != 4 or edges != 6:
-            raise ValueError(f'unexpected case count: children={len(cases)} edges={edges}')
+        # 건수는 후보 JSON 이 싣고 온 `sample_limits`(정답 파일의 선언)와 대조한다 — 고정
+        # 숫자로 두면 정답이 바뀔 때마다 러너가 78 로 멈춘다(WU5 사전 등록 §7).
+        limits = recorded.get('sample_limits') or {}
+        if 'children' not in limits or 'edges' not in limits:
+            raise ValueError('candidates file has no sample_limits.children/edges')
+        if len(cases) != limits['children'] or edges != limits['edges']:
+            raise ValueError(f'unexpected case count: children={len(cases)} edges={edges} '
+                             f'expected={limits["children"]}/{limits["edges"]}')
         repeats = max(1, args.repeats)
 
         transport = None
