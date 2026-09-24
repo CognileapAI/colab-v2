@@ -38,6 +38,11 @@ READINESS = 78
 FREEZE_CSS = '* { animation: none !important; transition: none !important; caret-color: transparent !important; }'
 
 
+# Chrome launch args from scenes.json `browser.args` (set in main). Passed on every call; only the
+# call that launches the session's browser uses them.
+BROWSER_ARGS: list[str] = []
+
+
 class CaptureError(RuntimeError):
     pass
 
@@ -50,7 +55,8 @@ def rel(path: pathlib.Path) -> str:
 
 
 def ab(session: str, *args: str, stdin: str | None = None, timeout: int = 90) -> str:
-    cmd = ['python3', str(ROOT / 'scripts/agent-bridge.py'), 'run-tool', 'browser', '--', '--session', session, *args]
+    launch = ['--args', ','.join(BROWSER_ARGS)] if BROWSER_ARGS else []
+    cmd = ['python3', str(ROOT / 'scripts/agent-bridge.py'), 'run-tool', 'browser', '--', '--session', session, *launch, *args]
     try:
         r = subprocess.run(cmd, cwd=ROOT, input=stdin, text=True, capture_output=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
@@ -212,6 +218,7 @@ def main() -> int:
         print('::visual-capture:: manifest has duplicate or no scenes', file=sys.stderr)
         return READINESS
     expected = sum(len(s['widths']) * len(s['themes']) for s in scenes)
+    BROWSER_ARGS[:] = manifest.get('browser', {}).get('args', [])
     height = int(manifest['viewport']['height'])
     dpr = int(manifest['viewport']['deviceScaleFactor'])
 
@@ -273,6 +280,7 @@ def main() -> int:
         'buildDir': rel(BUILD_DIR),
         'built': not args.skip_build,
         'parallel': args.parallel,
+        'browserArgs': BROWSER_ARGS,
         'scenes': names,
         'captureCount': len(captures),
         'captures': captures,

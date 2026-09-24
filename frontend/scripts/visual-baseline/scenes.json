@@ -6,6 +6,17 @@
     "deviceScaleFactor": 1
   },
   "scrollbars": "native",
+  "browser": {
+    "args": [
+      "--disable-gpu",
+      "--disable-gpu-rasterization",
+      "--disable-partial-raster",
+      "--disable-skia-runtime-opts",
+      "--force-color-profile=srgb",
+      "--disable-lcd-text"
+    ],
+    "why": "Without these, same-HEAD runs differed by 1-40 px (anti-aliasing of rounded corners and focus rings in dialogs); measured 2026-09-24."
+  },
   "notes": [
     "30 scene names are inherited from dev-package/reports/design-consistency/20260912/full/scenes.json; account-admin, password-change, gnb-more are new.",
     "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
