@@ -46,21 +46,12 @@ CI-Ref: 게시 뒤
 - 30·31 저장소가 같은 게이트 잠금 경로를 쓰면 #130 의 잠금 수정이 없는 쪽 데몬이 잠금을 쥘 수 있다(레인 L 관측 · 별건).
 
 ## 게시 절차 (사용자)
-전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다 — `git log origin/develop..origin/claude/agent-model-tiering` 이 비어 있는지 먼저 본다.
-Head-SHA 는 게시 시점 head 로 채우고 저장소 PR 계약을 통과시킨 뒤 연다:
-저장소 안 어느 체크아웃에서나 돈다(브랜치를 꺼내지 않는다). 계약 검사가 실패하면 PR 을 열지 않고 멈춘다:
+전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다.
+저장소 안 어느 체크아웃에서나 한 줄로 실행한다(브랜치를 꺼내지 않는다). 스크립트가 #131 병합을 확인하고, Head-SHA 를 채우고, 저장소 PR 계약(`pr_contract.py --mode draft`)을 통과시킨 뒤에만 PR 을 연다. 실패하면 이유를 내고 멈춘다. bash 로 파이프해 실행하므로 zsh 에 붙여 넣어도 된다:
 ```bash
-set -e
-git fetch origin
-test -z "$(git log --oneline origin/develop..origin/claude/agent-model-tiering)"   # #131 병합 확인
-HEAD_SHA=$(git rev-parse origin/claude/harness-external-gap)
-git show "$HEAD_SHA:dev-package/reports/harness/20260925-external-harness-gap/PR-BODY.md" \
-  | sed "s/^Head-SHA: .*/Head-SHA: $HEAD_SHA/" > /tmp/pr-body.md
-CHECK=$(mktemp -d)
-git archive "$HEAD_SHA" scripts/harness .agents/harness.yaml | tar -x -C "$CHECK"
-python3 "$CHECK/scripts/harness/pr_contract.py" --head "$HEAD_SHA" --mode draft /tmp/pr-body.md
-gh pr create --base develop --head claude/harness-external-gap --title "하네스에 훅 등록 누락·ADR·홈 경로·줄 상한·Intent-Ref 검사와 레인 범위 대조를 붙인다" --body-file /tmp/pr-body.md
+git fetch origin && git show origin/claude/harness-external-gap:dev-package/reports/harness/20260925-external-harness-gap/publish.sh | bash
 ```
+PR 을 열지 않고 확인만 하려면 `| PUBLISH_DRY_RUN=1 bash`.
 
 ## 병합 뒤
 - 새 훅이 없으므로 `/hooks` 재신뢰는 필요 없다.

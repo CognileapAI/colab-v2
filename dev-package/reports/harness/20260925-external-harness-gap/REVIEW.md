@@ -1,7 +1,7 @@
 # 수용 검토 기록 — 외부 하네스 대비 개선 (claude/harness-external-gap)
 
 기준: intent `dev-package/intent/2026-09-25-external-harness-gap.md` · spec `dev-package/prd/specs/S-EXTERNAL-HARNESS-GAP-20260925.md`.
-advisor ② 자리를 반증 워크플로 네 회차가 맡았다(검토자 → 결함마다 독립 검증자 반박 → 비평). 확정 결함이 나오지 않을 때까지 돌린다.
+advisor ② 자리를 반증 워크플로 다섯 회차가 맡았다(검토자 → 결함마다 독립 검증자 반박 → 비평). 확정 결함이 나오지 않을 때까지 돌린다.
 
 ## 1회차 — 레인 K·L + 병합 보정(0a3b9923..cf0114d7)
 - 검토자 6명(intent-ref · 계약 검사 · CI·게이트 배선 · 레인 범위 · 문서 · 회귀) · 후보 29건.
@@ -56,4 +56,10 @@ advisor ② 자리를 반증 워크플로 네 회차가 맡았다(검토자 → 
 ## 최종 측정(d63c18f3 · 4회차 수정 반영)
 - `gates/run.sh all`: green 76 / red(판정) 0 / red(준비) 0 · 게이트 합집합 8 green · ci-filter-check green · 단위 시험 131 OK(skip 10).
 - 게시 절차 모의 실행(브랜치를 쥐지 않은 주 체크아웃 · `gh pr create` 와 #131 확인만 제외): `pr_contract.py --mode draft` PASS.
+
+## 5회차 — 4회차 수정 재검증(843165a0)
+- 재검토자 2명 · 후보 1건 · 검증자 2명 모두 유지 → 확정 1 · begin 쪽 결함 0.
+- 확정 1: [중요] 게시 명령 블록이 Ted 의 로그인 셸(zsh · 대화형 주석 꺼짐)에서 줄 끝 `#` 주석을 `test` 인자로 받아 실패하고, 앞서 실행된 `set -e` 때문에 터미널이 닫힌다(bash 에서도 #131 미병합이면 말없이 닫힌다).
+- 비평: 원한 결과 1~8 전부 충족 · 남은 것은 위 1건과 #131 병합 전제.
+- 수정: 게시 절차를 `publish.sh` 로 옮기고 `git show … | bash` 한 줄로 실행 — 주석·errexit 가 스크립트 안에만 적용된다. #131 미병합이면 이유를 내고 멈춘다. `PUBLISH_DRY_RUN=1` 로 PR 생성 직전까지 확인.
 
