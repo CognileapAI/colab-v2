@@ -127,3 +127,33 @@
 - 검수: `dev-package/reports/design-review/20260912/findings.md` D17·D18(공통화 설계 후보 — 이 계획이 그 둘의 집행이다)
 - 계측: `survey.md` · `css_audit.md`(같은 디렉터리)
 - 검토: advisor ① 2026-09-24 approve-with-changes(교정 8건 반영 · 미확인으로 남긴 것 = vitest 정규식과 `@layer` 의 상호작용 · pretendard 로드 위치 · product.md §3/§5 대조 → P1·P2 spec 의 정책 대조 절에서 잰다)
+
+## 7. 완료 상태 (2026-09-24)
+
+P0~P5(P2 는 P2a·P2b 로 분할 · P4 는 P3 에 합침)를 순서 P0 → P1 → P2a → P3(+P4) → P2b → P5 로 마쳤다. 모든 단계의 완료 조건은 「시각 값 변경 0」(Q4)이고, 증거는 착수 HEAD 기준 캡처와의 엄격 픽셀 대조 · 계산값 전수 대조다.
+규칙의 사람 말 설명과 새 화면 점검표는 `docs/design-system.md`(①~⑧) 한 장이다. 그 문서의 토큰·프리미티브 표는 실물에서 생성되고 게이트 h 가 같음을 잰다.
+
+| 단계 | 한 것 | 증거 | 게이트 |
+|---|---|---|---|
+| P0 증명 도구 | 캡처 구동부(`capture.py` · `scenes.json` 33장면 196장) · 픽셀 대조(`diff.mjs` · pixelmatch) · 래스터 인자 고정 | 같은 HEAD 두 번 찍기 196장 엄격 차이 0 · red 경로(1px → exit 1 · PNG 삭제·명세 불일치 → 78) · `p0/report.md` | green 3(typecheck · test · fixture-reach) |
+| P1 토큰 정본 | 정본 밖 `:root` 토큰 정의 77 → 0(대안 B) · 라이트·다크 한 파일 · 게이트 `frontend-design-lint` a·b·c·d · BF-13 시험 폐기 | 196장 차이 0 · `p1/report.md` | a 0 · b 0 · c 0(면제 6) · d 0 |
+| P2a 보정 층 흡수 · `@layer` | `design-system.css` 192규칙 흡수·삭제 · `@layer tokens, base, primitives, patterns, screens` 전 파일 | 196장 차이 0 · 계산값 196 페이지 차이 0 · 상태 16건 동일 · `p2a/report.md` | green · d 범위 확대 |
+| P3(+P4) 화면 CSS · 인라인 | 죽은 폴백 64 삭제 · 색 리터럴 → 토큰 · TSX 인라인 8곳 → 변수 대입 · 게이트 f·g | 196장 차이 0 · 계산값 26962 항목 차이 0 · `p3/report.md` | f 0(면제 1) · g 0(변수 대입 7) |
+| P2b 프리미티브 단일 소유 | 6계열 기본값 114 선언을 `primitives.css` 로 · `base.css` · 별칭 토큰 9/9 치환 · 게이트 e | 196장 차이 0 · 계산값 9회 차이 0 · 상태 43건 동일 · `p2b/report.md` | e 0(면제 0) |
+| P5 문서 · 갤러리 · 게이트 h | `docs/design-system.md` · `design-docs.mjs`(생성 · `--check`) · 게이트 h · 프리미티브 갤러리 장면(`scene=primitives`) · `visual:diff --subset` · 스킬 정본(`to-spec` · `design-review §0`) 갱신 · 제품 CSS·TSX 변경 0 | `p5/report.md`(캡처 · 부분집합 대조 · 계산값 · 갤러리 DOM 질의) | h 0 · selftest 26 |
+
+### 판정 대기
+
+`docs/design-system.md` ⑦ 이 목록의 정본이다(16건 — 시각 값 10 · 범위·절차 6). 요지:
+
+- 시각 값(결정하면 시각 변경): 억눌린 hover·상태(P2a 후속 1) · `.btn-sm` 기본값 없음 · `.chip--off` 배경 · `.btn-strong:hover` 대비 · `.chip` `#eef2f7` 토큰화 · `.dl-keep` 바탕 · `lineage.css` 안내 줄 색 · `.de-req` 다크 대비 · 화면 편차 통일.
+- 범위·절차: 패턴 이관(`.page` 개명과 묶음) · 별 계열 이름·탭 합치기 · 갤러리 제품 노출 여부 · P3 제품 시험 단언 변경 수용 · P2b `cascade-map verify` 일반화 수용 · 게이트 e 의 `요소.클래스` 판정.
+
+### 후속
+
+1. **패턴 층** — `shell.css` 「P5 이관 대기」 규칙(페이지 컨테이너 · `.page-head h1` · `.form-row`)을 `.page` 개명(TSX) 별건과 묶어 `patterns.css` 로. 화면 7파일의 경쟁 선언 정리 · 죽은 `@media` padding 판정이 선행(`docs/design-system.md` ④).
+2. **화면 편차** — `docs/design-system.md` ③ 편차 목록의 값 통일 여부(Ted 판정 뒤 이슈별 별건).
+3. **억눌린 상태** — 되살릴 항목을 판정하고 되살릴 때마다 캡처 대조로 시각 변경을 드러낸다.
+4. **캡처 장면 사각** — 편집 모드 · `.vfilter.on` · 확대 미리보기 · 모자이크 · 오류·로딩 상태 · `AppLayout`·`AuthGate` 분기 · hover/focus 상태(갤러리도 정적 상태만)는 캡처 대조가 보지 못한다(P0 · P3 후속 6).
+5. **`tsconfig.audit.json` 게이트** — audit 진입점(갤러리 포함)의 타입 검사는 `npm run audit:build` 에만 있고 어느 게이트에도 걸리지 않는다(P0 후속).
+6. **시각 대조 게이트 승격** — `visual:capture`·`visual:diff` 는 단계마다 수동 실행이다. 게이트로 올릴지(캡처 약 8분 · agent-browser 필요)는 P1 우려 4 그대로 열려 있다. 계산값 대조 도구(`p2b/states/cdump.py`·`compare.py`)를 `frontend/scripts/visual-baseline/` 로 올릴지도 함께(P2a 후속 3 · P3 후속 7).

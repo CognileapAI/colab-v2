@@ -55,9 +55,22 @@ Check with the user that these seams match their expectations.
 - 계약 동결 해제 필요: 예(Ted 서명) / 아니오
 
 ### 디자인 제약 확인 (`frontend/` 를 건드리는 spec 은 필수)
-바꾸는 **화면마다** 아래를 적는다. 정본 = `frontend/src/shell/tokens.css`
+바꾸는 **화면마다** 아래 표를 채운다. 정본 = `frontend/src/shell/tokens.css`(유일 `:root`) · `frontend/src/shell/primitives.css`
+· 설명과 점검표 `docs/design-system.md` · 집행 = 게이트 `frontend-design-lint` 조건 a~h
 (판정 기준 `.agents/skills/design-review/SKILL.md §0` · 인터랙션 `.agents/skills/apple-design/SKILL.md`).
-- 토큰: `tokens.css` 의 토큰만 쓴다 (파일별 `:root` 전역 신설 없음)
+
+| 확인 | 게이트 | 이 화면 |
+|---|---|---|
+| 화면 CSS 에 `:root` 토큰 정의 없음 · 한 화면 전용 토큰은 화면 루트 클래스 범위(정본 계열 접두사 금지) | a | |
+| 부르는 토큰이 모두 정의됨(폴백 유무 무관) | b | |
+| 정본에 더하는 색 계열 이름은 다크 값 또는 `same-in-dark.txt` 사유 | c | |
+| 화면 CSS 에 `:root` 선택자 · `@import` 없음 | d | |
+| 프리미티브(btn·field·chip·card·table·modal) 맨 정의 없음 · 편차는 화면 범위 선택자 · `primitives.css`·`base.css` 에 `!important` 없음 | e | |
+| 색 리터럴 없음(직접 · `var()` 폴백 · 색 이름) — 새 색은 토큰(이름은 판정) | f | |
+| TSX 인라인 `style` 은 CSS 변수 대입만 | g | |
+| 토큰·프리미티브·게이트 목록을 바꾸면 `docs/design-system.md` 표를 `design-docs.mjs` 로 다시 씀 | h | |
+| 캡처 장면 유무 — `frontend/scripts/visual-baseline/scenes.json` 에 이 화면·상태의 장면이 있는가(없으면 추가 또는 사각으로 명시) | 게이트 밖(`visual:capture` · `visual:diff`) | |
+
 - 글자 **13px 이상** · 대비 **4.5:1 이상**
 - 카드 그림자 **0** (팝오버 허용) · 여백은 **컨테이너가 소유**
 - 인터랙션 하한: pointer-down 즉시 피드백 · 전환 중단 가능 · 움직임엔 `prefers-reduced-motion` 분기
