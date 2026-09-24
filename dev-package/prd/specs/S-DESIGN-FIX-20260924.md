@@ -360,7 +360,7 @@
 - 대안: `--color-primary-50`(고른 행 느낌).
 
 **17. WU-A4 업로드(`components/upload/upload.css`)**
-- 제안: `.btn-strong:active` primary-700 · `.dr-nav button:active` gray-100 · `.dr-cal-d:active` primary-200(hover primary-100 의 한 단 진함 · 글자 L 7.01 · D 5.91) · `.dr-useg button:active` gray-100(`.on` 은 primary-600 유지) · `.dr-field:active` 테두리 primary-600.
+- 제안: `.btn-strong:active` primary-700 · `.dr-nav button:active` gray-100 · `.dr-cal-d:active` primary-200(hover primary-100 의 한 단 진함 · 글자 L 7.01 · D 5.91) · `.dr-useg button:active` gray-100(`.on` 은 primary-600 유지) · `.dr-field:active` 테두리 primary-600. 〔2026-09-25 · `.dr-nav button` · `.dr-useg button` 누름은 값 19 로 대체 — 잔여 정리 F-final 1〕
 - 대안: `.dr-cal-d:active` 도 gray-100.
 
 ## 열린 값이 아닌 것(참고 · spec 에 적음)
