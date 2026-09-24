@@ -222,6 +222,171 @@ class TaskRuntimeTests(unittest.TestCase):
             contract.begin(self.root, 'auditor', gates=['check'])
 
 
+    # ── L1 lane scope (spec S-EXTERNAL-HARNESS-GAP-20260925 · intent 2026-09-25 원한 결과 6) ──
+    def complete_lane(self, task_id):
+        """Bind a fresh run, write a coherent green report and hand off through stop()."""
+        evidence = contract.gate_start(self.root, task_id)
+        current = contract.load_task(self.root, task_id)
+        path = contract.resolve_task_path(self.root, current, current['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.measurement_report(evidence, current['gates'])))
+        handoff = {'task_id': task_id, 'run_id': current['run_id'], 'mode': 'complete',
+                   'summary': 'lane result', 'artifacts': {}}
+        payload = {'cwd': str(self.root), 'agent_type': 'lane-worker',
+                   'last_assistant_message': 'done\nCOLAB_HANDOFF ' + json.dumps(handoff)}
+        return contract.stop(payload, 'lane-worker')
+
+    def write(self, relative, text='x'):
+        target = self.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text)
+
+    def test_lane_scope_blocks_out_of_scope_change_and_names_both_exits(self):
+        self.write('keep.txt', 'baseline')
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**', 'docs/a.md'])
+        self.assertEqual(task['scope'], ['src/**', 'docs/a.md'])
+        self.write('src/deep/module.py')
+        self.write('docs/a.md')
+        self.write('docs/other.md')
+        with self.assertRaises(ValueError) as caught:
+            self.complete_lane(task['task_id'])
+        message = str(caught.exception)
+        self.assertIn('docs/other.md', message)
+        self.assertNotIn('src/deep/module.py', message)
+        self.assertIn('(1)', message); self.assertIn('--scope', message)
+        self.assertIn('(2)', message); self.assertIn('revert', message)
+        # A deletion outside the scope is a change outside the scope too.
+        (self.root / 'docs/other.md').unlink(); (self.root / 'keep.txt').unlink()
+        with self.assertRaisesRegex(ValueError, 'keep.txt'):
+            self.complete_lane(task['task_id'])
+        self.write('keep.txt', 'baseline')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_counts_committed_changes_after_the_working_copy_is_restored(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('docs/other.md', 'out of scope')
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        subprocess.run(git + ['add', 'docs/other.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'out of scope'], check=True)
+        (self.root / 'docs/other.md').unlink()  # working copy back to the baseline, commit remains
+        with self.assertRaisesRegex(ValueError, 'docs/other.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_scope_rejects_forms_that_match_no_file(self):
+        self.write('src/a.py')
+        for bad in (['src/'], ['src']):
+            with self.subTest(scope=bad), self.assertRaisesRegex(ValueError, r'src/\*\*'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+
+    def test_lane_scope_is_rejected_on_the_legacy_schema(self):
+        with self.assertRaisesRegex(ValueError, 'colab-task/2'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], report='dev-package/reports/r/l/gate-summary.json',
+                           legacy=True, scope=['src/**'])
+
+    def test_lane_scope_sees_leading_space_paths_and_staged_only_changes(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['docs/**'])
+        self.write(' docs/x.md', 'out of scope (leading space)')
+        subprocess.run(git + ['add', '--', ' docs/x.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'leading space'], check=True)
+        (self.root / ' docs/x.md').unlink()
+        with self.assertRaisesRegex(ValueError, ' docs/x.md'):
+            self.complete_lane(task['task_id'])
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/staged.md', 'staged only')
+        subprocess.run(git + ['add', 'notes/staged.md'], check=True)
+        (self.root / 'notes/staged.md').unlink()          # index keeps it, working copy restored
+        with self.assertRaisesRegex(ValueError, 'notes/staged.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_scope_ignores_entries_staged_before_begin(self):
+        # Round-3 regression: the index was compared with HEAD, so a parent's staged work
+        # that predates the task was blamed on the lane.
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        self.write('notes/parent.md', 'parent work in progress')
+        subprocess.run(git + ['add', 'notes/parent.md'], check=True)
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('src/in.py')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # Staging something out of scope during the task is still the lane's change.
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/lane.md', 'lane staged')
+        subprocess.run(git + ['add', 'notes/lane.md'], check=True)
+        (self.root / 'notes/lane.md').unlink()
+        with self.assertRaisesRegex(ValueError, 'notes/lane.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_scoped_begin_records_the_index_and_explains_why_it_cannot(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        plain = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('started_index', plain)
+        scoped = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.assertRegex(scoped['started_index'], r'^[0-9a-f]{40}$')
+        # A held index.lock is not a conflict: git's own reason is reported.
+        lock = self.root / '.git' / 'index.lock'
+        lock.write_text('')
+        try:
+            with self.assertRaisesRegex(ValueError, 'index.lock'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        finally:
+            lock.unlink()
+        # A real conflict is refused as one.
+        self.write('c.txt', 'base'); subprocess.run(git + ['add', 'c.txt'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'base'], check=True)
+        subprocess.run(git + ['checkout', '-qb', 'other'], check=True)
+        self.write('c.txt', 'other'); subprocess.run(git + ['commit', '-qam', 'other'], check=True)
+        subprocess.run(git + ['checkout', '-q', '-'], check=True)
+        self.write('c.txt', 'main'); subprocess.run(git + ['commit', '-qam', 'main'], check=True)
+        subprocess.run(git + ['merge', '-q', 'other'], capture_output=True)
+        with self.assertRaisesRegex(ValueError, 'resolve the conflicts first'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+
+    def test_lane_scope_default_allowed_paths_need_no_declaration(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
+        self.write('src/a.py')
+        self.write('dev-package/reports/round/lane/notes.md')
+        self.write('docs/development/lifecycle-evidence.md')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # `*` does not cross a directory; `**` would.
+        self.write('src/nested/b.py')
+        with self.assertRaisesRegex(ValueError, 'src/nested/b.py'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_without_scope_keeps_current_behavior(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('scope', task)
+        self.write('anywhere/at/all.txt')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_declarations_are_validated(self):
+        for bad in ([''], ['/abs/**'], ['../up/**'], ['a/../b'], ['src\\x'], ['./src/**'], ['src/**', 'src/**']):
+            with self.subTest(scope=bad), self.assertRaises(ValueError):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', scope=['src/**'])
+
+    def test_lane_scope_cli_handoff_is_refused_with_exits(self):
+        (self.root / '.gitignore').write_text('__pycache__/\n')
+        self.write('gates/run.sh', '#!/usr/bin/env bash\necho verified\n')
+        script = str(ROOT / 'scripts/harness/hooks/lifecycle_contract.py')
+        def cli(*args):
+            return subprocess.run([sys.executable, script, *args], cwd=self.root, text=True, capture_output=True)
+        begun = cli('begin', '--role', 'lane-worker', '--gate', 'check', '--scope', 'src/**')
+        self.assertEqual(begun.returncode, 0, begun.stderr)
+        task_id = json.loads(begun.stdout)['task_id']
+        self.write('src/in.py'); self.write('outside.txt')
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        refused = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(refused.returncode, 78)
+        self.assertNotIn('COLAB_HANDOFF', refused.stdout)
+        self.assertIn('outside.txt', refused.stderr)
+        self.assertIn('--scope', refused.stderr); self.assertIn('revert', refused.stderr)
+        (self.root / 'outside.txt').unlink()
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        accepted = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertIn('COLAB_HANDOFF', accepted.stdout)
+
 class ResearcherTaskHookTests(unittest.TestCase):
     """R1 — `SubagentStart` (researcher) opens the H6 task so the first Stop is not bounced.
 

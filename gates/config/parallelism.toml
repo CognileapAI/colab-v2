@@ -36,6 +36,12 @@
 "planning-freshness"        = "parallel"
 "harness-contract"          = "parallel"
 "harness-contract-selftest" = "parallel"
+# `adr-records` — 실측 근거: `docs/decisions/*` 와 `.agents/harness.yaml` 을 읽고 `git diff`·`ls-files`
+#   조회만 한다(`scripts/harness/adr_gate.py --all`). 쓰기 0 · DB 0 · 도커 0 · 포트 0 · 잠금 0.
+"adr-records"               = "parallel"
+# `intent-ref` — 실측 근거: `git rev-list`·`log`·`diff`·`show`·`cat-file` 읽기 조회만 한다
+#   (`scripts/harness/intent_ref.py`). 인덱스·작업 트리·ref 쓰기 0 · DB 0 · 도커 0 · 포트 0.
+"intent-ref"                = "parallel"
 "contract-lint"             = "parallel"
 "contract-breaking"         = "parallel"
 "event-lint"                = "parallel"

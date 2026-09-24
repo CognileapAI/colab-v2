@@ -102,8 +102,13 @@ jobs:
               - '.github/workflows/ci.yml'
             # 상태 대장과 그 반영본(산문). 게이트 자체가 바뀌어도 다시 판정한다 —
             # 판정기를 고치고 대상을 안 보는 것이 이 레포의 대표 실패형이다.
+            # `docs/decisions/**` · 판정기 `scripts/harness/adr_gate.py` · 그 설정 `.agents/harness.yaml`(`adr_gate`)
+            # — 어느 것만 바꾼 PR 도 `adr-records` 를 깨운다(대조 = ci-filter-check ㈕).
             dev-package:
               - 'dev-package/**'
+              - 'docs/decisions/**'
+              - 'scripts/harness/adr_gate.py'
+              - '.agents/harness.yaml'
               - 'gates/**'
               - 'scripts/tests/test_planning_gate.py'
               - '.github/workflows/ci.yml'
@@ -539,6 +544,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -553,6 +560,14 @@ jobs:
       # 위장하면 원인이 한 겹 멀어진다 — 여기서 먼저 끊는다.
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
+      # ADR 구조·대체 연결 전수 검사(ADR-0003 · 게이트로만 붙인다). 산출 증거 등록부
+      # `.agents/ci-producers.json` `planning-gates` 에 등록돼 `verify_evidence.py record` 로 감싼다 —
+      # red 는 이 잡을 실패시키고 `ci-required` 가 막는다.
+      - name: ADR 구조·대체 연결 전수 검사
+        env:
+          # PR 이면 base 대비 승인 ADR 삭제·되돌림도 본다(push 는 비어 HEAD).
+          COLAB_ADR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "adr-records" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh adr-records
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "work-item-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh work-item-consistency
       # 참조자료 드라이브는 CI 에 없다. 그래서 **명시 면제**로 돈다 — md 4건 ↔ 커밋된 등재표
@@ -616,6 +631,27 @@ jobs:
           path: ${{ runner.temp }}/gate-evidence/repo-hygiene
           if-no-files-found: error
           retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────
+  # 커밋 → intent 연결(`Intent-Ref:` 트레일러)과 승인 intent 본문 보존 — 판정 red.
+  # PR 에서만 base..head 로 돈다. 경로 필터를 거치지 않는다(대상 경로 판별은 게이트가 하고
+  # 대상 밖이면 건수를 찍고 green). `product` 승격 PR 과 promotion·release 워크플로는 제외.
+  # push 에서는 skipped 이고 `ci-required` 가 경로 필터 skip 과 같이 센다.
+  intent-ref:
+    if: github.event_name == 'pull_request' && github.base_ref != 'product'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Intent-Ref 트레일러 · 승인 intent 보존 (PR base..head)
+        env:
+          COLAB_INTENT_REF_BASE: ${{ github.event.pull_request.base.sha }}
+          COLAB_INTENT_REF_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: ./gates/run.sh intent-ref
 
   harness-eval:
     needs: changes
@@ -784,7 +820,7 @@ jobs:
     # Push checks cannot satisfy the PR-only required context.
     # Path-filtered skips are explicit; failures, cancellations and missing results block promotion.
     if: ${{ always() }}
-    needs: ['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest']
+    needs: ['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest', 'intent-ref']
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -795,7 +831,7 @@ jobs:
           python3 - <<'PYCODE'
           import json, os, sys
           results = json.loads(os.environ['CI_RESULTS'])
-          expected = set(['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest'])
+          expected = set(['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest', 'intent-ref'])
           always_required = {'required-gates', 'changes', 'product-safety', 'repo-hygiene'}
           bad = set(results) != expected
           skipped = []
