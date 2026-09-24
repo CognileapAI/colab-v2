@@ -34,7 +34,7 @@
 .tbl tr.clk:hover td { background: var(--color-surface-hover); }
 .tbl tr.clk:hover td:first-child { box-shadow: inset 2px 0 0 var(--color-primary-600); }
 /* 누름 = hover(surface-hover)의 한 단 진한 값(design-fix 20260924 WU-A3 · 값 16) — 왼쪽 파란 줄은 hover 규칙이 계속 준다. */
-.tbl tr.clk:active td { background: var(--color-gray-100); }
+.tbl tr.clk:active td { background: var(--color-surface-pressed); }
 .tbl .fname { font-family: var(--font-data); font-size: var(--text-body-sm); font-weight: 600; letter-spacing: 0; color: var(--color-text); min-width: 260px; max-width: 320px; white-space: normal; }
 .tbl tr.is-locked td { color: var(--color-text-muted); }
 .tbl tr.is-locked .fname { color: var(--color-gray-500); }

@@ -35,14 +35,15 @@
 - 토큰 이름·값을 바꾸면 `node frontend/scripts/design-docs.mjs` 로 아래 표를 다시 쓴다 — 게이트 h.
 - `--color-on-text-body` 는 한 화면(상세 편집 `.de-req`)만 쓰지만 다크 값이 필요해 정본에 둔다 — 화면 범위에서는 다크 값을 줄 수 없고(d) 정본 계열 이름은 화면 범위에 둘 수 없다(a) · design-fix 20260924 #17.
 - 자간 토큰 두 구간 — `--tracking-heading`(−0.02em)은 제목, `--tracking-label`(0.05em)은 작은 굵은 라벨이 쓴다. 로고 글자 `.login-brand`(0.01em)는 브랜드 예외로 리터럴을 둔다 · design-fix 20260924 #7.
+- `--color-surface-pressed` 는 hover 가 `--color-surface-hover` 인 자리의 누름(`:active`) 바탕이다 — 라이트 = gray-100(#e8ecf2) · 다크 = gray-200(#45566a). 다크 gray-100 은 surface-hover 와 같은 값이라 누름이 hover 와 구분되지 않았다(다크 누름 대 hover 1.61:1) · design-fix 20260924 값 19.
 
 <!-- generated:tokens -->
 입력(sha256):
 
-- `frontend/src/shell/tokens.css` `b061258c09bc348ec3cdeba1c4ed1a5d39a8d20243206287bf2821e97929df82`
+- `frontend/src/shell/tokens.css` `f0874beaa703f5a80a43d5dcd6c5fccf6bdcc2673f739109e4ccdc6956a06294`
 - `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-라이트 `:root` 이름 84 · 다크 블록 이름 42 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
+라이트 `:root` 이름 85 · 다크 블록 이름 43 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
 
 다크 칸: 값 = 다크 블록의 값 · 동일(면제) = `same-in-dark.txt` 에 사유와 함께 적힌 이름 · 별칭 따라감 = 라이트 값이 `var(--x)` 라 대상 이름의 다크 값을 따른다 · — = 색 계열이 아니라 다크 판정 대상이 아니다 · **누락** = 게이트 c red.
 
@@ -80,6 +81,7 @@
 | `--color-surface` | `var(--color-white)` | `#1a222c` |  |
 | `--color-surface-hover` | `#69707714` | `#2b3745` |  |
 | `--color-surface-alt` | `#f5f7fa` | `#202b37` |  |
+| `--color-surface-pressed` | `var(--color-gray-100)` | `var(--color-gray-200)` |  |
 | `--color-overlay` | `rgb(15 20 28 / 45%)` | `rgb(3 7 12 / 65%)` |  |
 | `--color-border` | `#e8ecf2` | `#344251` |  |
 | `--color-border-strong` | `#dfe3e8` | `#45566a` |  |
@@ -137,7 +139,7 @@
 
 | 접두사 | 이름 수 |
 |---|---:|
-| `--color-` | 48 |
+| `--color-` | 49 |
 | `--space-` | 8 |
 | `--text-` | 6 |
 | `--radius-` | 4 |
@@ -178,37 +180,37 @@
 <!-- generated:primitives -->
 입력(sha256):
 
-- `frontend/src/shell/primitives.css` `f4521991bc52a1aa5c7c8e43fe56666e79255028d4f145c210cc364e5c52ded6`
+- `frontend/src/shell/primitives.css` `32f6c90ada5b9352c2a21b844403a32a95a17eb35b2144fc9aae6a638a6c048c`
 - `gates/fixtures/frontend-design-lint/primitives.txt` `82e423d8d2ffd7e4e92cab80301bcbf15e6ea87437310a0f99568aab4c14253f`
 - `gates/fixtures/frontend-design-lint/primitives-exempt.txt` `25f7aa495f529320af9ae53c064479bac5a3c08f1b07ee8cf9b631dc3f001eda`
 - `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-목록 클래스 22(계열 6) · `primitives.css` 규칙 36 · 선언 122
+목록 클래스 22(계열 6) · `primitives.css` 규칙 36 · 선언 123
 
 | 계열 | 목록 클래스 | 규칙 | 기본값 선언 |
 |---|---:|---:|---:|
-| btn | 6 | 10 | 27 |
+| btn | 6 | 10 | 29 |
 | field | 2 | 2 | 8 |
-| chip | 2 | 7 | 26 |
+| chip | 2 | 7 | 25 |
 | card | 3 | 4 | 16 |
 | table | 3 | 6 | 18 |
 | modal | 6 | 7 | 27 |
-| **계** | 22 | 36 | 122 |
+| **계** | 22 | 36 | 123 |
 
 규칙 = 그 클래스가 `:not()`·`:has()` 인자 밖에 나오는 `primitives.css` 규칙(폭 분기 포함). 한 규칙이 두 클래스에 걸리면(`:is(.inp, .sel)`) 아래 표의 두 행에 모두 세고, 계열 합계는 한 번만 센다. 「정의 없음」 = 목록에는 있어 화면 파일의 맨 정의가 막히지만 기본값이 없다.
 
 | 계열 | 클래스 | 규칙 | 선언 | 선택자 |
 |---|---|---:|---:|---|
-| btn | `.btn` | 3 | 13 | `.btn`<br>`.btn:where(:not(.btn-primary)):hover`<br>`.btn:where(:not(.btn-primary)):active` |
-| btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:hover`<br>`.btn-primary:active` |
+| btn | `.btn` | 3 | 13 | `.btn`<br>`.btn:where(:not(.btn-primary, :disabled)):hover`<br>`.btn:where(:not(.btn-primary)):active` |
+| btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:where(:not(:disabled)):hover`<br>`.btn-primary:active` |
 | btn | `.btn-secondary` | 1 | 3 | `.btn-secondary` |
 | btn | `.btn-ghost` | 1 | 1 | `.btn-ghost` |
 | btn | `.btn-danger` | 정의 없음 | — |  |
-| btn | `.btn-sm` | 2 | 5 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px) |
+| btn | `.btn-sm` | 2 | 7 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px) |
 | field | `.inp` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
 | field | `.sel` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
 | chip | `.chip` | 2 | 16 | `.chip`<br>`.chip:where(:not([class*="chip--"]))` |
-| chip | `.chip--*` | 5 | 10 | `.chip--off`<br>`.chip--verified`<br>`.chip--lineage`<br>`.chip--neutral`<br>`.chip--warning` |
+| chip | `.chip--*` | 5 | 9 | `.chip--off`<br>`.chip--verified`<br>`.chip--lineage`<br>`.chip--neutral`<br>`.chip--warning` |
 | card | `.card` | 1 | 5 | `.card` |
 | card | `.card-h` | 2 | 10 | `.card-h`<br>`.card-h h3` |
 | card | `.card-b` | 1 | 1 | `.card-b` |
@@ -275,8 +277,8 @@ patterns 층은 이름만 선언돼 있고 파일이 없다. 아래 규칙은 `f
 
 - 새 CSS 파일은 `@layer screens { … }` 한 블록으로 감싸고 `styles.ts` 에 import 를 더한다(① 층 함정).
 - 새 화면·새 상태는 `frontend/scripts/visual-baseline/scenes.json` 에 캡처 장면을 더하고(3폭 × 2테마) 착수 기준 캡처와 대조한다(⑧).
-- 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상 · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
-- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4).
+- 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상(예외 — 누르는 동안(`:active`)만의 순간 상태는 이 합격선 밖이다. 평상시·hover·초점 상태는 그대로 4.5:1 · 실측 라이트 카탈로그 행 회색 글자 on 누름 면 4.23:1 · 다크 보조 글자 on 누름 면 4.02:1 · design-fix 20260924 값 20) · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
+- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4). hover 가 `--color-surface-hover` 인 자리(카탈로그 표 행 · 상단 메뉴 링크)는 `--color-surface-pressed`(값 19) — 두 테마에서 누름 ≠ hover. 업로드 달력 `.dr-nav button` · `.dr-useg button` 은 아직 gray-100(다크 누름 = hover · F-css 미적용 · 레인 보고서).
 
 ## ⑥ 게이트 `frontend-design-lint` — 조건 a~h
 

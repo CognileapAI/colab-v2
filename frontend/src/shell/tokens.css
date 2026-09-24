@@ -55,6 +55,10 @@
   --color-surface: var(--color-white); /* 카드·셸 */
   --color-surface-hover: #69707714; /* fill.normal 8% */
   --color-surface-alt: #f5f7fa;
+  /* 누름 면 — hover 가 `--color-surface-hover` 인 누름 자리(카탈로그 표 행 · 상단 메뉴 링크 등)의 `:active` 바탕.
+     라이트 = gray-100 · 다크 = gray-200(다크 gray-100 은 surface-hover 와 같은 값이라 누름이 안 보였다 · 다크 누름 대 hover 1.61:1).
+     design-fix 20260924 값 19 · 수용 검토 A3 · A10. */
+  --color-surface-pressed: var(--color-gray-100);
   --color-overlay: rgb(15 20 28 / 45%);
 
   --color-border: #e8ecf2; /* line.solid.normal */
@@ -143,6 +147,7 @@
   --color-surface: #1a222c;
   --color-surface-alt: #202b37;
   --color-surface-hover: #2b3745;
+  --color-surface-pressed: var(--color-gray-200);
   --color-border: #344251;
   --color-border-strong: #45566a;
   --color-border-shell: #45566a;
