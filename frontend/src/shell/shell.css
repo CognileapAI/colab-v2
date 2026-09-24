@@ -37,6 +37,8 @@
   font: inherit;
   cursor: pointer;
 }
+/* 누름 = hover 의 한 단 진한 값(design-fix 20260924 WU-A2 · 값 15) — 셸 대화형 10종이 같은 규칙을 쓴다. */
+.loadfail-retry:active { background: var(--color-gray-100); }
 
 /* ===== 되돌아가기 줄 (`backrow`/`backlink`) — 경로(브레드크럼)가 아니다. 헤더 밖 제 줄에 하나 =====
    BF-11 — 같은 마크업(`DatasetDetailPage.tsx`·`ProjectDetailPage.tsx` 의 `.backrow`)이
@@ -75,6 +77,8 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
+.detail-page .backlink:active,
+.project-detail .backlink:active { background: var(--color-gray-100); }
 .detail-page .backlink .bl-n,
 .project-detail .backlink .bl-n {
   overflow: hidden;
@@ -111,6 +115,7 @@ body {
   padding: 0 20px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-shell);
+  /* 합격선 예외 #13 — 상단 고정바는 「항상 떠 있는 층」이라 카드 그림자 0 합격선에서 뺀다(design-review 20260924 #13 · 값 무변). */
   box-shadow: var(--shadow-sm);
 }
 
@@ -120,7 +125,7 @@ body {
   gap: 9px;
   font-weight: 700;
   font-size: 17px;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-heading);
   color: var(--color-primary);
   white-space: nowrap;
   text-decoration: none;
@@ -178,6 +183,7 @@ body {
   background: var(--color-surface-hover);
   color: var(--color-text);
 }
+.mainnav a:active { background: var(--color-gray-100); }
 /* 활성 내비 = 흰 면 + 잉크 밑줄 */
 .mainnav a.is-active {
   color: var(--color-text);
@@ -216,6 +222,7 @@ body {
   background: var(--color-gray-50);
   border-color: var(--color-gray-400);
 }
+.gnb-settings:active { background: var(--color-gray-100); }
 
 /* 업로드 = 셸 전역 1급 행동 · 유일한 상시 잉크 솔리드 */
 .gnb-upload {
@@ -236,6 +243,7 @@ body {
   transition: background var(--ease);
 }
 .gnb-upload:hover { background: var(--color-primary-700); }
+.gnb-upload:active { background: var(--color-primary-700); }
 
 .avatar-wrap { position: relative; }
 /* 사용자 표기 = **표시**다 (⟨개정 2026-09-13 · `D-5`⟩ · `.labswitch` 와 같은 이유).
@@ -289,6 +297,7 @@ body {
   background: var(--color-gray-50);
   border-color: var(--color-gray-400);
 }
+.gnb-more:active { background: var(--color-gray-100); }
 .gnb-more-list {
   position: absolute;
   top: calc(100% + 6px);
@@ -321,6 +330,7 @@ body {
   cursor: pointer;
 }
 .gnb-more-item:hover { background: var(--color-gray-50); }
+.gnb-more-item:active { background: var(--color-gray-100); }
 .gnb-more-item .lbl { white-space: nowrap; }
 
 .appmain { display: block; }
@@ -344,6 +354,7 @@ body {
   color: var(--color-text);
   border-color: var(--color-border-shell);
 }
+.gnb-logout:active { background: var(--color-gray-100); }
 
 /* GNB 아이콘 — 라벨 옆에 붙는다. 데스크톱에서는 아이콘·라벨이 함께 보인다 */
 .gnb .ico { flex: none; }
@@ -427,8 +438,9 @@ body {
      선택자에 화면 이름이 있어 층을 옮기면 층 함정 면이 늘고, `.page` 이름 통합(TSX 변경) 없이는 소유권 이득이 없어
      P5 로 미뤘다(spec S-DESIGN-STRUCTURE-P2B-20260924 「패턴은 P5 로」). */
 :is(.catalog-page, .lab-page, .project-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
-.page-head h1 { font-size: var(--text-h2); line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; }
+.page-head h1 { font-size: var(--text-h2); line-height: 1.3; font-weight: 700; letter-spacing: var(--tracking-heading); }
 .theme-switcher { min-height: 36px; max-width: 104px; padding: 6px 8px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-caption); cursor: pointer; }
+.theme-switcher:active { background: var(--color-gray-100); }
 .modal-h button:where(:not(.btn)) { color: var(--color-text); }
 :is(.detail-page, .project-detail, .preview-page, .settings-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
 .search-page { width: 100%; max-width: 920px; padding: var(--space-page); }
@@ -454,4 +466,5 @@ body {
   .theme-switcher { max-width: 88px; padding-inline: 6px; }
 }
 :is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
+:is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active { background: var(--color-gray-100); }
 }
