@@ -71,3 +71,5 @@ advisor ② 자리를 반증 워크플로 여섯 회차가 맡았다(검토자 �
 ## 종료 — 7회차 재검토 없음
 - PR #131 병합(`23cdf03c` · 2026-09-24) 뒤 Ted 결정(2026-09-25): 재검토는 6회차에서 멈춘다.
 - 따라서 6회차 수정 4건과 함께 고친 1건은 반증 검토를 거치지 않았다. 확인은 아래 실행 결과뿐이다.
+- 실행 결과(`6f6e43d5` · 6회차 수정 커밋): 게이트 합집합 8 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check rc=0 · 하네스 단위 시험 11파일 226 OK(skip 10) · 게시 스크립트 dry run(`services/` 하위 폴더 · 원격 브랜치 사본) — #131 병합 확인 통과(경로 0) → `pr_contract.py --mode draft` PASS · exit 0 · 임시 파일 잔존 0. 경로 1(미병합 중단 · exit 1)은 병합 전 같은 날 작업 사본 수정본으로 확인. 경로 78 은 이번에 실행하지 않았다.
+- `unittest discover -s scripts/tests` 는 407건 중 오류 3 — `test_preview_static_files`(fastapi) · `test_product_promotion` · `test_product_release`(pytest) 의 모듈 import 실패. 이 브랜치가 건드리지 않은 파일이며 호스트 python3 에 해당 패키지가 없다.

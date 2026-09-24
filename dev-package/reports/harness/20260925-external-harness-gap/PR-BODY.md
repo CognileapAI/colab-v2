@@ -23,6 +23,7 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 ## 검증
 게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 131 OK(skip 10 · Windows 전용) · PR 계약 `pr_contract.py --mode draft` PASS(게시 절차대로 Head-SHA 채움).
 측정 커밋 `d63c18f3`(이후 커밋은 기록 문서와 게시 스크립트 `publish.sh` — 그 뒤 exec-bit · 게시 스크립트 3경로를 따로 확인): `gates/run.sh all` **green 76 / red(판정) 0 / red(준비) 0** · 게이트 합집합 8 green · 단위 시험 131 OK. (`4a3a046a` 에서도 green 76 / 0 / 0.) (1회차 트리 `cf0114d7` 에서는 green 75 / red(판정) 1 — `frontend-test` 부하 시간 초과 · 단독 재실행 1613/1613 통과.)
+6회차 수정 커밋 `6f6e43d5`(검토 종료 시점): 게이트 합집합 8 green · ci-filter-check rc=0 · 하네스 단위 시험 11파일 226 OK(skip 10) · 게시 dry run 경로 0(병합 확인 통과 · 계약 PASS). 전수 `gates/run.sh all` 은 `d63c18f3` 뒤로 다시 돌리지 않았다.
 단독 `harness-contract-selftest` 1회는 다른 프로세스가 호스트 게이트 잠금을 900초 넘게 쥐어 red(준비) 였고, 기본 대기 상한 그대로 재실행해 green 1/0/0.
 
 | 원한 결과 (intent) | 실제 | 근거 | 가치 상태 |
