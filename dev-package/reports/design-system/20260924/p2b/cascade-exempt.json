@@ -209,5 +209,62 @@
   "selector": ".memtbl .chip--off",
   "prop": "margin-left",
   "reason": "범위 선택자로 옮긴 편차 — 값 6px 는 기본값 .chip margin-left 와 같다 · 걸리는 요소는 구성원 표의 비활성 칩 하나(새는 문맥 없음)"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".pj-modal-h h3",
+  "reason": "요소 호환(type) 경쟁이지만 프로젝트 모달 머리 — .card-h 와 같은 파일에 없다(요소 공유 없음) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".modal-h h3",
+  "reason": "요소 호환(type) 경쟁이지만 .card-h h3 는 모달 몸(UploadModal 생성 중·완료 카드)·설정 카드에만 있고 .modal-h 안이 아니다(TSX 확인) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".labinfo-modal h3",
+  "reason": "요소 호환(type) 경쟁이지만 LabInfoPanel 의 편집 모달 제목 — .card-h 는 카드 머리에서 닫힌 뒤다(h2 사용) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".todo-grp h3",
+  "reason": "요소 호환(type) 경쟁이지만 TodoInbox — .card-h 없음(dash-card-head 는 다른 클래스) — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".approval-dialog h3",
+  "reason": "요소 호환(type) 경쟁이지만 승인 대화상자 — .card-h 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "flip",
+  "selector": ".card-h h3",
+  "competitor": ".account-modal h3",
+  "reason": "요소 호환(type) 경쟁이지만 계정 모달 — .card-h 없음 — 같은 요소에 걸리지 않는다"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/upload/upload.css",
+  "selector": ".up-card",
+  "prop": "border",
+  "reason": "색만 죽어 있던 단축 선언을 굵기·모양으로 나눔 — .up-card 요소는 늘 .card(FileDropCard) · 테두리 색은 셸 끝 .card border-color(뒤 순서)가 이겼다 · 굵기·모양은 .up-card { border-width; border-style } 로 남김"
+ },
+ {
+  "kind": "added",
+  "file": "src/components/upload/upload.css",
+  "selector": ".up-card",
+  "prop": "border-width",
+  "reason": "종전 .up-card border 단축의 굵기(1px) — 값 무변"
+ },
+ {
+  "kind": "added",
+  "file": "src/components/upload/upload.css",
+  "selector": ".up-card",
+  "prop": "border-style",
+  "reason": "종전 .up-card border 단축의 모양(solid) — 값 무변"
  }
 ]

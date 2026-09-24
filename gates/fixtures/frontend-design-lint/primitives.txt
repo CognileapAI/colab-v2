@@ -15,3 +15,7 @@
 # chip
 .chip
 .chip--*
+# card
+.card
+.card-h
+.card-b

@@ -2,22 +2,7 @@
 /* 구성원 · 권한 격자 — 치수·색의 정본은 목업 `mockups/제품_260817.html` 의
    `.memtbl` · `.settabs` · `.modal` 블록이다. 토큰만 쓰고 새 색을 만들지 않는다. */
 
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.card-h {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
-}
-.card-h h3 {
-  margin: 0;
-  font-size: var(--text-body);
-}
+/* `.card`·`.card-h`·`.card-h h3`·`.card-b` 의 기본값은 `shell/primitives.css`(P2b). */
 /* 대표 제목 규약(`frontend/README` `## 규칙`)으로 탭 본체 제목이 `h3` → `h2` 가 됐다.
    **보이는 크기는 바뀌지 않는다** — 단계는 문서 구조의 값이고 크기는 여기서 고정한다.
    `.card-h h3` 는 등록 화면 카드가 그대로 쓰므로 지우지 않는다. */
@@ -35,7 +20,6 @@
   letter-spacing: -0.023em;
   color: var(--color-text);
 }
-.card-b { padding: 6px 18px; }
 /* 권한 격자는 스위치 4열 때문에 600px 을 넘는다. 제 스크롤 통이 없으면
    문서 전체가 옆으로 밀린다 — 가로 스크롤은 이 통 하나가 맡는다 */
 .memgrid .card-b { overflow-x: auto; -webkit-overflow-scrolling: touch; }

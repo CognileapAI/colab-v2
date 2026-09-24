@@ -83,10 +83,13 @@
 .regarea { display: flex; flex-direction: column; gap: 16px; }
 .mapstage[hidden], .regarea[hidden] { display: none; }
 .up-card, .mapstage, .reggate, .regarea {
-  border: 1px solid var(--up-line);
   border-radius: var(--up-radius);
   padding: 16px;
 }
+/* P2b — `.up-card` 는 늘 `.card` 와 함께 쓴다(FileDropCard). 테두리 색은 오늘 `.card` 기본값(border-strong)이 순서로
+   이겼다(이 색 선언은 죽어 있었다) — 기본값이 primitives 층으로 내려가도 같게 굵기·모양만 둔다. */
+.up-card { border-width: 1px; border-style: solid; }
+.mapstage, .reggate, .regarea { border: 1px solid var(--up-line); }
 
 .dropzone {
   display: flex;

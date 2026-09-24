@@ -800,7 +800,7 @@ function verify(out, baseRev, exemptFile) {
   const matches = (x, p, isDrop) => (x.kind === 'dropped' ? isDrop : !isDrop && (x.kind == null || x.kind === p.kind))
     && (x.no == null || x.no === p.no) && (x.prop == null || x.prop === p.prop)
     && (x.selector == null || (p.flips ? p.flips.some((f) => normSel(f.selector) === normSel(x.selector)) : normSel(p.selector || p.arg || '') === normSel(x.selector)));
-  for (const x of exemptions) if (!x.reason) problems.push({ kind: 'exemption-without-reason', ...x });
+  for (const x of exemptions) if (!x.reason) problems.push({ ...x, kind: 'exemption-without-reason', exemptKind: x.kind });
   for (const [list, isDrop] of [[problems, false], [dropped, true]]) for (let i = list.length - 1; i >= 0; i--) {
     const p = list[i];
     const hit = exemptions.filter((y) => y.reason && matches(y, p, isDrop));
@@ -963,7 +963,7 @@ function verifyAll(out, baseRev, exemptFile) {
   // exemptions (reason required) — counted and printed, never silent
   const exemptions = exemptFile && existsSync(exemptFile) ? JSON.parse(readFileSync(exemptFile, 'utf8')) : [];
   const exempted = [];
-  for (const x of exemptions) if (!x.reason) problems.push({ kind: 'exemption-without-reason', ...x });
+  for (const x of exemptions) if (!x.reason) problems.push({ ...x, kind: 'exemption-without-reason', exemptKind: x.kind });
   const hit = (x, p) => x.reason && x.kind === p.kind && (x.file == null || x.file === p.file) && (x.prop == null || x.prop === p.prop)
     && (x.selector == null || normSel(x.selector) === normSel(p.selector) || normSel(x.selector) === normSel(p.arg || ''));
   // flips: an exemption with `competitor` removes only the flips against that competitor selector (a competitor that can
@@ -990,7 +990,7 @@ function verifyAll(out, baseRev, exemptFile) {
     exempted.push({ ...p, reason: xs.map((x) => x.reason).join(' / ') });
     problems.splice(i, 1);
   }
-  for (const x of exemptions) if (x.reason && !x.used) problems.push({ kind: 'stale-exemption', ...x });
+  for (const x of exemptions) if (x.reason && !x.used) problems.push({ ...x, kind: 'stale-exemption', exemptKind: x.kind });
   mkdirSync(out, { recursive: true });
   const res = { schema: 'colab-cascade-verify-all/1', base: baseRev, units: baseUnits.length, unchanged, moved: moved.length, deleted: deleted.length,
     deletedDead: deleted.filter((d) => d.proof).length, added: added.length, exempted, problems, deletedList: deleted, movedList: moved,
