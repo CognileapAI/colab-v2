@@ -257,14 +257,17 @@ describe('A27 끌기 중 두 번째 포인터 — 무시하고 첫 포인터의 
 
 /* ═══ A29 · A41 — 경계 · 화면 크기가 바뀌면 관성을 멈춘다 ═══════════════════════ */
 
-function mountHook(bounds: typeof WIDE) {
+function mountHook(bounds: typeof WIDE, reactStrictMode = false) {
   const vp = document.createElement('div');
   Object.defineProperty(vp, 'clientWidth', { value: 512, configurable: true });
   Object.defineProperty(vp, 'clientHeight', { value: 512, configurable: true });
   const lay = document.createElement('div');
   Object.defineProperty(lay, 'offsetWidth', { value: 512, configurable: true });
   Object.defineProperty(lay, 'offsetHeight', { value: 1600, configurable: true });
-  const hook = renderHook(({ b }) => useZoomPan({ bounds: b }), { initialProps: { b: bounds } });
+  const hook = renderHook(({ b }) => useZoomPan({ bounds: b }), {
+    initialProps: { b: bounds },
+    reactStrictMode,
+  });
   act(() => {
     hook.result.current.viewportRef(vp as HTMLDivElement);
     hook.result.current.layersRef(lay);
@@ -310,6 +313,27 @@ describe('A29/A41 관성 중 경계·크기 변화 — 관성을 멈춘다', () 
     advance(1000);
     expect(hook.result.current.panOffset.y).toBe(at);
   });
+});
+
+/* ═══ FP-1 — StrictMode 이중 호출에도 관성은 목표에 정확히 선다 ═══════════════════ */
+
+describe('FP-1 관성 갱신 함수는 멱등이다 — StrictMode(DEV 이중 호출)에서도 목표에 선다', () => {
+  // 한 act 안에서 여러 프레임을 돌리면 갱신이 렌더 때 몰아서 처리된다(eager 아님).
+  // StrictMode 는 그때 갱신 함수를 두 번 부르고 첫 결과를 버린다 — 멈춤 프레임의 둘째 호출이
+  // 앞 프레임 값을 돌려주면 목표보다 SETTLE_PX 이상 모자란 자리에 선다.
+  for (const reactStrictMode of [false, true]) {
+    it(`reactStrictMode=${reactStrictMode} · 빠른 끌기 뒤 panOffset 이 잘린 투영 목표와 같다`, () => {
+      fakeClock();
+      const { hook } = mountHook(WIDE, reactStrictMode);
+      hookFling(hook);
+      advance(3000);
+      const goal = Math.min(HALF, 80 + projectedDistance(2000));
+      expect(goal).toBe(HALF);
+      expect(hook.result.current.panOffset).toEqual({ x: 0, y: goal });
+      advance(1000);
+      expect(hook.result.current.panOffset).toEqual({ x: 0, y: goal });
+    });
+  }
 });
 
 /* ═══ A30 — 놓은 속도가 스프링으로 인계된다 ═════════════════════════════════════ */

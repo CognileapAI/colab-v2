@@ -72,3 +72,21 @@ GREEN: 구현 커밋 뒤 F-preview·L3·L3b 41건 통과 · 전체 vitest 135 �
 - 인계 속도 상한으로 목표가 잘린 경우 놓는 순간 속도가 줄어든다(예: 2000 → 785px/s). spec 값 대로이며 체감 확인은 실화면 몫.
 - A30 시험 제목 「16ms 마다 1px 씩」은 실제 이동(11 · 1 · 1px)과 다르다 — 단언은 실제 값으로 계산한다. 구현 커밋 뒤 시험 파일을 고치지 않으려고 두었다.
 - 관성 갱신 함수가 렌더까지 미뤄지면 `settled` 를 한 프레임 늦게 읽어 빈 프레임 하나가 더 돈다. 그 16ms 안의 탭은 「관성을 잡는 탭」으로 처리된다.
+
+## 수정 라운드(리뷰 확정 FP-1)
+
+- 기준: 레인 브랜치 `worktree-wf_808554ed-fad-3` 머리 `45ca2112`(조상에 `bee7786f` 확인) · lifecycle task `416ca440fb60432e9b48512187b2827a` · 선언 게이트 4(같음)
+- 결함 FP-1(minor · `frontend/src/components/preview/useZoomPan.ts:485`): 관성 `setView` 갱신 함수가 클로저 플래그 `settled` 를 쓰고 `if (settled) return cur;` 로 빠진다. React 19.2.8 DEV StrictMode 는 렌더 때 몰아서 처리하는 갱신에서 갱신 함수를 두 번 부르고 첫 결과를 버린다(`react-dom-client.development.js:8044-8048`). 멈춤 프레임의 첫 호출이 `settled = true` 로 목표를 돌려주고 버려지며, 둘째 호출은 앞 프레임 값을 돌려준다. 앱은 `<StrictMode>` 아래(`frontend/src/main.tsx:17`)라 dev 에서 목표보다 ≥ 0.5px 모자란 자리에 선다.
+
+### 항목 → 전후 → 시험
+
+| 항목 | 전 | 후 | 시험 |
+|---|---|---|---|
+| FP-1 | 갱신 함수 첫 줄 `if (settled) return cur;` — 멈춤 뒤 호출은 앞 프레임 값 | (구현 커밋에서 기재) | `design-fix-20260924-F-preview.test.tsx` 「FP-1 … reactStrictMode=true · 빠른 끌기 뒤 panOffset 이 잘린 투영 목표와 같다」(＋ 같은 본문 `reactStrictMode=false` 대조) — renderHook `reactStrictMode` · 한 act 안 `advance(3000)` 으로 갱신을 렌더 때 몰아 처리 |
+
+### RED 증거
+
+시험 작성 커밋 시점(제품 코드 = `45ca2112`) `npx vitest run test/design-fix-20260924-F-preview.test.tsx` → **1 실패 · 13 통과**. 실패는 단언 실패(import 오류 0).
+
+- `reactStrictMode=true`: `AssertionError: expected { x: +0, y: 543.4196964154335 } to deeply equal { x: +0, y: 544 }` — 목표(경계 544)보다 0.58px 모자람(SETTLE_PX 0.5 이상).
+- `reactStrictMode=false`: 통과(같은 본문 · 이중 호출 없음 → 결함 경로 밖. 회귀 고정용).
