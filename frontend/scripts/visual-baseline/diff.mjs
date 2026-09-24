@@ -2,11 +2,16 @@
 // Pixel comparison of two capture directories written by capture.py.
 // Spec: dev-package/prd/specs/S-DESIGN-STRUCTURE-P0-20260924.md (P0).
 //
-//   node diff.mjs <baselineDir> <candidateDir> <reportDir>
+//   node diff.mjs [--subset] <baselineDir> <candidateDir> <reportDir>
 //
+// --subset (P5 · spec S-DESIGN-STRUCTURE-P5-20260924): compare only the scenes present on both sides and skip the
+//   manifest sha256 check — for linking a baseline taken before a scene was added to one taken after it. Both
+//   manifest hashes and the scenes left out on each side are written to the report. Within the common scenes the
+//   capture sets must still match; 0 common scenes is 78.
 // Exit 0 = every capture has 0 strict diff pixels.
 // Exit 1 = at least one capture differs (strict: threshold 0, includeAA true); <reportDir>/<name>.diff.png written.
-// Exit 78 = cannot compare: missing index.json/PNG, scene or capture sets differ, manifest sha256 differs, 0 captures.
+// Exit 78 = cannot compare: missing index.json/PNG, scene or capture sets differ, manifest sha256 differs, 0 captures
+//   (with --subset: no common scene, or capture sets differ within the common scenes).
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
@@ -38,22 +43,40 @@ function readIndex(dir, side) {
 const sameSet = (a, b) => a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]);
 
 function main(argv) {
-  if (argv.length !== 3) notReady('usage: node diff.mjs <baselineDir> <candidateDir> <reportDir>');
+  const subset = argv[0] === '--subset';
+  if (subset) argv = argv.slice(1);
+  if (argv.length !== 3) notReady('usage: node diff.mjs [--subset] <baselineDir> <candidateDir> <reportDir>');
   const [baseDir, candDir, reportDir] = argv;
   const base = readIndex(baseDir, 'baseline');
   const cand = readIndex(candDir, 'candidate');
 
-  if (base.manifestSha256 !== cand.manifestSha256) {
-    notReady(`manifest sha256 differs: baseline ${base.manifestSha256} vs candidate ${cand.manifestSha256}`);
+  let baseCaps = base.captures ?? [];
+  let candCaps = cand.captures ?? [];
+  let subsetInfo = null;
+  if (subset) {
+    const bs = new Set(base.scenes ?? []);
+    const cs = new Set(cand.scenes ?? []);
+    const common = [...bs].filter((s) => cs.has(s));
+    if (!common.length) notReady('--subset: no common scenes between baseline and candidate');
+    subsetInfo = {
+      baselineManifestSha256: base.manifestSha256, candidateManifestSha256: cand.manifestSha256,
+      commonScenes: common.length, onlyBaseline: [...bs].filter((s) => !cs.has(s)), onlyCandidate: [...cs].filter((s) => !bs.has(s)),
+    };
+    baseCaps = baseCaps.filter((c) => cs.has(c.scene));
+    candCaps = candCaps.filter((c) => bs.has(c.scene));
+  } else {
+    if (base.manifestSha256 !== cand.manifestSha256) {
+      notReady(`manifest sha256 differs: baseline ${base.manifestSha256} vs candidate ${cand.manifestSha256}`);
+    }
+    if (!sameSet(base.scenes ?? [], cand.scenes ?? [])) notReady('scene sets differ between baseline and candidate');
   }
-  if (!sameSet(base.scenes ?? [], cand.scenes ?? [])) notReady('scene sets differ between baseline and candidate');
-  const baseNames = (base.captures ?? []).map((c) => c.name);
-  const candNames = (cand.captures ?? []).map((c) => c.name);
+  const baseNames = baseCaps.map((c) => c.name);
+  const candNames = candCaps.map((c) => c.name);
   if (!sameSet(baseNames, candNames)) notReady('capture sets differ between baseline and candidate');
   if (baseNames.length === 0) notReady('0 captures to compare');
 
   const missing = [];
-  for (const c of base.captures) {
+  for (const c of baseCaps) {
     for (const dir of [baseDir, candDir]) {
       const file = resolve(dir, c.file);
       if (!existsSync(file)) missing.push(rel(file));
@@ -63,9 +86,9 @@ function main(argv) {
 
   mkdirSync(reportDir, { recursive: true });
   const rows = [];
-  const candBy = new Map(cand.captures.map((c) => [c.name, c]));
+  const candBy = new Map(candCaps.map((c) => [c.name, c]));
   const sha = (buf) => createHash('sha256').update(buf).digest('hex');
-  for (const c of base.captures) {
+  for (const c of baseCaps) {
     const a = readFileSync(resolve(baseDir, c.file));
     const b = readFileSync(resolve(candDir, c.file));
     // A PNG whose bytes no longer match its own index.json was changed after capture.
@@ -98,6 +121,7 @@ function main(argv) {
     verdictSetting: { threshold: 0, includeAA: true },
     referenceSetting: { threshold: 0.1 },
     manifestSha256: base.manifestSha256,
+    subset: subsetInfo,
     baseline: side(base, baseDir),
     candidate: side(cand, candDir),
     sameHead,
@@ -124,6 +148,7 @@ function main(argv) {
     `- 기준: \`${report.baseline.dir}\` · HEAD \`${base.gitHead}\`${base.gitDirty ? ' (미커밋 변경 있음)' : ''} · ${base.capturedAt}`,
     `- 후보: \`${report.candidate.dir}\` · HEAD \`${cand.gitHead}\`${cand.gitDirty ? ' (미커밋 변경 있음)' : ''} · ${cand.capturedAt}`,
     `- 명세 sha256: \`${base.manifestSha256}\``,
+    ...(subsetInfo ? [`- **부분집합 대조(--subset)** — 공통 장면 ${subsetInfo.commonScenes}개만 비교 · 명세 sha256 기준 \`${subsetInfo.baselineManifestSha256}\` / 후보 \`${subsetInfo.candidateManifestSha256}\` · 기준에만 있는 장면: ${subsetInfo.onlyBaseline.join(', ') || '없음'} · 후보에만 있는 장면: ${subsetInfo.onlyCandidate.join(', ') || '없음'}`] : []),
     `- 캡처 ${report.totals.captures}장 · 장면 ${report.totals.scenes}개 · red ${red.length}장 · 엄격 차이 픽셀 합 ${report.totals.strictPixels} · 보조 차이 픽셀 합 ${report.totals.lenientPixels} · 크기 차이 ${report.totals.sizeMismatch}장`,
     `- 종료코드: **${exit}**`,
     '',
