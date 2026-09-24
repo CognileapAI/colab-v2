@@ -160,7 +160,7 @@ section.lin {
    있었다. **못 고르는 부분만 색을 내리고 이유는 살렸다.**」 그 규율을 그대로 쓴다 —
    흐려지는 것은 **이름 버튼 하나**이고 사유 문구는 진한 색을 유지한다.
 
-     · 사유 `--lin-over-ink` #a85400 on `--lin-over-bg` #fff6ed = **5.00:1** (합격)
+     · 사유 `--color-warning-600` #a85400 on `--color-warning-50` #fff6ed = **5.00:1** (합격)
      · `확인 필요` 칩 = 같은 두 값 = **5.00:1** (합격)
      · 안내 줄 #5b6472 on #f7f8fa = **5.63:1** (합격)
      · 흐려진 이름 #8a93a0 on #fff6ed = 2.91:1 — **비활성 컨트롤**이라 4.5:1 대상이 아니고,
@@ -195,9 +195,9 @@ section.lin {
 
 /* 사후 충돌 안내 */
 .lin-conflict {
-  border-color: var(--lin-over-ink);
-  background: var(--lin-over-bg);
-  color: var(--lin-over-ink);
+  border-color: var(--color-warning-600);
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
 }
 
 .lin-lv {
@@ -207,24 +207,24 @@ section.lin {
 
 /* 초과 후보 — **보이되 못 고른다.** 지우거나 숨기지 않는다 */
 .lin-picker li.is-over {
-  background: var(--lin-over-bg);
+  background: var(--color-warning-50);
   border-radius: 6px;
   padding: 4px 6px;
 }
 .lin-picker li.is-over .lin-name {
-  color: var(--lin-over-name);
+  color: var(--color-text-muted);
 }
 .lin-picker li.is-over .lin-cand {
   cursor: not-allowed;
 }
 .lin-picker li.is-over .lin-lv {
-  color: var(--lin-over-name);
+  color: var(--color-text-muted);
 }
 .lin-over-why {
   margin: 2px 0 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--lin-over-ink);
+  color: var(--color-warning-600);
 }
 
 /* `확인 필요` 칩 — 카탈로그·상세와 같은 두 값을 쓴다 */
@@ -259,14 +259,14 @@ section.lin {
 
 .lin-unknown:has(input:disabled) label {
   cursor: not-allowed;
-  color: var(--lin-over-ink);
+  color: var(--color-warning-600);
 }
 
 .lin-unknown-why {
   margin: 4px 0 0 24px;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--lin-over-ink);
+  color: var(--color-warning-600);
 }
 
 /* ⭑ ⟨WU-B10 · PRD-31⟩ 상세 계보 수정·추가 모달.
@@ -287,7 +287,7 @@ section.lin {
   display: block;
   margin: 8px 0 4px;
   font-size: 13px;
-  color: var(--lin-over-ink);
+  color: var(--color-warning-600);
 }
 
 .lin-fix .lin-fix-pick .inp {

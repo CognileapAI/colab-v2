@@ -121,19 +121,8 @@
   --shell-gnb-height: 64px;
   --shell-gnb-offset: var(--shell-gnb-height);
 
-  /* ── 여러 루트에서 참조되는 화면 접두사 이름 ──
-     한 화면 루트 범위에 둘 수 없어 정본에 둔다(spec 「루트 밖에서 참조되는 이름은 승격」).
-     `--up-*` 는 업로드 모달·확인 대화상자·미완 업로드 배너와 전역 셀렉터(`.btn`·`.muted`·`.inp`)가,
-     `--lin-over-*` 는 연결 단계(`.lin`)와 계보 고치기 모달(`.lin-fix`)이 함께 참조한다. */
-  --up-line: var(--color-border);
-  --up-muted: var(--color-text-muted);
-  --up-ink: var(--color-text);
-  --up-warn: var(--color-warning-600);
-  --up-warn-bg: var(--color-warning-50);
-  --up-radius: 12px;
-  --lin-over-bg: var(--color-warning-50);
-  --lin-over-ink: var(--color-warning-600);
-  --lin-over-name: var(--color-text-muted);
+  /* P2b — 화면 접두사 별칭 9종(`--up-*` 6 · `--lin-over-*` 3)은 값이 같은 정본 이름으로 참조를 바꾸고 지웠다
+     (`--color-border` · `--color-text-muted` · `--color-text` · `--color-warning-600` · `--color-warning-50` · `--radius-lg`). */
 }
 
 @media (max-width: 900px) {

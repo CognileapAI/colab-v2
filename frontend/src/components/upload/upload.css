@@ -36,10 +36,10 @@
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
-  border-bottom: 1px solid var(--up-line);
+  border-bottom: 1px solid var(--color-border);
 }
 .modal-takeover .modal-h h3 { margin: 0; font-size: 18px; }
-.modal-takeover .mh-lab { color: var(--up-muted); font-size: 13px; }
+.modal-takeover .mh-lab { color: var(--color-text-muted); font-size: 13px; }
 .modal-takeover .modal-h .x { margin-left: auto; border: 0; background: none; font-size: 20px; cursor: pointer; }
 
 /* 본문 안에서만 스크롤이 돈다 — 모달 안에서 스크롤이 두 겹이 되지 않게 한다 */
@@ -83,13 +83,13 @@
 .regarea { display: flex; flex-direction: column; gap: 16px; }
 .mapstage[hidden], .regarea[hidden] { display: none; }
 .up-card, .mapstage, .reggate, .regarea {
-  border-radius: var(--up-radius);
+  border-radius: var(--radius-lg);
   padding: 16px;
 }
 /* P2b — `.up-card` 는 늘 `.card` 와 함께 쓴다(FileDropCard). 테두리 색은 오늘 `.card` 기본값(border-strong)이 순서로
    이겼다(이 색 선언은 죽어 있었다) — 기본값이 primitives 층으로 내려가도 같게 굵기·모양만 둔다. */
 .up-card { border-width: 1px; border-style: solid; }
-.mapstage, .reggate, .regarea { border: 1px solid var(--up-line); }
+.mapstage, .reggate, .regarea { border: 1px solid var(--color-border); }
 
 .dropzone {
   display: flex;
@@ -97,12 +97,12 @@
   align-items: center;
   gap: 4px;
   padding: 28px;
-  border: 1px dashed var(--up-line);
-  border-radius: var(--up-radius);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
   cursor: pointer;
 }
 .dropzone .big { font-size: 16px; font-weight: 600; }
-.dropzone .muted, .muted { color: var(--up-muted); font-size:13px; }
+.dropzone .muted, .muted { color: var(--color-text-muted); font-size:13px; }
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
 /* 확장자 혼합 안내의 규칙은 **여기 없다** (WU-A13R · PRD-43) — 공통 토스트 한 개로 옮겼다
@@ -114,7 +114,7 @@
 .up-note {
   margin: 0;
   font-size: 13px;
-  color: var(--up-muted);
+  color: var(--color-text-muted);
 }
 
 /* ⑩ 카드 본문 안 세로 여백은 **컨테이너**가 gap 으로 소유한다 —
@@ -126,14 +126,14 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--up-line);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 .filecard .fmeta { flex: 1; min-width: 0; }
 .filecard .fn { font-weight: 600; word-break: break-all; }
-.filecard .fs { color: var(--up-muted); font-size:13px; }
+.filecard .fs { color: var(--color-text-muted); font-size:13px; }
 .filecard .fkind { display: flex; align-items: center; gap: 6px; font-size:13px; }
-.slicebtn { align-self: flex-start; background: none; border: 0; color: var(--up-muted); cursor: pointer; }
+.slicebtn { align-self: flex-start; background: none; border: 0; color: var(--color-text-muted); cursor: pointer; }
 .slicelist { display: flex; flex-direction: column; gap: 6px; }
 
 /* 기준 격자 파일은 본체 목록과 따로 세운다 */
@@ -143,12 +143,12 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--up-line);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface-alt);
 }
 .companion .cl { font-weight: 600; font-size:13px; }
-.companion .cw { color: var(--up-muted); font-size:13px; }
+.companion .cw { color: var(--color-text-muted); font-size:13px; }
 .companion .cline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
 
 /* 여백 소유 = 컨테이너: `.mapstage` 의 gap 12px 이 줄 간격을 갖는다 — 자식은 `margin-top` 을 지지 않는다 (WU-C11 · 판정 49) */
@@ -158,7 +158,7 @@
 .vizload { display: flex; align-items: center; gap: 8px; }
 .vizload .spin {
   width: 12px; height: 12px; border-radius: 50%;
-  border: 2px solid var(--up-line); border-top-color: var(--up-ink);
+  border: 2px solid var(--color-border); border-top-color: var(--color-text);
   animation: up-spin 0.8s linear infinite;
 }
 @keyframes up-spin { to { transform: rotate(360deg); } }
@@ -178,32 +178,32 @@
 .vizerr, .warn {
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--up-warn-bg);
-  color: var(--up-warn);
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
   font-size: 13px;
 }
-.vizpartial { color: var(--up-muted); font-size: 13px; }
+.vizpartial { color: var(--color-text-muted); font-size: 13px; }
 .vizpartial .names { display: block; }
 .mapcanvas .tile { max-width: 100%; display: block; }
-.vizph { color: var(--up-muted); }
+.vizph { color: var(--color-text-muted); }
 
 .reggate { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
 .reggate .rg-t { font-weight: 600; }
-.reggate .rg-s { color: var(--up-muted); font-size: 13px; }
+.reggate .rg-s { color: var(--color-text-muted); font-size: 13px; }
 .reggate .rg-a { margin-left: auto; display: flex; gap: 8px; }
 
 /* 표시기 줄 — 한 번에 한 단계만 보인다. 줄 끝에 파일 이름을 고정한다 */
 .regsteps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .regsteps button {
-  border: 1px solid var(--up-line);
+  border: 1px solid var(--color-border);
   background: none;
   border-radius: 9999px;
   padding: 6px 12px;
   cursor: pointer;
 }
-.regsteps button.is-active { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
+.regsteps button.is-active { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-text); }
 .regsteps .cnt { margin-left: 6px; font-size:13px; }
-.regsteps .rs-f { margin-left: auto; color: var(--up-muted); font-size:13px; }
+.regsteps .rs-f { margin-left: auto; color: var(--color-text-muted); font-size:13px; }
 @media (max-width: 720px) { .regsteps .rs-f { display: none; } }
 
 /* ⑩ 단계 본문 안 세로 여백도 컨테이너가 갖는다 — 위 여백은 `.regarea` 의 gap 16px */
@@ -223,10 +223,10 @@
 /* 기간은 두 칸이 한 값이라(`DataPeriod`) 한 셀 안에서 붙는다 — 셀을 둘로 세지 않는다. */
 .form-3 .pair { display: flex; align-items: center; gap: 6px; }
 .form-3 .pair .inp { min-width: 0; flex: 1; }
-.form-3 .pair .tilde { color: var(--up-muted); flex: none; }
+.form-3 .pair .tilde { color: var(--color-text-muted); flex: none; }
 .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.form-row label { font-size:13px; color: var(--up-muted); display: flex; gap: 6px; align-items: center; }
-.autotag { font-size:13px; border: 1px solid var(--up-line); border-radius: 9999px; padding: 1px 6px; }
+.form-row label { font-size:13px; color: var(--color-text-muted); display: flex; gap: 6px; align-items: center; }
+.autotag { font-size:13px; border: 1px solid var(--color-border); border-radius: 9999px; padding: 1px 6px; }
 /* ⭑ ⟨19차 · PRD-15⟩ `필수` 표시. 「여기를 적어 주세요」를 색이 아니라 **글자로도** 적는다.
    ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 모양은 알약 배지가 아니라 라벨 옆 붉은 작은 글자다** —
       rev2 `.req` 축자(`font-weight:700` ＋ `--color-danger-600`).
@@ -253,7 +253,7 @@
 }
 /* `.inp`·`.sel` 의 기본값은 `shell/primitives.css`(P2b). */
 textarea.inp { resize: vertical; }
-.fieldlbl { font-size:13px; color: var(--up-muted); margin: 12px 0 8px; }
+.fieldlbl { font-size:13px; color: var(--color-text-muted); margin: 12px 0 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chipx { border: 0; background: none; cursor: pointer; }
@@ -262,8 +262,8 @@ textarea.inp { resize: vertical; }
 /* WU-A7R · PRD-23 개정본 — 연관 프로젝트·논문은 **표 한 장**이다(두 패널을 걷었다).
    열은 `유형` · `이름` · `해제` 이고 변수 표와 같이 위에서 아래로 쌓인다. */
 .projtable { width: 100%; border-collapse: collapse; }
-.projtable th, .projtable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--up-line); }
-.projtable th { font-size:13px; font-weight: 600; color: var(--up-muted); }
+.projtable th, .projtable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--color-border); }
+.projtable th { font-size:13px; font-weight: 600; color: var(--color-text-muted); }
 .projtable td.pr-k { width: 1%; white-space: nowrap; }
 .projtable td.pr-n { font-size: 13px; word-break: break-all; }
 .projtable td.pr-x { width: 1%; white-space: nowrap; text-align: right; }
@@ -271,9 +271,9 @@ textarea.inp { resize: vertical; }
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px. `.qproj` 는 이 줄 아래로 접히므로 row-gap 8px 이 그 자리다 */
 .projpick { display: flex; flex-wrap: wrap; gap: 8px; }
 .projpick .sel { flex: 1; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
-.qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
+.qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 10px; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; }
-.qproj .qnote { color: var(--up-muted); font-size:13px; }
+.qproj .qnote { color: var(--color-text-muted); font-size:13px; }
 
 /* ⑫ 행동 줄 **바닥 고정** (PRD-39 · rev1 `.up-foot`). 길게 스크롤해도 버튼이 따라온다 —
    고정하지 않으면 ① 의 긴 폼에서 `다음` 을 찾으려 매번 끝까지 내려야 한다.
@@ -301,12 +301,12 @@ textarea.inp { resize: vertical; }
   align-items: center;
   justify-content: center;
 }
-.confirm-back .modal { background: var(--color-surface); border-radius: var(--up-radius); max-width: 420px; width: 90%; }
+.confirm-back .modal { background: var(--color-surface); border-radius: var(--radius-lg); max-width: 420px; width: 90%; }
 .confirm-back .modal-h, .confirm-back .modal-b, .confirm-back .modal-f { padding: 16px 20px; }
 .confirm-back .modal-f { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* `.btn` 계열의 기본값은 `shell/primitives.css`(P2b). `.btn-strong` 은 이 화면의 강조 버튼이다. */
-.btn-strong { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
+.btn-strong { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-text); }
 /* P2b — 오늘의 hover 배경(기본값 .btn hover 가 특이도로 이기던 값)을 화면 쪽에 그대로 둔다(primitives 층은 화면에 진다). */
 .btn-strong:hover { background: var(--color-gray-50); }
 
@@ -381,26 +381,26 @@ textarea.inp { resize: vertical; }
 
 /* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
 .up-banner {
-  border: 1px solid var(--up-warn);
-  background: var(--up-warn-bg);
-  border-radius: var(--up-radius);
+  border: 1px solid var(--color-warning-600);
+  background: var(--color-warning-50);
+  border-radius: var(--radius-lg);
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .up-banner .ub-row { display: flex; align-items: center; gap: 10px; }
-.up-banner .ub-txt { flex: 1; font-size: 13px; color: var(--up-ink); }
+.up-banner .ub-txt { flex: 1; font-size: 13px; color: var(--color-text); }
 .up-banner .ub-btn {
-  border: 1px solid var(--up-line);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: 8px;
   padding: 4px 10px;
   font-size:13px;
   cursor: pointer;
 }
-.up-banner .ub-btn.is-armed { border-color: var(--up-warn); color: var(--up-warn); }
-.up-banner .ub-hint { margin: 0; font-size:13px; color: var(--up-muted); }
+.up-banner .ub-btn.is-armed { border-color: var(--color-warning-600); color: var(--color-warning-600); }
+.up-banner .ub-hint { margin: 0; font-size:13px; color: var(--color-text-muted); }
 
 /* 대표 그림(썸네일) 넛지 — rev1 `thumbrow` (`WU-A10` · PRD-20).
    썸네일 한 칸과 안내 한 줄이 나란히 선다. 저장 경로는 여기 없다(`WU-C2`). */
@@ -424,12 +424,12 @@ textarea.inp { resize: vertical; }
    토큰만 쓴다 — 색·간격을 이 파일이 새로 지어내지 않는다. */
 .up-body .pair .sel { flex: none; }
 .up-body .partrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-.up-body .partrow .pr-side { color: var(--up-muted); flex: none; min-width: 4.5em; }
+.up-body .partrow .pr-side { color: var(--color-text-muted); flex: none; min-width: 4.5em; }
 .up-body .partrow .pr-cell { display: inline-flex; align-items: center; gap: 2px; }
 .up-body .partrow .pr-in { width: auto; min-width: 0; text-align: right; }
-.up-body .partrow .pr-unit { color: var(--up-muted); }
+.up-body .partrow .pr-unit { color: var(--color-text-muted); }
 /* 등록 미리보기 한 줄 — 사람이 적은 값이 상세에서 어떻게 보일지를 등록 전에 말한다 */
-.up-body .regprev { color: var(--up-muted); font-variant-numeric: tabular-nums; margin: 4px 0 0; }
+.up-body .regprev { color: var(--color-text-muted); font-variant-numeric: tabular-nums; margin: 4px 0 0; }
 
 /* ① 파일 분석 3단계 표시 (PRD-39 · rev1 `pbStatus`) — 진행 바 아래 한 줄 */
 .up-analyze { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
@@ -526,10 +526,10 @@ textarea.inp { resize: vertical; }
 }
 /* 팝오버 안의 자리 칸도 등록 폼과 같은 규칙으로 선다 (`.up-body .partrow` 의 팝오버 사본) */
 .dr-parts .partrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.dr-parts .partrow .pr-side { color: var(--up-muted); flex: none; min-width: 4.5em; }
+.dr-parts .partrow .pr-side { color: var(--color-text-muted); flex: none; min-width: 4.5em; }
 .dr-parts .partrow .pr-cell { display: inline-flex; align-items: center; gap: 2px; }
 .dr-parts .partrow .pr-in { width: auto; min-width: 0; text-align: right; }
-.dr-parts .partrow .pr-unit { color: var(--up-muted); }
+.dr-parts .partrow .pr-unit { color: var(--color-text-muted); }
 
 /* ── ㈎ 미리보기 확장보기 오버레이 ──────────────────────────────────────
    각색 — rev2 는 `#pvExpandBack` 에 인라인 `style` 로만 치수를 줬다(`z-index:250` ·
@@ -537,7 +537,7 @@ textarea.inp { resize: vertical; }
 .modal-back.pvx-back{position:fixed;inset:0;z-index:250;background:var(--color-overlay);
   display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background: var(--color-surface);
-  border-radius:var(--up-radius);display:flex;flex-direction:column;overflow:hidden;}
+  border-radius:var(--radius-lg);display:flex;flex-direction:column;overflow:hidden;}
 /* ⭑ ⟨R-BUGFIX-260912 `#28`⟩ 방향 미선언이라 기본 `row` 가 걸렸고, 고르개 줄·진행 표시·
    그림·확대 줄이 가로로 늘어서며 확대 줄 버튼 글자가 세로로 접혔다. 세로로 쌓는다.
    본문 높이(`min(70vh,640px)`)는 그대로 둔다 — 늘어난 줄만큼 그림 자리가 줄어든다(우려 1 ⓐ). */
@@ -564,13 +564,13 @@ textarea.inp { resize: vertical; }
 .up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background: var(--color-surface-alt); }
 .up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:var(--color-primary-50); color:var(--color-text); font-size:36px; margin-bottom:12px; }
 .up-file-choose { margin-top:14px; }
-.up-file-management { color:var(--up-muted); font-size:13px; }
+.up-file-management { color:var(--color-text-muted); font-size:13px; }
 .up-file-management > summary { cursor:pointer; padding:4px 0; }
 .up-file-management[open] > summary { margin-bottom:12px; }
 .modal-takeover[data-scene="register"] .regarea { border:0; padding:0; }
-.modal-takeover[data-scene="register"] .regsteps { gap:0; border-bottom:1px solid var(--up-line); min-height:48px; }
-.modal-takeover[data-scene="register"] .regsteps button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--up-muted); padding:14px 12px; }
-.modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--up-ink); border-bottom-color:var(--color-primary-600); }
+.modal-takeover[data-scene="register"] .regsteps { gap:0; border-bottom:1px solid var(--color-border); min-height:48px; }
+.modal-takeover[data-scene="register"] .regsteps button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--color-text-muted); padding:14px 12px; }
+.modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--color-text); border-bottom-color:var(--color-primary-600); }
 .modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background: var(--color-surface-alt); border-radius:8px; padding:6px 10px; }
 @media(max-width:600px) { .mb-takeover.up-empty { padding:12px; } .up-empty .up-body { padding:16px; } .up-empty .modal-h { flex-wrap:wrap; } }
 
@@ -578,11 +578,11 @@ textarea.inp { resize: vertical; }
    미리보기는 입력 장면에서 펼치며, 보기만 진입도 유지한다. */
 .up-empty .up-split { display:block; }
 .up-empty .up-split-preview { display:none; }
-.up-empty .reggate { border:0; border-top:1px solid var(--up-line); padding:12px 0 0; flex-wrap:wrap; }
+.up-empty .reggate { border:0; border-top:1px solid var(--color-border); padding:12px 0 0; flex-wrap:wrap; }
 .up-empty .reggate .rg-a { flex:1; justify-content:flex-end; }
 .up-empty .reggate .rg-s { display:none; }
 .modal-takeover[data-scene="register"] .up-body { max-width:1424px; padding:20px 32px 88px; }
-.modal-takeover[data-scene="register"] .reg-actions { position:fixed; bottom:0; left:0; right:0; border-top:1px solid var(--up-line); padding:12px max(22px, calc((100vw - 1360px) / 2)); }
+.modal-takeover[data-scene="register"] .reg-actions { position:fixed; bottom:0; left:0; right:0; border-top:1px solid var(--color-border); padding:12px max(22px, calc((100vw - 1360px) / 2)); }
 .modal-takeover .form-row label, .modal-takeover .fieldlbl, .modal-takeover .muted, .modal-takeover .an-txt { font-size:13px; }
 @media(max-width:720px) {
   .modal-takeover[data-scene="register"] .up-body { padding:16px 16px 88px; }
@@ -590,10 +590,10 @@ textarea.inp { resize: vertical; }
 }
 
 /* 원본 카드 묶음: 제목 줄과 본문이 같은 경계 안에 있으며 표면은 흰색이다. */
-.modal-takeover .up-steps .card { background:var(--color-surface); border:1px solid var(--color-border-strong); border-radius:var(--up-radius); overflow:hidden; }
-.modal-takeover .up-steps .card-h { display:flex; align-items:center; gap:10px; padding:16px 22px; border-bottom:1px solid var(--up-line); }
+.modal-takeover .up-steps .card { background:var(--color-surface); border:1px solid var(--color-border-strong); border-radius:var(--radius-lg); overflow:hidden; }
+.modal-takeover .up-steps .card-h { display:flex; align-items:center; gap:10px; padding:16px 22px; border-bottom:1px solid var(--color-border); }
 .modal-takeover .up-steps .card-h h3 { margin:0; font-size:16px; font-weight:600; }
-.modal-takeover .up-steps .card-h .sub { margin-left:auto; color:var(--up-muted); font-size:13px; }
+.modal-takeover .up-steps .card-h .sub { margin-left:auto; color:var(--color-text-muted); font-size:13px; }
 .modal-takeover .up-steps .card-b { display: flex; flex-direction: column; gap: 20px; padding: var(--space-card); }
 .modal-takeover .form-row { margin-bottom: 0; gap: 8px; }
 .modal-takeover .inp, .modal-takeover .sel { min-width:0; background:var(--color-surface); color:var(--color-text); border-color:var(--color-border-control); }
@@ -606,8 +606,8 @@ textarea.inp { resize: vertical; }
 .modal-takeover[data-scene="analyze"] .up-file-choose { margin:0; }
 @media(max-width:1023px) { .modal-takeover[data-scene="register"] .up-split-preview { position:static; } }
 
-.up-preview-options { order:2; border-top:1px solid var(--up-line); padding-top:12px; font-size:13px; }
-.up-preview-options > summary { cursor:pointer; color:var(--up-muted); }
+.up-preview-options { order:2; border-top:1px solid var(--color-border); padding-top:12px; font-size:13px; }
+.up-preview-options > summary { cursor:pointer; color:var(--color-text-muted); }
 .up-preview-options[open] > summary { margin-bottom:12px; }
 /* ⭑ ⟨2026-09-17 · #93⟩ 종전 `.up-preview-options .vizsetup { margin-top:12px }` 을 지웠다 —
    묶음이 접기 밖(`.pv-frame-wrap`)으로 나가 조상 전제가 깨진 죽은 규칙이 된다. 줄 간격은
@@ -615,14 +615,14 @@ textarea.inp { resize: vertical; }
 
 .modal-takeover[data-scene="register"] .regsteps .rs-f { display:inline-flex; align-items:center; gap:6px; }
 .regsteps .rs-fn { overflow:hidden; text-overflow:ellipsis; }
-.modal-takeover[data-scene="register"] .regsteps .rs-x { padding:0 4px; border:0; flex:none; color:var(--up-ink); font-size:18px; }
+.modal-takeover[data-scene="register"] .regsteps .rs-x { padding:0 4px; border:0; flex:none; color:var(--color-text); font-size:18px; }
 @media(max-width:720px) { .modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:100%; margin:4px 0; } }
 
 .modal-takeover[data-scene="register"] .modal-h { min-height:71px; }
 .modal-takeover .reg-actions .btn { height: auto; padding: 0 12px; min-height: var(--control-height); }
 
 .modal-takeover :is(.pv-pick-f > span,.pv-muted,.fieldnote,.axis-note,.dr-useg button,.dr-units .du-l) { font-size:13px; }
-.modal-takeover .pv-muted { color:var(--up-muted); }
+.modal-takeover .pv-muted { color:var(--color-text-muted); }
 
 .modal-takeover .mapbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
 .modal-takeover .mapbar .mt { font-size: 14px; font-weight: 600; }
@@ -636,7 +636,7 @@ textarea.inp { resize: vertical; }
 /* `#24` ㉯ — `다음 →` 비활성 사유 한 줄.
    `.rg-s` 를 재사용하지 않는 이유 = `.up-empty .reggate .rg-s { display:none; }` 이
    분석 중 장면(등록 카드가 아직 안 열린 장면)에서 그 줄을 그대로 감춘다. */
-.reggate .rg-why { margin-top: 4px; font-size: 13px; color: var(--up-muted); }
+.reggate .rg-why { margin-top: 4px; font-size: 13px; color: var(--color-text-muted); }
 
 /* Ted 판정 ⑧ ㉠ — 분석 중 「동작 중」 표시. 칩이 스스로 옅어졌다 진해진다.
    감속을 선호하면 끈다 — 표시는 남고 움직임만 사라진다. */
@@ -647,7 +647,7 @@ textarea.inp { resize: vertical; }
 }
 
 /* Ted 판정 ⑧ ㉢ — 경과 시간. 자릿수가 늘어도 옆 글자가 밀리지 않게 고정폭 숫자를 쓴다. */
-.up-analyze .an-elapsed { font-size: 13px; color: var(--up-muted); font-variant-numeric: tabular-nums; }
+.up-analyze .an-elapsed { font-size: 13px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 /* == /R-BUGFIX-260912 L1 == */
 
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
