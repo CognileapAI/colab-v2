@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -218,6 +220,174 @@ class TaskRuntimeTests(unittest.TestCase):
             contract.begin(self.root, 'researcher', gates=['check'])
         with self.assertRaises(ValueError):
             contract.begin(self.root, 'auditor', gates=['check'])
+
+
+class ResearcherTaskHookTests(unittest.TestCase):
+    """R1 — `SubagentStart` (researcher) opens the H6 task so the first Stop is not bounced.
+
+    The failure this replaces: A3 (2026-09-24) — researchers spawned without
+    `lifecycle begin` were bounced by H6 on every Stop until the turn limit.
+    The auto task carries no `--agent-id`: `stop()` compares ids only when the task has one,
+    and SubagentStart/SubagentStop id equality is not yet proven.
+    """
+    HOOK = ROOT / 'scripts/harness/hooks/researcher-task.sh'
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        # A small real checkout: the hook begins with the cwd checkout's own bridge.
+        self.root = Path(self.tmp.name) / 'repo'
+        ignore = shutil.ignore_patterns('__pycache__')
+        (self.root / 'scripts').mkdir(parents=True)
+        shutil.copy2(ROOT / 'scripts/agent-bridge.py', self.root / 'scripts/agent-bridge.py')
+        shutil.copytree(ROOT / 'scripts/harness', self.root / 'scripts/harness', ignore=ignore)
+        shutil.copytree(ROOT / '.claude/hooks', self.root / '.claude/hooks', ignore=ignore)
+        shutil.copy2(ROOT / '.claude/settings.json', self.root / '.claude/settings.json')
+        (self.root / '.gitignore').write_text('__pycache__/\n')
+        git = ['git', '-C', str(self.root)]
+        subprocess.run(git + ['init', '-q'], check=True)
+        subprocess.run(git + ['add', '-A'], check=True)
+        subprocess.run(git + ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                              'commit', '-qm', 'initial'], check=True)
+
+    def run_hook(self, payload, **env):
+        environment = dict(os.environ, **env)
+        if 'COLAB_HOOKS' not in env:
+            environment.pop('COLAB_HOOKS', None)
+        return subprocess.run(['bash', str(self.HOOK)], input=json.dumps(payload), text=True,
+                              capture_output=True, env=environment, timeout=120)
+
+    def start(self, agent_id='spawn-aid'):
+        payload = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart',
+                   'agent_type': 'researcher', 'agent_id': agent_id}
+        result = self.run_hook(payload)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def printed(self, output, key):
+        match = re.search(r'^\s*' + key + r'\s*:\s*([a-f0-9]{32})\s*$', output, re.MULTILINE)
+        self.assertIsNotNone(match, output)
+        return match.group(1)
+
+    def bridge(self, *args, stdin=None):
+        return subprocess.run([sys.executable, 'scripts/agent-bridge.py', 'lifecycle', *args], cwd=self.root,
+                              input=stdin, text=True, capture_output=True, timeout=120)
+
+    def handoff(self, task_id, mode='read-only'):
+        result = self.bridge('handoff', '--task', task_id, '--mode', mode, '--summary', 'actual findings')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        markers = [line for line in result.stdout.splitlines() if line.startswith('COLAB_HANDOFF ')]
+        self.assertEqual(len(markers), 1, result.stdout)
+        return markers[0]
+
+    def stop_payload(self, marker, agent_id):
+        return {'cwd': str(self.root), 'hook_event_name': 'SubagentStop', 'agent_type': 'researcher',
+                'agent_id': agent_id, 'last_assistant_message': 'findings\n' + marker}
+
+    def runtime_tasks(self):
+        common = self.root / '.git' / 'colab-harness'
+        return sorted(common.rglob('task.json')) if common.exists() else []
+
+    def test_a_researcher_start_begins_task_and_prints_ids_and_handoff_command(self):
+        output = self.start()
+        task_id, run_id = self.printed(output, 'task_id'), self.printed(output, 'run_id')
+        task = contract.load_task(self.root.resolve(), task_id)
+        self.assertEqual((task['role'], task['run_id'], task['agent_id']), ('researcher', run_id, None))
+        self.assertIn('spawn-aid', output)
+        self.assertIn(f"python3 scripts/agent-bridge.py lifecycle handoff --task {task_id} --mode read-only", output)
+        self.assertIn('COLAB_HANDOFF', output)
+        self.assertIn('--agent-id spawn-aid --artifact runtime:artifacts/', output)
+        self.assertIn('커밋', output)
+        self.assertLessEqual(len(output.splitlines()), 15)
+
+    def test_b_printed_task_hands_off_and_passes_h6_for_a_different_stop_agent_id(self):
+        task_id = self.printed(self.start(), 'task_id')
+        marker = self.handoff(task_id)
+        # ⓑ′ — the Stop payload's agent_id differs from the one SubagentStart saw.
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'stop-aid-other'), 'researcher'), 'H6')
+        hook = subprocess.run(['bash', str(ROOT / 'scripts/harness/hooks/uncommitted-artifacts.sh')],
+                              input=json.dumps(self.stop_payload(marker, 'stop-aid-other')),
+                              text=True, capture_output=True, timeout=120)
+        self.assertEqual(hook.returncode, 0, hook.stderr)
+
+    def test_b_control_task_begun_with_agent_id_rejects_a_different_stop_agent_id(self):
+        begun = self.bridge('begin', '--role', 'researcher', '--agent-id', 'spawn-aid',
+                            '--artifact', 'runtime:artifacts/notes.md')
+        self.assertEqual(begun.returncode, 0, begun.stderr)
+        task = json.loads(begun.stdout)
+        wrote = self.bridge('write-artifact', '--task', task['task_id'], '--run-id', task['run_id'],
+                            '--agent-id', 'spawn-aid', '--artifact', 'runtime:artifacts/notes.md', stdin='notes')
+        self.assertEqual(wrote.returncode, 0, wrote.stderr)
+        marker = self.handoff(task['task_id'], 'artifacts')
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'spawn-aid'), 'researcher'), 'H6')
+        with self.assertRaisesRegex(ValueError, 'agent identity'):
+            contract.stop(self.stop_payload(marker, 'stop-aid-other'), 'researcher')
+
+    def test_c_second_artifact_task_with_same_agent_id_keeps_first_handoff_valid(self):
+        output = self.start()
+        first = self.printed(output, 'task_id')
+        command = re.search(r'python3 scripts/agent-bridge\.py lifecycle (begin --role researcher --agent-id \S+ '
+                            r'--artifact runtime:artifacts/)<[^>]+>', output)
+        self.assertIsNotNone(command, output)
+        args = command.group(1).split()
+        args[-1] += 'notes.md'
+        second = self.bridge(*args)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        task = json.loads(second.stdout)
+        self.assertEqual(task['agent_id'], 'spawn-aid')
+        wrote = self.bridge('write-artifact', '--task', task['task_id'], '--run-id', task['run_id'],
+                            '--agent-id', 'spawn-aid', '--artifact', 'runtime:artifacts/notes.md', stdin='notes')
+        self.assertEqual(wrote.returncode, 0, wrote.stderr)
+        self.assertEqual(contract.stop(self.stop_payload(self.handoff(first), 'x'), 'researcher'), 'H6')
+        marker = self.handoff(task['task_id'], 'artifacts')
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'spawn-aid'), 'researcher'), 'H6')
+
+    def test_d_non_git_cwd_reports_begin_failure_and_exits_zero(self):
+        outside = Path(self.tmp.name) / 'plain'
+        outside.mkdir()
+        result = self.run_hook({'cwd': str(outside), 'agent_type': 'researcher', 'agent_id': 'a1'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('researcher-task: begin 실패', result.stdout)
+        self.assertIn('사유', result.stdout)
+        self.assertIn('lifecycle begin --role researcher', result.stdout)
+        self.assertNotIn('--agent-id', result.stdout)
+
+    def test_e_disabled_hooks_print_nothing(self):
+        result = self.run_hook({'cwd': str(self.root), 'agent_type': 'researcher', 'agent_id': 'a1'}, COLAB_HOOKS='0')
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+        self.assertFalse(self.runtime_tasks())
+
+    def test_f_other_roles_print_nothing_and_begin_nothing(self):
+        for agent_type in ('lane-worker', 'Explore', 'advisor', ''):
+            with self.subTest(agent_type=agent_type):
+                result = self.run_hook({'cwd': str(self.root), 'agent_type': agent_type, 'agent_id': 'a1'})
+                self.assertEqual((result.returncode, result.stdout), (0, ''))
+        self.assertFalse(self.runtime_tasks())
+
+    def load_bridge(self):
+        spec = importlib.util.spec_from_file_location('fixture_bridge', self.root / 'scripts/agent-bridge.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_codex_subagent_start_carries_output_to_additional_context(self):
+        event = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart', 'agent_type': 'researcher',
+                 'agent_id': 'codex-aid'}
+        context = self.load_bridge().dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        task_id = self.printed(context, 'task_id')
+        self.assertIn('codex-aid', context)
+        self.assertIn(f'lifecycle handoff --task {task_id} --mode read-only', context)
+        self.assertIsNone(contract.load_task(self.root.resolve(), task_id)['agent_id'])
+
+    def test_codex_payload_without_agent_id_still_begins_without_agent_id(self):
+        event = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart', 'agent_type': 'researcher'}
+        context = self.load_bridge().dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        task_id = self.printed(context, 'task_id')
+        self.assertIsNone(contract.load_task(self.root.resolve(), task_id)['agent_id'])
+        self.assertNotIn('--agent-id <', context)
+        self.assertIn('--artifact runtime:artifacts/', context)
+        marker = self.handoff(task_id)
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'any'), 'researcher'), 'H6')
 
 
 if __name__ == '__main__': unittest.main()

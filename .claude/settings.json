@@ -24,6 +24,15 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/worktree-setup.sh\""
           }
         ]
+      },
+      {
+        "matcher": "researcher",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/researcher-task.sh\""
+          }
+        ]
       }
     ],
     "SubagentStop": [
