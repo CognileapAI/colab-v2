@@ -70,6 +70,10 @@ CANDIDATE_TEXT_KEYS = ("topic", "summary", "sourceLabel", "periodStart", "period
                        "crs", "grid", "fileName")
 #: 계약 `candidates.maxItems`. 상한을 표면이 실제로 요구한다.
 MAX_CANDIDATES = 20
+#: 계약 `LineageSuggestionRequest.processingLevel.maximum` = `LV_CAP`
+#: (`PLAN-SoT §9-⑳` · 마이그레이션 `0015` 의 4값 CHECK). **표면이 값을 보지 않으면
+#: 계약 밖 값이 그대로 흘러가** 지시문이 틀린 기준으로 읽는다.
+MAX_PROCESSING_LEVEL = 3
 #: `common.json#FileKind` 의 두 값.
 FILE_KINDS = ("본체", "기준 격자 파일")
 MAX_LIMIT = 100
@@ -330,6 +334,18 @@ def create_app(settings: Settings | None = None,
         if isinstance(candidates, str):
             return _error(400, "bad_request", candidates)
 
+        # ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ **받기만 한다 — 거르지 않는다**(`〈72〉-㉮` 분담).
+        #   ⚠ `bool` 을 먼저 막는다. 파이썬에서 `True` 는 `1` 이다.
+        #   ⚠ **안 보낸 것(`None`)과 계약 밖 값을 가른다** — 생략은 200 이고(선택 필드),
+        #   `null`·`4`·`"2"` 는 400 이다. 둘을 접으면 소비자의 표류를 아무도 못 센다.
+        upload_level = payload.get("processingLevel")
+        if "processingLevel" in payload:
+            if (isinstance(upload_level, bool)
+                    or not isinstance(upload_level, int)
+                    or not 0 <= upload_level <= MAX_PROCESSING_LEVEL):
+                return _error(400, "bad_request",
+                              f"processingLevel 은 0~{MAX_PROCESSING_LEVEL} 정수다 — 계약 밖이다.")
+
         searched = scope.get("searchedCount")
         if not isinstance(searched, int) or isinstance(searched, bool) or searched < 0:
             searched = 0
@@ -347,7 +363,7 @@ def create_app(settings: Settings | None = None,
         outcome = suggester.suggest(
             file_meta=meta, candidates=candidates,
             dataset_name_draft=payload.get("datasetNameDraft"),
-            subject=payload.get("subject"))
+            subject=payload.get("subject"), processing_level=upload_level)
         return JSONResponse(content=envelope.build(
             suggestions=list(outcome.suggestions),
             empty_declaration=outcome.empty_declaration))

@@ -207,11 +207,15 @@ class SuggesterTests(unittest.TestCase):
     """제품 생산자를 **그대로** 세우고 전송만 감싼다 — 판정이 아니라 배선 확인이다."""
 
     def test_제품_파서가_후보_밖_ID_를_버리고_전송이_지연을_기록한다(self):
+        # ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ 제품 파서가 읽는 모양이 **인용**으로 바뀌었다 —
+        #   확신도·근거 문장은 모델에게 묻지 않고, 인용이 0건인 후보는 제안이 아니다.
         raw = json.dumps({'suggestions': [
-            {'parentDatasetId': CAND_A['datasetId'], 'confidence': '확실',
-             'rationale': 'HSR 반사도 원자료다', 'suggestedParentRole': '주입력'},
-            {'parentDatasetId': '01ZZZZZZZZZZZZZZZZZZZZZZZZ', 'confidence': '확실',
-             'rationale': '지어낸 후보다', 'suggestedParentRole': '주입력'}]})
+            {'parentDatasetId': CAND_A['datasetId'], 'suggestedParentRole': '주입력',
+             'evidence': [{'field': 'fileName', 'uploadValue': 'precip_wgs84_crop.npy',
+                           'candidateValue': 'HSR'}]},
+            {'parentDatasetId': '01ZZZZZZZZZZZZZZZZZZZZZZZZ', 'suggestedParentRole': '주입력',
+             'evidence': [{'field': 'crs', 'uploadValue': 'EPSG:4326',
+                           'candidateValue': 'EPSG:4326'}]}]})
         transport = probe.FakeTransport(raw)
         row = probe.run_case(_case(), probe.build_suggester('m', transport, 8.0), transport)
         self.assertEqual([s['parent_dataset_id'] for s in row['suggestions']], [CAND_A['datasetId']])

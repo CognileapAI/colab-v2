@@ -34,6 +34,29 @@ DEFAULT_PARENT_ROLE = "주입력"
 #: `Policy §5 가공 방식 문장 — 1~120자`.
 MAX_METHOD_TEXT = 120
 
+#: `core-ai.yaml ParentCandidateSuggestion.evidence.items.field` 의 축 이름 5값.
+#: ⭑ **이 다섯 글자가 core-api 비교기(`d3_lineage_signals`)의 축 이름과 같은 문자열이다** —
+#: 두 벌이 되는 순간 「모델이 인용한 축」과 「core-api 가 검증하는 축」이 갈리고, 그 어긋남은
+#: 아무도 세지 않는다 (`R-K3-STRUCTURE WU-S0` ⓑ · 판정 기록 2회차 2).
+EVIDENCE_FIELDS = ("period", "crs", "grid", "variables", "fileName")
+#: `evidence.maxItems`. 축이 다섯이므로 **같은 축을 여러 번 인용해 채우지 못한다.**
+MAX_EVIDENCE = 5
+#: `evidence.items.{uploadValue,candidateValue}.maxLength`.
+#: ⚠ 넘치는 값은 **자르지 않고 그 항목을 버린다.** 인용은 「글자 그대로 옮긴 값」이라는
+#: 주장이고, 잘라서 실으면 core-api 의 대조가 틀린 값을 검증하게 된다 — 요약 상한
+#: (`suggest_wire.MAX_CANDIDATE_SUMMARY`)과 규율이 다른 이유가 그것이다.
+MAX_EVIDENCE_VALUE = 200
+
+#: ⭑ **⟨2026-09-24 · K3 `WU-S3`⟩ 계약 required 를 채우는 자리채움 두 값.**
+#: `confidence`·`rationale` 은 `AiSuggestionBase` 의 required 라 빼면 파괴적 변경인데,
+#: **그 값을 만드는 주인은 더는 모델이 아니다**(판정 기록 2회차 4 · Q4). core-api 가
+#: 인용을 실제 메타와 대조해 살아남은 근거 **종류 수**에서 확신도를 파생시키고
+#: (≥2 `확실` · 1 `애매` · 0 이면 제안 없음) 근거 문장도 거기서 다시 쓴다.
+#: ⚠ **여기서 잠정값을 계산하지 않는다.** 인용 수로 세어 두면 그 값이 곧 「모델이 매긴
+#: 확신도」로 읽히고, 검증 전의 주장이 화면까지 흐를 길이 생긴다 — 상수여야 하는 이유다.
+PLACEHOLDER_CONFIDENCE = "애매"
+PLACEHOLDER_RATIONALE = "근거 검증 대기"
+
 _ULID = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 #: `common.json#AiRationale` — 화면에서 한 줄로 서므로 줄바꿈을 허용하지 않는다.
 _ONE_LINE = re.compile(r"^[^\n\r]+$")
@@ -43,6 +66,37 @@ def _ulid(name: str, value: object) -> str:
     if not isinstance(value, str) or not _ULID.match(value):
         raise ValueError(f"{name} 가 정규 ID 가 아니다 — 지어내지 않는다.")
     return value
+
+
+def _evidence(items: object) -> None:
+    """인용 근거 한 벌의 규격. **어기면 객체가 서지 않는다** — 확신도·근거와 같은 규율이다.
+
+    ⚠ 여기서 보는 것은 **모양**뿐이다. 「인용한 값이 실제로 맞는가」는 카탈로그와 업로드
+    메타를 가진 core-api 만 판정할 수 있고, 이 배포 단위는 그 둘에 닿지 못한다
+    (`〈72〉-㉮`). 모양 검사를 판정으로 읽지 않는다.
+    """
+    if not isinstance(items, (list, tuple)):
+        raise TypeError("인용 근거는 배열이다.")
+    if len(items) > MAX_EVIDENCE:
+        raise ValueError(
+            f"인용 근거는 최대 {MAX_EVIDENCE}건이다 — 축이 다섯이고, 같은 축을 여러 번 "
+            "인용해 채우는 것은 근거가 아니다 (`core-ai.yaml evidence.maxItems`).")
+    for item in items:
+        if not isinstance(item, dict):
+            raise TypeError("인용 근거 항목이 객체가 아니다.")
+        if set(item) != {"field", "uploadValue", "candidateValue"}:
+            raise ValueError(
+                f"인용 근거 항목의 열쇠가 계약과 다르다: {sorted(item)} — 계약이 닫혀 있다.")
+        if item["field"] not in EVIDENCE_FIELDS:
+            raise ValueError(
+                f"인용한 축이 계약 밖이다: {item['field']!r} — 허용은 {list(EVIDENCE_FIELDS)}.")
+        for key in ("uploadValue", "candidateValue"):
+            value = item[key]
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"인용 근거의 {key} 가 1자 이상 문자열이 아니다.")
+            if len(value) > MAX_EVIDENCE_VALUE:
+                raise ValueError(
+                    f"인용 근거의 {key} 가 {MAX_EVIDENCE_VALUE}자를 넘는다 — 계약 상한이다.")
 
 
 @dataclass(frozen=True)
@@ -59,6 +113,10 @@ class Suggestion:
     #: ⭑ ⟨21차 해제 · R-B §5 판정 23⟩ 후보의 가공 단계 — **모르면 `None` 이고 열쇠가 안 생긴다.**
     #: `0` 을 기본값으로 두면 「모른다」가 「Lv0 이다」로 읽힌다 — 다른 사실이다.
     parent_processing_level: int | None = None
+    #: ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ **모델이 인용한 근거.** 주장이지 판정이 아니다 —
+    #: core-api 가 업로드 메타·후보 자동 메타의 실제 값과 대조해 틀리면 그 제안째 버린다.
+    #: 빈 튜플이 기본값인 것은 계약이 선택 필드로 열었기 때문이다(`가공 방식` 제안에는 없다).
+    evidence: tuple[dict, ...] = ()
     method_text: str | None = None
     applies_to_parent_dataset_id: str | None = None
 
@@ -76,6 +134,7 @@ class Suggestion:
             raise ValueError("근거가 없다 — 근거 없는 제안은 내놓지 않는다 (`Policy §10`).")
         if not _ONE_LINE.match(self.rationale):
             raise ValueError("근거는 한 줄이다 (`common.json#AiRationale`).")
+        _evidence(self.evidence)
 
         if self.kind == KIND_PARENT:
             _ulid("parentDatasetId", self.parent_dataset_id)
@@ -95,6 +154,10 @@ class Suggestion:
             if self.method_text is not None:
                 raise ValueError("가공 전 데이터 제안에 가공 방식 문장을 싣지 않는다.")
         else:
+            if self.evidence:
+                raise ValueError(
+                    "가공 방식 제안에 인용 근거를 싣지 않는다 — 계약은 그 자리를 "
+                    "`ParentCandidateSuggestion` 에만 두었다.")
             if not isinstance(self.method_text, str) or not self.method_text.strip():
                 raise ValueError("가공 방식 문장이 없다.")
             if len(self.method_text) > MAX_METHOD_TEXT:
@@ -117,6 +180,10 @@ class Suggestion:
             #    `null` 을 실으면 화면이 그것을 값으로 읽는다(이 메서드 머리 주석 축자).
             if self.parent_processing_level is not None:
                 body["parentProcessingLevel"] = self.parent_processing_level
+            # **인용이 없으면 열쇠 자체를 만들지 않는다** — 선택 필드이고, 빈 배열을
+            # 실으면 「대조했는데 하나도 안 맞았다」로 읽힌다. 인용 0건은 제안이 아니다.
+            if self.evidence:
+                body["evidence"] = [dict(e) for e in self.evidence]
         else:
             body["methodText"] = self.method_text
             if self.applies_to_parent_dataset_id:

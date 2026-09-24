@@ -117,7 +117,8 @@ class LineageSuggesterPort(Protocol):
 
     def suggest(self, *, file_meta: dict, candidates: tuple[ParentCandidate, ...],
                 dataset_name_draft: str | None = None,
-                subject: str | None = None) -> SuggestionOutcome:
+                subject: str | None = None,
+                processing_level: int | None = None) -> SuggestionOutcome:
         ...
 
 

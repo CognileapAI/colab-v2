@@ -56,12 +56,28 @@ def candidate_payload(c: ParentCandidate) -> dict:
         body["periodStart"] = c.period_start
     if c.period_end:
         body["periodEnd"] = c.period_end
+    # ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ **원메타 4축의 날값.** `WU-S0` 가 계약에 열고
+    #   표면이 여기까지 실어 온 값이다. 모델이 축을 **스스로 대조해 인용**하려면 이
+    #   값이 있어야 하고, 없으면 이름·설명만 보고 축을 지어낸다.
+    #   ⚠ **파생 신호를 만들어 얹지 않는다** — 겹침·교집합을 우리가 계산해 보내면
+    #   모델이 그대로 베껴 돌려주고 core-api 는 자기가 보낸 값을 자기가 검증하게 된다
+    #   (라운드 열린 권고 ① 채택).
+    if c.crs:
+        body["crs"] = c.crs
+    if c.grid:
+        body["grid"] = c.grid
+    if c.variables is not None:
+        # **빈 배열은 정상이다** — 변수 행이 한 줄도 없는 데이터셋이 실재한다(계약 산문).
+        body["variables"] = list(c.variables)
+    if c.file_name:
+        body["fileName"] = c.file_name
     return body
 
 
 def build_payload(*, model: str, system_prompt: str, file_meta: dict,
                   candidates: tuple[ParentCandidate, ...],
-                  dataset_name_draft: str | None, subject: str | None) -> dict:
+                  dataset_name_draft: str | None, subject: str | None,
+                  processing_level: int | None = None) -> dict:
     """왕복 본문 한 벌. **후보는 지시문이 아니라 데이터로 실린다** — 지시문은 한 장뿐이다."""
     user: dict = {"file": file_meta,
                   "candidates": [candidate_payload(c) for c in candidates]}
@@ -69,6 +85,13 @@ def build_payload(*, model: str, system_prompt: str, file_meta: dict,
         user["datasetNameDraft"] = dataset_name_draft
     if subject:
         user["subject"] = subject
+    # ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ 사람이 등록 폼 ① 에서 고른 자기 가공 단계.
+    #   지시문의 「자기보다 높은 단계는 부모가 아니다」가 읽을 **기준값**이다.
+    #   ⚠ **모르면 열쇠를 만들지 않는다** — `0` 으로 채우면 「Lv0 이다」로 읽히고,
+    #   그러면 모든 후보가 자기보다 높아져 지시문이 정반대로 작동한다.
+    #   ⚠ 적격 **필터는 core-api 가 건다**(`〈72〉-㉮`) — 여기서 후보를 지우지 않는다.
+    if processing_level is not None:
+        user["processingLevel"] = processing_level
     return {
         "model": model,
         "messages": [{"role": "system", "content": system_prompt},
