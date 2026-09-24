@@ -16,9 +16,16 @@
 #   c. 라이트 `:root` 의 색 계열 이름이 다크 블록·별칭·면제 목록 어디에도 없음 · 다크에만 있는 이름 ·
 #      면제 목록의 구멍(사유 없음 · 라이트에 없는 낡은 항목 · 다크에 이미 있는 항목)
 #   d. tokens.css 밖 `:root` 셀렉터(`html:root` 포함) · tokens.css 밖 전 CSS 의 `@import`(P2a 부터 셸 포함)
+#   f. (P3 · spec `S-DESIGN-STRUCTURE-P3-20260924`) tokens.css 밖 CSS 의 색 리터럴 — hex · rgb()/rgba()/
+#      hsl()/hsla()/hwb()/lab()/lch()/oklab()/oklch()/color()/color-mix() · CSS 표준 색 이름 148개 — 직접 값이든
+#      `var()` 폴백이든. 제외 = transparent · currentColor · inherit · initial · unset. 면제는 같은 목록
+#      (same-in-dark.txt)의 `f · 파일 · 선택자 · 속성 · 리터럴 · 사유` 줄 — 사유 없음 · 걸리는 리터럴 없음(낡음)은 red.
+#   g. (P3) `src/**/*.tsx` 의 JSX `style` 속성 값이 `--*` 키만 가진 객체 리터럴이 아님(축약형 `{ width }` ·
+#      펼침 · 계산 키 · 객체 아닌 값 포함). TS 파서(`typescript` devDependency)로 읽는다 — 정규식이 아니다.
+# 요약줄 끝 = `색 리터럴 f(면제 m) · 인라인 g(변수 대입 v)`.
 # fail-closed (green-by-skip 금지 · red(준비) · exit 78):
 #   · node 실행 파일 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 면제 목록(same-in-dark.txt) 부재 ·
-#     대상 목록(Git)에 있으나 디스크에 없는 CSS(추적 중 삭제 · P2a)
+#     대상 목록(Git)에 있으나 디스크에 없는 CSS(추적 중 삭제 · P2a) · `typescript` 를 불러오지 못함(P3 · g)
 #
 # 입력: COLAB_FRONTEND_DIR(기본 frontend) · COLAB_DESIGN_LINT_SAME_IN_DARK(기본
 #   gates/fixtures/frontend-design-lint/same-in-dark.txt) · COLAB_NODE_BIN(기본 node · selftest 용).

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-// frontend-design-lint judge (zero-dependency; node built-ins only).
+// frontend-design-lint judge (node built-ins + the `typescript` devDependency for rule g; nothing new).
 //
 // Usage: node scripts/design-lint.mjs --root <frontendDir> --same-in-dark <file> -- <css files relative to root...>
 //   TS/TSX files under <root>/src are scanned for '--name' string literals (style={{'--w': v}} ·
 //   setProperty('--x', ...)) and those names count as defined for rule b.
+//   `typescript` resolves from this script's own location (frontend/node_modules), not from <root>;
+//   COLAB_DESIGN_LINT_TYPESCRIPT overrides the module specifier (selftest: missing parser → 78).
 //
 // Rules (spec S-DESIGN-STRUCTURE-P1-20260924):
 //   a  custom property defined inside a `:root` rule outside src/shell/tokens.css, OR a
@@ -16,9 +18,20 @@
 //   d  `:root` selector outside tokens.css (any compound: `:root`, `html:root`, `:root[data-x]`) ·
 //      `@import` in any CSS other than tokens.css (P2a: shell.css no longer imports; `@layer` blocks
 //      make a late `@import` invalid anyway).
+//   f  (P3) colour literal in any CSS other than tokens.css — hex · rgb()/rgba()/hsl()/hsla()/hwb()/
+//      lab()/lch()/oklab()/oklch()/color()/color-mix() · the 148 CSS named colours — as a direct value
+//      or inside a var() fallback. Not literals: transparent · currentColor · inherit · initial · unset.
+//      Exemptions share the same-in-dark list: `f · <file> · <selector> · <property> · <literal> · <reason>`;
+//      an entry with an empty reason or matching nothing (stale) is red and exempts nothing.
+//   g  (P3) a JSX `style` attribute in <root>/src/**/*.tsx whose value is not an object literal made only of
+//      `--*` keys (TS AST, not regex): any other key (incl. shorthand `{ width }` · spread · computed
+//      non-literal) or a non-object value is red. `--*`-only objects count as variable assignments (v).
+//      `style` keys inside JSX spread attributes (`{...{ style: {…} }}`) are reported but not judged.
 // `@layer` blocks are transparent: rules inside `@layer x { … }` are judged like unlayered ones.
-// Exit: 0 green · 1 red · 78 readiness failure (no files, missing list, a listed file missing on disk).
+// Exit: 0 green · 1 red · 78 readiness failure (no files, missing list, a listed file missing on disk,
+//   `typescript` not resolvable).
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join, relative, sep } from 'node:path';
 
 const READINESS = 78;
@@ -26,6 +39,25 @@ const TOKENS = 'src/shell/tokens.css';
 const CANON_PREFIX = /^--(color|space|text|radius|font|shadow|leading|tracking|fg|bg|accent)-/;
 const COLOR_FAMILY = /^--(color|fg|bg|accent|shadow)-/;
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(|\b(white|black)\b/;
+// CSS Color 4 named colours (148 · `transparent`/`currentcolor` are keywords, not in this list).
+const COLOR_NAMES = new Set(('aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue '
+  + 'blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue '
+  + 'darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid '
+  + 'darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink '
+  + 'deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold '
+  + 'goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush '
+  + 'lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey '
+  + 'lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime '
+  + 'limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen '
+  + 'mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin '
+  + 'navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise '
+  + 'palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue '
+  + 'saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow '
+  + 'springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen').split(' '));
+if (COLOR_NAMES.size !== 148) throw new Error(`COLOR_NAMES must hold 148 names, has ${COLOR_NAMES.size}`);
+const COLOR_FN = /^(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)$/i;
+// Properties whose identifiers are names, not colours (font families, animation/grid/counter names).
+const NAME_PROPS = /^(font|font-family|animation|animation-name|grid-area|grid-row|grid-column|grid-template-areas|grid-template|counter-reset|counter-increment|counter-set|transition-property|will-change|content|quotes|list-style-type|view-transition-name|container-name|anchor-name|position-anchor)$/i;
 const ROOT_SEL = /:root(?![\w-])/;
 const DARK_SEL = /\[data-theme=["']?dark["']?\]/;
 
@@ -82,7 +114,7 @@ function walk(src) {
         if (stack.length === 0 || text.startsWith('@')) statements.push({ text, line: bufLine, depth: stack.length });
         else {
           const m = /^(--[A-Za-z0-9_-]+)\s*:([\s\S]*)$/.exec(text);
-          decls.push({ prop: m ? m[1] : null, value: m ? m[2].trim() : text.replace(/^[^:]*:/, '').trim(), line: bufLine, chain: stack.map(s => s.prelude) });
+          decls.push({ prop: m ? m[1] : null, name: (/^([-\w]+)\s*:/.exec(text) || [])[1] || null, value: m ? m[2].trim() : text.replace(/^[^:]*:/, '').trim(), line: bufLine, chain: stack.map(s => s.prelude) });
         }
       }
       buf = '';
@@ -108,6 +140,58 @@ function varRefs(value) {
   return out;
 }
 
+// Index of the `)` closing the `(` at `open` (strings already blanked), or value.length.
+function closeParen(value, open) {
+  let depth = 0;
+  for (let i = open; i < value.length; i++) {
+    if (value[i] === '(') depth++;
+    else if (value[i] === ')' && --depth === 0) return i;
+  }
+  return value.length;
+}
+
+// f — colour literals in one declaration value: [{ kind: 'direct'|'fallback'|'name', literal }].
+function colourLiterals(prop, rawValue) {
+  // Blank strings and url(...) bodies (keeping length) so `#id`, quoted text and file names never match.
+  let value = rawValue.replace(/(["'])(?:\\.|(?!\1)[^\\])*\1/g, m => ' '.repeat(m.length));
+  value = value.replace(/\burl\(([^)]*)\)/gi, (m, body) => `url(${' '.repeat(body.length)})`);
+  const fallbacks = []; // [start, end) of every var() fallback
+  for (const m of value.matchAll(/(?<![\w-])var\(/gi)) {
+    const open = m.index + 3;
+    const close = closeParen(value, open);
+    let depth = 0;
+    for (let i = open + 1; i < close; i++) {
+      if (value[i] === '(') depth++;
+      else if (value[i] === ')') depth--;
+      else if (value[i] === ',' && depth === 0) { fallbacks.push([i + 1, close]); break; }
+    }
+  }
+  const inFallback = pos => fallbacks.some(([s, e]) => pos >= s && pos < e);
+  const out = [];
+  const taken = []; // [start, end) of colour functions — their inner tokens are not counted again
+  for (const m of value.matchAll(/(?<![\w-])([A-Za-z][\w-]*)\(/g)) {
+    if (!COLOR_FN.test(m[1])) continue;
+    const end = closeParen(value, m.index + m[1].length) + 1;
+    if (taken.some(([s, e]) => m.index >= s && m.index < e)) continue;
+    taken.push([m.index, end]);
+    out.push({ kind: inFallback(m.index) ? 'fallback' : 'direct', literal: rawValue.slice(m.index, end) });
+  }
+  const inTaken = pos => taken.some(([s, e]) => pos >= s && pos < e);
+  for (const m of value.matchAll(/#([0-9a-fA-F]+)(?![\w-])/g)) {
+    if (![3, 4, 6, 8].includes(m[1].length) || inTaken(m.index)) continue;
+    out.push({ kind: inFallback(m.index) ? 'fallback' : 'direct', literal: m[0] });
+  }
+  if (!NAME_PROPS.test(prop || '')) {
+    for (const m of value.matchAll(/(?<![\w#-])([A-Za-z]+)(?![\w(-])/g)) {
+      if (!COLOR_NAMES.has(m[1].toLowerCase()) || inTaken(m.index)) continue;
+      out.push({ kind: inFallback(m.index) ? 'fallback' : 'name', literal: m[1] });
+    }
+  }
+  return out;
+}
+
+const norm = s => s.replace(/\s+/g, ' ').trim();
+
 function listTsFiles(dir, acc = []) {
   if (!existsSync(dir)) return acc;
   for (const name of readdirSync(dir)) {
@@ -120,17 +204,27 @@ function listTsFiles(dir, acc = []) {
   return acc;
 }
 
+// One list, two entry forms: `--name · reason` (c) and `f · file · selector · property · literal · reason` (f).
 function parseSameInDark(path) {
   const entries = [];
+  const fEntries = [];
   const text = readFileSync(path, 'utf8');
   text.split(/\r?\n/).forEach((raw, idx) => {
     const lineText = raw.trim();
     if (!lineText || lineText.startsWith('#')) return;
+    if (/^f\s*·/.test(lineText)) {
+      const parts = lineText.split('·').map(s => s.trim());
+      if (parts.length < 6) { fEntries.push({ line: idx + 1, malformed: true, text: lineText }); return; }
+      const [, file, selector, property, literal, ...reason] = parts;
+      fEntries.push({ line: idx + 1, file, selector: norm(selector), property: property.toLowerCase(),
+        literal: norm(literal).toLowerCase(), reason: reason.join(' · ').trim(), used: 0 });
+      return;
+    }
     const m = /^(--[A-Za-z0-9_-]+)\s*(?:·\s*(.*))?$/.exec(lineText);
     if (!m) { entries.push({ name: lineText, reason: '', line: idx + 1, malformed: true }); return; }
     entries.push({ name: m[1], reason: (m[2] || '').trim(), line: idx + 1 });
   });
-  return entries;
+  return { entries, fEntries };
 }
 
 const opt = args();
@@ -147,6 +241,7 @@ const defined = new Set();
 const light = new Map(); // name -> value (tokens.css, non-dark)
 const dark = new Map();
 const scopedColor = []; // screen-scope defs whose value holds a colour literal
+const fHits = [];       // {file,line,sel,prop,kind,literal} — colour literals outside tokens.css
 let tokensSeen = false;
 
 for (const file of files) {
@@ -166,6 +261,11 @@ for (const file of files) {
   }
   for (const d of decls) {
     for (const n of varRefs(d.value)) refs.push({ file, line: d.line, name: n });
+    if (!isTokens) {
+      for (const lit of colourLiterals(d.name, d.value)) {
+        fHits.push({ file, line: d.line, sel: norm(selectorOf(d.chain)), prop: (d.name || '').toLowerCase(), ...lit });
+      }
+    }
     if (!d.prop) continue;
     defined.add(d.prop);
     const sel = selectorOf(d.chain);
@@ -182,17 +282,78 @@ for (const file of files) {
   }
 }
 
+// g — JSX `style` attributes, read through the TypeScript AST.
+let ts;
+try {
+  ts = createRequire(import.meta.url)(process.env.COLAB_DESIGN_LINT_TYPESCRIPT || 'typescript');
+} catch (e) {
+  readiness(`typescript 파서를 불러오지 못했다(${process.env.COLAB_DESIGN_LINT_TYPESCRIPT || 'typescript'}) — frontend 에서 npm ci 가 먼저다: ${String(e.message).split('\n')[0]}`);
+}
+const gHits = [];    // {file,line,keys}
+const gSpread = [];  // {file,line} — `style` inside a JSX spread attribute (reported, not judged)
+let gVars = 0;
+let tsxCount = 0;
+const unwrap = n => {
+  while (n && (ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)
+    || ts.isNonNullExpression(n) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(n)))) n = n.expression;
+  return n;
+};
+const keyText = (p, sf) => {
+  if (ts.isShorthandPropertyAssignment(p)) return { key: p.name.text, shorthand: true };
+  if (ts.isSpreadAssignment(p)) return { key: `...${p.expression.getText(sf)}` };
+  const name = p.name;
+  if (!name) return { key: p.getText(sf) };
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name) || ts.isNumericLiteral(name)) return { key: name.text };
+  if (ts.isComputedPropertyName(name)) {
+    const e = unwrap(name.expression);
+    if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return { key: e.text };
+    return { key: `[${name.expression.getText(sf)}]` };
+  }
+  return { key: name.getText(sf) };
+};
+function scanStyles(rel, text) {
+  const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lineOf = n => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+  const visit = node => {
+    if (ts.isJsxAttribute(node) && node.name.getText(sf) === 'style') {
+      const init = node.initializer;
+      const expr = init && ts.isJsxExpression(init) ? unwrap(init.expression) : null;
+      if (!expr || !ts.isObjectLiteralExpression(expr)) {
+        gHits.push({ file: rel, line: lineOf(node), keys: [`(객체 리터럴 아님: ${init ? init.getText(sf).slice(0, 60) : '값 없음'})`] });
+      } else {
+        const keys = expr.properties.map(p => keyText(p, sf));
+        const bad = keys.filter(k => !k.key.startsWith('--'));
+        if (bad.length) gHits.push({ file: rel, line: lineOf(node), keys: bad.map(k => (k.shorthand ? `${k.key}(축약형)` : k.key)) });
+        else if (keys.length) gVars++;
+      }
+    }
+    if (ts.isJsxSpreadAttribute(node)) {
+      const find = n => {
+        if (ts.isPropertyAssignment(n) && keyText(n, sf).key === 'style') gSpread.push({ file: rel, line: lineOf(n) });
+        ts.forEachChild(n, find);
+      };
+      find(node.expression);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+}
+
 for (const tsFile of listTsFiles(join(root, 'src'))) {
   const text = readFileSync(tsFile, 'utf8');
   const re = /['"`](--[A-Za-z0-9_-]+)['"`]/g;
   let m;
   while ((m = re.exec(text))) defined.add(m[1]);
+  if (tsFile.endsWith('.tsx')) {
+    tsxCount++;
+    scanStyles(relative(root, tsFile).split(sep).join('/'), text);
+  }
 }
 
 const bHits = refs.filter(r => !defined.has(r.name));
 
 // c — dark pairing.
-const entries = parseSameInDark(opt.sameInDark);
+const { entries, fEntries } = parseSameInDark(opt.sameInDark);
 const exempt = new Map(entries.filter(e => !e.malformed).map(e => [e.name, e]));
 const covered = name => {
   const seen = new Set();
@@ -225,6 +386,25 @@ const c = cMissing.length + cDarkOnly.length + cHoles.length;
 const d = dHits.length;
 const m = entries.length;
 
+// f — match exemptions (file · selector · property · literal), then count what is left.
+const fHoles = [];
+const fExempted = [];
+const fLive = [];
+for (const h of fHits) {
+  const e = fEntries.find(x => !x.malformed && x.reason && x.file === h.file && x.selector === h.sel
+    && x.property === h.prop && x.literal === norm(h.literal).toLowerCase());
+  if (e) { e.used++; fExempted.push(h); } else fLive.push(h);
+}
+for (const e of fEntries) {
+  if (e.malformed) fHoles.push(`same-in-dark.txt:${e.line} f 형식 오류 「${e.text}」(f · 파일 · 선택자 · 속성 · 리터럴 · 사유)`);
+  else if (!e.reason) fHoles.push(`same-in-dark.txt:${e.line} f ${e.file} ${e.selector} ${e.property} ${e.literal} — 사유 칸이 비었다(면제하지 않는다)`);
+  else if (!e.used) fHoles.push(`same-in-dark.txt:${e.line} f ${e.file} ${e.selector} ${e.property} ${e.literal} — 걸리는 리터럴이 없다(낡은 항목)`);
+}
+const fCount = kind => fLive.filter(h => h.kind === kind).length;
+const f = fLive.length + fHoles.length;
+const fm = fEntries.length;
+const g = gHits.length;
+
 const show = (title, items, fmt) => {
   if (!items.length) return;
   console.log(`${title} ${items.length}`);
@@ -239,9 +419,14 @@ show('c 다크에만 있는 이름', cDarkOnly, x => x);
 show('c 면제 목록 구멍', cHoles, x => x);
 show('d :root/@import', dHits, x => `${x.file}:${x.line} ${x.what}`);
 if (scopedColor.length) show('참고 · 범위 색 토큰(다크 미검사)', scopedColor, x => `${x.file}:${x.line} ${x.name} (${x.sel})`);
+show('f 색 리터럴(정본 밖)', fLive, x => `${x.file}:${x.line} ${x.sel} { ${x.prop}: … ${x.literal} } (${x.kind === 'fallback' ? 'var() 폴백' : x.kind === 'name' ? '색 이름' : '직접'})`);
+show('f 면제 목록 구멍', fHoles, x => x);
+show('g 인라인 style 의 비변수 키', gHits, x => `${x.file}:${x.line} ${x.keys.join(', ')}`);
+if (gSpread.length) show('참고 · 펼침 속성 안의 style 키(g 밖 · 판정 안 함)', gSpread, x => `${x.file}:${x.line}`);
+if (fm) console.log(`면제(f) ${fm}: ${fEntries.map(e => e.malformed ? `형식 오류(${e.line}행)` : `${e.file} ${e.selector} ${e.property} ${e.literal}(${e.reason || '사유 없음'})`).join(' · ')}`);
 if (m) console.log(`면제(same-in-dark) ${m}: ${entries.map(e => `${e.name}(${e.reason || '사유 없음'})`).join(' · ')}`);
 
-const redAll = a + b + c + d + (tokensSeen ? 0 : 1);
-console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사)`);
-console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} tokens=${tokensSeen ? 1 : 0}`);
+const redAll = a + b + c + d + f + g + (tokensSeen ? 0 : 1);
+console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사) · 색 리터럴 ${f}(면제 ${fm}) · 인라인 ${g}(변수 대입 ${gVars})`);
+console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} f=${f} f_direct=${fCount('direct')} f_fallback=${fCount('fallback')} f_name=${fCount('name')} f_holes=${fHoles.length} f_exempt=${fm} f_exempted_hits=${fExempted.length} g=${g} g_vars=${gVars} g_spread=${gSpread.length} tsx=${tsxCount} tokens=${tokensSeen ? 1 : 0}`);
 process.exit(redAll > 0 ? 1 : 0);

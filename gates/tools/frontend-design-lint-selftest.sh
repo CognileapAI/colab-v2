@@ -6,7 +6,7 @@
 # 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
 # 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
 #
-# 케이스 — green 2 · red 7 · red(준비) 3 = 12.
+# 케이스 — green 3 · red 9 · red(준비) 4 = 16.
 #   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
 #   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
 #   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
@@ -19,6 +19,10 @@
 #   ⓕ red-exempt/  면제 목록의 사유 없음 · 낡은 항목 · 다크에 이미 있는 항목     → red
 #   ⓖ empty/       대상 CSS 0건(빈 트리)                                                   → red(준비 · 78)
 #   ⓗ node 부재(COLAB_NODE_BIN 을 없는 경로로)                                  → red(준비 · 78)
+#   ⓜ green-fg/    토큰 참조 · 제외 키워드 · 사유 있는 f 면제 1건 · 변수 대입만인 인라인 2건(P3) → green
+#   ⓝ red-f/       직접 hex · 폴백 hex · 색 이름 · 사유 없는 f 면제 · 낡은 f 면제(P3)     → red
+#   ⓞ red-g/       인라인 색 · px · 축약형 `{ width }`(변수 대입만인 1건은 세지 않는다)(P3) → red
+#   ⓟ typescript 파서 부재(COLAB_DESIGN_LINT_TYPESCRIPT 를 없는 경로로 · g 를 못 잼)(P3) → red(준비 · 78)
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -40,6 +44,11 @@ expect() { # $1=기대(green|red|ready) $2=이름 $3=픽스처 디렉터리 [$4.
   out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" "$@" "$GATE" 2>&1)"; rc=$?
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
     return
+  fi
+  # 준비 실패를 기대했는데 가로채기를 지나왔다면 판정 red(rc 1) 이거나 green 이다 — 기대와 다르다(P3 · ⓟ).
+  if [ "$want" = ready ]; then
+    red "$label — red(준비 · 78) 여야 하는데 rc=$rc:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
   if [ "$want" = green ] && [ "$rc" -ne 0 ]; then
     red "$label — green 이어야 하는데 red 다(rc=$rc):
@@ -104,9 +113,23 @@ else
 $(printf '%s\n' "$MISSING_OUT" | sed 's/^/     /')"
 fi
 
+# ⓜ f·g 대조군 — 이것이 green 이 아니면 아래 f·g red 는 아무 말도 하지 않는다.
+expect green "ⓜ 토큰 참조 · 제외 키워드 · f 면제 1건 · 변수 대입 인라인" "$FIX/green-fg"
+expect_line "ⓜ 요약줄 f·g 노출" "$FIX/green-fg" "색 리터럴 0(면제 1) · 인라인 0(변수 대입 2)"
+expect_line "ⓜ 면제가 실제 리터럴에 걸렸다" "$FIX/green-fg" "f_exempted_hits=1"
+# ⓝ f — 직접 · 폴백 · 색 이름 · 면제 구멍 둘(사유 없음은 면제하지 않는다).
+expect red "ⓝ f 직접 · 폴백 · 색 이름 · 면제 구멍" "$FIX/red-f"
+expect_line "ⓝ f 네 갈래" "$FIX/red-f" "f=6 f_direct=2 f_fallback=1 f_name=1 f_holes=2"
+# ⓞ g — 색 · px · 축약형은 red, 변수 대입만인 것은 v 로만 센다.
+expect red "ⓞ g 인라인 색 · px · 축약형" "$FIX/red-g"
+expect_line "ⓞ g 계수" "$FIX/red-g" " g=3 g_vars=1 "
+expect_line "ⓞ 축약형을 키로 읽었다" "$FIX/red-g" "src/components/x/X.tsx:9 width(축약형)"
+# ⓟ typescript 부재 — g 를 잴 수 없으면 통과로 세지 않는다.
+expect ready "ⓟ typescript 파서 부재" "$FIX/green-fg" COLAB_DESIGN_LINT_TYPESCRIPT=/nonexistent/typescript
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::frontend-design-lint-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 expect_readiness_verdict frontend-design-lint-selftest
-echo "frontend-design-lint-selftest green — 검사 12건 전건 기대대로 (green 2 · red 7 · red(준비) 3)."
+echo "frontend-design-lint-selftest green — 검사 16건 전건 기대대로 (green 3 · red 9 · red(준비) 4)."
