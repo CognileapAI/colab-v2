@@ -1960,31 +1960,342 @@ def _preview_measurement():
     })()""", default={}) or {}
 
 
-def request_selected_preview():
-    """현재 파일을 명시 선택한 뒤 사용자와 같은 `보기` 요청 한 건을 만든다."""
-    deadline = time.time() + 30
-    selected = {}
+# ── 보기 클릭 전 정착 대기 ────────────────────────────────────────────────────
+# 화면 사실(배포 트리 ea21d8c2aa54 · frontend/src/components/datasetpreview/DatasetPreviewSection.tsx):
+#  · 보기 버튼 disabled = drawing || !selectedFileId || !description || palettes.length === 0 (:354-355).
+#    drawing 이 아니면 「보기 활성」이 곧 「선택 파일의 describe 도착 · 팔레트 도착」이다.
+#  · 파일 고르개 onPick 은 description 을 비운다(:347-351). describe effect 는 selectedFileId 가
+#    바뀔 때만 다시 돈다(:169-183 · 의존 [source, selectedFileId, loadAttempt]). 그래서 **이미 선택된
+#    파일을 다시 고르면 설명이 비워진 채 다시 오지 않고** 보기가 영구 disabled 가 된다.
+#  · 변수·시각 고르개는 description 의 후보로 채워진다(PreviewPickRow.tsx:91-92,143-178).
+#  · agent-browser 0.27.0 의 click 은 disabled 버튼에도 성공을 돌려준다(아무 일도 일어나지 않는다).
+# dev 7회차 seq 15 = describe 도착 뒤 같은 파일 재선택 → 곧바로 클릭 → POST /api/v1/previews 0건.
+# 그래서 ⑴ 이미 선택된 파일은 다시 고르지 않고 ⑵ 고른 뒤에는 그 파일의 설명이 선 상태가
+# 연달아 두 번 관측될 때까지 기다린 뒤에만 누른다.
+PREVIEW_SETTLE_S = int(os.environ.get("COLAB_SEED_PREVIEW_SETTLE_S") or 60)
+PREVIEW_SETTLE_STABLE_S = 1.0
+PREVIEW_DISPLAY_WAIT_S = 120
+PREVIEW_CONTROLS_JS = """(() => {
+  const picker = document.querySelector('[data-testid="dt-pick-file"]');
+  const variable = document.querySelector('[data-testid="dt-pick-variable"]');
+  const instant = document.querySelector('[data-testid="dt-pick-instant"]');
+  const draw = document.querySelector('[data-testid="dt-preview-draw"]');
+  const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+  return {
+    fileId: picker?.value || '',
+    variableCount: variable ? variable.options.length : 0,
+    variableValue: variable?.value || '',
+    instantCount: instant ? instant.options.length : 0,
+    drawEnabled: !!draw && !draw.disabled,
+    slotState: slot?.getAttribute('data-preview-slot-state') || '',
+    now: performance.now(),
+  };
+})()"""
+
+
+def _preview_controls():
+    dry = {"fileId": "dry-run-file", "drawEnabled": True, "slotState": "idle",
+           "variableCount": 1, "variableValue": "dry", "instantCount": 1, "now": 0}
+    return js(PREVIEW_CONTROLS_JS, default=dry) or {}
+
+
+def preview_settled(controls, file_id):
+    """선택 파일의 설명이 선 상태인가 — 파일 일치 · 보기 활성(:355) · 아직 그리기 전(idle)."""
+    return (str(controls.get("fileId") or "") == file_id
+            and controls.get("drawEnabled") is True
+            and str(controls.get("slotState") or "") == "idle")
+
+
+def _describe_controls(c):
+    return ("파일 " + str(c.get("fileId") or "-") + " · 보기 " + ("활성" if c.get("drawEnabled") else "비활성")
+            + " · 변수 후보 " + str(c.get("variableCount", "?")) + "(" + str(c.get("variableValue") or "-")
+            + ") · 시각 후보 " + str(c.get("instantCount", "?")) + " · slot " + str(c.get("slotState") or "-"))
+
+
+def request_selected_preview(target_file_id=None):
+    """선택 파일의 설명이 선 뒤에 사용자와 같은 `보기` 요청 한 건을 만든다.
+
+    target_file_id 를 주지 않으면 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다.
+    클릭 직전 요청·콘솔 기록을 비워 시간 초과 때 「클릭 뒤」 증거만 남게 한다.
+    """
+    deadline = time.time() + PREVIEW_SETTLE_S
+    controls = {}
     while time.time() < deadline:
-        selected = js("""(() => {
-          const picker = document.querySelector('[data-testid="dt-pick-file"]');
-          const draw = document.querySelector('[data-testid="dt-preview-draw"]');
-          return {fileId: picker?.value || '', drawEnabled: !!draw && !draw.disabled};
-        })()""", default={"fileId": "dry-run-file", "drawEnabled": True}) or {}
-        if str(selected.get("fileId") or "").strip() and selected.get("drawEnabled") is True:
+        controls = _preview_controls()
+        if str(controls.get("fileId") or "").strip():
             break
-        time.sleep(0.1)
-    file_id = str(selected.get("fileId") or "").strip()
-    if not file_id or selected.get("drawEnabled") is not True:
-        raise Fail("미리보기 파일 후보 또는 보기 버튼이 준비되지 않았다")
-    ab(["select", '[data-testid="dt-pick-file"]', file_id])
+        time.sleep(0.2)
+    current = str(controls.get("fileId") or "").strip()
+    target = str(target_file_id or current).strip()
+    if not target:
+        raise Fail("미리보기 파일 후보가 준비되지 않았다(" + str(PREVIEW_SETTLE_S) + "s) — "
+                   + _describe_controls(controls))
+    if current != target:
+        ab(["select", '[data-testid="dt-pick-file"]', target])
+        log("  · 파일 선택 " + target + " — 이 파일의 설명(describe) 도착을 기다린다")
+    else:
+        # 같은 값을 다시 고르면 설명이 비워지고 다시 오지 않는다(:347-351 · :169-183).
+        log("  · 파일 " + target + " 은 이미 선택돼 있다 — 다시 고르지 않는다")
+
+    started = time.time()
+    deadline = started + PREVIEW_SETTLE_S
+    stable_since = None
+    while time.time() < deadline:
+        controls = _preview_controls()
+        if preview_settled(controls, target):
+            if stable_since is None:
+                stable_since = time.time()
+            if time.time() - stable_since >= PREVIEW_SETTLE_STABLE_S or CFG.dry_run:
+                break
+        else:
+            stable_since = None
+        time.sleep(0.25)
+    else:
+        raise Fail("미리보기 정착 대기 초과(" + str(PREVIEW_SETTLE_S) + "s) — 보기를 누르지 않았다(준비 안 됨) · "
+                   + _describe_controls(controls))
+    log("  · 정착 확인 " + format(time.time() - started, ".1f") + "s — 기다린 것 = 파일 일치 · 보기 활성"
+        + "(설명·팔레트 도착 · DatasetPreviewSection.tsx:355) · slot idle · 연속 "
+        + str(PREVIEW_SETTLE_STABLE_S) + "s · " + _describe_controls(controls))
+    for args in (["network", "requests", "--clear"], ["console", "--clear"], ["errors", "--clear"]):
+        rc, _, err = ab(args, expect_ok=False, quiet=True)
+        if rc != 0:
+            log("  ! 증거 기록 비우기 실패(" + " ".join(args) + "): " + str(err))
     ab(["click", '[data-testid="dt-preview-draw"]'])
-    return file_id
+    return target
 
 
-def require_preview_outcome(outcome):
+# ── 시간 초과 증거 · 분류 · 행별 판정 ────────────────────────────────────────
+# 정책(Ted 판단 2026-09-25): 미리보기 행 실패 중 `client_no_request`(정착 확인 뒤 보기를 눌렀는데
+# POST /api/v1/previews 가 관측되지 않음)는 「관측 · 제품 결함 추적」으로 기록하고 verify 단계를
+# 실패시키지 않는다. 그 밖의 실패(server_* · 증거 판정불가 · 준비 안 됨 · 안 그려짐 등)는 종전대로 차단한다.
+NON_BLOCKING_PREVIEW_CLASSES = {"client_no_request"}
+PREVIEW_OBSERVED_VERDICT = "관측 · 제품 결함 추적"
+PREVIEWS_POST_PATH = "/api/v1/previews"
+PREVIEW_TABLE_NAME = "verify-previews.tsv"
+PREVIEW_PERF_JS = """(() => ({posts: performance.getEntriesByType('resource').filter((e) =>
+  new URL(e.name, location.href).pathname.replace(/\\/+$/, '') === '__PATH__'
+  && e.initiatorType === 'fetch').length}))()""".replace("__PATH__", PREVIEWS_POST_PATH)
+
+
+def _is_previews_post(req):
+    from urllib.parse import urlparse
+    path = urlparse(str(req.get("url") or "")).path.rstrip("/")
+    return str(req.get("method") or "").upper() == "POST" and path == PREVIEWS_POST_PATH
+
+
+def classify_preview_timeout(network_ok, requests, perf_posts):
+    """보기 클릭 뒤 terminal/display 시간 초과의 분류.
+
+    network_ok = 요청 기록을 읽었는가 · requests = 클릭 뒤 기록 · perf_posts = 페이지 자원 기록의 POST 수.
+    """
+    if not network_ok:
+        return "evidence_unavailable"
+    posts = [r for r in (requests or []) if isinstance(r, dict) and _is_previews_post(r)]
+    if not posts:
+        # 요청 기록은 비었는데 페이지가 POST 를 봤다면 기록을 믿지 않는다(비차단으로 새지 않게).
+        return "evidence_unavailable" if int(perf_posts or 0) > 0 else "client_no_request"
+    status = posts[-1].get("status")
+    if status is None:
+        return "server_pending"
+    if int(status) >= 400:
+        return "server_http_" + str(int(status))
+    return "server_no_terminal"
+
+
+def preview_row_blocks(entry):
+    """이 행이 verify 단계를 실패시키는가(정책 2026-09-25 · 위 주석)."""
+    if entry.get("render") == "그려짐":
+        return False
+    return str(entry.get("classification") or "") not in NON_BLOCKING_PREVIEW_CLASSES
+
+
+def _preview_verdict(entry):
+    if entry.get("render") == "그려짐":
+        return "통과"
+    return "차단" if preview_row_blocks(entry) else PREVIEW_OBSERVED_VERDICT
+
+
+def _work_rel(path):
+    try:
+        return str(Path(path).relative_to(WORK_DIR))
+    except ValueError:
+        return str(path)
+
+
+def collect_preview_evidence(tag):
+    """시간 초과 행의 증거 — 클릭 뒤 요청(민감 칸 제외)·콘솔·페이지 오류·화면 상태를 fail/ 에 남긴다.
+
+    반환 = (분류 · 증거 경로 목록 · 한 줄 요약).
+    """
+    FAIL_DIR.mkdir(parents=True, exist_ok=True)
+    rc, data, err = ab(["network", "requests"], expect_ok=False, quiet=True)
+    raw = (data or {}).get("requests") if isinstance(data, dict) else None
+    network_ok = rc == 0 and isinstance(raw, list)
+    requests = []
+    for r in raw or []:
+        if isinstance(r, dict):
+            # 헤더·본문은 싣지 않는다(인증 값이 들어 있을 수 있다).
+            requests.append({k: r.get(k) for k in ("method", "url", "status", "resourceType",
+                                                     "timestamp", "requestId") if k in r})
+    perf = js(PREVIEW_PERF_JS, default={"posts": 0}) or {}
+    perf_posts = int(perf.get("posts") or 0) if isinstance(perf, dict) else 0
+    classification = classify_preview_timeout(network_ok, requests, perf_posts)
+    posts = [r for r in requests if _is_previews_post(r)]
+    page = _preview_controls()
+    network_path = FAIL_DIR / (tag + "-network.json")
+    network_path.write_text(json.dumps({
+        "classification": classification,
+        "network_read": {"rc": rc, "error": err if rc != 0 else ""},
+        "previews_posts": posts,
+        "requests_since_click": requests,
+        "page_resource_previews_posts": perf_posts,
+        "page_state": page,
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    crc, cdata, cerr = ab(["console"], expect_ok=False, quiet=True)
+    erc, edata, eerr = ab(["errors"], expect_ok=False, quiet=True)
+    messages = [{"type": m.get("type"), "text": str(m.get("text") or "")[:2000]}
+                for m in ((cdata or {}).get("messages") or []) if isinstance(m, dict)]
+    errors = (edata or {}).get("errors") if isinstance(edata, dict) else None
+    console_path = FAIL_DIR / (tag + "-console.json")
+    console_path.write_text(json.dumps({
+        "console_read": {"rc": crc, "error": cerr if crc != 0 else ""},
+        "messages_since_click": messages,
+        "errors_read": {"rc": erc, "error": eerr if erc != 0 else ""},
+        "page_errors_since_click": errors if isinstance(errors, list) else [],
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    summary = (classification + " · POST " + PREVIEWS_POST_PATH + " " + str(len(posts)) + "건"
+               + ("(" + ",".join(str(p.get("status", "대기")) for p in posts) + ")" if posts else "")
+               + " · 요청 기록 " + ("읽음" if network_ok else "못 읽음")
+               + " · 콘솔 error " + str(sum(1 for m in messages if m.get("type") == "error")) + "건"
+               + " · " + _describe_controls(page))
+    return classification, [_work_rel(network_path), _work_rel(console_path)], summary
+
+
+def write_preview_table(previews):
+    """행별 판정표 — 작업 자리의 verify-previews.tsv 와 로그에 같은 내용을 남긴다."""
+    head = ["seq", "name", "format", "preview_expected", "outcome", "classification", "verdict",
+            "evidence"]
+    lines = ["\t".join(head)]
+    for p in previews:
+        cols = [str(p.get("seq")), str(p.get("name") or "-"), str(p.get("format")),
+                str(p.get("preview_expected") or "-"), str(p.get("outcome") or p.get("render") or "-"),
+                str(p.get("classification") or "-"), _preview_verdict(p),
+                ",".join(p.get("evidence") or []) or "-"]
+        lines.append("\t".join(c.replace("\t", " ").replace("\n", " ") for c in cols))
+    log("· 미리보기 행별 판정표")
+    for line in lines:
+        log("  " + line.replace("\t", " | "))
+    if not CFG.dry_run:
+        (WORK_DIR / PREVIEW_TABLE_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        log("  = " + PREVIEW_TABLE_NAME)
+
+
+def verify_preview_row(entry):
+    """한 행 — 정착 뒤 보기 · terminal/display 대기 · 측정. 실패해도 예외를 밖으로 내지 않는다."""
+    seq = entry["seq"]
+    fmt = entry["format"]
+    tag = "verify-preview-" + str(seq).zfill(2) + "-" + fmt
+    open_url("/datasets/" + str(entry["dataset_id"]))
+    wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+    try:
+        entry["file_id"] = request_selected_preview()
+    except Fail as exc:
+        # 보기를 누르지 않았다 — POST 부재를 제품 결함으로 읽지 않는다(차단).
+        entry["render"] = "미확인"
+        entry["outcome"] = "준비 안 됨"
+        entry["classification"] = "runner_not_ready"
+        entry["status_text"] = str(exc)[:400]
+        dump_failure(tag, str(exc))
+        entry["evidence"] = [_work_rel(FAIL_DIR / (tag + ".txt")), _work_rel(FAIL_DIR / (tag + ".png"))]
+        log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 준비 안 됨 — " + str(exc))
+        return entry
+    outcome = wait_any([
+        ["displayed", lambda: (lambda m: m.get("slotState") == "done"
+         and int(m.get("imageCount") or 0) > 0
+         and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
+         and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
+        ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
+    ], PREVIEW_DISPLAY_WAIT_S, label="미리보기 terminal/display")
     if outcome is None:
-        raise Fail("미리보기 terminal/display 시간 초과 — 후속 요청을 중단한다")
-    return outcome
+        reason = "미리보기 terminal/display 시간 초과(" + str(PREVIEW_DISPLAY_WAIT_S) + "s)"
+        classification, evidence, summary = collect_preview_evidence(tag)
+        dump_failure(tag, reason + " · " + classification)
+        entry["render"] = "미확인"
+        entry["outcome"] = "시간 초과"
+        entry["classification"] = classification
+        entry["status_text"] = reason
+        entry["evidence"] = evidence + [_work_rel(FAIL_DIR / (tag + ".txt")),
+                                        _work_rel(FAIL_DIR / (tag + ".png"))]
+        log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 분류 = " + summary)
+        return entry
+    measured = _preview_measurement()
+    slot_state = measured.get("slotState") or outcome or ""
+    bad = int(measured.get("unavailable") or 0)
+    imgs = int(measured.get("imageCount") or 0)
+    decoded = int(measured.get("decodedCount") or 0)
+    total_text = str(measured.get("totalText") or "")
+    entry["preview_section"] = count('[data-testid="dataset-preview"]')
+    entry["slot_state"] = slot_state
+    entry["unavailable"] = bad
+    entry["images"] = imgs
+    entry["decoded_images"] = decoded
+    entry["display_total"] = total_text
+    entry["status_text"] = ""
+    if bad > 0:
+        rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
+                         expect_ok=False, quiet=True)
+        entry["status_text"] = ((data or dict()).get("text") or "")[:400]
+    entry["render"], measured_reason = classify_preview_measurement(
+        slot_state, imgs, decoded, bad, total_text)
+    if measured_reason and not entry["status_text"]:
+        entry["status_text"] = measured_reason
+    entry["outcome"] = entry["render"]
+    # terminal 실패는 서버가 실패를 돌려준 것이다(POST 는 나갔다).
+    entry["classification"] = ("" if entry["render"] == "그려짐"
+                               else ("server_failed" if slot_state == "failed" else "display_incomplete"))
+    SHOT_DIR.mkdir(parents=True, exist_ok=True)
+    shot = SHOT_DIR / (tag + ".png")
+    ab(["screenshot", str(shot)], expect_ok=False)
+    entry["screenshot"] = shot.name
+    entry["evidence"] = [_work_rel(shot)]
+    return entry
+
+
+def verify_previews(st, plan):
+    """PREVIEW_SEQS 전부를 점검한다 — 한 행의 실패가 다음 행을 막지 않는다."""
+    plan_by_seq = {int(d["seq"]): d for d in plan.get("datasets", []) if "seq" in d}
+    previews = []
+    for pair in PREVIEW_SEQS:
+        seq = pair[0]
+        fmt = pair[1]
+        row = st["datasets"].get(str(seq)) or dict()
+        ds = plan_by_seq.get(seq) or dict()
+        entry = dict()
+        entry["seq"] = seq
+        entry["format"] = fmt
+        entry["name"] = ds.get("name") or row.get("name") or ""
+        entry["preview_expected"] = ds.get("preview_expected") or ""
+        entry["dataset_id"] = row.get("dataset_id")
+        if not entry["dataset_id"]:
+            entry["render"] = "미확인"
+            entry["outcome"] = "미확인"
+            entry["classification"] = "dataset_id_missing"
+            entry["reason"] = "데이터셋 id 미확보"
+            previews.append(entry)
+            continue
+        try:
+            verify_preview_row(entry)
+        except Fail as exc:
+            entry["render"] = "미확인"
+            entry["outcome"] = "실패"
+            entry["classification"] = "runner_error"
+            entry["status_text"] = str(exc)[:400]
+            log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 러너 실패 — " + str(exc))
+        previews.append(entry)
+        log("· 미리보기 " + fmt + "(seq " + str(seq) + ") = " + str(entry.get("render"))
+            + " · " + _preview_verdict(entry))
+    write_preview_table(previews)
+    return previews
 
 
 def verify_result_passes(result):
@@ -1995,7 +2306,7 @@ def verify_result_passes(result):
     passed = passed and not result.get("model_input_descriptions_missing")
     passed = passed and result.get("edges_ok") == result.get("edges_expected")
     passed = passed and not result.get("edges_missing")
-    return passed and all(p.get("render") == "그려짐" for p in result.get("previews", []))
+    return passed and not any(preview_row_blocks(p) for p in result.get("previews", []))
 
 
 def phase_verify(st, plan):
@@ -2089,60 +2400,7 @@ def phase_verify(st, plan):
     result["edges_missing"] = edges_missing
     log("· 계보 간선 " + str(edges_ok) + " / " + str(len(plan["edges"])))
 
-    previews = []
-    for pair in PREVIEW_SEQS:
-        seq = pair[0]
-        fmt = pair[1]
-        row = st["datasets"].get(str(seq)) or dict()
-        did = row.get("dataset_id")
-        entry = dict()
-        entry["seq"] = seq
-        entry["format"] = fmt
-        entry["dataset_id"] = did
-        if not did:
-            entry["render"] = "미확인"
-            entry["reason"] = "데이터셋 id 미확보"
-            previews.append(entry)
-            continue
-        open_url("/datasets/" + str(did))
-        wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
-        entry["file_id"] = request_selected_preview()
-        outcome = wait_any([
-            ["displayed", lambda: (lambda m: m.get("slotState") == "done"
-             and int(m.get("imageCount") or 0) > 0
-             and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
-             and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
-            ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
-        ], 120, label="미리보기 terminal/display")
-        require_preview_outcome(outcome)
-        measured = _preview_measurement()
-        slot_state = measured.get("slotState") or outcome or ""
-        bad = int(measured.get("unavailable") or 0)
-        imgs = int(measured.get("imageCount") or 0)
-        decoded = int(measured.get("decodedCount") or 0)
-        total_text = str(measured.get("totalText") or "")
-        entry["preview_section"] = count('[data-testid="dataset-preview"]')
-        entry["slot_state"] = slot_state
-        entry["unavailable"] = bad
-        entry["images"] = imgs
-        entry["decoded_images"] = decoded
-        entry["display_total"] = total_text
-        entry["status_text"] = ""
-        if bad > 0:
-            rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
-                             expect_ok=False, quiet=True)
-            entry["status_text"] = ((data or dict()).get("text") or "")[:400]
-        entry["render"], measured_reason = classify_preview_measurement(
-            slot_state, imgs, decoded, bad, total_text)
-        if measured_reason and not entry["status_text"]:
-            entry["status_text"] = measured_reason
-        SHOT_DIR.mkdir(parents=True, exist_ok=True)
-        shot = SHOT_DIR / ("verify-preview-" + str(seq).zfill(2) + "-" + fmt + ".png")
-        ab(["screenshot", str(shot)], expect_ok=False)
-        entry["screenshot"] = shot.name
-        previews.append(entry)
-        log("· 미리보기 " + fmt + "(seq " + str(seq) + ") = " + entry["render"])
-    result["previews"] = previews
+    result["previews"] = verify_previews(st, plan)
 
     open_url("/projects")
     # 프로젝트도 카드다 — id 는 testid 접미에 실려 있다(ProjectCards.tsx:31).
