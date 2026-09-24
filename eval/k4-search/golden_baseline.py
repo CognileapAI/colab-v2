@@ -72,6 +72,26 @@ def assess(case, rows, total):
                                 for x in case['required']})
 
 
+def validate_suite(suite, snapshot):
+    """Return {id: name} of the snapshot after checking the suite against it.
+
+    The dataset count is read from the snapshot's own `counts.datasets` (never re-pinned here).
+    """
+    expected = {d['id']: d['name'] for d in snapshot['datasets']}
+    if len(expected) != len(snapshot['datasets']) or len(expected) != snapshot['counts']['datasets']:
+        raise ValueError('snapshot dataset count mismatch')
+    for c in suite['cases']:
+        if not c['scope'] or not set(c['scope']) <= set(expected):
+            raise ValueError('invalid scope')
+        if c['mode'] not in ('retrieval', 'empty', 'manual'):
+            raise ValueError('unknown mode')
+        if not set(c['required']) <= set(c['scope']):
+            raise ValueError('gold outside scope')
+        if c['mode'] == 'retrieval' and not c['required']:
+            raise ValueError('empty retrieval gold')
+    return expected
+
+
 REMOTE = r'''
 import dataclasses,hashlib,inspect,json,os,sys,time
 from datetime import datetime,timezone
@@ -130,18 +150,7 @@ def main():
             raise ValueError('unexpected case count')
         snapshot_path = ROOT / suite['snapshot']
         snapshot = json.loads(snapshot_path.read_text())
-        expected = {d['id']: d['name'] for d in snapshot['datasets']}
-        if len(expected) != 9:
-            raise ValueError('expected nine datasets')
-        for c in suite['cases']:
-            if not c['scope'] or not set(c['scope']) <= set(expected):
-                raise ValueError('invalid scope')
-            if c['mode'] not in ('retrieval', 'empty', 'manual'):
-                raise ValueError('unknown mode')
-            if not set(c['required']) <= set(c['scope']):
-                raise ValueError('gold outside scope')
-            if c['mode'] == 'retrieval' and not c['required']:
-                raise ValueError('empty retrieval gold')
+        expected = validate_suite(suite, snapshot)
         sys.path.insert(0, str(ROOT / 'services/ai-service/src'))
         from colab_ai.app.interpret import LiteralInterpreter
         import colab_ai.app.interpret as interpreter_module

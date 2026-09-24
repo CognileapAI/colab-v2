@@ -20,9 +20,8 @@ Ted 판정 2회차 1 이 구조 보장의 범위를 **후손·자기 자신·후
 집어 온 것) · `survived`(제품 적격 필터를 통과한 것). 셋을 한 칸으로 접으면 「구조가
 막았다」와 「애초에 후보에 없었다」가 같은 0 으로 보인다.
 
-⚠ **가공 단계의 출처는 이름의 「(Lv.n)」 이다.** 참조 스냅샷의 데이터셋 항목에는 가공 단계
-열이 **아예 없고**(`processing_level` 열쇠 부재), 일회용 DB 의 `processing_level_user_set`
-도 비어 있다 — 그래서 사람이 폼 ①에서 고를 값을 이름에서 읽는다. 그 값이 `lineage-cases.json`
+⚠ **가공 단계의 출처는 스냅샷 v2 의 `processing_level` 열이다**(dev `processing_level_user_set`).
+`seed_reference_corpus` 가 같은 값을 일회용 DB 에 싣는다. 그 값이 `lineage-cases.json`
 의 `upload_level` 과 한 글자도 다르지 않다는 것은 `test_k3_candidate_recall.py` 가 **표식
 없이** 지킨다(오타가 실측 직전에 드러나지 않게).
 
@@ -83,14 +82,17 @@ def _siblings(parents: dict[str, list[str]], levels: dict[str, int],
               child: str) -> tuple[set[str], str]:
     """형제 집합과 **어느 정의로 뽑았는지**를 함께 돌려준다.
 
-    ⚠ 이 코퍼스에는 **부모를 공유하는 형제가 한 건도 없다**(9건 계보가 사슬 모양이다).
-    그대로 두면 ⑶ 군이 공집합이라 아무것도 재지 못하고, ⑴′ 가 ⑴ 과 글자 하나 다르지
+    ⚠ 자식에 따라 **부모를 공유하는 형제가 한 건도 없다**(v1 9건은 계보 전체가 사슬 모양이었고,
+    v2 에서도 사슬 끝 자식이 그렇다). 그대로 두면 ⑶ 군이 공집합이라 아무것도 재지 못하고, ⑴′ 가 ⑴ 과 글자 하나 다르지
     않게 된다 — 구조 보장 판정용으로 더한 군이 사라진다. 그래서 **정의를 넓힌 사실을
     출력에 적고**(`sibling_rule`) 넓은 쪽으로 떨어진다. 감추면 표가 거짓말을 한다.
+
+    ⚠ graph 형제에서도 **자기 부모는 뺀다** — 부모 하나가 다른 부모의 부모이기도 하면
+    (v2: Prediction ← DEM · Aspect, Aspect ← DEM) 그 부모가 형제로 섞여 「형제만」 군이 오염된다.
     """
     mine = set(parents.get(child, ()))
     graph = {other for other, theirs in parents.items()
-             if other != child and mine & set(theirs)}
+             if other != child and other not in mine and mine & set(theirs)}
     if graph:
         return graph, SIBLING_GRAPH
     return ({other for other, level in levels.items()
@@ -311,18 +313,17 @@ def test_k3_계보_제안_후보와_대조군_4종을_적어_둔다(p2_client, s
     report = dict(
         kind=("K3 WU-S6 — core-api 가 계보 제안 요청에 실을 후보 + 대조군 4종 + 규칙 팔 기록. "
               "모델 호출 0회 · 판정 게이트 아님"),
-        corpus="eval/k4-search/fixtures/reference/dev-data-snapshot.json 의 9건을 일회용 DB 에 재생",
+        corpus=f"eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json 의 {len(datasets)}건을 일회용 DB 에 재생",
         sample_limits=cases["sample_limits"],
         groups=list(GROUPS), sibling_rules=sorted(sibling_rules),
         strategy=_ing.LINEAGE_CANDIDATE_STRATEGY, k=_ing.LINEAGE_CANDIDATE_LIMIT,
         corpus_size=len(datasets), visible_datasets_in_dev=snapshot["visible_datasets"],
-        level_source=("이름의 「(Lv.n)」. 스냅샷 데이터셋 항목에 가공 단계 열이 없고 "
-                      "일회용 DB 의 processing_level_user_set 도 비어 있다 — "
+        level_source=("스냅샷 v2 의 processing_level 열(dev processing_level_user_set). "
+                      "일회용 DB 에도 같은 값을 싣고 "
                       "`lineage-cases.json` 의 upload_level 과 대조해 오타를 막는다."),
         autometa_note=("`seed_reference_corpus` 는 자동 메타 행을 빈 채로 넣으므로 스냅샷의 "
-                       "실제 값을 덮어 썼다. dev 에서도 crs·grid·variables·기간은 9건 모두 "
-                       "비어 있고 bundle_file_name 만 있다 — 비교기가 쓸 수 있는 축이 "
-                       "**사실상 fileName 하나**라는 뜻이고, 그것이 이 실측의 표본 한계다."),
+                       "실제 값을 덮어 썼다. 축별로 채워진 건수는 autometa_axes_present 에 적는다 — "
+                       "빈 축은 지어내지 않는다(v2 에서도 variables 는 전 건 비어 있다)."),
         autometa_axes_present={
             axis: sum(1 for m in autometa.values() if m.get(column))
             for axis, column in (("period", "period_start"), ("crs", "crs"), ("grid", "grid"),
@@ -338,7 +339,8 @@ def test_k3_계보_제안_후보와_대조군_4종을_적어_둔다(p2_client, s
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
 
     # 기록 자체가 산출물이다 — **구조 무결성만** 단언한다. 수치로 합격/불합격을 가르지 않는다.
-    assert len(rows) == 4 and sum(len(r["parents"]) for r in rows) == 6
+    assert len(rows) == cases["sample_limits"]["children"]
+    assert sum(len(r["parents"]) for r in rows) == cases["sample_limits"]["edges"]
     assert all(1 <= r["candidate_count"] <= _ing.LINEAGE_CANDIDATE_LIMIT for r in rows)
     assert not any(r["child_itself_in_candidates"] for r in rows), \
         "자식 자신이 후보에 남았다 — 정답 부모가 없을 때 모델이 고르는 것이 바로 그것이다."

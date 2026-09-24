@@ -21,34 +21,37 @@ sys.path.insert(0, str(HERE.parents[1] / 'services/core-api/src'))
 
 import llm_lineage_probe as probe  # noqa: E402
 
-PARENT = '01M1SCC27AN4NZD3K978YFDCVD'
-OTHER = '01M1SCC8BZZJSCEW4MRPE4W9M8'
-CHILD = '01M1SCGM0K7FACRYTCWVMDDBY8'
-KID = '01M1SCJTXHXT37CZD22TKMJ13P'
+#: ⟨WU4 2026-09-25⟩ 스냅샷 v2 의 실제 간선(K3-LIN-003) — pred_sample ← hsr_sample(주입력) ·
+#: rn15_sample(보조입력, O4 보정 뒤). 옛 픽스처의 RN15 → crop 표본 보조입력 간선은 새 코퍼스에 없다.
+#: pred_sample 에는 후손이 없어 KID 는 판정 함수용 **가상 후손**이다(코퍼스 ID 아님).
+PARENT = '01M39TA6QY5NEAR8ZPZ6AF9KNE'   # hsr_sample
+OTHER = '01M39TB4NTBCFC8TSTNB93N5YP'    # rn15_sample
+CHILD = '01M39TCARM2C2NJ8S9SA4QBSER'    # pred_sample
+KID = '0000000000000000000000DESC'      # 가상 후손
 
-CAND_A = {'datasetId': PARENT, 'name': '강수 — HSR 레이더 합성 반사도 (Lv.0)',
-          'topic': '강우·강수', 'summary': 'HSR 합성 반사도 원자료',
-          'sourceLabel': '기상청', 'processingLevel': 0,
+CAND_A = {'datasetId': PARENT, 'name': 'hsr_sample',
+          'topic': None, 'summary': 'HSR 합성 반사도 원자료를 crop 한 전처리 자료',
+          'sourceLabel': None, 'processingLevel': 1,
           'crs': 'EPSG:4326', 'fileName': 'hsr_sample.npy'}
-CAND_B = {'datasetId': OTHER, 'name': '강수 — RN15 지상 15분 누적 강수 (Lv.0)',
-          'topic': '강우·강수', 'fileName': 'sfc_grid_rn_15m_201907281430.nc'}
+CAND_B = {'datasetId': OTHER, 'name': 'rn15_sample',
+          'topic': None, 'fileName': 'rn15_sample.npy'}
 FILE_META = {'fileName': 'pred_sample.npy', 'kind': '본체', 'crs': 'epsg:4326'}
 
 #: 축 기록 — core-api 가 후보 기록에 적는 그 모양이다(`_axes_json`).
 AXES = {
     PARENT: {'dataset_id': PARENT, 'file_name': 'hsr_sample.npy', 'crs': 'EPSG:4326',
              'grid': None, 'variables': [], 'period_start': None, 'period_end': None},
-    OTHER: {'dataset_id': OTHER, 'file_name': 'sfc_grid_rn_15m_201907281430.nc', 'crs': None,
+    OTHER: {'dataset_id': OTHER, 'file_name': 'rn15_sample.npy', 'crs': None,
             'grid': None, 'variables': [], 'period_start': None, 'period_end': None},
 }
 
 
 def _case(**over):
-    case = dict(id='K3-LIN-001', child_dataset_id=CHILD,
-                child_name='강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)',
-                topic='강우·강수', upload_level=1, file_meta=dict(FILE_META),
-                dataset_name_draft='강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)',
-                subject='강우·강수', searched_count=11,
+    case = dict(id='K3-LIN-003', child_dataset_id=CHILD,
+                child_name='pred_sample',
+                topic=None, upload_level=2, file_meta=dict(FILE_META),
+                dataset_name_draft='pred_sample',
+                subject=None, searched_count=30,
                 candidates=[dict(CAND_A), dict(CAND_B)],
                 candidate_axes={k: dict(v) for k, v in AXES.items()},
                 descendant_ids=[KID], sibling_ids=[],
@@ -290,13 +293,22 @@ class RuleArmTests(unittest.TestCase):
     def test_규칙_팔은_모델_없이_축_대조만으로_답한다(self):
         row = probe.run_rule_case(dict(_case(), group='main'))
         self.assertEqual(row['arm'], 'rules')
-        self.assertEqual([s['parent_dataset_id'] for s in row['suggestions']], [PARENT])
+        # rn15_sample.npy 도 업로드 pred_sample.npy 와 `sample` 토큰을 공유한다(v2 실제 파일명) —
+        # 축 두 종(fileName·crs)이 맞는 hsr_sample 이 앞, 한 종만 맞는 rn15_sample 이 뒤다.
+        self.assertEqual([s['parent_dataset_id'] for s in row['suggestions']], [PARENT, OTHER])
         self.assertEqual(row['suggestions'][0]['confidence'], '확실')
         self.assertIsNone(row['seconds'])          # 왕복이 없다
         self.assertEqual(row['raw_suggestions'], 0)
 
     def test_맞는_축이_없으면_빈_제안과_사유가_남는다(self):
-        row = probe.run_rule_case(dict(_case(candidates=[dict(CAND_B)]), group='main'))
+        # 부모가 아닌 v2 후보 — rn15 원자료(seq2). 파일명·CRS 어느 축도 업로드와 맞지 않는다.
+        raw_rn15 = '01M39T979PMQKRSK3GPCNYWHH3'
+        cand = {'datasetId': raw_rn15, 'name': 'rn15 15분 누적강수', 'topic': None,
+                'fileName': 'sfc_grid_rn_15m_201907281430.nc'}
+        axes = {raw_rn15: {'dataset_id': raw_rn15, 'file_name': 'sfc_grid_rn_15m_201907281430.nc',
+                           'crs': 'WGS84 (기준 격자 파일)', 'grid': None, 'variables': [],
+                           'period_start': None, 'period_end': None}}
+        row = probe.run_rule_case(dict(_case(candidates=[cand], candidate_axes=axes), group='main'))
         self.assertEqual(row['suggestions'], [])
         self.assertTrue(row['empty_declaration'])
 

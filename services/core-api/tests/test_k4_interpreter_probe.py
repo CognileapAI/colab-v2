@@ -1,7 +1,7 @@
 """K4 interpreter probe — replays recorded model interpretations through the real search API.
 
 Measurement, not a pass/fail gate: the retrieval half of `dev-package/intent/2026-09-22-k4-luna-interpreter-probe.md`.
-Corpus = the reference snapshot (9 datasets, fixed IDs) seeded by `seed_reference_corpus`, so the golden
+Corpus = the reference snapshot v2 (28 datasets, fixed IDs) seeded by `seed_reference_corpus`, so the golden
 IDs match without touching dev. No model is called here — the interpretations come from
 `eval/k4-search/llm_interpreter_probe.py --skip-remote` output (env `COLAB_K4_PROBE_INTERP`).
 The judgment JSON is written to `COLAB_K4_PROBE_OUT`. Both env values are required; missing → error, not skip.

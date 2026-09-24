@@ -46,7 +46,7 @@ def validate_golden_inputs() -> int:
         (REPORTS / "expanded-normalized-02.json").read_text(encoding="utf-8")
     )["expansion"]["responses"]
     snapshot = json.loads(
-        (REPORTS / "dev-data-snapshot.json").read_text(encoding="utf-8")
+        (REPORTS / "dev-data-snapshot-v2.json").read_text(encoding="utf-8")
     )["datasets"]
     packet = json.loads(
         (REPORTS / "stage-evidence-packet-02.json").read_text(encoding="utf-8")

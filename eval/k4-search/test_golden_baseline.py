@@ -1,6 +1,35 @@
+import json
 import unittest
+from pathlib import Path
 
-from golden_baseline import assess, expanded_cases
+from golden_baseline import ROOT, assess, expanded_cases, validate_suite
+
+
+HERE = Path(__file__).resolve().parent
+
+
+class CommittedSuiteTests(unittest.TestCase):
+    """커밋된 골든 12문항이 **자기가 가리키는 스냅샷**과 맞는지를 dev 접속 없이 본다.
+
+    종전에는 이 검사가 `main()` 안(dev 환경변수 뒤)에만 있어 낡은 ID 가 실측 직전의
+    준비 실패로 처음 드러났다. 건수는 스냅샷의 `counts.datasets` 에서 읽는다(다시 박지 않는다).
+    """
+
+    def load(self):
+        suite = json.loads((HERE / 'golden-cases.json').read_text())
+        return suite, json.loads((ROOT / suite['snapshot']).read_text())
+
+    def test_committed_suite_points_at_v2_snapshot_and_validates(self):
+        suite, snapshot = self.load()
+        self.assertEqual(suite['snapshot'], 'eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json')
+        expected = validate_suite(suite, snapshot)
+        self.assertEqual(len(expected), snapshot['counts']['datasets'])
+
+    def test_snapshot_count_mismatch_is_preparation_failure(self):
+        suite, snapshot = self.load()
+        broken = dict(snapshot, datasets=snapshot['datasets'][:-1])
+        with self.assertRaises(ValueError):
+            validate_suite(suite, broken)
 
 
 class AssessmentTests(unittest.TestCase):

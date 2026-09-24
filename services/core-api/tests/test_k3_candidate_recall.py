@@ -27,7 +27,7 @@ K_VALUES = (5, 10, 20)
 STRATEGIES = ("recent", "filtered")
 
 CASES_PATH = ROOT / "eval/k3-lineage/lineage-cases.json"
-SNAPSHOT_PATH = ROOT / "eval/k4-search/fixtures/reference/dev-data-snapshot.json"
+SNAPSHOT_PATH = ROOT / "eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json"
 
 
 def _cases() -> dict:
@@ -38,21 +38,16 @@ def _snapshot() -> dict:
     return json.loads(SNAPSHOT_PATH.read_text())
 
 
-#: ⭑ ⟨K3 `WU-S6` 2026-09-24⟩ **가공 단계의 정본은 이름의 「(Lv.n)」 이다.**
-#: 참조 스냅샷의 데이터셋 항목에는 가공 단계 열이 없고(`processing_level` 열쇠 부재)
-#: 일회용 DB 의 `processing_level_user_set` 도 비어 있다 — 그러므로 사람이 등록 폼 ①에서
-#: 고를 값을 이름에서 읽는 수밖에 없고, **읽는 규칙을 한 곳에 못 박는다.**
-#: ⚠ 괄호 안만 본다. 「식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)」 처럼 본문에 다른
-#: 단계가 적힌 이름이 실재한다 — 앞에서부터 찾으면 그 이름이 Lv.2 로 읽힌다.
-_LEVEL_IN_NAME = re.compile(r"\(Lv\.(\d)")
+#: ⭑ ⟨WU4 2026-09-25⟩ **가공 단계의 정본은 스냅샷 v2 의 `processing_level` 열이다**
+#: (dev `d3_dataset.processing_level_user_set` · `recapture_snapshot.py`). 종전 v1 에는 그 열이
+#: 없어 이름의 「(Lv.n)」 을 읽었지만 새 이름에는 그 표기가 없다 — 이름 파싱은 지웠다(두 벌 금지).
+_LEVEL_VALUE = re.compile(r"Lv(\d)")
 
 
 def snapshot_level(dataset: dict) -> int:
     """스냅샷 데이터셋 한 건의 가공 단계. **못 읽으면 터진다 — 0 으로 떨어지지 않는다.**"""
-    assert "processing_level" not in dataset, \
-        "스냅샷에 가공 단계 열이 생겼다 — 이름 파싱을 그 열로 바꾼다(두 벌로 두지 않는다)."
-    found = _LEVEL_IN_NAME.search(dataset["name"])
-    assert found is not None, f"이름에서 가공 단계를 못 읽었다: {dataset['name']}"
+    found = _LEVEL_VALUE.fullmatch(dataset.get("processing_level") or "")
+    assert found is not None, f"가공 단계 열을 못 읽었다: {dataset['name']}"
     return int(found.group(1))
 
 
@@ -77,7 +72,7 @@ def _upload_meta(child: dict) -> dict:
 def test_계보_정답이_참조_스냅샷과_한_글자도_어긋나지_않는다():
     snapshot, cases = _snapshot(), _cases()
     by_id = {d["id"]: d for d in snapshot["datasets"]}
-    assert cases["corpus"] == "eval/k4-search/fixtures/reference/dev-data-snapshot.json"
+    assert cases["corpus"] == "eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json"
 
     edges = 0
     for case in cases["cases"]:
@@ -98,15 +93,36 @@ def test_계보_정답이_참조_스냅샷과_한_글자도_어긋나지_않는�
     #   (K4 가 「없는 골든 데이터셋」으로 배운 자리와 같은 규율).
     for case in cases["cases"]:
         assert case["upload_level"] == snapshot_level(by_id[case["child_dataset_id"]]), \
-            f"업로드 Lv 가 스냅샷 이름과 다르다: {case['id']}"
+            f"업로드 Lv 가 스냅샷 가공 단계 열과 다르다: {case['id']}"
 
     # 표본 한계는 **정답 파일이 아니라 스냅샷 쪽에서도** 센다 — 두 수가 갈리면 정답이 낡은 것이다.
-    assert len(cases["cases"]) == 4 and edges == 6
-    assert sum(1 for d in snapshot["datasets"] if d["parents"]) == 4
-    assert sum(len(d["parents"]) for d in snapshot["datasets"]) == 6
-    assert cases["sample_limits"] == {"children": 4, "edges": 6,
+    # ⟨WU4⟩ 케이스는 스냅샷 계보의 부분집합(자식 5 · 간선 10)이다. 스냅샷 전체 계수(부모 있는
+    # 자식 13 · 간선 18)도 따로 박아 두어 스냅샷이 바뀌면 여기서 먼저 red 가 된다(드리프트 검출).
+    assert len(cases["cases"]) == 5 and edges == 10
+    assert sum(1 for d in snapshot["datasets"] if d["parents"]) == 13
+    assert sum(len(d["parents"]) for d in snapshot["datasets"]) == 18
+    assert cases["sample_limits"] == {"children": 5, "edges": 10,
                                       "candidate_population": len(snapshot["datasets"]),
-                                      "visible_datasets_in_dev": snapshot["visible_datasets"]}
+                                      "visible_datasets_in_dev": snapshot["visible_datasets"],
+                                      "snapshot_children_with_parents": 13,
+                                      "snapshot_edges": 18}
+
+
+def test_계보_형제에_자기_부모가_섞이지_않는다():
+    """`test_k3_lineage_probe._siblings` 의 graph 형제는 **자식의 부모를 뺀** 집합이다.
+
+    v2 에서 Prediction(공간상세화)의 부모 DEM 은 Aspect 의 부모이기도 하다 — 부모를 빼지
+    않으면 Aspect(실제 보조입력 부모)가 「형제만」 군에 섞여 그 군이 오염된다(§5 O10).
+    """
+    from test_k3_lineage_probe import _parent_map, _siblings
+
+    snapshot, cases = _snapshot(), _cases()
+    parents_of = _parent_map(snapshot)
+    levels = {d["id"]: snapshot_level(d) for d in snapshot["datasets"]}
+    for case in cases["cases"]:
+        siblings, _ = _siblings(parents_of, levels, case["child_dataset_id"])
+        assert not siblings & {p["parent_dataset_id"] for p in case["parents"]}, case["id"]
+        assert case["child_dataset_id"] not in siblings, case["id"]
 
 
 @pytest.mark.k3_probe
@@ -139,8 +155,8 @@ def test_k3_후보_포함률을_참조_코퍼스에서_잰다(p2_client, sql, fa
                     upload_meta=meta_by_child[child_id],
                     tokens=d3_catalog.lineage_candidate_tokens(meta_by_child[child_id]),
                     population=len(order),
-                    # 일회용 DB 에는 참조 9건 **말고도** 시험 시드(DSA1·DSA2)가 같은 연구실에
-                    # 서 있다. 그 둘도 진짜 후보라 세지만, 수치를 읽는 사람이 9 를 기대하지
+                    # 일회용 DB 에는 참조 코퍼스 **말고도** 시험 시드(DSA1·DSA2)가 같은 연구실에
+                    # 서 있다. 그 둘도 진짜 후보라 세지만, 수치를 읽는 사람이 코퍼스 건수를 기대하지
                     # 않도록 **몇 건이 코퍼스 밖인지** 적어 둔다.
                     population_outside_corpus=[i for i in order if i not in by_id],
                     child_itself_in_population=child_id in order,
@@ -164,13 +180,13 @@ def test_k3_후보_포함률을_참조_코퍼스에서_잰다(p2_client, sql, fa
 
     report = dict(
         kind="K3 J1 — core-api 후보 선정의 포함률만. 모델 호출 0회 · 계약 변경 0건 · 판정 게이트 아님",
-        corpus="eval/k4-search/fixtures/reference/dev-data-snapshot.json 의 9건을 일회용 DB 에 재생",
+        corpus=f"eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json 의 {len(datasets)}건을 일회용 DB 에 재생",
         sample_limits=cases["sample_limits"],
         visible_datasets_note=("스냅샷의 `visible_datasets` 는 목록이 아니라 dev 의 가시 데이터셋 **수**"
                                f"({snapshot['visible_datasets']})다. 모집단을 좁힐 수 있는 값이 아니라"
-                               f" 코퍼스 {len(datasets)}건이 그 부분집합임을 말한다 — distractor 가 없다."),
+                               f" 코퍼스 {len(datasets)}건이 그 부분집합임을 말한다."),
         product_cap_note="제품 권고 상한은 k=20(미해결 질문 ④). 여기서는 전 모집단을 읽고 앞에서 잘라 잰다.",
-        recent_order_caveat=("참조 9건은 한 번에 적재돼 `last_modified_at` 이 마이크로초 단위로만"
+        recent_order_caveat=("참조 코퍼스는 한 번에 적재돼 `last_modified_at` 이 마이크로초 단위로만"
                              " 갈린다. 그래서 `recent` 의 순서는 실제 최신성이 아니라 **적재 역순**이고,"
                              " 그 전략의 recall@5·@10 은 이 코퍼스에서 신호가 아니라 배치의 산물이다."
                              " recall@20(=모집단 전체)만 전략과 무관하게 읽을 수 있다."),
@@ -184,4 +200,5 @@ def test_k3_후보_포함률을_참조_코퍼스에서_잰다(p2_client, sql, fa
 
     # 측정 자체가 산출물이다 — 구조 무결성만 단언한다. 수치로 합격/불합격을 가르지 않는다.
     assert all(len(rows) == len(cases["cases"]) for rows in judged.values())
-    assert all(s["edges"] == 6 for s in (summary(rows) for rows in judged.values()))
+    assert all(s["edges"] == cases["sample_limits"]["edges"]
+               for s in (summary(rows) for rows in judged.values()))
