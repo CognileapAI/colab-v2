@@ -11,7 +11,7 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P1-20260924.md` · intent: `dev-
 | 1 착수 캡처 · 손 계측 | 완료 |
 | 2 게이트 `frontend-design-lint` + selftest · 등록 · 착수 CSS red 기록 | 완료 |
 | 3 `tokens.css` 재구성 · 화면 `:root` 제거 | 완료 — 게이트 green(a 0 · b 0 · c 0(면제 6) · d 0) |
-| 4 preview 경로(Q7) | 진행 전 |
+| 4 preview 경로(Q7) | 완료 — 제안 × 어둡게 agent-browser 확인 |
 | 5 시험 · 대장 | 진행 전 |
 | 6 시각 변경 0 대조 | 진행 전 |
 | 7 게이트 | 진행 전 |
@@ -89,3 +89,23 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
 ### `<html>` 유효 토큰 값 대조(정적 · 캡처와 별개)
 
 `styles.ts` 적재 순서(`@import` 펼침)대로 `:root` 계열 규칙을 특이도·순서로 풀어, 제품 문맥(`html[data-design=calm][data-theme=light|dark]`) · 폭 1440/800/375 에서 착수 HEAD 와 수정본의 `<html>` 사용자 정의 속성 값을 이름마다 비교했다. **차이 24 = 범위로 내린 4종 × 6 조합뿐**(루트에서 사라짐 · 의도). 나머지 이름은 두 테마·세 폭 모두 값이 같다 — 죽은 선언 6종이 실제로 가려져 있었다는 확인이기도 하다.
+
+## preview 경로(단계 4 · Q7)
+
+| 파일 | 변경 |
+|---|---|
+| `frontend/index.html` | `data-design="calm"` 삭제 — 읽는 CSS·코드 0건(저장소 전체 검색 · `tokens.css` 의 calm 스코프가 마지막 독자였다) |
+| `frontend/audit-design.tsx` | `design=calm` 분기: 테마를 `document.body.dataset.theme` → `document.documentElement.dataset.theme` 에 건다(`body.design-preview` 클래스는 유지 · `design-system.css` 는 P2). `design=full` 분기의 `dataset.design = 'calm'` 삭제(GNB 포함 여부 무변) |
+| `frontend/audit-upload.tsx` | `dataset.design = 'calm'` 삭제(같은 이유) |
+| `frontend/design-preview.html` · `design-preview.js` | 「기존 복구 화면」(`design=before`) 선택지와 그 전용 분기(테마 잠금·안내문) 삭제 |
+| `frontend/README-audit.md` | 제안 경로 URL 꼴(`/audit-design.html?design=calm&theme=dark&scene=catalog`) 추가 |
+| `frontend/src/shell/tokens.css` | 위 수정 뒤 `body.design-preview[data-theme="dark"]` 별칭 삭제 |
+| `frontend/scripts/visual-baseline/scenes.json` | **무변** |
+
+실제 확인(agent-browser · audit 빌드 `vite preview` 127.0.0.1:4391):
+
+- `design-preview.html?scene=catalog&design=calm&theme=dark&width=1440` — 디자인 선택지 1개(「제안」) · 테마 값 `dark` · iframe `src` = `/audit-design.html?scene=catalog&design=calm&theme=dark` · 화면이 어두운 바탕으로 그려짐(스크린샷 확인).
+- iframe 문서 직접 열기(같은 URL) — `html[data-theme]` = `dark` · `body[data-theme]` 없음 · `body.className` = `design-preview` · `body` 계산 배경 `rgb(17, 22, 29)`(= 다크 `--color-bg` `#11161d`) · 글자 `rgb(237, 242, 247)`(= 다크 `--color-text` `#edf2f7`).
+- `audit:build`(`tsc --noEmit -p tsconfig.audit.json` 포함) exit 0.
+
+`calm` 이 없던 문맥의 값 변화(캡처 밖 · Q7 로 폐기된 모드): `audit-selected-preview.html` 과 `design` 인자 없는 `audit-design.html` 은 종전 calm 스코프 밖이라 기본 `:root` 값(`--leading-body` 1.467 · `--tracking-body` 0.0096em · calm 전용 이름 미정의)을 썼다. 이제 제품과 같은 값을 쓴다. 제품(`index.html`)과 캡처 33장면(`design=full`·`audit-upload`)은 종전에도 calm 값이었다.

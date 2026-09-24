@@ -139,7 +139,7 @@
   :root { --shell-gnb-offset: 110px; }
 }
 
-:root[data-theme="dark"], body.design-preview[data-theme="dark"] {
+:root[data-theme="dark"] {
   color-scheme: dark;
   --color-bg: #11161d;
   --color-surface: #1a222c;

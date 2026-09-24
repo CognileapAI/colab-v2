@@ -11,8 +11,6 @@ function render() {
   frame.style.width = width === 'full' ? '100%' : width + 'px';
   frame.style.height = width === '375' ? '900px' : '1100px';
   document.getElementById('direct').href = url;
-  document.getElementById('theme').disabled = design === 'before';
-  document.getElementById('notice').textContent = design === 'before' ? '기존 화면에는 어두운 테마가 없습니다.' : '';
   history.replaceState(null, '', '?' + new URLSearchParams(Object.fromEntries(fields.map(field => [field.id, field.value]))));
 }
 fields.forEach(field => field.addEventListener('change', render));

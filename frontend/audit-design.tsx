@@ -121,15 +121,16 @@ function fullSource(over: Partial<DashboardSource> = {}): DashboardSource {
 
 
 const previewParams = new URLSearchParams(location.search);
+// design=calm: design-preview.html 의 「제안」 — GNB 없는 화면. 테마는 정본 다크 블록(`:root[data-theme="dark"]`)이
+// 읽는 <html> 에 건다(P1 · 종전 body 의 data-theme 은 tokens.css 의 body.design-preview 별칭에 기댔다).
 if (previewParams.get('design') === 'calm') {
   document.body.classList.add('design-preview');
-  document.body.dataset.theme = previewParams.get('theme') === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = previewParams.get('theme') === 'dark' ? 'dark' : 'light';
 }
 const scene = previewParams.get('scene') ?? 'catalog';
 const full = previewParams.get('design') === 'full';
 if (full) {
   document.body.classList.add('colab-ui');
-  document.documentElement.dataset.design = 'calm';
   document.documentElement.dataset.theme = previewParams.get('theme') === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.themePreference = document.documentElement.dataset.theme;
 }

@@ -3,7 +3,7 @@
 `frontend`에서 `npm ci`, `npm run audit:build`, `npm run audit:preview -- --port 4187` 순서로 실행한다.
 빌드 설정은 `audit.vite.config.ts` 하나이며 결과는 `.codex/upload-preview-audit`에 생성된다.
 
-- `/design-preview.html`: 대표 화면·테마·너비 선택
+- `/design-preview.html`: 대표 화면·테마·너비 선택. 화면은 `/audit-design.html?design=calm&theme=dark&scene=catalog` 꼴(GNB 없는 화면)로 연다
 - `/audit-design.html?design=full&theme=dark&scene=catalog`: 현재 공통 스타일의 모의 화면
 - `/audit-design.html?design=full&scene=preview-done`: 로컬 예시 지도
 - `/audit-upload.html?theme=dark`: 모의 업로드 화면
