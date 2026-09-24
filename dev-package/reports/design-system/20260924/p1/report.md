@@ -42,16 +42,18 @@ design-lint-counts files=19 a=77 a_root=77 a_scoped=0 b=2 c=17 c_missing=0 c_dar
 
 ## ⓐ 게이트 — 최종(단계 7)
 
-`COLAB_TASK_ID=8e021e5608634778b0a905bf52a206d1 gates/run.sh task` → **exit 1 · 계 green 5 / red(판정) 1 / red(준비) 0**. 요약 JSON = git common dir 기준 `colab-harness/1e175b30943cec0a49a50bc054005cf7/8e021e5608634778b0a905bf52a206d1/<run>/gate-summary.json`(run id 는 최종 실행의 것 · handoff 줄에 실린다). `~/.colab-v2-test.env` 존재 확인 뒤 실행.
+`COLAB_TASK_ID=8e021e5608634778b0a905bf52a206d1 bash gates/run.sh task` → **exit 0 · 계 green 6 / red(판정) 0 / red(준비) 0**(`preview-slot-4x3` 셀렉터 변경 커밋 `ad588224` 뒤). 요약 JSON = git common dir 기준 `colab-harness/1e175b30943cec0a49a50bc054005cf7/8e021e5608634778b0a905bf52a206d1/a6afec9a237146c6b63649d896070d92/gate-summary.json`. 이 표를 적은 커밋 뒤 handoff 용으로 같은 명령을 한 번 더 돌리며, 그 run id 는 `COLAB_HANDOFF` 줄에 실린다. `~/.colab-v2-test.env` 존재 확인 뒤 실행.
 
 | 게이트 | 결과 | 요약 |
 |---|---|---|
 | `frontend-design-lint` | green | 파일 19 · :root 정의 밖 0 · 미정의 참조 0 · 다크 누락 0(면제 6) · :root/@import 0 · 범위 색 토큰 0(다크 미검사) |
 | `frontend-design-lint-selftest` | green | 검사 8건 전건 기대대로 (green 1 · red 5 · red(준비) 2) |
 | `frontend-typecheck` | green | tsc --noEmit 오류 0건 |
-| `frontend-test` | **red(판정)** | Test Files 1 failed · 128 passed (129) · Tests 1 failed · 1609 passed (1610) — `preview-slot-4x3.test.tsx` 「비율은 CSS 한 자리(토큰)에서 온다」 1건(단계 5 멈춘 항목) |
+| `frontend-test` | green | Test Files 129 passed (129) · Tests 1610 passed (1610) — BF-13 시험 폐기 뒤 건수 |
 | `frontend-fixture-reach` | green | 도달 203(진입점 제외 202) · 금지 모듈 0 |
 | `work-item-consistency` | green | 대장과 산문의 불일치 0 |
+
+이전 실행(시험 변경 전 · 커밋 `0beaad99`): exit 1 · green 5 / red(판정) 1(`frontend-test` 의 `preview-slot-4x3.test.tsx:100` 1건) / red(준비) 0.
 
 착수 → 최종: a 77 → 0 · b 2 → 0 · c 17(면제 2 · 목록 없이 19) → 0(면제 6) · d 9 → 0.
 
