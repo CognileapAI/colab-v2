@@ -67,6 +67,10 @@
   --color-text-body: #21272ae0; /* label.neutral */
   --color-text-muted: #565c63; /* coolNeutral40 */
   --color-text-subtle: var(--color-text-muted);
+  /* 「색 배경 위 글자」 — `--color-text-body` 를 바탕으로 쓰는 글자(상세 편집 필수 표식 `.de-req`).
+     한 화면만 쓰지만 여기 둔다(위 「둘 이상 화면」 규칙의 예외): 다크 값이 필요한데 화면 범위에서는 다크 값을
+     줄 수 없고(게이트 d) 정본 계열 이름은 화면 범위에 둘 수 없다(게이트 a). design-fix 20260924 #17 · 값 13. */
+  --color-on-text-body: #ffffff;
 
   --color-danger: #a3222b;
   --color-danger-solid: #a3222b;
@@ -86,15 +90,19 @@
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   --font-data: var(--font-sans);
 
-  --text-h2: 28px;
-  --text-h3: 18px;
-  --text-section: 16px;
-  --text-body: 15px;
-  --text-body-sm: 14px;
-  --text-caption: 13px;
+  /* 글자 크기는 rem(뿌리 16px 기준 값 무변 · 브라우저 기본 글자 설정을 따른다 · design-fix 20260924 #8) */
+  --text-h2: 1.75rem;
+  --text-h3: 1.125rem;
+  --text-section: 1rem;
+  --text-body: 0.9375rem;
+  --text-body-sm: 0.875rem;
+  --text-caption: 0.8125rem;
   --leading-body: 1.6;
   --leading-body-sm: 1.429;
   --tracking-body: 0;
+  /* 자간 — 제목(음수)·작은 라벨(양수) 두 구간(design-fix 20260924 #7 · 값 8) */
+  --tracking-heading: -0.02em;
+  --tracking-label: 0.05em;
   --weight-heading: 600;
 
   /* ── 간격·치수 ── */
@@ -142,6 +150,7 @@
   --color-text: #edf2f7;
   --color-text-body: #dce4ed;
   --color-text-muted: #b2bfce;
+  --color-on-text-body: #1a222c;
   --color-gray-50: #202b37;
   --color-gray-100: #2b3745;
   --color-gray-200: #45566a;

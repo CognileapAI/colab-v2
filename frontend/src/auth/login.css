@@ -26,6 +26,7 @@
 .login-brand {
   font-weight: 700;
   color: var(--color-primary);
+  /* 브랜드 예외 — 로고 글자라 자간 토큰 두 구간(제목 · 작은 라벨) 밖으로 두고 리터럴을 유지한다(design-fix 20260924 #7 · 값 9). */
   letter-spacing: 0.01em;
 }
 
@@ -184,7 +185,8 @@
 .account-row-note { align-self: center; font-size: var(--text-caption); color: var(--color-text-muted); }
 
 .account-modal-back {
-  position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px;
+  /* 층 = 공통 모달 뒤판 `.modal-back`(primitives.css · 200) — GNB(100) 위(design-fix 20260924 #14) */
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px;
   background: color-mix(in srgb, var(--color-bg) 70%, transparent);
 }
 .account-modal {
