@@ -2,7 +2,7 @@
 
 Plan-Ref: dev-package/prd/specs/S-EXTERNAL-HARNESS-GAP-20260925.md
 Head-SHA: (게시 때 PR head 40자리로 채운다)
-검증 상태: 로컬 게이트 green · CI 는 게시 뒤
+검증 상태: 부분 검증
 
 ## 목적
 외부 하네스 `sungwooHa/ai-sdlc-harness`(커밋 `78b2d0f`)와 장치 30개를 대조해, 우리에게 없던 검사를 새 훅 없이 붙인다(intent `dev-package/intent/2026-09-25-external-harness-gap.md` · Ted 판정 "권고대로").
@@ -13,11 +13,12 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 - 보류 7(재검토 조건 기록 · `docs/development/dual-agent.md`) · 불채택 4(로컬 전용 이력 · 해시 승인 · 셸 차단 · PR 형태 훅).
 
 ## 계획
-- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 2회차 → 확정 결함 16 + 9 수정.
+- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 3회차(확정 결함 16 · 9 + ADR 1 · 3) → 모두 수정. 로컬 검증 상태는 「부분 검증」 — CI 는 게시 뒤에 돈다.
 - 검토 기록: `dev-package/reports/harness/20260925-external-harness-gap/REVIEW.md`.
 
 ## 결정
-- 새 ADR 없음. ADR-0003(adr_gate 는 훅 없이) · ADR-0005 개정(「조용한 exit 0 없음」)에 맞춰 게이트로만 붙였다. ADR-0004·0006 은 줄 참조만 갱신.
+- ADR-0007(accepted) — 커밋은 Intent-Ref 로 intent 를 가리키고 승인 intent 는 줄 추가만 허용한다(`docs/decisions/0007-intent-ref-trailer-and-append-only-approved-intents.md` · 승인 = intent 질문 4 ⓐ).
+- 나머지 검사는 ADR-0003(판정은 CLI·게이트 · 훅 없음) · ADR-0005 개정(조용한 exit 0 없음)에 맞춰 게이트로만 붙였다. ADR-0004·0006 은 줄 참조만 갱신.
 
 ## 검증
 게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 129 OK(skip 10 · Windows 전용).
@@ -39,13 +40,19 @@ Evidence-SHA256: 게시 뒤 CI 증거로 채운다
 CI-Ref: 게시 뒤
 
 ## 남은 제약
-- 기존 열린 PR·브랜치는 트레일러가 없으면 `intent-ref` 가 red 다. 소급 경로 = `git commit --allow-empty -m "…" -m "Intent-Ref: dev-package/intent/<파일>.md"` 1개(`.agents/skills/colab-v2-work/SKILL.md`).
+- 기존 열린 PR·브랜치는 트레일러가 없으면 `intent-ref` 가 red 다. 소급 경로 = 그 PR 의 intent 를 가리키는 빈 커밋 1개. 예: `git commit --allow-empty -m "intent 연결" -m "Intent-Ref: dev-package/intent/2026-09-25-external-harness-gap.md"`(규칙 `.agents/skills/colab-v2-work/SKILL.md`).
 - 후속(이 변경과 무관한 기존 문서 차이): `gates/README.md` harness-eval 행의 비밀·모델 호출 서술 · spec 틀과 to-spec 템플릿의 나머지 차이.
 - 30·31 저장소가 같은 게이트 잠금 경로를 쓰면 #130 의 잠금 수정이 없는 쪽 데몬이 잠금을 쥘 수 있다(레인 L 관측 · 별건).
 
 ## 게시 절차 (사용자)
+전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다 — `git log origin/develop..origin/claude/agent-model-tiering` 이 비어 있는지 먼저 본다.
+Head-SHA 는 게시 시점 head 로 채우고 저장소 PR 계약을 통과시킨 뒤 연다:
 ```bash
-gh pr create --base develop --head claude/harness-external-gap --title "하네스에 훅 등록 누락·ADR·홈 경로·줄 상한·Intent-Ref 검사와 레인 범위 대조를 붙인다" --body-file dev-package/reports/harness/20260925-external-harness-gap/PR-BODY.md
+git fetch origin && git switch claude/harness-external-gap && git pull --ff-only
+HEAD_SHA=$(git rev-parse HEAD)
+sed "s/^Head-SHA: .*/Head-SHA: $HEAD_SHA/" dev-package/reports/harness/20260925-external-harness-gap/PR-BODY.md > /tmp/pr-body.md
+python3 scripts/harness/pr_contract.py --head "$HEAD_SHA" --mode draft /tmp/pr-body.md
+gh pr create --base develop --head claude/harness-external-gap --title "하네스에 훅 등록 누락·ADR·홈 경로·줄 상한·Intent-Ref 검사와 레인 범위 대조를 붙인다" --body-file /tmp/pr-body.md
 ```
 
 ## 병합 뒤

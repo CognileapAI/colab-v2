@@ -23,3 +23,22 @@ advisor ② 자리를 반증 워크플로 두 회차가 맡았다(검토자 → 
 - 수정 전 red 인용이 커밋 메시지에만 있음 → 이 문서와 PR 요약에 옮김.
 - `gates/run.sh all` 증거 → 1회차 게이트 측정(위)을 인용.
 - PR 은 #131 병합 뒤 연다(intent 판정 ⑧).
+
+## 3회차 — 2회차 수정 재검증(7fce70c3)
+- 재검토자 3명 · 후보 8건 · 검증자 2명씩 → 두 명 모두 유지 **3** · 한 명 유지 1 · 기각 4.
+- 확정 3: ① [중요] 2회차에 넣은 스테이징 대조가 begin 이전부터 스테이징된 부모 작업을 레인 범위 위반으로 셈(2회차 회귀) ② [중요] 이 PR 요약이 저장소 PR 계약(`scripts/harness/pr_contract.py --mode draft`)을 통과하지 못함 ③ [사소] 게시 절차에 「#131 먼저 병합」 조건 누락.
+- 비평: 원한 결과 충족 7 · 부분 1(6 — 위 ①) · 빈틈 — ADR-0004 의 gates/README 줄 참조(브랜치 이전부터 낡음) · 전수 실행 증거가 1회차 트리 기준 · 항목별 수정 전 red 인용 부재 · 새 「ADR 남길 때」 기준에 Intent-Ref 게이트가 해당.
+- 수정: 범위 task 는 begin 때 index 트리(`git write-tree`)를 기록하고 인계 때 그것과 비교 · PR 요약을 계약에 맞춤(검증 상태 값 · 자리표시자 제거 · 게시 때 Head-SHA 채우고 계약 검사) · 게시 전제 명시 · ADR-0004 줄 참조를 인용 문구 기준으로 재측정 · ADR-0007(Intent-Ref) 신설 · 최종 트리에서 `gates/run.sh all` 재실행.
+
+## 항목별 수정 전 red 인용
+| 항목 | 수정 전(red) | 수정 후 |
+|---|---|---|
+| K1 훅 등록 누락 | `[] != ['hook not registered … test-file-guard.sh (event PreToolUse, matcher Edit\|Write)']` (레인 K) | green |
+| K2 adr-records | `gates/run.sh has no adr-records case` · ci-filter-check `㈕ docs/decisions/0001-… 가 dev-package 필터에 안 잡힌다` rc=1 (레인 K) | green |
+| K3 홈 절대경로 | `AttributeError: module 'harness_config' has no attribute 'check_home_paths'` (K3 이전 config · 오케스트레이터) | green |
+| K4 줄 상한 | `KeyError: 'hygiene'` → 121행 fixture red (레인 K) | green |
+| K5 intent-ref | `FileNotFoundError`(모듈 없음) · 트레일러 없는 범위 `트레일러가 0개다` rc=1 (레인 K) | green |
+| L1 레인 범위 | `TypeError: begin() got an unexpected keyword argument 'scope'` · `unrecognized arguments: --scope src/**` (레인 L) | green |
+| 1회차 수정 | 새 시험 8건이 이전 코드에서 red — 분기 뒤 승인 intent · UTF-8 경로 · 준비 실패 시 판정 누락 · 커밋 뒤 복원 우회 · 범위 형태 2 · ci-filter ㈕ 2 | green |
+| 2회차 수정 | 새 시험 10건 red(9 실패 · 1 오류) — `---`/`--` 줄 · 끝 줄바꿈 · `-diff`·색상 · UTF-8 이름 intent · 옛 스키마 범위 · 앞 공백·스테이징 · 0건 ADR · ADR 보존 · UTF-8 파일 이름 | green |
+| 3회차 수정 | `ValueError: changes outside declared lane scope: notes/parent.md …` (begin 이전 스테이징) | green |

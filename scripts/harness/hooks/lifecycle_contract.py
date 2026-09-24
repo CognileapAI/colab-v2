@@ -217,6 +217,13 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     check_scope_declarations(scope, root)
     # Only a declared scope adds the key, so an undeclared task keeps the current record and behaviour.
     extra = dict(scope=list(scope)) if scope else {}
+    if scope:
+        # The index at begin: staged entries that predate the task are not the lane's changes
+        # (advisor review round 3, 2026-09-25). write-tree refuses an unmerged index.
+        try:
+            extra['started_index'] = git(root, 'write-tree')
+        except subprocess.CalledProcessError:
+            raise ValueError('lane scope needs a mergeable index at begin — resolve conflicts first') from None
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
     if not legacy:
@@ -400,9 +407,9 @@ def stop(data, expected_role):
                 raise ValueError('lane scope requires the colab-task/2 runtime (begin-time commit); '
                                  'this task has none — begin a new task without --legacy')
             # Raw -z output (no .strip(): it would eat a leading space of the first path);
-            # staged-only changes count as well.
+            # staged-only changes since begin count as well (index vs the begin-time index tree).
             for extra in (['diff', '--no-renames', '--name-only', '-z', started, 'HEAD'],
-                          ['diff', '--cached', '--no-renames', '--name-only', '-z', 'HEAD']):
+                          ['diff', '--cached', '--no-renames', '--name-only', '-z', task.get('started_index', 'HEAD')]):
                 out = subprocess.check_output(['git', '-C', str(root), *extra])
                 changed |= {p for p in out.decode('utf-8', 'surrogateescape').split('\0') if p}
             outside = out_of_scope(task, changed)

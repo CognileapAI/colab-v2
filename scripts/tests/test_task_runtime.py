@@ -299,6 +299,23 @@ class TaskRuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'notes/staged.md'):
             self.complete_lane(task['task_id'])
 
+    def test_lane_scope_ignores_entries_staged_before_begin(self):
+        # Round-3 regression: the index was compared with HEAD, so a parent's staged work
+        # that predates the task was blamed on the lane.
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        self.write('notes/parent.md', 'parent work in progress')
+        subprocess.run(git + ['add', 'notes/parent.md'], check=True)
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('src/in.py')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # Staging something out of scope during the task is still the lane's change.
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/lane.md', 'lane staged')
+        subprocess.run(git + ['add', 'notes/lane.md'], check=True)
+        (self.root / 'notes/lane.md').unlink()
+        with self.assertRaisesRegex(ValueError, 'notes/lane.md'):
+            self.complete_lane(task['task_id'])
+
     def test_lane_scope_default_allowed_paths_need_no_declaration(self):
         task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
         self.write('src/a.py')
