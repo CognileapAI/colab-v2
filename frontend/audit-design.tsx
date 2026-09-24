@@ -148,9 +148,91 @@ const source = fullSource(empty ? {
   dataMap: async () => ({totalCount: 0, byLineageState: [], byTopic: []}),
   activities: async () => [], lineageTodo: async () => [],
 } : {});
+// scene=primitives — 프리미티브 갤러리(spec S-DESIGN-STRUCTURE-P5-20260924). 6계열 × 정적 상태(기본 · 수식자 · disabled)를
+// primitives.css 클래스만으로 그린다. 제품 컴포넌트를 import 하지 않는다 — 이 장면은 프리미티브 CSS 만 보여 준다.
+// hover·focus 는 정적 캡처가 재현하지 못해 그리지 않는다. `.modal-back` 은 화면 전체를 덮는 fixed 뒤판이라 빼고
+// 대화상자 판(`.modal.modal--dialog`)만 제자리에 연 상태로 둔다(뒤판 모양은 lab-dialog·project-dialog 장면이 찍는다).
+const GALLERY_ROWS = [
+  {name: '낙동강 강우 원자료', kind: '원천', size: '148 MB'},
+  {name: '낙동강 강우 격자화', kind: '가공', size: '96 MB'},
+  {name: '한강 유출량', kind: '원천', size: '12 MB'},
+];
+function PrimitivesGallery() {
+  return <main className="primitives-gallery" data-screen="primitives">
+    <h1>프리미티브 갤러리</h1>
+    <p>기본값 = <code>primitives.css</code> · 목록 = <code>primitives.txt</code> · 정적 상태만(hover·focus 없음).</p>
+    <section data-family="btn" aria-labelledby="pg-btn">
+      <h2 id="pg-btn">btn — 버튼</h2>
+      <p>
+        <button className="btn" type="button">.btn</button>{' '}
+        <button className="btn btn-primary" type="button">.btn-primary</button>{' '}
+        <button className="btn btn-secondary" type="button">.btn-secondary</button>{' '}
+        <button className="btn btn-ghost" type="button">.btn-ghost</button>{' '}
+        <button className="btn btn-danger" type="button">.btn-danger</button>{' '}
+        <button className="btn btn-sm" type="button">.btn-sm</button>
+      </p>
+      <p>
+        <button className="btn" type="button" disabled>.btn disabled</button>{' '}
+        <button className="btn btn-primary" type="button" disabled>.btn-primary disabled</button>{' '}
+        <button className="btn btn-secondary" type="button" disabled>.btn-secondary disabled</button>{' '}
+        <button className="btn btn-ghost" type="button" disabled>.btn-ghost disabled</button>{' '}
+        <button className="btn btn-danger" type="button" disabled>.btn-danger disabled</button>
+      </p>
+    </section>
+    <section data-family="field" aria-labelledby="pg-field">
+      <h2 id="pg-field">field — 입력·선택</h2>
+      <p>
+        <input className="inp" aria-label=".inp" defaultValue=".inp 값" />{' '}
+        <input className="inp" aria-label=".inp 자리표시" placeholder=".inp 자리표시" />{' '}
+        <input className="inp" aria-label=".inp disabled" defaultValue=".inp disabled" disabled />
+      </p>
+      <p>
+        <select className="sel" aria-label=".sel" defaultValue="a"><option value="a">.sel 선택</option><option value="b">둘째</option></select>{' '}
+        <select className="sel" aria-label=".sel disabled" defaultValue="a" disabled><option value="a">.sel disabled</option></select>
+      </p>
+    </section>
+    <section data-family="chip" aria-labelledby="pg-chip">
+      <h2 id="pg-chip">chip — 칩</h2>
+      <p>
+        <span className="chip">.chip</span>
+        <span className="chip chip--off">.chip--off</span>
+        <span className="chip chip--verified">.chip--verified</span>
+        <span className="chip chip--lineage">.chip--lineage</span>
+        <span className="chip chip--neutral">.chip--neutral</span>
+        <span className="chip chip--warning">.chip--warning</span>
+      </p>
+    </section>
+    <section data-family="card" aria-labelledby="pg-card">
+      <h2 id="pg-card">card — 카드</h2>
+      <div className="card">
+        <div className="card-h"><h3>.card-h 제목</h3><button className="btn" type="button">동작</button></div>
+        <div className="card-b">.card-b 본문 — 카드 몸의 여백과 글자를 본다.</div>
+      </div>
+    </section>
+    <section data-family="table" aria-labelledby="pg-table">
+      <h2 id="pg-table">table — 표</h2>
+      <p className="table-scroll-hint">.table-scroll-hint — 좁은 화면에서 표를 좌우로 움직여 봅니다.</p>
+      <div className="tblwrap">
+        <table className="tbl">
+          <thead><tr><th scope="col">.tbl 이름</th><th scope="col">종류</th><th scope="col">크기</th></tr></thead>
+          <tbody>{GALLERY_ROWS.map(row => <tr key={row.name}><td>{row.name}</td><td>{row.kind}</td><td>{row.size}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </section>
+    <section data-family="modal" aria-labelledby="pg-modal">
+      <h2 id="pg-modal">modal — 대화상자</h2>
+      <div className="modal modal--dialog" role="dialog" aria-labelledby="pg-modal-title">
+        <div className="modal-h"><h3 id="pg-modal-title">.modal-h 제목</h3></div>
+        <div className="modal-b">.modal-b 본문 — 열린 상태를 뒤판 없이 제자리에 둔다.</div>
+        <div className="modal-f"><button className="btn btn-secondary" type="button">취소</button><button className="btn btn-primary" type="button">확인</button></div>
+      </div>
+    </section>
+  </main>;
+}
 function Scene() {
   const [open, setOpen] = useState(true);
   const close = () => setOpen(false);
+  if (scene === 'primitives') return <PrimitivesGallery />;
   if (scene === 'lineage-picker') return <main className="lin">{open && <ParentPicker candidates={FIXTURE_ROWS} selfLv={2} levelFilter={null} onLevelFilterChange={() => {}} onPick={close} onClose={close} testId="audit-parent-picker" />}</main>;
   if (scene === 'not-found') return <NotFoundPage />;
   if (scene === 'members') return <main className="settings-page"><MemberPermissionGrid port={members} /></main>;
@@ -174,7 +256,7 @@ function Scene() {
 // 값이 없으면 종전 기본값(업로드 = full 또는 detail · 연구실 설정 켬 · 운영자 아님)을 쓴다.
 const flag = (key: string, fallback: boolean) => previewParams.has(key) ? previewParams.get(key) === '1' : fallback;
 const sessionAccount = {...account({'연구실 설정': flag('labSettings', true), '프로젝트 생성': true, '업로드·편집': flag('upload', full || scene === 'detail')}), ...(flag('operator', scene === 'account-admin') ? {canManageServiceAccounts: true} : {})};
-// 제품에서 GNB 없이 단독 렌더되는 화면(`AuthGate`).
-const STANDALONE = ['login', 'password-change'];
+// 제품에서 GNB 없이 단독 렌더되는 화면(`AuthGate`) · 프리미티브 갤러리(P5 · 제품 화면이 아니다).
+const STANDALONE = ['login', 'password-change', 'primitives'];
 const entry = scene === 'detail' ? '/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1' : scene === 'project-detail' ? `/projects/${FIXTURE_PROJECTS[0]!.projectId}` : scene.startsWith('search') ? '/datasets/search?q=강수' : scene.startsWith('preview') ? '/datasets/preview/upload?render=render' : scene.startsWith('project') ? '/projects' : scene === 'lab' || scene === 'empty' || scene === 'gnb-more' ? '/lab' : scene === 'account-admin' ? '/account-admin' : '/datasets';
 createRoot(document.getElementById('root')!).render(<MemoryRouter initialEntries={[scene.startsWith('preview') ? {pathname:'/datasets/preview/upload',search:'?render=render',state:{preview:{uploadId:'upload',renderId:'render',withoutReferenceGrid:true,basicInfo:{byteSize:148000000,variable:'rain'},files:[{fileId:'file',fileName:'rain.nc',kind:'본체',byteSize:148000000}]}}} : entry]}><SessionProvider account={sessionAccount}>{full && !STANDALONE.includes(scene) && <Gnb />}<Scene /></SessionProvider></MemoryRouter>);

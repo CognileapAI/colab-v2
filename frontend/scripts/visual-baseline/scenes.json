@@ -21,7 +21,8 @@
     "30 scene names are inherited from dev-package/reports/design-consistency/20260912/full/scenes.json; account-admin, password-change, gnb-more are new.",
     "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
     "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector).",
-    "gnb-more has widths 375/768 only: .gnb-more is visible at <= 900px."
+    "gnb-more has widths 375/768 only: .gnb-more is visible at <= 900px.",
+    "primitives (P5 · spec S-DESIGN-STRUCTURE-P5-20260924) is the primitive gallery: static markup of primitives.css classes only, no GNB (STANDALONE in audit-design.tsx), no product components."
   ],
   "scenes": [
     {
@@ -958,6 +959,31 @@
           "click": ".gnb-more"
         }
       ],
+      "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "primitives",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "primitives",
+        "design": "full"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [],
       "settleMs": 500,
       "account": {
         "upload": true,
