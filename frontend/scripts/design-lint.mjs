@@ -28,8 +28,18 @@
 //      `--*` keys (TS AST, not regex): any other key (incl. shorthand `{ width }` · spread · computed
 //      non-literal) or a non-object value is red. `--*`-only objects count as variable assignments (v).
 //      A `style` key inside a JSX spread attribute (`{...(c ? { style: {…} } : {})}`) is judged the same way.
+//   e  (P2b · spec S-DESIGN-STRUCTURE-P2B-20260924) a bare primitive definition outside src/shell/primitives.css:
+//      a selector-list argument that — after expanding `:is()`/`:where()` — is ONE compound made only of
+//      classes from the primitives list (`--primitives`, one class per line, `.chip--*` prefix form) plus
+//      pseudo-classes/-elements and attribute selectors (`.btn` · `.btn:hover` · `.chip--warning` ·
+//      `:is(.inp, .sel)`). `:not()`/`:has()` arguments are not inspected. A compound mixed with a
+//      non-listed class/type/id (`.btn.foo` · `button.btn`) and ancestor/descendant contexts (`.memgrid .btn`)
+//      are allowed. Also red: `!important` inside src/shell/primitives.css or src/shell/base.css.
+//      Exemptions live in their own list (`--primitives-exempt`, `<file> · <selector> · <reason>`): an empty
+//      reason → red and exempts nothing · an entry matching nothing (stale) → red · count shown as 「(면제 m)」.
 // `@layer` blocks are transparent: rules inside `@layer x { … }` are judged like unlayered ones.
-// Exit: 0 green · 1 red · 78 readiness failure (no files, missing list, a listed file missing on disk,
+// Exit: 0 green · 1 red · 78 readiness failure (no files, a missing list (same-in-dark · primitives ·
+//   primitives-exempt), a listed file missing on disk,
 //   `typescript` not resolvable).
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -64,10 +74,12 @@ const DARK_SEL = /\[data-theme=["']?dark["']?\]/;
 
 function args() {
   const argv = process.argv.slice(2);
-  const out = { root: '.', sameInDark: null, files: [] };
+  const out = { root: '.', sameInDark: null, primitives: null, primitivesExempt: null, files: [] };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--root') out.root = argv[++i];
     else if (argv[i] === '--same-in-dark') out.sameInDark = argv[++i];
+    else if (argv[i] === '--primitives') out.primitives = argv[++i];
+    else if (argv[i] === '--primitives-exempt') out.primitivesExempt = argv[++i];
     else if (argv[i] === '--') { out.files = argv.slice(i + 1); break; }
   }
   return out;
@@ -249,11 +261,110 @@ function parseSameInDark(path) {
   return { entries, fEntries };
 }
 
+// e — primitive list (`.btn` · `.chip--*`) and its exemption list (`file · selector · reason`).
+function parsePrimitives(path) {
+  const exact = new Set(); const prefixes = []; const bad = [];
+  readFileSync(path, 'utf8').split(/\r?\n/).forEach((raw, idx) => {
+    const t = raw.trim();
+    if (!t || t.startsWith('#')) return;
+    const m = /^\.(-?[A-Za-z_][\w-]*?)(\*)?$/.exec(t);
+    if (!m) { bad.push(`primitives.txt:${idx + 1} 형식 오류 「${t}」(한 줄에 클래스 하나 · 접두 표기 .x--*)`); return; }
+    if (m[2]) prefixes.push(m[1]); else exact.add(m[1]);
+  });
+  return { bad, size: exact.size + prefixes.length, has: n => exact.has(n) || prefixes.some(x => n.startsWith(x)) };
+}
+function parsePrimitivesExempt(path) {
+  const out = [];
+  readFileSync(path, 'utf8').split(/\r?\n/).forEach((raw, idx) => {
+    const t = raw.trim();
+    if (!t || t.startsWith('#')) return;
+    const parts = t.split('·').map(x => x.trim());
+    if (parts.length < 3) { out.push({ line: idx + 1, malformed: true, text: t }); return; }
+    const [file, selector, ...reason] = parts;
+    out.push({ line: idx + 1, file, selector: norm(selector), reason: reason.join(' · ').trim(), used: 0 });
+  });
+  return out;
+}
+// Split at top-level commas (outside (), [] and quotes).
+function splitList(s) {
+  const out = []; let depth = 0; let quote = null; let cur = '';
+  for (const ch of s) {
+    if (quote) { cur += ch; if (ch === quote) quote = null; continue; }
+    if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue; }
+    if (ch === '(' || ch === '[') depth++;
+    if (ch === ')' || ch === ']') depth--;
+    if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+// Expand the first top-level `:is(`/`:where(` of a selector into one selector per argument (recursively).
+function expandIsWhere(sel) {
+  let depth = 0; let quote = null;
+  for (let i = 0; i < sel.length; i++) {
+    const ch = sel[i];
+    if (quote) { if (ch === quote) quote = null; continue; }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === '(' || ch === '[') { depth++; continue; }
+    if (ch === ')' || ch === ']') { depth--; continue; }
+    if (depth !== 0 || ch !== ':' || sel[i + 1] === ':' || sel[i - 1] === ':') continue;
+    const m = /^:(is|where|matches|-webkit-any)\(/i.exec(sel.slice(i));
+    if (!m) continue;
+    const open = i + m[0].length - 1;
+    let d = 0; let j = open;
+    for (; j < sel.length; j++) { if (sel[j] === '(') d++; else if (sel[j] === ')') { d--; if (d === 0) break; } }
+    const before = sel.slice(0, i); const after = sel.slice(j + 1);
+    return splitList(sel.slice(open + 1, j)).flatMap(a => expandIsWhere(before + a + after));
+  }
+  return [sel];
+}
+// One compound → its simple selectors, or null when a top-level combinator makes it complex.
+function compoundSimples(sel) {
+  const s = sel.trim(); const simples = [];
+  let i = 0;
+  const ident = () => { const m = /^-?[A-Za-z_\\\u0080-￿][\w\\\u0080-￿-]*/.exec(s.slice(i)); if (!m) return null; i += m[0].length; return m[0]; };
+  const balanced = (open, close) => { let d = 0; const st = i; for (; i < s.length; i++) { if (s[i] === open) d++; else if (s[i] === close) { d--; if (d === 0) { i++; return s.slice(st + 1, i - 1); } } } return null; };
+  while (i < s.length) {
+    const ch = s[i];
+    if (/[\s>+~]/.test(ch)) return null;
+    if (ch === '.') { i++; const n = ident(); if (n == null) return null; simples.push({ kind: 'class', name: n }); }
+    else if (ch === '#') { i++; ident(); simples.push({ kind: 'id' }); }
+    else if (ch === '*') { i++; simples.push({ kind: 'type' }); }
+    else if (ch === '[') { if (balanced('[', ']') == null) return null; simples.push({ kind: 'attr' }); }
+    else if (ch === ':') {
+      i++; if (s[i] === ':') i++;
+      if (ident() == null) return null;
+      if (s[i] === '(' && balanced('(', ')') == null) return null;
+      simples.push({ kind: 'pseudo' });
+    } else { if (ident() == null) return null; simples.push({ kind: 'type' }); }
+  }
+  return simples;
+}
+// Is this selector-list argument a bare primitive definition (after :is()/:where() expansion)?
+function barePrimitive(arg, prim) {
+  for (const x of expandIsWhere(arg)) {
+    const simples = compoundSimples(x);
+    if (!simples) continue;
+    const classes = simples.filter(y => y.kind === 'class');
+    if (!classes.length || simples.some(y => y.kind === 'type' || y.kind === 'id')) continue;
+    if (classes.every(y => prim.has(y.name))) return x.trim();
+  }
+  return null;
+}
+const PRIMITIVES_CSS = 'src/shell/primitives.css';
+const NO_IMPORTANT = new Set([PRIMITIVES_CSS, 'src/shell/base.css']);
+
 const opt = args();
 const root = opt.root;
 const files = opt.files.map(f => f.split(sep).join('/')).filter(f => f.endsWith('.css'));
 if (files.length === 0) readiness('대상 CSS 0건 — 검사한 것이 없다');
 if (!opt.sameInDark || !existsSync(opt.sameInDark)) readiness(`same-in-dark 목록이 없다: ${opt.sameInDark ?? '(미지정)'}`);
+if (!opt.primitives || !existsSync(opt.primitives)) readiness(`프리미티브 목록이 없다: ${opt.primitives ?? '(미지정)'} — 목록이 없으면 e 를 판정할 수 없다`);
+if (!opt.primitivesExempt || !existsSync(opt.primitivesExempt)) readiness(`프리미티브 면제 목록이 없다: ${opt.primitivesExempt ?? '(미지정)'}`);
+const prim = parsePrimitives(opt.primitives);
+const eHits = [];      // {file,line,sel,expanded} — bare primitive definitions outside primitives.css
+const eImportant = []; // {file,line,sel,prop} — !important inside primitives.css / base.css
 
 const aRoot = [];      // {file,line,name}
 const aScoped = [];    // canonical-family names in screen scope
@@ -280,6 +391,18 @@ for (const file of files) {
     for (const r of rules) {
       if (!r.prelude.startsWith('@') && ROOT_SEL.test(r.prelude)) dHits.push({ file, line: r.line, what: `:root 셀렉터 「${r.prelude.replace(/\s+/g, ' ')}」` });
     }
+  }
+  if (file !== PRIMITIVES_CSS) {
+    for (const r of rules) {
+      if (r.prelude.startsWith('@') || r.chain.some(c => /^@(-webkit-)?(keyframes|font-face)/i.test(c))) continue;
+      for (const arg of splitList(r.prelude)) {
+        const hit = barePrimitive(arg, prim);
+        if (hit) eHits.push({ file, line: r.line, sel: norm(arg), expanded: norm(hit) });
+      }
+    }
+  }
+  if (NO_IMPORTANT.has(file)) {
+    for (const d of decls) if (/!\s*important\s*$/i.test(d.value)) eImportant.push({ file, line: d.line, sel: norm(selectorOf(d.chain)), prop: d.name || '' });
   }
   for (const d of decls) {
     for (const n of varRefs(d.value)) refs.push({ file, line: d.line, name: n });
@@ -430,6 +553,23 @@ for (const e of fEntries) {
   else if (!e.used) fHoles.push(`same-in-dark.txt:${e.line} f ${e.file} ${e.selector} ${e.property} ${e.literal} — 걸리는 리터럴이 없다(낡은 항목)`);
 }
 const fCount = kind => fLive.filter(h => h.kind === kind).length;
+
+// e — match exemptions (file · selector-list argument), then count what is left.
+const eEntries = parsePrimitivesExempt(opt.primitivesExempt);
+const eHoles = [...prim.bad];
+const eExempted = [];
+const eLive = [];
+for (const h of eHits) {
+  const x = eEntries.find(y => !y.malformed && y.reason && y.file === h.file && y.selector === h.sel);
+  if (x) { x.used++; eExempted.push(h); } else eLive.push(h);
+}
+for (const x of eEntries) {
+  if (x.malformed) eHoles.push(`primitives-exempt.txt:${x.line} 형식 오류 「${x.text}」(파일 · 선택자 · 사유)`);
+  else if (!x.reason) eHoles.push(`primitives-exempt.txt:${x.line} ${x.file} ${x.selector} — 사유 칸이 비었다(면제하지 않는다)`);
+  else if (!x.used) eHoles.push(`primitives-exempt.txt:${x.line} ${x.file} ${x.selector} — 걸리는 맨 정의가 없다(낡은 항목)`);
+}
+const e = eLive.length + eImportant.length + eHoles.length;
+const em = eEntries.length;
 const f = fLive.length + fHoles.length;
 const fm = fEntries.length;
 const g = gHits.length;
@@ -451,10 +591,14 @@ if (scopedColor.length) show('참고 · 범위 색 토큰(다크 미검사)', sc
 show('f 색 리터럴(정본 밖)', fLive, x => `${x.file}:${x.line} ${x.sel} { ${x.prop}: … ${x.literal} } (${x.kind === 'fallback' ? 'var() 폴백' : x.kind === 'name' ? '색 이름' : '직접'})`);
 show('f 면제 목록 구멍', fHoles, x => x);
 show('g 인라인 style 의 비변수 키', gHits, x => `${x.file}:${x.line} ${x.keys.join(', ')}${x.via === 'spread' ? ' (펼침 속성)' : ''}`);
+show('e 프리미티브 맨 정의(primitives.css 밖)', eLive, x => `${x.file}:${x.line} ${x.sel}${x.expanded !== x.sel ? ` (펼침 ${x.expanded})` : ''}`);
+show('e primitives.css·base.css 의 !important', eImportant, x => `${x.file}:${x.line} ${x.sel} { ${x.prop} }`);
+show('e 목록·면제 구멍', eHoles, x => x);
+if (em) console.log(`면제(e) ${em}: ${eEntries.map(x => x.malformed ? `형식 오류(${x.line}행)` : `${x.file} ${x.selector}(${x.reason || '사유 없음'})`).join(' · ')}`);
 if (fm) console.log(`면제(f) ${fm}: ${fEntries.map(e => e.malformed ? `형식 오류(${e.line}행)` : `${e.file} ${e.selector} ${e.property} ${e.literal}(${e.reason || '사유 없음'})`).join(' · ')}`);
 if (m) console.log(`면제(same-in-dark) ${m}: ${entries.map(e => `${e.name}(${e.reason || '사유 없음'})`).join(' · ')}`);
 
-const redAll = a + b + c + d + f + g + (tokensSeen ? 0 : 1);
-console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사) · 색 리터럴 ${f}(면제 ${fm}) · 인라인 ${g}(변수 대입 ${gVars})`);
-console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} f=${f} f_direct=${fCount('direct')} f_fallback=${fCount('fallback')} f_name=${fCount('name')} f_holes=${fHoles.length} f_exempt=${fm} f_exempted_hits=${fExempted.length} g=${g} g_vars=${gVars} g_spread=${gSpread.length} tsx=${tsxCount} tokens=${tokensSeen ? 1 : 0}`);
+const redAll = a + b + c + d + e + f + g + (tokensSeen ? 0 : 1);
+console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사) · 색 리터럴 ${f}(면제 ${fm}) · 인라인 ${g}(변수 대입 ${gVars}) · 프리미티브 맨 정의 밖 ${e}(면제 ${em})`);
+console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} f=${f} f_direct=${fCount('direct')} f_fallback=${fCount('fallback')} f_name=${fCount('name')} f_holes=${fHoles.length} f_exempt=${fm} f_exempted_hits=${fExempted.length} g=${g} g_vars=${gVars} g_spread=${gSpread.length} tsx=${tsxCount} e=${e} e_bare=${eLive.length} e_important=${eImportant.length} e_holes=${eHoles.length} e_exempt=${em} e_exempted_hits=${eExempted.length} primitives=${prim.size} tokens=${tokensSeen ? 1 : 0}`);
 process.exit(redAll > 0 ? 1 : 0);

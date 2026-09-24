@@ -1,0 +1,12 @@
+/* 화면 픽스처 — 문맥 · 섞인 compound · :not()/:has() 인자 · 목록 밖 이름은 맨 정의가 아니다 */
+@layer screens {
+.x-page .btn { padding: 0; }
+.btn.x-go { color: var(--color-text); }
+button.btn { color: var(--color-text); }
+.x-row:not(.btn) { color: var(--color-text); }
+.x-row:has(.chip) { color: var(--color-text); }
+.btn .x-icon { color: var(--color-text); }
+.btn-ghost { color: var(--color-text); }
+:is(.x-page, .x-card) .chip { color: var(--color-link); }
+.chip--legacy { color: var(--color-link); }
+}

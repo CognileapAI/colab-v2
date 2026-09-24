@@ -2,11 +2,12 @@
 # frontend-design-lint 가 red fixture 로 **fail-closed** 임을 증명한다.
 #
 # 픽스처 원본 = `gates/fixtures/frontend-design-lint/` 트리 여섯. 판정부는 읽기만 하므로 사본 없이
-# 각 트리를 그대로 `COLAB_FRONTEND_DIR` 로 가리키고, 면제 목록은 트리 안의 `same-in-dark.txt` 를 준다.
+# 각 트리를 그대로 `COLAB_FRONTEND_DIR` 로 가리키고, 면제 목록은 트리 안의 `same-in-dark.txt` 를,
+# 프리미티브 목록·면제는 트리 안의 `primitives.txt`·`primitives-exempt.txt` 를 준다(P2b · 없는 트리는 빈 파일).
 # 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
 # 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
 #
-# 케이스 — green 4 · red 11 · red(준비) 4 = 19.
+# 케이스 — green 5 · red 13 · red(준비) 5 = 23.
 #   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
 #   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
 #   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
@@ -26,6 +27,10 @@
 #   ⓡ green-mix/   토큰끼리의 color-mix()(var() · transparent · currentColor)(P3)     → green
 #   ⓢ red-mix/     리터럴 색이 섞인 color-mix()(P3)                                 → red
 #   ⓟ typescript 파서 부재(COLAB_DESIGN_LINT_TYPESCRIPT 를 없는 경로로 · g 를 못 잼)(P3) → red(준비 · 78)
+#   ⓣ green-e/     primitives.css 의 맨 정의 · 화면의 문맥·섞인 compound·:not()/:has() 인자 · 사유 있는 e 면제 1건(P2b) → green
+#   ⓤ red-e/       화면 CSS 의 맨 정의 · 상태 맨 정의 · `:is()` 펼침 · 사유 없는 e 면제(면제 안 함) · 낡은 e 면제(P2b) → red
+#   ⓥ red-e-important/ primitives.css·base.css 안의 `!important`(P2b)                     → red
+#   ⓦ 프리미티브 목록 부재(COLAB_DESIGN_LINT_PRIMITIVES 를 없는 경로로)(P2b)          → red(준비 · 78)
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -44,7 +49,8 @@ red() { echo "::error::frontend-design-lint-selftest red — $*"; FAILED=1; }
 expect() { # $1=기대(green|red|ready) $2=이름 $3=픽스처 디렉터리 [$4..=추가 환경]
   local want="$1" label="$2" dir="$3" out rc
   shift 3
-  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" "$@" "$GATE" 2>&1)"; rc=$?
+  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
+    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" "$@" "$GATE" 2>&1)"; rc=$?
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
     return
   fi
@@ -66,7 +72,8 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
 
 expect_line() { # $1=이름 $2=픽스처 $3=출력에 있어야 할 문자열 — red 가 **그 규칙 때문**인지 확인한다.
   local label="$1" dir="$2" needle="$3" out
-  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" "$GATE" 2>&1)"
+  out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
+    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" "$GATE" 2>&1)"
   if ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
     red "$label — 출력에 「$needle」이 없다(다른 이유로 red 일 수 있다):
 $(printf '%s\n' "$out" | sed 's/^/     /')"
@@ -108,7 +115,7 @@ expect ready "ⓖ 대상 CSS 0건" "$FIX/empty"
 expect ready "ⓗ node 부재" "$FIX/green" COLAB_NODE_BIN=/nonexistent/node
 # ⓛ 대상 목록의 파일이 디스크에 없다(추적 중 삭제) — 조용히 건너뛰지 않는다. 게이트는 Git 목록을 주므로
 #    판정부를 직접 불러 없는 경로를 섞는다.
-MISSING_OUT="$(cd "$FIX/green" && node "${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}" --root . --same-in-dark same-in-dark.txt -- src/shell/tokens.css src/components/x/x.css src/shell/gone.css 2>&1)"; MISSING_RC=$?
+MISSING_OUT="$(cd "$FIX/green" && node "${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}" --root . --same-in-dark same-in-dark.txt --primitives primitives.txt --primitives-exempt primitives-exempt.txt -- src/shell/tokens.css src/components/x/x.css src/shell/gone.css 2>&1)"; MISSING_RC=$?
 if [ "$MISSING_RC" -eq 78 ] && printf '%s\n' "$MISSING_OUT" | grep -qF "src/shell/gone.css"; then
   echo "  ✓ ⓛ 디스크에 없는 대상 파일 (ready)"
 else
@@ -140,9 +147,24 @@ expect_line "ⓢ f 계수" "$FIX/red-mix" "f=1 f_direct=1 f_fallback=0 f_name=0 
 # ⓟ typescript 부재 — g 를 잴 수 없으면 통과로 세지 않는다.
 expect ready "ⓟ typescript 파서 부재" "$FIX/green-fg" COLAB_DESIGN_LINT_TYPESCRIPT=/nonexistent/typescript
 
+# ⓣ e 대조군 — 이것이 green 이 아니면 아래 e red 는 아무 말도 하지 않는다.
+expect green "ⓣ primitives.css 의 맨 정의 · 화면 문맥 · 섞인 compound · e 면제 1건" "$FIX/green-e"
+expect_line "ⓣ 요약줄 e 노출" "$FIX/green-e" "프리미티브 맨 정의 밖 0(면제 1)"
+expect_line "ⓣ 면제가 실제 맨 정의에 걸렸다" "$FIX/green-e" "e_exempted_hits=1 primitives=4"
+# ⓤ e — 맨 정의 · 상태 맨 정의 · :is() 펼침 · 사유 없는 면제(면제 안 함) · 낡은 면제.
+expect red "ⓤ e 맨 정의 · 상태 · :is() 펼침 · 면제 구멍" "$FIX/red-e"
+expect_line "ⓤ e 계수" "$FIX/red-e" "e=6 e_bare=4 e_important=0 e_holes=2"
+expect_line "ⓤ :is() 를 펼쳐 읽었다" "$FIX/red-e" "src/components/x/x.css:4 :is(.x-go, .chip) (펼침 .chip)"
+expect_line "ⓤ 상태 맨 정의" "$FIX/red-e" "src/components/x/x.css:3 .btn-primary:hover"
+# ⓥ primitives.css·base.css 의 !important(화면 파일의 것은 e 대상이 아니다).
+expect red "ⓥ primitives.css·base.css 의 !important" "$FIX/red-e-important"
+expect_line "ⓥ e 계수" "$FIX/red-e-important" "e=2 e_bare=0 e_important=2 e_holes=0"
+# ⓦ 프리미티브 목록 부재 — 목록이 없으면 e 를 판정할 수 없다.
+expect ready "ⓦ 프리미티브 목록 부재" "$FIX/green-e" COLAB_DESIGN_LINT_PRIMITIVES=/nonexistent/primitives.txt
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::frontend-design-lint-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 expect_readiness_verdict frontend-design-lint-selftest
-echo "frontend-design-lint-selftest green — 검사 19건 전건 기대대로 (green 4 · red 11 · red(준비) 4)."
+echo "frontend-design-lint-selftest green — 검사 23건 전건 기대대로 (green 5 · red 13 · red(준비) 5)."

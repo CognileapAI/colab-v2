@@ -22,18 +22,30 @@
 #      (same-in-dark.txt)의 `f · 파일 · 선택자 · 속성 · 리터럴 · 사유` 줄 — 사유 없음 · 걸리는 리터럴 없음(낡음)은 red.
 #   g. (P3) `src/**/*.tsx` 의 JSX `style` 속성(펼침 속성 안의 `style` 키 포함) 값이 `--*` 키만 가진 객체 리터럴이 아님(축약형 `{ width }` ·
 #      펼침 · 계산 키 · 객체 아닌 값 포함). TS 파서(`typescript` devDependency)로 읽는다 — 정규식이 아니다.
-# 요약줄 끝 = `색 리터럴 f(면제 m) · 인라인 g(변수 대입 v)`.
+#   e. (P2b · spec `S-DESIGN-STRUCTURE-P2B-20260924`) `src/shell/primitives.css` 밖 CSS 의 프리미티브 **맨 정의** —
+#      선택자 목록의 인자가 (`:is()`/`:where()` 를 펼친 뒤) compound 하나이고 그 compound 가 프리미티브 목록
+#      (`primitives.txt` · 한 줄에 클래스 하나 · 접두 표기 `.chip--*`)의 클래스 + 가상 클래스/요소 · 속성 선택자만으로
+#      되어 있음(`.btn` · `.btn:hover` · `.chip--warning` · `:is(.inp, .sel)`). `:not()`·`:has()` 인자는 보지 않는다 ·
+#      목록 밖 클래스·요소와 섞인 compound(`.btn.foo`)와 조상·자손 문맥(`.memgrid .btn`)은 허용 ·
+#      `primitives.css`·`base.css` 안의 `!important`. 면제 = `primitives-exempt.txt`(`파일 · 선택자 · 사유`) —
+#      사유 없음 · 걸리는 맨 정의 없음(낡음)은 red.
+# 요약줄 끝 = `색 리터럴 f(면제 m) · 인라인 g(변수 대입 v) · 프리미티브 맨 정의 밖 e(면제 m)`.
 # fail-closed (green-by-skip 금지 · red(준비) · exit 78):
 #   · node 실행 파일 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 면제 목록(same-in-dark.txt) 부재 ·
+#     프리미티브 목록(primitives.txt) 부재 · 프리미티브 면제 목록(primitives-exempt.txt) 부재(P2b) ·
 #     대상 목록(Git)에 있으나 디스크에 없는 CSS(추적 중 삭제 · P2a) · `typescript` 를 불러오지 못함(P3 · g)
 #
 # 입력: COLAB_FRONTEND_DIR(기본 frontend) · COLAB_DESIGN_LINT_SAME_IN_DARK(기본
-#   gates/fixtures/frontend-design-lint/same-in-dark.txt) · COLAB_NODE_BIN(기본 node · selftest 용).
+#   gates/fixtures/frontend-design-lint/same-in-dark.txt) · COLAB_DESIGN_LINT_PRIMITIVES(기본
+#   gates/fixtures/frontend-design-lint/primitives.txt) · COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT(기본
+#   gates/fixtures/frontend-design-lint/primitives-exempt.txt) · COLAB_NODE_BIN(기본 node · selftest 용).
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 FE="${COLAB_FRONTEND_DIR:-$REPO_ROOT/frontend}"
 SAME_IN_DARK="${COLAB_DESIGN_LINT_SAME_IN_DARK:-$REPO_ROOT/gates/fixtures/frontend-design-lint/same-in-dark.txt}"
+PRIMITIVES="${COLAB_DESIGN_LINT_PRIMITIVES:-$REPO_ROOT/gates/fixtures/frontend-design-lint/primitives.txt}"
+PRIMITIVES_EXEMPT="${COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT:-$REPO_ROOT/gates/fixtures/frontend-design-lint/primitives-exempt.txt}"
 NODE_BIN="${COLAB_NODE_BIN:-node}"
 READINESS_EXIT=78
 
@@ -53,12 +65,14 @@ command -v "$NODE_BIN" >/dev/null 2>&1 || ready_red "node 실행 파일($NODE_BI
 SCRIPT="${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}"
 [ -f "$SCRIPT" ] || ready_red "$SCRIPT" "판정부 스크립트가 없다."
 [ -f "$SAME_IN_DARK" ] || ready_red "$SAME_IN_DARK" "다크 동일 면제 목록이 없다 — 선언이 없으면 c 를 판정할 수 없다."
+[ -f "$PRIMITIVES" ] || ready_red "$PRIMITIVES" "프리미티브 목록 부재 — 목록이 없으면 e 를 판정할 수 없다."
+[ -f "$PRIMITIVES_EXEMPT" ] || ready_red "$PRIMITIVES_EXEMPT" "프리미티브 면제 목록 부재 — 선언이 없으면 e 의 면제를 셀 수 없다."
 
 # 대상 = Git 이 아는 CSS(추적 + 추적 전 · .gitignore 제외). 아직 add 하지 않은 새 화면 CSS 도 본다.
 mapfile -t FILES < <(cd "$FE" && git ls-files --cached --others --exclude-standard -- ':(glob)src/**/*.css' | sort -u)
 [ "${#FILES[@]}" -gt 0 ] || ready_red "$FE/src/**/*.css" "대상 CSS 가 0건이다 — 아무것도 검사하지 않은 것을 통과로 세지 않는다."
 
-OUT="$(cd "$FE" && "$NODE_BIN" "$SCRIPT" --root . --same-in-dark "$SAME_IN_DARK" -- "${FILES[@]}" 2>&1)"; rc=$?
+OUT="$(cd "$FE" && "$NODE_BIN" "$SCRIPT" --root . --same-in-dark "$SAME_IN_DARK" --primitives "$PRIMITIVES" --primitives-exempt "$PRIMITIVES_EXEMPT" -- "${FILES[@]}" 2>&1)"; rc=$?
 printf '%s\n' "$OUT"
 case "$rc" in
   0) SUMMARY="$(printf '%s\n' "$OUT" | grep '^파일 ' | tail -1)"
