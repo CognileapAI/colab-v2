@@ -85,6 +85,21 @@ PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32}
 # 기대지 않는다. 선택지가 빈 값으로 시작하도록 바뀌어도 같은 동작이 선다.
 LEVEL_CSS = '[data-testid="reg-level"]'
 PROCESSING_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+
+# ── 업로드 마법사의 나머지 필수 칸 (값 원본 = `upload-classify.json` → build_plan → 계획) ──
+# ① 분류·유형 — 6705675d 부터 빈 값으로 시작하고 안 고르면 「다음 →」(reg-next)가 비활성이다.
+# ② 관측 간격 숫자·단위 · ③ Lv0 출처 주소·내려받은 날 — e171c5c2 부터 제출(reg-done) 시 필수다.
+#    화면 검사(`UploadModal.tsx` 제출 검사)와 서버 400(`_validate_create_required_metadata`)이 같다.
+# 저장값 원본 = frontend/src/components/upload/axisDict.ts · RegisterArea.tsx `INTERVAL_UNITS`.
+CATEGORY_CSS = '[data-testid="reg-category"]'
+DATATYPE_CSS = '[data-testid="reg-datatype"]'
+INTERVAL_VALUE_CSS = '[data-testid="reg-interval-value"]'
+INTERVAL_UNIT_CSS = '[data-testid="reg-interval-unit"]'
+SOURCE_URL_CSS = '[data-testid="reg-source-url"]'
+SOURCE_DATE_CSS = '[data-testid="reg-source-downloaded-on"]'
+CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
+DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
+INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
 PERIOD_PARTS = ("year", "month", "day", "hour", "minute", "second")
 PERIOD_UNITS = ("년", "월", "일", "시", "분", "초")
 PERIOD_PATTERNS = {
@@ -212,6 +227,61 @@ def level_action(ds, options=None):
         raise Fail("가공 단계 선택지에 없는 값: " + name + " · " + value
                    + " · 화면 선택지 = " + ",".join(str(o) for o in options))
     return ["select", LEVEL_CSS, value]
+
+
+def _row_name(ds):
+    return str(ds.get("name") or ("순번 " + str(ds.get("seq"))))
+
+
+def classify_actions(ds):
+    """계획 한 행 → ① 분류·유형 선택 동작 두 개. 비었거나 사전 밖이면 이름을 대고 실패한다."""
+    name = _row_name(ds)
+    category = str(ds.get("category") or "").strip()
+    data_type = str(ds.get("data_type") or "").strip()
+    if category not in CATEGORIES:
+        raise Fail("분류 값이 계획에 없거나 5값 밖이다: " + name + " · " + repr(ds.get("category")))
+    if data_type not in DATA_TYPES:
+        raise Fail("유형 값이 계획에 없거나 6값 밖이다: " + name + " · " + repr(ds.get("data_type")))
+    return [["select", CATEGORY_CSS, category], ["select", DATATYPE_CSS, data_type]]
+
+
+def interval_actions(ds):
+    """계획 한 행 → ② 관측 간격 숫자 칸·단위 칸 동작."""
+    interval = ds.get("observation_interval")
+    value = str((interval or dict()).get("value") or "") if isinstance(interval, dict) else ""
+    unit = (interval or dict()).get("unit") if isinstance(interval, dict) else None
+    if not re.fullmatch(r"[1-9]\d*", value) or unit not in INTERVAL_UNITS:
+        raise Fail("관측 간격이 계획에 없거나 형상이 틀렸다: " + _row_name(ds) + " · " + repr(interval))
+    return [["fill", INTERVAL_VALUE_CSS, value], ["select", INTERVAL_UNIT_CSS, unit]]
+
+
+def source_actions(ds):
+    """계획 한 행 → ③ Lv0 출처 주소·내려받은 날 동작. Lv0 가 아니면 빈 목록."""
+    if ds.get("processing_level") != "Lv0":
+        return []
+    source = ds.get("source")
+    url = str((source or dict()).get("url") or "").strip() if isinstance(source, dict) else ""
+    day = (source or dict()).get("downloaded_on") if isinstance(source, dict) else None
+    try:
+        day_ok = isinstance(day, str) and bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", day)) \
+            and datetime.strptime(day, "%Y-%m-%d").strftime("%Y-%m-%d") == day
+    except ValueError:
+        day_ok = False
+    if not url or not day_ok:
+        raise Fail("Lv0 출처(주소·내려받은 날)가 계획에 없거나 틀렸다: " + _row_name(ds) + " · " + repr(source))
+    return [["fill", SOURCE_URL_CSS, url], ["fill", SOURCE_DATE_CSS, day]]
+
+
+def plan_field_problems(rows):
+    """계획 전행의 필수 칸 값 검사 — 업로드 **전에** 한 번에 본다. 반환 = 실패 문면 목록."""
+    problems = []
+    for ds in rows:
+        for build in (classify_actions, interval_actions, source_actions):
+            try:
+                build(ds)
+            except Fail as exc:
+                problems.append(str(exc))
+    return problems
 
 
 def failure_path(reg_open_exists, reg_open_enabled, reason):
@@ -1037,11 +1107,17 @@ def period_form_actions(ds):
 
 def fill_period(ds):
     actions = period_form_actions(ds)
-    ab(actions[0])
+    # ⚠ 2026-09-24 로컬 실측(ea21d8c2 번들) — ② 로 넘어온 직후 「기간」 단추의 중심이 모달 머리(`.modal-h`)
+    #   아래에 깔려 `click` 이 rc 0 을 돌려주고도 머리를 눌렀다(팝오버 0). 여는 단추와 적용 단추는
+    #   `activate`(보이는 자리로 옮기고 초점 ＋ Enter)로 누른다 — 「+ 추가」와 같은 처방이다.
+    activate(actions[0][1], "기간 고르기 열기")
     if not wait_css('[data-testid="reg-period-pop"]', 10, "기간 고르기"):
         raise Fail("기간 고르기가 열리지 않았다: " + str(ds.get("name")))
-    for action in actions[1:]:
+    for action in actions[1:-1]:
         ab(action)
+    activate(actions[-1][1], "기간 적용")
+    if not CFG.dry_run and not wait_gone('[data-testid="reg-period-pop"]', 10, "기간 고르기 닫힘"):
+        raise Fail("기간 적용 뒤에도 기간 고르기가 닫히지 않았다: " + str(ds.get("name")))
     log("  · 기간 = " + ds["period"]["start"] + " ~ " + ds["period"]["end"]
         + " (" + ds["period"]["granularity"] + ")")
 
@@ -1065,6 +1141,58 @@ def select_level(st, ds):
     st.setdefault("selectors", dict())["reg-level"] = ["testid", "reg-level"]
     log("  · 가공 단계 = " + action[2] + " (계획값 명시 지정)")
     return action[2]
+
+
+def select_state(css):
+    """select 한 칸의 현재 값과 선택지(LEVEL_READ_JS 재사용). 못 읽으면 None."""
+    got = js(LEVEL_READ_JS.replace("__SEL__", json.dumps(css)), default=None)
+    if isinstance(got, dict) and isinstance(got.get("options"), list):
+        return got
+    return None
+
+
+def _select_checked(action, label, ds):
+    """select 동작 하나를 내고 화면값을 되읽어 확인한다 — rc 0 만으로 성립시키지 않는다."""
+    ab(list(action))
+    if CFG.dry_run:
+        return
+    after = select_state(action[1])
+    if after is None or after.get("value") != action[2]:
+        raise Fail(label + " 값이 들어가지 않았다: " + _row_name(ds) + " · 기대 " + action[2]
+                   + " · 화면 " + str((after or dict()).get("value")))
+
+
+def select_classify(ds):
+    """① 분류·유형을 계획값으로 고른다. 이 둘이 비면 「다음 →」이 비활성이다(6705675d)."""
+    actions = classify_actions(ds)
+    if not wait_css(CATEGORY_CSS, 60, "분류 선택 칸"):
+        raise Fail("「분류」 선택 칸이 없다: " + _row_name(ds))
+    for action, label in zip(actions, ("분류", "유형")):
+        _select_checked(action, label, ds)
+    log("  · 분류 = " + actions[0][2] + " · 유형 = " + actions[1][2] + " (계획값 명시 지정)")
+
+
+def fill_interval(ds):
+    """② 관측 간격 숫자·단위를 채운다(e171c5c2 부터 제출 시 필수)."""
+    actions = interval_actions(ds)
+    if not wait_css(INTERVAL_VALUE_CSS, 30, "관측 간격 칸"):
+        raise Fail("「관측 간격」 칸이 없다: " + _row_name(ds))
+    ab(list(actions[0]))
+    _select_checked(actions[1], "관측 간격 단위", ds)
+    log("  · 관측 간격 = " + actions[0][2] + " " + actions[1][2])
+
+
+def fill_source(ds):
+    """③ Lv0 출처 주소·내려받은 날을 채운다. Lv0 가 아니면 아무것도 하지 않는다."""
+    actions = source_actions(ds)
+    if not actions:
+        return
+    if not CFG.dry_run and not wait_css(SOURCE_URL_CSS, 30, "출처 주소 칸"):
+        dump_failure(str(ds["seq"]).zfill(2) + "-source", "출처 블록 미출현")
+        raise Fail("「출처 주소」 칸이 없다(부모가 붙은 Lv0 는 화면이 출처 블록을 숨긴다): " + _row_name(ds))
+    for action in actions:
+        ab(list(action))
+    log("  · 출처 = " + actions[0][2] + " · 내려받은 날 " + actions[1][2])
 
 
 def activate(css, label=""):
@@ -1444,6 +1572,7 @@ def do_dataset(st, ds):
     open_register(st)
     # 「가공 단계」는 계획값을 **매 행 명시 지정**한다(등록 카드 ① 단계).
     st["datasets"][seq]["processing_level"] = select_level(st, ds)
+    select_classify(ds)
     save_state(st)
     do_grid(st, ds)
     ensure_step_two(st)
@@ -1453,6 +1582,7 @@ def do_dataset(st, ds):
     spot(st, "reg-summary", [("testid", "reg-summary"), ("label", "설명")],
          action="fill", text=ds["summary"])
     fill_period(ds)
+    fill_interval(ds)
 
     goto_step(st, "③ 연결", "reg-step-3", '[data-testid="reg-proj-select"]')
     # option 의 value 는 projectId 다(RegisterArea.tsx `value={r.projectId}`) — 이름이 아니라 id 로 고른다.
@@ -1467,6 +1597,8 @@ def do_dataset(st, ds):
     log("  · 연관 프로젝트 담김 " + ds["project"])
 
     do_lineage(st, ds)
+    # 출처 블록은 연결 0건일 때만 선다 — 계보를 다 붙인 **뒤**에 채운다.
+    fill_source(ds)
 
     settle_grid(st)
     if not CFG.dry_run and not enabled('[data-testid="reg-done"]'):
@@ -1511,6 +1643,12 @@ def do_dataset(st, ds):
 
 def phase_datasets(st, plan):
     rows = sorted(plan["datasets"], key=lambda d: d["seq"])
+    # 업로드 마법사 필수 칸 값 — 계획 **전행**을 첫 업로드 전에 본다(한 행이라도 비면 파일을 올리지 않는다).
+    problems = plan_field_problems(rows)
+    if problems:
+        raise Fail("계획에 업로드 필수 칸 값이 없다 " + str(len(problems)) + "건 — "
+                   + " / ".join(problems[:6]) + (" …" if len(problems) > 6 else "")
+                   + " · build_plan.py 가 upload-classify.json(서명본)을 실었는지 본다")
     if CFG.only_seq:
         rows = [d for d in rows if d["seq"] in CFG.only_seq]
     elif CFG.from_seq:
