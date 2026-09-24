@@ -219,11 +219,16 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     extra = dict(scope=list(scope)) if scope else {}
     if scope:
         # The index at begin: staged entries that predate the task are not the lane's changes
-        # (advisor review round 3, 2026-09-25). write-tree refuses an unmerged index.
-        try:
-            extra['started_index'] = git(root, 'write-tree')
-        except subprocess.CalledProcessError:
-            raise ValueError('lane scope needs a mergeable index at begin — resolve conflicts first') from None
+        # (advisor review round 3, 2026-09-25). An unmerged index is refused as a conflict;
+        # any other write-tree failure is reported with git's own message (round 4).
+        if git(root, 'ls-files', '-u'):
+            raise ValueError('lane scope needs a mergeable index at begin — resolve the conflicts first')
+        written = subprocess.run(['git', '-C', str(root), 'write-tree'], capture_output=True, text=True)
+        if written.returncode:
+            # Not a conflict (checked above): report git's own reason, e.g. a held index.lock.
+            raise ValueError('lane scope could not record the begin-time index: '
+                             + (written.stderr.strip() or 'git write-tree failed'))
+        extra['started_index'] = written.stdout.strip()
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
     if not legacy:

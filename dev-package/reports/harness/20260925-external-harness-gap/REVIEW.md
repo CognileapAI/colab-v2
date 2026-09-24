@@ -1,7 +1,7 @@
 # 수용 검토 기록 — 외부 하네스 대비 개선 (claude/harness-external-gap)
 
 기준: intent `dev-package/intent/2026-09-25-external-harness-gap.md` · spec `dev-package/prd/specs/S-EXTERNAL-HARNESS-GAP-20260925.md`.
-advisor ② 자리를 반증 워크플로 두 회차가 맡았다(검토자 → 결함마다 독립 검증자 반박 → 비평).
+advisor ② 자리를 반증 워크플로 네 회차가 맡았다(검토자 → 결함마다 독립 검증자 반박 → 비평). 확정 결함이 나오지 않을 때까지 돌린다.
 
 ## 1회차 — 레인 K·L + 병합 보정(0a3b9923..cf0114d7)
 - 검토자 6명(intent-ref · 계약 검사 · CI·게이트 배선 · 레인 범위 · 문서 · 회귀) · 후보 29건.
@@ -46,3 +46,10 @@ advisor ② 자리를 반증 워크플로 두 회차가 맡았다(검토자 → 
 ## 최종 측정(4a3a046a)
 - `gates/run.sh all`: green 76 / red(판정) 0 / red(준비) 0.
 - 게이트 합집합 8개 green(단독 `harness-contract-selftest` 1회는 다른 프로세스의 잠금 점유로 red(준비) → 기본 상한 재실행 green) · ci-filter-check green · 단위 시험 130 OK(skip 10).
+
+## 4회차 — 3회차 수정 재검증(a65b15b3)
+- 재검토자 3명 · 후보 11건 · 검증자 2명씩 → 두 명 모두 유지 **8(중요 1 · 사소 7)** · 기각 3.
+- 확정 8: ① [중요] PR 요약 게시 명령이 계약 검사 실패에도 PR 을 열고, 브랜치를 쥔 작업 사본 밖에서 `git switch` 가 실패함 ② begin 이 index 트리 기록 실패를 원인과 무관하게 「충돌」로 안내(`index.lock` 도) ③ 그 거부 분기·`started_index` 부재에 시험 없음 ④ lifecycle-evidence 에 begin 시점 index 기준 설명 없음 ⑤ ADR-0007 의 CI 범위 서술(product 가 아닌 모든 대상) ⑥ PR 요약의 ADR-0006 서술(대안 항목 추가 누락) ⑦ 2회차 건수 불일치 ⑧ REVIEW 머리의 회차 수.
+- 비평: 원한 결과 충족 7 · 부분 1(6 — ②③④) · PR 준비 = 위 수정 뒤.
+- 수정: 충돌은 `git ls-files -u` 로 먼저 가리고 그 밖의 실패는 git 메시지를 그대로 담는다(수정 전 `AssertionError: "index.lock" does not match "… resolve conflicts first"` → 수정 후 green) · 문서·기록 5곳 정정 · 게시 명령은 `set -e` 와 브랜치를 꺼내지 않는 `git show` 방식.
+

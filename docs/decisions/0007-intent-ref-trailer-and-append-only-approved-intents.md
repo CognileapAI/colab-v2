@@ -12,7 +12,7 @@
 ## 결정
 - PR 범위(`base..head`)가 코드·하네스 경로(`services/`·`frontend/src/`·`contracts/`·`db/`·`scripts/`·`gates/`·`.agents/`·`.claude/`·`.codex/`)를 바꾸면, 범위 안 커밋 중 적어도 하나는 `Intent-Ref: dev-package/intent/<파일>.md` 트레일러를 달아야 한다. 그 파일은 head 에 있어야 한다. 빈 커밋의 트레일러도 인정한다(트레일러 없는 기존 브랜치의 소급 경로).
 - 기준 시점 또는 분기 시점에 승인 표기가 있는 intent 는 범위에서 줄 추가만 허용한다. 판정은 원본 바이트의 기존 줄이 새 내용에 순서대로 남는지로 한다.
-- 위반은 `red(판정)` 이다. 게이트 `intent-ref` 가 판정하고, CI 는 develop 대상 PR 에서만 돌린다(product 대상 릴리스 PR 제외). 훅은 두지 않는다(ADR-0003).
+- 위반은 `red(판정)` 이다. 게이트 `intent-ref` 가 판정하고, CI 는 `pull_request` 이벤트 중 대상 브랜치가 `product` 가 아닌 PR 에서 돌린다(`github.base_ref != 'product'` · product 대상 릴리스 PR 제외). 훅은 두지 않는다(ADR-0003).
 - 승인 근거: intent `dev-package/intent/2026-09-25-external-harness-gap.md` 질문 4 ⓐ — Ted 원문 "권고댜로"(2026-09-25, 뜻 = 권고대로).
 
 ## 검토한 대안

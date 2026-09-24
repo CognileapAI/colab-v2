@@ -13,12 +13,12 @@ Head-SHA: (게시 때 PR head 40자리로 채운다)
 - 보류 7(재검토 조건 기록 · `docs/development/dual-agent.md`) · 불채택 4(로컬 전용 이력 · 해시 승인 · 셸 차단 · PR 형태 훅).
 
 ## 계획
-- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 3회차(확정 결함 16 · 9 + ADR 1 · 3) → 모두 수정. 로컬 검증 상태는 「부분 검증」 — CI 는 게시 뒤에 돈다.
+- 레인 K(검사·게이트) · 레인 L(레인 범위·틀·문서) 병렬 → 병합 보정(K3 홈 경로) → 반증 검토 4회차 → 모두 수정. 회차별 확정 결함: 1회차 16 · 2회차 8(+ 한 명 유지 1건 함께 수정 · 비평 신규 ADR 1건) · 3회차 3 · 4회차 8. 로컬 검증 상태는 「부분 검증」 — CI 는 게시 뒤에 돈다.
 - 검토 기록: `dev-package/reports/harness/20260925-external-harness-gap/REVIEW.md`.
 
 ## 결정
 - ADR-0007(accepted) — 커밋은 Intent-Ref 로 intent 를 가리키고 승인 intent 는 줄 추가만 허용한다(`docs/decisions/0007-intent-ref-trailer-and-append-only-approved-intents.md` · 승인 = intent 질문 4 ⓐ).
-- 나머지 검사는 ADR-0003(판정은 CLI·게이트 · 훅 없음) · ADR-0005 개정(조용한 exit 0 없음)에 맞춰 게이트로만 붙였다. ADR-0004·0006 은 줄 참조만 갱신.
+- 나머지 검사는 ADR-0003(판정은 CLI·게이트 · 훅 없음) · ADR-0005 개정(조용한 exit 0 없음)에 맞춰 게이트로만 붙였다. ADR-0004 는 줄 참조만 갱신했다. ADR-0006 은 줄 참조 갱신과 함께 「검토한 대안」에 symlink 미러 미채택 사유 1항목을 더했다(intent 원한 결과 8).
 
 ## 검증
 게이트(이 브랜치 · 로컬): harness-contract · harness-contract-selftest · agent-bridge · adr-records · exec-bit · planning-freshness · work-item-consistency · intent-ref 각각 green 1 / red(판정) 0 / red(준비) 0 · ci-filter-check green · 단위 시험 130 OK(skip 10 · Windows 전용) · PR 계약 `pr_contract.py --mode draft` PASS(게시 절차대로 Head-SHA 채움).
@@ -48,11 +48,17 @@ CI-Ref: 게시 뒤
 ## 게시 절차 (사용자)
 전제: PR #131(`claude/agent-model-tiering`)이 develop 에 먼저 병합돼야 한다(intent 판정 ⑧). 병합 전에 열면 #131 커밋 6개가 이 PR 에 섞인다 — `git log origin/develop..origin/claude/agent-model-tiering` 이 비어 있는지 먼저 본다.
 Head-SHA 는 게시 시점 head 로 채우고 저장소 PR 계약을 통과시킨 뒤 연다:
+저장소 안 어느 체크아웃에서나 돈다(브랜치를 꺼내지 않는다). 계약 검사가 실패하면 PR 을 열지 않고 멈춘다:
 ```bash
-git fetch origin && git switch claude/harness-external-gap && git pull --ff-only
-HEAD_SHA=$(git rev-parse HEAD)
-sed "s/^Head-SHA: .*/Head-SHA: $HEAD_SHA/" dev-package/reports/harness/20260925-external-harness-gap/PR-BODY.md > /tmp/pr-body.md
-python3 scripts/harness/pr_contract.py --head "$HEAD_SHA" --mode draft /tmp/pr-body.md
+set -e
+git fetch origin
+test -z "$(git log --oneline origin/develop..origin/claude/agent-model-tiering)"   # #131 병합 확인
+HEAD_SHA=$(git rev-parse origin/claude/harness-external-gap)
+git show "$HEAD_SHA:dev-package/reports/harness/20260925-external-harness-gap/PR-BODY.md" \
+  | sed "s/^Head-SHA: .*/Head-SHA: $HEAD_SHA/" > /tmp/pr-body.md
+CHECK=$(mktemp -d)
+git archive "$HEAD_SHA" scripts/harness .agents/harness.yaml | tar -x -C "$CHECK"
+python3 "$CHECK/scripts/harness/pr_contract.py" --head "$HEAD_SHA" --mode draft /tmp/pr-body.md
 gh pr create --base develop --head claude/harness-external-gap --title "하네스에 훅 등록 누락·ADR·홈 경로·줄 상한·Intent-Ref 검사와 레인 범위 대조를 붙인다" --body-file /tmp/pr-body.md
 ```
 

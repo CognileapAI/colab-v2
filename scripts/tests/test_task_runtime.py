@@ -316,6 +316,31 @@ class TaskRuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'notes/lane.md'):
             self.complete_lane(task['task_id'])
 
+    def test_scoped_begin_records_the_index_and_explains_why_it_cannot(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        plain = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('started_index', plain)
+        scoped = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.assertRegex(scoped['started_index'], r'^[0-9a-f]{40}$')
+        # A held index.lock is not a conflict: git's own reason is reported.
+        lock = self.root / '.git' / 'index.lock'
+        lock.write_text('')
+        try:
+            with self.assertRaisesRegex(ValueError, 'index.lock'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        finally:
+            lock.unlink()
+        # A real conflict is refused as one.
+        self.write('c.txt', 'base'); subprocess.run(git + ['add', 'c.txt'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'base'], check=True)
+        subprocess.run(git + ['checkout', '-qb', 'other'], check=True)
+        self.write('c.txt', 'other'); subprocess.run(git + ['commit', '-qam', 'other'], check=True)
+        subprocess.run(git + ['checkout', '-q', '-'], check=True)
+        self.write('c.txt', 'main'); subprocess.run(git + ['commit', '-qam', 'main'], check=True)
+        subprocess.run(git + ['merge', '-q', 'other'], capture_output=True)
+        with self.assertRaisesRegex(ValueError, 'resolve the conflicts first'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+
     def test_lane_scope_default_allowed_paths_need_no_declaration(self):
         task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
         self.write('src/a.py')
