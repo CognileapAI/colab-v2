@@ -105,13 +105,13 @@ from colab_core.kernel.scope import read_only_scope
 
 p=json.loads(sys.stdin.readline())
 subject=p['subject']
-known=json.loads(Path(os.environ['COLAB_CORE_SUBJECTS_FILE']).read_text())
-assert subject in known.values(), 'subject absent'
 url=Path(os.environ['COLAB_CORE_DATABASE_URL_FILE']).read_text().strip()
 factory=make_session_factory(make_engine(url).execution_options(isolation_level='REPEATABLE READ'))
 out={'captured_at':datetime.now(timezone.utc).isoformat(),'results':[]}
 with read_only_scope(factory,Subject(account_id=Ulid(subject['accountId']),lab_id=Ulid(subject['labId']))) as s:
  out['read_only']=s.execute(text('SHOW transaction_read_only')).scalar()
+ # Subject = one real account row in that lab (DB), not the token table (auth only).
+ assert s.execute(text('SELECT count(*) FROM d1_account WHERE id=:a AND lab_id=:l'),{'a':subject['accountId'],'l':subject['labId']}).scalar()==1, 'subject absent'
  out['corpus']=[dict(r) for r in s.execute(text('SELECT d.id,dd.name,dd.topic,dd.summary,d.source_label,dd.search_vector::text AS description_vector,am.search_vector::text AS autometa_vector,d.search_vector::text AS source_vector FROM d3_dataset d JOIN d3_dataset_description dd ON dd.dataset_id=d.id LEFT JOIN d3_dataset_autometa am ON am.dataset_id=d.id WHERE d.deleted_at IS NULL ORDER BY d.id')).mappings()]
  ids={r['id'] for r in out['corpus']}
  assert set(p['expected_names']) <= ids, 'missing gold dataset'

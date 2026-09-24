@@ -32,6 +32,24 @@ class CommittedSuiteTests(unittest.TestCase):
             validate_suite(suite, broken)
 
 
+class RemoteSubjectCheckTests(unittest.TestCase):
+    """주체 확인은 dev DB 의 계정·연구실 행으로 한다 — 토큰 표(`subjects.json`)가 아니다.
+
+    2026-09-25 WU5: 재시드 뒤 dev 의 토큰 표가 `{}` 여서 `subject absent` 로 78 이 났다.
+    토큰 표는 인증 수단이고 계정 존재의 증거가 아니다. 같은 읽기 전용 스코프 안에서
+    `d1_account(id, lab_id)` 가 정확히 1행 보여야 진행한다.
+    """
+
+    def test_remote_does_not_read_token_table(self):
+        from golden_baseline import REMOTE
+        self.assertNotIn('COLAB_CORE_SUBJECTS_FILE', REMOTE)
+
+    def test_remote_checks_account_row_in_lab_under_scope(self):
+        from golden_baseline import REMOTE
+        self.assertIn('FROM d1_account WHERE id=:a AND lab_id=:l', REMOTE)
+        self.assertLess(REMOTE.index('read_only_scope(factory'), REMOTE.index('FROM d1_account'))
+
+
 class AssessmentTests(unittest.TestCase):
     def test_dictionary_failure_cannot_silently_become_literal_comparison(self):
         with self.assertRaises(ValueError):
