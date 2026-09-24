@@ -4,7 +4,7 @@
    ※ 토큰은 정본 `shell/tokens.css` 에 있다 — `--up-*` 도 여러 루트·전역 셀렉터가 참조해 정본에 둔다
      (대안 B · P1 에서 값 무변으로 옮김). 이 파일에 `:root` 를 두지 않는다. */
 
-/* 모달은 화면을 통째로 덮고 아래에서 올라온다(0.46초), 닫힐 때 같은 길로 내려간다(0.32초).
+/* 모달은 화면을 통째로 덮고 아래에서 올라온다. 닫힐 때 같은 길·같은 시간(0.3초)으로 내려간다.
    스크롤은 페이지가 아니라 모달 본문 안에서 돈다 (§8 업로드 모달) */
 .modal-back.mb-takeover {
   position: fixed;
@@ -21,15 +21,18 @@
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
-  animation: up-rise 0.46s ease;
+  /* design-review 20260924 #1 — keyframes 는 중간에 되돌릴 수 없다. transition 은 지금 값에서 되돌아간다(값 1).
+     열기 = `@starting-style` 시작 모양 → 기본 모양. 닫기 = `UploadModal` 이 `data-state="closing"` 을 붙여 같은 모양으로
+     돌아가고, 전환이 끝나면(transitionend · 대비 타이머) 언마운트한다. 계산된 전환 시간이 0 이면(전역 reduced-motion
+     규칙 `shell.css` 의 `transition: none !important`) 즉시 언마운트한다 — 이 파일에 따로 끄는 분기를 두지 않는다. */
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
-@keyframes up-rise {
-  from { transform: translateY(3%); opacity: 0.4; }
-  to { transform: none; opacity: 1; }
+@starting-style {
+  .modal.modal-takeover { transform: translateY(3%); opacity: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .modal.modal-takeover { animation: none; }
-}
+.modal.modal-takeover[data-state="closing"] { transform: translateY(3%); opacity: 0; }
+/* 닫는 동안 배경은 누름을 통과시킨다 — 그 사이 업로드 단추를 다시 누르면 닫기가 되돌아간다(값 2). */
+.modal-back.mb-takeover[data-state="closing"] { pointer-events: none; }
 
 .modal-takeover .modal-h {
   display: flex;
