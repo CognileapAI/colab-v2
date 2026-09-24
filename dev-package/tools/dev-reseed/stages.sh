@@ -48,8 +48,23 @@ reset_docker_prefix() {
 }
 
 reset_docker_cmd() {
-  printf '%s python /tmp/reset.py --target dev --yes-reset-dev \\\n' "$(reset_docker_prefix "${1:-}")"
+  printf '%s python /tmp/reset.py --target dev --yes-reset-dev \\\n' "$(reset_docker_prefix "${1:-}" "${2:-}")"
   printf '    --platform-url-file /s/platform.url --ai-url-file /s/ai.url'
+}
+
+# 계수(`--phase count`) 전용 — BYPASSRLS 읽기 롤(`colab_backup`) URL 파일을 더 건다.
+# 왜 = 소유자 롤은 FORCE RLS 에 걸리고, 연구실 경계를 걸어 세면 경계 밖 행과 `d3_file` 의
+#   RESTRICTIVE `body_access` 에 잠긴 파일을 못 본다(2026-09-24 사고 · `.agents/rules/deploy.md` 10번).
+#   그 롤은 백업 cron 이 이미 쓰는 자리다(`infra/dev/backup.sh` · `db-bootstrap.sh backup-role`).
+COUNT_URL_FILE_NAME=backup-platform-db.url
+reset_count_cmd() {
+  reset_docker_cmd "${1:-}" "-v $EC2_SECRETS_DIR/$COUNT_URL_FILE_NAME:/s/count.url:ro"
+  printf ' \\\n    --count-url-file /s/count.url'
+}
+# 계수 URL 파일이 없으면 docker -v 가 빈 폴더를 만들어 건다 — 그 전에 원격이 이름을 대고 멈춘다.
+reset_count_precheck() {
+  printf 'sudo test -f %s/%s || { echo "계수 URL 파일 %s 이 없다 — BYPASSRLS 계수 없이 초기화하지 않는다" >&2; exit 1; }\n' \
+    "$EC2_SECRETS_DIR" "$COUNT_URL_FILE_NAME" "$COUNT_URL_FILE_NAME"
 }
 
 # ── 계획 검토 본문 ────────────────────────────────────────────────────────
@@ -179,17 +194,103 @@ reset_recover_apps() {
   [ "$rc" = 0 ] || warn "복구 재기동이 비영 종료했다(code=$rc) — 앱 상태를 직접 확인한다"
 }
 
+# 정지 게이트 — 원격 `count-before.json` 을 **바이트 그대로**(base64) 실행 기록으로 가져와 판정한다.
+#
+# ack 토큰 = 그 파일의 sha256. 도구가 시각을 싣지 않으므로 같은 상태를 다시 세면 같은 토큰이고,
+# 행·키·객체가 하나라도 바뀌면 토큰이 바뀐다 — 지난 회차 토큰(stale)은 대조에서 떨어진다.
+# 운영자는 `COLAB_RESEED_ACK_NONEMPTY=<토큰>` 으로만 넘긴다. 판정·토큰은 `reset-ack.json` 에 남는다.
+# 판정 불가(파일 없음 · 옛 모양 · 전수 경로 표지 없음 · 표 누락)는 0 으로 읽지 않고 멈춘다.
+RESET_GATE_TABLES="d1_account account_admin.login_credential d3_dataset d3_file d5_upload d6_project d4_lineage_edge"
+reset_nonempty_gate() {
+  if [ "$DRY_RUN" = 1 ]; then
+    log "DRY 정지 게이트 — ssh <dev> sudo base64 -w0 $REMOTE_OUT/count-before.json → 실행 자리 count-before.json · sha256 = ack 토큰"
+    log "DRY   표 [$RESET_GATE_TABLES] ＋ DB 참조 키 중 하나라도 0 이 아니면 COLAB_RESEED_ACK_NONEMPTY=<토큰> 없이 멈춘다"
+    return 0
+  fi
+  local b64 rc=0
+  b64="$(ssh_dev_capture "sudo base64 -w0 $REMOTE_OUT/count-before.json")" || rc=$?
+  if [ "$rc" -ne 0 ] || [ -z "$b64" ]; then
+    blocked_add reset "정지 게이트 판정 불가 — count-before.json 을 받지 못했다(ssh 종료코드 $rc)"
+    log "⛔ 정지 게이트 — count-before.json 을 받지 못했다. 0 으로 읽지 않는다"
+    return 1
+  fi
+  ( umask 077; printf '%s' "$b64" | base64 -d > "$RUN_DIR/count-before.json" ) || {
+    blocked_add reset "정지 게이트 판정 불가 — count-before.json base64 복원 실패"; return 1; }
+  local out; rc=0
+  out="$(python3 - "$RUN_DIR/count-before.json" "$RUN_DIR/reset-ack.json" "$RUN_ID" \
+      "${COLAB_RESEED_OPERATOR:-$(id -un)}" "$RESET_GATE_TABLES" "${COLAB_RESEED_ACK_NONEMPTY-}" <<'PY'
+import datetime, hashlib, json, os, sys
+src, record, run_id, who, tables, ack = sys.argv[1:7]
+tables = tables.split()
+raw = open(src, "rb").read()
+token = hashlib.sha256(raw).hexdigest()
+
+def done(decision, lines, code):
+    body = {"schema": "colab-reseed-reset-ack/1", "runId": run_id, "operator": who,
+            "recordedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            "countBefore": "count-before.json", "countBeforeSha256": token,
+            "decision": decision, "ackProvided": bool(ack),
+            "ackSha256": ack if decision == "acknowledged" else None,
+            "nonEmpty": nonempty, "referencedKeys": refs}
+    fd = os.open(record, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(body, f, ensure_ascii=False, indent=2)
+    print("\n".join(lines))
+    sys.exit(code)
+
+nonempty, refs = {}, None
+try:
+    body = json.loads(raw)
+    plat = body["db"]["platform"]
+    rows, path = plat["rows"], plat.get("countPath")
+    refs = body["referencedKeys"]["count"]
+    bad = [t for t in tables if not isinstance(rows.get(t), int)]
+    if body.get("phase") != "count" or path != "bypassrls:row_security=off" or bad or not isinstance(refs, int):
+        raise ValueError(f"전수 경로 표지 {path!r} · 빠진 표 {bad}")
+except (ValueError, KeyError, TypeError) as exc:
+    done("undecidable", [f"⛔ 정지 게이트 판정 불가 — 계수 파일이 BYPASSRLS 전수 계수 모양이 아니다 ({exc}). 0 으로 읽지 않는다."], 2)
+nonempty = {t: rows[t] for t in tables if rows[t] != 0}
+counts = " · ".join(f"{t} {rows[t]}" for t in tables) + f" · 참조 키 {refs}"
+if not nonempty and refs == 0:
+    done("empty", [f"정지 게이트 — 빈 DB ({counts}) · 토큰 불요"], 0)
+if ack == token:
+    done("acknowledged", [f"정지 게이트 — 비어 있지 않음 ({counts}) · ack 토큰 일치 {token} · 진행"], 0)
+why = ("COLAB_RESEED_ACK_NONEMPTY 가 없다" if not ack else
+       "COLAB_RESEED_ACK_NONEMPTY 가 sha256 꼴이 아니다" if len(ack) != 64 or set(ack) - set("0123456789abcdef") else
+       "COLAB_RESEED_ACK_NONEMPTY 가 이번 계수 파일과 다르다(지난 회차 토큰이거나 그 사이 자료가 바뀌었다)")
+done("refused", [
+    f"⛔ 정지 게이트 — dev DB 가 비어 있지 않다: {counts}",
+    f"   {why}. 앱 정지·DROP·S3 는 하나도 하지 않았다.",
+    f"   이번 계수 파일 = 실행 자리 count-before.json · sha256(ack 토큰) = {token}",
+    f"   지워도 된다고 판단했을 때만: COLAB_RESEED_ACK_NONEMPTY={token} bash dev-package/tools/dev-reseed/reseed.sh --from reset",
+], 1)
+PY
+)" || rc=$?
+  printf '%s\n' "$out" | while IFS= read -r line; do log "$line"; done
+  if [ "$rc" -ne 0 ]; then
+    blocked_add reset "$(printf '%s\n' "$out" | head -2 | tr '\n' ' ')"
+    return 1
+  fi
+  return 0
+}
+
 stage_reset() {
   write_approval_record || return 1
 
   # ── 읽기 전용 구간 ── 여기서 실패하면 dev 는 계속 돌고 있다(정지 전이다).
-  log "① 실행 전 계수 — 연구실 경계를 건 상태에서 센다(읽기 전용)"
+  log "① 실행 전 계수 — BYPASSRLS 롤 · row_security=off 로 행 전수를 센다(읽기 전용)"
   ssh_dev "mkdir -p $REMOTE_OUT && chmod 700 $REMOTE_OUT" || return 1
   ssh_script "reset:count" <<EOF || return 1
 set -euo pipefail
-$(reset_docker_cmd) --phase count --report /out/count-before.json
+$(reset_count_precheck)
+$(reset_count_cmd) --phase count --report /out/count-before.json
 test -s $REMOTE_OUT/count-before.json
 EOF
+
+  # ── 정지 게이트 ── 비어 있지 않으면 **여기서** 멈춘다. 아래는 앱 정지 · DROP · S3 다.
+  #   2026-09-24 08:33Z 사고 = 계수가 비어 있지 않았는데 `test -s` 만 보고 지나갔다.
+  log "①ᵇ 정지 게이트 — 계수가 0 이 아니면 이번 계수의 ack 토큰 없이 파괴 걸음에 들어가지 않는다"
+  reset_nonempty_gate || return 1
 
   # 사전 질의가 실패하거나 진행 중 작업이 있으면 앱을 내리기 전에 중단한다.
   # 이후 생긴 작업은 정지 뒤 ①″에서 다시 확인한다.
@@ -235,6 +336,7 @@ json.dump({
         {"id": 2, "text": "COLAB_CORE_S3_BUCKET 정확 일치", "evidence": bucket},
         {"id": 3, "text": "두 DB URL 호스트에 -dev 포함", "evidence": "reset_dev_environment.py ENV_HOST_MARK 가 판정한다"},
         {"id": 4, "text": "계획 키가 uploads/·previews/ 안", "evidence": "s3 단계의 계획 검토와 도구 NEVER_TOUCH_PREFIXES 가 판정한다"},
+        {"id": 5, "text": "BYPASSRLS 전수 계수가 0 이 아니면 이번 계수 sha256 ack 없이 정지", "evidence": "reset ①ᵇ 정지 게이트 판정 = reset-ack.json"},
     ],
 }, open(path, "w"), ensure_ascii=False, indent=2)
 PY
@@ -364,16 +466,22 @@ stage_s3() {
   if [ "$DRY_RUN" = 1 ]; then
     # 이 단계의 명령은 출력을 되받아 판정하므로 `ssh_script` 의 DRY 줄이 변수로 들어간다.
     # dry-run 에서는 네 걸음을 여기서 그대로 찍는다.
-    log "DRY ① ssh <dev> — $(reset_docker_cmd | tr -d '\\\n') --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json"
+    log "DRY ① ssh <dev> — $(reset_docker_cmd | tr -d '\\\n') --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json --referenced-keys /out/count-before.json [--ack-sha256 <COLAB_RESEED_ACK_NONEMPTY>]"
     log "DRY ② ssh <dev> — 같은 컨테이너(--user 0) 안에서 계획 검토(_ops/ 0 건 · 접두사 uploads/·previews/ · 모드 0600 · 소유자 일치 · sha256 기재)"
     log "DRY ③ ssh <dev> — 같은 도구 --phase s3-apply --apply-plan /out/plan.json --plan-sha256 <① 출력값> --report /out/s3-apply.json"
     log "DRY ④ ssh <dev> — 같은 도구 --phase count --report /out/count-after.json"
     return 0
   fi
-  log "① s3-plan — exact-key 계획 ＋ sha256"
+  # ⭑ 계획은 스키마 DROP **뒤**에 선다 — DB 가 가리키던 키는 reset ① 의 count-before.json 에서 읽는다.
+  #   겹치면 reset 정지 게이트와 **같은 토큰**(그 파일의 sha256)이 있어야 계획이 선다(도구가 판정한다).
+  local ack_arg=""
+  [ -z "${COLAB_RESEED_ACK_NONEMPTY:-}" ] || ack_arg=" --ack-sha256 $COLAB_RESEED_ACK_NONEMPTY"
+  case "$ack_arg" in *[!\ a-z0-9-]*) blocked_add s3-plan "ack 토큰 꼴이 sha256 이 아니다"; return 1 ;; esac
+  log "① s3-plan — exact-key 계획 ＋ sha256 · DB 참조 키 대조(reset ① 계수 파일)"
   local out; out="$(ssh_script "s3:plan" <<EOF
 set -euo pipefail
-$(reset_docker_cmd) --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json
+$(reset_docker_cmd) --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json \\
+    --referenced-keys /out/count-before.json$ack_arg
 EOF
 )"
   # `ssh_script` 가 이미 `tee` 로 적었다 — 여기서 다시 적지 않는다(오류 한 건을 두 번 보이게 한다).
@@ -398,7 +506,8 @@ EOF
   log "④ 실행 후 계수 — 표 넷 0 · uploads/·previews/ 객체 0 · 멀티파트 0"
   ssh_script "s3:count-after" <<EOF || return 1
 set -euo pipefail
-$(reset_docker_cmd) --phase count --report /out/count-after.json
+$(reset_count_precheck)
+$(reset_count_cmd) --phase count --report /out/count-after.json
 EOF
 }
 

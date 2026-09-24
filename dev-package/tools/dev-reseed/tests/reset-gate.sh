@@ -15,6 +15,7 @@
 #   ⓕ 계수 파일을 못 받으면 · 옛 모양(경계 경로 · 표 넷)이면 판정 불가로 멈춘다 — 0 으로 읽지 않는다
 #   ⓖ 계수는 BYPASSRLS URL 파일(`backup-platform-db.url`)로 돈다 · 그 파일이 없으면 원격이 먼저 멈춘다
 #   ⓗ s3 계획이 계수 파일(DB 참조 키)과 같은 토큰을 받는다 · 실행 후 계수도 같은 경로로 돈다
+#   ⓘ 초기화 도구가 **실제로 쓴** 계수 파일(가짜 DB·S3 위 `--phase count`)을 게이트가 같은 뜻으로 읽는다
 #
 # 실물 무접촉 = `ssh`·`docker`·`sudo` 를 PATH 대역으로 가린다. 원격 스크립트는 **실행하지 않고 적기만** 한다.
 set -uo pipefail
@@ -175,8 +176,72 @@ after="$(declare -f stage_s3 | grep -c 'reset_count_cmd' || true)"
 [ "$after" -ge 1 ] || note "ⓗ‴ stage_s3 ④ 실행 후 계수가 전수 경로(reset_count_cmd)를 쓰지 않는다"
 CURRENT_STAGE=reset
 
+# ── ⓘ 도구가 실제로 쓰는 계수 파일 ↔ 정지 게이트 판독 ─────────────────────
+# 위 픽스처는 손으로 쓴 모양이다. 도구(`reset_dev_environment.py --phase count`)를 가짜 DB·S3 로
+# 실제로 돌려 나온 파일을 게이트에 넣는다 — 두 쪽 모양이 갈리면 게이트가 늘 「판정 불가」로 서거나
+# 더 나쁘게 빈 DB 로 읽는 자리를 여기서 잡는다.
+cat > "$TMP/run_tool.py" <<'PY'
+import importlib.util, os, sys
+tool, out, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
+spec = importlib.util.spec_from_file_location("reset_tool", tool)
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+class Cur:
+    def __init__(self): self.rows = []
+    def execute(self, sql, params=None):
+        s = sql.lower()
+        self.rows = ([("public",), ("account_admin",)] if "pg_namespace" in s else
+                     [(True,)] if "rolbypassrls" in s else
+                     [] if "to_regclass" in s else
+                     [("uploads/L/%d.nc" % i,) for i in range(n)] if "storage_key" in s else
+                     [(n,)] if "count(*)" in s else [])
+    def fetchone(self): return self.rows[0] if self.rows else None
+    def fetchall(self): return list(self.rows)
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+class Conn:
+    def cursor(self): return Cur()
+    def rollback(self): pass
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+class S3:
+    def list_objects(self, prefix): return iter(())
+    def list_multipart_uploads(self, prefix=""): return []
+d = os.path.dirname(out)
+for name, db, user in (("p", "colab_platform", "colab_owner"), ("a", "colab_ai", "colab_owner"),
+                       ("c", "colab_platform", "colab_backup")):
+    with open(os.path.join(d, name + ".url"), "w") as f:
+        f.write("postgresql://%s:x@colab-v2-dev-pg.invalid:5432/%s" % (user, db))
+os.environ.update(COLAB_CORE_S3_BUCKET="colab-platform-data-dev", COLAB_CORE_S3_REGION="ap-northeast-2")
+sys.exit(m.main(["--target", "dev", "--yes-reset-dev", "--phase", "count",
+                 "--platform-url-file", os.path.join(d, "p.url"), "--ai-url-file", os.path.join(d, "a.url"),
+                 "--count-url-file", os.path.join(d, "c.url"), "--report", out],
+                connect=lambda url: Conn(), s3_factory=lambda **kw: S3()))
+PY
+mkdir -p "$TMP/tool"
+TOOL="$REPO_ROOT/services/core-api/ops/reset_dev_environment.py"
+for n in 0 2; do
+  if python3 "$TMP/run_tool.py" "$TOOL" "$TMP/tool/count-$n.json" "$n" >/dev/null 2>"$TMP/tool/err"; then :; else
+    note "ⓘ 도구 --phase count 가 가짜 DB 위에서 비영 종료했다: $(tail -1 "$TMP/tool/err")"; continue
+  fi
+  reset_case
+  export FIXTURE_COUNT_BEFORE="$TMP/tool/count-$n.json"
+  unset COLAB_RESEED_ACK_NONEMPTY
+  stage_reset >/dev/null 2>&1; rc=$?
+  if [ "$n" = 0 ]; then
+    [ "$rc" = 0 ] || note "ⓘ′ 도구가 쓴 빈 계수를 게이트가 통과시키지 않았다: $(grep -m1 '정지 게이트' "$STAGE_LOG")"
+  else
+    [ "$rc" -ne 0 ] || note "ⓘ″ 도구가 쓴 비어 있지 않은 계수를 게이트가 통과시켰다"
+    n2="$(destructive_calls)"; [ "$n2" = 0 ] || note "ⓘ‴ 도구 계수가 비어 있지 않은데 파괴 호출이 $n2 건 나갔다"
+    tok="$(sha256sum "$FIXTURE_COUNT_BEFORE" | cut -d' ' -f1)"
+    reset_case
+    export COLAB_RESEED_ACK_NONEMPTY="$tok"
+    stage_reset >/dev/null 2>&1 || note "ⓘ⁗ 도구 계수 파일의 sha256 을 토큰으로 줬는데 거부됐다"
+    unset COLAB_RESEED_ACK_NONEMPTY
+  fi
+done
+
 if [ "$fail" -eq 0 ]; then
-  echo "reset-gate — green (비어 있음 정지 · 지난 토큰 거부 · 꼴 거부 · 일치 진행·ack 기록 · 빈 DB 무토큰 · 판정 불가 정지 · BYPASSRLS 계수 경로 · s3 계획 참조 키 대조)"
+  echo "reset-gate — green (비어 있음 정지 · 지난 토큰 거부 · 꼴 거부 · 일치 진행·ack 기록 · 빈 DB 무토큰 · 판정 불가 정지 · BYPASSRLS 계수 경로 · s3 계획 참조 키 대조 · 도구 계수 파일 ↔ 게이트 판독)"
   exit 0
 fi
 echo "reset-gate — red" >&2
