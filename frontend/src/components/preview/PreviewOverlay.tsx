@@ -30,7 +30,7 @@ export interface PreviewOverlayProps {
 
 /**
  * **도구 층이 뷰포트 안으로 들어가면 버튼 클릭이 그림의 조작으로 샌다.**
- * 뷰포트는 `onClick`(값 조회) · `onMouseDown`(드래그 시작) · `onDoubleClick`(데이터 맞춤)을
+ * 뷰포트는 `onClick`(값 조회) · `onPointerDown`(드래그 시작) · `onDoubleClick`(데이터 맞춤)을
  * 들고 있어서, 확대 버튼을 누르면 그 자리의 값을 조회하는 결함이 새로 생긴다. 규칙을
  * **부품 한 곳**에 둔다 — 뷰포트 핸들러 넷에 같은 target 검사를 흩지 않는다(우려 2 ⓐ).
  *
@@ -48,7 +48,7 @@ export function PreviewOverlay(props: PreviewOverlayProps) {
       className="pv-overlay"
       data-testid={props.testId ?? 'preview-overlay'}
       onClick={stop}
-      onMouseDown={stop}
+      onPointerDown={stop}
       onDoubleClick={stop}
     >
       {/* 모서리 묶음은 **여백과 간격을 소유한다** — 도구 요소는 margin 을 지지 않는다.

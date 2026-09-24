@@ -10,8 +10,8 @@
 
 | 단계 | 상태 | 커밋 |
 |---|---|---|
-| L3a 시험 작성(RED) | 완료 — 새 시험 18건 중 13 RED · 기존 5파일 9곳 이관 중 5건 RED(포인터 미처리) | (이 커밋) |
-| L3a 구현(GREEN) | 대기 | — |
+| L3a 시험 작성(RED) | 완료 — 새 시험 14건 중 13 RED · 기존 5파일 9곳 이관 중 5건 RED(포인터 미처리) | `b6d69bd3` |
+| L3a 구현(GREEN) | 완료 — 전체 131파일 1627건 통과 · tsc 0 | (이 커밋) |
 | L3b 시험 작성(RED) | 대기 | — |
 | L3b 구현(GREEN) | 대기 | — |
 | 레인 게이트 | 대기 | — |
@@ -21,6 +21,7 @@
 | 시점 | 파일 | 시험 | 결과 |
 |---|---|---|---|
 | 기준(e8fc4e13) | 130 | 1613 | 전부 통과 |
+| L3a GREEN | 131 | 1627 | 전부 통과(＋14 = 새 시험) |
 
 ## RED 기록
 
@@ -29,7 +30,11 @@
 
 ## before → after
 
-(항목마다 채운다)
+| # | before | after | 근거 |
+|---|---|---|---|
+| 3 | `onMouseDown` ＋ 창 `mousemove`/`mouseup` · 1px 부터 끌기 · 마우스 전용 · 끌기 뒤 click 이 값 조회를 부름 | `onPointerDown` ＋ 창 `pointermove`/`pointerup`/`pointercancel`(pointerId 대조) · `setPointerCapture?.()` · 임계 10px 초과 전 불변 · 넘는 순간 누른 자리 기준 1:1 · 끌기 성립 뒤 click 1회를 뷰포트 캡처 단계에서 멈춤(도구 층 click 제외) | `frontend/src/components/preview/useZoomPan.ts` `DRAG_THRESHOLD` · `onPointerDown` · `swallow` · 호출부 `PreviewPanels.tsx:314` · `upload/PreviewPanel.tsx:619` · `:780` · `PreviewOverlay.tsx:51` |
+
+- GREEN 도중 발견·수정: 첫 구현은 끌기 뒤 남은 「click 버림」 표지가 다음 도구 층 click(「기본 배율로」)까지 삼켰다 — 이관 시험 `preview-map-viewport-20260918` 「기본 배율로가 넘치는 축도 중앙으로 되돌린다」가 red 로 잡았다. 도구 층(`.pv-overlay`) 안의 click 은 표지를 건드리지 않게 고쳤다(휠 핸들러의 같은 target 검사와 같은 규칙).
 
 ## 수용 기준 대조
 

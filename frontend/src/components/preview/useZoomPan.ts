@@ -22,6 +22,13 @@ import { baseScaleFor, needsBoundsOutline, snapWidthKm, boundsWidthKm, type GeoB
 /** 한 번 누를 때 들어가는 정도. 화면 조작의 단위이지 상한이 아니다. */
 const STEP = 2;
 
+/**
+ * 끌기 시작 임계(px · 확정 값 4 · design-fix 20260924 #3). 누른 자리에서 이만큼을 **넘기 전에는**
+ * 그림이 움직이지 않고, 넘는 순간 누른 자리 기준으로 따라붙어 그 뒤 1:1 이다. 임계 안에서 놓으면
+ * 뒤이은 click(값 조회)은 그대로 살아 있다.
+ */
+const DRAG_THRESHOLD = 10;
+
 export interface ZoomBoundsFraction {
   x0: number;
   y0: number;
@@ -97,7 +104,17 @@ export interface ZoomPan {
     target?: EventTarget | null;
     preventDefault?: () => void;
   }) => void;
-  onMouseDown: (e: { clientX: number; clientY: number; button?: number }) => void;
+  /**
+   * 끌기 시작(포인터 · mouse · touch · pen 같은 경로). 캡처는 optional-call 이다 — 캡처가 없는
+   * 환경(jsdom)에서도 이동·놓기는 창(window) 리스너가 받는다.
+   */
+  onPointerDown: (e: {
+    clientX: number;
+    clientY: number;
+    button?: number;
+    pointerId: number;
+    currentTarget?: EventTarget | null;
+  }) => void;
   zoomIn: () => void;
   zoomOut: () => void;
   reset: () => void;
@@ -172,7 +189,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   // 화면 크기는 **상태로도 들고 있어야 한다** — 타일 모자이크가 그 값으로 조각을 세우는데
   // ref 를 그때그때 읽으면 크기가 늦게 잡혀도 다시 그려지지 않는다.
   const [boxSize, setBoxSize] = useState<{ width: number; height: number } | undefined>();
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  /** 누른 포인터 · 누른 자리(`sx`·`sy`) · 마지막 반영 자리(`x`·`y`) · 임계를 넘었는가. */
+  const drag = useRef<{ id: number; sx: number; sy: number; x: number; y: number; active: boolean } | null>(null);
+  /** 끌기가 성립한 뒤 따라오는 click 한 번을 버린다(값 조회가 끌기 끝에서 새지 않게). */
+  const dragged = useRef(false);
 
   const box = useCallback(() => {
     const node = el.current;
@@ -328,32 +348,68 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     if (!node) return;
     const handle = (e: WheelEvent) => onWheel(e);
     node.addEventListener('wheel', handle, { passive: false });
-    return () => node.removeEventListener('wheel', handle);
+    // 끌기 끝의 click 은 **캡처 단계에서** 멈춘다 — React 의 onClick(값 조회)은 루트 위임이라
+    // 여기서 전파를 끊으면 닿지 않는다. 호출부마다 같은 검사를 흩지 않는다.
+    // 도구 층(확대 줄 등)의 click 은 끌기의 끝이 아니다 — 건드리지 않는다.
+    const swallow = (e: MouseEvent) => {
+      if (!dragged.current) return;
+      if (e.target instanceof Element && e.target.closest('.pv-overlay')) return;
+      dragged.current = false;
+      e.stopPropagation();
+    };
+    node.addEventListener('click', swallow, true);
+    return () => {
+      node.removeEventListener('wheel', handle);
+      node.removeEventListener('click', swallow, true);
+    };
   }, [node, onWheel]);
 
-  const onMouseDown = useCallback(
-    (e: { clientX: number; clientY: number; button?: number }) => {
+  const onPointerDown = useCallback(
+    (e: {
+      clientX: number;
+      clientY: number;
+      button?: number;
+      pointerId: number;
+      currentTarget?: EventTarget | null;
+    }) => {
       if (e.button !== undefined && e.button !== 0) return;
-      drag.current = { x: e.clientX, y: e.clientY };
+      dragged.current = false;
+      drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, active: false };
+      // 캡처가 있으면 뷰포트 밖으로 나가도 이동이 이어진다. 없으면(jsdom) 창 리스너가 받는다.
+      (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
     },
     [],
   );
 
   useEffect(() => {
-    function move(e: MouseEvent) {
+    function move(e: PointerEvent) {
       const from = drag.current;
-      if (!from) return;
-      drag.current = { x: e.clientX, y: e.clientY };
-      setView((cur) => clampView({ ...cur, x: cur.x + (e.clientX - from.x), y: cur.y + (e.clientY - from.y) }));
+      if (!from || e.pointerId !== from.id) return;
+      if (!from.active) {
+        // 임계를 **넘기 전에는** 움직이지 않는다. 넘는 순간 누른 자리 기준으로 붙는다
+        // (`from.x`·`from.y` 가 아직 누른 자리이므로 첫 반영이 곧 누른 자리부터의 전량이다).
+        if (Math.hypot(e.clientX - from.sx, e.clientY - from.sy) <= DRAG_THRESHOLD) return;
+        from.active = true;
+      }
+      const dx = e.clientX - from.x;
+      const dy = e.clientY - from.y;
+      from.x = e.clientX;
+      from.y = e.clientY;
+      setView((cur) => clampView({ ...cur, x: cur.x + dx, y: cur.y + dy }));
     }
-    function up() {
+    function up(e: PointerEvent) {
+      const from = drag.current;
+      if (!from || e.pointerId !== from.id) return;
+      dragged.current = from.active;
       drag.current = null;
     }
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     return () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
     };
   }, [clampView]);
 
@@ -456,7 +512,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     onImageLoad,
     onNativeWidth: learn,
     onWheel,
-    onMouseDown,
+    onPointerDown,
     zoomIn,
     zoomOut,
     reset,
