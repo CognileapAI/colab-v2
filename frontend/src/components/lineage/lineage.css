@@ -259,14 +259,14 @@ section.lin {
 
 .lin-unknown:has(input:disabled) label {
   cursor: not-allowed;
-  color: var(--lin-over-ink, #5b6472);
+  color: var(--lin-over-ink);
 }
 
 .lin-unknown-why {
   margin: 4px 0 0 24px;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--lin-over-ink, #5b6472);
+  color: var(--lin-over-ink);
 }
 
 /* ⭑ ⟨WU-B10 · PRD-31⟩ 상세 계보 수정·추가 모달.
@@ -287,7 +287,7 @@ section.lin {
   display: block;
   margin: 8px 0 4px;
   font-size: 13px;
-  color: var(--lin-over-ink, #5b6472);
+  color: var(--lin-over-ink);
 }
 
 .lin-fix .lin-fix-pick .inp {

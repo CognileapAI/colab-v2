@@ -111,7 +111,7 @@
 .up-note {
   margin: 0;
   font-size: 13px;
-  color: var(--up-muted, #666);
+  color: var(--up-muted);
 }
 
 /* ⑩ 카드 본문 안 세로 여백은 **컨테이너**가 gap 으로 소유한다 —
@@ -163,8 +163,8 @@
   width: 16px;
   height: 16px;
   flex: none;
-  border: 2px solid var(--color-border-strong, #dfe3e8);
-  border-top-color: var(--color-primary-600, #1369e9);
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary-600);
   border-radius: 50%;
   animation: up-spin 0.8s linear infinite;
 }
@@ -279,7 +279,7 @@ textarea.inp { resize: vertical; }
 .reg-actions {
   display: flex; align-items: center; gap: 8px;
   position: sticky; bottom: 0; z-index: 5;
-  padding: 10px 0; background: var(--color-surface, #fff);
+  padding: 10px 0; background: var(--color-surface);
 }
 /* 「지금 할 일」 한 줄 — 좁은 폭에서는 버튼 자리를 뺏지 않게 감춘다 (rev1 720px 규칙) */
 .reg-actions .uf-hint { flex: 1; min-width: 0; font-size:13px; color: var(--color-text-muted); }
@@ -339,24 +339,24 @@ textarea.inp { resize: vertical; }
   overflow: hidden;
   border: 0;
   border-radius: 999px;
-  background: var(--color-border, #e8ecf2);
+  background: var(--color-border);
 }
 .gridbar::-webkit-progress-bar {
   border-radius: inherit;
-  background: var(--color-border, #e8ecf2);
+  background: var(--color-border);
 }
 .gridbar::-webkit-progress-value {
   border-radius: inherit;
-  background: var(--color-primary-600, #1369e9);
+  background: var(--color-primary-600);
   transition: width 180ms ease-out;
 }
 .gridbar::-moz-progress-bar {
   border-radius: inherit;
-  background: var(--color-primary-600, #1369e9);
+  background: var(--color-primary-600);
   transition: width 180ms ease-out;
 }
 .up-transfer-percent {
-  color: var(--color-text-muted, #565c63);
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;

@@ -11,7 +11,7 @@
 .labinfo-error {
   margin: 8px 0;
   font-size: var(--text-body-sm);
-  color: var(--color-danger, #b42318);
+  color: var(--color-danger);
 }
 
 .labinfo-notice {
@@ -38,7 +38,7 @@
   overflow-y: auto;
   padding: var(--space-card);
   border-radius: var(--radius-lg);
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   box-shadow: none;
   border: 1px solid var(--color-border-strong);
 }

@@ -19,20 +19,20 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 14px 16px;
-  border: 1px solid var(--color-border, #dde1e6);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 .loadfail-msg {
   margin: 0;
   font-size: var(--text-body);
-  color: var(--color-text-body, #21272a);
+  color: var(--color-text-body);
 }
 .loadfail-retry {
-  border: 1px solid var(--color-border, #dde1e6);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  color: var(--color-text-body, #21272a);
+  background: var(--color-surface);
+  color: var(--color-text-body);
   padding: 5px 12px;
   font: inherit;
   cursor: pointer;

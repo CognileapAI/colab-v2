@@ -158,7 +158,7 @@
 }
 
 .dash-error {
-  color: var(--fg-danger, #a3222b);
+  color: var(--fg-danger);
   font-size: 13px;
 }
 

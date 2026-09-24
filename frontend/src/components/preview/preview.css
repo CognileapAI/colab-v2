@@ -553,13 +553,13 @@
 }
 
 .pv-basemap-coast {
-  stroke: var(--color-gray-500, #697077);
+  stroke: var(--color-gray-500);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 .pv-basemap-border {
-  stroke: var(--color-gray-400, #848c94);
+  stroke: var(--color-gray-400);
   stroke-width: 1;
   stroke-dasharray: 3 2;
   vector-effect: non-scaling-stroke;

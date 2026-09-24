@@ -99,7 +99,7 @@
 .detail-page .filelist .fl-n { font-family: var(--font-mono, monospace); font-size: var(--text-body-sm); color: var(--color-text); overflow-wrap: anywhere; }
 .detail-page .filelist .fl-x { font-size: 13px; color: var(--color-gray-500); }
 .detail-page .filelist .fl-none { margin: 0; font-size: var(--text-body-sm); color: var(--color-gray-500); }
-.detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger, #b42318); margin: 0 0 var(--space-6); }
+.detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger); margin: 0 0 var(--space-6); }
 
 /* ── 활용 · 가져가기 (섹션 4 · `#sec-usage`) ────────────────────────────────── */
 .detail-page .use-sec .use-n { font-size: var(--text-body); font-weight: 600; color: var(--color-text); margin: 0 0 12px; }
@@ -115,7 +115,7 @@
 .detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
 /* 접근 값의 출처 한 줄 (PRD-39 ⑩) — 버튼보다 작게, 읽기는 되게 */
 .detail-page .use-sec .use-dl-note { margin: 6px 0 0; font-size: 13px; }
-.detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }
+.detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger); }
 
 /* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,
    같은 면·같은 보더로 잇고 새 색을 만들지 않는다. */
@@ -163,7 +163,7 @@
 .detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
 .detail-page .dt-edit .de-k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
 /* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */
-.detail-page .dt-edit .de-req { font-size: 13px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
+.detail-page .dt-edit .de-req { font-size: 13px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: var(--color-white); }
 .detail-page .dt-edit .de-v {
   width: 100%;
   font: inherit;
@@ -190,7 +190,7 @@
   z-index: 5;
   margin: 0 0 var(--space-4);
   padding: 8px 0;
-  background: var(--color-surface, #ffffff);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 .detail-page .dsec-menu-l { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }

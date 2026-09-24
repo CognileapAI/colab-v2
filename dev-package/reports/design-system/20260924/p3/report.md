@@ -9,8 +9,8 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P3-20260924.md` · 조사: `p3/l
 | 단계 | 상태 | 커밋 |
 |---|---|---|
 | 1 착수 캡처 `p3-before` · 재계측 | 완료 | — |
-| 2 게이트 f·g · selftest 16 | 완료 | (이 커밋) |
-| 3 CSS — 죽은 폴백 · B · 면제 | 대기 | |
+| 2 게이트 f·g · selftest 16 | 완료 | `844652cd` |
+| 3 CSS — 죽은 폴백 64 · B 2 · 면제 3 | 완료 | (이 커밋) |
 | 4 TSX 인라인 7 | 대기 | |
 | 5 캡처 범위 표 | 대기 | |
 | 6 대장 BF-8 | 대기 | |
@@ -80,3 +80,23 @@ design-lint-counts files=19 a=0 … f=69 f_direct=5 f_fallback=64 f_name=0 f_hol
 ```
 
 - ⓐ 기대 「f ≥ 72 · g = 7」 대비: **f = 69**(위 재계측 표 — P2a 가 A 1 · B 1 · D 3 을 먼저 없앰 · color-mix 2 가 새로 걸림) · g = 7.
+
+## 단계 3 — CSS(값 무변)
+
+### 리터럴 처리 표
+
+| 분류 | 건 | 처리 | 자리 |
+|---|---:|---|---|
+| D 죽은 폴백 | 64 | 폴백만 삭제 `var(--x, #…)` → `var(--x)` | search 38 · upload 9 · shell 6 · detail 3 · lineage 3 · lab 2 · preview 2 · dashboard 1(8파일 60줄) |
+| B `#fff` | 2 | `var(--color-white)`(`tokens.css` `#ffffff` · 다크 블록에 없음 = 테마 불변 · `same-in-dark.txt` 면제 항목) | `detail.css` `.detail-page .dt-edit .de-req` color · `search.css` `.search-page .vfilter .vsw::after` background |
+| B `#fff`(조사 3건째) | 0 | 없음 — P2a 흡수로 이미 `var(--color-on-primary)` | `catalog.css` `.colmenu .cm-box` color |
+| A 오버레이 | 0 | 없음 — P2a 흡수로 이미 `var(--color-overlay)` | `project.css` `.pj-modal-back` background |
+| C `#eef2f7` | 1 | 리터럴 유지 · f 면제(Ted 판정 대기) | `upload.css` `.chip` background |
+| `color-mix()` | 2 | 리터럴 유지 · f 면제(판정 대기) | `login.css` `.account-modal-back` · `.auth-expiry-overlay` background |
+
+- D 64 의 대상 이름 20종(`--color-border` 9 · `--color-surface` 10 · `--color-text-muted` 10 · `--color-primary-600` 6 · `--color-success-600` 6 · `--color-text-body` 4 · `--color-danger` 3 · `--lin-over-ink` 3 · `--color-warning-50` 2 · 나머지 11종 1씩)은 전부 `tokens.css` 라이트 `:root` 에 정의돼 있다 — 폴백이 렌더된 적이 없다. 증거는 단계 7(캡처 · 계산값).
+- `lineage.css` `var(--lin-over-ink, #5b6472)` 3곳(`.lin-unknown:has(input:disabled) label` · `.lin-unknown-why` · `.lin-fix-method-l`): **실제 렌더 = `--lin-over-ink` → `var(--color-warning-600)`**(`tokens.css:135`). 폴백의 회색 `#5b6472` 는 렌더된 적이 없다 — 회색이 의도였는지는 P1 후속 항목 그대로.
+- diff 검증: 바뀐 60줄의 `-` 쪽에서 폴백만 지운 문자열이 `+` 쪽과 바이트 동일(`cmp` 일치).
+- 면제 3건은 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 끝 `f · …` 줄(사유 포함). 오케스트레이터 지시의 「A · C 면제 2」와 다르다 — A 는 착수 코드에 리터럴이 없어 면제할 대상이 없고(낡은 항목은 red), color-mix 2 가 더해졌다(아래 「spec 과 다르게 한 점」).
+
+게이트(이 단계 뒤): `색 리터럴 0(면제 3) · 인라인 7(변수 대입 0)` · `f=0 … f_exempt=3 f_exempted_hits=3 g=7` — g 가 남아 여전히 red.
