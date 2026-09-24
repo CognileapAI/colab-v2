@@ -212,7 +212,7 @@ red 보고: `visual/red-proof/report.md`. 바뀐 PNG 는 자기 `index.json` sha
 | `frontend-test` | green | 130 파일 · 1614건 통과 · 실패 0 |
 | `frontend-fixture-reach` | green | `src/main.tsx` 도달 203개 · 금지 모듈 0건 |
 
-`COLAB_TASK_ID=<task> bash gates/run.sh task` · 계: green 3 / red(판정) 0 / red(준비) 0 · exit 0. 마지막 변경(이 보고서) 뒤 다시 실행한 결과가 handoff 증거다.
+`COLAB_TASK_ID=06827f30cef14773850422445c745106 bash gates/run.sh task` · 계: green 3 / red(판정) 0 / red(준비) 0 · exit 0. 증거 = task runtime(Git common dir) `colab-harness/d38e300b03824556933f7c72f6a13392/06827f30cef14773850422445c745106/b8bfee7f53974cbfbc855ee5c5e8a323/gate-summary.json` (schema `colab-gate-summary/1` · `targets.selected` = frontend-typecheck·frontend-test·frontend-fixture-reach · commit `32008b98` · 실행 전후 파일 hash `3a1290d6…` 동일). 오케스트레이터가 2026-09-24 이 파일을 직접 열어 계수를 확인했다(advisor ② 수정 1). 저장소 안에는 사본을 두지 않는다 — runtime 보고서는 run 디렉터리에만 쓴다(`docs/development/lifecycle-evidence.md`).
 
 `npm run audit:build`(= `tsc --noEmit -p tsconfig.audit.json` + vite build)는 게이트가 아니며 `p0-a` 캡처가 실행해 통과했다.
 

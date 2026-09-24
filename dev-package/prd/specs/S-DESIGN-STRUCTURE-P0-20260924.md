@@ -3,7 +3,7 @@
 계획: `dev-package/reports/design-system/20260924/architecture.md §2-3·§3 P0`
 
 ## 문제 진술
-- P1~P3 의 완료 조건은 「보이는 값이 같다」인데, 저장소에 재현 가능한 캡처 구동부도, 픽셀 대조 도구도, 현재 HEAD 기준 캡처도 없다. 09-12 전체 회차의 캡처 스크립트는 git 에 없고(`representative/capture.py` 는 장면 4개짜리) `scenes.json` 은 계측값이지 캡처 명세가 아니다. 09-12 PNG 360장은 그 뒤 93개 파일 변경(#73~#123) 이전 상태다.
+- P1~P3 의 완료 조건은 「보이는 값이 같다」인데, 저장소에 재현 가능한 캡처 구동부도, 픽셀 대조 도구도, 현재 HEAD 기준 캡처도 없다. 09-12 전체 회차의 캡처 스크립트는 git 에 없고(`representative/capture.py` 는 장면 4개짜리) `scenes.json` 은 계측값이지 캡처 명세가 아니다. 09-12 PNG 360장은 그 뒤 91개 파일 변경(#73~#123) 이전 상태다.
 - 09-12 장면 30개에는 그 뒤 신설·개편된 화면이 없다 — 계정 관리(`AccountAdminPage` · #84·#121) · 비밀번호 변경(`PasswordChangePage`) · GNB 더보기 메뉴(`GnbMoreMenu` · 09-14).
 
 ## 해법 개요
@@ -40,7 +40,7 @@
   - ⓒ red 픽스처 — 후보 디렉터리의 PNG 한 장을 1픽셀 바꾼 사본으로 대조하면 그 장면만 red · exit 1 · 차이 이미지 생성. 장면 하나를 빼면 exit 78.
   - ⓓ `frontend/test/visual-diff.test.ts` — `compare.mjs` 의 비교 함수를 작은 PNG 픽스처(동일 2장 → 0 · 1픽셀 다름 → 1 · 미세 색 차이 1픽셀 → 엄격 1/보조 0 · 크기 다름 → 크기 차이)로 잠근다. 실제 브라우저 없이 돈다. 픽스처 PNG 는 시험이 `pngjs` 로 생성한다(바이너리 커밋 없음).
   - ⓔ 새 장면 3개가 실제로 그 화면을 그린다 — `account-admin` 캡처에 표 머리글 8개, `password-change` 에 폼, `gnb-more` 에 열린 메뉴가 보이는지 `live_probe` 류 DOM 질의로 확인(스크린샷만으로 판정하지 않는다).
-  - ⓕ 09-12 이후 변경 파일 93개(`git diff --stat 09b97a34 HEAD -- frontend/src`)를 장면에 대응시킨 커버리지 표를 `report.md` 에 둔다. 대응 장면이 없는 파일은 이름으로 남긴다(숨기지 않는다).
+  - ⓕ 09-12 이후 변경 파일 91개(spec 초안은 93으로 적었으나 실측 91 · 레인 확인)(`git diff --stat 09b97a34 HEAD -- frontend/src`)를 장면에 대응시킨 커버리지 표를 `report.md` 에 둔다. 대응 장면이 없는 파일은 이름으로 남긴다(숨기지 않는다).
 - 재사용 seam: audit 빌드 · `agent-browser` 호출(`scripts/agent-bridge.py run-tool browser`) · `live_probe.js` · `frontend/test/factories`. 신설 seam: `scenes.json` 명세 형식 하나.
 - 해당 서비스 단독 게이트 이름: `frontend-typecheck` · `frontend-test` · `frontend-fixture-reach`(audit 파일이 `main.tsx` 에서 닿지 않아야 한다 — 지금도 그렇다). 새 게이트는 만들지 않는다(집행 게이트는 P1 의 `frontend-design-lint`).
 - green-by-skip 방지: `diff.mjs` 는 대상 0건·집합 불일치·명세 sha256 불일치를 78 로 낸다. ⓑ 의 보고서에 캡처 수 196 을 명시한다. 시험 ⓓ 의 픽스처 수를 시험 이름에 적는다.
