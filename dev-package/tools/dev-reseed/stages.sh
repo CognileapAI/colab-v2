@@ -642,6 +642,13 @@ stage_seed() {
   log "② 러너 — 교수 로그인 · 무소속 운영자 4명 · 프로젝트 · 데이터셋 · 확인 · 보고"
   local runner="$REPO_ROOT/dev-package/tools/dev-seed/runner.py" i phase
   local args=(--base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" --account "$RESEED_ACCOUNT_EMAIL")
+  # 창은 **이 국면이 스스로 연다** — 첫 login 앞에서 올린다(멱등 · `ON CONFLICT DO NOTHING`).
+  # ⚠ prelude 의 올림에 기대면 `--from seed` 재개가 죽는다. 앞 회차가 ③ 에서 이미 내렸으므로
+  #   교수는 평범한 교수이고, `accounts` 국면이 계정 관리 화면(`account-create`)을 열지 못한다
+  #   (2026-09-24 로컬 검증 실측 — `runner.py` 「계정 관리 화면(account-create)이 열리지 않았다」).
+  #   login **앞**이어야 하는 이유 = 올림 뒤의 세션만 운영자 주장을 싣는다(④ 와 같은 설계 —
+  #   `kernel/login_sessions.py:226-228`). 이미 열린 교수 세션은 여기서 거절되고 login 이 새로 든다.
+  operator_grant "seed:operator-grant" || return 1
   run python3 "$runner" --phase login "${args[@]}" || return 1
   for i in 0 1 2 3; do
     run python3 "$runner" --phase accounts "${args[@]}" --accounts-file "$ACCOUNTS_WORK_DIR/operator-$i.json" \

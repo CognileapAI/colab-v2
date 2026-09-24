@@ -7,6 +7,9 @@
 #   ⓐ′ 그 해제와 `projects` 사이에 **재로그인**이 있다. 자격이 바뀐 세션은 제품이 거절한다
 #      (`kernel/session_token.py:59-61` · `kernel/login_sessions.py:192-206`) — 어떤 길로 내리든
 #      열린 세션은 닫힌다. 2026-09-24 재개 1 이 이 자리에서 로그인 화면을 보고 멈췄다.
+#   ⓐ″ 창은 `stage_seed` 가 첫 login **앞**에서 스스로 연다. `--from seed` 재개는 앞 회차의
+#      해제 뒤에서 시작하므로 교수가 운영자가 아니고, `accounts` 가 계정 관리 화면을 못 연다
+#      (2026-09-24 로컬 검증 실측).
 #   ⓑ `account_finalize` 가 `accounts.py finalize` 를 부르기 **전에** 자격을 되올린다.
 #      되올리지 않으면 `accounts.py` 의 「final professor credential drift」 가 나서
 #      교수 비밀번호를 초기값으로 되돌리지 못한다.
@@ -102,6 +105,16 @@ if [ -n "$i_revoke" ] && [ -n "$i_check" ] && [ -n "$i_projects" ]; then
   if [ -z "$i_relogin" ] || [ "$i_relogin" -gt "$i_projects" ]; then
     note "ⓐ′ 해제 뒤 재로그인이 없다 — 자격이 바뀐 세션은 거절되므로 projects 가 로그인 화면을 본다"
   fi
+fi
+# ⓐ″ 창은 `stage_seed` 가 **스스로 연다** — 첫 login 국면 앞에 올림이 있어야 한다.
+#    `--from seed` 재개는 앞 회차의 해제 뒤에서 시작하므로 prelude 의 올림에 기댈 수 없다.
+#    올림이 login 뒤에 오면 그 세션도 주장 불일치로 거절된다(ⓐ′ 와 같은 이유).
+i_open="$(idx 'seed:operator-grant')"
+i_login1="$(idx '\-\-phase login')"
+if [ -z "$i_open" ]; then
+  note 'ⓐ″ seed 국면이 임시 운영자를 스스로 올리지 않는다 — --from seed 재개의 accounts 가 계정 관리 화면을 못 연다'
+elif [ -n "$i_login1" ] && [ "$i_open" -gt "$i_login1" ]; then
+  note 'ⓐ″ 올림이 첫 login 뒤에 온다 — 그 세션은 주장 불일치로 거절된다'
 fi
 
 # ── ⓑ 최종화 직전 되올림 ─────────────────────────────────────────────────
