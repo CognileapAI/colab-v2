@@ -226,6 +226,8 @@ agent-browser 로 착수 빌드와 최종 빌드에서 같은 장면·폭 1440 �
 
 ## spec 과 다르게 한 점
 
+- ⟨advisor ② 반영⟩ `dev-package/reports/design-system/20260924/p2a/cascade-verify.md` 가 이 레인 diff 에서 48줄 바뀐 것은 P2b spec 「정리 항목(P2a 후속)」의 **면제표 미디어 열 추가**(`f0d8baf0`)다 — P2a 판정 내용은 그대로이고 표 형식만 바뀌었다.
+
 1. **`cascade-map.mjs verify` 일반화** — spec 은 P2a `verify` 를 그대로 쓴다고 적었으나 그 모드는 `design-system.css` 선언만 추적한다(착수 트리에 그 파일이 없어 모든 이동이 「증명 없는 변경」이 된다). 기준 트리에 `design-system.css` 가 없을 때 전 선언 단위를 보는 판정을 더했다(P2a 판정은 그대로 · `family` 모드 추가). 지시 「spec 과 코드가 다르면 멈춤」에 해당하는지 판단이 갈릴 수 있어 적는다 — 제품 코드·값의 사실(토큰 9/9 · `.chip--verified`·`.chip--off`·`catalog.css` 중복·`members.css` hover · `shell.css` 임시 블록)은 spec 과 같았다.
 2. `.chip--off` — spec 은 「색·배경·테두리를 primitives 로」라 했으나 배경 gray-50 은 오늘 업로드 화면 `.chip` 배경에 순서로 져 보인 적이 없다. 옮기면 되살아나므로 **삭제**하고 색·테두리만 옮겼다. margin-left 는 spec 대로 범위 선택자로.
 3. `.btn-sm` 은 오늘 모든 요소에서 셸 끝 `.btn` 에 지는 **죽은 규칙**이다 — 목록에는 두되 `primitives.css` 에 정의가 없다(되살리면 시각 변경).
