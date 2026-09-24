@@ -11,7 +11,7 @@
 // 권한이 꺼지면 **버튼이 숨는다 — 비활성이 아니다** (`P-12`). `UploadEntry` 와 같은 게이트다.
 import { useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { UploadModal } from './UploadModal';
+import { UploadModal, useUploadModalPresence } from './UploadModal';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
 import { apiProjectSource } from './projectSource';
@@ -36,14 +36,9 @@ export function GridAttachEntry(props: {
   onAttached?: (() => void) | undefined;
   sources?: UploadSources | undefined;
 }) {
-  // design-review 20260924 #1 값 2 — 「열림」과 「그려 둠」을 따로 든다. 닫기 전환 동안에는 열림 false · 그려 둠 true 이고,
-  // 그 사이 단추를 다시 누르면 열림만 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(onClose) 언마운트한다.
-  const [open, setOpen] = useState(false);
-  const [rendered, setRendered] = useState(false);
-  const openModal = () => {
-    setOpen(true);
-    setRendered(true);
-  };
+  // design-review 20260924 #1 값 2 · design-fix 20260924 F-int — 「열림」·「그려 둠」·세션 번호는 `useUploadModalPresence` 한 벌이다.
+  //   닫는 도중 다시 누르면 입력을 둔 채 되돌아오고, 반영 확정 뒤의 닫기 도중이면 새 모달(①)이 선다.
+  const { open, rendered, session, openModal, onCloseStart, onClose } = useUploadModalPresence();
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
 
   return (
@@ -58,8 +53,9 @@ export function GridAttachEntry(props: {
       </button>
       {rendered && (
         <UploadModal
+          key={session}
           open={open}
-          onCloseStart={() => setOpen(false)}
+          onCloseStart={onCloseStart}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.targetLabId}
@@ -68,10 +64,7 @@ export function GridAttachEntry(props: {
             datasetName: props.datasetName,
             onAttached: props.onAttached,
           }}
-          onClose={() => {
-            setOpen(false);
-            setRendered(false);
-          }}
+          onClose={onClose}
         />
       )}
     </PermissionGate>
