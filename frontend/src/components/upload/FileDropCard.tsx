@@ -3,7 +3,7 @@
 // **번호를 붙이지 않는다** (§8 단계 번호) — 파일 놓기·바로 미리보기는 절차가 아니라
 // 파일을 열어 보는 일이다.
 // **축(위도·경도)을 사람에게 묻지 않는다** — 서버가 파일에서 판별한다 (`〈63〉-㉰`).
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Toast } from '../common/Toast';
 import { MIXED_EXTENSION_NOTICE } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
@@ -141,6 +141,13 @@ export function FileDropCard(props: {
 }) {
   const [slicesOpen, setSlicesOpen] = useState(false);
   const [mixedNotice, setMixedNotice] = useState(false);
+  /**
+   * design-review 20260924 #4 — 끌어 오는 동안 놓을 자리가 반응한다(`is-dragover`).
+   * 자식(글자·아이콘·단추)을 지날 때마다 enter/leave 짝이 오므로 **깊이를 센다** — 불리언 하나로
+   * 받으면 자식 경계에서 꺼졌다 켜지며 깜박인다. 바깥으로 나가거나(깊이 0) 놓으면 끈다.
+   */
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepth = useRef(0);
 
   /** 놓는 순간 확장자를 세어 **한 종류만** 위로 올린다 (PRD-32 · `VAL-002`). */
   function handlePick(files: File[]) {
@@ -165,8 +172,16 @@ export function FileDropCard(props: {
             실제 드롭은 여기 핸들러가 받는다 — 숨긴 1px 인풋에는 드롭이 닿지 않는다.
             폴더가 떨어지면 dropTree 가 재귀로 펼친다 (`〈337〉`). */}
         <label
-          className="dropzone"
+          className={dragOver ? 'dropzone is-dragover' : 'dropzone'}
           data-testid="up-drop"
+          onDragEnter={() => {
+            dragDepth.current += 1;
+            setDragOver(true);
+          }}
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) setDragOver(false);
+          }}
           // ⚠ **버블을 여기서 멈춘다** — 모달이 `document` 에도 같은 드롭을 받는다
           //    (`UploadModal.tsx` ②). 멈추지 않으면 라벨에 놓은 파일이 두 번 접수돼
           //    서버에 두 벌 가고 조각 묶음이 거짓으로 선다.
@@ -177,6 +192,8 @@ export function FileDropCard(props: {
           onDrop={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            dragDepth.current = 0;
+            setDragOver(false);
             void collectDrop(e.dataTransfer).then((dropped) => {
               if (dropped.length === 0) return;
               const paths = new Map(

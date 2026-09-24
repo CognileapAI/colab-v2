@@ -41,7 +41,14 @@ export function UploadEntry(props: {
   variant?: 'gnb' | 'menu' | undefined;
 }) {
   const inMenu = props.variant === 'menu';
+  // design-review 20260924 #1 값 2 — 「열림」과 「그려 둠」을 따로 든다. 닫기 전환 동안에는 열림 false · 그려 둠 true 이고,
+  // 그 사이 단추를 다시 누르면 열림만 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(onClose) 언마운트한다.
   const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const openModal = () => {
+    setOpen(true);
+    setRendered(true);
+  };
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
   // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
   const seq = props.openRequest?.seq ?? 0;
@@ -56,7 +63,7 @@ export function UploadEntry(props: {
     const registerUploadId = props.openRequest?.registerUploadId;
     setResumeRequest(resumeUploadId ? { seq, uploadId: resumeUploadId } : null);
     setRegisterRequest(registerUploadId ? { seq, uploadId: registerUploadId } : null);
-    setOpen(true);
+    openModal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seq]);
 
@@ -67,7 +74,7 @@ export function UploadEntry(props: {
         className={inMenu ? 'gnb-more-item' : 'gnb-upload'}
         data-testid={inMenu ? 'gnb-more-upload' : 'gnb-upload'}
         aria-label="업로드"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
       >
         {/* 좁은 화면에서는 `.lbl` 이 숨고 이 아이콘만 남는다 (`shell.css` 640px).
             아이콘이 없으면 버튼이 빈 칸이 된다 — main 의 모바일 반응형 병합에서 실제로 그럴 뻔했다.
@@ -88,15 +95,20 @@ export function UploadEntry(props: {
         </svg>
         <span className="lbl">업로드</span>
       </button>
-      {open && (
+      {rendered && (
         <UploadModal
+          open={open}
+          onCloseStart={() => setOpen(false)}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.openRequest?.targetLabId}
           lineageStep={props.lineageStep}
           resumeRequest={resumeRequest ?? undefined}
           registerRequest={registerRequest ?? undefined}
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            setRendered(false);
+          }}
         />
       )}
     </PermissionGate>

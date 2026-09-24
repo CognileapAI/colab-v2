@@ -36,7 +36,14 @@ export function GridAttachEntry(props: {
   onAttached?: (() => void) | undefined;
   sources?: UploadSources | undefined;
 }) {
+  // design-review 20260924 #1 값 2 — 「열림」과 「그려 둠」을 따로 든다. 닫기 전환 동안에는 열림 false · 그려 둠 true 이고,
+  // 그 사이 단추를 다시 누르면 열림만 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(onClose) 언마운트한다.
   const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const openModal = () => {
+    setOpen(true);
+    setRendered(true);
+  };
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
 
   return (
@@ -45,12 +52,14 @@ export function GridAttachEntry(props: {
         type="button"
         className="btn btn-secondary"
         data-testid="grid-attach-open"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
       >
         기준 격자 추가
       </button>
-      {open && (
+      {rendered && (
         <UploadModal
+          open={open}
+          onCloseStart={() => setOpen(false)}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.targetLabId}
@@ -59,7 +68,10 @@ export function GridAttachEntry(props: {
             datasetName: props.datasetName,
             onAttached: props.onAttached,
           }}
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            setRendered(false);
+          }}
         />
       )}
     </PermissionGate>
