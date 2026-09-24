@@ -34,7 +34,13 @@ print(v if isinstance(v,str) else "")' "$key" 2>/dev/null || true)"
   printf '%s' "$v"
 }
 
-[ "$(hook_field agent_type)" = "researcher" ] || exit 0
+AGENT_TYPE="$(hook_field agent_type)"
+# matcher 가 researcher 로 발화했는데 필드가 비면 조용히 넘기지 않는다 — 필드명이 바뀌면 전원 무음 skip 이 된다.
+if [ -z "$AGENT_TYPE" ]; then
+  echo "researcher-task: agent_type 없음 — 자동 task 를 열지 않았다 · 직접 begin: python3 scripts/agent-bridge.py lifecycle begin --role researcher"
+  exit 0
+fi
+[ "$AGENT_TYPE" = "researcher" ] || exit 0
 
 CWD="$(hook_field cwd)"
 AGENT_ID="$(hook_field agent_id)"

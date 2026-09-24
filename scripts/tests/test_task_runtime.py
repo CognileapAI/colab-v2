@@ -358,10 +358,20 @@ class ResearcherTaskHookTests(unittest.TestCase):
         self.assertFalse(self.runtime_tasks())
 
     def test_f_other_roles_print_nothing_and_begin_nothing(self):
-        for agent_type in ('lane-worker', 'Explore', 'advisor', ''):
+        for agent_type in ('lane-worker', 'Explore', 'advisor'):
             with self.subTest(agent_type=agent_type):
                 result = self.run_hook({'cwd': str(self.root), 'agent_type': agent_type, 'agent_id': 'a1'})
                 self.assertEqual((result.returncode, result.stdout), (0, ''))
+        self.assertFalse(self.runtime_tasks())
+
+    def test_f2_missing_agent_type_is_announced_not_silently_skipped(self):
+        for payload in ({'cwd': str(self.root), 'agent_type': '', 'agent_id': 'a1'},
+                        {'cwd': str(self.root), 'agent_id': 'a1'}):
+            with self.subTest(payload=sorted(payload)):
+                result = self.run_hook(payload)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('researcher-task: agent_type 없음', result.stdout)
+                self.assertIn('lifecycle begin --role researcher', result.stdout)
         self.assertFalse(self.runtime_tasks())
 
     def load_bridge(self):

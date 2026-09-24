@@ -17,6 +17,7 @@
 #   실브라우저를 띄우지 않으므로 호스트의 다른 세션과 무관하다 (spec `S-HARNESS-LANE-HYGIENE-20260924` F2).
 #   ⑶ `AB_SESSION` 없음 → 고유 세션(`la-…`)으로 돌고 끝에 `close` 1회
 #   ⑷ `AB_SESSION=x`   → 호출자 소유 세션 `x` 로 돌고 `close` 0회
+#   ⑸ 실브라우저 ⓐ·ⓑ 뒤 판정부가 연 `la-…` 세션의 프로세스 0개(5초 안)
 #
 # ⓑ 가 통과해 버리면 이 게이트는 아무것도 막지 않는다 — 그 케이스가 이 셀프테스트의 존재 이유다.
 set -uo pipefail
@@ -136,10 +137,46 @@ elif [ "$ss" != x ]; then red "⑷ AB_SESSION=x — 호출자 세션이 아닌 �
 elif [ "$c" != 0 ]; then red "⑷ AB_SESSION=x — 호출자 소유 세션을 ${c}회 닫았다 (기대 0회) — 로그인 선행 흐름이 깨진다"
 else echo "  ✓ ⑷ AB_SESSION=x → 호출자 세션 x · close 0회 (호출 ${n}건)"; fi
 
+# ── ⑸ 실브라우저 ⓐ·ⓑ 뒤 판정부가 연 세션의 프로세스가 남지 않는다 ─────────────────
+#   ⑶ 은 가짜 바이너리로 close **호출**만 잰다. 이것은 실제 데몬·chrome 의 **소멸**을 잰다
+#   (spec v2 F2 실효 · advisor ② 차단급). 세션 이름은 판정부가 index.md 머리에 찍은 값이고,
+#   데몬과 chrome 은 env `AGENT_BROWSER_SESSION=<이름>` 을 지닌다. close 뒤 chrome 이 내려가는
+#   시간을 5초까지 본다 — 넘기면 남은 것이다. 남의 세션은 이름이 달라 세지 않는다.
+for key in green red; do
+  idx="$REPORTS/$key/frontend-visual/index.md"
+  if [ ! -f "$idx" ]; then
+    # ⓐ·ⓑ 가 준비 실패로 가로채였으면 판정부가 돌지 않았다 — 아래 준비 판정이 통과를 막는다.
+    [ -n "${EXPECT_READINESS[*]:-}" ] && continue
+    red "⑸ $key — 판정부 index.md 가 없다($idx) · 세션 소멸을 잴 수 없다"; continue
+  fi
+  sess="$(sed -n '1s/.* · session \(.*\)$/\1/p' "$idx")"
+  case "$sess" in
+    la-*) ;;
+    *) red "⑸ $key — 판정부 세션이 고유 세션이 아니다('$sess')"; continue ;;
+  esac
+  left=""
+  for _ in 1 2 3 4 5 6; do
+    left=""
+    for e in /proc/[0-9]*/environ; do
+      # 2>/dev/null 을 < 앞에 둔다 — bash 는 왼쪽부터 적용하므로 남의 /proc 권한 거부가 로그에 새지 않는다.
+      if tr '\0' '\n' 2>/dev/null < "$e" | grep -qxF "AGENT_BROWSER_SESSION=$sess"; then
+        pid="${e#/proc/}"; left="$left ${pid%/environ}"
+      fi
+    done
+    [ -z "$left" ] && break
+    sleep 1
+  done
+  if [ -n "$left" ]; then
+    red "⑸ $key — 판정부 세션 $sess 의 프로세스가 5초 뒤에도 남았다(pid$left) — 연 브라우저를 닫지 않았다"
+  else
+    echo "  ✓ ⑸ $key 실브라우저 뒤 세션 $sess 프로세스 0개"
+  fi
+done
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::frontend-visual-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict frontend-visual-selftest
-echo "frontend-visual-selftest green — 검사 6건 전건 기대대로 (green 2 · red(판정) 1 · red(준비·입력미선언) 1 · 세션 소유 2)."
+echo "frontend-visual-selftest green — 검사 8건 전건 기대대로 (green 2 · red(판정) 1 · red(준비·입력미선언) 1 · 세션 소유 2 · 세션 소멸 2)."
