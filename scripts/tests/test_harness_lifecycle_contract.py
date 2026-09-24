@@ -326,7 +326,7 @@ class LifecycleRedTests(unittest.TestCase):
                     self.assertEqual(result.returncode,expected,result.stdout+result.stderr)
 
     def test_reseed_ack_values_are_filled_only_by_the_user(self):
-        """2026-09-25 — 비어 있지 않은 dev 삭제 GO 는 사용자 몫이다. ack 값을 넣는 Bash 는 Claude·Codex 모두 막힌다."""
+        """2026-09-25 — 비어 있지 않은 dev 삭제 GO 는 사용자 몫이다. ack 값 할당 꼴 Bash 는 Claude·Codex 모두 거부된다(우발적 주입 경로 축소 · 자동 보안 경계 아님)."""
         token = 'a' * 64
         blocked = (f'COLAB_RESEED_ACK_NONEMPTY={token} bash dev-package/tools/dev-reseed/reseed.sh --from reset',
                    f'cd /tmp && export COLAB_RESEED_ACK_NONEMPTY={token}; bash reseed.sh --from reset',

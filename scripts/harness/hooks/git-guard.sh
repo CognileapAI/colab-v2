@@ -128,6 +128,9 @@ IS_SUBAGENT=0
 #   보고 준 명시 GO 의 기록이고(`.agents/rules/deploy.md` 11번 증보), 사용자가 자기 터미널에서 넣는다.
 #   2026-09-24 사고의 주체가 상시 승인 아래의 에이전트였다 — 권고 문장만으로는 막히지 않았다.
 #   ⚠ 이름을 읽기만 하는 명령(grep 등)은 통과한다 — `이름=` 할당 꼴만 본다. 한 겹 감싼 형태는 아래 한계와 같다.
+#   ⚠ 이 검사는 우발적 주입 경로를 줄일 뿐 자동 보안 경계가 아니다(`AGENTS.md` — 명시적 guard 호출은 자동 보안
+#   경계가 아니다). 남는 경로 — 의사 터미널(pty)로 토큰 읽기 · count-before.json ＋ challenge nonce 로 로컬 재계산 ·
+#   env 파일·Write 도구로 값 주입. 규칙은 `.agents/rules/deploy.md` 11번이다.
 if printf '%s' "$CMD" | grep -Eq '(^|[[:space:];&|(`])COLAB_RESEED_ACK_(NONEMPTY|BASIS)='; then
   echo "⛔ 차단(H3 git-guard ⑹) — COLAB_RESEED_ACK_NONEMPTY·COLAB_RESEED_ACK_BASIS 는 에이전트가 채우지 않는다. 비어 있지 않은 dev 삭제는 사용자가 정지 게이트의 표별 계수를 보고 명시 GO 를 준 뒤 사용자 터미널에서 넘긴다(.agents/rules/deploy.md 11번 증보). 훅을 비활성화하지 않는다." >&2
   exit 2

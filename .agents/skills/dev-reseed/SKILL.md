@@ -128,7 +128,10 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 �
   남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프) 토큰 없이 「자기 터미널에서 다시 열어야 보인다」만 남긴다.
 - 넘기는 것은 **사용자**다 — Ted 가 계수를 보고 GO 를 준 뒤 사용자 터미널에서 `COLAB_RESEED_ACK_NONEMPTY`(그 토큰)와
   `COLAB_RESEED_ACK_BASIS`(GO 근거 — 누가 · 어디서 · 언제)를 두고 `--from reset` 으로 다시 연다. 판정·근거는 `reset-ack.json` 에 남는다.
-  ⛔ 에이전트는 두 값을 채우지 않는다 — 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)이 Claude·Codex 모두에서 막는다.
+  ⛔ 에이전트는 두 값을 채우지 않는다. 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)은 Claude·Codex 에서 할당 꼴
+  명령을 거부하고, 위 터미널 한정 출력은 거부 출력을 읽는 경로를 줄인다 — 둘 다 우발적 읽기·주입 경로를 줄일 뿐
+  **자동 보안 경계가 아니다**(`AGENTS.md`). 남는 경로: 의사 터미널(pty)로 stdout 받기 · 실행 자리 `count-before.json` ＋
+  원격 challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입. 지키는 것은 규칙(deploy.md 11번)이다.
 - 도구도 스스로 막는다 — `--phase schema` 는 DROP 직전 같은 프로세스에서 다시 세어 비어 있지 않은데 재계수 sha256 과 같은
   ack 가 없으면 지우지 않는다. `--phase s3-plan` 은 이번 reset 의 DROP 직전 계수(`count-at-drop.json`)와 그 sha256 을 필수로
   받고, **지금** DB 가 가리키는 키가 1건이라도 있으면 계획을 쓰지 않는다. 런북대로 손으로 불러도 같다.

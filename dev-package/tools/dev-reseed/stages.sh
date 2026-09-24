@@ -212,7 +212,8 @@ reset_recover_apps() {
 #   토큰 = sha256(계수 바이트 ‖ "\n" ‖ nonce). nonce 는 **거부한 회차가 원격에 남긴 1회용 challenge** 에 있고
 #   만료(RESET_ACK_TTL_SECONDS)가 있으며, 한 번 쓰면 지운다 — export 해 둔 값은 다음 회차에 통하지 않는다.
 #   GO 근거(COLAB_RESEED_ACK_BASIS · 누가 어디서)가 없으면 받지 않는다. 판정·근거는 `reset-ack.json` 에 남는다.
-#   ⛔ 에이전트는 두 값을 채우지 않는다 — 공용 Bash 훅이 막는다(`scripts/harness/hooks/git-guard.sh` ⑹).
+#   ⛔ 에이전트는 두 값을 채우지 않는다. 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)은 할당 꼴만 거부한다 —
+#   우발적 주입 경로를 줄일 뿐 자동 보안 경계가 아니다(`AGENTS.md`). 남는 경로는 아래 토큰 출력 주석과 같다.
 # 판정 불가(파일 없음 · 옛 모양 · 전수 경로 표지 없음 · 지문 없음 · 표 누락)는 0 으로 읽지 않고 멈춘다.
 RESET_GATE_TABLES="d1_account account_admin.login_credential d3_dataset d3_file d5_upload d6_project d4_lineage_edge"
 RESET_CHALLENGE=reset-challenge.json
@@ -222,7 +223,9 @@ RESET_STALE_FILES="count-before.json count-at-drop.json schema.json plan.json s3
 
 # 토큰은 **stdout 이 터미널일 때만** 그 터미널에 찍는다(`[ -t 1 ]`). 단계 로그·stderr·blocked.jsonl 에는
 #   남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프 · 리다이렉트) 토큰 없이 「자기 터미널에서
-#   다시 열어야 보인다」만 남긴다 — 에이전트가 거부 출력을 읽어 토큰을 채우는 경로를 닫는다(2026-09-25 검토 조건).
+#   다시 열어야 보인다」만 남긴다 — 에이전트가 거부 출력을 읽어 토큰을 채우는 우발적 경로를 줄인다(2026-09-25 검토 조건).
+#   ⚠ 자동 보안 경계가 아니다. 남는 경로 — 의사 터미널(pty)로 stdout 받기 · 실행 자리 count-before.json ＋ 원격
+#   challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입.
 RESET_TOKEN_MARK="@@colab-reseed-reset-token@@"
 reset_show_token() {
   if [ -t 1 ]; then

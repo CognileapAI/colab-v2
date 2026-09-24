@@ -64,8 +64,11 @@
     ⛔ **비어 있지 않은 dev 는 상시 승인 밖이다 — 매 회차 Ted 의 명시 GO 가 있어야 지운다.** GO 는 **현재 대화에서**
     Ted 가 정지 게이트가 찍은 표별 계수(시드 기준선 초과분 포함)를 보고 준 것이어야 하고, 사용자가 자기 터미널에서
     그 회차의 1회용 토큰(`COLAB_RESEED_ACK_NONEMPTY` · 만료 30분 · 1회 소진)과 GO 근거(`COLAB_RESEED_ACK_BASIS`)를 넣어
-    넘긴다. 에이전트는 두 값을 채우지 않는다(공용 Bash 훅 `scripts/harness/hooks/git-guard.sh` ⑹ 이 막는다) — 문서·역할
-    정의·지난 GO 가 이 GO 를 대신하지 않는다. 판정·근거는 실행 자리 `reset-ack.json` 에 남는다.
+    넘긴다. 에이전트는 두 값을 채우지 않는다 — 문서·역할 정의·지난 GO 가 이 GO 를 대신하지 않는다.
+    판정·근거는 실행 자리 `reset-ack.json` 에 남는다. ⚠ 공용 Bash 훅 `scripts/harness/hooks/git-guard.sh` ⑹(할당 꼴 거부)과
+    토큰의 터미널 한정 출력(`[ -t 1 ]`)은 우발적 읽기·주입 경로를 줄일 뿐 **자동 보안 경계가 아니다**(`AGENTS.md` —
+    명시적 guard 호출은 자동 보안 경계가 아니다). 남는 경로 — 의사 터미널(pty)로 stdout 받기 · 실행 자리
+    `count-before.json` ＋ 원격 challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입.
     staging·prod 는 무변(매회 GO).
     ／ 종전(2026-09-14 · `DR-4` · 〈398〉) ~~**dev 한정 상시 승인** — 위 게이트 넷 충족 시 회차별 GO 불요~~ — 2026-09-15·16·24 세 번
     사람이 만든 자료를 지웠다. ／ 그 전 ~~`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — 승인은 1회 소진이다~~

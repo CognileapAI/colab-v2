@@ -24,7 +24,8 @@
 #   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
-#   COLAB_RESEED_ACK_NONEMPTY · COLAB_RESEED_ACK_BASIS — **사용자만** 넣는다(에이전트 Bash 는 훅이 막는다).
+#   COLAB_RESEED_ACK_NONEMPTY · COLAB_RESEED_ACK_BASIS — **사용자만** 넣는다(git-guard ⑹ 은 할당 꼴만 거부 ·
+#     우발적 주입 경로를 줄일 뿐 자동 보안 경계가 아니다 — 남는 경로는 `.agents/rules/deploy.md` 11번).
 #     reset ①ᵇ 가 비어 있지 않은 dev 에서 멈추며 찍은 **그 회차의 1회용 토큰**(만료 30분 · 한 번 쓰면 소진 ·
 #     stdout 이 터미널일 때만 보인다)과
 #     GO 근거(누가 · 어디서 · 언제). 없거나 다르면 앱 정지·DROP·S3 전에 멈춘다(2026-09-24 사고 · `stages.sh` 정지 게이트).
