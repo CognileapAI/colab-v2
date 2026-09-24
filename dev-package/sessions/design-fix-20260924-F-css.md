@@ -53,7 +53,7 @@ vitest 전체: 착수 전 `Test Files 134 passed · Tests 1732 passed` → 구�
 
 ## 4. 하지 않은 것
 
-- **A21(업로드 `.dr-nav button:active` · `.dr-useg button:active` 에 값 19)** — 미적용. 기존 `frontend/test/design-fix-20260924-L2.test.tsx:226` · `:228` 이 두 선택자의 값을 `var(--color-gray-100)` 으로 고정한다. 이 레인의 파일 면(spec 수정 레인 표)은 기존 시험 중 `design-fix-20260924-L1.test.ts` 만 허용하므로 L2 시험을 고치지 않았고, CSS 만 바꾸면 frontend-test 가 판정 red 가 된다. spec 의 파일 면 누락(⑶ 기획이 애매) — 오케스트레이터가 L2 시험 두 줄 변경을 이 레인 또는 다른 레인에 배정해야 한다. 그때까지 다크에서 두 단추의 누름 = hover(1.00:1)가 남는다. `docs/design-system.md` ⑤ 누름 줄에 미적용을 적었다. 적용 시 알려진 부수 효과: `.dr-nav button` 테두리(border-strong · 다크 #45566a)와 누름 면이 같은 값이 된다(A21 원문 caveat).
+- **A21(업로드 `.dr-nav button:active` · `.dr-useg button:active` 에 값 19)** — 미적용. 기존 `frontend/test/design-fix-20260924-L2.test.tsx:226` · `:228` 이 두 선택자의 값을 `var(--color-gray-100)` 으로 고정한다. 이 레인의 파일 면(spec 수정 레인 표)은 기존 시험 중 `design-fix-20260924-L1.test.ts` 만 허용하므로 L2 시험을 고치지 않았고, CSS 만 바꾸면 frontend-test 가 판정 red 가 된다. spec 의 파일 면 누락(⑶ 기획이 애매) — 오케스트레이터가 L2 시험 두 줄 변경을 이 레인 또는 다른 레인에 배정해야 한다. 그때까지 다크에서 두 단추의 누름 = hover(1.00:1)가 남는다. (수정 라운드에서 정본 기재 위치를 ⑤ 규칙 줄 → ⑦ 판정 대기 17 로 옮겼다 · 아래 「수정 라운드」.) 적용 시 알려진 부수 효과: `.dr-nav button` 테두리(border-strong · 다크 #45566a)와 누름 면이 같은 값이 된다(A21 원문 caveat).
 - 실화면 증거 · 캡처 대조(spec §5 「게이트 밖 증거」) — spec F3 대로 통합 단계 몫. 누름(`:active`) · 끌어 오는 동안(`is-dragover`) 상태는 정적 audit 장면에 없으므로 `frontend-visual` 이 재지 않는다 — 이 레인의 누름·드롭 변경은 CSS 원문 계측(vitest)으로만 확인했다. 실제 브라우저 누름 검증 미실행.
 - `COLAB_FIX_LANE=1` 훅 — 이 환경에서 훅에 전달할 수단이 없어 걸리지 않았다. 규율로 지켰다: 구현 커밋 `b69ea79a` 의 변경 파일은 `frontend/src/**` 7 · `docs/design-system.md` · `.agents/skills/design-review/SKILL.md` 뿐이고 `frontend/test/**` · `gates/**` · `contracts/**` 는 0(`git show --stat b69ea79a`).
 - `gates/fixtures/frontend-design-lint/*` — 새 토큰은 다크 값이 있어 `same-in-dark.txt` 변경 불요. 변경 0.
@@ -65,3 +65,39 @@ vitest 전체: 착수 전 `Test Files 134 passed · Tests 1732 passed` → 구�
 - `.lin-unknown-why`(`lineage.css`)는 거는 TSX 가 0건인 규칙이다 — 주석에 적었고 삭제하지 않았다. 어느 게이트도 재지 않는다 — 후속.
 - `.dropzone.is-dragover .up-drop-icon` 흰 면 대 영역 primary-50 은 L 1.11:1 · D 1.36:1 — 장식 원형이라 대비 합격선 대상은 아니나 약한 구분이다(값 21 확정값 그대로).
 - A37(`live_audit.sh` 60자 절단) · A39(visual 데몬의 뮤텍스 fd 상속) · `live_probe.js` 의 `@layer` 미계수 — 이 run 에서도 재현. 하네스 후속(spec 「통합 수정」 마지막 줄).
+
+## 6. 수정 라운드 (2026-09-25 · 리뷰 확정 결함 F1 · F2)
+
+- 기준: `origin/worktree-wf_808554ed-fad-1` = `79c2b61f`(`git merge-base --is-ancestor bee7786f HEAD` 종료 0) · `frontend/` 에서 `npm ci` 종료 0
+- lifecycle task: `d33e9bd416cf45669791d8e8ff1da428`(role lane-worker · 선언 게이트 6 — 본 레인과 같은 집합)
+
+### 6-1. 항목 · 처리
+
+| 결함 | 처리 | before → after | 시험 |
+|---|---|---|---|
+| F2(minor · `docs/design-system.md:281`) 정본 ⑤ 누름 줄에 레인 상태 문구 | 수정 | before 「업로드 달력 `.dr-nav button` · `.dr-useg button` 은 아직 gray-100(다크 누름 = hover · F-css 미적용 · 레인 보고서)」 → after 「hover 가 `--color-surface-hover` 인 자리의 누름은 `--color-surface-pressed`(값 19)를 쓴다(예: …) — 두 테마에서 누름 ≠ hover. 이 규칙에 맞지 않는 자리는 ⑦ 판정 대기 17 에 둔다.」 ＋ ⑦ 시각 값 표에 17 행(업로드 달력 두 단추 누름 · 오늘 렌더 · 적용 선택지와 다크 `.dr-nav` 테두리 #45566a = 누름 면 부수 효과 · L2 시험 고정값 동반 갱신 · 출처 A21) | `design-fix-20260924-F-css.test.ts` 「수정 라운드 F2 · 정본 ⑤ 누름 줄은 규칙만 — 남은 자리는 ⑦ 판정 대기」 2건 |
+| F1(major · `upload.css:509` · `:540`) A21 · 값 19 미적용 | **미수정 · 정지 보고** | 변경 없음 — `.dr-nav button:active` · `.dr-useg button:active` 는 `var(--color-gray-100)` 그대로 | 추가 안 함 |
+
+### 6-2. RED 증거
+
+- 시험 커밋 `dc1e1dbc`(구현 전): `Tests  2 failed | 49 passed (51)` — `AssertionError: expected '- 누름 피드백 = hover 의 한 단 진한 값(`:active`…' not to match /미적용|레인 보고서|아직/` · `AssertionError: expected '' to contain '.dr-useg button'`. import 오류 아님(판정 단언 실패).
+- 구현 커밋 `5fdf697c` 뒤: F-css + L1 시험 `Tests  106 passed (106)`.
+
+### 6-3. 게이트
+
+`COLAB_TASK_ID=d33e9bd416cf45669791d8e8ff1da428 COLAB_VISUAL_URLS='<장면 8 × (라이트 · &theme=dark) = 16>' bash gates/run.sh task`(저장소 루트 · 직렬 · 장면 = 본 레인 §3 과 같은 8).
+
+| run_id | 커밋 | 계 | 증거 |
+|---|---|---|---|
+| `064c184a2a3a4d78bb45ba0f60494e63` | `5fdf697c`(이 절 기재 전) | green 6 / red(판정) 0 / red(준비) 0 | `.git/colab-harness/d29fac1f57f6f2927e85b2a555e5e244/d33e9bd416cf45669791d8e8ff1da428/064c184a2a3a4d78bb45ba0f60494e63/gate-summary.json` · 같은 run 의 `logs/` |
+
+- 게이트별: typecheck 오류 0 · frontend-test 통과 1783 · 실패 0(+2 = F2 시험) · fixture-reach 도달 207 · 금지 0 · design-lint 파일 21 · 다크 누락 0(면제 6) · 색 리터럴 0 · 문서 표 갈림 0 · selftest 26건 기대대로(green 6 · red 14 · red(준비) 6) · visual 페이지 13 · 13px 미만 0 · 대비<4.5 0 · 스크린샷 26장(증거 `/tmp/frontend-visual-1yoIZK` · 커밋 안 됨 · 페이지 13 = A37 절단).
+- visual 뒤 `agent-browser --session design close` 실행 · 남은 agent-browser 프로세스 0(`pgrep`).
+- 이 절 기재로 파일 hash 가 바뀌므로 인계 증거는 이 보고서 커밋 뒤 같은 명령을 다시 돌린 run 이다 — run_id 는 레인 최종 메시지의 `COLAB_HANDOFF` 줄. 제품 파일은 두 run 사이에 같다.
+
+### 6-4. 하지 않은 것
+
+- **F1 · A21 CSS 적용** — 정지 보고. 적용하려면 `frontend/test/design-fix-20260924-L2.test.tsx:226` · `:228` 의 고정값 `var(--color-gray-100)` 을 함께 바꿔야 하는데, 이 수정 라운드 지시의 파일 면도 기존 시험 중 `design-fix-20260924-L1.test.ts` 만 허용한다(「그 밖 = 정지·보고」). CSS 만 바꾸면 frontend-test 판정 red. 분류 ⑶ 기획이 애매 — 결함 fix_hint 는 「오케스트레이터가 L2 시험 두 줄 + CSS 두 줄을 한 변경으로 배정」이다. 배정 시 결정 필요: 다크 `.dr-nav button` 테두리 border-strong(#45566a) = surface-pressed(#45566a)라 누르는 동안 테두리가 안 보인다.
+- F-css 「누름 ≠ hover」 표에 두 선택자 추가 — 하지 않음. 이 레인 안에서 green 으로 만들 수 없는 단언이라 넣으면 frontend-test 가 판정 red 로 고정된다. A21 을 배정받는 변경이 같은 커밋에서 더해야 한다.
+- 실제 브라우저 누름 검증 — 이 라운드는 문서·시험만 바꿨고 CSS 변경 0 이라 해당 없음.
+- `COLAB_FIX_LANE=1` 훅 — 이 환경에서 걸 수 없음. 규율: 구현 커밋 `5fdf697c` 변경 파일 = `docs/design-system.md` 1 개뿐 · `frontend/test/**` · `gates/**` · `contracts/**` 0(`git show --stat 5fdf697c`). 시험 커밋 `dc1e1dbc` = `frontend/test/design-fix-20260924-F-css.test.ts` 1 개.
