@@ -96,9 +96,12 @@ CAND_A = ParentCandidate(dataset_id="00000000000000000000000AA1", name="낙동�
                          topic="강우·강수", summary="관측소 시간 강우")
 CAND_B = ParentCandidate(dataset_id="00000000000000000000000BB2", name="한강 격자 강우")
 
+#: ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ 모델은 확신도·근거 문장을 내지 않는다 — **인용까지**다.
+#: 인용이 한 항목도 없으면 그 후보는 제안이 아니라서 `result_count` 가 0이 된다.
 SUGGESTED = json.dumps({"suggestions": [
-    {"parentDatasetId": CAND_A.dataset_id, "confidence": "확실",
-     "rationale": "같은 유역의 관측 원자료다.", "suggestedParentRole": "주입력"}]},
+    {"parentDatasetId": CAND_A.dataset_id, "suggestedParentRole": "주입력",
+     "evidence": [{"field": "variables", "uploadValue": "pr",
+                   "candidateValue": "pr"}]}]},
     ensure_ascii=False)
 
 FILE_META = {"fileName": "nakdong_rain_2024.nc", "kind": "본체"}

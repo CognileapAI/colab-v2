@@ -222,9 +222,11 @@ class _Fake:
 
     def __init__(self, reply: str = '{"suggestions": []}') -> None:
         self.reply, self.calls = reply, 0
+        self.payloads: list[dict] = []
 
     def __call__(self, payload: dict) -> str:
         self.calls += 1
+        self.payloads.append(payload)
         return self.reply
 
 
@@ -297,11 +299,19 @@ def test_플래그를_켜려_했는데_키가_없으면_고장_문구다() -> No
     assert out.empty_declaration == EmptyLineageSuggester.NO_CREDENTIALS_REASON
 
 
+#: 모델이 낼 수 있는 인용 한 항목 (`ParentCandidateSuggestion.evidence.items`).
+_EV = {"field": "variables", "uploadValue": "pr", "candidateValue": "pr"}
+
+
+def _model_item(parent_id=CAND_A, **over):
+    item = {"parentDatasetId": parent_id, "suggestedParentRole": "주입력",
+            "evidence": [dict(_EV)]}
+    item.update(over)
+    return item
+
+
 def test_켠_회차의_제안이_표면까지_흐른다() -> None:
-    fake = _Fake(json.dumps({"suggestions": [
-        {"parentDatasetId": CAND_A, "confidence": "확실",
-         "rationale": "기상청 AWS 일강수량을 crop 한 표본이다",
-         "suggestedParentRole": "주입력"}]}, ensure_ascii=False))
+    fake = _Fake(json.dumps({"suggestions": [_model_item()]}, ensure_ascii=False))
     res = _llm_client(fake).post(
         PATH, json=_body(candidates=[_cand(), _cand(datasetId=CAND_B, name="DEM")]),
         headers=_headers())
@@ -313,16 +323,58 @@ def test_켠_회차의_제안이_표면까지_흐른다() -> None:
     one = body["suggestions"][0]
     assert one["parentDatasetId"] == CAND_A
     assert one["parentDatasetName"] == "강수 — 원자료"
-    assert one["confidence"] == "확실"
     assert one["kind"] == "가공 전 데이터"
+    # **인용이 표면까지 나간다** — core-api 가 이 값을 실제 메타와 대조한다.
+    assert one["evidence"] == [_EV]
     for forbidden in ("score", "confidencePercent", "%"):
         assert forbidden not in json.dumps(body, ensure_ascii=False)
 
 
+def test_표면이_내는_확신도와_근거가_자리채움이다() -> None:
+    """**모델이 만든 값이 아니다**(판정 기록 2회차 4) — core-api 가 다시 쓴다.
+    계약 required 라 열쇠 자체는 있어야 한다."""
+    from colab_ai.domains.d10_suggestion import (
+        PLACEHOLDER_CONFIDENCE,
+        PLACEHOLDER_RATIONALE,
+    )
+    fake = _Fake(json.dumps({"suggestions": [
+        _model_item(confidence="확실", rationale="모델이 스스로 쓴 문장이다")]},
+        ensure_ascii=False))
+    one = _llm_client(fake).post(PATH, json=_body(candidates=[_cand()]),
+                                 headers=_headers()).json()["suggestions"][0]
+    assert one["confidence"] == PLACEHOLDER_CONFIDENCE
+    assert one["rationale"] == PLACEHOLDER_RATIONALE
+    assert "모델이 스스로 쓴 문장이다" not in json.dumps(one, ensure_ascii=False)
+
+
+def test_제안_한_장의_열쇠가_계약_안에_있다(spec) -> None:
+    """**열쇠 ⊆ 계약** — 계약에 없는 열쇠를 실으면 core-api 가 응답을 통째로 버린다."""
+    schemas = spec["components"]["schemas"]
+    allowed = set(schemas["AiSuggestionBase"]["properties"])
+    allowed |= set(schemas["ParentCandidateSuggestion"]["allOf"][1]["properties"])
+    fake = _Fake(json.dumps({"suggestions": [_model_item()]}, ensure_ascii=False))
+    one = _llm_client(fake).post(PATH, json=_body(candidates=[_cand()]),
+                                 headers=_headers()).json()["suggestions"][0]
+    assert set(one) <= allowed, f"계약 밖 열쇠가 실렸다: {set(one) - allowed}"
+    item = schemas["ParentCandidateSuggestion"]["allOf"][1][
+        "properties"]["evidence"]["items"]
+    for ev in one["evidence"]:
+        assert set(ev) == set(item["required"]), f"근거 항목이 계약 밖이다: {set(ev)}"
+        assert ev["field"] in item["properties"]["field"]["enum"]
+
+
+def test_인용이_한_항목도_없는_후보는_표면에서도_제안이_아니다() -> None:
+    fake = _Fake(json.dumps({"suggestions": [_model_item(evidence=[])]},
+                            ensure_ascii=False))
+    body = _llm_client(fake).post(PATH, json=_body(candidates=[_cand()]),
+                                  headers=_headers()).json()
+    assert body["suggestions"] == []
+    assert body["degradedReason"], "0건의 사유를 응답이 스스로 말해야 한다"
+
+
 def test_후보_밖_ID_는_표면에서도_사라진다() -> None:
     fake = _Fake(json.dumps({"suggestions": [
-        {"parentDatasetId": "01ARZ3NDEKTSV4RRFFQ69G5FZZ", "confidence": "확실",
-         "rationale": "지어낸 ID 다"}]}, ensure_ascii=False))
+        _model_item("01ARZ3NDEKTSV4RRFFQ69G5FZZ")]}, ensure_ascii=False))
     body = _llm_client(fake).post(PATH, json=_body(candidates=[_cand()]),
                                   headers=_headers()).json()
     assert body["suggestions"] == []
@@ -459,6 +511,26 @@ def test_오퍼레이션_산문이_인용_검증_모형을_적는다(spec) -> No
 def test_요청의_가공단계_열쇠를_표면이_받는다(client) -> None:
     res = client.post(PATH, json=_body(processingLevel=2), headers=_headers())
     assert res.status_code == 200, res.text
+
+
+@pytest.mark.parametrize("bad", [-1, 4, 2.0, True, "2", None, []])
+def test_요청의_가공단계가_계약_밖이면_400_이다(client, spec, bad) -> None:
+    """계약은 `integer · 0..3` 이다. 표면이 값을 안 보면 **계약 밖 값이 그대로 흘러간다**
+    — 아래층에서 터지거나, 순위 문장이 틀린 기준으로 읽힌다."""
+    lv = spec["components"]["schemas"]["LineageSuggestionRequest"][
+        "properties"]["processingLevel"]
+    assert (lv["minimum"], lv["maximum"]) == (0, 3)
+    res = client.post(PATH, json=_body(processingLevel=bad), headers=_headers())
+    assert res.status_code == 400, res.text
+
+
+def test_업로드_가공단계가_모델에게_가는_본문에_실린다() -> None:
+    fake = _Fake()
+    _llm_client(fake).post(PATH, json=_body(processingLevel=1, candidates=[_cand()]),
+                           headers=_headers())
+    assert fake.calls == 1
+    body = json.loads(fake.payloads[0]["messages"][1]["content"])
+    assert body["processingLevel"] == 1
 
 
 def test_후보의_원메타_열쇠를_표면이_받는다(client) -> None:
