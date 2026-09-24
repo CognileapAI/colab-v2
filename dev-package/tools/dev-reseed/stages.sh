@@ -698,6 +698,70 @@ PREVIEW_CLICK_ACK_MS="${COLAB_RESEED_PREVIEW_CLICK_ACK_MS:-5000}"
 AB_SESSION="${COLAB_RESEED_BROWSER_SESSION:-colab-dev}"
 ab_dev() { run_capture agent-browser --session "$AB_SESSION" "$@"; }
 
+# ── 보기 누름 — 적중 검사 · 초점 ＋ Enter · JS click 폴백 (러너 `press_preview_draw` 와 같은 규칙) ──
+# ⚠ dev 2026-09-25 00:45–01:00 KST(7ba6cdaf) — 정착 확인 뒤 `click` 이 26행 모두 종료 0 인데 slot 이 idle 에
+#   머물렀다(onClick → draw() 미실행 · 배포 프론트 `ea21d8c2aa54` DatasetPreviewSection.tsx:224-250,354).
+#   로컬 대역 페이지 실측(agent-browser 0.27.0): 좌표 클릭은 버튼이 화면 밖이면 스크롤 없이 화면 밖을 누르고,
+#   버튼 중심이 고정 층에 덮이면 그 층을 누른다 — 둘 다 종료 0 · 처리기 0회.
+#   그래서 누르기 전에 버튼 중심의 적중 대상을 재어 로그·판정표 비고에 남기고, 초점 ＋ Enter 로 누른 뒤
+#   slot 이 idle 을 떠났는지 본다. 떠나지 않으면 JS click 한 번으로 폴백하고 먹힌 방법을 적는다.
+PREVIEW_DRAW_SEL='[data-testid="dt-preview-draw"]'
+AB_JS_SUB="e""val"
+PREVIEW_HIT_JS="$(cat <<'HITJS'
+(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return '보기 단추 없음';
+  const probe = () => {
+    const r = btn.getBoundingClientRect();
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    const where = '(' + x + ',' + y + ')';
+    if (!(x >= 0 && y >= 0 && x < innerWidth && y < innerHeight)) return where + ' 화면 밖(창 ' + innerWidth + 'x' + innerHeight + ')';
+    const el = document.elementFromPoint(x, y);
+    if (!el) return where + ' 적중 요소 없음';
+    if (el === btn || btn.contains(el)) return where + ' = 보기 단추';
+    const near = el.closest('[data-testid]');
+    const cls = typeof el.className === 'string' ? el.className : (el.getAttribute('class') || '');
+    const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    return where + ' 을 덮은 요소 = ' + el.tagName.toLowerCase()
+      + (el.getAttribute('data-testid') ? ' testid=' + el.getAttribute('data-testid') : '')
+      + (near && near !== el ? ' 조상testid=' + near.getAttribute('data-testid') : '')
+      + (cls ? ' class=' + cls.slice(0, 80) : '') + (text ? ' 「' + text + '」' : '');
+  };
+  const before = probe();
+  btn.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+  return ('스크롤 전 중심 ' + before + ' · 스크롤 뒤 중심 ' + probe()).replace(/["\\\t\r\n]/g, ' ');
+})()
+HITJS
+)"
+PREVIEW_JS_CLICK="(() => { const b = document.querySelector('[data-testid=\"dt-preview-draw\"]'); if (!b) return 'none'; b.click(); return 'clicked'; })()"
+
+# 표준출력 = 적중 검사 한 줄(못 재면 빈 값). 버튼을 화면 가운데로 옮긴다.
+preview_hit_test() {
+  ab_dev "$AB_JS_SUB" --stdin <<< "$PREVIEW_HIT_JS" 2>/dev/null | head -1 | sed 's/^"//; s/"$//'
+}
+
+# $1 = 상한 ms. slot 이 idle 을 떠나면 그 값을 찍고 0, 아니면 마지막 값을 찍고 1.
+preview_wait_left_idle() {
+  local t0 s; t0="$(date +%s%3N)"
+  while :; do
+    s="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+    if [ -n "$s" ] && [ "$s" != idle ]; then printf '%s' "$s"; return 0; fi
+    [ "$(( $(date +%s%3N) - t0 ))" -lt "$1" ] || { printf '%s' "$s"; return 1; }
+    sleep 0.05
+  done
+}
+
+# 표준출력 = `방법|slot` (방법 = focus+Enter · js-click · none). none 이면 종료 1.
+preview_press() {
+  local s=""
+  if ab_dev focus "$PREVIEW_DRAW_SEL" >/dev/null 2>&1 && ab_dev press Enter >/dev/null 2>&1; then
+    if s="$(preview_wait_left_idle "$PREVIEW_CLICK_ACK_MS")"; then printf 'focus+Enter|%s' "$s"; return 0; fi
+  fi
+  ab_dev "$AB_JS_SUB" --stdin <<< "$PREVIEW_JS_CLICK" >/dev/null 2>&1
+  if s="$(preview_wait_left_idle "$PREVIEW_CLICK_ACK_MS")"; then printf 'js-click|%s' "$s"; return 0; fi
+  printf 'none|%s' "$s"; return 1
+}
+
 # 미리보기 판정 — `preview-unavailable` 의 **계수 한 개**로 가른다.
 #   0        → 성립      (「볼 수 없다」 표시가 없다)
 #   1 이상   → 미성립    (표시가 있다)
@@ -846,11 +910,20 @@ PY
       level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
       unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
       usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
+      # 기대(미성립)는 바꾸지 않는다. 화면에 **실제로 보인 것**을 비고에 그대로 적어 판단 근거로 남긴다.
+      # 참고 — 배포 프론트의 `dt-preview-unsupported` 는 보기(draw) 요청이 「그릴 수 없음」으로 돌아온 뒤에만
+      #   그려진다(`ea21d8c2aa54` DatasetPreviewSection.tsx:362-366 · 그때 slot = failed). 이 갈래는 보기를 누르지 않는다.
+      local u_slot u_draw u_unavail seen
+      u_slot="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      u_draw="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
+      u_unavail="$(ab_dev get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
+      seen="미지원 표시 [$unsupported_n] · slot [$u_slot] · 보기 활성 [$u_draw] · preview-unavailable [$u_unavail] · 로그인 [$login_n] · 상세 [$info_n]"
+      log "seq=$seq $name — 정본 미성립 행 화면: $seen"
       if [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$unsupported_n" = 1 ]; then
-        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원\n' "$seq" "$name" "$level" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원 · %s\n' "$seq" "$name" "$level" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
       else
-        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다"
+        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인 · %s\n' "$seq" "$name" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다 · $seen"
       fi
       continue
     fi
@@ -876,23 +949,17 @@ PY
       blocked_add verify "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
       continue
     fi
+    # 적중 검사 — 누르기 전에 보기 단추 중심이 무엇에 닿는지 남긴다(위 PREVIEW_HIT_JS 주석).
+    local hit press press_method
+    hit="$(preview_hit_test)"; hit="${hit:-못 잼}"
+    log "seq=$seq $name — 보기 적중 검사: $hit"
     t0="$(date +%s%3N)"
-    if ! ab_dev click '[data-testid="dt-preview-draw"]' >/dev/null 2>&1; then
-      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name — 미리보기 보기 명시 실행 실패"
-      continue
-    fi
-    # 클릭 반영 확인 — 종료 0 은 반영의 증거가 아니다(비활성 버튼도 0). slot 이 idle 을 떠나야 한다.
-    slot_state=idle
-    while :; do
-      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
-      [ -n "$slot_state" ] && [ "$slot_state" != idle ] && break
-      [ "$(( $(date +%s%3N) - t0 ))" -lt "$PREVIEW_CLICK_ACK_MS" ] || break
-      sleep 0.05
-    done
-    if [ -z "$slot_state" ] || [ "$slot_state" = idle ]; then
-      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t클릭 미반영\n' "$seq" "$name" "$(( $(date +%s%3N) - t0 ))" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name — 클릭 미반영(${PREVIEW_CLICK_ACK_MS}ms 안에 slot 이 idle 을 떠나지 않았다 · 받은 값 [$slot_state])"
+    # 누름 반영 확인 — 종료 0 은 반영의 증거가 아니다(비활성·덮인 버튼도 0). slot 이 idle 을 떠나야 한다.
+    press="$(preview_press)"; press_method="${press%%|*}"; slot_state="${press#*|}"
+    log "seq=$seq $name — 보기 누름 = $press_method · slot [$slot_state]"
+    if [ "$press_method" = none ]; then
+      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t클릭 미반영 · 누름 none · 적중 %s\n' "$seq" "$name" "$(( $(date +%s%3N) - t0 ))" "$hit" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 클릭 미반영(focus+Enter · JS click 모두 ${PREVIEW_CLICK_ACK_MS}ms 안에 slot 이 idle 을 떠나지 않았다 · 받은 값 [$slot_state] · 적중 검사 [$hit])"
       continue
     fi
     # Container presence is not completion: its slot starts in idle/drawing.
@@ -941,8 +1008,8 @@ PY
     fi
     # 받은 값을 **그대로** 적는다. `:-0`·`:-?` 로 기본값을 박으면 표만 보고는
     # 「0 을 받았다」와 「아무 값도 못 받았다」를 가를 수 없다.
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n' \
-      "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t누름 %s · 적중 %s\n' \
+      "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" "$press_method" "$hit" >> "$RUN_DIR/preview-judgment.tsv"
   done <<< "$ids"
 
   log "② 계수 대조 — 러너 verify.json ＋ 순회 결과 ＋ 정본 등재표"

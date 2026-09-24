@@ -19,6 +19,11 @@
 #      영구 비활성(:355)이 된다. agent-browser 0.27.0 은 비활성 버튼 클릭도 성공으로 답한다.
 #      보기는 「파일 일치 · 보기 활성 · slot idle」이 1 s 이상 유지된 뒤에만 누르고(러너 `preview_settled` 와 같은 규칙),
 #      누른 뒤 slot 이 idle 을 떠나지 않으면 전체 대기 없이 「클릭 미반영」으로 적는다.
+#   ⓗ 보기는 좌표 클릭이 아니라 초점 ＋ Enter 로 누르고(미반영이면 JS click 한 번), 누르기 전 적중 검사
+#      (버튼 중심의 elementFromPoint)와 먹힌 방법을 판정표 비고·로그에 남긴다. dev 2026-09-25 실측 —
+#      `click` 이 rc 0 인데 onClick 이 돌지 않았다(버튼 중심이 화면 밖이거나 떠 있는 층에 덮이면 그렇다).
+#   ⓘ GeoPackage(정본 미성립) 행은 기대를 바꾸지 않고, 실제로 보인 것(미지원 표시 계수 · slot · 보기 활성)을
+#      판정표 비고에 적는다.
 #
 # 실물 무접촉 = `agent-browser` 를 PATH 대역으로 가린다. ssh·docker 는 이 단계가 부르지 않는다.
 set -uo pipefail
@@ -44,9 +49,15 @@ cat > "$TMP/bin/agent-browser" <<'STUB'
 { printf 'AB'; for a in "$@"; do printf '\t%s' "$a"; done; printf '\n'; } >> "$FIXTURE_AB_LOG"
 if [ "${1:-}" = "--session" ]; then shift 2; fi
 page="${FIXTURE_PAGE:-detail}"
+draw_if_enabled() {
+  if [ -f "$FIXTURE_AB_LOG.described" ] && [ "${FIXTURE_DRAW_ENABLED:-true}" = true ]; then
+    : > "$FIXTURE_AB_LOG.drawn"
+    echo $(( $(date +%s%3N) - $(cat "$FIXTURE_AB_LOG.opened") )) > "$FIXTURE_AB_LOG.click-after-ms"
+  fi
+}
 case "${1:-}" in
   open)
-    rm -f "$FIXTURE_AB_LOG.waited" "$FIXTURE_AB_LOG.drawn" "$FIXTURE_AB_LOG.unsupported-seen"
+    rm -f "$FIXTURE_AB_LOG.waited" "$FIXTURE_AB_LOG.drawn" "$FIXTURE_AB_LOG.unsupported-seen" "$FIXTURE_AB_LOG.focused"
     # 배포 프론트 모형 — 기본 파일이 선택된 채 열리고 그 파일의 설명(describe)이 도착해 있다.
     : > "$FIXTURE_AB_LOG.described"; date +%s%3N > "$FIXTURE_AB_LOG.opened"
     exit "${FIXTURE_OPEN_FAIL:-0}" ;;
@@ -59,11 +70,27 @@ case "${1:-}" in
   click)
     [ "${2:-}" = '[data-testid="dt-preview-draw"]' ] || exit 1
     # agent-browser 0.27.0 — 비활성 버튼 클릭도 종료 0 으로 답한다. 반영 여부는 slot 이 말한다.
-    if [ -f "$FIXTURE_AB_LOG.described" ] && [ "${FIXTURE_DRAW_ENABLED:-true}" = true ] \
-       && [ "${FIXTURE_CLICK_NOOP:-0}" != 1 ]; then
-      : > "$FIXTURE_AB_LOG.drawn"
-      echo $(( $(date +%s%3N) - $(cat "$FIXTURE_AB_LOG.opened") )) > "$FIXTURE_AB_LOG.click-after-ms"
+    # 덮인 버튼(FIXTURE_COVERED=1)의 좌표 클릭은 덮은 층이 받는다 — 종료 0 · 처리기 0회(dev 2026-09-25).
+    [ "${FIXTURE_COVERED:-0}" = 1 ] || draw_if_enabled ;;
+  focus)
+    [ "${2:-}" = '[data-testid="dt-preview-draw"]' ] && : > "$FIXTURE_AB_LOG.focused" ;;
+  press)
+    if [ "${2:-}" = Enter ] && [ -f "$FIXTURE_AB_LOG.focused" ] && [ "${FIXTURE_KEYBOARD_NOOP:-0}" != 1 ]; then
+      draw_if_enabled
     fi ;;
+  eval)
+    script="$(cat)"
+    case "$script" in
+      *elementFromPoint*)
+        if [ "${FIXTURE_COVERED:-0}" = 1 ]; then
+          echo '"스크롤 전 중심 (51,1412) 화면 밖(창 1280x577) · 스크롤 뒤 중심 (51,288) 을 덮은 요소 = div testid=resume-drafts 「올리다 만 것이 있어요」"'
+        else
+          echo '"스크롤 전 중심 (51,288) = 보기 단추 · 스크롤 뒤 중심 (51,288) = 보기 단추"'
+        fi ;;
+      *'.click()'*)
+        echo '"js-click" ' >> "$FIXTURE_AB_LOG.js-clicks"
+        [ "${FIXTURE_JS_CLICK_NOOP:-0}" = 1 ] || draw_if_enabled ;;
+    esac ;;
   wait)
     case "${2:-}" in *dt-preview-slot*) : > "$FIXTURE_AB_LOG.waited" ;; esac
     exit 0 ;;
@@ -169,8 +196,9 @@ JSON
 JSON
   fi
 }
-reset_run() { rm -f "$ACCOUNTS_WORK_DIR/details-verified.json"; : > "$FIXTURE_AB_LOG"; rm -f "$FIXTURE_AB_LOG.click-after-ms";  rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
+reset_run() { rm -f "$ACCOUNTS_WORK_DIR/details-verified.json"; : > "$FIXTURE_AB_LOG"; rm -f "$FIXTURE_AB_LOG.click-after-ms" "$FIXTURE_AB_LOG.js-clicks";  rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
 verdict_of() { awk -F'\t' -v s="$1" '$1==s {print $4}' "$RUN_DIR/preview-judgment.tsv"; }
+note_of() { awk -F'\t' -v s="$1" '$1==s {print $8}' "$RUN_DIR/preview-judgment.tsv"; }
 
 # ── ⓐ·ⓑ 상세 화면 · 세션 인자 ────────────────────────────────────────────
 write_state 0; reset_run
@@ -188,7 +216,10 @@ n_sess="$(grep -c $'^AB\t--session\tcolab-dev\t' "$FIXTURE_AB_LOG")"
 [ "$n_calls" -gt 0 ] || note "ⓐ agent-browser 호출이 0건이다 — 순회가 돌지 않았다"
 [ "$n_calls" = "$n_sess" ] || note "ⓐ′ --session colab-dev 없이 나간 agent-browser 호출이 $(( n_calls - n_sess ))건이다(전체 $n_calls) — 환경변수는 세션을 고르지 않는다"
 [ "$(grep -c $'^AB\t--session\tcolab-dev\tselect\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓖ″ 이미 선택된 파일을 다시 골랐다 — 설명이 비워져 보기가 영구 비활성이 된다"
-[ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t\[data-testid="dt-preview-draw"\]$' "$FIXTURE_AB_LOG")" -eq 1 ] || note "ⓑ‴ 보기를 정확히 한 번 명시 클릭하지 않았다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tfocus\t\[data-testid="dt-preview-draw"\]$' "$FIXTURE_AB_LOG")" -eq 1 ] \
+  && [ "$(grep -c $'^AB\t--session\tcolab-dev\tpress\tEnter$' "$FIXTURE_AB_LOG")" -eq 1 ] \
+  || note "ⓑ‴ 보기를 초점 ＋ Enter 로 정확히 한 번 누르지 않았다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "ⓗ 보기를 좌표 클릭으로 눌렀다"
 
 # `is enabled`가 false를 출력해도 종료 0인 CLI 계약을 true로 오인하지 않는다.
 reset_run; export FIXTURE_DRAW_ENABLED=false
@@ -197,19 +228,36 @@ stage_verify >/dev/null 2>&1; rc=$?
 [ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "보기 버튼 비활성인데 클릭했다"
 unset FIXTURE_DRAW_ENABLED
 
-# 보기 클릭이 반영되지 않으면(slot 이 idle 그대로) 전체 대기 없이 「클릭 미반영」으로 적는다.
-reset_run; export FIXTURE_CLICK_NOOP=1
+# ⓗ 버튼 중심이 떠 있는 층에 덮여도 초점 ＋ Enter 로 눌러 성립하고, 적중 검사가 덮은 층을 적는다.
+reset_run; export FIXTURE_COVERED=1
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 0 ] || note "ⓗ 덮인 보기 단추를 초점 ＋ Enter 로 누르지 못했다(rc $rc): $(tail -1 "$STAGE_LOG")"
+[ "$(verdict_of 1)" = 성립 ] || note "ⓗ′ 덮인 보기 단추 행의 판정이 「성립」이 아니다: [$(verdict_of 1)]"
+case "$(note_of 1)" in *"누름 focus+Enter"*resume-drafts*) ;; *) note "ⓗ″ 판정표 비고에 누름 방법·덮은 층이 없다: [$(note_of 1)]" ;; esac
+grep -q '적중 검사.*resume-drafts' "$STAGE_LOG" || note "ⓗ‴ 로그에 적중 검사(덮은 층)가 없다"
+[ ! -s "$FIXTURE_AB_LOG.js-clicks" ] || note "ⓗ‴′ 초점 ＋ Enter 가 먹혔는데 JS click 을 또 냈다"
+
+# ⓗ 초점 ＋ Enter 가 반영되지 않으면 JS click 한 번으로 폴백하고 그 방법을 적는다.
+reset_run; export FIXTURE_KEYBOARD_NOOP=1
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 0 ] || note "ⓗ⁗ JS click 폴백으로 성립하지 못했다(rc $rc)"
+case "$(note_of 1)" in *"누름 js-click"*) ;; *) note "ⓗ⁗′ 판정표 비고에 누름 js-click 이 없다: [$(note_of 1)]" ;; esac
+[ "$(cat "$FIXTURE_AB_LOG.js-clicks" 2>/dev/null | wc -l)" -eq 1 ] || note "ⓗ⁗″ JS click 폴백이 정확히 한 번이 아니다"
+unset FIXTURE_KEYBOARD_NOOP
+
+# 보기 누름이 반영되지 않으면(초점 ＋ Enter · JS click 모두 slot 이 idle 그대로) 전체 대기 없이 「클릭 미반영」으로 적는다.
+reset_run; export FIXTURE_KEYBOARD_NOOP=1 FIXTURE_JS_CLICK_NOOP=1
 saved_wait="$PREVIEW_WAIT_MS"; PREVIEW_WAIT_MS=5000
 t_start="$(date +%s%3N)"
 stage_verify >/dev/null 2>&1; rc=$?
 t_took=$(( $(date +%s%3N) - t_start ))
 PREVIEW_WAIT_MS="$saved_wait"
 [ "$rc" -ne 0 ] || note "ⓖ‴ 반영되지 않은 보기 클릭을 성공으로 판정했다"
-[ "$(awk -F'\t' '$1=="1" {print $4"|"$8}' "$RUN_DIR/preview-judgment.tsv")" = "판정불가|클릭 미반영" ] \
-  || note "ⓖ‴′ 반영되지 않은 클릭의 판정표 행이 [판정불가|클릭 미반영] 이 아니다: [$(awk -F'\t' '$1=="1" {print $4"|"$8}' "$RUN_DIR/preview-judgment.tsv")]"
+case "$(verdict_of 1)|$(note_of 1)" in "판정불가|클릭 미반영"*"누름 none"*resume-drafts*) ;;
+  *) note "ⓖ‴′ 반영되지 않은 누름의 판정표 행이 [판정불가|클릭 미반영 · 누름 none · 적중 …] 이 아니다: [$(verdict_of 1)|$(note_of 1)]" ;; esac
 grep -q '클릭 미반영' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓖ‴″ 차단 사유에 「클릭 미반영」이 없다"
 [ "$t_took" -lt 4000 ] || note "ⓖ‴‴ 클릭 미반영을 전체 대기(${t_took} ms)까지 기다렸다"
-unset FIXTURE_CLICK_NOOP
+unset FIXTURE_KEYBOARD_NOOP FIXTURE_JS_CLICK_NOOP FIXTURE_COVERED
 
 # 러너가 재어 둔 저장 기간·모델 입력 설명이 빠지거나 미달이면 상세 화면이 멀쩡해도 차단한다.
 cp "$SEED_WORK_DIR/verify.json" "$TMP/verify-good.json"
@@ -271,8 +319,16 @@ JSON
   reset_run; export FIXTURE_UNAVAIL=1 FIXTURE_UNSUPPORTED=1 FIXTURE_UNSUPPORTED_DELAY=1
   stage_verify >/dev/null 2>&1; rc=$?
   [ "$rc" -eq 0 ] || note "정본이 허용한 $expected_name 미리보기 미성립을 실패로 판정했다"
+  case "$(note_of 1)" in *"미지원 표시 [1]"*"slot ["*) ;; *) note "ⓘ $expected_name 비고에 실제 표시(미지원 표시 · slot)가 없다: [$(note_of 1)]" ;; esac
 done
 unset FIXTURE_UNAVAIL FIXTURE_UNSUPPORTED FIXTURE_UNSUPPORTED_DELAY
+# ⓘ′ 미지원 표시가 끝내 없으면 기대(미성립)는 그대로 두고 판정불가로 막되, 실제로 보인 것을 적는다.
+reset_run
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "ⓘ′ 미지원 표시가 없는 GeoPackage 행을 성공으로 판정했다"
+case "$(note_of 1)" in "미지원 상태 미확인"*"미지원 표시 [0]"*"slot [idle]"*"보기 활성 ["*) ;;
+  *) note "ⓘ″ 미지원 표시 부재 행의 비고가 실제 표시를 적지 않았다: [$(note_of 1)]" ;; esac
+grep -q '미지원 표시 \[0\]' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓘ‴ 차단 사유에 실제 표시(미지원 표시 [0])가 없다"
 
 # 기대 증거가 빠지면 실제 화면이 성립이어도 fail closed다.
 write_state 0
