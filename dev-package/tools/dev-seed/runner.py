@@ -1941,23 +1941,44 @@ def classify_preview_measurement(slot_state, image_count, decoded_count, unavail
     return "그려짐", ""
 
 
+# 슬롯 안 주 이미지 측정 — 화면(viewport) 교차를 요구하지 않는다.
+# ⚠ dev 2026-09-25 01:20 KST seq 25(HDF4) — 창 1280x577 · 보기 단추가 y≈288 에 오게 스크롤된 채
+#   지도가 범례 아래(접힌 선 밖)에서 시작해 종전 측정(교차하는 이미지만 셈)이 imageCount 0 이었다.
+#   slot done · 「총 2.4초」 · 지도 그려짐인데 120 s 시간 초과(server_no_terminal)로 적혔다.
+#   그래서 slot 이 done 이면 슬롯을 화면으로 스크롤하고, 슬롯 **안의** 이미지를 폭·높이 > 0 과
+#   decode(complete ∧ naturalWidth > 0)로 센다.
+PREVIEW_MEASURE_JS = """(() => {
+  const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+  const slotState = slot?.getAttribute('data-preview-slot-state') || '';
+  if (slot && slotState === 'done') {
+    slot.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'instant'});
+  }
+  const images = slot ? Array.from(slot.querySelectorAll(
+    '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
+      const box = img.getBoundingClientRect();
+      return box.width > 0 && box.height > 0;
+    }) : [];
+  return {
+    slotState,
+    imageCount: images.length,
+    decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
+    unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
+    totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
+  };
+})()"""
+
+
 def _preview_measurement():
-    return js("""(() => {
-      const slot = document.querySelector('[data-testid="dt-preview-slot"]');
-      const images = Array.from(document.querySelectorAll(
-        '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
-          const box = img.getBoundingClientRect();
-          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0
-            && box.top < window.innerHeight && box.left < window.innerWidth;
-        });
-      return {
-        slotState: slot?.getAttribute('data-preview-slot-state') || '',
-        imageCount: images.length,
-        decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
-        unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
-        totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
-      };
-    })()""", default={}) or {}
+    return js(PREVIEW_MEASURE_JS, default={}) or {}
+
+
+def _record_image_counts(entry, measured):
+    """행마다 슬롯 안 주 이미지 계수 · decode 계수를 남긴다(판정표 images · decoded 칸 · 로그)."""
+    entry["images"] = int(measured.get("imageCount") or 0)
+    entry["decoded_images"] = int(measured.get("decodedCount") or 0)
+    log("  · 미리보기 seq " + str(entry.get("seq")) + " 측정 — slot " + str(measured.get("slotState") or "-")
+        + " · imageCount " + str(entry["images"]) + " · decodedCount " + str(entry["decoded_images"])
+        + " · 표시 시간 「" + str(measured.get("totalText") or "").strip() + "」")
 
 
 # ── 보기 클릭 전 정착 대기 ────────────────────────────────────────────────────
@@ -2293,14 +2314,15 @@ def collect_preview_evidence(tag, diag=None):
 def write_preview_table(previews):
     """행별 판정표 — 작업 자리의 verify-previews.tsv 와 로그에 같은 내용을 남긴다."""
     head = ["seq", "name", "format", "preview_expected", "outcome", "classification", "verdict",
-            "evidence", "activation", "hit_test"]
+            "evidence", "activation", "hit_test", "images", "decoded"]
     lines = ["\t".join(head)]
     for p in previews:
         cols = [str(p.get("seq")), str(p.get("name") or "-"), str(p.get("format")),
                 str(p.get("preview_expected") or "-"), str(p.get("outcome") or p.get("render") or "-"),
                 str(p.get("classification") or "-"), _preview_verdict(p),
                 ",".join(p.get("evidence") or []) or "-",
-                str(p.get("activation") or "-"), str(p.get("hit_test") or "-")]
+                str(p.get("activation") or "-"), str(p.get("hit_test") or "-"),
+                str(p.get("images", "-")), str(p.get("decoded_images", "-"))]
         lines.append("\t".join(c.replace("\t", " ").replace("\n", " ") for c in cols))
     log("· 미리보기 행별 판정표")
     for line in lines:
@@ -2313,6 +2335,7 @@ def write_preview_table(previews):
 def _preview_timeout_entry(entry, tag, reason, outcome, diag):
     """누른 뒤 terminal/display 에 닿지 못한 행 — 증거(누름 방법·적중 검사 포함)를 남기고 분류한다."""
     classification, evidence, summary = collect_preview_evidence(tag, diag)
+    _record_image_counts(entry, _preview_measurement())
     dump_failure(tag, reason + " · " + classification + " · 누름 " + str(diag.get("activation") or "-")
                  + " · 적중 검사 " + str(diag.get("hit_summary") or "-"))
     entry["render"] = "미확인"
@@ -2371,8 +2394,7 @@ def verify_preview_row(entry):
     entry["preview_section"] = count('[data-testid="dataset-preview"]')
     entry["slot_state"] = slot_state
     entry["unavailable"] = bad
-    entry["images"] = imgs
-    entry["decoded_images"] = decoded
+    _record_image_counts(entry, measured)
     entry["display_total"] = total_text
     entry["status_text"] = ""
     if bad > 0:

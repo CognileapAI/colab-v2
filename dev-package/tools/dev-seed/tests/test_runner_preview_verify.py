@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,6 +23,59 @@ def test_done_slot_requires_a_decoded_main_image():
     assert runner.classify_preview_measurement("done", 2, 2, 0, "") == (
         "안 그려짐", "화면 표시 시간 관측이 끝나지 않음")
     assert runner.classify_preview_measurement("done", 2, 2, 0, "총 120ms") == ("그려짐", "")
+
+
+# 창 1280x577 · 보기 단추가 y≈288 에 오도록 스크롤된 상태에서 HDF4 지도는 범례 아래 = 접힌 선 밖에서
+# 시작한다(dev 2026-09-25 seq 25 · slot done · 「총 2.4초」인데 imageCount 0 으로 120 s 시간 초과).
+# 가짜 DOM 에 측정 스크립트를 실제로 돌린다 — scrollIntoView 는 아무것도 옮기지 않는다(범례가 길어
+# 스크롤 뒤에도 지도가 접힌 선 밖에 남는 경우).
+FAKE_PAGE_JS = """
+const script = %s;
+const box = (top) => () => ({top, bottom: top + 300, left: 0, right: 600, width: 600, height: 300});
+const inSlot = [{getBoundingClientRect: box(700), complete: true, naturalWidth: 512}];
+const outside = [{getBoundingClientRect: box(10), complete: false, naturalWidth: 0}];
+let scrolled = 0;
+const slot = {
+  getAttribute: (n) => (n === 'data-preview-slot-state' ? 'done' : null),
+  querySelectorAll: () => inSlot,
+  scrollIntoView: () => { scrolled += 1; },
+};
+globalThis.window = {innerHeight: 577, innerWidth: 1280};
+globalThis.document = {
+  querySelector: (sel) => (sel.includes('dt-preview-slot') ? slot
+    : sel.includes('dt-preview-total') ? {textContent: '총 2.4초'} : null),
+  querySelectorAll: (sel) => (sel.includes('preview-unavailable') ? [] : inSlot.concat(outside)),
+};
+const got = new Function('return ' + script)();
+process.stdout.write(JSON.stringify(Object.assign({}, got, {scrolled})));
+"""
+
+
+def run_measurement_on_fake_page(monkeypatch, tmp_path):
+    node = shutil.which("node")
+    assert node, "node 가 없어 측정 스크립트를 실행할 수 없다(준비 실패 · 건너뛰지 않는다)"
+    captured = []
+    monkeypatch.setattr(runner, "js", lambda script, default=None, **_k: captured.append(script) or {})
+    runner._preview_measurement()
+    assert len(captured) == 1
+    page = tmp_path / "fake-page.js"
+    page.write_text(FAKE_PAGE_JS % json.dumps(captured[0]), encoding="utf-8")
+    out = subprocess.run([node, str(page)], capture_output=True, text=True, timeout=30, check=True)
+    return json.loads(out.stdout)
+
+
+def test_done_slot_image_below_the_fold_is_counted_after_scrolling_the_slot(monkeypatch, tmp_path):
+    """완료 슬롯 안의 주 이미지는 접힌 선 아래여도 센다 — 슬롯을 스크롤하고 슬롯 밖 이미지는 세지 않는다."""
+    got = run_measurement_on_fake_page(monkeypatch, tmp_path)
+
+    assert got["slotState"] == "done"
+    assert got["scrolled"] >= 1
+    assert got["imageCount"] == 1
+    assert got["decodedCount"] == 1
+    assert got["totalText"] == "총 2.4초"
+    assert runner.classify_preview_measurement(
+        got["slotState"], got["imageCount"], got["decodedCount"], got["unavailable"],
+        got["totalText"]) == ("그려짐", "")
 
 
 def test_failed_and_empty_states_are_not_reported_as_rendered():
@@ -364,6 +419,11 @@ def test_failing_preview_row_does_not_abort_later_rows_and_yields_table(monkeypa
     assert rows["15"][6] == "차단"
     assert "fail/verify-preview-15-grib-network.json" in rows["15"][7]
     assert all(rows[s][6] == "통과" for s in ["17", "19", "21", "25"])
+    # 행마다 슬롯 안 주 이미지 계수 · decode 계수를 판정표에 남긴다(시간 초과 행 포함).
+    assert table[0][10:12] == ["images", "decoded"]
+    assert rows["15"][10:12] == ["0", "0"]
+    assert all(rows[s][10:12] == ["1", "1"] for s in ["17", "19", "21", "25"])
+    assert any("imageCount 0" in line and "decodedCount 0" in line for line in logs)
     assert st["steps"]["verify"]["status"] == "partial"
     network = json.loads((tmp_path / "fail" / "verify-preview-15-grib-network.json").read_text())
     assert "secret" not in json.dumps(network)
