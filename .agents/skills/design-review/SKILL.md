@@ -66,7 +66,7 @@ python3 .agents/skills/design-review/scripts/css_audit.py --root frontend/src --
 8. 스크립트 값을 그대로 믿지 않는다 — 채택하는 행마다 실물 규칙을 열어 확인하고, 오탐은 산출 파일의 소절 「css_audit 오탐」에 적는다. 스크립트는 같은 규칙 안의 색쌍만 재므로 **상속 색쌍(부모 배경 위 자식 글자)은 사람이 계산**한다.
 9. 「파일 내 토큰 정의」 축은 둘로 가른다 — ⓐ 컴포넌트 전용 변수(접두사가 그 화면 고유 · `--pv-*`·`--toast-*` 류) = 없음 / ⓑ 전역 어휘(`--color-*`·`--radius-*`·`--space-*`)를 파일마다 복제 = Ted 판정(`tokens.css` 승격 여부). 이 구분 없이 판정하지 않는다.
 
-모델 = `researcher`(sonnet). L4 인터랙션 레인만 판단이 무거우면 `model: opus` 로 올린다.
+모델 = `researcher`(기본 opus · 2026-09-24 변경). 계수·추출만인 레인은 `model: sonnet` 을 넘길 수 있다.
 
 ### 2-3. 판정표 형식 (레인 산출 · 메인 취합 공통)
 

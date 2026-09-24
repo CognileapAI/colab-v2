@@ -27,19 +27,33 @@ class EnvironmentTests(unittest.TestCase):
 
 
 class AgentConfigurationTests(unittest.TestCase):
+    # Models that `codex exec -m <model>` accepted on this host's CLI 0.154.0 / ChatGPT account
+    # (2026-09-24). gpt-6-sol and gpt-6-luna returned 400 "not supported".
+    # Source: dev-package/reports/harness/20260924-agent-model-tiering/X-codex-smoke.md
+    SELECTABLE_CODEX_MODELS = frozenset({'gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'})
+
     def test_role_models_are_explicit_and_do_not_claim_parent_inheritance(self):
+        # Difficulty order follows the Claude roles (spec S-AGENT-MODEL-TIERING-20260924 X1),
+        # on the models this account can select (X-codex-smoke.md: GPT-5.6 Luna < Terra < Sol < GPT-6 Astra).
         expected = {
-            'lane-worker': 'gpt-5.6-sol',
-            'researcher': 'gpt-5.6-sol',
-            'gate-runner': 'gpt-6-astra',
-            'advisor': 'gpt-6-astra',
+            'advisor': ('gpt-6-astra', 'high'),
+            'lane-worker': ('gpt-5.6-sol', 'high'),
+            'researcher': ('gpt-5.6-sol', 'medium'),
+            'measurement-lane': ('gpt-5.6-terra', 'low'),
+            'gate-runner': ('gpt-5.6-luna', 'low'),
         }
-        for role, model in expected.items():
+        self.assertEqual(
+            {path.stem for path in (bridge.ROOT/'.codex/agents').glob('*.toml')}, set(expected)
+        )
+        self.assertLessEqual({model for model, _ in expected.values()}, self.SELECTABLE_CODEX_MODELS)
+        self.assertEqual(set(expected), set(bridge.CODEX_ROLES))
+        for role, (model, effort) in expected.items():
             with self.subTest(role=role):
                 config = tomllib.loads(
                     (bridge.ROOT/f'.codex/agents/{role}.toml').read_text(encoding='utf-8')
                 )
                 self.assertEqual(config.get('model'), model)
+                self.assertEqual(config.get('model_reasoning_effort'), effort)
                 instructions = config['developer_instructions'].lower()
                 self.assertNotIn("inherit the parent's model", instructions)
                 self.assertNotIn("inherit the parent's settings", instructions)

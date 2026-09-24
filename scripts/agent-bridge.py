@@ -76,8 +76,11 @@ def registered_hooks(tool: str, event: str = "PreToolUse") -> list[Path]:
     return paths
 
 
+CODEX_ROLES = ("advisor", "lane-worker", "researcher", "measurement-lane", "gate-runner")
+
+
 def check() -> None:
-    for role in ("advisor", "lane-worker", "researcher", "gate-runner"):
+    for role in CODEX_ROLES:
         config = tomllib.loads((ROOT / f".codex/agents/{role}.toml").read_text(encoding="utf-8"))
         for field in ("name", "description", "developer_instructions"):
             if not isinstance(config.get(field), str) or not config[field]:
@@ -129,7 +132,7 @@ def check() -> None:
             probe = entry["matcher"].split("|")[0]
             count += len(registered_hooks(probe, event))
     adapters = len(skills) - len(codex_only)
-    print(f"green: 4 role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
+    print(f"green: {len(CODEX_ROLES)} role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
 
 
 def run_registered(payload: dict) -> int:

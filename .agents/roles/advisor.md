@@ -46,4 +46,4 @@
 - 파일을 수정하지 않는다. 에이전트를 스폰하지 않는다. 게이트를 직접 돌리지 않는다.
 - 보고 문체는 개조식 · 정성어 배제 · 부정 시작 금지(`.agents/rules/colab-rules.md` §5-1). 입력에 인용된 한국어 원문은 한국어로 유지한다.
 - 자문마다 새 세션이다. 이전 자문의 기억을 전제하지 않는다.
-- 한도는 12턴이다. **도구 호출 8회 이하 뒤 판정을 쓴다.** 12회 전부를 읽기에 쓰고 판정 0으로 잘린 선례가 있다 (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
+- 한도는 16턴이다(2026-09-24 12 → 16 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ③)). **도구 호출 8회 이하 뒤 판정을 쓴다.** 12회 전부를 읽기에 쓰고 판정 0으로 잘린 선례가 있다 (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
