@@ -49,6 +49,9 @@ DEFAULT_CLASSIFY = TOOL_DIR / "upload-classify.json"
 CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
 DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
 INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+# 주제 6값 — 정본 = db/platform/schema.sql `d3_dataset_description.topic` CHECK. 등록 화면에 주제 칸이
+# 없어(RegisterArea.tsx 2026-09-14 개정) 러너가 등록 뒤 `PATCH /datasets/{id}` 로 싣는다.
+TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC", "가뭄", "파일 포맷 예제")
 # 등록 설명 칸 상한 = RegisterArea.tsx `reg-summary` maxLength(6705675d · 3000자). 서버·계약에는 상한이 없다.
 SUMMARY_MAX_CHARS = 3000
 # 보조입력 간선 정본. DEM·Aspect 는 첫 등재, 나머지 셋은 O4(사용자 서명 2026-09-25) —
@@ -191,6 +194,9 @@ def bind_canonical_metadata(datasets, path=DEFAULT_METADATA):
         note = str(row.get("registrationNote") or "").strip()
         if note:
             d["summary"] = (str(d.get("summary") or "").strip() + " · " + note).strip(" ·")
+        if row.get("topic") not in TOPICS:
+            raise SystemExit("주제가 없거나 6값 밖이다: %s · %r" % (d["name"], row.get("topic")))
+        d["topic"] = row["topic"]
 
     got_aux = {(x.get("child"), x.get("parent"), x.get("role"))
                for x in doc.get("auxiliaryParents") or []}

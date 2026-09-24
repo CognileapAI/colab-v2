@@ -121,6 +121,9 @@ SOURCE_DATE_CSS = '[data-testid="reg-source-downloaded-on"]'
 CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
 DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
 INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+# 주제 6값 — 정본 = db/platform/schema.sql `d3_dataset_description.topic` CHECK(build_plan.py `TOPICS` 와 같은 값).
+# 등록 화면에 주제 칸이 없어(RegisterArea.tsx 2026-09-14 개정) 등록 뒤 공식 `PATCH /datasets/{id}` 로 싣는다.
+TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC", "가뭄", "파일 포맷 예제")
 PERIOD_PARTS = ("year", "month", "day", "hour", "minute", "second")
 PERIOD_UNITS = ("년", "월", "일", "시", "분", "초")
 PERIOD_PATTERNS = {
@@ -293,11 +296,19 @@ def source_actions(ds):
     return [["fill", SOURCE_URL_CSS, url], ["fill", SOURCE_DATE_CSS, day]]
 
 
+def planned_topic(ds):
+    """계획 한 행의 주제. 비었거나 6값 밖이면 이름을 대고 실패한다."""
+    topic = ds.get("topic")
+    if topic not in TOPICS:
+        raise Fail("주제가 계획에 없거나 6값 밖이다: " + _row_name(ds) + " · " + repr(topic))
+    return topic
+
+
 def plan_field_problems(rows):
     """계획 전행의 필수 칸 값 검사 — 업로드 **전에** 한 번에 본다. 반환 = 실패 문면 목록."""
     problems = []
     for ds in rows:
-        for build in (classify_actions, interval_actions, source_actions):
+        for build in (classify_actions, interval_actions, source_actions, planned_topic):
             try:
                 build(ds)
             except Fail as exc:
@@ -1520,6 +1531,33 @@ def reconcile_auxiliary_lineage(st, ds, child_id):
     return len(desired)
 
 
+def reconcile_topics(st, rows):
+    """등록된 행의 주제를 계획값으로 맞춘다 — 저장값이 다를 때만 공식 `PATCH /datasets/{id}` 를 친다.
+
+    반복 실행에 안전하다(이미 맞으면 GET 만). 반환 = PATCH 건수. 저장 확인이 어긋나면 이름을 대고 실패한다.
+    """
+    if CFG.dry_run:
+        return 0
+    patched = 0
+    for ds in rows:
+        cur = st["datasets"].get(str(ds["seq"])) or {}
+        did = cur.get("dataset_id")
+        if not did or not is_registered(cur.get("status")):
+            continue
+        topic = planned_topic(ds)
+        path = "/api/v1/datasets/" + str(did)
+        stored = authenticated_api("GET", path).get("topic")
+        if stored != topic:
+            stored = authenticated_api("PATCH", path, {"topic": topic}).get("topic")
+            patched += 1
+        if stored != topic:
+            raise Fail("주제 저장 확인 실패: " + _row_name(ds) + " · 계획 " + topic + " · 저장 " + repr(stored))
+        cur["topic"] = stored
+        save_state(st)
+    log("· 주제 " + str(patched) + "건 PATCH · 계획 " + str(len(rows)) + "행")
+    return patched
+
+
 def handle_analysis_failure(st, ds, outcome):
     """분석 실패 자리 — **등록으로 잇는다.** 반환 = 실패 사유 문면(등록은 이어감).
 
@@ -1735,6 +1773,8 @@ def phase_datasets(st, plan):
             log("x seq " + seq + " 실패: " + str(exc))
             log("  재개 = python3 runner.py --phase datasets --from-seq " + seq)
             sys.exit(2)
+    # 등록 화면에 주제 칸이 없다 — 등록된 전행(건너뛴 이전 행 포함)을 공식 API 로 계획값에 맞춘다.
+    reconcile_topics(st, sorted(plan["datasets"], key=lambda d: d["seq"]))
     done = 0
     for v in st["datasets"].values():
         if is_registered(v.get("status")):
@@ -2458,6 +2498,9 @@ def verify_result_passes(result):
     passed = result.get("dataset_count_ui") == result.get("dataset_count_expected")
     passed = passed and result.get("periods_ok") == result.get("periods_expected")
     passed = passed and not result.get("periods_missing")
+    passed = passed and result.get("topics_expected") is not None
+    passed = passed and result.get("topics_ok") == result.get("topics_expected")
+    passed = passed and not result.get("topics_missing")
     passed = passed and result.get("model_input_descriptions_ok") == 2
     passed = passed and not result.get("model_input_descriptions_missing")
     passed = passed and result.get("edges_ok") == result.get("edges_expected")
@@ -2493,6 +2536,8 @@ def phase_verify(st, plan):
 
     periods_ok = 0
     periods_missing = []
+    topics_ok = 0
+    topics_missing = []
     descriptions_ok = 0
     descriptions_missing = []
     for ds in plan["datasets"]:
@@ -2509,6 +2554,12 @@ def phase_verify(st, plan):
         else:
             periods_missing.append({"name": ds["name"], "expected": ds["period"],
                                     "stored": stored})
+        stored_topic = ds.get("topic") if CFG.dry_run else detail.get("topic")
+        if ds.get("topic") in TOPICS and stored_topic == ds.get("topic"):
+            topics_ok += 1
+        else:
+            topics_missing.append({"name": ds["name"], "expected": ds.get("topic"),
+                                   "stored": stored_topic})
         if ds["name"] in ("DEM", "Aspect"):
             stored_summary = ds["summary"] if CFG.dry_run else detail.get("summary")
             if stored_summary == ds["summary"] and "파일 내부 날짜 정보는 없음" in stored_summary:
@@ -2518,9 +2569,13 @@ def phase_verify(st, plan):
     result["periods_ok"] = periods_ok
     result["periods_expected"] = len(plan["datasets"])
     result["periods_missing"] = periods_missing
+    result["topics_ok"] = topics_ok
+    result["topics_expected"] = len(plan["datasets"])
+    result["topics_missing"] = topics_missing
     result["model_input_descriptions_ok"] = descriptions_ok
     result["model_input_descriptions_missing"] = descriptions_missing
     log("· 저장 기간 " + str(periods_ok) + " / " + str(len(plan["datasets"])))
+    log("· 저장 주제 " + str(topics_ok) + " / " + str(len(plan["datasets"])))
 
     edges_ok = 0
     edges_missing = []
@@ -2569,7 +2624,7 @@ def phase_verify(st, plan):
     mark_step(st, "verify", "done" if passed else "partial")
     log("· verify.json 기록 · 판정 = " + ("전건 통과" if passed else "미달 있음"))
     if not passed:
-        raise Fail("저장 기간·모델 입력 설명·계보 역할·미리보기 검증 중 미달이 있다")
+        raise Fail("저장 기간·주제·모델 입력 설명·계보 역할·미리보기 검증 중 미달이 있다")
 
 
 def phase_report(st, plan):

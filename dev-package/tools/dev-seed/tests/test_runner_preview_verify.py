@@ -339,17 +339,18 @@ def verify_env(monkeypatch, tmp_path, requests_for_15):
     monkeypatch.setattr(runner, "time", clock)
     monkeypatch.setattr(runner, "save_state", lambda st: None)
     monkeypatch.setattr(runner, "log", lambda msg, echo=True: logs.append(str(msg)))
-    datasets = [dict(seq=seq, name=name, preview_expected=exp, period="p", summary="s")
+    datasets = [dict(seq=seq, name=name, preview_expected=exp, period="p", summary="s", topic="파일 포맷 예제")
                 for seq, name, exp in PREVIEW_ROWS]
-    datasets += [dict(seq=1, name="DEM", period="p", summary="DEM " + NO_DATE,
+    datasets += [dict(seq=1, name="DEM", period="p", summary="DEM " + NO_DATE, topic="식생·NDVI",
                       preview_expected="미측정"),
-                 dict(seq=2, name="Aspect", period="p", summary="Aspect " + NO_DATE,
+                 dict(seq=2, name="Aspect", period="p", summary="Aspect " + NO_DATE, topic="식생·NDVI",
                       preview_expected="미측정")]
     plan = {"datasets": datasets, "edges": [], "projects": []}
     st = {"steps": {}, "datasets": {
         str(d["seq"]): {"dataset_id": "D" + str(d["seq"]), "status": "done", "name": d["name"]}
         for d in datasets}}
-    details = {"D" + str(d["seq"]): {"basicInfo": {"period": "p"}, "summary": d["summary"]}
+    details = {"D" + str(d["seq"]): {"basicInfo": {"period": "p"}, "summary": d["summary"],
+                                  "topic": d["topic"]}
                for d in datasets}
     current = {"did": ""}
     opened = []

@@ -18,6 +18,9 @@
   md `description` 기반 문장). 등재표(`plan-manifest.yaml`)는 md 한 줄 요약을 그대로 두고,
   러너 입력(`upload-plan.json`)만 덧씌운 값을 싣는다. 근거 = 2026-09-25 dev 보정(O4·O7) ·
   `dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md` §7.
+- 주제(`topic` · 28행 전부 · 참조자료 폴더별 한 값: 강수 → 강우·강수 · 식생 → 식생·NDVI · 가뭄 → 가뭄 ·
+  파일 포맷 → 파일 포맷 예제)도 같은 정본이 싣는다. 등록 화면에 주제 칸이 없어 러너가 datasets 단계 끝에
+  공식 `PATCH /datasets/{id}` 로 맞추고(저장값이 다를 때만), verify 가 28/28 을 요구한다. 근거 = 같은 보고서 §8.
 - md 4건의 자리(참조자료 뿌리 기준) = `01.level-data/01.precipitation/DATASETS.md` ·
   `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` ·
   `02.File-format/DATASETS.md`. 레포 안 거울 사본은 `dev-package/reports/reference-data/datasets-md/`.

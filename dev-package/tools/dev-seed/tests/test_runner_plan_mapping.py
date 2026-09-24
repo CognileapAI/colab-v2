@@ -196,12 +196,59 @@ def test_stored_period_verification_preserves_month_granularity():
 def test_verify_contract_rejects_missing_period_or_model_input_description():
     good = {"dataset_count_ui": 28, "dataset_count_expected": 28,
             "periods_ok": 28, "periods_expected": 28,
+            "topics_ok": 28, "topics_expected": 28,
             "model_input_descriptions_ok": 2, "edges_ok": 18, "edges_expected": 18,
             "previews": [{"render": "그려짐"}]}
     assert runner.verify_result_passes(good)
     assert not runner.verify_result_passes(dict(good, periods_ok=27))
     assert not runner.verify_result_passes(dict(good, model_input_descriptions_ok=1))
     assert not runner.verify_result_passes(dict(good, periods_missing=[{"name": "DEM"}]))
+    assert not runner.verify_result_passes(dict(good, topics_ok=27))
+    assert not runner.verify_result_passes(dict(good, topics_missing=[{"name": "DEM"}]))
+    assert not runner.verify_result_passes({k: v for k, v in good.items() if k != "topics_expected"})
+
+
+def test_plan_without_a_db_topic_is_a_named_field_problem():
+    base = {"name": "DEM", "category": "환경 인자", "data_type": "관측 기반 산출물",
+            "observation_interval": {"value": "1", "unit": "월"}, "processing_level": "Lv1"}
+    assert runner.plan_field_problems([dict(base, topic="식생·NDVI")]) == []
+    for bad in (None, "식생"):
+        problems = runner.plan_field_problems([dict(base, topic=bad)])
+        assert len(problems) == 1 and "주제" in problems[0] and "DEM" in problems[0]
+
+
+def test_topic_reconcile_patches_only_rows_whose_stored_topic_differs(monkeypatch):
+    """The form has no topic field — topics go through the official PATCH after registration."""
+    rows = [{"seq": 1, "name": "one", "topic": "가뭄"},
+            {"seq": 2, "name": "two", "topic": "강우·강수"},
+            {"seq": 3, "name": "three", "topic": "가뭄"}]
+    st = {"datasets": {"1": {"name": "one", "dataset_id": "ID1", "status": "done"},
+                       "2": {"name": "two", "dataset_id": "ID2", "status": "registered_no_preview"},
+                       "3": {"name": "three", "status": "blocked"}}}
+    stored = {"ID1": None, "ID2": "강우·강수"}
+    calls = []
+
+    def api(method, path, body=None):
+        calls.append((method, path, body))
+        did = path.rsplit("/", 1)[1]
+        if method == "PATCH":
+            stored[did] = body["topic"]
+        return {"datasetId": did, "topic": stored[did]}
+
+    monkeypatch.setattr(runner, "authenticated_api", api)
+    monkeypatch.setattr(runner, "save_state", lambda *_: None)
+    monkeypatch.setattr(runner, "CFG", type("C", (), {"dry_run": False})())
+    assert runner.reconcile_topics(st, rows) == 1
+    assert ("PATCH", "/api/v1/datasets/ID1", {"topic": "가뭄"}) in calls
+    assert not any(c[0] == "PATCH" and c[1].endswith("ID2") for c in calls)
+    assert st["datasets"]["1"]["topic"] == "가뭄" and st["datasets"]["2"]["topic"] == "강우·강수"
+
+    def ignoring(method, path, body=None):
+        return {"datasetId": "ID1", "topic": None}
+
+    monkeypatch.setattr(runner, "authenticated_api", ignoring)
+    with pytest.raises(runner.Fail, match="주제.*one"):
+        runner.reconcile_topics(st, rows)
 
 
 # ── ⑵ 분석 실패 자리의 갈림 ───────────────────────────────────────────────

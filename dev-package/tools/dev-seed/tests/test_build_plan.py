@@ -253,6 +253,7 @@ def lineage_fixture():
                 for s, n, p in names]
     rows = [{"seq": s, "name": n, "start": "2023-05", "end": "2023-05",
              "granularity": "월", "basis": "사용자 제공 맥락",
+             "topic": "강우·강수" if s <= 5 else "식생·NDVI",
              **({"registrationNote": "기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음"}
                 if n in ("DEM", "Aspect") else {})}
             for s, n, _ in names]
@@ -330,12 +331,51 @@ def test_repo_canonical_metadata_carries_the_dev_o4_o7_corrections():
             assert needle in summaries[seq], (seq, needle)
 
 
+def test_canonical_topic_is_bound_to_every_plan_row(tmp_path):
+    """The registration form has no topic field — the plan row carries it for the runner's PATCH."""
+    datasets, rows = lineage_fixture()
+    build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+    by = {d["name"]: d["topic"] for d in datasets}
+    assert by["pred_sample"] == "강우·강수"
+    assert by["DEM"] == "식생·NDVI"
+
+
+@pytest.mark.parametrize("bad", [None, "", "식생", "지형"])
+def test_canonical_topic_must_be_one_of_the_db_check_values(tmp_path, bad):
+    datasets, rows = lineage_fixture()
+    if bad is None:
+        rows[0].pop("topic")
+    else:
+        rows[0]["topic"] = bad
+    with pytest.raises(SystemExit, match="주제.*hsr_sample"):
+        build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, rows, SIGNED_AUX))
+
+
+def test_repo_canonical_topics_follow_the_reference_folder_of_each_dataset():
+    """WU4 후속 (사용자 승인 2026-09-25) — dev 28건에 API 로 채운 주제와 같은 값을 재시드가 싣는다.
+
+    규칙 = 참조자료 폴더(= `sources` 문서) → 주제. v1 적재기(`infra/staging/tools/build-manifest-refdata.py`
+    `TOPIC`)와 v1 스냅샷 9건의 주제가 같은 규칙이다(서명 ① 대응으로 확인).
+    """
+    doc = json.loads((TOOL_DIR / "canonical-metadata.json").read_text(encoding="utf-8"))
+    by_document = {
+        "01.level-data/01.precipitation/DATASETS.md": "강우·강수",
+        "01.level-data/02.vegetation/DATASETS.md": "식생·NDVI",
+        "01.level-data/03.drought/DATASETS.md": "가뭄",
+        "02.File-format/DATASETS.md": "파일 포맷 예제",
+    }
+    expected = {seq: by_document[s["document"]] for s in doc["sources"] for seq in s["datasets"]}
+    got = {r["seq"]: r.get("topic") for r in doc["datasets"]}
+    assert len(got) == 28 and got == expected
+    assert set(got.values()) <= set(build_plan.TOPICS)
+
+
 def test_auxiliary_role_rejects_the_wrong_ndvi_target(tmp_path):
     datasets = [{"seq": 9, "name": "DEM", "parents": []},
                 {"seq": 10, "name": "Aspect", "parents": ["DEM"]},
                 {"seq": 12, "name": "다른 결과", "parents": ["DEM", "Aspect"]}]
     rows = [{"seq": d["seq"], "name": d["name"], "start": "2023-05",
-             "end": "2023-05", "granularity": "월", "basis": "fixture"}
+             "end": "2023-05", "granularity": "월", "basis": "fixture", "topic": "식생·NDVI"}
             for d in datasets]
     path = metadata_file(tmp_path, rows, [
         {"child": "다른 결과", "parent": "DEM", "role": "보조입력"},

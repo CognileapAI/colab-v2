@@ -14,7 +14,7 @@
       "id": "K3-LIN-001",
       "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
       "child_name": "hsr_sample",
-      "topic": null,
+      "topic": "강우·강수",
       "upload_level": 1,
       "parents": [
         {
@@ -29,7 +29,7 @@
       "id": "K3-LIN-002",
       "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
       "child_name": "GK2A_NDVI_mean_202305",
-      "topic": null,
+      "topic": "식생·NDVI",
       "upload_level": 1,
       "parents": [
         {
@@ -44,7 +44,7 @@
       "id": "K3-LIN-003",
       "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
       "child_name": "pred_sample",
-      "topic": null,
+      "topic": "강우·강수",
       "upload_level": 2,
       "parents": [
         {
@@ -65,7 +65,7 @@
       "id": "K3-LIN-004",
       "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
       "child_name": "Prediction (공간상세화)",
-      "topic": null,
+      "topic": "식생·NDVI",
       "upload_level": 2,
       "parents": [
         {
@@ -104,7 +104,7 @@
       "id": "K3-LIN-005",
       "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
       "child_name": "rn15_sample",
-      "topic": null,
+      "topic": "강우·강수",
       "upload_level": 1,
       "parents": [
         {

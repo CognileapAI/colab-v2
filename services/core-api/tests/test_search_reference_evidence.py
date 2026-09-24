@@ -74,18 +74,12 @@ def seed_reference_corpus(p2_client,sql,fake_ai):
     return client,datasets
 
 
-#: WU4 (2026-09-25) — retrieval questions that the product misses on the v2 corpus with the frozen
-#: interpretations (expanded-normalized-02.json). Explicit exemption, 4 of 9 retrieval questions.
-#: The failure set must match exactly: a new miss turns red, and a closed gap also turns red so the
-#: entry is removed. Re-measurement and the fix belong to WU5 (corpus metadata, not this test).
-V2_RETRIEVAL_GAPS={
-    'SEARCH-GOLD-005':('DEM·Aspect·LULC_2023·HLS 의 v2 이름·요약·파일 근거가 frozen 해석 낱말과 맞지 않아 4건 모두 '
-                       '결과에 없다. 같은 이유로 HLS 역할 근거 문장 검사도 이 면제에 묶인다'),
-    'SEARCH-GOLD-006':('rn15_sample 1건이 결과에 없다 — v2 이름·요약(「rn15 15분 누적강수를 …」)이 frozen 해석 낱말'
-                       '(강수·검증에 등)과 낱말 단위로 맞지 않는다. pred_sample 은 찾는다'),
-    'SEARCH-GOLD-008':'frozen 해석 topic=가뭄, v2 28건 topic 전부 null — 주제 필터가 SPI·SPEI 를 거른다',
-    'SEARCH-GOLD-009':'008 과 같은 원인(topic=가뭄 · v2 topic null)',
-}
+#: Explicit exemption for retrieval questions the product misses on the v2 corpus with the frozen
+#: interpretations (expanded-normalized-02.json). The failure set must match exactly: a new miss turns
+#: red, and a closed gap also turns red so the entry is removed.
+#: WU4 (2026-09-25) exempted 005·006·008·009 while every v2 topic was null. The WU4 follow-up filled
+#: the 28 dev topics through the product API (snapshot v2 recaptured) and all four now pass — 0 left.
+V2_RETRIEVAL_GAPS={}
 
 
 def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql,fake_ai):

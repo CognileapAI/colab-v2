@@ -516,3 +516,105 @@ SQL 쓰기 0 · reseed/reset 실행 0 · 다른 계정 로그인 0.
 - 설명 칸 보강은 검색 순위에 쓰이는 설명 벡터·색인이 새 문장으로 다시 계산됐는지 확인하지 않았다(검색·모델 호출 0회). WU5 재측정 전에 확인 필요.
 - `PATCH /datasets/{id}` 가 `d3_dataset_description.updated_at` 을 올리지 않는다(7-5). 어느 게이트·시험도 이 열의 갱신을 보지 않는다 — 별건 후속.
 - 사라진 설명 문서 6개(docx·pptx·ipynb) 적재·증거 패킷 재수집(O7 의 다른 선택지)은 하지 않았다.
+
+## 8. WU4 후속(topic·색인·면제) — 2026-09-25
+
+사용자 승인(2026-09-25) 범위 — dev 28건의 빈 주제(`topic`)를 **제품 API 로만** 채우고, 재시드 정본에 같은 값을 싣고, 전후를 기록한다. SQL 쓰기 0 · reseed/reset 실행 0 · 주제 외 쓰기 0.
+
+### 8-1. 주제 대응 (28건)
+
+규칙 = **참조자료 폴더별 한 값**. 근거 셋이 같은 값을 가리킨다.
+
+- v1 적재기 `infra/staging/tools/build-manifest-refdata.py` `TOPIC` — 폴더 짧은 이름 → 정본 주제(강수 → 강우·강수 · 식생 → 식생·NDVI · 가뭄 → 가뭄 · 파일 포맷 → 파일 포맷 예제).
+- v1 스냅샷 9건의 주제(`eval/k4-search/fixtures/reference/dev-data-snapshot.json`)를 서명 ① 대응(§1-1)으로 옮긴 값 — HSR0·RN0·RAIN1·RAIN2 → 강우·강수, VEG0·VEG1·VEG-AUX·VEG2 → 식생·NDVI, DROUGHT → 가뭄.
+- 등재표 프로젝트(`plan-manifest.yaml` `project`)와 `canonical-metadata.json` `sources` 문서 — precipitation·vegetation·drought·포멧테스트 네 묶음이 위 폴더와 1:1.
+- 골든 frozen 해석의 주제 필터 — 008·009·010 = 「가뭄」(`expanded-normalized-02.json`). 나머지 문항은 필터 없음.
+
+| seq | 이름 | 이전 | 이후 | 근거 |
+|---|---|---|---|---|
+| 1~5 | HSR 레이더 반사도 원자료 · rn15 15분 누적강수 · hsr_sample · rn15_sample · pred_sample | NULL | 강우·강수 | 강수 폴더 · v1 HSR0·RN0·RAIN1·RAIN2 |
+| 6~8, 12 | GK-2A 일 단위 식생자료 · GK2A_NDVI_mean_202305 · HLS_S30_NDVI_mean_202305 · Prediction (공간상세화) | NULL | 식생·NDVI | 식생 폴더 · v1 VEG0·VEG1·VEG-AUX·VEG2 |
+| 9~11 | DEM · Aspect · LULC_2023 | NULL | 식생·NDVI | 식생 폴더 · v1 VEG-AUX(묶음 주제 식생·NDVI) |
+| 13~14 | SPI-4weeks · SPEI-4weeks | NULL | 가뭄 | 가뭄 폴더 · v1 DROUGHT · 골든 008·009 필터 |
+| 15~28 | 포멧테스트 14건 | NULL | 파일 포맷 예제 | 파일 포맷 폴더 · v1 FF-* 5건 · 〈359〉 로 생긴 값 |
+
+- 9 DEM · 10 Aspect · 11 LULC_2023 은 어휘에 `지형·DEM`·`토지피복·LULC` 가 있지만 **식생·NDVI** 로 두었다. 이 코퍼스의 정본(v1 적재기·v1 스냅샷·서명 ① 대응)이 셋 다 식생 폴더의 모델 입력으로 식생·NDVI 를 준다. `지형·DEM` 은 옛 합성 시드(`eval/k4-search/seed-15.sql`)에만 있다. 다른 값을 쓰면 이 코퍼스 근거 밖의 새 판정이 된다. 결과로 005(식생 모델의 보조자료)가 주제 신호로 통과한다(8-7). 바꾸려면 사용자 판정이 필요하다.
+- ID 는 §1-2 표와 같다.
+
+### 8-2. 쓴 경로 — 배포 코드 `ea21d8c2aa54` 의 공식 API
+
+| 목적 | API | 근거(`git show ea21d8c2aa54:<경로>`) |
+|---|---|---|
+| 로그인 | `POST /api/v1/sessions` → 201 | `services/core-api/src/colab_core/app/routes/session.py:66` |
+| 주제 수정 | `PATCH /api/v1/datasets/{id}` `{"topic": 값}` → 200 (응답 = 수정 뒤 상세) | `services/core-api/src/colab_core/app/routes/catalog.py:1227`(op) · `:809`(허용 열쇠 `topic`) · `:1122-1126`(6값 밖 400) · `:1313`(`d3_catalog.update_dataset` 호출) |
+| 값 집합 | `강우·강수`·`식생·NDVI`·`지형·DEM`·`토지피복·LULC`·`가뭄`·`파일 포맷 예제` | `catalog.py:827-828` `_TOPICS` · `db/platform/schema.sql:466` CHECK |
+| 저장 | `UPDATE d3_dataset_description SET topic = … WHERE dataset_id = …` | `services/core-api/src/colab_core/domains/d3_catalog.py:1220`(`_UPDATABLE`) · `:1303-1308` |
+| 등록 화면 | 주제 칸 없음(2026-09-14 개정) — 재시드 러너가 등록 뒤 같은 PATCH 를 친다(8-6) | `frontend/src/components/upload/RegisterArea.tsx:442-446` |
+
+로그인 계정 = 재시드 러너의 연구실 교수 계정(데이터셋 소유자). 러너 작업 자리의 계정 목록에서 교수 역할 1건 · 러너 로그인 계정과 같음을 대조했고(값 미출력), 28건 상세의 `owner.accountId` 가 스냅샷 v2 `subject.accountId` 와 같음을 28/28 확인했다. 세션은 끝에 닫았다.
+
+### 8-3. 이전 상태 (쓰기 전 기록)
+
+BYPASSRLS 백업 URL · 일회용 postgres:16-alpine · `begin read only; … rollback;`(`transaction_read_only = on`) · 2026-09-24T21:41:52Z(UTC).
+
+- 데이터셋 28 · `topic` 채움 0/28(전부 NULL).
+- `d3_dataset_description.updated_at` — 28건 모두 등록 시각(2026-09-24T13:38:44Z ~ 15:12:20Z). §7 의 설명 9건 PATCH 뒤에도 등록 시각 그대로.
+- `search_vector` = 현재 이름·주제·설명으로 다시 계산한 식과 같음 28/28(8-5).
+- 되돌리는 법 — 같은 API `PATCH /api/v1/datasets/{id}` `{"topic": null}`(계약상 `null` = 비우기).
+
+### 8-4. 요청 기록 (KST · 토큰·계정 값 없음)
+
+확인 실행(쓰기 없음) 58건 — 2026-09-25 06:46:20 경 `POST /sessions` 201 · `GET /datasets/{id}` 56건 200 · `DELETE /sessions/current` 204.
+
+쓰기 실행 86건 — 2026-09-25 06:46:29~06:46:35:
+
+| # | 요청 | 상태 |
+|---|---|---|
+| 1 | `POST /api/v1/sessions` | 201 |
+| 2~85 | 28건마다 `GET /api/v1/datasets/{id}`(이전 값) → `PATCH /api/v1/datasets/{id}` `{"topic": 8-1 값}` → `GET /api/v1/datasets/{id}`(확인) | GET 200 × 56 · PATCH 200 × 28 |
+| 86 | `DELETE /api/v1/sessions/current` | 204 |
+
+### 8-5. 검증
+
+- API — PATCH 응답의 `topic` = 보낸 값 28/28. 뒤이은 `GET` 의 `topic` = 8-1 값 28/28. `summary` 무변화 28/28.
+- BYPASSRLS 읽기(2026-09-24T21:46:49Z · `transaction_read_only = on`) — `topic` 채움 28/28 · 분포 강우·강수 5 · 식생·NDVI 7 · 가뭄 2 · 파일 포맷 예제 14. `summary` md5 28/28 이전과 같음.
+- `d3_dataset_description.updated_at` — 28건 모두 이전 값 그대로. §7-5 의 설명 수정과 같은 결함이다. 이슈 초안을 작성했다(게시는 오케스트레이터 몫 · 8-9).
+
+### 8-6. 검색 색인 재계산 — 결론: 다시 계산된다
+
+- 제품 검색이 쓰는 색인 = `d3_dataset_description.search_vector`(이름 A · 주제 B · 설명 C). `GENERATED ALWAYS AS (…) STORED` 생성 컬럼이라 같은 행의 `UPDATE` 에서 DB 가 다시 계산한다(`db/platform/schema.sql:470-474`, dev 카탈로그 `pg_attribute.attgenerated = 's'` 와 식 일치 확인). GIN 색인 `d3_dataset_description_search_idx`(`schema.sql:516-517`)는 그 열을 따라간다.
+- 제품 검색 SQL 이 이 열을 읽는다 — `ts_rank_cd(dd.search_vector ‖ am.search_vector ‖ d.search_vector)` · 주제 필터 `dd.topic = :topic`(`services/core-api/src/colab_core/domains/d3_catalog.py:733-759`). 임베딩 벡터는 없다(`schema.sql:29` — pgvector 미사용).
+- 직접 읽기 대조(BYPASSRLS · 읽기 전용):
+  - 이전 — 저장된 `search_vector` = 현재 열로 다시 계산한 식 28/28. §7 설명 9건 PATCH 뒤의 값이다. 설명 수정도 색인에 반영돼 있었다. `가뭄:*` 적중 0.
+  - 이후 — `search_vector` md5 28/28 바뀜 · 다시 계산한 식과 같음 28/28 · 주제 어휘소 실림(강우·강수 → `강우`·`강수`, 식생·NDVI → `식생`·`ndvi`, 가뭄 → `가뭄`, 파일 포맷 예제 → `파일`·`포맷`·`예제`). `가뭄:*` 적중 2(SPI·SPEI). §7 설명에만 있는 낱말 `불연속:*` 적중 3(seq 3·4·5).
+- §7-9 의 「설명 벡터·색인이 새 문장으로 다시 계산됐는지 미확인」은 이것으로 닫는다.
+
+### 8-7. 재시드 정본 반영 (다음 재시드가 같은 주제를 싣는다)
+
+| 파일 | 변경 |
+|---|---|
+| `dev-package/tools/dev-seed/canonical-metadata.json` | 28행 전부에 `topic`(8-1 값) · 머리에 `topicBasis`(규칙·근거 한 문장) |
+| `dev-package/tools/dev-seed/build_plan.py` | `TOPICS` 6값. 정본 행의 `topic` 이 없거나 6값 밖이면 행 이름을 대고 멈춘다. 계획 행에 `topic` 을 싣는다 |
+| `dev-package/tools/dev-seed/runner.py` | `planned_topic` — 업로드 전 필수 칸 검사(`plan_field_problems`)에 주제 포함. `reconcile_topics` — datasets 단계 끝에 등록된 전행의 주제를 저장값이 다를 때만 공식 `PATCH /datasets/{id}` 로 맞추고 응답으로 확인. verify 가 `topics_ok == topics_expected`(28)를 요구 |
+| `dev-package/tools/dev-seed/tests/*` | 정본 주제 결합·6값 밖/누락 거절 · 커밋된 정본 28행 = 폴더 규칙 · 필수 칸 검사 · PATCH 는 다른 행만 · 저장 확인 실패 · verify 계약 — red 9건 확인 뒤 green |
+| `dev-package/tools/dev-seed/README.md` | 예외 목록에 주제 한 항목 |
+
+- `plan-manifest.yaml` 은 바꾸지 않았다(md 생성물 · 주제는 러너 입력 `upload-plan.json` 에만 실림). seed-plan-drift 가 등재표 = md 재생성본임을 확인한다.
+
+### 8-8. 스냅샷 재포획 · 골든 회귀 · 면제
+
+- 스냅샷 v2 재포획(`recapture_snapshot.py` 읽기 전용 · 2026-09-24T21:47:08Z) — 검증 11/11 통과. 이전 v2 와 다른 것은 `topic` 28건과 `captured_at` 뿐이다. ID·순서·이름→ID 표(`dev-name-id-v2.json`) 동일.
+- K3 `eval/k3-lineage/lineage-cases.json` 5건의 `topic` 을 스냅샷 값으로 맞췄다(LIN-001·003·005 강우·강수, LIN-002·004 식생·NDVI). `test_k3_candidate_recall.py` 의 「정답 = 스냅샷」 대조가 요구한다. 부모·역할·Lv 는 무수정.
+- 골든 회귀(모델 호출 0 · `run_regression.py` = helper 45건 ＋ `service-tests.sh core-api search_golden`) — 스냅샷 교체 직후 면제 4건(005·006·008·009)을 둔 채 돌리면 red였다. 실패 집합이 빈 집합으로 면제 집합과 달랐다. 네 문항이 모두 통과해 면제를 전부 지웠다(`V2_RETRIEVAL_GAPS = {}`). 다시 돌려 green: **골든 회귀 12/12 통과 · 0 면제(V2_RETRIEVAL_GAPS)**. 면제 때문에 꺼져 있던 005 HLS 역할 근거 문장 검사(`HLS_S30_NDVI_mean_202305.tif`·「검증 자료」·「보조 입력」)도 이제 켜져 통과한다.
+  - 008·009 — frozen 해석의 주제 필터 「가뭄」이 SPI·SPEI 를 더는 거르지 않는다.
+  - 006 — rn15_sample 이 주제 어휘소 `강우`·`강수` 로 해석 낱말과 맞는다.
+  - 005 — 검토된 파일 근거(search-evidence)는 그 데이터셋의 주제가 질문 조건의 주제와 같을 때만 후보가 된다(`catalog.py:520-525`). DEM·Aspect·LULC_2023·HLS 가 식생·NDVI 를 받아 이 대조를 통과한다.
+  - 010(empty) — 가뭄 주제 2건이 생겼어도 범위 안 결과 0건 유지.
+- 문구 보정 — `run_regression.py` 끝 줄이 「골든 회귀 N/12 통과 · M 면제(V2_RETRIEVAL_GAPS)」를 실제 수로 낸다. M 은 시험 파일의 `V2_RETRIEVAL_GAPS` 를 읽어 세고, N = 12 − M 이다. 시험이 실패 집합 = 면제 집합을 요구하므로 green 이면 이 값이 맞다. `golden-set.md:55` 옛 ID 줄에 「(v1 · 사멸 · 서명 ② 범위 밖이라 보존)」.
+- §4-2 의 「topic 0/28」 행은 닫혔다. K3 filtered 전략의 「주제」 신호는 v2 에서 다시 선다.
+
+### 8-9. 하지 않은 것 · 후속
+
+- 모델을 부르는 재측정(WU5)은 하지 않았다. 순위·상위 N 영향은 WU5 몫이다.
+- `d3_dataset_description.updated_at` 미갱신 — GitHub 이슈 초안만 썼다(`bug` · 원인 `d3_catalog.py:1303-1314` · 필수 회귀 시험 포함). 게시는 오케스트레이터 몫이다.
+- DEM·Aspect·LULC_2023 을 `지형·DEM`·`토지피복·LULC` 로 나눌지는 사용자 판정 대상이다(8-1). 나누면 005 의 주제 신호가 달라지므로 골든 회귀를 다시 돌린다.
