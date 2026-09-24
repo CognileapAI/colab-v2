@@ -482,7 +482,7 @@ class HttpLineageSuggestionRelay:
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
                 file_meta: dict[str, Any], candidates: list[dict[str, Any]],
                 searched_count: int, dataset_name_draft: str | None,
-                subject: str | None) -> dict[str, Any]:
+                subject: str | None, processing_level: int) -> dict[str, Any]:
         """⭑ **⟨정정 2026-08-30⟩ 나가는 본문이 계약과 어긋나 있었다.**
 
         계약(`core-ai.yaml LineageSuggestionRequest`, 2026-08-22 동결)은 `file` 을
@@ -501,6 +501,12 @@ class HttpLineageSuggestionRelay:
         payload: dict[str, Any] = {
             "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
             "file": file_meta,
+            # ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 사람이 고른 자기 가공 단계(정수 0..3).** 계약이
+            # `readOnly` 인 `ProcessingLevel` 을 참조하지 않고 인라인으로 적은 자리다 —
+            # 파생값이 아니라 **사람이 고른 값**이라 애초에 다른 사실이다.
+            # ⚠ 안 골랐으면 여기까지 오지 않는다(라우트가 중계를 부르지 않는다) —
+            # `0` 으로 채우면 「Lv0 이다」로 읽힌다(계약 산문 축자).
+            "processingLevel": processing_level,
         }
         if dataset_name_draft:
             payload["datasetNameDraft"] = dataset_name_draft

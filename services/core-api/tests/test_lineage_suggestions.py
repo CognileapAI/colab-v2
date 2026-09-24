@@ -20,7 +20,17 @@ from test_dataset_registration import make_upload
 from colab_core.app.main import API_PREFIX
 
 
-def _get(client, upload_id, **params):
+#: ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 가공 단계를 안 고르면 모델을 부르지 않는다**(Ted 판정 ③ ·
+#: 라운드 `WU-S1` Q2a). 그래서 아래 시험들은 「사람이 골랐다」를 **명시한다** — 안 고른 자리의
+#: 응답은 이 파일의 `test_가공_단계를_안_고르면...` 이 따로 재는 **다른 사실**이다.
+#: `Lv1` 인 이유: 시드의 후보(DSA1 파생 0 · DSA2 파생 1)가 둘 다 적격으로 남아 종전 오라클이
+#: 그대로 선다. 적격 필터 자체는 도메인 시험이 잰다.
+DEFAULT_USER_SET_LEVEL = "Lv1"
+
+
+def _get(client, upload_id, *, processingLevelUserSet=DEFAULT_USER_SET_LEVEL, **params):
+    if processingLevelUserSet is not None:
+        params["processingLevelUserSet"] = processingLevelUserSet
     return client.get(f"{API_PREFIX}/uploads/{upload_id}/lineage-suggestions",
                       params=params, headers=auth(TOKEN_RES))
 
@@ -679,3 +689,127 @@ def test_후보의_기간이_나가는_요청에_실린다(p2_client, recording_
     sent = _by_id(_sent_candidates(seen))[DS_A1]
     assert sent["periodStart"].startswith("2020-01-01"), sent
     assert sent["periodEnd"].startswith("2024-12-31"), sent
+
+
+# ═════════ WU-S1b — 가공 단계가 있어야 묻는다 · 원메타 4축을 싣는다 ══════════
+#
+# **Lv 가 없으면 모델을 부르지 않는다**(라운드 `WU-S1` Q2a · Ted 판정 ③). 기준값이 없으면
+# 적격을 가를 수 없고, 적격을 못 가르면 자손이 부모로 제안되는 자리가 그대로 열린다.
+# 그때 참인 답은 「제안이 없다」이고, 그것을 **200 + 0건 + 사유 한 줄**로 말한다.
+
+
+def test_가공_단계를_안_고르면_ai_service_를_부르지_않는다(p2_client, recording_ai) -> None:
+    """**요청이 0회다.** 부르고 버리는 것과 안 부르는 것은 다르다 — 토큰도 감시 기록도 다르다."""
+    from colab_core.app.routes import ingestion as _ing
+
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    r = _get(client, make_upload(client)["uploadId"], processingLevelUserSet=None)
+    assert r.status_code == 200, r.text
+    assert seen == [], "가공 단계를 안 골랐는데 모델 쪽으로 요청이 나갔다."
+    body = r.json()
+    assert body["suggestions"] == []
+    assert body["degraded"] is True
+    assert body["degradedReason"] == _ing.LEVEL_REQUIRED_REASON
+
+
+def test_가공_단계_사유는_기존_영_상태_사유와_다른_문장이다(p2_client, recording_ai) -> None:
+    """**네 번째 영 상태다.** 기존 셋(㈎ 뒤질 대상 0 · ㈏ 뒤졌고 0건 · ㈐ 못 물어봤다)을
+    그대로 두고 옆에 선다 — 사유 문자열이 같으면 화면이 「AI 가 죽었다」와 「네가 아직
+    안 골랐다」를 구별하지 못한다. ⚠ 사유 **코드 enum 을 새로 만들지 않는다**: 오늘
+    `degradedReason` 을 읽는 FE 소비자가 0건이라, 읽는 쪽이 생기는 회차가 그것을 정한다."""
+    from colab_core.app.routes import ingestion as _ing
+
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    not_chosen = _get(client, make_upload(client)["uploadId"],
+                      processingLevelUserSet=None).json()
+    offline = p2_client(ai_base_url=None)
+    not_asked = _get(offline, make_upload(offline)["uploadId"]).json()
+    assert not_chosen["degradedReason"] == _ing.LEVEL_REQUIRED_REASON
+    assert not_chosen["degradedReason"] != not_asked["degradedReason"], \
+        "「안 골랐다」와 「못 물어봤다」가 같은 문장으로 내려간다."
+    assert not_chosen["scope"]["labId"] == LAB_A, "사유만 남기고 범위를 잃었다."
+
+
+@pytest.mark.parametrize("bad", ["Lv9", "1", "lv1", "Lv", ""])
+def test_계약_밖_가공_단계_값은_400_이다(p2_client, recording_ai, bad) -> None:
+    """표면이 계약을 요구한다 — `fe-core.yaml` 의 enum 은 `Lv0`~`Lv3` 넷뿐이다.
+    모르는 값을 조용히 「안 골랐다」로 접으면 오타가 영 상태로 둔갑한다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    r = _get(client, make_upload(client)["uploadId"], processingLevelUserSet=bad)
+    assert r.status_code == 400, r.text
+    assert seen == [], "계약 밖 값인데 모델 쪽으로 요청이 나갔다."
+
+
+def test_나가는_요청에_사람이_고른_가공_단계가_정수로_실린다(p2_client, recording_ai) -> None:
+    """계약 `LineageSuggestionRequest.processingLevel` 은 **정수**다(인라인 0..3).
+    문자열→정수 변환 자리는 `d3_catalog.parse_user_set_level` 한 곳뿐이다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"], processingLevelUserSet="Lv2")
+    assert seen, "요청이 나가지 않았다."
+    sent = seen[0]["processingLevel"]
+    assert sent == 2 and isinstance(sent, int) and not isinstance(sent, bool), sent
+    schema = _contract_schemas()["LineageSuggestionRequest"]["properties"]["processingLevel"]
+    assert schema["minimum"] <= sent <= schema["maximum"]
+
+
+def test_후보의_원메타_네_축은_아는_것만_실린다(p2_client, recording_ai, sql) -> None:
+    """⭑ 모델이 근거를 **인용**하려면 대조할 날값이 있어야 한다(계약 `WU-S0` 산문).
+    ⚠ **날값만 싣는다** — 겹침·교집합 같은 파생 신호는 싣지 않는다(열린 권고 ① 채택).
+    ⚠ **모르는 값은 열쇠를 만들지 않는다** — 자동 메타 행이 아예 없는 후보가 그 자리다."""
+    sql("""UPDATE d3_dataset_autometa
+              SET grid = '0.25도 정규격자', bundle_file_name = 'a1-body.csv'
+            WHERE dataset_id = :d""", {"d": DS_A1})
+    _seed_dataset(sql, _BARE_SEED, name="자동 메타가 없는 자료")
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    sent = _by_id(_sent_candidates(seen))
+    known = sent[DS_A1]
+    assert known["crs"] == "EPSG:5179"
+    assert known["grid"] == "0.25도 정규격자"
+    # 변수 목록의 정본은 `d3_dataset_variable` 이고 트리거가 자동 메타로 옮긴다 — 시드의
+    # DSA1 은 세 행(`강우량`·`기온`·`유출량`)이다. 여기서 재는 것은 **날값 그대로**인가다.
+    assert known["variables"] == ["강우량", "기온", "유출량"]
+    assert known["fileName"] == "a1-body.csv"
+    unknown = sent[_BARE_SEED]
+    for axis in ("crs", "grid", "variables", "fileName"):
+        assert axis not in unknown, f"{axis} 를 모르는데 열쇠를 만들었다 — 미지가 값이 된다"
+    # **파생 신호는 나가지 않는다.** 모델이 베껴 돌려주면 인용 검증이 오라클 구실을 못 한다.
+    allowed = set(_contract_schemas()["LineageParentCandidate"]["properties"])
+    for candidate in sent.values():
+        assert set(candidate) <= allowed, f"계약 밖 열쇠: {set(candidate) - allowed}"
+
+
+def test_원메타_날값은_계약_상한으로_잘라_보낸다(p2_client, recording_ai, sql) -> None:
+    """상한은 본문이 부풀지 않게 이쪽에서 건다 — D3 저장값에는 상한이 없다
+    (`summary`·`sourceLabel` 과 같은 규율)."""
+    sql("""UPDATE d3_dataset_autometa
+              SET crs = :long, grid = :long, bundle_file_name = :long,
+                  variables = CAST(:vars AS text[])
+            WHERE dataset_id = :d""",
+        {"d": DS_A1, "long": "가" * 300,
+         "vars": "{" + ",".join(f"v{n}" for n in range(60)) + "}"})
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schema = _contract_schemas()["LineageParentCandidate"]["properties"]
+    sent = _by_id(_sent_candidates(seen))[DS_A1]
+    for axis in ("crs", "grid", "fileName"):
+        assert len(sent[axis]) == schema[axis]["maxLength"], axis
+    assert len(sent["variables"]) == schema["variables"]["maxItems"]
+
+
+def test_적격_필터가_라우트까지_배선됐다(p2_client, recording_ai) -> None:
+    """도메인 시험이 재는 것은 함수이고, 여기서 재는 것은 **배선**이다.
+    DSA2 는 확정된 부모(DSA1)가 있어 파생 Lv1 이라 `Lv0` 업로드의 부모가 될 수 없다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"], processingLevelUserSet="Lv0")
+    ids = set(_by_id(_sent_candidates(seen)))
+    assert DS_A2 not in ids, "Lv0 업로드에 파생 Lv1 후보가 나갔다 — 필터가 배선되지 않았다"
+    assert DS_A1 in ids, "같은 단계(Lv0) 후보까지 지웠다"
+    assert DS_B1 not in ids, "필터를 걸면서 연구실 경계가 넓어졌다"

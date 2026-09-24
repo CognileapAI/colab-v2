@@ -89,12 +89,17 @@ class LineageSuggestionPort(Protocol):
     core-api 이고 매기는 것만 저쪽 일이다**(`〈72〉-㉮` 검색과 같은 분담). 그래서 되받은
     제안의 `parentDatasetId` 가 **보낸 후보 밖**이면 구현이 그것을 버린다: 신뢰하지 않는
     쪽에서 거르는 것이 계약 표류를 잡는 유일한 자리다(응답 `scope` 를 버리는 그 자리와 같다).
+
+    ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ `processing_level` 은 사람이 고른 값이다.** 「부모 Lv ≤ 자기
+    Lv」의 기준값이고 **거르는 것은 core-api 다**(`〈72〉-㉮` 분담) — 저쪽은 해석 단서로만 쓴다.
+    ⚠ 안 골랐으면 **이 표면에 오지 않는다**: 기준값이 없으면 적격을 가를 수 없어 라우트가
+    중계를 부르지 않고 정직한 빈 상태로 답한다(`routes/ingestion.LEVEL_REQUIRED_REASON`).
     """
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
                 file_meta: dict[str, Any], candidates: list[dict[str, Any]],
                 searched_count: int, dataset_name_draft: str | None,
-                subject: str | None) -> dict[str, Any]:
+                subject: str | None, processing_level: int) -> dict[str, Any]:
         ...
 
 

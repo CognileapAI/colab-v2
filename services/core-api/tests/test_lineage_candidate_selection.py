@@ -248,3 +248,152 @@ def test_자기_자신_제외는_세션_경계_안에서_판정된다(session_fa
     assert DS_TWIN not in a_side and DS_TWIN_B not in a_side
     assert DS_TWIN_B not in b_side and DS_TWIN not in b_side
     assert DS_A1 in a_side and DS_B1 in b_side
+
+
+# ═══════ WU-S1b — 적격 필터 「부모 Lv ≤ 자기 Lv」 (Ted 판정 ③ · 2026-09-24) ═══════
+#
+# 2차 실측의 오답은 **자기 자식**이었다. 부모가 있고 확정일이 없는 자식은 `lineage_state`
+# 가 「확인 필요」라 `LineageCandidate.processing_level` 이 `None` 으로 실린다 — **판정된
+# 값만 가지고 필터를 걸면 바로 그 후보가 필터를 통과한다.** 그래서 필터가 쓰는 값은
+# `level_view(...)["processingLevelDerived"]`(언제나 정의된다)와 사람이 고른 값의 **큰 쪽**
+# 이고, 본문에 싣는 값은 **판정된 것만**이다. 두 규율을 일부러 다르게 둔다(라운드 열린 권고 ③).
+#: 부모가 DSA2 인 손자 — 파생 Lv2 다. 확정일이 없어 `processing_level` 은 `None` 으로 실린다.
+DS_GRAND = "00000000000000000000DSGRN1"
+#: 부모 0(파생 0)인데 **사람이 Lv2 라고 골라 둔** 후보. `max(파생, 사람값)` 이 아니면 샌다.
+#: ⚠ ULID 알파벳에 `U` 가 없다 — `DSHUM2` 는 도메인 CHECK 에 걸린다.
+DS_HUMAN2 = "00000000000000000000DSHMN2"
+EDGE_GRAND = "000000000000000000000EDGRN"
+
+
+def _seed_level(sql, dataset_id, *, name, user_set=None, modified="2026-06-01T00:00:00Z"):
+    _seed(sql, dataset_id, name=name, topic=TOPIC_RAIN, modified=modified,
+          source_label="기상청")
+    if user_set is not None:
+        sql("UPDATE d3_dataset SET processing_level_user_set = :lv WHERE id = :id",
+            {"lv": user_set, "id": dataset_id})
+
+
+def _seed_child_of(sql, dataset_id, parent_id, edge_id, *, name,
+                   modified="2026-06-02T00:00:00Z"):
+    _seed(sql, dataset_id, name=name, topic=TOPIC_RAIN, modified=modified)
+    sql("""INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id,
+                                        parent_role, method, origin,
+                                        confirmed_by_account_id)
+           VALUES (:id, :lab, :child, :parent, '주입력', '재격자화', 'manual', :account)""",
+        {"id": edge_id, "lab": LAB_A, "child": dataset_id, "parent": parent_id,
+         "account": ACC_A_RES})
+
+
+def _picked(session, *, upload_level, k=20, strategy="recent"):
+    return _select(session, strategy=strategy, k=k, upload_level=upload_level,
+                   lineage_summaries=d4_lineage.LineageSummaryAdapter(session))
+
+
+def test_문자열_Lv_를_정수로_읽는_자리는_한_곳이다():
+    """`Lv0`~`Lv3` 문자열을 정수로 옮기는 자리를 **두 벌로 두지 않는다**
+    (계약 `fe-core.yaml listUploadLineageSuggestions.processingLevelUserSet` 축자 —
+    「문자열→정수 변환은 `d3_catalog` 한 곳에만 둔다」). 라우트도 이 함수를 부른다."""
+    assert d3_catalog.parse_user_set_level("Lv0") == 0
+    assert d3_catalog.parse_user_set_level("Lv3") == 3
+    # 계약 enum 밖은 **정수가 아니다** — 부르는 쪽이 400 으로 가른다.
+    assert d3_catalog.parse_user_set_level("Lv9") is None
+    assert d3_catalog.parse_user_set_level("2") is None
+    assert d3_catalog.parse_user_set_level(None) is None
+    assert d3_catalog.parse_user_set_level("") is None
+
+
+def test_파생_Lv_가_업로드보다_높은_후보는_빠진다(session_factory, sql):
+    """**판정이 없어도 걸린다** — 자기 자식이 정확히 이 자리로 샜다(2차 실측 오답)."""
+    _seed_child_of(sql, DS_GRAND, DS_A2, EDGE_GRAND, name="A 강우 손자")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = {c.core.dataset_id: c for c in _picked(session, upload_level=1)}
+    assert DS_GRAND not in got, "파생 Lv2 후보가 Lv1 업로드의 부모 후보로 남았다"
+    assert DS_A2 in got, "같은 단계(Lv1) 후보를 지웠다 — 「부모 Lv ≤ 자기 Lv」 는 같음을 허용한다"
+    assert DS_A1 in got, "더 낮은 단계 후보까지 지웠다"
+
+
+def test_판정된_Lv_가_없어도_본문_규율은_그대로다(session_factory, sql):
+    """필터가 쓰는 값(파생)과 싣는 값(판정된 것만)은 **다르다** — 일부러 다르게 둔 자리다."""
+    _seed_child_of(sql, DS_GRAND, DS_A2, EDGE_GRAND, name="A 강우 손자")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = {c.core.dataset_id: c for c in _picked(session, upload_level=3)}
+    assert DS_GRAND in got, "Lv3 업로드는 아무 후보도 거르지 못한다"
+    assert got[DS_GRAND].processing_level is None, \
+        "「확인 필요」 후보에 Lv 를 지어냈다 — 필터가 쓰는 값을 본문에 옮겨 적었다"
+    assert got[DS_GRAND].derived_level == 2, "필터가 무엇으로 걸렀는지가 남지 않았다"
+
+
+def test_사람이_고른_Lv_가_더_높으면_그_값으로_걸린다(session_factory, sql):
+    """필터는 `max(파생, 사람값)` 이다(Ted 판정 ③). 파생만 보면 사람이 Lv2 라고 적어 둔
+    후보가 Lv1 업로드의 부모로 남는다 — 사람 값은 파생값과 어긋날 수 있다(`level_view` 의
+    `processingLevelMismatch` 가 있는 이유)."""
+    _seed_level(sql, DS_HUMAN2, name="A 사람이 Lv2 라 적은 자료", user_set="Lv2")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        low = {c.core.dataset_id for c in _picked(session, upload_level=1)}
+        high = {c.core.dataset_id for c in _picked(session, upload_level=2)}
+    assert DS_HUMAN2 not in low, "사람이 고른 Lv2 를 파생 0 으로 읽어 통과시켰다"
+    assert DS_HUMAN2 in high, "같은 단계(Lv2) 후보를 지웠다"
+
+
+def test_파생도_사람값도_모르면_남긴다(session_factory, sql):
+    """**「모른다」를 이유로 진짜 부모를 지우지 않는다**(라운드 열린 권고 ③).
+    계보 요약 포트가 없으면 파생값을 모르고, 사람 값도 없으면 잴 것이 없다."""
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy="recent", k=20, upload_level=0))
+    assert DS_A1 in got and DS_A2 in got, "잴 값이 없는 후보를 Lv0 업로드에서 지웠다"
+
+
+def test_Lv3_업로드는_아무것도_거르지_않는다(session_factory, sql):
+    """⚠ **상한 구멍이다.** 계약의 `processingLevel` 상한이 `3` 이고 후보 쪽 Lv 도 3 이하라
+    `Lv3` 업로드에서는 「후보 Lv > 3」 인 후보가 **존재할 수 없다** — 이 필터는 그 자리에서
+    한 건도 못 거른다. 구조 보장이 Lv3 에서 얇아진다는 사실을 시험으로 적어 둔다.
+    막으려면 다른 축(자기 자손 배제)이 필요하고, 그것은 이 회차의 일이 아니다."""
+    _seed_child_of(sql, DS_GRAND, DS_A2, EDGE_GRAND, name="A 강우 손자")
+    _seed_level(sql, DS_HUMAN2, name="A 사람이 Lv2 라 적은 자료", user_set="Lv2")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        ceiling = {c.core.dataset_id for c in _picked(session, upload_level=3)}
+        unfiltered = {c.core.dataset_id for c in _picked(session, upload_level=None)}
+    assert ceiling == unfiltered, "Lv3 상한 구멍이 메워졌다면 이 시험이 아니라 그 설계를 적는다"
+
+
+def test_upload_level_이_없으면_현행과_글자_하나_다르지_않다(session_factory, sql):
+    """기본값이 현행을 보존한다 — 호출자가 하나뿐이라 기본값이 곧 회귀 오라클이다."""
+    _seed_child_of(sql, DS_GRAND, DS_A2, EDGE_GRAND, name="A 강우 손자")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        before = _picked(session, upload_level=None)
+        plain = _select(session, strategy="recent", k=20,
+                        lineage_summaries=d4_lineage.LineageSummaryAdapter(session))
+    assert [(c.core.dataset_id, c.processing_level, c.matched_by) for c in before] == \
+           [(c.core.dataset_id, c.processing_level, c.matched_by) for c in plain]
+    assert DS_GRAND in _ids(before), "필터를 걸지 않았는데 후보가 사라졌다"
+
+
+def test_적격_필터는_상한_k_보다_먼저_걸린다(session_factory, sql):
+    """빼는 자리가 상한 **앞**이라 빈 자리를 뒤의 진짜 후보가 채운다. 뒤에서 빼면
+    k 자리 안에서만 사라지고 모집단 뒤쪽의 참인 부모는 영영 안 보인다.
+
+    ⚠ **전략이 `filtered` 여야 이 두 순서가 갈린다.** `recent` 는 질의 하나가 k행만 읽어
+    오므로 모집단 자체가 k건이고, 그때는 앞에서 빼든 뒤에서 빼든 결과가 같다. 합집합은
+    질의마다 k행을 읽어 **모집단이 k 를 넘을 수 있고**, 거기서만 순서가 사실이 된다:
+    앞에서 빼면 `[DSA2, DSA1]`(2건) · 뒤에서 빼면 `[DSA2]`(1건)다.
+    """
+    _seed_child_of(sql, DS_GRAND, DS_A2, EDGE_GRAND, name="A 강우 손자",
+                   modified="2026-07-01T00:00:00Z")
+    meta = _upload("손자 원자료 격자화", file_name="upload.csv")
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy="filtered", k=2, upload_meta=meta,
+                           upload_level=1,
+                           lineage_summaries=d4_lineage.LineageSummaryAdapter(session)))
+    assert DS_GRAND not in got, "가장 최근인 부적격 후보가 상한 뒤에서 잘려 살아남았다"
+    assert got == [DS_A2, DS_A1], f"부적격을 뺀 자리를 뒤의 후보가 못 채웠다: {got}"
+
+
+def test_적격_필터는_자기_자신_제외_뒤에_걸린다(session_factory, sql):
+    """자신을 먼저 빼고 나서 Lv 로 거른다 — 순서가 바뀌면 자신이 Lv 로 살아남을 수 있다."""
+    _seed_twin(sql)
+    meta = _upload(TWIN_NAME, file_name=TWIN_FILE)
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as session:
+        got = _ids(_select(session, strategy="recent", k=20, upload_meta=meta,
+                           upload_level=3,
+                           lineage_summaries=d4_lineage.LineageSummaryAdapter(session)))
+    assert DS_TWIN not in got, "Lv3(아무것도 안 거르는 값)에서 자기 자신이 살아남았다"
