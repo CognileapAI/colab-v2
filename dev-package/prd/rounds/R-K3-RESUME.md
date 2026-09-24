@@ -252,3 +252,5 @@
 **Ted 결정 목록.** ① `candidates` 선택 필드 서명(J1·㉮ 뒤) ② `core-ai.yaml:69-71` D9 산문 삭제/존치 ③ 후보 필터 — 최근순 무필터 / 이름·주제 필터 / 둘 다 실측 후 ④ ㉮ 화면 복원 — 서버 선행 허용 vs K3 보류 ⑤ D10 실행 원장 — K3 편입 vs K3·K4 공통 별건 ⑥ k=20 · 플래그 기본 off — 권고 수용.
 
 **WU1a·WU4a 는 결정 ③ 을 위해 두 전략(최근순 무필터 · 이름/주제 필터)을 모두 구현해 J1 을 나란히 잰다.** 각 레인은 `lifecycle begin --role lane-worker --gate …` 로 task 를 열고 red 로그를 먼저 남긴다.
+
+**판정 2026-09-24 (Ted 「좋아 권고대로」).** 결정 ①~⑥ 전부 권고 수용 — intent 「판정 기록」 절 참조. WU1a·WU4a 는 `k3-wu1a-candidates` 64bfbbd7 로 `k3-resume` 에 병합됨. 이제 **WU0 → WU1b ∥ WU2 → WU3 → WU4b** 로 간다. WU1b 는 후보 전략 기본값을 `filtered` 로 배선한다.
