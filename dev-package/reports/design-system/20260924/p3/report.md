@@ -4,6 +4,14 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P3-20260924.md` · 조사: `p3/l
 
 착수 HEAD `26b8a676` · task `a48a85df6e19492ba20254a0ad6135bf` · 레인 1(직렬)
 
+## 결론
+
+- 게이트 `frontend-design-lint` 에 f(정본 밖 색 리터럴) · g(TSX 인라인 비변수 키)를 더했다. 착수 red **f 69 · g 7** → 최종 green **f 0(면제 3) · g 0(변수 대입 6)**. selftest 12 → **16건** 전건 기대대로.
+- CSS: 죽은 폴백 **64** 삭제 · `#fff` **2** → `var(--color-white)` · 판정 대기 **3** 면제(`.chip` `#eef2f7` · `login.css` `color-mix()` 2). 조사의 A 1 · B 1 · D 3 은 P2a 가 먼저 없앴다(착수 계 69 ≠ 조사 72).
+- TSX 인라인 7곳(5파일)을 CSS 변수 대입 6 + 클래스 1 로 바꿨다.
+- 시각 변경 0 — `visual:diff` **196 captures · red 0 · strict px 0 · exit 0**. 계산값 전수 대조(커스텀 속성 제외) **196 페이지 · 요소·가상요소 26962 항목 차이 0**. 캡처가 닿지 않는 변경 자리 9종은 실브라우저 probe 로 전후 계산값 18건 동일.
+- **판정 필요 2건**: ⑴ `search.test.tsx:175` 단언을 `style.width` → 변수 값으로 바꿨다(제품 시험 1줄 · 지시 「0」과 다름) ⑵ `login.css` `color-mix()` 2건을 면제로 두었다(지시의 「면제 2 = A·C」와 다름 — A 는 착수 코드에 없다).
+
 ## 진행 상태
 
 | 단계 | 상태 | 커밋 |
@@ -11,11 +19,11 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P3-20260924.md` · 조사: `p3/l
 | 1 착수 캡처 `p3-before` · 재계측 | 완료 | — |
 | 2 게이트 f·g · selftest 16 | 완료 | `844652cd` |
 | 3 CSS — 죽은 폴백 64 · B 2 · 면제 3 | 완료 | `539f68ee` |
-| 4 TSX 인라인 7 | 완료(제품 시험 1줄 변경 · 판정 필요) | (이 커밋) |
-| 5 캡처 범위 표 | 대기 | |
-| 6 대장 BF-8 | 대기 | |
-| 7 시각 변경 0 | 대기 | |
-| 8 게이트 | 대기 | |
+| 4 TSX 인라인 7 | 완료(제품 시험 1줄 변경 · 판정 필요) | `c80e3eab` |
+| 5 캡처 범위 표 | 완료(캡처 미도달 자리는 실브라우저 probe · 나머지 [미검증] 표기) | (이 커밋) |
+| 6 대장 BF-8 | 완료 | `67ce0608` |
+| 7 시각 변경 0 | 완료 — 196장 엄격 차이 0 · 계산값 196 페이지 차이 0 | (이 커밋) |
+| 8 게이트 | 아래 ⓓ | |
 
 ## 단계 1 — 착수 캡처 · 재계측
 
@@ -127,3 +135,78 @@ design-lint-counts files=19 a=0 … f=69 f_direct=5 f_fallback=64 f_name=0 f_hol
 | `frontend/test/search.test.tsx:175`(it 「관련도는 막대 하나다 — 퍼센트도 등급 텍스트도 숫자도 화면에 없다」) | `expect(span.style.width).toBe('42%')` → `expect(span.style.getPropertyValue('--hit-relbar-w')).toBe('42%')` + 주석 1줄 | spec(Q5)대로 인라인 `width` 를 변수 대입으로 바꾸면 요소의 `style.width` 는 빈 문자열이 된다 — 시험이 단언하던 **전달 수단**이 바뀐 것이고 단언한 사실(막대 길이 42% 가 막대에만 실린다)은 그대로다. red 확인: 변경 전 `AssertionError: expected '' to be '42%'` · 변경 뒤 19/19. 렌더 폭은 단계 7 의 캡처 대조가 본다(jsdom 은 층 껍질을 벗긴 CSS 를 싣지만 이 시험은 search.css 의 규칙 적용을 단언하지 않는다). **오케스트레이터 지시 「제품 시험 변경 0」과 다르다** — 판정 요청. |
 
 - 전 시험: `npx vitest run` → Test Files 130 passed (130) · Tests 1613 passed (1613)(건수 = P2a 와 같음 · 폐기 0).
+
+## 단계 5 — 캡처 범위(어느 장면이 바뀐 자리를 찍는가)
+
+도구 = `p3/states/cdump_p3.py`(P2a `cdump.py` 사본 · 요소 키를 `순번:태그` 로 · 커스텀 속성을 해시에서 뺌 · 선택자별 「화면에 그려짐」 계수를 더함 — 너비·높이 > 0 · `visibility` 가 hidden 아님 · 캡처 영역(전체 페이지면 문서 높이, 아니면 뷰포트 900px) 안) · 원자료 `p3/states/cover-after.json`(선택자 → 그려진 페이지). 196 페이지 = 33장면 × 테마 × 폭.
+
+| 자리 | 그려진 캡처(장면) | 검증 |
+|---|---|---|
+| B `.detail-page .dt-edit .de-req`(편집 모드) | **없음** | 캡처 [미검증] → probe 동일(라이트·다크 color `rgb(255, 255, 255)`) |
+| B `.search-page .vfilter .vsw::after`(스위치 손잡이) | search · search-degraded(12장) | 캡처 · 계산값 |
+| 〃 켜짐 `.vfilter.on`(폴백 3) | **없음** | 캡처 [미검증] → probe 동일(`::after` 배경 `rgb(255, 255, 255)` · 켜짐 색 라이트 `rgb(6, 117, 6)` · 다크 `rgb(144, 220, 178)`) |
+| `.colmenu .cm-box`(체크) | **없음** | 이번 변경 없음(P2a 에서 이미 토큰) |
+| A `.pj-modal-back` | project-close · project-dialog(12장) | 이번 변경 없음 · 캡처에 찍힘 |
+| TSX 1 `.relbar > span` | search · search-degraded(12장) | 캡처 · 계산값 · probe |
+| TSX 2 `.pv-swatch` | preview-done(6장) | 캡처 · 계산값 · probe |
+| TSX 3 `.pv-tile-piece`(모자이크) | **없음** | 캡처 [미검증] → probe 동일(`absolute` · 10/20/30/40px) |
+| TSX 4 `.dash-bar-fill` | lab · lab-dialog · gnb-more(16장) | 캡처 · 계산값 · probe |
+| TSX 5 `reg-source-block` | upload-link(6장) | 캡처 · 계산값 · probe(`margin-top: 16px`) |
+| TSX 6·7 `up-preview-layers` · `pv-expand-layers` | **없음** | 캡처 [미검증] → probe 동일(`matrix(2, 0, 0, 2, 5, 6)` · origin `0px 0px`) |
+| `.pv-layers` 확대 없음(규칙이 걸리지 않아야 함) | preview-done 의 `preview-layers`(6장) | 캡처 · 계산값 · probe(`transform: none` · origin 기본값) |
+
+- 색 리터럴 자리 69 중 캡처에 그려지는 것 **40** · 안 그려지는 것 **29** = 면제·무변 2(`login.css` 오버레이 둘) + B 1(`.de-req` · probe) + D **26**: `.dash-error` · `.fl-err` · `.dlerr` · `.labinfo-error` · `.labinfo-modal` · `lineage.css` 3 · `.loading` · `.hit.is-locked` · `.vfilter.on` 3 · `.up-spinner` 2 · `.gridbar` 계열 4 · `.up-transfer-percent` · `shell.css` `.loadfail` 계열 6. 이 26 은 **실화면 [미검증]** 이다 — 근거는 논증뿐(폴백 대상 이름 20종이 전부 `tokens.css` 라이트 `:root` 에 정의돼 있어 요소 위치와 무관하게 해석되고, 화면 범위 재정의는 게이트 a 가 0 으로 막는다).
+- probe = `p3/states/probe.py` — 착수 빌드 CSS 에는 종전 인라인 모양, 최종 빌드 CSS 에는 새 변수·클래스 모양으로 같은 DOM 을 만들어 agent-browser 로 라이트·다크 계산값(위치·크기·변환·여백·색·`::after` 배경)을 비교: **9 모양 × 2 테마 = 18건 전부 같음**(`p3/states/probe.json`). React 출력은 그대로 쓰지 않았다 — TSX 가 변수를 싣는지는 단계 4 의 시험·타입검사, CSS 가 그 변수를 같은 값으로 읽는지는 probe 가 본다.
+- `scenes.json` 무변(명세 sha256 `d6983d71…` 전후 같음) — 장면을 더하려면 새 픽스처(편집 모드 · 확대 미리보기 · 오류 상태)가 필요해 더하지 않았다.
+
+## 단계 6 — 대장
+
+- `dev-package/work-items.yaml` BF-8 `evidence` 끝에 한 줄: 「2026-09-24 P2a: 완료 정의의 「히어로 내용 폭 680px」는 09-12 승인 디자인(`design-system.css` → `search.css` 흡수 · `.lab-page .search-hero { max-width: 720px }`)이 720px 로 대체 · `dashboard.test.tsx` 기대값 720 (승인).」 다른 칸 무변.
+- 지시문의 문장은 흡수처를 `dashboard.css` 로 적었으나 720px 규칙은 `search.css:154` 에 있다(`dashboard.css:22` 의 같은 선택자 규칙은 좌우 여백 0 만) — 파일명만 사실대로 고쳤다.
+- `bash gates/run.sh work-item-consistency` → `work-item-consistency: green — 대장과 산문의 불일치 0`.
+
+## 단계 7 — 시각 변경 0(ⓑ)
+
+- 기준 `p3-before`: HEAD `26b8a676` · audit 빌드 포함 · 05:45:44~05:53:34 UTC · 196장.
+- 후보 `p3-after`: HEAD `67ce0608`(게이트 · CSS · TSX · 대장 전부 포함) · `gitDirty` false · audit 다시 빌드 · 06:04:48~06:12:40 UTC · 196장.
+- `npm run visual:diff -- .visual/p3-before .visual/p3-after .visual/p3-report` → **196 captures · red 0 · strict px 0 · exit 0** · 보조 차이 0 · 크기 차이 0 · 명세 sha256 두 쪽 같음. 보고 = `p3/visual/report.md`·`report.json`. red 0 이라 `visual/red/` 는 만들지 않았다.
+- B 의 다크 판정: `.vsw::after` 는 search·search-degraded 다크 캡처에서 차이 0. `.de-req` 는 캡처 밖이라 probe 로 봤다(다크 `rgb(255, 255, 255)` 전후 같음).
+
+### ⓑ′ 계산값 전수 대조
+
+- 착수 빌드(`frontend/.visual/p3-dist-before`)와 최종 빌드(`p3-dist-after`)를 캡처와 같은 196 페이지에서 열어(같은 명세 · 저장소 비움 · 애니메이션 고정) 모든 요소·가상요소의 `getComputedStyle` 전 속성 해시를 비교 — **196 페이지 · 26962 항목 · 차이 0**(`compare.py`).
+- P2a 도구와 다른 점: 커스텀 속성(`--*`)은 해시에서 뺐다 — 새 변수(`--hit-relbar-w` 등)는 상속돼 자손 전부의 커스텀 속성 목록을 바꾸므로, 렌더 값(비커스텀 속성)만 비교해야 뜻이 있다. 요소 키에서 클래스 이름을 뺐다 — `reg-source-block` 클래스가 새로 붙은 요소를 같은 요소로 맞추기 위해서다(DOM 순서 동일).
+
+## ⓓ 게이트(단계 8)
+
+(아래 표는 게이트 실행 뒤 적는다)
+
+## spec 과 다르게 한 점
+
+1. 착수 계수 69 ≠ spec 72 — A 1(`.pj-modal-back`) · B 1(`.cm-box`) · D 3 을 P2a 흡수가 먼저 토큰 참조로 바꿨다. spec 의 「`.pj-modal-back` 은 P2a 뒤 … 다시 확인」이 이 경우다. 그래서 **A 면제는 등록하지 않았다**(걸리는 리터럴이 없는 항목은 게이트가 낡은 항목으로 red 를 낸다).
+2. `color-mix()` 2건(`login.css`)을 새로 면제했다 — spec·지시가 f 탐지에 `color-mix()` 를 넣었고, 두 값은 정본 토큰 `--color-bg` 와 `transparent` 의 혼합이라 옮기려면 새 토큰 이름이 필요하다(이번 범위의 「새 토큰 금지」). 면제 계 = 3(spec·지시 2).
+3. 면제 형식: spec 은 `allow.txt` 를 적었으나 「P1 면제 파일 형식을 따르고 파일명이 다르면 그것」에 따라 **P1 목록 `same-in-dark.txt` 한 파일에 `f · …` 줄**을 더했다(환경변수·게이트 입력 무변).
+4. selftest 4건의 구성 — 지시의 `red-f`·`red-g` 에 f·g 대조군 `green-fg`(green) · `typescript` 부재(red(준비))를 더해 16건. `red-f` 는 사유 없는 면제와 낡은 면제를 함께 담는다.
+5. selftest 의 `expect()` 에 「ready 기대인데 판정 red 로 끝남 = 기대와 다름」 갈래를 더했다(기존 ⓖ·ⓗ 결과 무변).
+6. 제품 시험 1줄 변경(`search.test.tsx:175`) — 위 단계 4 「기존 시험 변경」 · 판정 요청.
+7. 대장 문장의 흡수처 파일명 `dashboard.css` → `search.css`(사실 정정).
+8. 계산값 대조 도구를 P3 용으로 고쳤다(커스텀 속성 제외 · 키에서 클래스 제외 · 선택자 범위 계수) · 캡처 밖 자리 probe 를 더했다.
+
+## 하지 않은 것
+
+- **펼침 속성 안의 인라인 `style` 1곳**(`components/preview/PreviewPanels.tsx:343` · `preview-layers` 의 `transform`·`transformOrigin`)은 바꾸지 않았다 — spec 의 g 정의(「`style` JSX 속성」)와 지시(「이 7곳만」) 밖이고, 이 요소의 `style.transform` 을 읽는 제품 시험이 5파일(`dataset-preview-tiles` · `dataset-preview-zoom` · `dataset-preview-zoom-latency` · `rev1-keep-regression` · `preview-map-viewport-20260918`)에 있다. 게이트는 판정하지 않고 「참고 · 펼침 속성 안의 style 키 1」로 건수만 낸다(`g_spread=1`).
+- `.ts` 의 DOM 스타일 대입(`Gnb.tsx` 의 `setProperty('--shell-gnb-offset')` 는 변수 · `ScreenshotButton.tsx` `a.style.display = 'none'`)은 g 대상 밖.
+- 색 아닌 폴백 리터럴(`search.css` `var(--text-body-sm, 13px)` 류 14 · `login.css` `var(--radius-md, 12px)` · `detail.css` `var(--font-mono, monospace)`)과 `deletion.css` `var(--color-surface-muted, transparent)`(제외 키워드)는 그대로 — f 범위 밖.
+- 여백·글자 크기 리터럴 · 토큰 값·이름 · 프리미티브(P2b) · `scenes.json` · 새 의존성 0 · push·PR 게시.
+- 실화면 [미검증]: D 26 자리(단계 5 목록) · TSX 3·6·7 과 B `.de-req` 는 실화면 대신 probe(같은 CSS · 같은 DOM 모양)로 봤다.
+
+## 후속 항목
+
+1. [Ted 판정] `upload.css .chip` `#eef2f7` — 새 토큰(값 유지 · 다크 값 결정) vs `--color-gray-100` 값 변경(시각 변경). 참고: 이 `.chip` 규칙은 화면 범위 없이 선언돼 있다 — 캡처상 `.chip` 요소가 그려지는 장면은 catalog·detail·members·pending·project 계열·search 등 10개이고, 각 화면의 더 좁은 `.chip` 규칙이 배경을 덮는지는 재지 않았다.
+2. [판정] `login.css` `color-mix(in srgb, var(--color-bg) 70%|96%, transparent)` 2건 — 오버레이 토큰 신설 vs 면제 유지.
+3. [판정] `search.test.tsx:175` 단언 변경 수용 여부(위 「기존 시험 변경」).
+4. `.detail-page .dt-edit .de-req` 는 다크에서 흰 글자(`rgb(255, 255, 255)`)가 밝은 배경(`--color-text-body` 다크 `rgb(220, 228, 237)`) 위에 선다 — 오늘의 렌더(값 무변)이며 대비가 낮다. spec 우려 3 의 「뜻 토큰」 치환(`--color-on-…`) 판정 때 함께 본다. 검출은 probe 뿐이고 게이트·캡처 어디에도 걸리지 않는다.
+5. 펼침 속성 안 인라인 변환(`PreviewPanels.tsx:343`)을 변수 대입으로 옮길지 — 옮기면 위 5개 시험 파일의 `style.transform` 단언이 바뀐다. 게이트 g 를 펼침 속성까지 넓힐지와 같이 판정.
+6. 캡처 장면 보강(편집 모드 · `.vfilter.on` · 확대 미리보기 · 모자이크 · 오류·로딩 상태) — `scenes.json` 과 픽스처 변경이 필요해 이번엔 하지 않았다. 지금 이 자리들은 캡처 대조의 사각이다.
+7. 계산값 대조 도구(`p3/states/cdump_p3.py` · `compare.py`)를 `frontend/scripts/visual-baseline/` 로 올려 P2b 의 정식 오라클로 쓸지(P2a 후속 3 과 같음).
+8. 색 아닌 폴백 리터럴 16건(대상 토큰 정의 여부 미조사) 정리 — 게이트로 막을지는 여백·글자 눈금 확정 뒤.
