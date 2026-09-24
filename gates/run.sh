@@ -318,7 +318,8 @@ case "$GATE" in
   adr-records)
     # `docs/decisions/*` 전 기록의 구조·대체 연결 검사(ADR-0003: 로컬 CLI · 훅 없음 → 게이트로 붙인다).
     # 의미 승인은 판정하지 않는다. 입력을 못 읽으면 adr_gate 가 78 을 낸다.
-    exec python3 "$REPO_ROOT/scripts/harness/adr_gate.py" --all --repo-root "$REPO_ROOT"
+    # 기준 = COLAB_ADR_BASE(CI 는 PR base sha) · 미선언이면 HEAD — 승인 ADR 보존(삭제·되돌림) 검사는 기준이 HEAD 가 아닐 때만 뜻이 있다.
+    exec python3 "$REPO_ROOT/scripts/harness/adr_gate.py" --all --repo-root "$REPO_ROOT" --base "${COLAB_ADR_BASE:-HEAD}"
     ;;
   intent-ref)
     # 범위 안 커밋의 `Intent-Ref:` 트레일러 · 승인 intent 본문 보존(판정 red).

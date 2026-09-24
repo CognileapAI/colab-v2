@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import shutil
 from pathlib import Path
 import subprocess
@@ -243,6 +244,20 @@ class HarnessConfigTests(unittest.TestCase):
         self.assertEqual(code, 78)
         self.assertIn("red(판정): parallel-safety fixture error", err.getvalue())
         self.assertIn("home scan unreadable (fixture)", err.getvalue())
+
+    def test_home_scan_survives_non_utf8_file_names(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            (root / 'docs').mkdir()
+            raw = os.path.join(os.fsencode(root), b'docs', b'caf\xe9.md')
+            with open(raw, 'wb') as handle:
+                handle.write(b'leak /home/alice/x\n')
+            errors, readiness = self.module.check_home_paths(root, value)
+            self.assertIsNone(readiness)
+            self.assertEqual(len(errors), 1)
+            self.assertIn('/home/alice/', errors[0])
 
     def run_check(self, contract):
         return subprocess.run(

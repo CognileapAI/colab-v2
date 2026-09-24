@@ -278,6 +278,27 @@ class TaskRuntimeTests(unittest.TestCase):
             with self.subTest(scope=bad), self.assertRaisesRegex(ValueError, r'src/\*\*'):
                 contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
 
+    def test_lane_scope_is_rejected_on_the_legacy_schema(self):
+        with self.assertRaisesRegex(ValueError, 'colab-task/2'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], report='dev-package/reports/r/l/gate-summary.json',
+                           legacy=True, scope=['src/**'])
+
+    def test_lane_scope_sees_leading_space_paths_and_staged_only_changes(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['docs/**'])
+        self.write(' docs/x.md', 'out of scope (leading space)')
+        subprocess.run(git + ['add', '--', ' docs/x.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'leading space'], check=True)
+        (self.root / ' docs/x.md').unlink()
+        with self.assertRaisesRegex(ValueError, ' docs/x.md'):
+            self.complete_lane(task['task_id'])
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/staged.md', 'staged only')
+        subprocess.run(git + ['add', 'notes/staged.md'], check=True)
+        (self.root / 'notes/staged.md').unlink()          # index keeps it, working copy restored
+        with self.assertRaisesRegex(ValueError, 'notes/staged.md'):
+            self.complete_lane(task['task_id'])
+
     def test_lane_scope_default_allowed_paths_need_no_declaration(self):
         task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
         self.write('src/a.py')

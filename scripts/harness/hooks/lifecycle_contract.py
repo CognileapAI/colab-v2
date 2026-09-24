@@ -241,6 +241,8 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
     # branch below, which would reject it with a message about research gates.
     if role == 'measurement-lane':
         raise ValueError('measurement-lane has no legacy repository-output mode; drop --legacy')
+    if scope:
+        raise ValueError('lane scope requires the colab-task/2 runtime; drop --legacy')
     for name in artifacts:
         if inside(root, name).relative_to(root).as_posix() != name or not name.startswith(WATCH):
             raise ValueError('artifact must be a repository-relative research output')
@@ -394,9 +396,15 @@ def stop(data, expected_role):
             # Committed changes since begin count too: committing an out-of-scope change and then
             # restoring the working copy must not hide it (advisor review 2026-09-25).
             started = (task.get('started_identity') or {}).get('commit')
-            if started:
-                changed |= {p for p in git(root, 'diff', '--no-renames', '--name-only', '-z',
-                                           started, 'HEAD').split('\0') if p}
+            if not started:
+                raise ValueError('lane scope requires the colab-task/2 runtime (begin-time commit); '
+                                 'this task has none — begin a new task without --legacy')
+            # Raw -z output (no .strip(): it would eat a leading space of the first path);
+            # staged-only changes count as well.
+            for extra in (['diff', '--no-renames', '--name-only', '-z', started, 'HEAD'],
+                          ['diff', '--cached', '--no-renames', '--name-only', '-z', 'HEAD']):
+                out = subprocess.check_output(['git', '-C', str(root), *extra])
+                changed |= {p for p in out.decode('utf-8', 'surrogateescape').split('\0') if p}
             outside = out_of_scope(task, changed)
             if outside:
                 raise ValueError(

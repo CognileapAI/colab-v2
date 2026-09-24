@@ -14,7 +14,7 @@ Claude와 Codex 두 도구가 같은 규칙·역할·스킬을 읽는다. 각 �
 ## 결정
 규칙·역할·스킬·판정부의 본문은 `.agents/`와 `scripts/harness/`가 단독 소유한다.
 `.claude/`·`.codex/`는 등록과 payload 변환만 소유하며 본문을 복제하지 않는다.
-소유·어댑터 목록의 기계 정본은 `.agents/harness.yaml`의 `sources`(39-50행)와 `adapters`(51-61행)이고,
+소유·어댑터 목록의 기계 정본은 `.agents/harness.yaml`의 `sources`(40-64행)와 `adapters`(65-75행)이고,
 `harness-contract` 게이트가 그 구조를 검사한다 — `gates/README.md:9` 「`.agents/harness.yaml`의 공통 원본·adapter·필수 gate·0/1/78 계약 누락과 경로 이탈」.
 전환 순서 제약을 결정에 포함한다 — `docs/development/dual-agent.md:19-20` 「실행 중인 훅 이전은 원본 복사 → 소비자 경로 전환 → 기존 진입점 어댑터화 순서로 한다.
 기존 진입점을 먼저 없애면 PreToolUse 자체가 실패하여 복구 도구까지 차단된다.」

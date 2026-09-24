@@ -544,6 +544,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -562,6 +564,9 @@ jobs:
       # `.agents/ci-producers.json` `planning-gates` 에 등록돼 `verify_evidence.py record` 로 감싼다 —
       # red 는 이 잡을 실패시키고 `ci-required` 가 막는다.
       - name: ADR 구조·대체 연결 전수 검사
+        env:
+          # PR 이면 base 대비 승인 ADR 삭제·되돌림도 본다(push 는 비어 HEAD).
+          COLAB_ADR_BASE: ${{ github.event.pull_request.base.sha }}
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "adr-records" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh adr-records
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "work-item-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh work-item-consistency

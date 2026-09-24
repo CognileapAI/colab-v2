@@ -290,7 +290,7 @@ def check_home_paths(root: Path, value: dict, stats: dict | None = None) -> tupl
         return [], f"cannot list harness documents: {exc}"
     if listed.returncode != 0:
         return [], "cannot list harness documents: " + listed.stderr.decode("utf-8", "replace").strip()
-    names = sorted({name for name in listed.stdout.decode("utf-8").split("\0") if name})
+    names = sorted({name for name in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if name})
     errors, scanned = [], 0
     for name in names:
         path = root / name
@@ -316,7 +316,8 @@ def check_home_paths(root: Path, value: dict, stats: dict | None = None) -> tupl
         for number, line in enumerate(text.splitlines(), 1):
             for match in HOME_PATH.finditer(line):
                 if match.group(0) not in allowed:
-                    errors.append(f"home absolute path in {name}:{number}: {match.group(0)}")
+                    shown = name.encode("utf-8", "surrogateescape").decode("utf-8", "backslashreplace")
+                    errors.append(f"home absolute path in {shown}:{number}: {match.group(0)}")
     if scanned == 0:
         return errors, "home-path scan found no harness document to read"
     return errors, None

@@ -11,7 +11,7 @@ v1 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했다. `gates/README.m
 v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 반복하지 않는다.」
 같은 계열의 두 번째 사고는 셀프테스트 쪽이었다. `gates/README.md:124-126` 「⭑ **⟨2026-09-03 · 코드리뷰 #6⟩ 준비 실패(종료코드 78)를 「기대한 red」로 세지 않는다.**
 자체 `expect()` 를 가진 셀프테스트 12개 중 **10개가 78 을 그냥 red 로 접고 있었다.**」 그 결과는 `gates/README.md:128-129` 「**판정된 적이 없는데 출력은 「red OK」라고 말한다** — 검사기가 아무것도 검사하지 않은 채 통과를 / 보고하는 모양이다.」
-종료코드 값은 `AGENTS.md:45` · `docs/development/dual-agent.md:126` · `.agents/harness.yaml:30`에 한 줄씩 적혀 있으나, 왜 셋인지와 미선언 입력을 왜 통과로 접지 않는지는 결정으로 승격된 적이 없다.
+종료코드 값은 `AGENTS.md:45` · `docs/development/dual-agent.md:127` · `.agents/harness.yaml:30`에 한 줄씩 적혀 있으나, 왜 셋인지와 미선언 입력을 왜 통과로 접지 않는지는 결정으로 승격된 적이 없다.
 
 ## 결정
 게이트 판정은 셋뿐이다 — `green`(exit 0) · `red_판정`(exit 1) · `red_준비`(exit 78). `SKIP`을 만들지 않는다.
@@ -27,7 +27,7 @@ v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 
 ## 검토한 대안
 - v1의 4상태 요약 계약 — 배제. `docs/superpowers/specs/2026-09-06-harness-fable51-design.md:299` 「## D. 게이트 요약 계약 (v1 의 4상태 폐기 — advisor 지적 3 수용)」. 새 계수 개념을 만들지 않은 이유는 같은 문서 313행 — 「`counts` 는 run.sh 가 이미 세는 `n_green` / `n_red_judge` / `n_red_ready` / `n_undeclared_input` 을 그대로 쓴다. 새 계수 개념(`targets`) 없음 → v1 K-4(53게이트가 targets 를 낼 수 있는가) **소멸**.」
 - `SKIP` 상태 신설(대상 0건·환경 부재를 통과로 표기) — 배제. `docs/superpowers/specs/2026-09-06-harness-fable51-design.md:312` 「`state` 값은 **`green` / `red_판정` / `red_준비` 3개뿐**. `SKIP` 은 만들지 않는다 — 이 레포는 대상 0건을 red 로 못박았고, SKIP 은 green-by-skip 통로를 다시 여는 것이다.」
-- 준비 실패 78을 판정 red 1로 접기 — 배제. `docs/development/dual-agent.md:104` 「준비 실패는 건너뛴 성공이나 일반 판정 실패로 바꾸지 않는다. 실제 반환 코드와 상태를 함께 보고한다.」
+- 준비 실패 78을 판정 red 1로 접기 — 배제. `docs/development/dual-agent.md:128` 「준비 실패는 건너뛴 성공이나 일반 판정 실패로 바꾸지 않는다. 실제 반환 코드와 상태를 함께 보고한다.」
 - 게이트 로직을 고쳐 요약을 맞추기 — 배제. `gates/run.sh:16-17` 「⚠ **게이트 로직은 한 줄도 바뀌지 않는다.** 검사·판정·종료코드는 그대로이고, 요약이 이미 센 / 계수를 직렬화할 뿐이다」.
 
 ## 결과와 감수한 비용
@@ -46,6 +46,6 @@ v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 
 - `gates/run.sh:4-5`(green-by-skip 금지 원칙) · `:11-19`(요약 JSON 스키마 `colab-gate-summary/1` 주석).
 - `gates/README.md:99-102,112,117,122,124-129,131-143`.
 - `docs/superpowers/specs/2026-09-06-harness-fable51-design.md:299-316`(§D) · `:410-412`(§J 확정 판정 — 승인 문장).
-- `AGENTS.md:45-46` · `docs/development/dual-agent.md:103-104`.
+- `AGENTS.md:45-46` · `docs/development/dual-agent.md:127-128`. (2026-09-25 줄 번호 갱신)
 - `.agents/harness.yaml:30`(`states`) · `:31`(`report_schema`) · `:37`(`required_counts`). (2026-09-25 키 추가로 줄 번호 갱신)
 - 관련: [ADR-0003](0003-human-approval-machine-checks-form.md) · [ADR-0005](0005-harness-controls-are-declarative.md).

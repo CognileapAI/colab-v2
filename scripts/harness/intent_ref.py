@@ -8,7 +8,10 @@
 ⑵ An intent that is approved at the base OR at the fork point (its meta line says 승인 and not
    미승인) may only gain lines in the range. Deleting, renaming or editing any existing line is red.
    Both points count: a PR that forked before develop approved an intent must not rewrite it.
-   Additions-only is judged by git's own diff (fork..head): any `-` line is red.
+   Additions-only = every existing line (raw bytes, from `git cat-file blob`) still appears in
+   order in the new content (ordered subsequence). No diff text is parsed, so `---` lines, a
+   missing final newline, `-diff`/textconv attributes, colour or binary detection cannot hide a
+   removal. Paths keep their original bytes (surrogateescape) so non-UTF-8 names stay protected.
 
 Base: COLAB_INTENT_REF_BASE (CI passes the PR base sha). Undeclared → merge-base(HEAD,
 origin/develop), and the output says so. Head: COLAB_INTENT_REF_HEAD, default HEAD.
@@ -65,9 +68,28 @@ def resolve(root: Path, ref: str, label: str) -> str:
     return result.stdout.decode().strip()
 
 
+def blob(root: Path, commit: str, path: str) -> bytes | None:
+    """Raw blob bytes (no textconv, no attributes); None when the path is absent."""
+    result = git(root, "cat-file", "blob", f"{commit}:{path}", check=False)
+    return result.stdout if result.returncode == 0 else None
+
+
 def show(root: Path, commit: str, path: str) -> str | None:
-    result = git(root, "show", f"{commit}:{path}", check=False)
-    return result.stdout.decode("utf-8", "replace") if result.returncode == 0 else None
+    data = blob(root, commit, path)
+    return data.decode("utf-8", "replace") if data is not None else None
+
+
+def printable(path: str) -> str:
+    return path.encode("utf-8", "surrogateescape").decode("utf-8", "backslashreplace")
+
+
+def first_missing_line(old: bytes, new: bytes) -> bytes | None:
+    """The first old line not found, in order, among the new lines (None = only additions)."""
+    lines = iter(new.splitlines())
+    for line in old.splitlines():
+        if not any(candidate == line for candidate in lines):
+            return line
+    return None
 
 
 def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], list[str]]:
@@ -91,7 +113,7 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
 
     commits = [c for c in git(root, "rev-list", f"{fork}..{head}").stdout.decode().split() if c]
     changed = sorted({p for p in git(root, "diff", "--no-renames", "--name-only", "-z", fork, head)
-                      .stdout.decode("utf-8", "replace").split("\0") if p})
+                      .stdout.decode("utf-8", "surrogateescape").split("\0") if p})
     subject = [p for p in changed if p.startswith(SUBJECT_PREFIXES)]
     red: list[str] = []
 
@@ -117,16 +139,16 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
                     + ", ".join(sorted({v for _, v in valid})))
     else:
         red.append(f"⑴ 범위의 커밋 {len(commits)}개 중 유효한 `Intent-Ref: dev-package/intent/<파일>.md` "
-                   f"트레일러가 0개다 ({scope} · 대상 경로 {len(subject)}건, 예: {subject[0]}).")
+                   f"트레일러가 0개다 ({scope} · 대상 경로 {len(subject)}건, 예: {printable(subject[0])}).")
         for sha, value in broken:
-            red.append(f"   - {sha[:12]} `Intent-Ref: {value}` — 형식이 틀렸거나 head 에 그 파일이 없다")
+            red.append(f"   - {sha[:12]} `Intent-Ref: {printable(value)}` — 형식이 틀렸거나 head 에 그 파일이 없다")
         red.append("   고치는 법: 해당 intent 를 가리키는 트레일러를 커밋에 단다. 이미 올린 브랜치는 "
                    "`git commit --allow-empty -m \"…\" -m \"Intent-Ref: dev-package/intent/<파일>.md\"` 1개.")
 
     # ⑵ approved intents (at the base OR at the fork point) stay append-only in fork..head
     def intent_names(commit: str) -> set[str]:
         return {n for n in git(root, "ls-tree", "-z", "--name-only", commit, INTENT_ROOT + "/")
-                .stdout.decode("utf-8", "replace").split("\0") if n.endswith(".md")}
+                .stdout.decode("utf-8", "surrogateescape").split("\0") if n.endswith(".md")}
 
     protected = 0
     for path in sorted(intent_names(base) | intent_names(fork)):
@@ -138,16 +160,18 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
         protected += 1
         if path not in changed:
             continue
-        if show(root, head, path) is None:
-            red.append(f"⑵ 승인 intent 가 삭제·이동됐다: {path} — 재개봉 금지 · 새 intent 를 쓴다")
+        after = blob(root, head, path)
+        if after is None:
+            red.append(f"⑵ 승인 intent 가 삭제·이동됐다: {printable(path)} — 재개봉 금지 · 새 intent 를 쓴다")
             continue
-        if show(root, fork, path) is None:
+        before = blob(root, fork, path)
+        if before is None:
             continue  # created in the range: nothing existing to protect
-        diff = git(root, "diff", "--no-renames", "--unified=0", fork, head, "--", path).stdout.decode("utf-8", "replace")
-        removed = [line[1:] for line in diff.splitlines() if line.startswith("-") and not line.startswith("---")]
-        if removed:
-            red.append(f"⑵ 승인 intent 의 기존 줄이 변경·삭제됐다: {path} `{removed[0][:60]}` "
-                       f"(삭제·변경 {len(removed)}줄) — 줄 추가만 허용한다 · 필요하면 새 intent")
+        missing = first_missing_line(before, after)
+        if missing is not None:
+            shown = missing.decode("utf-8", "replace")[:60]
+            red.append(f"⑵ 승인 intent 의 기존 줄이 변경·삭제됐다: {printable(path)} `{shown}` "
+                       "— 줄 추가만 허용한다 · 필요하면 새 intent")
     info.append(f"⑵ 기준·분기 시점 승인 intent {protected}건 대조")
     return info, red
 

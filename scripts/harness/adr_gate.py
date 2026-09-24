@@ -189,6 +189,15 @@ def main():
         if problems:
             print('\n'.join(problems), file=sys.stderr)
             return 1
+        if args.all:
+            root = json.loads((repo / '.agents/harness.yaml').read_text(encoding='utf-8'))['adr_gate']['root']
+            listed = git(repo, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', root).split('\0')
+            count = len([p for p in listed if p.endswith('.md') and PurePosixPath(p).name not in ('README.md', '_template.md')])
+            if count == 0:
+                print(f'ADR records: 0 under {root} — zero targets is not a pass', file=sys.stderr)
+                return 1
+            print(f'PASS: {count} ADR records (structure, links, accepted history vs {args.base}); this is not approval')
+            return 0
         print('PASS: optional ADR structure and links; this is not approval')
         return 0
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:

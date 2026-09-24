@@ -65,6 +65,51 @@ class AdrRecordsGateTests(unittest.TestCase):
         green = self.run_gate("valid")
         self.assertEqual(green.returncode, 0, green.stdout + green.stderr)
 
+    def adr_repo(self, fixture):
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        git(root, "init", "-q")
+        (root / ".agents").mkdir()
+        shutil.copy2(ROOT / ".agents/harness.yaml", root / ".agents/harness.yaml")
+        shutil.copytree(FIXTURES / "adr-records" / fixture, root / "docs/decisions")
+        git(root, "add", "-A"); git(root, "commit", "-q", "-m", "fixture")
+        return root
+
+    def run_runner(self, root, base=None):
+        env = {k: v for k, v in os.environ.items() if k != "COLAB_ADR_BASE"}
+        if base:
+            env["COLAB_ADR_BASE"] = base
+        return subprocess.run([sys.executable, str(ROOT / "scripts/harness/adr_gate.py"), "--all",
+                               "--repo-root", str(root), "--base", env.get("COLAB_ADR_BASE", "HEAD")],
+                              capture_output=True, text=True, env=env)
+
+    def test_zero_adr_records_is_red_not_a_silent_pass(self):
+        root = self.adr_repo("valid")
+        git(root, "rm", "-q", "-r", "docs/decisions"); git(root, "commit", "-q", "-m", "drop all")
+        result = self.run_runner(root)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("0", result.stderr)
+        green = self.run_runner(self.adr_repo("valid"))
+        self.assertEqual(green.returncode, 0, green.stdout + green.stderr)
+        self.assertRegex(green.stdout, r"PASS: \d+ ADR records")
+
+    def test_deleting_an_accepted_adr_is_red_against_the_pr_base(self):
+        root = self.adr_repo("valid")
+        record = next((root / "docs/decisions").glob("0*.md"))
+        record.write_text(record.read_text(encoding="utf-8").replace("- 상태: proposed", "- 상태: accepted"), encoding="utf-8")
+        git(root, "commit", "-q", "-am", "accept")
+        base = git(root, "rev-parse", "HEAD")
+        accepted_green = self.run_runner(root, base)
+        self.assertEqual(accepted_green.returncode, 0, accepted_green.stdout + accepted_green.stderr)
+        git(root, "rm", "-q", str(record.relative_to(root))); git(root, "commit", "-q", "-m", "drop accepted")
+        dropped = self.run_runner(root, base)
+        self.assertEqual(dropped.returncode, 1, dropped.stdout + dropped.stderr)
+        self.assertIn("preserve accepted history", dropped.stderr)
+        # Against HEAD (the pre-fix CI shape) the same deletion was invisible.
+        self.assertNotIn("preserve accepted history", self.run_runner(root).stderr)
+        runner = (ROOT / "gates/run.sh").read_text(encoding="utf-8")
+        self.assertIn('--base "${COLAB_ADR_BASE:-HEAD}"', runner)
+
     def test_runner_dispatches_adr_records_over_all_records(self):
         runner = (ROOT / "gates/run.sh").read_text(encoding="utf-8")
         case = re.search(r"^  adr-records\)\n(.*?)\n    ;;", runner, re.M | re.S)
@@ -243,6 +288,45 @@ class IntentRefGateTests(unittest.TestCase):
         required = ci["jobs"]["ci-required"]
         self.assertIn("intent-ref", required["needs"])
         self.assertIn("'intent-ref'", required["steps"][0]["run"])
+
+    def repo_with(self, text):
+        root, _ = self.repo()
+        self.commit(root, "set approved", {INTENT: text})
+        return root, git(root, "rev-parse", "HEAD")
+
+    def test_removal_of_dash_led_lines_is_red_and_append_without_final_newline_is_green(self):
+        text = APPROVED + "---\n-- scope: A and B\n- last line"   # no final newline
+        for label, new, code in (("delete rule", text.replace("---\n", ""), 1),
+                                 ("edit -- line", text.replace("-- scope: A and B", "-- scope: A only"), 1),
+                                 ("append", text + "\n- appended line\n", 0)):
+            with self.subTest(case=label):
+                root, base = self.repo_with(text)
+                self.commit(root, label + "\n\n" + TRAILER, {INTENT: new})
+                self.assertExit(self.run_gate(root, base), code)
+
+    def test_diff_attributes_and_colour_cannot_hide_a_rewrite(self):
+        rewritten = APPROVED.replace("- first line", "- first line REWRITTEN")
+        root, base = self.repo()
+        self.commit(root, "hide\n\n" + TRAILER, {".gitattributes": "dev-package/intent/*.md -diff\n", INTENT: rewritten})
+        self.assertExit(self.run_gate(root, base), 1)
+        root, base = self.repo()
+        git(root, "config", "color.ui", "always"); git(root, "config", "color.diff", "always")
+        self.commit(root, "colour\n\n" + TRAILER, {INTENT: rewritten})
+        self.assertExit(self.run_gate(root, base), 1)
+
+    def test_non_utf8_named_approved_intent_stays_protected(self):
+        root, _ = self.repo()
+        raw = os.path.join(os.fsencode(root), b"dev-package", b"intent", b"2026-01-05-caf\xe9.md")
+        with open(raw, "wb") as handle:
+            handle.write(APPROVED.encode("utf-8"))
+        self.commit(root, "add latin-1 intent")
+        base = git(root, "rev-parse", "HEAD")
+        with open(raw, "wb") as handle:
+            handle.write(APPROVED.replace("- first line", "- changed").encode("utf-8"))
+        self.commit(root, "edit latin-1 intent\n\n" + TRAILER)
+        result = self.run_gate(root, base)
+        self.assertExit(result, 1)
+        self.assertNotIn("Traceback", result.stderr)
 
     def test_docs_only_range_is_out_of_scope_and_green(self):
         root, base = self.repo()

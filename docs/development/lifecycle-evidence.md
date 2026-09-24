@@ -87,8 +87,9 @@ python3 scripts/agent-bridge.py lifecycle handoff --task <task_id> --mode comple
 레인 범위: 부모가 파일 범위를 정하면 `begin --role lane-worker --gate … --scope <glob>`(여러 번)로 선언한다.
 `**`는 디렉터리를 건너고 `*`·`?`는 건너지 않는다. 저장소 상대 POSIX 경로만 받고 `..`·절대경로·역슬래시는 거절한다.
 아무 파일과도 맞지 않는 형태(`src/`처럼 `/`로 끝나거나 와일드카드 없는 디렉터리 이름)는 begin에서 거절하고 `src/**`를 안내한다.
+범위는 `colab-task/2` runtime 에서만 쓴다 — `--legacy` 와 함께 쓰면 begin 이 거절한다(begin 시점 커밋이 없어 커밋 변경을 대조할 수 없다).
 범위를 선언한 task의 `handoff --mode complete`와 H7은 baseline 대비 변경 파일 중 범위 밖을 목록으로 내고 차단한다.
-baseline은 begin 시점의 추적·미추적(무시 제외) 파일 전체의 내용 hash다. 여기에 begin 시점 커밋..HEAD 사이에 커밋된 변경을 더해 센다 — 범위 밖 변경을 커밋한 뒤 작업 파일만 되돌려도 드러난다. 삭제도 변경이다.
+baseline은 begin 시점의 추적·미추적(무시 제외) 파일 전체의 내용 hash다. 여기에 begin 시점 커밋..HEAD 사이에 커밋된 변경과 스테이징만 된 변경을 더해 센다 — 범위 밖 변경을 커밋·스테이징한 뒤 작업 파일만 되돌려도 드러난다. 삭제도 변경이다.
 선언 없이 허용되는 경로는 `dev-package/reports/**`·이 문서다. task runtime은 Git common 디렉터리에 있어 대조 대상에 나타나지 않는다.
 차단 메시지의 출구는 둘이다. ⑴ 범위를 넓힌 새 task를 `begin --scope`로 열고 게이트를 다시 돌려 그 task로 인계한다.
 새 task의 baseline은 그 시점 파일을 담아 이미 한 범위 밖 변경을 다시 보지 못하므로, 넓힌 경로와 사유를 `--summary`에 적는다.
