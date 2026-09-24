@@ -282,7 +282,7 @@ fi
 
 # 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
 ALL_GATES=(
-  planning-freshness agent-bridge harness-contract operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
+  planning-freshness agent-bridge harness-contract adr-records intent-ref operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
@@ -313,7 +313,18 @@ case "$GATE" in
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
     ;;
   harness-contract-selftest)
-    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py
+    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py scripts/tests/test_harness_record_gates.py
+    ;;
+  adr-records)
+    # `docs/decisions/*` 전 기록의 구조·대체 연결 검사(ADR-0003: 로컬 CLI · 훅 없음 → 게이트로 붙인다).
+    # 의미 승인은 판정하지 않는다. 입력을 못 읽으면 adr_gate 가 78 을 낸다.
+    exec python3 "$REPO_ROOT/scripts/harness/adr_gate.py" --all --repo-root "$REPO_ROOT"
+    ;;
+  intent-ref)
+    # 범위 안 커밋의 `Intent-Ref:` 트레일러 · 승인 intent 본문 보존(판정 red).
+    # 기준 = COLAB_INTENT_REF_BASE(CI 는 PR base sha) · 미선언이면 merge-base(HEAD, origin/develop)
+    # 를 쓰고 출력에 적는다. 그 ref 도 없을 때만 78.
+    exec python3 "$REPO_ROOT/scripts/harness/intent_ref.py" --repo-root "$REPO_ROOT"
     ;;
   gate-host-mutex-selftest)
     # 호스트 뮤텍스가 `serial` 선언을 **프로세스 경계 너머로** 집행함을 외부 행위로 증명한다.

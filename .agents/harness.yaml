@@ -24,7 +24,8 @@
       "frontend-test",
       "seed-plan-drift",
       "agent-bridge",
-      "harness-contract"
+      "harness-contract",
+      "adr-records"
     ],
     "states": {"green": 0, "red_judgment": 1, "red_readiness": 78},
     "report_schema": "colab-gate-summary/1"
