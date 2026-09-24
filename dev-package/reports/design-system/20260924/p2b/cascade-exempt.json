@@ -188,5 +188,26 @@
   "selector": ".btn:where(:not(.btn-primary, .btn-secondary)):hover",
   "competitor": ".btn-strong",
   "reason": "공존 클래스(co) 뒤집힘을 upload.css .btn-strong:hover { background: var(--color-gray-50) }(screens · 0,2,0)가 같은 값으로 되돌린다 — .btn-strong 요소는 전부 .btn · primary/secondary 아님"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/members/members.css",
+  "selector": ".chip--off",
+  "prop": "background",
+  "reason": "오늘 죽음 — .chip--off 요소는 .chip 을 함께 가진다(MemberPermissionGrid 1곳 chip chip--off) · upload.css .chip background #eef2f7(뒤 순서 · 동률)이 덮었다(보인 적 없는 gray-50 · 후속 판정)"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/members/members.css",
+  "selector": ".chip--off",
+  "prop": "margin-left",
+  "reason": "범위 선택자로 옮김 — 같은 값을 .memtbl .chip--off(members.css)에 둔다(spec 칩 수식자 규칙 · 레이아웃 선언은 화면 범위) · 요소는 .memtbl 표 안에만 있다(MemberPermissionGrid)"
+ },
+ {
+  "kind": "added",
+  "file": "src/components/members/members.css",
+  "selector": ".memtbl .chip--off",
+  "prop": "margin-left",
+  "reason": "범위 선택자로 옮긴 편차 — 값 6px 는 기본값 .chip margin-left 와 같다 · 걸리는 요소는 구성원 표의 비활성 칩 하나(새는 문맥 없음)"
  }
 ]

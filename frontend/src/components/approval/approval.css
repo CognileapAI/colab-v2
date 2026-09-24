@@ -13,7 +13,6 @@
 .dh-menu button { width: 100%; padding: 10px 12px; border: 0; background: none; color: var(--color-text); text-align: left; }
 .dh-menu button:hover { background: var(--color-surface-hover); }
 .approval-dialog .btn-danger { background: var(--color-danger-solid); border-color: var(--fg-danger); color: var(--color-on-danger); }
-.chip--verified { color: var(--color-success-600); background: var(--color-success-50); }
 .vc-impact { padding-left: 20px; color: var(--color-text-muted); }
 
 @media (min-width: 861px) { .dt-header .dh-menu { left: auto; right: 0; } }

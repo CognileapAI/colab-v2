@@ -122,9 +122,7 @@
 .fchips .fc button { border: none; background: none; padding: 0; font-size: 13px; line-height: 1; color: var(--color-gray-500); cursor: pointer; width: 24px; height: 28px; }
 .fchips .fall { margin-left: 4px; border: none; background: none; font-size: 13px; color: var(--color-text-muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
-.chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 13px; font-weight: 600; line-height: 1; white-space: nowrap; }
-.chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
-.chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
+/* `.chip` 계열의 기본값은 `shell/primitives.css`(P2b). */
 .lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 13px; font-weight: 600; line-height: 1; }
 .lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
 .lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }

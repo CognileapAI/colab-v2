@@ -12,3 +12,6 @@
 # field
 .inp
 .sel
+# chip
+.chip
+.chip--*

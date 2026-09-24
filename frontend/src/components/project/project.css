@@ -310,14 +310,7 @@
   font-size: 13px;
 }
 
-.chip {
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  font-size: 13px;
-  margin-left: 6px;
-}
+/* `.chip` 의 기본값(테두리 · margin-left 6px 포함)은 `shell/primitives.css`(P2b). */
 
 .pc-m .chip,
 .pd-m .chip {

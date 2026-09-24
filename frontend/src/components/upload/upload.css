@@ -253,7 +253,6 @@ textarea.inp { resize: vertical; }
 .fieldlbl { font-size:13px; color: var(--up-muted); margin: 12px 0 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 10px; background: #eef2f7; font-size:13px; }
 .chipx { border: 0; background: none; cursor: pointer; }
 /* ② 연관 프로젝트 — 국가과제 / 논문 두 패널 (WU-A7 · PRD-23).
    패널 안은 칩이 아니라 **행**이고 위에서 아래로 쌓인다. 0건 패널도 남는다. */

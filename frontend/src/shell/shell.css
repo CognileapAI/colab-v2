@@ -429,7 +429,6 @@ body {
 .tbl { font-size: var(--text-body-sm); line-height: 1.5; }
 .tbl th { color: var(--color-text-muted); font-weight: 600; letter-spacing: 0; }
 .tbl td { padding: 10px 12px; }
-.chip--lineage { background: var(--color-gray-100); color: var(--color-text-muted); }
 .theme-switcher { min-height: 36px; max-width: 104px; padding: 6px 8px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-caption); cursor: pointer; }
 .modal-h button:where(:not(.btn)) { color: var(--color-text); }
 :is(.detail-page, .project-detail, .preview-page, .settings-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
@@ -457,9 +456,6 @@ body {
   .gnb .avatar { display: none; }
   .gnb .gnb-logout { min-height: 44px; }
 }
-.chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
-.chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
-.chip:where(:not([class*="chip--"])) { background: var(--color-surface-alt); color: var(--color-text-muted); }
 :is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
 .table-scroll-hint { display: none; }
 @media (max-width: 1100px) {
