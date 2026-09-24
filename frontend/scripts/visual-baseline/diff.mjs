@@ -7,6 +7,7 @@
 // Exit 0 = every capture has 0 strict diff pixels.
 // Exit 1 = at least one capture differs (strict: threshold 0, includeAA true); <reportDir>/<name>.diff.png written.
 // Exit 78 = cannot compare: missing index.json/PNG, scene or capture sets differ, manifest sha256 differs, 0 captures.
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -62,12 +63,18 @@ function main(argv) {
 
   mkdirSync(reportDir, { recursive: true });
   const rows = [];
+  const candBy = new Map(cand.captures.map((c) => [c.name, c]));
+  const sha = (buf) => createHash('sha256').update(buf).digest('hex');
   for (const c of base.captures) {
-    const r = comparePng(readFileSync(resolve(baseDir, c.file)), readFileSync(resolve(candDir, c.file)));
+    const a = readFileSync(resolve(baseDir, c.file));
+    const b = readFileSync(resolve(candDir, c.file));
+    // A PNG whose bytes no longer match its own index.json was changed after capture.
+    const edited = sha(a) !== c.sha256 || sha(b) !== candBy.get(c.name).sha256;
+    const r = comparePng(a, b);
     const row = {
       name: c.name, scene: c.scene, theme: c.theme, width: c.width,
       strict: r.strict, strictPct: (r.strict / r.totalPixels) * 100, lenient: r.lenient,
-      sizeMismatch: r.sizeMismatch, pixels: r.totalPixels, diffImage: null,
+      sizeMismatch: r.sizeMismatch, pixels: r.totalPixels, editedAfterCapture: edited, diffImage: null,
     };
     if (r.strict > 0) {
       const out = resolve(reportDir, `${c.name}.diff.png`);
@@ -80,7 +87,7 @@ function main(argv) {
   const red = rows.filter((r) => r.strict > 0);
   // Same HEAD, clean trees, same manifest: any difference is capture instability, not a code change.
   const sameHead = Boolean(base.gitHead) && base.gitHead === cand.gitHead && !base.gitDirty && !cand.gitDirty;
-  const unstable = sameHead ? red.map((r) => r.name) : [];
+  const unstable = sameHead ? red.filter((r) => !r.editedAfterCapture).map((r) => r.name) : [];
   const exit = red.length ? 1 : 0;
   const side = (idx, dir) => ({
     dir: rel(dir), gitHead: idx.gitHead, gitDirty: idx.gitDirty, capturedAt: idx.capturedAt,
@@ -122,12 +129,12 @@ function main(argv) {
     '',
     '## red 목록',
     '',
-    ...(red.length ? red.map((r) => `- \`${r.name}\` — 엄격 ${r.strict}px · 차이 이미지 \`${r.diffImage}\``) : ['없음']),
+    ...(red.length ? red.map((r) => `- \`${r.name}\` — 엄격 ${r.strict}px · 차이 이미지 \`${r.diffImage}\`${r.editedAfterCapture ? ' · PNG 가 캡처 뒤 바뀜(index.json sha256 불일치)' : ''}`) : ['없음']),
     '',
     '## 불안정 장면',
     '',
     sameHead
-      ? (unstable.length ? unstable.map((n) => `- \`${n}\` (같은 HEAD 두 번 찍기에서 차이)`).join('\n') : '없음 (같은 HEAD 두 번 찍기 · 전 캡처 차이 0)')
+      ? (unstable.length ? unstable.map((n) => `- \`${n}\` (같은 HEAD 두 번 찍기에서 차이)`).join('\n') : red.length ? '없음 (red 는 모두 캡처 뒤 바뀐 PNG 다)' : '없음 (같은 HEAD 두 번 찍기 · 전 캡처 차이 0)')
       : '해당 없음 (기준·후보의 HEAD 가 다르거나 미커밋 변경이 있다 — 차이는 코드 변경 후보로 읽는다)',
     '',
     '## 캡처별 표',
