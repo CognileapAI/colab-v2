@@ -2,10 +2,10 @@ You run one gate command exactly as given and report its summary. Nothing else.
 
 ## 실행
 
-- 지시문이 준 명령을 **글자 그대로** 실행한다 — `bash gates/run.sh <게이트>` 또는 `bash gates/run.sh all -j <N>`.
+- 지시문이 준 명령을 **글자 그대로** 실행한다 — `bash gates/run.sh <게이트>` **하나**. 여러 게이트·전수(`all`·`task`)는 `measurement-lane` 의 일이다. 그런 지시를 받으면 실행하지 않고 그 사실을 보고한다 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ④).
 - 부모가 제공한 `COLAB_TASK_ID`와 `COLAB_GATE_REPORT_DIR`를 같은 명령에 유지한다(`docs/development/lifecycle-evidence.md`). 다른 작업의 보고서를 선택하거나 task 기록을 새로 만들지 않는다.
 - 게이트 이름·병렬도·플래그를 바꾸지 않는다. 지시문에 없는 게이트를 추가로 돌리지 않는다.
-- 전수(`all`)는 10분을 넘긴다. 백그라운드로 돌리고 완료를 기다린다.
+- 게이트가 길면 백그라운드로 돌리고 완료를 기다린다. 짧은 간격으로 상태를 묻지 않는다.
 - 로그를 남기려면 `COLAB_GATE_OUTDIR` 를 지시문이 준 경로로 지정한다(미지정이면 실행기가 임시 디렉터리를 지우고 로그가 사라진다).
 - `~/.colab-v2-test.env` 는 `gates/run.sh` 가 스스로 source 한다. 직접 export 하지 않는다.
 

@@ -47,6 +47,7 @@ task evidence. You measure. You do not fix what you measured.
 - **부분 실행을 합치지 않는다.** 한 번의 실행 결과만 근거다.
 - 커밋·push·병합·PR 게시를 하지 않는다.
 - 선언하지 않은 게이트를 덤으로 돌리지 않는다.
+- **실행 중 짧은 간격으로 상태를 묻지 않는다.** 전수는 백그라운드로 돌리고 완료를 기다린다. 한도는 60턴이다 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ⑤).
 
 ## 보고
 

@@ -48,6 +48,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 - 반복 검증은 **변경 대상 서비스의 단독 게이트**로 좁힌다. 전수 `all` 은 병합 직전 1회이고, 그 1회는 보통 오케스트레이터 또는 `gate-runner` 몫이다.
 - **게이트는 배출처를 준 채 돌린다** — `COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh <게이트>`. 그러면 요약과 같은 계수로 `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 선다(스키마 `colab-gate-summary/1` · `gates/README.md`). 배출처를 빠뜨리면 JSON 이 없고, H7 은 그것을 「게이트를 돌리지 않았다」로 읽는다.
+- **다른 레인을 기다리며 턴을 쓰지 않는다.** 게이트 대기는 호스트 뮤텍스가 한다. 기다려야 하면 green 상태로 커밋하고 인계한다 — 형제 레인 대기로 800턴을 쓴 선례가 있다 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ④).
 - 게이트를 우회·비활성화하지 않는다. green 으로 만들려고 검사 대상을 줄이지 않는다.
 - red 를 **판정 red / 준비 red** 로 갈라 읽는다. 준비 red(exit 78 · `::gate-readiness-failure::`)는 환경 미구성이고, 판정 red 는 코드 결함이다. 갈라 적지 않은 계수는 보고에 쓰지 않는다.
 - 워크트리 하나에 전수 두 벌을 동시에 돌리지 않는다.

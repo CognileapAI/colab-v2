@@ -1,5 +1,5 @@
-# Intent: 역할별 모델·effort·maxTurns 재검토와 Codex 배정 정렬
-메타 — 발의자: Ted · 작성 2026-09-24 · 승인: **미승인 (Ted 판정 대기)**
+# Intent: 역할별 모델·effort·maxTurns 재검토와 Codex 배정 정렬 (승인 2026-09-24)
+메타 — 발의자: Ted · 작성 2026-09-24 · 승인: **Ted 2026-09-24 — 「판정」 절 참조**
 - Ted 원문 1: "gpt가 클로드와 유사한 모델로 세팅되어있어야 하는데 좀 뒤죽박죽인데 어떻게 생각해? claude로 하이쿠 low돌리는데, gpt는 astra로 돌리잖아" (2026-09-24)
 - Ted 원문 2: "1. 리서처 뿐만아니라 각 역할에 적절한 모데로가 이포트 등 여기 있는 기준을 다시 재검토 하고 2. 코덱스 권고도 같이 개선하자. 이내용 인텐트로 같이 질의해보자" (2026-09-24)
 - 근거 폴더: `dev-package/reports/harness/20260924-agent-model-tiering/`(M1 역할별 실사용 · M2 Codex 사실 · S 이 세션 관측) · `dev-package/reports/harness/20260924-lane-hygiene-review/A2-turn-cuts.md`
@@ -21,13 +21,19 @@
   턴 수는 재개 구간을 합친 값이다. 「한도 도달」은 「한 번 이상 절단된 실행」의 근사다(M1 주).
 - measurement-lane 의 effort 는 비어 있고, 빈 값의 동작은 Claude Code 문서에 없다(S §2).
 
+## 판정 (Ted 2026-09-24 · 원문 그대로)
+- "1. 리서처 모델은 opus 로 바꾼다. 2. b로 올리고 측정한다. 3. 어드바이저는 b로 올린다. (fable이 opus 위 등급이 맞다, opus 5.5 도 나왔지만 그럼에도 fable이 위다) 4. 권고대로 한다. 5. 해당 추론강도로 턴한도 60 두고 재자. 6. astra가 sol보다 상위 모델이 맞다. (검색해서 정리해서 기록) 7. 코덱스 배정은 난이도 순서로 맞춘다. (gpt, claude 난이도에 따른 대응표 확보해서 수준에 상응하게 맞추기) 8. 권고대로" (2026-09-24)
+- 정리: ① researcher 기본 모델 opus(ⓑ) ② researcher maxTurns 30 → 50 · 재측정(ⓑ) ③ advisor fable·high 유지 · maxTurns 12 → 16 · 스폰 때 model 을 넘기지 않는다 · fable 은 opus 5.5 보다 상위(Ted 확인) ④ lane-worker·gate-runner 설정 유지 + 행동 규칙(ⓐ) ⑤ measurement-lane effort low · maxTurns 60 · 재측정(ⓐ) ⑥ astra > sol(Ted 확인) · 공개 출처를 조사해 기록 ⑦ Codex 배정 = GPT·Claude 난이도 대응표로 수준에 맞춘다 ⑧ #130 병합 뒤 별도 PR · 평가 재실행 포함(ⓐ).
+
 ## 원한 결과 (proposed outcome)
-1. Claude 역할 5개 frontmatter 에 `model`·`effort`·`maxTurns` 가 모두 적혀 있다(빈 값 0 · grep 으로 잰다).
+1. Claude 역할 5개 frontmatter 에 `model`·`effort`·`maxTurns` 가 모두 적혀 있고 판정 ①②③⑤ 값과 같다(빈 값 0 · grep 으로 잰다): researcher opus·medium·50 · lane-worker opus·high·200 · advisor fable·high·16 · measurement-lane sonnet·low·60 · gate-runner haiku·low·20.
 2. 역할 1개(gate-runner)에 `model_reasoning_effort` 를 넣고 Codex 에서 스폰해, 역할이 로드되는지(모르는 키 거부 여부)와 `turn_context` 의 model·effort 가 바뀌는지 먼저 증거 파일로 남긴다. 스폰이 안 되면 그 사실과 대체 경로를 남긴다(성공으로 적지 않는다).
 3. 2 가 통과했을 때만 역할 5개 `.codex/agents/*.toml` 에 `model`·`model_reasoning_effort` 를 적고 배정 순서를 Claude 의 난이도 순서에 맞춘다. `scripts/tests/test_agent_bridge.py` 가 5역할(measurement-lane 포함)의 model·effort 를 단언한다. 2 가 실패하면 effort 키는 넣지 않고 model 만 바꾼다.
 4. `docs/development/dual-agent.md` 의 배정 문단이 난이도 기준과 표로 바뀐다.
-5. `.agents/skills/colab-v2-work/SKILL.md` 에 「스폰 때 모델을 바꾸는 규칙」이 있다(아래 판정 결과대로).
+5. `.agents/skills/colab-v2-work/SKILL.md` 와 역할 본문에 판정 ③④⑤의 규칙이 있다 — advisor 스폰 때 model 을 넘기지 않는다 · lane-worker 는 다른 레인을 기다리며 턴을 쓰지 않는다 · gate-runner 는 게이트 하나 · measurement-lane 은 짧은 간격 폴링을 하지 않는다.
 6. 모델 호출 평가(`harness-eval`)를 바뀐 Codex 배정으로 다시 돌린 결과가 있다(AGENTS.md 「실제 사용 모델로」 · 구독 사용). named agent 스폰이 안 되면 이 결과는 역할 배정 검증이 아니라 부모 모델 회귀 확인이며 그렇게 적는다.
+7. GPT·Claude 난이도 대응표(출처 URL · 조회일)가 근거 폴더에 있고, Codex 역할 5개의 model·effort 가 그 표에서 역할의 Claude 설정과 같은 수준으로 정해진다.
+8. 병합 뒤 재측정: researcher·measurement-lane·advisor 의 한도 도달률을 같은 방식(M1)으로 다시 잰 기록을 남긴다(후속 · 병합 조건 아님).
 
 ## 영향 범위
 - 사용자·화면: 없음. 서비스·스키마·계약: 없음. 계약 파괴: 아니오.
@@ -70,7 +76,7 @@
 - maxTurns: Codex 대응 키 없음 → 역할 파일 `developer_instructions` 에 도구 호출 예산 문장을 둔다(advisor 「8회 뒤 판정」 등). 전역 `job_max_runtime_seconds` 는 역할별이 아니라 쓰지 않는다.
 - 역할 파일이 `model_reasoning_effort` 를 실제로 받는지는 원한 결과 3 의 스폰 실측으로 판정한다.
 
-## 미해결 질문 (Ted 판정)
+## 미해결 질문 (Ted 판정 · 2026-09-24 닫힘 — 「판정」 절)
 1. researcher: 기본 sonnet 유지 + 「판단·문안 조사는 opus」 규칙 ⓐ(권고) / 기본을 opus 로 ⓑ.
 2. researcher maxTurns: #130 병합 뒤 1차 구간만으로 다시 재서 정한다 ⓐ(권고) / 지금 50 으로 ⓑ(p90 근거는 반송 턴 포함).
 3. advisor: fable·high·12 유지 · 스폰 때 model 을 넘기지 않는다 ⓐ(권고) / 한도 12 → 16 도 함께 ⓑ. 함께 확인: fable 과 opus 의 상하(저장소 문서에는 없음).
@@ -84,8 +90,8 @@
 - 새 역할 신설 · 역할 통폐합 · 도구 허용 목록 변경 · Claude 사용자 전역 설정 · `~/.codex/config.toml`(사용자 전역) 변경 · 제품 코드.
 
 ## 확인
-- Ted 확인 문장: (판정 뒤 원문 그대로 적는다)
-- 재개봉 금지: 아니오(초안).
+- Ted 확인 문장(원문 그대로): 위 「판정」 절.
+- 재개봉 금지: 예(잔여 결함은 새 intent).
 
 ## 참조
 - 설정: `.claude/agents/*.md` · `.codex/agents/*.toml` · `docs/development/dual-agent.md` 「`.codex/agents/*.toml`에 `model`이 지정된 역할」 문단 · `AGENTS.md` 「모델을 부르는 eval」 문장

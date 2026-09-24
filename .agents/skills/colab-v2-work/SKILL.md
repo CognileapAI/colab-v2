@@ -36,6 +36,7 @@ description: CoLAB v2 레포에서 무엇이든 실행할 때 쓴다. 서브에�
 - **완료 정의가 없으면 「완료 정의 미작성」으로 적게 한다.** 지어낸 완료 정의는 나중에 그 WU 를 못 닫게 만든다.
 - **재개 지시문에는 task_id 와 handoff 명령을 다시 적는다.** 재개된 에이전트는 첫 지시를 믿을 수 없다 — task_id 없이 재개된 researcher 2건이 H6 에 24회 막혀 38턴을 썼다. researcher 가 도는 동안 **같은 체크아웃에 커밋하지 않는다**(`stop()` 이 begin 뒤 HEAD 변경을 거부한다). 커밋이 필요한 구간이면 researcher 를 `isolation: worktree` 로 스폰한다 — 자동 task 훅은 워크트리 cwd 에서도 begin 한다.
 - **레인 1건 = 파일 계열 2~3개.** 7계열을 한 레인에 준 P2a·P2b 가 200턴에서 잘렸다. 넘으면 레인을 나눈다.
+- **역할 모델은 frontmatter 를 따른다.** advisor 는 스폰 때 model 을 넘기지 않는다(fable · Fable 은 Opus 5.5 보다 상위 — Ted 2026-09-24). researcher 기본은 opus 이고, 계수·추출·목록만인 조사는 `model: sonnet` 을 넘길 수 있다(전역 규칙 「기계적 작업 sonnet」). gate-runner 에는 게이트 하나만 맡기고 여러 게이트·전수는 measurement-lane 에 맡긴다 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ①③④).
 - **advisor ② 프롬프트에는 gate-summary 절대경로와 3계수를 적는다.** 경로 키가 체크아웃 hash 라 advisor 가 스스로 찾지 못한다(6건 중 자가 열람 0) (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
 - 산출은 파일에 쓰게 하고 메인에는 **경로 + 요지 몇 줄**만 돌려받는다. 산출물은 **회수 즉시 경로·hash·승인 상태를 확인**한다. 커밋·push는 사용자 승인 범위만 수행한다. 미승인 초안은 부모에게 반환하고, 다음 사본에 필요한 파일은 승인된 복사와 hash 대조로 전달한다(`§2-2`, `docs/development/lifecycle-evidence.md`).
 

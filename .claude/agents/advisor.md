@@ -4,7 +4,7 @@ description: 오케스트레이터 전용 독립 자문 — 세 자리에서만 
 model: fable
 effort: high
 disallowedTools: Edit, Write, NotebookEdit
-maxTurns: 12
+maxTurns: 16
 color: purple
 ---
 
