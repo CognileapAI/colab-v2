@@ -302,6 +302,10 @@ jobs:
       # 워커라 별도 설치 스텝이 없다.
       - name: 프런트 픽스처 도달성 (운영 경로가 픽스처에 안 닿는가)
         run: python scripts/harness/verify_evidence.py record --producer "frontend-gates" --check "frontend-fixture-reach" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh frontend-fixture-reach
+      # 토큰 정본 단일화(대안 B · spec S-DESIGN-STRUCTURE-P1-20260924) — 정본 밖 `:root` 정의 ·
+      # 미정의 var() 참조 · 다크 누락 · 화면 CSS `:root`·`@import` 가 0 인가. node 만 있으면 돈다.
+      - name: 프런트 디자인 토큰 정본 (frontend-design-lint)
+        run: python scripts/harness/verify_evidence.py record --producer "frontend-gates" --check "frontend-design-lint" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh frontend-design-lint
       - name: 검사별 실행 증거 보관
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
