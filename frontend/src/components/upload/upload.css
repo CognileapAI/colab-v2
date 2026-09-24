@@ -307,8 +307,9 @@ textarea.inp { resize: vertical; }
 
 /* `.btn` 계열의 기본값은 `shell/primitives.css`(P2b). `.btn-strong` 은 이 화면의 강조 버튼이다. */
 .btn-strong { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-text); }
-/* P2b — 오늘의 hover 배경(기본값 .btn hover 가 특이도로 이기던 값)을 화면 쪽에 그대로 둔다(primitives 층은 화면에 진다). */
-.btn-strong:hover { background: var(--color-gray-50); }
+/* design-review 20260924 #10 — hover 는 파란 채움의 한 단 진한 값(primary-700)이다. 종전 gray-50 은 흰(다크 남색) 글자와
+   1.05/1.10:1 이었다. primitives 층은 화면에 지므로 값은 여기 둔다. */
+.btn-strong:hover { background: var(--color-primary-700); }
 
 
 /* 격자 업로드 블록 (`S1-PLAN-REFOUND §E`) — 미리보기 패널 **안**에서 열린다.
