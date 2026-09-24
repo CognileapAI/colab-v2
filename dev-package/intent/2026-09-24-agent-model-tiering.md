@@ -25,6 +25,8 @@
 - "1. 리서처 모델은 opus 로 바꾼다. 2. b로 올리고 측정한다. 3. 어드바이저는 b로 올린다. (fable이 opus 위 등급이 맞다, opus 5.5 도 나왔지만 그럼에도 fable이 위다) 4. 권고대로 한다. 5. 해당 추론강도로 턴한도 60 두고 재자. 6. astra가 sol보다 상위 모델이 맞다. (검색해서 정리해서 기록) 7. 코덱스 배정은 난이도 순서로 맞춘다. (gpt, claude 난이도에 따른 대응표 확보해서 수준에 상응하게 맞추기) 8. 권고대로" (2026-09-24)
 - 정리: ① researcher 기본 모델 opus(ⓑ) ② researcher maxTurns 30 → 50 · 재측정(ⓑ) ③ advisor fable·high 유지 · maxTurns 12 → 16 · 스폰 때 model 을 넘기지 않는다 · fable 은 opus 5.5 보다 상위(Ted 확인) ④ lane-worker·gate-runner 설정 유지 + 행동 규칙(ⓐ) ⑤ measurement-lane effort low · maxTurns 60 · 재측정(ⓐ) ⑥ astra > sol(Ted 확인) · 공개 출처를 조사해 기록 ⑦ Codex 배정 = GPT·Claude 난이도 대응표로 수준에 맞춘다 ⑧ #130 병합 뒤 별도 PR · 평가 재실행 포함(ⓐ).
 
+- 추가 판정: Ted 원문 "권고대로" (2026-09-25) — ⓐ measurement-lane = `gpt-5.6-terra`·low · gate-runner = `gpt-5.6-luna`·low 유지 ⓑ Codex 40과제 평가 재실행은 하지 않는다(러너가 역할 파일을 읽지 않아 배정을 재지 못함 · 배정 검증은 5역할 스폰 실측이 대신함).
+
 ## 원한 결과 (proposed outcome)
 1. Claude 역할 5개 frontmatter 에 `model`·`effort`·`maxTurns` 가 모두 적혀 있고 판정 ①②③⑤ 값과 같다(빈 값 0 · grep 으로 잰다): researcher opus·medium·50 · lane-worker opus·high·200 · advisor fable·high·16 · measurement-lane sonnet·low·60 · gate-runner haiku·low·20.
 2. 역할 1개(gate-runner)에 `model_reasoning_effort` 를 넣고 Codex 에서 스폰해, 역할이 로드되는지(모르는 키 거부 여부)와 `turn_context` 의 model·effort 가 바뀌는지 먼저 증거 파일로 남긴다. 스폰이 안 되면 그 사실과 대체 경로를 남긴다(성공으로 적지 않는다).

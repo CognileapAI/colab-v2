@@ -48,13 +48,14 @@
 3. 실측 1·2 결과대로 5개 toml 을 X1 표로 고친다. 선택 불가 대체 순서: luna 불가 → `gpt-6-sol`·low · `gpt-6-sol` 불가 → 실측 1 에서 선택된 `gpt-5.6-sol` · 그것도 불가 → `gpt-6-astra`·low. 사유를 적는다. effort 키가 거부되면 effort 는 넣지 않는다. **가드**: 5파일 수정 뒤 각 toml 의 `model` 값으로 `codex exec -m <값>` 최소 호출을 한 번씩 해 5역할 모델명이 실측 1 통과 집합 안에 있음을 `X-codex-smoke.md` 에 5행으로 기록한다.
 4. `scripts/tests/test_agent_bridge.py` `test_role_models_are_explicit_and_do_not_claim_parent_inheritance` 의 `expected` 를 5역할(measurement-lane 포함)로 넓히고 effort 를 넣었으면 effort 도 단언한다. `expected` 의 모델 값이 실측 1 통과 집합의 부분집합임도 단언한다(집합은 시험 안 상수 · 출처 X-codex-smoke.md). 수정 전 red(새 값 불일치)를 보인다.
 5. `docs/development/dual-agent.md` 「`.codex/agents/*.toml`에 `model`이 지정된 역할」 문단을 난이도 기준 문장 + X1 역할 표로 바꾼다. 표 아래 한 줄: 「lane-worker 품질 미달 시 `gpt-6-sol`·xhigh → `gpt-6-astra`·medium 순으로 올린다(M3 §3 · Opus 5.5 가 GPT-6 Sol 보다 벤치마크가 높다)」. `dev-package/prd/rounds/R-CODEX-PARITY.md` 머리에 「2026-09-24 배정 변경 — 이 문서의 모델명은 2026-09-09 기준」 한 줄.
-6. **평가 재실행(판정 ⑧) — 보류 · Ted 재확인**: advisor ① 확인 결과 40과제 러너 `scripts/codex-harness-eval.py` 는 `-m`·역할 지정 없이 `codex exec` 를 불러 늘 전역 config(astra) 로 돈다(2026-09-09 결과 `models: ["gpt-6-astra"]`). 역할 toml 을 읽지 않으므로 재실행해도 새 배정을 재지 못하고 2026-09-09 와 같은 조건(최대 약 2시간)을 반복한다. 판정 ⑧의 전제(평가가 배정을 검증한다)가 달라져 Ted 에게 다시 묻는다. 실행하기로 하면 레인이 아니라 병합 뒤 오케스트레이터가 배경 1회 돌리고 결과 표제를 「부모 모델(전역 config) 회귀 확인 · 배정 검증 아님」으로 고정한다. 역할 배정의 실제 검증은 실측 2(역할 스폰)가 맡는다.
+6. **평가 재실행(판정 ⑧) — 제외 (Ted 2026-09-25 "권고대로")**: advisor ① 확인 결과 40과제 러너 `scripts/codex-harness-eval.py` 는 `-m`·역할 지정 없이 `codex exec` 를 불러 늘 전역 config(astra) 로 돈다(2026-09-09 결과 `models: ["gpt-6-astra"]`). 역할 toml 을 읽지 않으므로 재실행해도 새 배정을 재지 못하고 2026-09-09 와 같은 조건(최대 약 2시간)을 반복한다. 판정 ⑧의 전제(평가가 배정을 검증한다)가 달라져 Ted 에게 다시 묻는다. 실행하기로 하면 레인이 아니라 병합 뒤 오케스트레이터가 배경 1회 돌리고 결과 표제를 「부모 모델(전역 config) 회귀 확인 · 배정 검증 아님」으로 고정한다. 역할 배정의 실제 검증은 실측 2(역할 스폰)가 맡는다.
 
 ### X3 실측 뒤 조정 (2026-09-25 · 오케스트레이터)
 - 이 계정(ChatGPT 로그인)에서 `gpt-6-sol`·`gpt-6-luna` 는 선택 불가(400). 선택 가능 = `gpt-6-astra`·`gpt-5.6-sol`·`gpt-5.6-terra`·`gpt-5.6-luna`(X-codex-smoke 실측 1·3).
 - GPT-5.6 안의 순서 Luna < Terra < Sol(M3 22행)로 판정 ⑦을 적용해 **measurement-lane = `gpt-5.6-terra`·low · gate-runner = `gpt-5.6-luna`·low** 로 좁혔다. X2-3 대체 순서는 두 모델의 선택 가능 여부를 모를 때 쓴 것이다.
 - 5역할 스폰 실측(실측 4)에서 자식 마지막 `turn_context` 가 역할 파일 값과 모두 같다 — 원한 결과 2·3 충족.
 - 상향 경로는 `gpt-5.6-sol`·xhigh → `gpt-6-astra`·medium.
+- Ted 2026-09-25 "권고대로": terra·luna 배정 유지 · 평가 재실행 제외.
 - `scripts/agent-bridge.py check` 가 역할 4개만 검사하던 것(measurement-lane 누락 · 「4 role mappings」 고정 문구)을 5개로 고쳤다.
 
 ## 시험 결정
