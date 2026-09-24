@@ -82,7 +82,7 @@ GREEN: 구현 커밋 뒤 F-preview·L3·L3b 41건 통과 · 전체 vitest 135 �
 
 | 항목 | 전 | 후 | 시험 |
 |---|---|---|---|
-| FP-1 | 갱신 함수 첫 줄 `if (settled) return cur;` — 멈춤 뒤 호출은 앞 프레임 값 | (구현 커밋에서 기재) | `design-fix-20260924-F-preview.test.tsx` 「FP-1 … reactStrictMode=true · 빠른 끌기 뒤 panOffset 이 잘린 투영 목표와 같다」(＋ 같은 본문 `reactStrictMode=false` 대조) — renderHook `reactStrictMode` · 한 act 안 `advance(3000)` 으로 갱신을 렌더 때 몰아 처리 |
+| FP-1 | 갱신 함수 첫 줄 `if (settled) return cur;` — 멈춤 뒤 호출은 앞 프레임 값 | 갱신 함수 첫 줄 `if (settled && launch) return clampView({ ...cur, x: launch.goal.x, y: launch.goal.y });` — 멈춘 뒤 호출도 목표를 돌려준다(멱등). `settled` 는 rAF 루프의 멈춤 판단에만 쓴다(`useZoomPan.ts:485-488` · 구현 커밋 `bb477fa9`) | `design-fix-20260924-F-preview.test.tsx` 「FP-1 … reactStrictMode=true · 빠른 끌기 뒤 panOffset 이 잘린 투영 목표와 같다」(＋ 같은 본문 `reactStrictMode=false` 대조) — renderHook `reactStrictMode` · 한 act 안 `advance(3000)` 으로 갱신을 렌더 때 몰아 처리 |
 
 ### RED 증거
 
@@ -90,3 +90,29 @@ GREEN: 구현 커밋 뒤 F-preview·L3·L3b 41건 통과 · 전체 vitest 135 �
 
 - `reactStrictMode=true`: `AssertionError: expected { x: +0, y: 543.4196964154335 } to deeply equal { x: +0, y: 544 }` — 목표(경계 544)보다 0.58px 모자람(SETTLE_PX 0.5 이상).
 - `reactStrictMode=false`: 통과(같은 본문 · 이중 호출 없음 → 결함 경로 밖. 회귀 고정용).
+
+GREEN: 구현 커밋 `bb477fa9` 뒤 F-preview·L3·L3b 43건 통과(로컬 `npx vitest run` 세 파일).
+
+### 게이트
+
+`COLAB_TASK_ID=416ca440fb60432e9b48512187b2827a bash gates/run.sh task`(선언 게이트 4 · 한 번에 · 저장소 루트).
+
+| run_id | 커밋(보고서 갱신 전) | 계 | 증거 |
+|---|---|---|---|
+| `801551a543f84819a172866d1dfb2346` | `bb477fa9` | green 4 / red(판정) 0 / red(준비) 0 | `.git/colab-harness/d6dd0f257bf20fbd87e8c62f5c2e6bcc/416ca440fb60432e9b48512187b2827a/801551a543f84819a172866d1dfb2346/gate-summary.json` · `logs/0.log`–`3.log` |
+
+- 게이트별: `frontend-typecheck` 오류 0 · `frontend-test` 135 파일 · 통과 1746 · 실패 0(1744 → 1746 · 새 시험 2) · `frontend-fixture-reach` 도달 207 · 금지 모듈 0 · `frontend-design-lint` 파일 21 · 전 조건 0 · 다크 누락 0(면제 6) · 문서 표 갈림 0.
+- 호스트 뮤텍스 대기 누계 0s. `frontend-visual`·agent-browser 를 띄우지 않았다.
+- 이 보고서 갱신으로 파일 hash 가 바뀐다. 인계 증거는 보고서 커밋 뒤 같은 명령을 다시 돌린 run 이며 그 run_id 는 최종 메시지의 `COLAB_HANDOFF` 줄에 있다. 제품 파일은 두 run 사이에 같다.
+
+### 규율(커밋별 `git show --stat`)
+
+- `c08adec8`(시험 작성): `frontend/test/design-fix-20260924-F-preview.test.tsx` · 이 보고서
+- `bb477fa9`(구현): `frontend/src/components/preview/useZoomPan.ts` 만 — `frontend/test/**` · `gates/**` · `contracts/**` 0
+- 보고서 커밋: 이 보고서 만. 파일 면 밖 제품 파일 변경 0. `COLAB_FIX_LANE` 훅은 이 환경에서 걸 수 없어 규율로 지켰다.
+
+### 하지 않은 것
+
+- 실브라우저(dev · StrictMode) 관성 멈춤 자리 확인 — vitest renderHook `reactStrictMode` 로만 검증했다. agent-browser·`frontend-visual` 미실행.
+- `settled` 를 한 프레임 늦게 읽어 빈 프레임 하나가 더 도는 동작(위 5절 마지막 항)은 그대로다 — FP-1 범위 밖.
+- StrictMode 의 컴포넌트 이중 렌더·동시 렌더 rebase 에서 멈춤 이전 프레임의 갱신이 `settled` 뒤에 다시 처리되면 중간 값 대신 목표를 돌려준다(최종 값은 같다). 이 경로의 시험은 없다.
