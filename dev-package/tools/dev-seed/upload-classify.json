@@ -1,8 +1,8 @@
 {
   "schema": "colab-dev-seed-classify/1",
-  "status": "proposal",
-  "signedBy": null,
-  "signedOn": null,
+  "status": "signed",
+  "signedBy": "Ted",
+  "signedOn": "2026-09-24",
   "document": "dev-package/reports/corpus-expansion/upload-classify-proposal-2026-09-24.md",
   "note": "업로드 마법사 신규 필수 칸(분류·유형·관측 간격·Lv0 출처 두 칸)의 값. 정본 md 4건·레포 자료에 명시값이 없어 전부 제안이다. status=signed 와 서명 두 칸이 서기 전에는 build_plan.py 가 계획을 쓰지 않는다.",
   "datasets": [
