@@ -388,7 +388,7 @@ export function PreviewMap(props: {
                 {result.legend.classes.map((c) => (
                   <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
                     <dt>
-                      <span className="pv-swatch" style={{ background: c.color }} />
+                      <span className="pv-swatch" style={{ '--pv-swatch-bg': c.color } as React.CSSProperties} />
                     </dt>
                     {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
                     <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
@@ -485,12 +485,11 @@ function TileMosaic(props: {
               .then(() => markDecoded(image.currentSrc || image.src)).catch(() => undefined);
           }}
           style={{
-            position: 'absolute',
-            left: `${t.left}px`,
-            top: `${t.top}px`,
-            width: `${t.width}px`,
-            height: `${t.height}px`,
-          }}
+            '--pv-piece-left': `${t.left}px`,
+            '--pv-piece-top': `${t.top}px`,
+            '--pv-piece-w': `${t.width}px`,
+            '--pv-piece-h': `${t.height}px`,
+          } as React.CSSProperties}
         />
       ))}
     </div>

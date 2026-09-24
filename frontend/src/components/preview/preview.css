@@ -146,6 +146,8 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
+  /* 계급 색은 데이터다 — `PreviewPanels` 범례가 `--pv-swatch-bg` 로 넘긴다(P3) */
+  background: var(--pv-swatch-bg);
 }
 
 .pv-controls {
@@ -284,6 +286,14 @@
   position: relative;
 }
 
+/* 확대·이동 변환 — 업로드 미리보기·확장보기(`upload/PreviewPanel`)가 `--pv-layers-transform` 으로 넘긴다(P3).
+   `data-zoom-scale` 은 확대 상태가 층을 움직일 때만 붙는다. 데이터셋 미리보기(`preview-layers`)는
+   아직 인라인 변환을 펼침 속성으로 싣고, 인라인이 이 규칙을 이긴다(P3 보고서 「하지 않은 것」). */
+.pv-layers[data-zoom-scale] {
+  transform: var(--pv-layers-transform);
+  transform-origin: 0 0;
+}
+
 /* WU-C4 — **「지금 어디를 보고 있는지」 외곽선.** 층 묶음의 좌표계에서 데이터 경계는 곧
    층 전체라 상자 하나로 끝난다. 변환은 층에 걸린 것 하나를 함께 탄다(정본 §8 조건 ⑸).
    ⚠ 배경 지도(해안선·국경)는 WU-C5 다 — 이 사각형은 자산 없이 선다. */
@@ -353,6 +363,12 @@
 }
 
 .pv-mosaic .pv-tile-piece {
+  /* 조각 자리는 `PreviewPanels` 모자이크가 px 로 넘긴다(P3 · 인라인 style 은 변수 대입만) */
+  position: absolute;
+  left: var(--pv-piece-left);
+  top: var(--pv-piece-top);
+  width: var(--pv-piece-w);
+  height: var(--pv-piece-h);
   border: 0;
   border-radius: 0;
   /* 확대는 「촘촘함을 바꿔 끼우는」 것이지 흐리게 늘리는 것이 아니다 (§8 확대·이동) */

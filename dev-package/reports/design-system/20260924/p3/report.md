@@ -10,8 +10,8 @@ spec: `dev-package/prd/specs/S-DESIGN-STRUCTURE-P3-20260924.md` · 조사: `p3/l
 |---|---|---|
 | 1 착수 캡처 `p3-before` · 재계측 | 완료 | — |
 | 2 게이트 f·g · selftest 16 | 완료 | `844652cd` |
-| 3 CSS — 죽은 폴백 64 · B 2 · 면제 3 | 완료 | (이 커밋) |
-| 4 TSX 인라인 7 | 대기 | |
+| 3 CSS — 죽은 폴백 64 · B 2 · 면제 3 | 완료 | `539f68ee` |
+| 4 TSX 인라인 7 | 완료(제품 시험 1줄 변경 · 판정 필요) | (이 커밋) |
 | 5 캡처 범위 표 | 대기 | |
 | 6 대장 BF-8 | 대기 | |
 | 7 시각 변경 0 | 대기 | |
@@ -100,3 +100,30 @@ design-lint-counts files=19 a=0 … f=69 f_direct=5 f_fallback=64 f_name=0 f_hol
 - 면제 3건은 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 끝 `f · …` 줄(사유 포함). 오케스트레이터 지시의 「A · C 면제 2」와 다르다 — A 는 착수 코드에 리터럴이 없어 면제할 대상이 없고(낡은 항목은 red), color-mix 2 가 더해졌다(아래 「spec 과 다르게 한 점」).
 
 게이트(이 단계 뒤): `색 리터럴 0(면제 3) · 인라인 7(변수 대입 0)` · `f=0 … f_exempt=3 f_exempted_hits=3 g=7` — g 가 남아 여전히 red.
+
+## 단계 4 — TSX 인라인 7(ⓒ)
+
+| # | 파일:행(착수) | 종전 | 이후 | 변수 이름 · CSS |
+|---|---|---|---|---|
+| 1 | `components/search/SearchHitCard.tsx:60` | `style={{ width }}`(축약형 · `42%` 류) | `style={{ '--hit-relbar-w': width } as React.CSSProperties}` | `--hit-relbar-w` · `search.css` `.search-page .relbar > span { width: var(--hit-relbar-w) }` |
+| 2 | `components/preview/PreviewPanels.tsx:391` | `style={{ background: c.color }}` | `style={{ '--pv-swatch-bg': c.color } as …}` | `--pv-swatch-bg` · `preview.css` `.pv-swatch { background: var(--pv-swatch-bg) }` |
+| 3 | `components/preview/PreviewPanels.tsx:487` | `position: 'absolute'` · `left`·`top`·`width`·`height` `${n}px` | 네 좌표만 변수 · `position` 은 클래스 규칙 | `--pv-piece-left`·`--pv-piece-top`·`--pv-piece-w`·`--pv-piece-h` · `preview.css` `.pv-mosaic .pv-tile-piece { position: absolute; left/top/width/height: var(…) }` |
+| 4 | `components/dashboard/DataMapCard.tsx:37` | `style={{ width: …% }}` | `style={{ '--dash-bar-w': … } as …}` | `--dash-bar-w` · `dashboard.css` `.dash-bar-fill { width: var(--dash-bar-w) }` |
+| 5 | `components/upload/RegisterArea.tsx:1007` | `style={{ marginTop: 16 }}`(정적) | `className="reg-source-block"` | 변수 없음 · `upload.css` `.reg-source-block { margin-top: 16px }` |
+| 6 | `components/upload/PreviewPanel.tsx:631` | `transform: translate(…) scale(…)` · `transformOrigin: '0 0'` | 변환 문자열만 변수 · `transform-origin` 은 규칙 | `--pv-layers-transform` · `preview.css` `.pv-layers[data-zoom-scale] { transform: var(--pv-layers-transform); transform-origin: 0 0 }` |
+| 7 | `components/upload/PreviewPanel.tsx:794` | 위와 같음(확장보기) | 위와 같음 | 위와 같음 |
+
+- 이름은 컴포넌트 접두사(`--hit-` · `--pv-` · `--dash-`) · 게이트 a 의 정본 계열 접두사 없음(a=0). 게이트 b 는 TSX 의 `'--x'` 문자열을 정의로 센다(b=0).
+- `React.CSSProperties` 는 기존 `React.ReactNode` 처럼 import 없이 타입 자리에서 쓴다 — `cssVars.ts` 는 만들지 않았다(필요 없음). `tsc --noEmit` 오류 0.
+- 규칙을 거는 선택자는 종전 인라인이 걸리던 요소에만 걸리게 골랐다: `.pv-swatch` · `.pv-tile-piece` · `.dash-bar-fill` 은 TSX 에서 그 자리 하나만 쓴다 · `.relbar > span` 은 인라인 요소라 `display: block` 규칙 없이는 폭이 원래 적용되지 않는다 · `.pv-layers` 는 세 곳이 쓰므로 `[data-zoom-scale]`(확대 상태가 있을 때만 붙음)로 좁혔고, 데이터셋 미리보기 `preview-layers` 는 확대 상태가 있을 때 인라인 변환(펼침 속성)이 이 규칙을 이긴다 · `.reg-source-block` 은 새 클래스이고 그 `div` 의 `margin-top` 을 거는 다른 규칙이 없다(`.card-b` 규칙은 padding·gap 만).
+- 변수가 없을 때: 종전 인라인 값이 없으면 속성이 비어 초기값이었고, 이제 `var()` 가 정의되지 않아 초기값이다(예: 범례 색이 비면 두 쪽 다 투명).
+
+게이트(이 단계 뒤): `frontend-design-lint green — … · 색 리터럴 0(면제 3) · 인라인 0(변수 대입 6)` · `g=0 g_vars=6 g_spread=1`.
+
+### 기존 시험 변경(판정 필요 1건)
+
+| 파일:행 | 전 → 후 | 사유 |
+|---|---|---|
+| `frontend/test/search.test.tsx:175`(it 「관련도는 막대 하나다 — 퍼센트도 등급 텍스트도 숫자도 화면에 없다」) | `expect(span.style.width).toBe('42%')` → `expect(span.style.getPropertyValue('--hit-relbar-w')).toBe('42%')` + 주석 1줄 | spec(Q5)대로 인라인 `width` 를 변수 대입으로 바꾸면 요소의 `style.width` 는 빈 문자열이 된다 — 시험이 단언하던 **전달 수단**이 바뀐 것이고 단언한 사실(막대 길이 42% 가 막대에만 실린다)은 그대로다. red 확인: 변경 전 `AssertionError: expected '' to be '42%'` · 변경 뒤 19/19. 렌더 폭은 단계 7 의 캡처 대조가 본다(jsdom 은 층 껍질을 벗긴 CSS 를 싣지만 이 시험은 search.css 의 규칙 적용을 단언하지 않는다). **오케스트레이터 지시 「제품 시험 변경 0」과 다르다** — 판정 요청. |
+
+- 전 시험: `npx vitest run` → Test Files 130 passed (130) · Tests 1613 passed (1613)(건수 = P2a 와 같음 · 폐기 0).

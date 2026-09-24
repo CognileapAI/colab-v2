@@ -130,6 +130,8 @@
 
 .dash-bar-fill {
   display: block;
+  /* 막대 길이는 `DataMapCard` 가 `--dash-bar-w` 로 넘긴다(P3) */
+  width: var(--dash-bar-w);
   height: 100%;
   background: var(--accent-neutral);
 }

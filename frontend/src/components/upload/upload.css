@@ -285,6 +285,8 @@ textarea.inp { resize: vertical; }
 .reg-actions .uf-hint { flex: 1; min-width: 0; font-size:13px; color: var(--color-text-muted); }
 @media (max-width: 720px) { .reg-actions .uf-hint { display: none; } }
 .reg-actions .sp { flex: 1; }
+/* 원천 블록은 계보 자리 뒤 16px(P3 · 종전 인라인 `marginTop: 16`) */
+.reg-source-block { margin-top: 16px; }
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px 이 갖는다 */
 .lineage-slot { display: flex; flex-direction: column; gap: 12px; }
 

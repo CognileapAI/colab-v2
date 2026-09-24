@@ -172,7 +172,8 @@ describe('S-06 결과 카드', () => {
     const card = await screen.findByTestId('search-hit');
     const bar = within(card).getByTestId('relevance-bar');
     // 길이는 막대에만 실린다 — 사람이 읽는 자리에 숫자가 서면 정본 위반이다
-    expect((bar.firstElementChild as HTMLElement).style.width).toBe('42%');
+    // (P3 · 인라인 style 은 변수 대입만 — 길이는 `--hit-relbar-w` 로 실리고 `search.css` 가 width 로 읽는다)
+    expect((bar.firstElementChild as HTMLElement).style.getPropertyValue('--hit-relbar-w')).toBe('42%');
     expect(card.textContent).not.toMatch(/%|42|0\.42|확실|애매|모름/);
     expect(container.querySelector('[aria-valuenow]')).toBeNull();
   });
