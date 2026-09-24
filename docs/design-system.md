@@ -33,14 +33,16 @@
 - 화면 범위 이름에는 정본 계열 접두사(아래 표)를 쓰지 않는다 — 게이트 a.
 - 정본에 색 계열 이름(`--color-` · `--fg-` · `--bg-` · `--accent-` · `--shadow-`)을 더하면 다크 블록에도 값을 둔다. 두 테마 값이 같아야 하면 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 에 사유와 함께 적는다 — 게이트 c.
 - 토큰 이름·값을 바꾸면 `node frontend/scripts/design-docs.mjs` 로 아래 표를 다시 쓴다 — 게이트 h.
+- `--color-on-text-body` 는 한 화면(상세 편집 `.de-req`)만 쓰지만 다크 값이 필요해 정본에 둔다 — 화면 범위에서는 다크 값을 줄 수 없고(d) 정본 계열 이름은 화면 범위에 둘 수 없다(a) · design-fix 20260924 #17.
+- 자간 토큰 두 구간 — `--tracking-heading`(−0.02em)은 제목, `--tracking-label`(0.05em)은 작은 굵은 라벨이 쓴다. 로고 글자 `.login-brand`(0.01em)는 브랜드 예외로 리터럴을 둔다 · design-fix 20260924 #7.
 
 <!-- generated:tokens -->
 입력(sha256):
 
-- `frontend/src/shell/tokens.css` `f38b9e8ec68c4163683958965f5a100a7a919ce1f57b97899e41cfd24503e0dc`
-- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `5b4c93136ba7be1adb5d9eb4772a5209a7bf069437a8c0f8fa4051370f539281`
+- `frontend/src/shell/tokens.css` `b061258c09bc348ec3cdeba1c4ed1a5d39a8d20243206287bf2821e97929df82`
+- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-라이트 `:root` 이름 81 · 다크 블록 이름 41 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
+라이트 `:root` 이름 84 · 다크 블록 이름 42 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
 
 다크 칸: 값 = 다크 블록의 값 · 동일(면제) = `same-in-dark.txt` 에 사유와 함께 적힌 이름 · 별칭 따라감 = 라이트 값이 `var(--x)` 라 대상 이름의 다크 값을 따른다 · — = 색 계열이 아니라 다크 판정 대상이 아니다 · **누락** = 게이트 c red.
 
@@ -87,6 +89,7 @@
 | `--color-text-body` | `#21272ae0` | `#dce4ed` |  |
 | `--color-text-muted` | `#565c63` | `#b2bfce` |  |
 | `--color-text-subtle` | `var(--color-text-muted)` | 별칭 따라감 |  |
+| `--color-on-text-body` | `#ffffff` | `#1a222c` |  |
 | `--color-danger` | `#a3222b` | `#ffadb6` |  |
 | `--color-danger-solid` | `#a3222b` | `#ffadb6` |  |
 | `--color-on-danger` | `#ffffff` | `#361016` |  |
@@ -99,15 +102,17 @@
 | `--font-sans` | `"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", "Noto Sans KR", sans-serif` | — |  |
 | `--font-mono` | `ui-monospace, SFMono-Regular, Consolas, monospace` | — |  |
 | `--font-data` | `var(--font-sans)` | 별칭 따라감 |  |
-| `--text-h2` | `28px` | — |  |
-| `--text-h3` | `18px` | — |  |
-| `--text-section` | `16px` | — |  |
-| `--text-body` | `15px` | — |  |
-| `--text-body-sm` | `14px` | — |  |
-| `--text-caption` | `13px` | — |  |
+| `--text-h2` | `1.75rem` | — |  |
+| `--text-h3` | `1.125rem` | — |  |
+| `--text-section` | `1rem` | — |  |
+| `--text-body` | `0.9375rem` | — |  |
+| `--text-body-sm` | `0.875rem` | — |  |
+| `--text-caption` | `0.8125rem` | — |  |
 | `--leading-body` | `1.6` | — |  |
 | `--leading-body-sm` | `1.429` | — |  |
 | `--tracking-body` | `0` | — |  |
+| `--tracking-heading` | `-0.02em` | — |  |
+| `--tracking-label` | `0.05em` | — |  |
 | `--weight-heading` | `600` | — |  |
 | `--space-1` | `4px` | — |  |
 | `--space-2` | `8px` | — |  |
@@ -132,14 +137,14 @@
 
 | 접두사 | 이름 수 |
 |---|---:|
-| `--color-` | 47 |
+| `--color-` | 48 |
 | `--space-` | 8 |
 | `--text-` | 6 |
 | `--radius-` | 4 |
 | `--font-` | 3 |
 | `--shadow-` | 2 |
 | `--leading-` | 2 |
-| `--tracking-` | 1 |
+| `--tracking-` | 3 |
 | `--fg-` | 1 |
 | `--bg-` | 1 |
 | `--accent-` | 1 |
@@ -163,7 +168,7 @@
 
 | 계열 | 마크업 | 수식자·조각 |
 |---|---|---|
-| btn | `<button class="btn" type="button">` | `.btn-primary` · `.btn-secondary` · `.btn-ghost` · `.btn-danger` · `.btn-sm`(아래 표의 「정의 없음」 참고) |
+| btn | `<button class="btn" type="button">` | `.btn-primary` · `.btn-secondary` · `.btn-ghost` · `.btn-danger` · `.btn-sm`(작은 단추 · 640px 이하에서는 `--control-height`) |
 | field | `<input class="inp">` · `<select class="sel">` | `disabled` · `textarea.inp`(크기 조절은 업로드 화면 규칙) |
 | chip | `<span class="chip">` | `.chip--off` · `.chip--verified` · `.chip--lineage` · `.chip--neutral` · `.chip--warning` |
 | card | `<div class="card"><div class="card-h"><h3>…</h3></div><div class="card-b">…</div></div>` | — |
@@ -173,36 +178,36 @@
 <!-- generated:primitives -->
 입력(sha256):
 
-- `frontend/src/shell/primitives.css` `5a5cb5334dffd0c19999cd2e7e5d032f5d562ddf65a63df71bbca96da9881f63`
+- `frontend/src/shell/primitives.css` `f4521991bc52a1aa5c7c8e43fe56666e79255028d4f145c210cc364e5c52ded6`
 - `gates/fixtures/frontend-design-lint/primitives.txt` `82e423d8d2ffd7e4e92cab80301bcbf15e6ea87437310a0f99568aab4c14253f`
 - `gates/fixtures/frontend-design-lint/primitives-exempt.txt` `25f7aa495f529320af9ae53c064479bac5a3c08f1b07ee8cf9b631dc3f001eda`
-- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `5b4c93136ba7be1adb5d9eb4772a5209a7bf069437a8c0f8fa4051370f539281`
+- `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-목록 클래스 22(계열 6) · `primitives.css` 규칙 32 · 선언 114
+목록 클래스 22(계열 6) · `primitives.css` 규칙 36 · 선언 122
 
 | 계열 | 목록 클래스 | 규칙 | 기본값 선언 |
 |---|---:|---:|---:|
-| btn | 6 | 6 | 20 |
+| btn | 6 | 10 | 27 |
 | field | 2 | 2 | 8 |
-| chip | 2 | 7 | 25 |
+| chip | 2 | 7 | 26 |
 | card | 3 | 4 | 16 |
 | table | 3 | 6 | 18 |
 | modal | 6 | 7 | 27 |
-| **계** | 22 | 32 | 114 |
+| **계** | 22 | 36 | 122 |
 
 규칙 = 그 클래스가 `:not()`·`:has()` 인자 밖에 나오는 `primitives.css` 규칙(폭 분기 포함). 한 규칙이 두 클래스에 걸리면(`:is(.inp, .sel)`) 아래 표의 두 행에 모두 세고, 계열 합계는 한 번만 센다. 「정의 없음」 = 목록에는 있어 화면 파일의 맨 정의가 막히지만 기본값이 없다.
 
 | 계열 | 클래스 | 규칙 | 선언 | 선택자 |
 |---|---|---:|---:|---|
-| btn | `.btn` | 2 | 12 | `.btn`<br>`.btn:where(:not(.btn-primary, .btn-secondary)):hover` |
-| btn | `.btn-primary` | 2 | 4 | `.btn-primary`<br>`.btn-primary:active` |
+| btn | `.btn` | 3 | 13 | `.btn`<br>`.btn:where(:not(.btn-primary)):hover`<br>`.btn:where(:not(.btn-primary)):active` |
+| btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:hover`<br>`.btn-primary:active` |
 | btn | `.btn-secondary` | 1 | 3 | `.btn-secondary` |
 | btn | `.btn-ghost` | 1 | 1 | `.btn-ghost` |
 | btn | `.btn-danger` | 정의 없음 | — |  |
-| btn | `.btn-sm` | 정의 없음 | — |  |
+| btn | `.btn-sm` | 2 | 5 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px) |
 | field | `.inp` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
 | field | `.sel` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
-| chip | `.chip` | 2 | 15 | `.chip`<br>`.chip:where(:not([class*="chip--"]))` |
+| chip | `.chip` | 2 | 16 | `.chip`<br>`.chip:where(:not([class*="chip--"]))` |
 | chip | `.chip--*` | 5 | 10 | `.chip--off`<br>`.chip--verified`<br>`.chip--lineage`<br>`.chip--neutral`<br>`.chip--warning` |
 | card | `.card` | 1 | 5 | `.card` |
 | card | `.card-h` | 2 | 10 | `.card-h`<br>`.card-h h3` |
@@ -221,9 +226,7 @@
 
 프리미티브 맨 정의 면제(`primitives-exempt.txt` · 게이트 e): 0 — 없음
 
-색 리터럴 면제(`same-in-dark.txt` 의 `f` 줄 · 게이트 f): 1
-
-- `src/shell/primitives.css` `.chip` `background: #eef2f7` — 같은 값 토큰 없음(가까운 --color-gray-100 #e8ecf2 · --color-surface-alt #f5f7fa 는 값이 다르다) — 새 토큰 vs 기존 토큰으로 값 변경(시각 변경)을 Ted 판정 대기 · spec P3 우려 1
+색 리터럴 면제(`same-in-dark.txt` 의 `f` 줄 · 게이트 f): 0 — 없음
 <!-- /generated:primitives -->
 
 ### 화면 편차 목록 (손글 · P2b 결과 · 값 무변)
@@ -232,7 +235,7 @@ P2b 가 기본값을 모으면서 **오늘 값 그대로 남긴** 화면 쪽 편
 
 | 계열 | 화면 범위 규칙으로 옮긴 편차(P2b 신설) | 남긴 특이도 편차 |
 |---|---|---|
-| btn | `upload.css` `.btn-strong:hover { background: gray-50 }` | `.modal-takeover .reg-actions .btn` · `.detail-page label.btn` · `.labinfo-card .card-h .btn` · `.account-row-actions > .btn` · `.approval-dialog .btn-danger` · `.detail-page .btn-danger(:disabled)` |
+| btn | `upload.css` `.btn-strong:hover { background: primary-700 }`(design-fix 20260924 #10) | `.modal-takeover .reg-actions .btn` · `.detail-page label.btn` · `.labinfo-card .card-h .btn` · `.account-row-actions > .btn` · `.approval-dialog .btn-danger` · `.detail-page .btn-danger(:disabled)` |
 | field | — | `.modal-takeover .inp/.sel(:focus-visible)` · `.vartable td .inp(:focus/-visible)` · `textarea.inp` · 배치 문맥 9(`.pv-pick-f .sel` 등) |
 | chip | `members.css` `.memtbl .chip--off { margin-left: 6px }` | `.detail-page .chip(--neutral/--warning)` · `.search-page .chip` · `.lin .chip` · `.pc-m/.pd-m .chip` · `.fname .chip` · `.up-analyze .chip.is-analyzing` |
 | card | `upload.css` `.up-card { border-width; border-style }` | `.catalog-page .card` · `.project-detail .card` · `.memgrid .card-b` · `.up-card > .card-b` · `.modal-takeover .up-steps .card(-h/-b)` · `.up-empty .up-card > .card-b` |
@@ -272,7 +275,8 @@ patterns 층은 이름만 선언돼 있고 파일이 없다. 아래 규칙은 `f
 
 - 새 CSS 파일은 `@layer screens { … }` 한 블록으로 감싸고 `styles.ts` 에 import 를 더한다(① 층 함정).
 - 새 화면·새 상태는 `frontend/scripts/visual-baseline/scenes.json` 에 캡처 장면을 더하고(3폭 × 2테마) 착수 기준 캡처와 대조한다(⑧).
-- 글자 13px 이상 · 대비 4.5:1 이상 · 카드 그림자 0 · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
+- 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상 · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
+- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4).
 
 ## ⑥ 게이트 `frontend-design-lint` — 조건 a~h
 
@@ -301,16 +305,23 @@ P1~P3 · P2a · P2b · P5 보고서에서 「Ted 판정」·「판정 필요」�
 
 | # | 항목 | 오늘 렌더 | 선택지 | 출처 |
 |---|---|---|---|---|
-| 1 | 억눌린 hover — `.btn-primary:hover` · `.btn-secondary` hover | 배경이 바뀌지 않는다 | 되살림(primary-700 등) · 그대로 | P2a 후속 1 · P2b 후속 2 |
-| 2 | 억눌린 상태 — `.inp[readonly]` 배경 · `.lin .chip--warning` 색 · `.login-input:focus-visible` 테두리색 · `.pcard` 초점 간격 2px | 선언이 없어 기본 모양 | 되살림 · 그대로 | P2a 후속 1 |
-| 3 | `.btn-sm` — 목록에 있으나 기본값 없음(종전 규칙은 전 요소에서 셸 `.btn` 에 졌다) | `.btn` 과 같은 크기 | 작은 버튼 정의 · 목록에서 제외 | P2b 후속 2 · spec 과 다르게 한 점 3 |
-| 4 | `.chip--off` 배경 gray-50 | 업로드 `.chip` 배경에 져 보인 적 없음(삭제) | 되살림 · 그대로 | P2b 후속 2 |
-| 5 | `.btn-strong:hover` 배경 gray-50 — 흰 글자 위 대비 낮음 | 그대로 렌더 | 대비 맞는 값으로 · 그대로 | P2b 후속 2 |
-| 6 | `.chip` 배경 `#eef2f7`(게이트 f 면제 1) — 리터럴이라 다크에서도 그대로다(갤러리 실측: 배경 수식자가 없는 `.chip--off` 가 다크에서 `rgb(238, 242, 247)`) | 리터럴 | 새 토큰(값 유지 · 다크 값 결정) · `--color-gray-100` 으로 값 변경 | P3 후속 1 · P3 우려 1 |
-| 7 | `deletion.css` `.dl-keep` 바탕 — 이름이 뜻한 `--color-surface-muted` 는 정의된 적이 없어 늘 `transparent` | 투명 | `--color-surface-alt` 로 채움 · 그대로 | P1 후속 2 |
-| 8 | `lineage.css` 안내 줄 3곳(`.lin-unknown-why` 등) — 주석은 회색 `#5b6472` 를 설명하지만 실제 렌더는 `--color-warning-600` | 주황 | 회색 토큰으로 · 주석을 렌더에 맞춤 | P1 후속 3 · P3 |
-| 9 | `.detail-page .dt-edit .de-req` 다크 — 흰 글자가 밝은 배경 위(대비 낮음) | 그대로 | `--color-on-…` 뜻 토큰 · 그대로 | P3 후속 4 |
 | 10 | 화면 편차 통일(③ 화면 편차 목록 · 버튼 높이·모서리·칩 여백 등) | 화면마다 다름 | 편차 목록 유지 · 통일안 | P2b 우려 1 · P5 우려 1 |
+
+### 닫힘 — design-review 20260924
+
+Ted 판정(2026-09-25) · spec `dev-package/prd/specs/S-DESIGN-FIX-20260924.md`. 종전 시각 값 1–9 행을 여기로 옮겼다.
+
+| ⑦ | 판정표 묶음 | 판정 | 처리 |
+|---|---|---|---|
+| 1 억눌린 hover | 9 | ⓐ | primary-700 · secondary gray-50(값 10) · L1 |
+| 2 억눌린 상태 4종 | 18 | ⓑ | 그대로 · 코드 0 |
+| 3 `.btn-sm` | 12 | ⓐ | 작은 단추 정의(값 11) · L1 |
+| 4 `.chip--off` 배경 | 11 | ⓑ | `.chip` 배경을 기존 토큰으로(값 12) — 6 과 함께 닫힘 · L1 |
+| 5 `.btn-strong:hover` | 10 | ⓑ | primary-700 · L2 |
+| 6 `.chip` `#eef2f7` | 11 | ⓑ | 기존 토큰 · 게이트 f 면제 0 · L1 |
+| 7 `.dl-keep` 바탕 | 20 | ⓑ | 그대로 · 코드 0 |
+| 8 계보 안내 줄 주석 | 19 | ⓐ | 주석을 렌더에 맞춤 · L1 |
+| 9 `.de-req` 다크 | 17 | ⓐ | 새 뜻 토큰(값 13) · L1 |
 
 ### 범위·절차
 
