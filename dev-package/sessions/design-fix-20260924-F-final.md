@@ -40,7 +40,8 @@
 - run `9c2cfece7dbe40bcb522bdcf3e307ec3`(구현 커밋 `23de167f` · 이 보고서 작성 전) — **green 6 / red(판정) 0 / red(준비) 0**, 종료코드 0.
   - typecheck 오류 0 · frontend-test 통과 1814 · 실패 0 · fixture-reach 도달 207 · 금지 0 · design-lint 파일 21 · 다크 누락 0(면제 6) · 색 리터럴 0 · 문서 표 갈림 0 · selftest 26건 기대대로(green 6 · red 14 · red(준비) 6) · visual 페이지 3 · 13px 미만 0 · 대비<4.5 0 · 스크린샷 6장.
   - visual 「페이지 3」 = primitives 라이트·다크 URL 이 `live_audit.sh` 60자 파일 이름 절단(A37)으로 같은 이름이 되어 덮인 결과. 마지막 run 은 `theme=dark` 를 질의 맨 앞에 두어 이름을 가른다.
-- 이 보고서를 쓴 뒤 같은 선언 집합을 한 번 더 돌린다(보고서 파일도 hash 대상). 그 run 의 id·계수는 `handoff --mode complete` 의 `COLAB_HANDOFF` 줄에 있다.
+- 이 보고서를 쓴 뒤 같은 선언 집합을 한 번 더 돌렸다(보고서 파일도 hash 대상) — **green 4 / red(판정) 0 / red(준비) 2**, 종료코드 78. `frontend-test` · `frontend-visual` 이 호스트 뮤텍스 대기 900초 한도를 넘었다(921 · 922초) — 판정되지 않음. 원인 = 첫 run 의 `frontend-visual` 이 띄운 agent-browser 데몬(이 워크트리 cwd)이 fd 11 로 `/tmp/colab-v2-gate-host-mutex/host` 를 쥔 채 40분 남아 있었다(A39 재현 · `/proc/<pid>/fd` 로 확인). 이 레인의 다른 세션·다른 저장소 게이트도 같은 잠금에서 대기했다. `agent-browser --session design close` 로 닫은 뒤 브라우저 프로세스 0 을 확인했다.
+- 보고서 정정 뒤 선언 집합을 다시 돌리고, 끝나자마자 `agent-browser --session design close` 를 부른다. 그 run 의 id·계수는 `handoff --mode complete` 의 `COLAB_HANDOFF` 줄에 있다.
 
 ## 4. 원한 결과 대조
 
@@ -53,4 +54,5 @@
 - 다크에서 `.dr-nav button` 테두리 `--color-border-strong`(#45566a) = 누름 면 `--color-surface-pressed`(#45566a) — 누르는 동안 테두리가 면과 같은 색이 된다(종전 ⑦ 17 행이 적었던 결과). 값 19 확정의 귀결이며 새 값을 넣지 않았다. 검사: 어느 게이트에도 걸리지 않는다(누름 상태 테두리 대비를 재는 검사 없음).
 - 누름(`:active`) 상태는 정적 audit 장면에 없어 `frontend-visual` 이 재지 않는다 — 이 레인의 누름·비활성 hover 변경은 CSS 원문 계측(vitest)으로만 확인했다. 실제 브라우저 누름 검증 미실행.
 - `frontend/src/components/preview/useZoomPan.ts` effect 정리 주석 「리스너를 새로 걸 때 멈춘다(A41)」 도 FP-2 와 같은 오기다(정리는 언마운트 때만). 파일 면 밖이라 고치지 않았다. 검사: 어느 게이트에도 걸리지 않는다.
+- A39(`frontend-visual` 이 띄운 agent-browser 가 호스트 잠금 fd 를 물려받음)는 이 레인에서 실제로 게이트 2개를 준비 실패로 만들었다 — 게이트를 부른 쪽이 즉시 `close` 하지 않으면 호스트 전체 serial 게이트가 멈춘다. 검사: 어느 게이트에도 걸리지 않는다(대기 쪽이 78 로 드러낼 뿐 원인을 짚지 않는다).
 - A37(`live_audit.sh` 60자 절단)은 하네스 후속(spec 「통합 수정」) 그대로 — 이 레인은 URL 질의 순서로 피했다.
