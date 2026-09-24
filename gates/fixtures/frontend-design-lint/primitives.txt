@@ -19,3 +19,7 @@
 .card
 .card-h
 .card-b
+# table
+.tbl
+.tblwrap
+.table-scroll-hint

@@ -18,16 +18,15 @@
 /* 가로·세로 스크롤은 표 래퍼 **한 곳**이 맡는다 — 컨테이너가 둘이면 sticky 기준이 흔들린다 */
 /* iOS Safari 는 툴바 때문에 100vh 가 실제 보이는 높이보다 커서 표 아래가 잘린다.
    dvh 를 쓰되 vh 를 먼저 적어 폴백을 남긴다 */
-.tblwrap { max-height: calc(100vh - 232px); max-height: calc(100dvh - 232px); overflow: auto; -webkit-overflow-scrolling: touch; }
-.tbl { width: 100%; min-width: 940px; border-collapse: collapse; font-size: var(--text-body-sm); }
+/* `.tblwrap`·`.tbl` 의 기본값과 머리·몸 칸의 색·굵기·자간·padding 은 `shell/primitives.css`(P2b). */
 .tbl th {
-  text-align: left; font-size: 14px; color: var(--color-gray-500); font-weight: 700; letter-spacing: 0.05em;
+  text-align: left; font-size: 14px;
   padding: 0; border-bottom: 1px solid var(--color-border-strong);
   background: var(--color-surface-alt); white-space: nowrap;
   position: sticky; top: 0; z-index: 5;
 }
 .tbl th::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--color-border-strong); }
-.tbl td { padding: 13px 14px; border-bottom: 1px solid var(--color-border); vertical-align: middle;
+.tbl td { border-bottom: 1px solid var(--color-border); vertical-align: middle;
   color: var(--color-text-body); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tbl tr:last-child td { border-bottom: none; }
 .tbl tr.clk { cursor: pointer; }

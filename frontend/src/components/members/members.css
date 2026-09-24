@@ -32,12 +32,13 @@
 .memtbl { width: 100%; min-width: 640px; border-collapse: collapse; }
 .memtbl th,
 .memtbl td {
-  padding: 10px 8px;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
   font-size: var(--text-body-sm);
 }
-.memtbl th { color: var(--color-text-muted); font-weight: 600; }
+/* P2b — 몸 칸 padding(10px 8px)은 오늘 `.tbl td`(셸 끝 · 뒤 순서)에 졌다 — 이 표는 늘 `tbl memtbl` 이다.
+   `.tbl td` 가 primitives 층으로 내려가도 같게 머리 칸에만 둔다. */
+.memtbl th { padding: 10px 8px; color: var(--color-text-muted); font-weight: 600; }
 .memtbl th.pc,
 .memtbl td.pc { text-align: center; width: 116px; }
 .memtbl .mn { font-weight: 600; }

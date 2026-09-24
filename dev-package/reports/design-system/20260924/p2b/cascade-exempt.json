@@ -266,5 +266,42 @@
   "selector": ".up-card",
   "prop": "border-style",
   "reason": "종전 .up-card border 단축의 모양(solid) — 값 무변"
+ },
+ {
+  "kind": "flip",
+  "selector": ".tbl th",
+  "competitor": ".vartable th",
+  "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 은 다른 표"
+ },
+ {
+  "kind": "flip",
+  "selector": ".tbl td",
+  "competitor": ".pj-table td",
+  "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-table 는 다른 표"
+ },
+ {
+  "kind": "flip",
+  "selector": ".tbl td",
+  "competitor": ".pj-ds td",
+  "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .pj-ds 는 다른 표"
+ },
+ {
+  "kind": "flip",
+  "selector": ".tbl td",
+  "competitor": ".projtable td",
+  "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .projtable 는 다른 표"
+ },
+ {
+  "kind": "flip",
+  "selector": ".tbl td",
+  "competitor": ".vartable td",
+  "reason": "요소 호환(type) 경쟁이지만 className 에 tbl 을 쓰는 표는 CatalogTable(tbl catalog)·MemberPermissionGrid(tbl memtbl) 둘뿐이다(TSX 전수) — .vartable 는 다른 표"
+ },
+ {
+  "kind": "deleted-live",
+  "file": "src/components/members/members.css",
+  "selector": ".memtbl td",
+  "prop": "padding",
+  "reason": "오늘 죽음 — 구성원 표는 늘 tbl memtbl · 셸 끝 .tbl td padding 10px 12px(같은 0,1,1 · 뒤 순서)이 덮었다"
  }
 ]
