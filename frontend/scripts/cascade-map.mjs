@@ -121,7 +121,7 @@ function parseDecls(body, line0) {
 function parseCss(text, file) {
   const t = stripComments(text);
   const rules = [];
-  const stats = { layerBlocks: [], layerStatements: 0, unlayeredRules: 0, imports: 0 };
+  const stats = { layerBlocks: [], layerStatements: 0, layerOrder: [], unlayeredRules: 0, imports: 0 };
   const lineAt = (i) => (t.slice(0, i).match(/\n/g) || []).length + 1;
   function block(start, end, media, layer) {
     let i = start;
@@ -143,7 +143,7 @@ function parseCss(text, file) {
       const prelude = t.slice(i, j).trim();
       if (t[j] === ';' || j >= end) { // statement at-rule
         if (/^@import/i.test(prelude)) stats.imports++;
-        if (/^@layer/i.test(prelude)) stats.layerStatements++;
+        if (/^@layer/i.test(prelude)) { stats.layerStatements++; stats.layerOrder.push(...prelude.replace(/^@layer\s*/i, '').split(',').map((x) => x.trim()).filter(Boolean)); }
         i = j + 1;
         continue;
       }
@@ -390,15 +390,22 @@ function mediaSubset(inner, outer) { const x = mediaRange(inner); const y = medi
 const mediaKey = (m) => m.join(' and ');
 
 // ---------------------------------------------------------------- model
+// Cascade position = layer rank (declared `@layer a, b;` order; unlayered rules above every layer) then
+// source order. Only normal declarations are compared this way; the two !important declarations of the
+// tree sit in one layer (screens) so the reversed layer order for !important never comes into play.
 function buildModel(fs) {
   const order = loadOrder(fs);
+  const parsed = order.map((file) => ({ file, ...parseCss(fs.read(file), file) }));
+  const layerOrder = [];
+  for (const p of parsed) for (const n of p.stats.layerOrder) if (!layerOrder.includes(n)) layerOrder.push(n);
+  for (const p of parsed) for (const b of p.stats.layerBlocks) if (!layerOrder.includes(b.name)) layerOrder.push(b.name);
+  const rank = (layer) => (layer ? layerOrder.indexOf(layer) : layerOrder.length);
   const rules = []; const files = {};
-  order.forEach((file, fi) => {
-    const { rules: rs, stats } = parseCss(fs.read(file), file);
+  parsed.forEach(({ file, rules: rs, stats }, fi) => {
     files[file] = { index: fi, stats, ruleCount: rs.length };
-    for (const r of rs) { r.pos = rules.length; r.fileIndex = fi; rules.push(r); }
+    for (const r of rs) { r.pos = rank(r.layer) * 1e6 + rules.length; r.fileIndex = fi; rules.push(r); }
   });
-  return { order, rules, files };
+  return { order, rules, files, layerOrder };
 }
 
 const PREFIX_IS = ':is(.colab-ui, .design-preview)';
@@ -438,7 +445,7 @@ function competitorsFor(model, dsRule, sel, decl, opts = {}) {
       const shared = [...ti.tokens].filter((x) => info.tokens.has(x));
       let kind = null;
       if (shared.some((x) => /^[.#[]/.test(x))) kind = 'key';
-      else if (shared.length && !info.hasKey && !ti.hasKey && [...ti.allKeys].some((x) => info.allKeys.has(x))) kind = 'key';
+      else if (shared.length && [...ti.allKeys].some((x) => info.allKeys.has(x))) kind = 'key';
       else if (shared.length) kind = 'type';
       else if (!ti.hasKey && (ti.types.size === 0 || info.types.size === 0 || [...ti.types].some((x) => info.types.has(x)))) kind = ti.types.size ? 'type' : 'universal';
       else if (!info.hasKey && info.types.size && ti.types.size && [...ti.types].some((x) => info.types.has(x))) kind = 'type';
@@ -728,6 +735,7 @@ function verify(out, baseRev, exemptFile) {
     } else exempted.push({ ...p, reason: hit.map((y) => y.reason).join(' / ') });
     list.splice(i, 1);
   }
+  mkdirSync(out, { recursive: true });
   const res = { schema: 'colab-cascade-verify/1', base: baseRev, dsUnits: unitTotal, moved: moved.length, dropped, changed, problems, exempted,
     layers: Object.fromEntries(Object.entries(cur.files).map(([f, v]) => [f, { layerBlocks: v.stats.layerBlocks.map((b) => b.name), unlayeredRules: v.stats.unlayeredRules, imports: v.stats.imports, rules: v.ruleCount }])) };
   writeFileSync(join(out, 'cascade-verify.json'), JSON.stringify(res, null, 1));

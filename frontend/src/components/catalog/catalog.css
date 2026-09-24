@@ -1,3 +1,4 @@
+@layer screens {
 /* S-03 카탈로그 — 치수·색의 정본은 목업 `mockups/데이터_찾기_260817.html` 의 카탈로그 블록이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
    ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
@@ -230,4 +231,5 @@
 .fname .lock { float: left; margin-right: 6px; margin-top: 2px; }
 @media (max-width: 640px) {
   .tbl .colmenu { position: fixed; inset: auto 16px 16px; width: auto; max-width: none; max-height: 60dvh; overflow-y: auto; z-index: 140; padding: 12px; }
+}
 }

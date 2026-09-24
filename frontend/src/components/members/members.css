@@ -1,3 +1,4 @@
+@layer screens {
 /* 구성원 · 권한 격자 — 치수·색의 정본은 목업 `mockups/제품_260817.html` 의
    `.memtbl` · `.settabs` · `.modal` 블록이다. 토큰만 쓰고 새 색을 만들지 않는다. */
 
@@ -202,4 +203,5 @@
   }
   .memgrid .memtbl td.pc.is-chg { padding: 8px; border-radius: var(--radius-sm); }
   .memgrid .memtbl td.who { padding-bottom: 6px; }
+}
 }

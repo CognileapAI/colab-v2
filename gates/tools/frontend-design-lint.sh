@@ -11,13 +11,14 @@
 #
 # red 조건 (판정 · exit 1):
 #   a. tokens.css 밖 `:root` 안의 `--*:` 정의 · 화면 범위 규칙의 정본 계열 이름
-#      (`--color-` `--space-` `--text-` `--radius-` `--font-` `--shadow-` `--leading-` `--tracking-` `--fg-` `--bg-`)
+#      (`--color-` `--space-` `--text-` `--radius-` `--font-` `--shadow-` `--leading-` `--tracking-` `--fg-` `--bg-` `--accent-`)
 #   b. 어디에도 정의되지 않은 `var(--x)` 참조(폴백 유무 무관)
 #   c. 라이트 `:root` 의 색 계열 이름이 다크 블록·별칭·면제 목록 어디에도 없음 · 다크에만 있는 이름 ·
 #      면제 목록의 구멍(사유 없음 · 라이트에 없는 낡은 항목 · 다크에 이미 있는 항목)
-#   d. tokens.css 밖 `:root` 셀렉터 · 화면 CSS(`src/shell/` 밖)의 `@import`
+#   d. tokens.css 밖 `:root` 셀렉터(`html:root` 포함) · tokens.css 밖 전 CSS 의 `@import`(P2a 부터 셸 포함)
 # fail-closed (green-by-skip 금지 · red(준비) · exit 78):
-#   · node 실행 파일 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 면제 목록(same-in-dark.txt) 부재
+#   · node 실행 파일 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 면제 목록(same-in-dark.txt) 부재 ·
+#     대상 목록(Git)에 있으나 디스크에 없는 CSS(추적 중 삭제 · P2a)
 #
 # 입력: COLAB_FRONTEND_DIR(기본 frontend) · COLAB_DESIGN_LINT_SAME_IN_DARK(기본
 #   gates/fixtures/frontend-design-lint/same-in-dark.txt) · COLAB_NODE_BIN(기본 node · selftest 용).

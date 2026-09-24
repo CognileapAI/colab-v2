@@ -1,0 +1,15 @@
+/* 픽스처 정본(P2a) — 정본 전체가 `@layer tokens` 블록 안에 있어도 :root 정의·다크 짝을 읽는다 */
+@layer tokens {
+:root {
+  --color-white: #ffffff;
+  --color-text: #121619;
+  --color-link: var(--color-text);
+  --space-2: 8px;
+}
+@media (max-width: 640px) {
+  :root { --space-2: 6px; }
+}
+:root[data-theme="dark"] {
+  --color-text: #edf2f7;
+}
+}

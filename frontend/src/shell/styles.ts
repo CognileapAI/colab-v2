@@ -1,4 +1,7 @@
 // Product and visual fixtures use one deterministic CSS entry.
+// P2a — 층 순서를 가장 먼저 선언한다(tokens < base < primitives < patterns < screens). 층을 넘는 우선순위는
+// 이 선언이 정하고, 같은 층 안의 동률만 아래 import 순서가 정한다.
+import './layers.css';
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './tokens.css';
 import '../components/catalog/catalog.css';

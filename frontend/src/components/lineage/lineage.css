@@ -1,3 +1,4 @@
+@layer screens {
 /* ③ 계보 확정. 업로드 모달 안에 얹히므로 `upload.css` 의 토큰·버튼을 그대로 쓴다. */
 
 section.lin {
@@ -354,3 +355,4 @@ section.lin {
 .lin-findbar :is(input, select) { width: 100%; min-width: 0; max-width: 100%; }
 .lin-picker li > button { border: 0; border-radius: var(--radius-sm); padding: 8px; background: transparent; color: var(--color-text); }
 .lin-picker li > button[aria-pressed="true"] { background: var(--color-surface-hover); }
+}

@@ -1,3 +1,4 @@
+@layer screens {
 /* 공통 토스트 한 개 (PRD-43). 치수·색은 종전 인라인 안내(`upload.css` 의 `.up-toast`)를
    그대로 옮겼다 — 새 모양을 발명하지 않는다.
    ※ 이 컴포넌트만 쓰는 토큰은 자기 루트 `.toast` 범위에 둔다(대안 B · P1 에서 `:root` 에서 값 무변으로 옮김). */
@@ -12,4 +13,5 @@
   background: var(--toast-bg);
   color: var(--toast-fg);
   font-size: 13px;
+}
 }

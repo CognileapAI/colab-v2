@@ -1,0 +1,5 @@
+@layer screens {
+/* `html:root` 는 `:root` 와 같은 요소다 — 층 블록 안이어도 정본 밖 정의로 센다(a · d) */
+html:root { --x-thing: 1px; }
+.x-page .row { color: var(--color-link); padding: var(--space-2); background: var(--color-white); }
+}

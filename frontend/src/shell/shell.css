@@ -1,3 +1,4 @@
+@layer screens {
 /* 문서 기본(P2a · 종전 보정 층 첫머리) — `.colab-ui` 루트 범위라 접두를 유지한다(특이도 강등 금지). */
 :is(.colab-ui, .design-preview) { font-size: var(--text-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); }
 :is(.colab-ui, .design-preview) :is(button, a, input, select, textarea) { -webkit-tap-highlight-color: transparent; }
@@ -482,4 +483,5 @@ button { font-size: var(--text-body-sm); }
 @media (max-width: 640px) {
   .gnb { gap: 4px; }
   .theme-switcher { max-width: 88px; padding-inline: 6px; }
+}
 }

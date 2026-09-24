@@ -1,3 +1,4 @@
+@layer screens {
 .ar-pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .ar-pending-note { font-size: 13px; color: var(--color-text-muted); }
 .approval-dialog { width: min(520px, calc(100% - 32px)); padding: var(--space-card); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); box-shadow: none; }
@@ -16,3 +17,4 @@
 .vc-impact { padding-left: 20px; color: var(--color-text-muted); }
 
 @media (min-width: 861px) { .dt-header .dh-menu { left: auto; right: 0; } }
+}

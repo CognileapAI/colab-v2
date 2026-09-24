@@ -1,3 +1,4 @@
+@layer screens {
 /* S-01 검색 히어로 · S-06 검색 결과.
    토큰은 `shell/tokens.css` 의 것을 쓰고, 이 화면이 처음 쓰는 값만 폴백으로 잇는다.
    ※ 관련도 막대에는 **눈금도 숫자도 두지 않는다** — 길이 하나뿐이다. */
@@ -158,3 +159,4 @@
 :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)), :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)):visited { color: var(--color-primary-700); text-underline-offset: 3px; }
 .search-page :is(.vfilter, .empty-acts .quiet, .empty-acts .strong) { min-height: var(--control-height); height: auto; }
 .search-page .empty-acts { flex-wrap: wrap; }
+}

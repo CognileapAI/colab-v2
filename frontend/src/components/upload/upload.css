@@ -1,3 +1,4 @@
+@layer screens {
 /* S-04 업로드 전체 화면 모달 — 치수·색의 정본은 목업
    `mockups/업로드와_계보_확정_260817.html` 이다. 목업에 없는 요소를 여기서 발명하지 않는다.
    ※ 토큰은 정본 `shell/tokens.css` 에 있다 — `--up-*` 도 여러 루트·전역 셀렉터가 참조해 정본에 둔다
@@ -664,4 +665,5 @@ textarea.inp { resize: vertical; }
 }
 @media (max-width: 640px) {
   .up-empty .reggate .rg-a { flex-basis: 100%; }
+}
 }

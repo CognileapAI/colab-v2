@@ -1,3 +1,4 @@
+@layer tokens {
 /* 디자인 토큰 — 저장소 유일의 `:root`. 값의 정본은 목업 `mockups/제품_260817.html` 의 :root 블록이다.
    **둘 이상 화면이 쓰는 이름만 여기 둔다. 한 화면(한 컴포넌트)만 쓰는 이름은 그 화면 루트 클래스 범위에 둔다**
    (대안 B · spec `S-DESIGN-STRUCTURE-P1-20260924`). 화면 CSS 에 `:root`·`@import` 를 다시 만들지 않는다 —
@@ -190,4 +191,5 @@
     --space-section: 20px;
     --control-height: 44px;
   }
+}
 }

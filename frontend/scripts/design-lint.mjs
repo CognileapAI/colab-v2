@@ -8,22 +8,25 @@
 // Rules (spec S-DESIGN-STRUCTURE-P1-20260924):
 //   a  custom property defined inside a `:root` rule outside src/shell/tokens.css, OR a
 //      canonical-family name (--color- --space- --text- --radius- --font- --shadow- --leading-
-//      --tracking- --fg- --bg-) defined in a screen-scope rule outside tokens.css.
+//      --tracking- --fg- --bg- --accent-) defined in a screen-scope rule outside tokens.css.
 //   b  var(--x) whose --x is defined nowhere (CSS in scope or TS/TSX literal), fallback or not.
 //   c  light colour-family name (--color- --fg- --bg- --accent- --shadow-) in tokens.css :root
 //      that is not in the dark block, not covered through a var() alias, and not in the
 //      same-in-dark list; plus dark-only names; plus list holes (empty reason · stale · already dark).
-//   d  `:root` selector outside tokens.css · `@import` in screen CSS (files outside src/shell/).
-// Exit: 0 green · 1 red · 78 readiness failure (no files, missing list).
+//   d  `:root` selector outside tokens.css (any compound: `:root`, `html:root`, `:root[data-x]`) ·
+//      `@import` in any CSS other than tokens.css (P2a: shell.css no longer imports; `@layer` blocks
+//      make a late `@import` invalid anyway).
+// `@layer` blocks are transparent: rules inside `@layer x { … }` are judged like unlayered ones.
+// Exit: 0 green · 1 red · 78 readiness failure (no files, missing list, a listed file missing on disk).
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const READINESS = 78;
 const TOKENS = 'src/shell/tokens.css';
-const CANON_PREFIX = /^--(color|space|text|radius|font|shadow|leading|tracking|fg|bg)-/;
+const CANON_PREFIX = /^--(color|space|text|radius|font|shadow|leading|tracking|fg|bg|accent)-/;
 const COLOR_FAMILY = /^--(color|fg|bg|accent|shadow)-/;
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(|\b(white|black)\b/;
-const ROOT_SEL = /(^|[\s,>+~(])(:root)(?![\w-])/;
+const ROOT_SEL = /:root(?![\w-])/;
 const DARK_SEL = /\[data-theme=["']?dark["']?\]/;
 
 function args() {
@@ -148,14 +151,13 @@ let tokensSeen = false;
 
 for (const file of files) {
   const abs = join(root, file);
-  if (!existsSync(abs)) continue;
+  if (!existsSync(abs)) readiness(`대상 목록의 파일이 디스크에 없다: ${file} — 추적 중인데 지워졌다면 git rm 으로 목록에서도 뺀다`);
   const src = stripComments(readFileSync(abs, 'utf8'));
   const { decls, statements, rules } = walk(src);
   const isTokens = file === TOKENS;
-  const isShell = file.startsWith('src/shell/');
   if (isTokens) tokensSeen = true;
   for (const st of statements) {
-    if (/^@import\b/.test(st.text) && !isShell) dHits.push({ file, line: st.line, what: st.text.replace(/\s+/g, ' ') });
+    if (/^@import\b/.test(st.text) && !isTokens) dHits.push({ file, line: st.line, what: st.text.replace(/\s+/g, ' ') });
   }
   if (!isTokens) {
     for (const r of rules) {

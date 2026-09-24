@@ -1,3 +1,4 @@
+@layer screens {
 /* 로그인 화면 — 셸(GNB) 밖이다. 로그인 전에는 상단 내비를 보이지 않는다
    (정본 UI-006 · `Validation_계정과_연구실_소속`). */
 
@@ -241,4 +242,5 @@
 .login-theme { position: absolute; top: 20px; right: 20px; }
 @media (max-width: 640px) {
   .login-input { font-size: 16px; }
+}
 }

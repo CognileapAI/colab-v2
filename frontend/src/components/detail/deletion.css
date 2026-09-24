@@ -1,3 +1,4 @@
+@layer screens {
 /* 삭제 확인 모달의 두 구획 (`DL-1`). 골격(`.modal-back`·`.modal`·`.modal--dialog`·
    `.modal-h/b/f`)은 전역 이름이라 여기서 다시 선언하지 않는다 (`members.css`). */
 
@@ -40,4 +41,5 @@
 .detail-page .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
 }

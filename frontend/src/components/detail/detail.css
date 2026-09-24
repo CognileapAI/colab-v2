@@ -1,3 +1,4 @@
+@layer screens {
 /* S-05 데이터셋 상세 상단 — 치수·색의 정본은 목업 `mockups/데이터셋_상세_260817.html` 이다.
    목업에 없는 요소를 여기서 발명하지 않는다.
    ※ 토큰은 정본 `shell/tokens.css` 에 있다 — 이 파일에 `:root` 를 두지 않는다(대안 B · P1 에서 값 무변으로 옮김). */
@@ -316,3 +317,4 @@
 :is(.dt-header, .dt-card) { border-radius: var(--radius-lg); box-shadow: none; }
 .dt-card h3 { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
 .detail-page .dsec-h h2 { font-size: 20px; }
+}

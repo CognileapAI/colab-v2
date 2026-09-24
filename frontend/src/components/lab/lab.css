@@ -1,3 +1,4 @@
+@layer screens {
 /* `연구실 설정 > 연구실 정보` 전용. **이름을 전부 `labinfo-` 로 접두한다** —
    전역 `.modal`·`.card` 이름을 새로 정의하지 않는다(members.css 의 `.modal` 이 업로드 모달을
    덮은 사고와 같은 모양을 만들지 않기 위해서다). 골격만 project.css 의 `pj-modal` 선례를 따른다. */
@@ -70,3 +71,4 @@
 }
 
 @media (max-width: 640px) { .labinfo-modal .inp, .labinfo-modal .sel { min-width: 0; } }
+}

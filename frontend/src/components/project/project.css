@@ -1,3 +1,4 @@
+@layer screens {
 /* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
    이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
 
@@ -610,4 +611,5 @@ body:has(.pj-modal-back) { overflow: hidden; }
   .pj-ctl { min-width: 0; }
   .pj-ctl select { width: 100%; font-size: 16px; }
   .pj-count { grid-column: 1 / -1; margin-left: 0; }
+}
 }
