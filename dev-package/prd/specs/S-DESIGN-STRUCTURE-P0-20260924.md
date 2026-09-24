@@ -19,27 +19,31 @@
 
 ## 구현 결정
 - 모듈 · 인터페이스 (전부 `frontend/scripts/visual-baseline/`):
-  - `scenes.json` — 장면 명세. 항목 = `{name, entry: "audit-design.html"|"audit-upload.html", query: {...}, widths: [375,768,1440], themes: ["light","dark"], fullPage: bool, actions?: [{click: selector}|{wait: ms}]}`. 09-12 의 30장면 이름을 그대로 승계하고 `account-admin`·`password-change`·`gnb-more` 3장면을 더한다(**33장면 × 3폭 × 2테마 = 198 캡처**). `design=full` 로 GNB 를 포함해 찍는다(제품과 같은 마운트).
-  - `capture.py` — 명세를 읽어 `python3 scripts/agent-bridge.py run-tool browser -- --session <s> …` 로 열고 찍는다(09-12 `representative/capture.py` 와 같은 호출 방식). 순서 = viewport 설정 → open → `wait --load networkidle` → `document.fonts.ready` → `actions` → 정착 대기(고정 ms · 명세 값) → screenshot. 출력 = `<out>/<name>-<theme>-<width>.png` + `<out>/index.json`(장면 목록 · 명세 sha256 · 캡처 시각 · git HEAD · audit 빌드 경로). 병렬은 테마당 세션 1개(최대 2)로 제한한다.
-  - `diff.mjs` — `node diff.mjs <baselineDir> <candidateDir> <reportDir>`. 두 `index.json` 의 장면 집합이 다르면 **exit 78**(대조 대상이 갈렸다 · 준비 실패). 각 쌍을 `pixelmatch` 로 비교(`threshold` 0.1 · 안티앨리어싱 무시 켬)해 차이 픽셀 수·비율을 세고 차이 이미지 `report/<name>.diff.png` 를 쓴다. 크기가 다르면 그 장면은 차이로 센다(크기 차이 표기). 출력 = `report.json` + `report.md`(장면별 표 · 총계 · red 목록). 차이 픽셀 > 0 인 장면이 하나라도 있으면 **exit 1**, 없으면 **exit 0**, 대상 0건이면 **exit 78**.
+  - `scenes.json` — 장면 명세. 항목 = `{name, entry: "audit-design.html"|"audit-upload.html", query: {...}, widths: [375,768,1440], themes: ["light","dark"], fullPage: bool, actions?: [{click: selector}|{wait: ms}]}`. 09-12 의 30장면 이름을 그대로 승계하고 `account-admin`·`password-change`·`gnb-more` 3장면을 더한다. `gnb-more` 는 더보기 버튼(`.gnb-more`)이 900px 이하에서만 보이므로 `widths: [375, 768]` 만 갖는다 → **32장면 × 6 + 1장면 × 4 = 196 캡처**. `design=full` 로 GNB 를 포함해 찍는다(제품과 같은 마운트). 단 `password-change` 는 제품에서 `AuthGate` 가 GNB 없이 단독 렌더하므로 `login` 과 같이 GNB 를 뺀다. 장면마다 계정 플래그(`canUpload`·`operator`·`canLabSettings`)를 명세에 고정한다 — 더보기 메뉴 항목이 그 값에 따라 달라진다.
+  - `capture.py` — 명세를 읽어 `python3 scripts/agent-bridge.py run-tool browser -- --session <s> …` 로 열고 찍는다(09-12 `representative/capture.py` 와 같은 호출 방식). 순서 = **새 세션**(storage 비움 · 매 실행) → viewport 설정(DPR 1 고정) → open → `wait --load networkidle` → `document.fonts.ready` → 전역 `* { animation: none !important; transition: none !important; caret-color: transparent !important }` 주입 → `actions` → 정착 대기(고정 ms · 명세 값) → screenshot. 스크롤바 처리(숨김 여부)는 명세 값으로 고정한다. 출력 = `<out>/<name>-<theme>-<width>.png` + `<out>/index.json`(장면 목록 · 명세 sha256 · 캡처 시각 · git HEAD · audit 빌드 경로). 병렬은 테마당 세션 1개(최대 2)로 제한한다.
+  - `diff.mjs` — `node diff.mjs <baselineDir> <candidateDir> <reportDir>`. 두 `index.json` 의 장면 집합이 다르거나 **명세 sha256 이 다르면 exit 78**(대조 대상이 갈렸다 · 준비 실패). 각 쌍을 `pixelmatch` 로 비교하되 **판정은 엄격 설정(`threshold: 0` · `includeAA: true`)** 으로 한다 — P1 의 핵심 회귀는 미세한 색 변화라 임계 이하 차이를 버리면 거짓 green 이 된다. 참고용으로 `threshold: 0.1` 값을 보조 열에 함께 낸다. 차이 픽셀 수·비율을 세고 차이 이미지 `report/<name>.diff.png` 를 쓴다. 비교 함수는 `compare.mjs`(+ `compare.d.mts` 타입 선언)로 분리해 시험이 import 할 수 있게 한다(`frontend-typecheck` 가 `test/` 를 포함하므로 선언 없는 `.mjs` import 는 TS7016). 크기가 다르면 그 장면은 차이로 센다(크기 차이 표기). 출력 = `report.json` + `report.md`(장면별 표 · 총계 · red 목록). 차이 픽셀 > 0 인 장면이 하나라도 있으면 **exit 1**, 없으면 **exit 0**, 대상 0건이면 **exit 78**.
   - `package.json` scripts: `visual:capture` = `python3 scripts/visual-baseline/capture.py --out <dir>` · `visual:diff` = `node scripts/visual-baseline/diff.mjs`. devDependencies: `pixelmatch`·`pngjs` 고정 버전(`^` 없이).
-  - 출력 자리: 캡처 PNG 는 `frontend/.visual/<label>/`(**gitignore** · PNG 는 커밋하지 않는다). 보고서 `report.md`·`report.json` 만 `dev-package/reports/design-system/<날짜>/<단계>/visual/` 로 복사해 커밋한다. 차이 이미지는 red 장면의 것만 복사한다.
-  - 장면 추가(fixture 코드): `frontend/audit-design.tsx` 에 `account-admin`(`AccountAdminPage` · 계정 ≥5행 · 긴 이메일 1행 포함) · `password-change`(`PasswordChangePage`) · `gnb-more`(`lab` 장면 + 더보기 버튼 클릭 action) 분기를 더한다. 필요한 fixture source 가 `frontend/test/factories` 에 없으면 audit 파일 안에 로컬 fixture 로 둔다. **제품 코드(`src/`)는 건드리지 않는다.** 필요한 port 가 없어 fixture 로 만들 수 없으면 멈추고 보고한다.
+  - 출력 자리: 캡처 PNG 는 `frontend/.visual/<label>/` 에 두고 **`.gitignore` 에 `frontend/.visual/` 를 추가**한다(지금은 ignore 대상이 아니다). PNG 는 커밋하지 않는다 — 09-12 회차는 `dev-package/reports` 에 PNG 696장을 커밋했으므로 **이는 정책 변경**이며 이 spec 이 그 결정이다. 보고서 `report.md`·`report.json` 은 `dev-package/reports/design-system/<날짜>/<단계>/visual/` 로 복사해 커밋하고, **red 장면은 전·후·차이 세 장**을 함께 복사한다(사용자 스토리 3).
+  - 장면 추가(fixture 코드): `frontend/audit-design.tsx` 에 세 분기를 더한다. **제품 코드(`src/`)는 건드리지 않는다.**
+    - `account-admin` — `AccountAdminPage` 는 port 없이 `api.GET('/admin/accounts-v2')`·`'/admin/account-options'` 를 직접 부른다. `src/api/client.ts` 의 fetch 는 호출 시점에 `globalThis.fetch` 를 찾으므로 audit 파일 안에서 **`globalThis.fetch` 를 스텁**해 두 경로에 `Schemas` 타입에 맞는 응답(계정 ≥5행 · 60자 이상 이메일 1행)을 준다(`test/account-admin.test.tsx` 가 같은 방식). 계정은 `{...account(...), canManageServiceAccounts: true}` 로 만든다(`operator` 분기 조건). MemoryRouter entry 는 `/account-admin`(GNB 활성 상태가 맞게).
+    - `password-change` — `PasswordChangePage` 단독 렌더(GNB 없음 · 폼 렌더에 fetch 불필요).
+    - `gnb-more` — `lab` 장면 + `.gnb-more` 클릭 action · 폭 375/768 만.
+    - 필요한 fixture 가 `frontend/test/factories` 에 없으면 audit 파일 안에 로컬로 둔다. `src/**/fixture.ts` 이름으로 만들지 않는다(`frontend-fixture-reach` 금지 목록). 스텁으로도 만들 수 없는 의존이 나오면 멈추고 보고한다.
 - 스키마 · 마이그레이션: 없음.
 - API 계약: 비파괴 · 변경 없음.
-- 결정성(같은 HEAD 두 번 → 0): 시간·난수 의존 요소는 명세에서 고정한다 — 날짜는 fixture 값, 지도 타일은 로컬 `audit-tile.svg`, 애니메이션은 정착 대기 뒤 캡처, 캐럿은 `caret-color: transparent` 를 캡처 세션에서 주입. 그래도 흔들리는 장면은 `report.md` 「불안정 장면」에 이름·차이 픽셀·추정 원인을 적고 **P1 대조에서 제외하지 않는다** — 제외는 그때 Ted 판정.
+- 결정성(같은 HEAD 두 번 → 0): 시간·난수·저장소 의존 요소는 명세에서 고정한다 — 날짜는 fixture 값, 지도 타일은 로컬 `audit-tile.svg`, 애니메이션·전환·캐럿은 주입 CSS 로 끔, DPR 1, **매 실행 새 세션**(`dashboard/visits.ts` 의 `recordVisit` 가 localStorage 에 방문 기록을 쌓고 `relativeTime(iso, now)` 로 표시하므로 두 실행 사이에 lab 장면이 달라질 수 있다 · `ThemeSwitcher` 도 localStorage 값을 보여 준다). 그래도 흔들리는 장면은 `report.md` 「불안정 장면」에 이름·차이 픽셀·추정 원인을 적고 **P1 대조에서 제외하지 않는다** — 제외는 그때 Ted 판정.
 
 ## 시험 결정
 - 외부 행위 기준 검증 항목:
-  - ⓐ `visual:capture` 가 198 PNG + `index.json` 을 낸다(장면 33 × 6 · 0바이트 파일 0).
+  - ⓐ `visual:capture` 가 **196** PNG + `index.json` 을 낸다(32장면 × 6 + `gnb-more` × 4 · 0바이트 파일 0).
   - ⓑ 같은 HEAD 에서 두 번 찍어 `visual:diff` 가 **전 장면 차이 0 · exit 0**. 흔들린 장면은 표에 이름으로.
   - ⓒ red 픽스처 — 후보 디렉터리의 PNG 한 장을 1픽셀 바꾼 사본으로 대조하면 그 장면만 red · exit 1 · 차이 이미지 생성. 장면 하나를 빼면 exit 78.
-  - ⓓ `frontend/test/visual-diff.test.ts` — `diff.mjs` 의 비교 함수를 작은 PNG 픽스처(동일 2장 → 0 · 1픽셀 다름 → 1 · 크기 다름 → 크기 차이)로 잠근다. 실제 브라우저 없이 돈다.
+  - ⓓ `frontend/test/visual-diff.test.ts` — `compare.mjs` 의 비교 함수를 작은 PNG 픽스처(동일 2장 → 0 · 1픽셀 다름 → 1 · 미세 색 차이 1픽셀 → 엄격 1/보조 0 · 크기 다름 → 크기 차이)로 잠근다. 실제 브라우저 없이 돈다. 픽스처 PNG 는 시험이 `pngjs` 로 생성한다(바이너리 커밋 없음).
   - ⓔ 새 장면 3개가 실제로 그 화면을 그린다 — `account-admin` 캡처에 표 머리글 8개, `password-change` 에 폼, `gnb-more` 에 열린 메뉴가 보이는지 `live_probe` 류 DOM 질의로 확인(스크린샷만으로 판정하지 않는다).
   - ⓕ 09-12 이후 변경 파일 93개(`git diff --stat 09b97a34 HEAD -- frontend/src`)를 장면에 대응시킨 커버리지 표를 `report.md` 에 둔다. 대응 장면이 없는 파일은 이름으로 남긴다(숨기지 않는다).
 - 재사용 seam: audit 빌드 · `agent-browser` 호출(`scripts/agent-bridge.py run-tool browser`) · `live_probe.js` · `frontend/test/factories`. 신설 seam: `scenes.json` 명세 형식 하나.
 - 해당 서비스 단독 게이트 이름: `frontend-typecheck` · `frontend-test` · `frontend-fixture-reach`(audit 파일이 `main.tsx` 에서 닿지 않아야 한다 — 지금도 그렇다). 새 게이트는 만들지 않는다(집행 게이트는 P1 의 `frontend-design-lint`).
-- green-by-skip 방지: `diff.mjs` 는 대상 0건·집합 불일치를 78 로 낸다. ⓑ 의 보고서에 장면 수 198 을 명시한다. 시험 ⓓ 의 픽스처 수를 시험 이름에 적는다.
+- green-by-skip 방지: `diff.mjs` 는 대상 0건·집합 불일치·명세 sha256 불일치를 78 로 낸다. ⓑ 의 보고서에 캡처 수 196 을 명시한다. 시험 ⓓ 의 픽스처 수를 시험 이름에 적는다.
 
 ## 정책 대조 (작성 시점 제약)
 - `.agents/rules/product.md §3` 불변 규칙 중 저촉 항목: 없음(도메인·계약·생성물·절대경로 무관). 문서·보고서에 절대경로를 적지 않는다.
@@ -59,6 +63,7 @@
 
 ## 범위 밖
 - 제품 CSS·TSX 변경, 토큰 이동(P1), 게이트 `frontend-design-lint`(P1), 09-12 PNG 재사용, 실제 서버·운영 화면 캡처, iOS/Safari.
+- 캡처 구동부·장면 명세를 도는 게이트 — P0 에는 없다. `diff` 로직은 ⓓ 로 `frontend-test` 가 잡지만 명세·구동부는 아무도 돌리지 않으면 깨진 채 남는다(`gates/README.md` `frontend-fixture-reach` 행과 같은 계열). **P1 의 완료 조건이 `visual:diff` exit 0 을 요구**하므로 P1 부터 매 단계 실제로 돈다. 게이트 승격 여부는 P1 spec 의 우려 항목.
 - 캡처 PNG 의 git 커밋. 커밋·push·PR 게시(사용자).
 
 ## 산출 계획
