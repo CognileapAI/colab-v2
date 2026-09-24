@@ -1,0 +1,2600 @@
+{
+  "captured_at": "2026-09-24T23:12:15.783782+00:00",
+  "results": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "total": 19,
+      "rows": [
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 2.2,
+          "matched_terms": [
+            "식생",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 1.4,
+          "matched_terms": [
+            "식생",
+            "월평균",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 1.4,
+          "matched_terms": [
+            "식생",
+            "수",
+            "월평균"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 1.2,
+          "matched_terms": [
+            "경기",
+            "식생",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 1.0,
+          "matched_terms": [
+            "2023년",
+            "5월",
+            "식생",
+            "수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.8,
+          "matched_terms": [
+            "2023년",
+            "5월",
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.6,
+          "matched_terms": [
+            "2023년",
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.01656084693968296
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "total": 11,
+      "rows": [
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 0.6,
+          "matched_terms": [
+            "2023년",
+            "5월",
+            "수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.4,
+          "matched_terms": [
+            "경기",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.4,
+          "matched_terms": [
+            "2023년",
+            "5월"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.2,
+          "matched_terms": [
+            "2023년"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.2,
+          "matched_terms": [
+            "수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.004826168064028025
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "total": 12,
+      "rows": [
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 0.4,
+          "matched_terms": [
+            "2023년",
+            "5월"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.4,
+          "matched_terms": [
+            "2023년",
+            "5월"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.2,
+          "matched_terms": [
+            "2023년"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.004045841982588172
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "total": 15,
+      "rows": [
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 1.8,
+          "matched_terms": [
+            "GK2A_NDVI_mean_202305",
+            "tif",
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4",
+          "rank": 1.4,
+          "matched_terms": [
+            "tif",
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y",
+          "rank": 1.4,
+          "matched_terms": [
+            "tif",
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V7N5V054MKPFW7N0DTYEX",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+          "rank": 1.0,
+          "matched_terms": [
+            "원자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "tif"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 0.4,
+          "matched_terms": [
+            "tif"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.4,
+          "matched_terms": [
+            "tif"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.4,
+          "matched_terms": [
+            "tif"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "데"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "데"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.00423430697992444
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "total": 3,
+      "rows": [
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 1.2,
+          "matched_terms": [
+            "식생자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.0034244749695062637
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "total": 12,
+      "rows": [
+        {
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+          "rank": 1.8,
+          "matched_terms": [
+            "레이더",
+            "강우",
+            "강수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "rank": 1.2,
+          "matched_terms": [
+            "레이더",
+            "강우",
+            "강수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 1.0,
+          "matched_terms": [
+            "강우",
+            "강수",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 1.0,
+          "matched_terms": [
+            "강우",
+            "강수",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X",
+          "rank": 1.0,
+          "matched_terms": [
+            "레이더"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+          "rank": 1.0,
+          "matched_terms": [
+            "레이더"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+          "rank": 0.8,
+          "matched_terms": [
+            "강우",
+            "강수"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.4,
+          "matched_terms": [
+            "강우",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.4,
+          "matched_terms": [
+            "강우",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.004594873171299696
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "total": 17,
+      "rows": [
+        {
+          "dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+          "rank": 3.0,
+          "matched_terms": [
+            "WGS84",
+            "15분",
+            "누적",
+            "강수"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 1.4,
+          "matched_terms": [
+            "WGS84",
+            "15분",
+            "누적",
+            "강수",
+            "표본"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 1.0,
+          "matched_terms": [
+            "WGS84",
+            "강수",
+            "표본"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "rank": 0.8,
+          "matched_terms": [
+            "WGS84",
+            "강수",
+            "표본"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+          "rank": 0.6,
+          "matched_terms": [
+            "WGS84",
+            "강수"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.4,
+          "matched_terms": [
+            "WGS84",
+            "바꾸고"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39VBGCMRM3K31W963PGG7E8",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39VM0GYXG98CXDJKFD8RPYJ",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39XWZBR39ZDX38RZVADF3BR",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39XZFZ6NYXQ48YD4KZN168X",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ",
+          "rank": 0.2,
+          "matched_terms": [
+            "WGS84"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        }
+      ],
+      "sql_seconds": 0.00424148584716022
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "total": 7,
+      "rows": [
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.6,
+          "matched_terms": [
+            "대한민국",
+            "4주",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.6,
+          "matched_terms": [
+            "대한민국",
+            "4주",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.0034840689040720463
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "total": 7,
+      "rows": [
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 2.6,
+          "matched_terms": [
+            "SPI-4weeks",
+            "자료",
+            "SPI"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 2.6,
+          "matched_terms": [
+            "자료",
+            "SPEI"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.003322764066979289
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "total": 9,
+      "rows": [
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료",
+            "중"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료",
+            "중"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 0.4,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.2,
+          "matched_terms": [
+            "U-Net"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.0032927091233432293
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "total": 19,
+      "rows": [
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 2.2,
+          "matched_terms": [
+            "식생",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 1.2,
+          "matched_terms": [
+            "식생",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 1.0,
+          "matched_terms": [
+            "식생",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 0.8,
+          "matched_terms": [
+            "2023년",
+            "5월",
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.8,
+          "matched_terms": [
+            "2023년",
+            "5월",
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 0.8,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약",
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.6,
+          "matched_terms": [
+            "2023년",
+            "식생"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39YCEB2RHDTPH26KEV70TK4",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YJVRFA5N1T1498KNN007Y",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YP2K5A3CEEF99M5TNVR44",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39YSE2MMXGA14SHG08PHY6S",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z0009K337B2N4DK4TSE9C",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZCMYVKSA6N5SS3HJZ225F",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39ZK1YKQRT84W0PSJFD89SJ",
+          "rank": 0.4,
+          "matched_terms": [
+            "식생"
+          ],
+          "where": [
+            "포맷·변수"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.004151934990659356
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "total": 11,
+      "rows": [
+        {
+          "dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "rank": 2.2,
+          "matched_terms": [
+            "월평균",
+            "NDVI",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "rank": 1.8,
+          "matched_terms": [
+            "NDVI",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "rank": 1.4,
+          "matched_terms": [
+            "월평균",
+            "NDVI"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "rank": 1.0,
+          "matched_terms": [
+            "NDVI",
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "rank": 0.4,
+          "matched_terms": [
+            "NDVI"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "rank": 0.4,
+          "matched_terms": [
+            "NDVI"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "rank": 0.4,
+          "matched_terms": [
+            "NDVI"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        },
+        {
+          "dataset_id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+          "rank": 0.2,
+          "matched_terms": [
+            "자료"
+          ],
+          "where": [
+            "이름·주제·요약"
+          ]
+        }
+      ],
+      "sql_seconds": 0.0026358698960393667
+    }
+  ],
+  "read_only": "on",
+  "corpus": [
+    {
+      "id": "01M39T7N812JDX7GW62F8YFZ0V",
+      "name": "HSR 레이더 반사도 원자료",
+      "topic": "강우·강수",
+      "summary": "기상청 HSR 합성 반사도 원본",
+      "source_label": null,
+      "description_vector": "'hsr':1A,8C '강수':6B '강우':5B '기상청':7C '레이더':2A '반사도':3A,10C '원본':11C '원자료':4A '합성':9C",
+      "autometa_vector": "'2881x2305':10C 'binary':1B 'gz':2B 'rdr_cmp_hsr_pub_201907281430.bin.gz':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39T979PMQKRSK3GPCNYWHH3",
+      "name": "rn15 15분 누적강수",
+      "topic": "강우·강수",
+      "summary": "지상 격자 15분 누적강수 원본",
+      "source_label": null,
+      "description_vector": "'15분':2A,8C 'rn15':1A '강수':5B '강우':4B '격자':7C '누적강수':3A,9C '원본':10C '지상':6C",
+      "autometa_vector": "'2049x2049':10C 'nc':2B 'netcdf':1B 'sfc_grid_rn_15m_201907281430.nc':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+      "name": "hsr_sample",
+      "topic": "강우·강수",
+      "summary": "HSR 반사도를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+      "source_label": null,
+      "description_vector": "'10':25C,30C '128':26C,27C '2019':32C 'crop':20C 'hsr':1A,5C 'lat':9C 'lon':10C 'sample':2A 'wgs84':13C '~2024':33C '강수':4B '강우':3B '계열이':40C '기상청':7C '년에':34C '로':14C '맞추어':12C '반사도를':6C '변환하고':16C '불연속':36C '시각이며':38C '아니다':41C '연구대상지를':18C '연속':39C '은':31C '자료':23C '전처리':22C '제공':8C '좌표계':15C '중심으로':19C '첫':28C '축':29C '특정':17C '파일에':11C '표본':37C '한':21C '형태는':24C '흩어진':35C",
+      "autometa_vector": "'128x128':10C 'hsr_sample.npy':11C 'npy':2B 'numpy':1B 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TB4NTBCFC8TSTNB93N5YP",
+      "name": "rn15_sample",
+      "topic": "강우·강수",
+      "summary": "rn15 15분 누적강수를 기상청 제공 lat·lon 파일에 맞추어 WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop 한 전처리 자료. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+      "source_label": null,
+      "description_vector": "'10':25C,30C '128':26C,27C '15분':6C '2019':32C 'crop':20C 'lat':10C 'lon':11C 'rn15':1A,5C 'sample':2A 'wgs84':14C '~2024':33C '강수':4B '강우':3B '계열이':40C '기상청':8C '년에':34C '누적강수를':7C '로':15C '맞추어':13C '변환하고':17C '불연속':36C '시각이며':38C '아니다':41C '연구대상지를':18C '연속':39C '은':31C '자료':23C '전처리':22C '제공':9C '좌표계':16C '중심으로':19C '첫':28C '축':29C '파일에':12C '표본':37C '한':21C '형태는':24C '흩어진':35C",
+      "autometa_vector": "'128x128':10C 'npy':2B 'numpy':1B 'rn15_sample.npy':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TCARM2C2NJ8S9SA4QBSER",
+      "name": "pred_sample",
+      "topic": "강우·강수",
+      "summary": "레이더 반사도 격자를 입력으로 받아 같은 격자의 강우 분포를 출력하는 U-Net 기반 모델의 예측 결과. 입력은 hsr_sample.npy, 검증은 rn15_sample.npy 다. 형태는 (10, 128, 128). 첫 축 10 은 2019~2024 년에 흩어진 불연속 표본 시각이며 연속 계열이 아니다.",
+      "source_label": null,
+      "description_vector": "'10':28C,33C '128':29C,30C '2019':35C 'hsr_sample.npy':23C 'net':17C 'pred':1A 'rn15_sample.npy':25C 'sample':2A 'u':16C 'u-net':15C '~2024':36C '강수':4B '강우':3B,12C '같은':10C '검증은':24C '격자를':7C '격자의':11C '결과':21C '계열이':43C '기반':18C '년에':37C '다':26C '레이더':5C '모델의':19C '반사도':6C '받아':9C '분포를':13C '불연속':39C '시각이며':41C '아니다':44C '연속':42C '예측':20C '은':34C '입력으로':8C '입력은':22C '첫':31C '축':32C '출력하는':14C '표본':40C '형태는':27C '흩어진':38C",
+      "autometa_vector": "'128x128':10C 'npy':2B 'numpy':1B 'pred_sample.npy':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TK0F5P3W4APB91N08KTMY",
+      "name": "GK-2A 일 단위 식생자료",
+      "topic": "식생·NDVI",
+      "summary": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.",
+      "source_label": null,
+      "description_vector": "'1일':22C '2':23C '2a':3A,13C '5개':34C 'conformal':18C 'conic':19C 'dqf':31C 'evi':29C 'fvc':30C 'gk':2A,12C 'gk-2a':1A,11C 'km':24C 'lambert':17C 'le2':14C 'ndvi':8B,28C,40C '공간해상도는':21C '국가기상위성센터가':9C '다':25C '단위':5A '들어':36C '만':41C '사용한다':42C '시':20C '식생':7B '식생자료':6A,15C '이':38C '일':4A '있고':37C '자료가':35C '정의':33C '제공하는':10C '좌표계':32C '좌표계는':16C '파일':26C '하나에':27C '흐름은':39C",
+      "autometa_vector": "'/126.0':12C '/60.0':10C '30.0':9C '38.0':11C '900x900':18C 'conformal':7C 'conic':8C 'gk2a_ami_le2_vgt_ko_202305010000.nc':19C 'lambert':6C 'nc':2B 'netcdf':1B 'wgs84':13C '내':15C '속성':17C '식생':3B '인자':5B '탄소':4B '투영':16C '파일':14C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TSEPR820QBZ1DBBFKDJEP",
+      "name": "GK2A_NDVI_mean_202305",
+      "topic": "식생·NDVI",
+      "summary": "DQF 로 품질 저하 픽셀을 NaN 으로 바꾸고 유효 범주 -1~1 밖을 NaN 처리한 뒤, 원자료 좌표계 LCC 를 WGS84 로 변환해 NDVI 레이어만 TIF 로 저장한 자료. 경기도 남부~충청권 일대로 영역을 추출하고 2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환했다.",
+      "source_label": null,
+      "description_vector": "'-1':17C '100':45C '2':42C '202305':4A 'dqf':7C 'gk2a':1A 'km':43C 'lcc':25C 'm':46C 'mean':3A 'nan':12C,20C 'ndvi':2A,6B,30C 'tif':32C 'wgs84':27C '~1':18C '경기도':36C '균등':48C '남부':37C '단위':54C '단위를':52C '뒤':22C,50C '레이어만':31C '로':8C,28C,33C,47C '를':26C,44C '바꾸고':14C '밖을':19C '범주':16C '변환해':29C '변환했다':56C '분할한':49C '식생':5B '영역을':40C '원자료':23C '월':53C '유효':15C '으로':13C '일':51C '일대로':39C '자료':35C '저장한':34C '저하':10C '좌표계':24C '처리한':21C '추출하고':41C '충청권':38C '평균으로':55C '품질':9C '픽셀을':11C",
+      "autometa_vector": "'1280x1280':8C '4326':7C 'epsg':6C 'geotiff':1B 'gk2a_ndvi_mean_202305.tif':9C 'tif':2B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+      "name": "HLS_S30_NDVI_mean_202305",
+      "topic": "식생·NDVI",
+      "summary": "Lv.2 공간상세화 모델의 검증자료. HLS S30 자료의 Red·NIR 밴드로 NDVI 를 계산하고 3~7일 간격 자료를 월평균 100 m 로 변환한 것이다.",
+      "source_label": null,
+      "description_vector": "'100':27C '202305':5A '3':21C 'hls':1A,12C 'lv.2':8C 'm':28C 'mean':4A 'ndvi':3A,7B,18C 'nir':16C 'red':15C 's30':2A,13C '~7':22C '간격':24C '검증자료':11C '것이다':31C '계산하고':20C '공간상세화':9C '로':29C '를':19C '모델의':10C '밴드로':17C '변환한':30C '식생':6B '월평균':26C '일':23C '자료를':25C '자료의':14C",
+      "autometa_vector": "'1280x1280':8C '4326':7C 'epsg':6C 'geotiff':1B 'hls_s30_ndvi_mean_202305.tif':9C 'tif':2B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TTPB2T87ESQKHCZPBAKD6",
+      "name": "DEM",
+      "topic": "식생·NDVI",
+      "summary": "100 m 수치표고모형 입력 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+      "source_label": null,
+      "description_vector": "'100':4C '2023년':14C '5월이며':15C 'dem':1A 'm':5C 'ndvi':3B '기준':8C '날짜':18C '내부':17C '따른':13C '맥락에':12C '사용자':10C '수치표고모형':6C '시점은':9C '식생':2B '없음':20C '입력':7C '정보는':19C '제공':11C '파일':16C",
+      "autometa_vector": "'1280x1280':7C '4326':6C 'dem.tif':8C 'epsg':5C 'geotiff':1B 'tif':2B '인자':4B '환경':3B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TVD38600D4EKH13EV55DV",
+      "name": "Aspect",
+      "topic": "식생·NDVI",
+      "summary": "DEM 에서 산출한 100 m 경사향 · 기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음",
+      "source_label": null,
+      "description_vector": "'100':7C '2023년':16C '5월이며':17C 'aspect':1A 'dem':4C 'm':8C 'ndvi':3B '경사향':9C '기준':10C '날짜':20C '내부':19C '따른':15C '맥락에':14C '사용자':12C '산출한':6C '시점은':11C '식생':2B '없음':22C '에서':5C '정보는':21C '제공':13C '파일':18C",
+      "autometa_vector": "'1280x1280':7C '4326':6C 'aspect.tif':8C 'epsg':5C 'geotiff':1B 'tif':2B '인자':4B '환경':3B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TW21793T8631ATHJREHK5",
+      "name": "LULC_2023",
+      "topic": "식생·NDVI",
+      "summary": "2023년 연 단위 토지피복지도",
+      "source_label": null,
+      "description_vector": "'2023':2A '2023년':5C 'lulc':1A 'ndvi':4B '단위':7C '식생':3B '연':6C '토지피복지도':8C",
+      "autometa_vector": "'1280x1280':8C '4326':7C 'epsg':6C 'geotiff':1B 'lulc_2023.tif':9C 'tif':2B '경제':4B '사회':3B '인자':5B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+      "name": "Prediction (공간상세화)",
+      "topic": "식생·NDVI",
+      "summary": "U-Net 기반 공간상세화 모델의 산출물. 월평균 GK-2A NDVI 와 수치표고모형·경사향·토지피복지도를 입력으로, 월평균 HLS NDVI 를 검증자료로 학습했다. Lv.1 과 달리 Lv.0 처럼 일 단위 시간해상도를 갖고 지형 변화에 따른 NDVI 변화가 픽셀별로 다르게 나타난다.",
+      "source_label": null,
+      "description_vector": "'2a':15C 'gk':14C 'gk-2a':13C 'hls':23C 'lv.0':31C 'lv.1':28C 'ndvi':4B,16C,24C,40C 'net':7C 'prediction':1A 'u':6C 'u-net':5C '갖고':36C '검증자료로':26C '경사향':19C '공간상세화':2A,9C '과':29C '기반':8C '나타난다':44C '다르게':43C '단위':34C '달리':30C '따른':39C '를':25C '모델의':10C '변화가':41C '변화에':38C '산출물':11C '수치표고모형':18C '시간해상도를':35C '식생':3B '와':17C '월평균':12C,22C '일':33C '입력으로':21C '지형':37C '처럼':32C '토지피복지도를':20C '픽셀별로':42C '학습했다':27C",
+      "autometa_vector": "'1280x1280':10C 'npy':2B 'numpy':1B 'prediction_20230501.npy':11C 'wgs84':6C '격자':8C '기준':7C '식생':3B '인자':5B '탄소':4B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39V005J6SQ9SW8MZ8D16ZWK",
+      "name": "SPI-4weeks",
+      "topic": "가뭄",
+      "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+      "source_label": null,
+      "description_vector": "'-01':31C,32C '-12':34C '-20':35C '2000':30C '2025':33C '4weeks':3A '4주':11C 'calibrated':50C 'l1':49C 'lv1':42C 'spi':2A,12C 'spi-4weeks':1A '가뭄':4B '가정해':28C '각':19C '값은':41C '강우':8C '관측소의':20C '관측자료가':24C '관측자료로':9C '구축했다':29C '그':23C '기상관측소의':7C '기준으로':22C '내':6C '다':51C '단위로':15C,38C '담는다':39C '담은':16C '대표한다고':27C '대한민국':5C '데이터':46C '레벨':47C '를':13C '문서의':45C '벡터':17C '산정한':10C '소재':25C '시군구':14C '시군구를':26C '을':36C '이고':43C '자료':18C '제품':40C '주':37C '주소지를':21C '축자는':48C '출처':44C",
+      "autometa_vector": "'gpkg':1B 'spi_4weeks_sig_wide.gpkg':5C '기상':2B '기후':3B '인자':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39V0T17DHQ5PF5XSSERTZ8H",
+      "name": "SPEI-4weeks",
+      "topic": "가뭄",
+      "summary": "대한민국 내 기상관측소의 강우 관측자료로 산정한 4주 SPEI 를 시군구 단위로 담은 벡터 자료. 각 관측소의 주소지를 기준으로 그 관측자료가 소재 시군구를 대표한다고 가정해 구축했다. 2000-01-01 ~ 2025-12-20 을 주 단위로 담는다. 제품 값은 Lv1 이고 출처 문서의 데이터 레벨 축자는 「L1 Calibrated」다.",
+      "source_label": null,
+      "description_vector": "'-01':31C,32C '-12':34C '-20':35C '2000':30C '2025':33C '4weeks':3A '4주':11C 'calibrated':50C 'l1':49C 'lv1':42C 'spei':2A,12C 'spei-4weeks':1A '가뭄':4B '가정해':28C '각':19C '값은':41C '강우':8C '관측소의':20C '관측자료가':24C '관측자료로':9C '구축했다':29C '그':23C '기상관측소의':7C '기준으로':22C '내':6C '다':51C '단위로':15C,38C '담는다':39C '담은':16C '대표한다고':27C '대한민국':5C '데이터':46C '레벨':47C '를':13C '문서의':45C '벡터':17C '산정한':10C '소재':25C '시군구':14C '시군구를':26C '을':36C '이고':43C '자료':18C '제품':40C '주':37C '주소지를':21C '축자는':48C '출처':44C",
+      "autometa_vector": "'gpkg':1B 'spei_4weeks_sig_wide.gpkg':5C '기상':2B '기후':3B '인자':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39V7N5V054MKPFW7N0DTYEX",
+      "name": "surface (ERA5 GRIB 원자료)",
+      "topic": "파일 포맷 예제",
+      "summary": "ERA5 지표 변수 GRIB 원본",
+      "source_label": null,
+      "description_vector": "'era5':2A,8C 'grib':3A,11C 'surface':1A '변수':10C '예제':7B '원본':12C '원자료':4A '지표':9C '파일':5B '포맷':6B",
+      "autometa_vector": "'0':18C,21C '0.0174532925199433':24C '6367470':17C '721x1440':34C '9122':27C 'authority':25C 'axis':28C,31C 'coordinate':7C 'datum':13C 'degree':23C 'east':33C 'epsg':26C 'file':12C 'from':10C 'geogcs':6C 'greenwich':20C 'grib':1B,2B,11C 'imported':9C 'latitude':29C 'longitude':32C 'north':30C 'primem':19C 'sphere':16C 'spheroid':15C 'surface.grib':35C 'system':8C 'unit':22C 'unnamed':14C '기상':3B '기후':4B '인자':5B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39VBGCMRM3K31W963PGG7E8",
+      "name": "ERA5 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "GRIB 에서 변환한 slhf·ssr·str 시각별 배열",
+      "source_label": null,
+      "description_vector": "'era5':1A 'grib':7C 'slhf':10C 'ssr':11C 'str':12C '결과':3A '배열':14C '변환':2A '변환한':9C '시각별':13C '에서':8C '예제':6B '파일':4B '포맷':5B",
+      "autometa_vector": "'721x1440':10C 'era5_slhf_202509010000.npy':11C 'npy':2B 'numpy':1B 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39VM0GYXG98CXDJKFD8RPYJ",
+      "name": "GK-2A LST 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "GK-2A 지표온도 10분 간격 원본",
+      "source_label": null,
+      "description_vector": "'10분':13C '2a':3A,11C 'gk':2A,10C 'gk-2a':1A,9C 'lst':4A '간격':14C '예제':8B '원본':15C '원자료':5A '지표온도':12C '파일':6B '포맷':7B",
+      "autometa_vector": "'/126.0':12C '/60.0':10C '30.0':9C '38.0':11C '900x900':18C 'conformal':7C 'conic':8C 'gk2a_ami_le2_lst_ko_202005010000.nc':19C 'lambert':6C 'nc':2B 'netcdf':1B 'wgs84':13C '기상':3B '기후':4B '내':15C '속성':17C '인자':5B '투영':16C '파일':14C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39XWZBR39ZDX38RZVADF3BR",
+      "name": "GK-2A LST 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "nc 에서 변환한 지표온도 배열",
+      "source_label": null,
+      "description_vector": "'2a':3A 'gk':2A 'gk-2a':1A 'lst':4A 'nc':10C '결과':6A '배열':14C '변환':5A '변환한':12C '에서':11C '예제':9B '지표온도':13C '파일':7B '포맷':8B",
+      "autometa_vector": "'900x900':10C 'gk2a_ami_le2_lst_ko_202005010000.npy':11C 'npy':2B 'numpy':1B 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39XZFZ6NYXQ48YD4KZN168X",
+      "name": "HSR 레이더합성 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "HSR 합성 바이너리 원본",
+      "source_label": null,
+      "description_vector": "'hsr':1A,7C '레이더합성':2A '바이너리':9C '예제':6B '원본':10C '원자료':3A '파일':4B '포맷':5B '합성':8C",
+      "autometa_vector": "'2881x2305':10C 'binary':1B 'gz':2B 'rdr_cmp_hsr_pub_202508131000.bin.gz':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+      "name": "HSR 레이더합성 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "bin 에서 변환한 합성 반사도 배열",
+      "source_label": null,
+      "description_vector": "'bin':8C 'hsr':1A '결과':4A '레이더합성':2A '반사도':12C '배열':13C '변환':3A '변환한':10C '에서':9C '예제':7B '파일':5B '포맷':6B '합성':11C",
+      "autometa_vector": "'2881x2305':10C 'npy':2B 'numpy':1B 'rdr_cmp_hsr_pub_202508131000.npy':11C 'wgs84':6C '격자':8C '기상':3B '기준':7C '기후':4B '인자':5B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39YCEB2RHDTPH26KEV70TK4",
+      "name": "HLS S30 T51SYB 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "HLS S30 T51SYB 타일 밴드 3종",
+      "source_label": null,
+      "description_vector": "'3종':13C 'hls':1A,8C 's30':2A,9C 't51syb':3A,10C '밴드':12C '예제':7B '원자료':4A '타일':11C '파일':5B '포맷':6B",
+      "autometa_vector": "'32651':7C '3660x3660':8C 'epsg':6C 'geotiff':1B 'hls.s30.t51syb.2025359t023019.v2.0.b02.tif':9C 'tif':2B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39YJVRFA5N1T1498KNN007Y",
+      "name": "HLS S30 T52SCE 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "HLS S30 T52SCE 타일 밴드 3종",
+      "source_label": null,
+      "description_vector": "'3종':13C 'hls':1A,8C 's30':2A,9C 't52sce':3A,10C '밴드':12C '예제':7B '원자료':4A '타일':11C '파일':5B '포맷':6B",
+      "autometa_vector": "'32652':7C '3660x3660':8C 'epsg':6C 'geotiff':1B 'hls.s30.t52sce.2025361t022121.v2.0.b02.tif':9C 'tif':2B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39YP2K5A3CEEF99M5TNVR44",
+      "name": "HLS S30 T51SYB 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "T51SYB 타일 밴드 3종의 변환 배열",
+      "source_label": null,
+      "description_vector": "'3종의':12C 'hls':1A 's30':2A 't51syb':3A,9C '결과':5A '배열':14C '밴드':11C '변환':4A,13C '예제':8B '타일':10C '파일':6B '포맷':7B",
+      "autometa_vector": "'3660x3660':6C 'hls.s30.t51syb.2025359t023019.v2.0.b02.npy':7C 'npy':2B 'numpy':1B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39YSE2MMXGA14SHG08PHY6S",
+      "name": "HLS S30 T52SCE 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "T52SCE 타일 밴드 3종의 변환 배열",
+      "source_label": null,
+      "description_vector": "'3종의':12C 'hls':1A 's30':2A 't52sce':3A,9C '결과':5A '배열':14C '밴드':11C '변환':4A,13C '예제':8B '타일':10C '파일':6B '포맷':7B",
+      "autometa_vector": "'3660x3660':6C 'hls.s30.t52sce.2025361t022121.v2.0.b02.npy':7C 'npy':2B 'numpy':1B '식생':3B '인자':5B '탄소':4B",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39Z0009K337B2N4DK4TSE9C",
+      "name": "hdf4 MOD15A2H h27v05 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "폴더명 hdf5 · 실물 HDF4. h27v05 타일 4일치",
+      "source_label": null,
+      "description_vector": "'4일치':14C 'h27v05':3A,12C 'hdf4':1A,11C 'hdf5':9C 'mod15a2h':2A '실물':10C '예제':7B '원자료':4A '타일':13C '파일':5B '포맷':6B '폴더명':8C",
+      "autometa_vector": "'2400x2400':13C '6371007.181':8C 'hdf':2B 'hdf4':1B 'mod15a2h.a2019273.h27v05.061.2020313082826.hdf':14C 'r':7C 'sinusoidal':6C 'structmetadata':12C 'wgs84':9C '내':11C '식생':3B '인자':5B '탄소':4B '파일':10C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+      "name": "hdf4 MOD15A2H h28v05 원자료",
+      "topic": "파일 포맷 예제",
+      "summary": "폴더명 hdf5 · 실물 HDF4. h28v05 타일 4일치",
+      "source_label": null,
+      "description_vector": "'4일치':14C 'h28v05':3A,12C 'hdf4':1A,11C 'hdf5':9C 'mod15a2h':2A '실물':10C '예제':7B '원자료':4A '타일':13C '파일':5B '포맷':6B '폴더명':8C",
+      "autometa_vector": "'2400x2400':13C '6371007.181':8C 'hdf':2B 'hdf4':1B 'mod15a2h.a2019273.h28v05.061.2020313082838.hdf':14C 'r':7C 'sinusoidal':6C 'structmetadata':12C 'wgs84':9C '내':11C '식생':3B '인자':5B '탄소':4B '파일':10C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39ZCMYVKSA6N5SS3HJZ225F",
+      "name": "hdf4 MOD15A2H h27v05 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "폴더명 hdf5 · 실물 HDF4. h27v05 변수 6종 × 4일",
+      "source_label": null,
+      "description_vector": "'4일':16C '6종':15C 'h27v05':3A,13C 'hdf4':1A,12C 'hdf5':10C 'mod15a2h':2A '결과':5A '변수':14C '변환':4A '실물':11C '예제':8B '파일':6B '포맷':7B '폴더명':9C",
+      "autometa_vector": "'2400x2400':10C 'mod15a2h.a2019273.h27v05.061.2020313082826_fpar_500m.npy':11C 'npy':2B 'numpy':1B 'wgs84':6C '격자':8C '기준':7C '식생':3B '인자':5B '탄소':4B '파일':9C",
+      "source_vector": ""
+    },
+    {
+      "id": "01M39ZK1YKQRT84W0PSJFD89SJ",
+      "name": "hdf4 MOD15A2H h28v05 변환 결과",
+      "topic": "파일 포맷 예제",
+      "summary": "폴더명 hdf5 · 실물 HDF4. h28v05 변수 6종 × 4일",
+      "source_label": null,
+      "description_vector": "'4일':16C '6종':15C 'h28v05':3A,13C 'hdf4':1A,12C 'hdf5':10C 'mod15a2h':2A '결과':5A '변수':14C '변환':4A '실물':11C '예제':8B '파일':6B '포맷':7B '폴더명':9C",
+      "autometa_vector": "'2400x2400':10C 'mod15a2h.a2019273.h28v05.061.2020313082838_fpar_500m.npy':11C 'npy':2B 'numpy':1B 'wgs84':6C '격자':8C '기준':7C '식생':3B '인자':5B '탄소':4B '파일':9C",
+      "source_vector": ""
+    }
+  ],
+  "search_code_sha256": "353ca83d221403cd4f24532f198b811527653e9d2afeee5ae1b004504924dc0d",
+  "mode": "literal-to-deployed-D3; no LLM/dictionary/graph/API/UI",
+  "expansion": null,
+  "diagnostic_omit_topic_filter": false,
+  "runner_sha256": "ac3d92cdb164ad19a3e2e5d77f5bca688caf03488813263a6d8f1e9fede395a3",
+  "oracle_sha256": "3ceee177a79c0955371a521ee2cf4b54d5131d876bc8435eb623561c7d7ca463",
+  "suite_sha256": "ef5227126c801b1a7f527d6292456ffc146c3253c87e3e066845158818497c31",
+  "snapshot_sha256": "171ddd497a41a414eb37be31d394f9c97f6c1b0c330de76648a733a4cfafb952",
+  "interpreter_sha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181",
+  "local_sha": "646131c92605d998f6ef9def9f4b3289f53552d3",
+  "cases": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+      "scope": [
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "required": [
+        "01M39TSEPR820QBZ1DBBFKDJEP"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "2023년",
+        "5월",
+        "경기",
+        "남부와",
+        "충청권의",
+        "식생",
+        "상태를",
+        "살펴볼",
+        "수",
+        "있는",
+        "월평균",
+        "위성",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TSEPR820QBZ1DBBFKDJEP"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "2023년",
+        "5월",
+        "경기",
+        "남부와",
+        "충청권에서",
+        "식물이",
+        "얼마나",
+        "푸른지",
+        "월평균으로",
+        "볼",
+        "수",
+        "있는",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "2023년",
+        "5월",
+        "1일의",
+        "식생지수를",
+        "U-Net",
+        "예측한",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TK0F5P3W4APB91N08KTMY"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "GK2A_NDVI_mean_202305",
+        "tif",
+        "만드는",
+        "데",
+        "쓴",
+        "천리안",
+        "원자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "U-Net",
+        "식생지수",
+        "모델에",
+        "쓴",
+        "지형·토지피복",
+        "보조자료와",
+        "검증용",
+        "식생자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "레이더",
+        "반사도로",
+        "만든",
+        "강우",
+        "추정",
+        "결과와",
+        "검증에",
+        "쓴",
+        "강수",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39TB4NTBCFC8TSTNB93N5YP"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "WGS84",
+        "바꾸고",
+        "연구대상지에",
+        "맞춰",
+        "잘라",
+        "둔",
+        "15분",
+        "누적",
+        "강수",
+        "표본",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "2000년부터",
+        "2025년까지",
+        "대한민국",
+        "시군구의",
+        "4주",
+        "가뭄지수를",
+        "주간으로",
+        "비교할",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [
+        "01M39V005J6SQ9SW8MZ8D16ZWK"
+      ],
+      "mode": "retrieval",
+      "terms": [
+        "시군구별",
+        "주간",
+        "SPI-4weeks",
+        "자료",
+        "찾아줘",
+        "SPEI",
+        "말고",
+        "SPI",
+        "필요해"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [],
+      "mode": "empty",
+      "terms": [
+        "검색",
+        "대상",
+        "자료",
+        "중",
+        "U-Net",
+        "예측한",
+        "가뭄지수",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [],
+      "mode": "manual",
+      "terms": [
+        "결측률이",
+        "0%로",
+        "검증된",
+        "2023년",
+        "5월",
+        "식생",
+        "자료",
+        "찾아줘"
+      ]
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+      "scope": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required": [],
+      "mode": "manual",
+      "terms": [
+        "100m로",
+        "직접",
+        "관측한",
+        "천리안",
+        "월평균",
+        "NDVI",
+        "자료",
+        "찾아줘"
+      ]
+    }
+  ],
+  "judgments": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5"
+      ],
+      "outside_ids": [
+        "01M39YCEB2RHDTPH26KEV70TK4",
+        "01M39YJVRFA5N1T1498KNN007Y",
+        "01M39YP2K5A3CEEF99M5TNVR44",
+        "01M39YSE2MMXGA14SHG08PHY6S",
+        "01M39Z0009K337B2N4DK4TSE9C",
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "required_ranks": {
+        "01M39TSEPR820QBZ1DBBFKDJEP": 4
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [],
+      "required_ranks": {
+        "01M39TSEPR820QBZ1DBBFKDJEP": 2
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [],
+      "required_ranks": {
+        "01M39TZ0SCEYHHMBWZ991M1QGN": 10
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "retrieval": "fail",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [
+        "01M39YCEB2RHDTPH26KEV70TK4",
+        "01M39YJVRFA5N1T1498KNN007Y",
+        "01M39V7N5V054MKPFW7N0DTYEX",
+        "01M39VM0GYXG98CXDJKFD8RPYJ",
+        "01M39XZFZ6NYXQ48YD4KZN168X",
+        "01M39Z0009K337B2N4DK4TSE9C",
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH"
+      ],
+      "required_ranks": {
+        "01M39TK0F5P3W4APB91N08KTMY": null
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "retrieval": "fail",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "outside_ids": [],
+      "required_ranks": {
+        "01M39TT0S5PSJ0DQNR0XMTHFNW": null,
+        "01M39TTPB2T87ESQKHCZPBAKD6": null,
+        "01M39TVD38600D4EKH13EV55DV": null,
+        "01M39TW21793T8631ATHJREHK5": null
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP"
+      ],
+      "outside_ids": [
+        "01M39XZFZ6NYXQ48YD4KZN168X",
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX"
+      ],
+      "required_ranks": {
+        "01M39TB4NTBCFC8TSTNB93N5YP": 4,
+        "01M39TCARM2C2NJ8S9SA4QBSER": 2
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39T979PMQKRSK3GPCNYWHH3",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39T7N812JDX7GW62F8YFZ0V",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TZ0SCEYHHMBWZ991M1QGN"
+      ],
+      "outside_ids": [
+        "01M39VBGCMRM3K31W963PGG7E8",
+        "01M39VM0GYXG98CXDJKFD8RPYJ",
+        "01M39XWZBR39ZDX38RZVADF3BR",
+        "01M39XZFZ6NYXQ48YD4KZN168X",
+        "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+        "01M39Z0009K337B2N4DK4TSE9C",
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ"
+      ],
+      "required_ranks": {
+        "01M39TB4NTBCFC8TSTNB93N5YP": 2
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP"
+      ],
+      "outside_ids": [],
+      "required_ranks": {
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1,
+        "01M39V0T17DHQ5PF5XSSERTZ8H": 2
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "retrieval": "pass",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP"
+      ],
+      "outside_ids": [],
+      "required_ranks": {
+        "01M39V005J6SQ9SW8MZ8D16ZWK": 1
+      }
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "retrieval": "fail",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TCARM2C2NJ8S9SA4QBSER",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [],
+      "required_ranks": {}
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "retrieval": "not_applicable",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [
+        "01M39YCEB2RHDTPH26KEV70TK4",
+        "01M39YJVRFA5N1T1498KNN007Y",
+        "01M39YP2K5A3CEEF99M5TNVR44",
+        "01M39YSE2MMXGA14SHG08PHY6S",
+        "01M39Z0009K337B2N4DK4TSE9C",
+        "01M39Z6ABH9Z2EW0CZTZM4C6DH",
+        "01M39ZCMYVKSA6N5SS3HJZ225F",
+        "01M39ZK1YKQRT84W0PSJFD89SJ"
+      ],
+      "required_ranks": {}
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "retrieval": "not_applicable",
+      "semantic": "unassessed",
+      "scoped_ids": [
+        "01M39TT0S5PSJ0DQNR0XMTHFNW",
+        "01M39TSEPR820QBZ1DBBFKDJEP",
+        "01M39TZ0SCEYHHMBWZ991M1QGN",
+        "01M39TK0F5P3W4APB91N08KTMY",
+        "01M39TTPB2T87ESQKHCZPBAKD6",
+        "01M39TVD38600D4EKH13EV55DV",
+        "01M39TW21793T8631ATHJREHK5",
+        "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+        "01M39TB4NTBCFC8TSTNB93N5YP",
+        "01M39V005J6SQ9SW8MZ8D16ZWK",
+        "01M39V0T17DHQ5PF5XSSERTZ8H"
+      ],
+      "outside_ids": [],
+      "required_ranks": {}
+    }
+  ],
+  "counts": {
+    "pass": 7,
+    "fail": 3,
+    "not_applicable": 2
+  },
+  "model_calls": 0,
+  "semantic_unassessed": 12
+}
