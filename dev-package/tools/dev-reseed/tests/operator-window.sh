@@ -4,6 +4,9 @@
 # 무엇을 증명하는가 =
 #   ⓐ `stage_seed` 가 `accounts` 국면을 마친 **직후** 임시 운영자를 내리고, 그 다음에야
 #      `projects`·`datasets`·`verify`·`report` 국면을 돈다.
+#   ⓐ′ 그 해제와 `projects` 사이에 **재로그인**이 있다. 자격이 바뀐 세션은 제품이 거절한다
+#      (`kernel/session_token.py:59-61` · `kernel/login_sessions.py:192-206`) — 어떤 길로 내리든
+#      열린 세션은 닫힌다. 2026-09-24 재개 1 이 이 자리에서 로그인 화면을 보고 멈췄다.
 #   ⓑ `account_finalize` 가 `accounts.py finalize` 를 부르기 **전에** 자격을 되올린다.
 #      되올리지 않으면 `accounts.py` 의 「final professor credential drift」 가 나서
 #      교수 비밀번호를 초기값으로 되돌리지 못한다.
@@ -93,6 +96,12 @@ if [ -n "$i_revoke" ] && [ -n "$i_check" ] && [ -n "$i_projects" ]; then
     || note 'ⓐ accounts 국면보다 먼저 내렸다 — 무소속 운영자 넷을 만들 수 없다'
   [ "$i_revoke" -lt "$i_projects" ] \
     || note 'ⓐ projects 국면이 운영자 자격을 켠 채 돈다'
+  # ⓐ′ 해제 **뒤** 첫 login 국면이 projects 앞에 와야 한다.
+  i_relogin="$(grep -n -e '\-\-phase login' "$TRACE" | cut -d: -f1 \
+               | awk -v r="$i_revoke" '$1 > r { print; exit }')"
+  if [ -z "$i_relogin" ] || [ "$i_relogin" -gt "$i_projects" ]; then
+    note "ⓐ′ 해제 뒤 재로그인이 없다 — 자격이 바뀐 세션은 거절되므로 projects 가 로그인 화면을 본다"
+  fi
 fi
 
 # ── ⓑ 최종화 직전 되올림 ─────────────────────────────────────────────────

@@ -654,6 +654,16 @@ stage_seed() {
   # DR-4 가 28/28 을 세운 것과 같은 단일 연구실 경로다.
   operator_revoke "seed:operator-revoke" || return 1
 
+  log "④ 재로그인 — 자격이 바뀐 세션은 제품이 거절한다(설계대로다)"
+  # ⚠ **이 한 줄을 빼면 `projects` 가 로그인 화면을 본다.** 토큰은 발급 시점의 운영자 여부를
+  #   주장으로 싣고, 세션 확인이 `service_operator` 를 **매 요청 다시 읽어** 주장과 어긋나면
+  #   그 세션을 거절한다 — `kernel/session_token.py:59-61` · `kernel/login_sessions.py:192-206`.
+  #   즉 자격을 어떤 길로 내리든(제품 API든 SQL이든) **열린 세션은 반드시 닫힌다.**
+  #   2026-09-24 재개 1 이 이 자리에서 「지목점 project-new-button 해소 실패」로 멈췄고,
+  #   덤프에 찍힌 것은 프로젝트 목록이 아니라 **로그인 화면**이었다.
+  #   `phase_login` 은 멱등이다 — 이미 들어가 있으면 건너뛰고, 아니면 회전된 비밀번호로 다시 든다.
+  run python3 "$runner" --phase login "${args[@]}" || return 1
+
   for phase in projects datasets verify report; do
     run python3 "$runner" --phase "$phase" "${args[@]}" || return 1
   done
