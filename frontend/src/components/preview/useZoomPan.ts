@@ -18,6 +18,7 @@
 // 여기 상수로 박힌 것은 사람이 한 번에 얼마나 들어가는가(`STEP`) 하나다.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { baseScaleFor, needsBoundsOutline, snapWidthKm, boundsWidthKm, type GeoBounds } from './scaleLadder';
+import { SETTLE_PX, VELOCITY_WINDOW_MS, projectedDistance, spring } from './spring';
 
 /** 한 번 누를 때 들어가는 정도. 화면 조작의 단위이지 상한이 아니다. */
 const STEP = 2;
@@ -193,6 +194,21 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   const drag = useRef<{ id: number; sx: number; sy: number; x: number; y: number; active: boolean } | null>(null);
   /** 끌기가 성립한 뒤 따라오는 click 한 번을 버린다(값 조회가 끌기 끝에서 새지 않게). */
   const dragged = useRef(false);
+  /** 이동 기록(시각 ms · 자리) — 놓을 때 마지막 100ms 의 평균 속도를 낸다(#5 · 값 6). */
+  const samples = useRef<Array<{ t: number; x: number; y: number }>>([]);
+  /** 놓은 뒤 관성 프레임 번호. 새 누르기 · 휠 · 확대 단추 · 더블클릭이 끊는다. */
+  const inertia = useRef<number | null>(null);
+  /** 관성이 출발할 자리 — 놓는 순간의 상태. */
+  const viewNow = useRef(view);
+  viewNow.current = view;
+
+  /** 관성을 **그 프레임 값에서** 멈춘다 — 자리를 다시 쓰지 않으므로 튀지 않는다. */
+  const stopInertia = useCallback(() => {
+    if (inertia.current === null) return;
+    cancelAnimationFrame(inertia.current);
+    inertia.current = null;
+  }, []);
+  useEffect(() => stopInertia, [stopInertia]);
 
   const box = useCallback(() => {
     const node = el.current;
@@ -269,6 +285,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   //   휠 확대가 `atLimit` 를 지어내지 않게 판정 자리를 하나로 둔다.
   const stepIn = useCallback(
     (anchorX?: number, anchorY?: number) => {
+      stopInertia();
       if (!measured || view.scale >= maxScale) {
         // 한계를 모르거나 한계에 닿았다. **없는 값을 만들어 그리지 않는다.**
         if (measured) setBlocked(true);
@@ -276,15 +293,16 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       }
       zoomTo(view.scale * STEP, anchorX, anchorY);
     },
-    [measured, maxScale, view.scale, zoomTo],
+    [measured, maxScale, view.scale, zoomTo, stopInertia],
   );
 
   const stepOut = useCallback(
     (anchorX?: number, anchorY?: number) => {
+      stopInertia();
       setBlocked(false);
       zoomTo(view.scale / STEP, anchorX, anchorY);
     },
-    [view.scale, zoomTo],
+    [view.scale, zoomTo, stopInertia],
   );
 
   // ⚠ 버튼은 **인자 없이** 부른다 — `onClick={zoom.zoomIn}` 이 넘기는 클릭 이벤트가
@@ -294,9 +312,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   const zoomOut = useCallback(() => stepOut(), [stepOut]);
 
   const reset = useCallback(() => {
+    stopInertia();
     setBlocked(false);
     setView({ scale: baseScale, x: 0, y: 0 });
-  }, [baseScale]);
+  }, [baseScale, stopInertia]);
 
   /**
    * **더블클릭 = 데이터에 맞춤**(판정 축자 「더블클릭으로 데이터에 맞춤」).
@@ -304,9 +323,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
    * 경계가 없으면(②비지도형) 기본 배율과 같은 자리라 **아무 일도 하지 않는 것과 같다**.
    */
   const fitToData = useCallback(() => {
+    stopInertia();
     setBlocked(false);
     setView({ scale: 1, x: 0, y: 0 });
-  }, []);
+  }, [stopInertia]);
 
   const onWheel = useCallback(
     (e: {
@@ -373,18 +393,23 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       currentTarget?: EventTarget | null;
     }) => {
       if (e.button !== undefined && e.button !== 0) return;
+      stopInertia();
       dragged.current = false;
       drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, active: false };
+      samples.current = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
       // 캡처가 있으면 뷰포트 밖으로 나가도 이동이 이어진다. 없으면(jsdom) 창 리스너가 받는다.
       (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
     },
-    [],
+    [stopInertia],
   );
 
   useEffect(() => {
     function move(e: PointerEvent) {
       const from = drag.current;
       if (!from || e.pointerId !== from.id) return;
+      const now = performance.now();
+      samples.current = samples.current.filter((p) => now - p.t <= VELOCITY_WINDOW_MS);
+      samples.current.push({ t: now, x: e.clientX, y: e.clientY });
       if (!from.active) {
         // 임계를 **넘기 전에는** 움직이지 않는다. 넘는 순간 누른 자리 기준으로 붙는다
         // (`from.x`·`from.y` 가 아직 누른 자리이므로 첫 반영이 곧 누른 자리부터의 전량이다).
@@ -402,6 +427,38 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       if (!from || e.pointerId !== from.id) return;
       dragged.current = from.active;
       drag.current = null;
+      if (!from.active) return;
+      // 놓을 때 속도 = 마지막 100ms 이동 기록의 평균(px/s · 확정 값 6). 기록이 한 점뿐이면
+      // (잠시 멈췄다 놓음) 속도 0 — 관성 없이 그 자리에 선다.
+      const now = performance.now();
+      const recent = [...samples.current, { t: now, x: e.clientX, y: e.clientY }].filter(
+        (p) => now - p.t <= VELOCITY_WINDOW_MS,
+      );
+      samples.current = [];
+      const first = recent[0];
+      const last = recent[recent.length - 1];
+      if (!first || !last || last.t <= first.t) return;
+      // 「동작 줄이기」면 관성 없이 놓은 자리에 선다.
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      const vx = ((last.x - first.x) / (last.t - first.t)) * 1000;
+      const vy = ((last.y - first.y) / (last.t - first.t)) * 1000;
+      // 목표 = 투영 자리를 이동 범위로 자른 값. 스프링이 놓은 속도를 이어받아 그리로 간다.
+      const start = viewNow.current;
+      const goal = clampView({
+        scale: start.scale,
+        x: start.x + projectedDistance(vx),
+        y: start.y + projectedDistance(vy),
+      });
+      const t0 = now;
+      const frame = () => {
+        const t = (performance.now() - t0) / 1000;
+        const sx = spring(start.x, goal.x, vx, t).value;
+        const sy = spring(start.y, goal.y, vy, t).value;
+        const done = Math.abs(sx - goal.x) < SETTLE_PX && Math.abs(sy - goal.y) < SETTLE_PX;
+        setView((cur) => clampView({ ...cur, x: done ? goal.x : sx, y: done ? goal.y : sy }));
+        inertia.current = done ? null : requestAnimationFrame(frame);
+      };
+      inertia.current = requestAnimationFrame(frame);
     }
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
