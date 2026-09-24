@@ -25,16 +25,19 @@
   transition: background var(--ease), border-color var(--ease);
 }
 /* hover — plain·ghost·secondary 는 gray-50, primary 는 primary-700(design-fix 20260924 #9 · 값 10 · 억눌린 hover 해소).
-   누름(`:active`) = hover 의 한 단 진한 값 — plain·ghost·secondary 는 gray-100, primary 는 primary-700 유지(WU-A1 · 값 14). */
-.btn:where(:not(.btn-primary)):hover { background: var(--color-gray-50); }
+   누름(`:active`) = hover 의 한 단 진한 값 — plain·ghost·secondary 는 gray-100, primary 는 primary-700 유지(WU-A1 · 값 14).
+   비활성 단추는 hover 에서 뺀다 — `:disabled` 제외를 `:where()` 안에 두어 특이도가 누름 규칙과 같게 남는다(뒤에 선 누름이
+   이긴다 · 수용 검토 A2 · A5 · A13). */
+.btn:where(:not(.btn-primary, :disabled)):hover { background: var(--color-gray-50); }
 .btn-ghost { border-color: transparent; }
 .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
 .btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
-.btn-primary:hover { background: var(--color-primary-700); }
+.btn-primary:where(:not(:disabled)):hover { background: var(--color-primary-700); }
 .btn-primary:active { background: var(--color-primary-700); }
 .btn:where(:not(.btn-primary)):active { background: var(--color-gray-100); }
-/* 작은 단추(#12 · 값 11 · v2 목업 `.btn-sm`) — 640px 이하는 터치 하한 `--control-height`(44px)를 지킨다. */
-.btn-sm { height: 29px; min-height: 29px; padding: 0 11px; font-size: var(--text-caption); }
+/* 작은 단추(#12 · 값 11 · v2 목업 `.btn-sm`) — 640px 이하는 터치 하한 `--control-height`(44px)를 지킨다.
+   `label.btn-sm`(파일 고르기)도 글자가 세로 가운데에 오도록 inline-flex · center(수용 검토 A4). */
+.btn-sm { display: inline-flex; align-items: center; height: 29px; min-height: 29px; padding: 0 11px; font-size: var(--text-caption); }
 @media (max-width: 640px) {
   .btn-sm { min-height: var(--control-height); }
 }
@@ -69,7 +72,8 @@
   white-space: nowrap;
   margin-left: 6px;
 }
-.chip--off { border: 1px solid var(--color-border); color: var(--color-text-muted); }
+/* `.chip--off` 는 테두리를 다시 적지 않는다 — `border` 단축형이 위 border-strong(값 18)을 되돌렸다(수용 검토 A6 · A14). */
+.chip--off { color: var(--color-text-muted); }
 .chip--verified { color: var(--color-success-600); background: var(--color-success-50); }
 .chip--lineage { background: var(--color-gray-100); color: var(--color-text-muted); }
 .chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }

@@ -182,8 +182,9 @@ describe('WU-A1 · 버튼 누름(값 14)', () => {
 });
 
 describe('#9 · 기본·보조 단추 hover(값 10)', () => {
-  it('`.btn-primary:hover` = primary-700', () => {
-    expect(decls(body(PRIM, '.btn-primary:hover'))).toContain('background: var(--color-primary-700)');
+  // F-css A2 · A5 · A13 — 비활성 단추는 hover 에서 제외(`:where()` 로 특이도 무변).
+  it('`.btn-primary:where(:not(:disabled)):hover` = primary-700', () => {
+    expect(decls(body(PRIM, '.btn-primary:where(:not(:disabled)):hover'))).toContain('background: var(--color-primary-700)');
   });
   it('hover 제외 목록에 `.btn-secondary` 가 없다', () => {
     const hover = rules(PRIM).filter((r) => r.selectors.some((s) => /^\.btn:where\(:not\(.*\)\):hover$/.test(s)));
@@ -200,9 +201,17 @@ describe('#9 · 기본·보조 단추 hover(값 10)', () => {
 });
 
 describe('#12 · `.btn-sm`(값 11)', () => {
-  it('네 선언 = 29px · 29px · 0 11px · caption', () => {
+  // F-css A4 — `label.btn` 의 글자 세로 가운데를 위해 inline-flex · align-items center 두 선언을 더한다.
+  it('여섯 선언 = 29px · 29px · 0 11px · caption ＋ inline-flex · center', () => {
     expect(decls(body(PRIM, '.btn-sm')).sort()).toEqual(
-      ['font-size: var(--text-caption)', 'height: 29px', 'min-height: 29px', 'padding: 0 11px'].sort(),
+      [
+        'align-items: center',
+        'display: inline-flex',
+        'font-size: var(--text-caption)',
+        'height: 29px',
+        'min-height: 29px',
+        'padding: 0 11px',
+      ].sort(),
     );
   });
   it('640px 이하에서는 `--control-height` 하한', () => {
@@ -337,11 +346,12 @@ describe('#16 · 「불일치」 글자', () => {
 });
 
 describe('#19 · 계보 안내 줄 주석', () => {
-  it('주석 포함 원문에 `#5b6472` 0 · 안내 줄 주석이 warning-600', () => {
+  // F-css A1 — 안내 줄은 `.lin-scope-lv`(muted on surface-alt)다. 세부 단언은 F-css 시험.
+  it('주석 포함 원문에 `#5b6472` 0 · 안내 줄 주석이 `.lin-scope-lv` 의 muted', () => {
     const src = raw('src/components/lineage/lineage.css');
     expect(src).not.toMatch(/#5b6472/i);
     const lines = src.split('\n').filter((l) => l.includes('안내 줄'));
-    expect(lines.some((l) => l.includes('--color-warning-600'))).toBe(true);
+    expect(lines.some((l) => l.includes('.lin-scope-lv') && l.includes('--color-text-muted'))).toBe(true);
   });
 });
 
@@ -349,7 +359,7 @@ describe('WU-A2 · 셸 대화형 10종 누름(값 15)', () => {
   const want: [string, string][] = [
     ['.detail-page .backlink:active', 'var(--color-gray-100)'],
     ['.project-detail .backlink:active', 'var(--color-gray-100)'],
-    ['.mainnav a:active', 'var(--color-gray-100)'],
+    ['.mainnav a:active', 'var(--color-surface-pressed)'], // F-css A3 · A10 · 값 19
     ['.gnb-settings:active', 'var(--color-gray-100)'],
     ['.gnb-upload:active', 'var(--color-primary-700)'],
     ['.gnb-more:active', 'var(--color-gray-100)'],
@@ -386,8 +396,9 @@ describe('WU-A2 · 셸 대화형 10종 누름(값 15)', () => {
 });
 
 describe('WU-A3 · 표 행 누름(값 16)', () => {
-  it('`.tbl tr.clk:active td` = gray-100', () => {
-    expect(decls(body(CATALOG, '.tbl tr.clk:active td'))).toContain('background: var(--color-gray-100)');
+  // F-css A3 · A10 · 값 19 — hover 가 surface-hover 인 자리의 누름은 surface-pressed.
+  it('`.tbl tr.clk:active td` = surface-pressed', () => {
+    expect(decls(body(CATALOG, '.tbl tr.clk:active td'))).toContain('background: var(--color-surface-pressed)');
   });
   it('`.tbl tr.clk td` transition 불변', () => {
     expect(decls(body(CATALOG, '.tbl tr.clk td'))).toEqual(['transition: background var(--ease), box-shadow var(--ease)']);

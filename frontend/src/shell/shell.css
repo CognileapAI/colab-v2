@@ -183,13 +183,16 @@ body {
   background: var(--color-surface-hover);
   color: var(--color-text);
 }
-.mainnav a:active { background: var(--color-gray-100); }
+/* 상단 메뉴 링크는 hover 가 surface-hover 라 누름은 surface-pressed(값 19 · 다크에서 gray-100 = hover 였다 · A3 · A10). */
+.mainnav a:active { background: var(--color-surface-pressed); }
 /* 활성 내비 = 흰 면 + 잉크 밑줄 */
 .mainnav a.is-active {
   color: var(--color-text);
   font-weight: 700;
   background: var(--color-surface);
 }
+/* 현재 메뉴도 누르면 반응한다 — `.mainnav a.is-active` 가 같은 특이도·뒤 순서로 위 누름을 덮었다(수용 검토 A8). */
+.mainnav a.is-active:active { background: var(--color-surface-pressed); }
 .mainnav a.is-active::after {
   content: "";
   position: absolute;
