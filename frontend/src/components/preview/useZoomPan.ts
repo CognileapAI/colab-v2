@@ -482,7 +482,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
         }
         const t = (performance.now() - t0) / 1000;
         setView((cur) => {
-          if (settled) return cur;
+          // 갱신 함수는 멱등이어야 한다 — StrictMode(DEV)는 몰아 처리하는 갱신을 두 번 부르고
+          // 첫 결과를 버린다. 멈춘 뒤의 호출도 앞 프레임 값이 아니라 목표를 돌려준다(FP-1).
+          // `settled` 는 rAF 루프의 멈춤 판단에만 쓴다.
+          if (settled && launch) return clampView({ ...cur, x: launch.goal.x, y: launch.goal.y });
           if (!launch) {
             const goal = clampView({
               scale: cur.scale,
