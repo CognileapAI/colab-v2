@@ -287,7 +287,7 @@ patterns 층은 이름만 선언돼 있고 파일이 없다. 아래 규칙은 `f
 | e | `primitives.css` 밖의 프리미티브 맨 정의(`:is()`/`:where()` 를 펼쳐 본다 · `:not()`/`:has()` 인자는 보지 않는다) · `primitives.css`·`base.css` 안의 `!important` · 목록·면제 구멍 | `e 프리미티브 맨 정의(primitives.css 밖)` · `e primitives.css·base.css 의 !important` · `e 목록·면제 구멍` | 편차는 화면 범위 선택자로, 기본값 변경은 `primitives.css` 에서(시각 변경이면 판정) | `primitives-exempt.txt`(파일 · 선택자 · 사유) |
 | f | 정본 밖 CSS 의 색 리터럴(직접 · `var()` 폴백 · 색 이름 · 리터럴이 섞인 `color-mix()`) · 면제 구멍 | `f 색 리터럴(정본 밖)` · `f 면제 목록 구멍` | 같은 값 토큰으로 · 없으면 새 토큰(이름은 판정) | `same-in-dark.txt` 의 `f · 파일 · 선택자 · 속성 · 리터럴 · 사유` 줄 |
 | g | TSX `style` 속성(펼침 속성 안의 `style` 키 포함)의 값이 `--*` 키만 가진 객체 리터럴이 아님 | `g 인라인 style 의 비변수 키` | 값을 CSS 변수로 대입하고 CSS 가 `var()` 로 읽는다 | 없음 |
-| h | 이 문서의 표지 안쪽(② 토큰 · ③ 프리미티브)이 실물에서 다시 만든 표와 다름 | `h tokens 갈림 — 블록 n번째 줄부터 다르다` · `h primitives 갈림 …` · 요약 `문서 표 갈림 n` | `node frontend/scripts/design-docs.mjs` 로 다시 쓰고 커밋 | 없음(표지 밖 손글은 비교하지 않는다) |
+| h | 이 문서의 표지 안쪽(② 토큰 · ③ 프리미티브)이 실물에서 다시 만든 표와 다름 | `h tokens 갈림 — 블록 n번째 줄부터 다르다` · `h primitives 갈림 …` · 요약 `문서 표 갈림 n` | `node frontend/scripts/design-docs.mjs` 로 다시 쓰고 커밋 — 표지 안에 입력 sha256 이 있어 입력 파일의 주석만 바꿔도 다시 써야 한다 | 없음(표지 밖 손글은 비교하지 않는다) |
 
 **red(준비 · 종료 78)** — 판정하지 못한 것은 통과가 아니다: node 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 목록 파일(`same-in-dark.txt` · `primitives.txt` · `primitives-exempt.txt`) 부재 · Git 목록에 있으나 디스크에 없는 CSS · `typescript` 파서 부재 · (h) 이 문서 · 표지 짝 · 입력 파일 부재.
 **h 의 입력** — h 는 저장소의 문서와 저장소의 실물만 비교한다(`COLAB_FRONTEND_DIR` 픽스처 교체와 무관). 문서 경로는 env `COLAB_DESIGN_LINT_DOC`(기본 `docs/design-system.md`)로 바꿀 수 있고 selftest 가 이것으로 갈림 red 와 부재 78 을 만든다.

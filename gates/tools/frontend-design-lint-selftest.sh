@@ -7,7 +7,7 @@
 # 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
 # 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
 #
-# 케이스 — green 5 · red 13 · red(준비) 5 = 23.
+# 케이스 — green 6 · red 14 · red(준비) 6 = 26.
 #   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
 #   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
 #   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
@@ -31,6 +31,10 @@
 #   ⓤ red-e/       화면 CSS 의 맨 정의 · 상태 맨 정의 · `:is()` 펼침 · 사유 없는 e 면제(면제 안 함) · 낡은 e 면제(P2b) → red
 #   ⓥ red-e-important/ primitives.css·base.css 안의 `!important`(P2b)                     → red
 #   ⓦ 프리미티브 목록 부재(COLAB_DESIGN_LINT_PRIMITIVES 를 없는 경로로)(P2b)          → red(준비 · 78)
+#   ⓧ 문서 표 갈림 — 저장소 문서 사본의 생성 블록 안 한 줄을 고쳐 COLAB_DESIGN_LINT_DOC 로(P5 · h) → red
+#   ⓨ 문서 부재 — COLAB_DESIGN_LINT_DOC 를 없는 경로로(P5 · h)                         → red(준비 · 78)
+#   ⓩ 블록 밖만 고친 문서 사본 — 손글 변경은 h 에 걸리지 않는다(P5 · h)                → green
+#   h 의 입력은 저장소 문서·실물이다(픽스처 트리와 무관) — 모든 트리에서 저장소 문서가 같으면 h=0 이다.
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -70,10 +74,11 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   echo "  ✓ $label ($want)"
 }
 
-expect_line() { # $1=이름 $2=픽스처 $3=출력에 있어야 할 문자열 — red 가 **그 규칙 때문**인지 확인한다.
+expect_line() { # $1=이름 $2=픽스처 $3=출력에 있어야 할 문자열 [$4..=추가 환경] — red 가 **그 규칙 때문**인지 확인한다.
   local label="$1" dir="$2" needle="$3" out
+  shift 3
   out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
-    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" "$GATE" 2>&1)"
+    COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" "$@" "$GATE" 2>&1)"
   if ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
     red "$label — 출력에 「$needle」이 없다(다른 이유로 red 일 수 있다):
 $(printf '%s\n' "$out" | sed 's/^/     /')"
@@ -83,6 +88,7 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"
 # ⓐ 대조군 — 이것이 green 이 아니면 아래 red 들은 아무 말도 하지 않는다.
 expect green "ⓐ 정본 짝·루트 범위·면제 1건" "$FIX/green"
 expect_line "ⓐ 면제 건수 노출" "$FIX/green" "다크 누락 0(면제 1)"
+expect_line "ⓐ h 대조군 — 저장소 문서가 실물과 같다" "$FIX/green" "문서 표 갈림 0"
 # ⓑ a — 화면 :root 정의와 범위 안 정본 계열 이름.
 expect red "ⓑ a 화면 :root 정의 · 범위의 정본 계열 이름" "$FIX/red-a"
 expect_line "ⓑ a 는 두 갈래를 다 센다" "$FIX/red-a" "a_root=1 a_scoped=1"
@@ -162,9 +168,27 @@ expect_line "ⓥ e 계수" "$FIX/red-e-important" "e=2 e_bare=0 e_important=2 e_
 # ⓦ 프리미티브 목록 부재 — 목록이 없으면 e 를 판정할 수 없다.
 expect ready "ⓦ 프리미티브 목록 부재" "$FIX/green-e" COLAB_DESIGN_LINT_PRIMITIVES=/nonexistent/primitives.txt
 
+# ⓧ·ⓨ·ⓩ h — 저장소 문서의 사본을 고쳐 문서 경로로 준다(저장소 문서는 건드리지 않는다).
+DOC="$REPO_ROOT/docs/design-system.md"
+if [ -f "$DOC" ]; then
+  TMPD="$(mktemp -d)"
+  trap 'rm -rf "$TMPD"' EXIT
+  # 생성 블록(tokens) 여는 표지 바로 다음 줄을 바꾼다 — 블록 안 1줄 갈림.
+  awk '{print} /^<!-- generated:tokens -->$/ {getline; print "손으로 고친 줄"}' "$DOC" > "$TMPD/drift.md"
+  # 블록 밖(문서 끝)에만 한 줄을 더한다.
+  { cat "$DOC"; printf '\n블록 밖에 더한 손글 한 줄.\n'; } > "$TMPD/outside.md"
+  expect red "ⓧ h 생성 블록 안 한 줄 갈림" "$FIX/green" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+  expect_line "ⓧ h 계수" "$FIX/green" "문서 표 갈림 1" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+  expect_line "ⓧ 갈린 블록 이름" "$FIX/green" "h tokens 갈림" COLAB_DESIGN_LINT_DOC="$TMPD/drift.md"
+  expect ready "ⓨ h 문서 부재" "$FIX/green" COLAB_DESIGN_LINT_DOC=/nonexistent/design-system.md
+  expect green "ⓩ h 블록 밖만 고친 문서" "$FIX/green" COLAB_DESIGN_LINT_DOC="$TMPD/outside.md"
+else
+  red "ⓧ·ⓨ·ⓩ — 저장소 문서가 없어 h 케이스를 만들 수 없다: $DOC"
+fi
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::frontend-design-lint-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 expect_readiness_verdict frontend-design-lint-selftest
-echo "frontend-design-lint-selftest green — 검사 23건 전건 기대대로 (green 5 · red 13 · red(준비) 5)."
+echo "frontend-design-lint-selftest green — 검사 26건 전건 기대대로 (green 6 · red 14 · red(준비) 6)."

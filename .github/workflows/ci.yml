@@ -87,6 +87,8 @@ jobs:
             frontend:
               - 'frontend/**'
               - 'contracts/**'
+              # 게이트 frontend-design-lint h(P5)가 이 문서의 생성 표를 실물과 대조한다 — 문서만 바뀐 PR 도 판정한다.
+              - 'docs/design-system.md'
             infra:
               - 'infra/**'
             db:
