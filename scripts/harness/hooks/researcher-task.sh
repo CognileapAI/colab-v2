@@ -11,7 +11,10 @@
 #   payload agent_id 는 출력에만 찍어 researcher 가 산출물 task 를 열 때 쓴다.
 #
 # ⚠ 비차단이다. 무슨 일이 있어도 exit 0 — 실패는 「begin 실패」 한 줄과 직접 begin 명령으로 알린다.
-#   stdout 은 평문으로 subagent 맥락에 실린다(Codex 는 bridge 가 additionalContext 로 옮긴다).
+#   stdout = `hookSpecificOutput.additionalContext` JSON 1줄(hookEventName `SubagentStart`). 2026-09-26 실측
+#   (spec S-HARNESS-IMPROVEMENT-20260925 A7): SubagentStart 평문 stdout 은 subagent 에 도달하지 않았다(2/2 발화 ·
+#   도달 0). 본문은 평문으로 모은 뒤 끝에서 한 번 JSON 으로 싼다. Codex 는 bridge `hook_context()` 가 본문만 재적재한다.
+#   python3 가 없으면 평문 그대로 낸다(도달 0 · debug log).
 #
 # 입력(stdin JSON): `cwd` · `agent_id` · `agent_type`. `$CLAUDE_PROJECT_DIR` 이 아니라 `cwd` 의
 #   체크아웃에서 begin 한다(worktree 에서 뜬 researcher 는 그 사본에 task 를 가져야 한다).
@@ -34,6 +37,8 @@ print(v if isinstance(v,str) else "")' "$key" 2>/dev/null || true)"
   printf '%s' "$v"
 }
 
+# 본문 = 평문. 아래 main 의 stdout 을 모아 끝에서 additionalContext JSON 1줄로 낸다(안쪽 exit 0 은 서브셸 종료).
+main() {
 AGENT_TYPE="$(hook_field agent_type)"
 # matcher 가 researcher 로 발화했는데 필드가 비면 조용히 넘기지 않는다 — 필드명이 바뀌면 전원 무음 skip 이 된다.
 if [ -z "$AGENT_TYPE" ]; then
@@ -77,4 +82,15 @@ researcher-task: H6 작업 증거를 자동으로 열었다(read-only · --agent
 파일 산출물이 필요하면 $ARTIFACT_BEGIN --artifact runtime:artifacts/<파일> 로 task 를 하나 더 열고 그 task 로 handoff 한다.
 이 task 가 열린 동안 같은 체크아웃에 커밋하면 인계가 거부된다.
 EOF
+exit 0
+}
+
+CONTEXT="$(main)"
+[ -n "$CONTEXT" ] || exit 0
+if command -v python3 >/dev/null 2>&1; then
+  printf '%s' "$CONTEXT" | python3 -c 'import json,sys; print(json.dumps({"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":sys.stdin.read()}}, ensure_ascii=False))' \
+    || printf '%s\n' "$CONTEXT"
+else
+  printf '%s\n' "$CONTEXT"
+fi
 exit 0

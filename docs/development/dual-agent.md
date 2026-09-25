@@ -79,7 +79,8 @@ additionalContext JSON으로, SubagentStop 성공 출력은 systemMessage JSON�
 `hookSpecificOutput.additionalContext` JSON은 bridge가 본문만 꺼내 다시 싣는다.
 `researcher-task.sh`(SubagentStart · matcher `researcher`)는 스폰 시 cwd 체크아웃에서
 `lifecycle begin --role researcher`를 `--agent-id` 없이 실행하고 task_id·run_id·payload agent_id·handoff 명령을
-평문으로 싣는다(Codex는 additionalContext). begin이 실패해도 exit 0이며 사유와 직접 begin 명령을 출력한다.
+`hookSpecificOutput.additionalContext` JSON 1줄로 싣는다(`worktree-setup.sh`도 같다 · Claude·Codex 양쪽 동일).
+SubagentStart 평문 stdout은 subagent에 도달하지 않았다(2026-09-26 실측). begin이 실패해도 exit 0이며 사유와 직접 begin 명령을 출력한다.
 실행 오류는 차단으로 전달한다. H2는 환경 준비이며 격리 사본 생성이나 성공 보장이 아니다.
 프로젝트 trust와 `/hooks`의 정의별 review가 필요하다. 이 PC에서는 2026-09-09 확인 시
 7개 등록 항목 모두 enabled/trusted이며 SessionStart 실행과 PreToolUse 차단을 실측했다.
