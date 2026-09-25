@@ -22,6 +22,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from ..domains import d3_lineage_signals
 from ..kernel.observability import current_traceparent
 
 #: 중계 대기 시간(초). 저쪽이 안 답할 때 이쪽 요청 스레드를 무한히 잡아 두지 않는다.
@@ -450,6 +451,80 @@ class HttpDatasetSearchRelay:
         }
 
 
+#: 제안이 **부모를 가리키는 자리 전부**. 「가공 전 데이터」는 `parentDatasetId` 로,
+#: 「가공 방식」은 어느 부모와의 관계인지를 `appliesToParentDatasetId` 로 가리킨다
+#: (`core-ai.yaml ProcessingMethodSuggestion` 산문 · `DOMAINS §2 D4`).
+_PARENT_REF_KEYS = ("parentDatasetId", "appliesToParentDatasetId")
+
+
+def _within_candidates(suggestion: object, allowed: set) -> bool:
+    """후보 밖의 부모를 가리키는가. **한쪽 문만 잠그지 않는다.**
+
+    `parentDatasetId` 만 보면 「가공 방식」 제안의 `appliesToParentDatasetId` 로
+    후보 밖 ID 가 그대로 화면까지 간다 — 계약 산문 ⓑ 가 막으려던 것이 절반만 막힌다.
+    ⚠ **가리키지 않은 것은 버리지 않는다.** 어느 부모인지 모르면 생략하는 것이 계약이고
+    (그 산문), 생략을 「후보 밖」으로 읽으면 참인 답이 사라진다.
+    """
+    if not isinstance(suggestion, dict):
+        return True
+    return all(suggestion.get(key) in allowed
+               for key in _PARENT_REF_KEYS if key in suggestion)
+
+
+#: ⭑ **⟨K3 `WU-S2` 2026-09-24⟩ 인용 검증의 대상이 되는 제안 종류.**
+#: 「가공 방식」에는 대조할 축이 없다(`evidence` 는 `ParentCandidateSuggestion` 의 칸이다) —
+#: 없는 근거를 요구하면 참인 답이 사라진다. 그쪽 문장을 다시 쓰는 일도 여기서 하지 않는다.
+PARENT_SUGGESTION_KIND = "가공 전 데이터"
+
+#: ⭑ **⟨K3 `WU-S5` 2026-09-24 · Ted 판정 2회차 5⟩ 응답에 남기는 제안의 상위 k.**
+#: **두 팔이 같은 상수를 쓴다**(`app/rule_suggest.py` 가 이것을 import 한다) — 절단이 갈리면
+#: `WU-S6` 실측의 hit@3 이 「어느 팔이 나은가」가 아니라 「어느 팔이 많이 냈나」를 잰다.
+#: 값은 후보 상한(`routes/ingestion.LINEAGE_CANDIDATE_LIMIT` · 계약
+#: `LineageSuggestionRequest.candidates.maxItems`)과 같다 — 제안은 후보 집합의 부분집합이라
+#: **모델 팔에서 이 절단은 사실상 일어나지 않는다**(그래서 이 줄이 기존 동작을 바꾸지 않는다).
+#: 규칙 팔은 신호가 흔한 연구실에서 실제로 여기서 잘린다.
+#: ⚠ 상수를 `routes` 에서 import 하지 않는다 — 라우트가 이 모듈을 import 하므로 순환이 된다.
+#: 두 값이 같다는 사실은 시험이 지킨다(`tests/test_rule_based_suggester.py`).
+SUGGESTION_LIMIT = 20
+
+
+def _verified_suggestion(suggestion: object, upload_axes, candidate_axes: dict):
+    """제안 한 건의 인용을 **실제 값에 대조**하고, 검증된 것만으로 다시 세운다.
+
+    ⭑ **⟨K3 `WU-S2` 2026-09-24 · 계약 `evidence` 산문⟩ 모델이 적은 것은 주장이지 판정이
+    아니다.** 그래서 세 가지가 여기서 일어난다.
+      ① **검증되지 않은 항목은 버린다.** 규격을 어긴 항목(`from_claim` 이 `None`)도 마찬가지다 —
+         **그 항목만** 버리고 응답 전체를 버리지 않는다(후보 밖 ID 와 같은 규율).
+      ② **검증된 근거가 0이면 제안이 아니다**(`None` 을 돌려주고 부르는 쪽이 버린다).
+      ③ **`confidence`·`rationale` 을 덮어쓴다** — 모델이 보낸 값은 **읽지 않는다**.
+         사실을 쥔 쪽이 문장도 쥔다(Ted 판정 4). 검증하지 못한 문장이 화면에 가면
+         「검증된 근거」라는 약속이 반쪽이 된다.
+
+    ⚠ **판정하는 함수는 신호를 계산한 함수와 같은 한 벌이다**(`d3_lineage_signals`).
+    두 벌이면 「인용 오류 0」이 참인 이유가 「모델이 맞혔다」가 아니라 「두 함수가 서로 다른
+    것을 봤다」가 된다(`R-K3-STRUCTURE.md` 「의존 그래프」).
+
+    ⚠ **이것은 「지어낸 근거」를 막지 「관계 없음」을 막지 않는다.** 형제는 좌표계·기간이
+    진짜로 같을 수 있고, 그 제안은 참인 인용을 달고 살아남는다(Ted 판정 1).
+    """
+    if not isinstance(suggestion, dict) or suggestion.get("kind") != PARENT_SUGGESTION_KIND:
+        return suggestion
+    axes = candidate_axes.get(suggestion.get("parentDatasetId"))
+    claimed = suggestion.get("evidence")
+    verified = []
+    if axes is not None and isinstance(claimed, list):
+        for claim in claimed:
+            item = d3_lineage_signals.Evidence.from_claim(claim)
+            if item is not None and d3_lineage_signals.verify(item, upload_axes, axes):
+                verified.append(item)
+    confidence = d3_lineage_signals.derive_confidence(verified)
+    if confidence is None:
+        return None
+    return {**suggestion, "confidence": confidence,
+            "rationale": d3_lineage_signals.rationale(verified),
+            "evidence": [item.to_dict() for item in verified]}
+
+
 class HttpLineageSuggestionRelay:
     """`ports.LineageSuggestionPort` — ai-service 로 나가는 중계.
 
@@ -460,9 +535,10 @@ class HttpLineageSuggestionRelay:
         self._base = None if not base_url else base_url.rstrip("/")
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
-                file_meta: dict[str, Any], searched_count: int,
-                dataset_name_draft: str | None,
-                subject: str | None) -> dict[str, Any]:
+                file_meta: dict[str, Any], candidates: list[dict[str, Any]],
+                searched_count: int, dataset_name_draft: str | None,
+                subject: str | None, processing_level: int,
+                upload_axes: Any, candidate_axes: dict[str, Any]) -> dict[str, Any]:
         """⭑ **⟨정정 2026-08-30⟩ 나가는 본문이 계약과 어긋나 있었다.**
 
         계약(`core-ai.yaml LineageSuggestionRequest`, 2026-08-22 동결)은 `file` 을
@@ -481,11 +557,21 @@ class HttpLineageSuggestionRelay:
         payload: dict[str, Any] = {
             "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
             "file": file_meta,
+            # ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 사람이 고른 자기 가공 단계(정수 0..3).** 계약이
+            # `readOnly` 인 `ProcessingLevel` 을 참조하지 않고 인라인으로 적은 자리다 —
+            # 파생값이 아니라 **사람이 고른 값**이라 애초에 다른 사실이다.
+            # ⚠ 안 골랐으면 여기까지 오지 않는다(라우트가 중계를 부르지 않는다) —
+            # `0` 으로 채우면 「Lv0 이다」로 읽힌다(계약 산문 축자).
+            "processingLevel": processing_level,
         }
         if dataset_name_draft:
             payload["datasetNameDraft"] = dataset_name_draft
         if subject:
             payload["subject"] = subject
+        # **후보가 0건이면 열쇠를 만들지 않는다** — 계약이 선택 필드로 열어 둔 자리이고,
+        # 저쪽은 후보가 없으면 모델을 부르지 않고 빈 제안으로 답한다(토큰을 태우지 않는다).
+        if candidates:
+            payload["candidates"] = candidates
         try:
             status, body = _request(f"{self._base}/lineage-suggestions", method="POST",
                                     headers=_scope_headers(lab_id, account_id), body=payload)
@@ -510,6 +596,32 @@ class HttpLineageSuggestionRelay:
             _record_suggest_failure(rejected=True, lab_id=lab_id, status=status, reason=reason)
             return honest_empty_suggestions(
                 lab_id=lab_id, lab_name=lab_name, searched_count=searched_count, reason=reason)
+        # **후보 밖의 부모를 실은 제안만 버린다** (`core-ai.yaml candidates` 산문 ⓑ).
+        # 한 건이 밖이라고 응답 전체를 버리지 않는다 — 나머지는 후보 안에서 나온 참인 답이고,
+        # 통째로 버리면 저쪽의 표류 한 건이 제품의 0건이 된다.
+        # ⚠ 기록에는 **건수만** 적는다. 데이터셋 이름을 적으면 감시 로그가 카탈로그 사본이 된다.
+        allowed = {c.get("datasetId") for c in candidates}
+        suggestions = body.get("suggestions")
+        if isinstance(suggestions, list):
+            kept = [s for s in suggestions if _within_candidates(s, allowed)]
+            dropped = len(suggestions) - len(kept)
+            if dropped:
+                _record_suggest_failure(
+                    rejected=True, lab_id=lab_id, status=status,
+                    reason=f"후보 목록 밖의 부모를 실은 제안 {dropped}건을 버렸다.")
+            # **인용 검증은 후보 밖 폐기 다음 줄이다** — 두 검사가 겹쳐도 한 번만 샌다.
+            # ⭑ ⟨K3 `WU-S2`⟩ 여기부터 `confidence`·`rationale` 의 산지가 core-api 다.
+            checked = [_verified_suggestion(s, upload_axes, candidate_axes) for s in kept]
+            verified = [s for s in checked if s is not None]
+            unverified = len(kept) - len(verified)
+            if unverified:
+                # **건수만 적는다** — 이름·값을 적으면 감시 로그가 카탈로그 사본이 된다.
+                _record_suggest_failure(
+                    rejected=True, lab_id=lab_id, status=status,
+                    reason=f"인용이 실제 값과 다른 제안 {unverified}건을 버렸다.")
+            # ⭑ ⟨K3 `WU-S5`⟩ **상위 k 절단은 규칙 팔과 같은 상수다.** 폐기 계수를 센 **뒤**에
+            # 자른다 — 넘쳐서 자른 건을 「인용이 틀렸다」로 세면 감시가 없는 고장을 본다.
+            body = {**body, "suggestions": verified[:SUGGESTION_LIMIT]}
         # **여기부터가 정직한 빈 상태의 자리다** — 저쪽이 답했고 0건이면 그것이 참인 답이다.
         # 그 자리에는 실패 기록을 남기지 않는다. 남기면 「없다」와 「못 물어봤다」가
         # 기록에서 다시 붙고, 감시가 매 업로드마다 울어 아무도 보지 않게 된다.

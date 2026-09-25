@@ -196,12 +196,59 @@ def test_stored_period_verification_preserves_month_granularity():
 def test_verify_contract_rejects_missing_period_or_model_input_description():
     good = {"dataset_count_ui": 28, "dataset_count_expected": 28,
             "periods_ok": 28, "periods_expected": 28,
+            "topics_ok": 28, "topics_expected": 28,
             "model_input_descriptions_ok": 2, "edges_ok": 18, "edges_expected": 18,
             "previews": [{"render": "그려짐"}]}
     assert runner.verify_result_passes(good)
     assert not runner.verify_result_passes(dict(good, periods_ok=27))
     assert not runner.verify_result_passes(dict(good, model_input_descriptions_ok=1))
     assert not runner.verify_result_passes(dict(good, periods_missing=[{"name": "DEM"}]))
+    assert not runner.verify_result_passes(dict(good, topics_ok=27))
+    assert not runner.verify_result_passes(dict(good, topics_missing=[{"name": "DEM"}]))
+    assert not runner.verify_result_passes({k: v for k, v in good.items() if k != "topics_expected"})
+
+
+def test_plan_without_a_db_topic_is_a_named_field_problem():
+    base = {"name": "DEM", "category": "환경 인자", "data_type": "관측 기반 산출물",
+            "observation_interval": {"value": "1", "unit": "월"}, "processing_level": "Lv1"}
+    assert runner.plan_field_problems([dict(base, topic="식생·NDVI")]) == []
+    for bad in (None, "식생"):
+        problems = runner.plan_field_problems([dict(base, topic=bad)])
+        assert len(problems) == 1 and "주제" in problems[0] and "DEM" in problems[0]
+
+
+def test_topic_reconcile_patches_only_rows_whose_stored_topic_differs(monkeypatch):
+    """The form has no topic field — topics go through the official PATCH after registration."""
+    rows = [{"seq": 1, "name": "one", "topic": "가뭄"},
+            {"seq": 2, "name": "two", "topic": "강우·강수"},
+            {"seq": 3, "name": "three", "topic": "가뭄"}]
+    st = {"datasets": {"1": {"name": "one", "dataset_id": "ID1", "status": "done"},
+                       "2": {"name": "two", "dataset_id": "ID2", "status": "registered_no_preview"},
+                       "3": {"name": "three", "status": "blocked"}}}
+    stored = {"ID1": None, "ID2": "강우·강수"}
+    calls = []
+
+    def api(method, path, body=None):
+        calls.append((method, path, body))
+        did = path.rsplit("/", 1)[1]
+        if method == "PATCH":
+            stored[did] = body["topic"]
+        return {"datasetId": did, "topic": stored[did]}
+
+    monkeypatch.setattr(runner, "authenticated_api", api)
+    monkeypatch.setattr(runner, "save_state", lambda *_: None)
+    monkeypatch.setattr(runner, "CFG", type("C", (), {"dry_run": False})())
+    assert runner.reconcile_topics(st, rows) == 1
+    assert ("PATCH", "/api/v1/datasets/ID1", {"topic": "가뭄"}) in calls
+    assert not any(c[0] == "PATCH" and c[1].endswith("ID2") for c in calls)
+    assert st["datasets"]["1"]["topic"] == "가뭄" and st["datasets"]["2"]["topic"] == "강우·강수"
+
+    def ignoring(method, path, body=None):
+        return {"datasetId": "ID1", "topic": None}
+
+    monkeypatch.setattr(runner, "authenticated_api", ignoring)
+    with pytest.raises(runner.Fail, match="주제.*one"):
+        runner.reconcile_topics(st, rows)
 
 
 # ── ⑵ 분석 실패 자리의 갈림 ───────────────────────────────────────────────
@@ -415,3 +462,120 @@ def test_account_creation_unchecks_default_admin_for_regular_user(monkeypatch):
     monkeypatch.setattr(runner, 'el_text', lambda *args: '계정을 추가했어요.')
     runner.create_account({}, ACCOUNTS[1], 'fixture-secret')
     assert box['checked'] is False
+
+
+# ── ⑸ 업로드 마법사 필수 칸 — 분류·유형(①) · 관측 간격(②) · Lv0 출처 두 칸(③) ─────────
+# 2026-09-24 dev 3회차 실측 — 「분류 필수」·「유형 필수」가 「직접 선택해 주세요」로 남아
+# 「다음 →」이 비활성이었고 러너는 ① 에서 멈췄다(6705675d). 관측 간격·Lv0 출처는 e171c5c2 부터
+# 제출 시점 필수다(`UploadModal.tsx` 의 제출 검사 · 서버 `_validate_create_required_metadata`).
+
+def classified(seq=1, name="HSR 레이더 반사도 원자료", level="Lv0", parents=None, **over):
+    ds = {"seq": seq, "name": name, "processing_level": level, "parents": parents or [],
+          "category": "기상·기후 인자", "data_type": "지상관측자료",
+          "observation_interval": {"value": "5", "unit": "분"}}
+    if level == "Lv0":
+        ds["source"] = {"url": "https://apihub.kma.go.kr/", "downloaded_on": "2025-08-13"}
+    ds.update(over)
+    return ds
+
+
+def test_분류_유형은_계획값_그대로_두_칸을_고른다():
+    assert runner.classify_actions(classified()) == [
+        ["select", '[data-testid="reg-category"]', "기상·기후 인자"],
+        ["select", '[data-testid="reg-datatype"]', "지상관측자료"],
+    ]
+
+
+@pytest.mark.parametrize("key,value,needle", [
+    ("category", None, "분류"), ("category", "기상 인자", "분류"),
+    ("data_type", "", "유형"), ("data_type", "레이더자료", "유형"),
+])
+def test_분류_유형이_없거나_사전_밖이면_이름이_실린_실패다(key, value, needle):
+    with pytest.raises(runner.Fail) as exc:
+        runner.classify_actions(classified(**{key: value}))
+    assert "HSR 레이더 반사도 원자료" in str(exc.value) and needle in str(exc.value)
+
+
+def test_관측_간격은_숫자_칸과_단위_칸을_채운다():
+    assert runner.interval_actions(classified()) == [
+        ["fill", '[data-testid="reg-interval-value"]', "5"],
+        ["select", '[data-testid="reg-interval-unit"]', "분"],
+    ]
+
+
+@pytest.mark.parametrize("interval", [None, {"value": "5"}, {"value": "0", "unit": "분"},
+                                      {"value": "1.5", "unit": "분"}, {"value": "1", "unit": "주"}])
+def test_관측_간격이_비었거나_형상이_틀리면_실패다(interval):
+    with pytest.raises(runner.Fail) as exc:
+        runner.interval_actions(classified(observation_interval=interval))
+    assert "관측 간격" in str(exc.value)
+
+
+def test_Lv0_는_출처_주소와_내려받은_날을_채운다():
+    assert runner.source_actions(classified()) == [
+        ["fill", '[data-testid="reg-source-url"]', "https://apihub.kma.go.kr/"],
+        ["fill", '[data-testid="reg-source-downloaded-on"]', "2025-08-13"],
+    ]
+
+
+def test_Lv0_가_아니면_출처_동작이_없다():
+    assert runner.source_actions(classified(level="Lv1", parents=["x"])) == []
+
+
+@pytest.mark.parametrize("source", [None, {"url": "", "downloaded_on": "2025-08-13"},
+                                    {"url": "https://x.invalid/", "downloaded_on": "2025-02-31"},
+                                    {"url": "https://x.invalid/", "downloaded_on": "2025/08/13"}])
+def test_Lv0_출처가_비었거나_날짜가_틀리면_실패다(source):
+    with pytest.raises(runner.Fail) as exc:
+        runner.source_actions(classified(source=source))
+    assert "출처" in str(exc.value)
+
+
+def test_datasets_국면은_업로드_전에_계획_전행의_필수값을_본다(monkeypatch):
+    # 한 행이라도 비면 **첫 업로드 전에** 이름을 대고 멈춘다 — 파일을 올린 뒤 ① 에서 서는 일을 막는다.
+    from types import SimpleNamespace
+    rows = [classified(seq=1), classified(seq=2, name="rn15 15분 누적강수", category=None)]
+    monkeypatch.setattr(runner, "CFG", SimpleNamespace(only_seq=None, from_seq=None, force=False))
+    monkeypatch.setattr(runner, "do_dataset", lambda *_: pytest.fail("must not upload"))
+    with pytest.raises(runner.Fail) as exc:
+        runner.phase_datasets({"datasets": {}, "steps": {}}, {"datasets": rows})
+    assert "rn15 15분 누적강수" in str(exc.value)
+
+
+def test_fill_period_는_여는_단추와_적용_단추를_초점_Enter_로_누른다(monkeypatch):
+    # 2026-09-24 로컬 실측(ea21d8c2 번들) — 「기간」 단추 중심이 모달 머리(.modal-h) 아래에 깔려
+    # `click` 이 rc 0 인데 팝오버가 0 이었다. 여는·적용 단추는 activate(초점 ＋ Enter)여야 한다.
+    from types import SimpleNamespace
+    ds = {"name": "HSR", "period": {"start": "2019-07-28", "end": "2024-07-09", "granularity": "일"}}
+    seen = []
+    monkeypatch.setattr(runner, "CFG", SimpleNamespace(dry_run=False))
+    monkeypatch.setattr(runner, "activate", lambda css, label="": seen.append(("activate", css)))
+    monkeypatch.setattr(runner, "ab", lambda action, **_: seen.append(tuple(action[:2])) or (0, {}, ""))
+    monkeypatch.setattr(runner, "wait_css", lambda *_: True)
+    monkeypatch.setattr(runner, "wait_gone", lambda *_: True)
+    runner.fill_period(ds)
+    assert seen[0] == ("activate", '[data-testid="reg-period-open"]')
+    assert seen[-1] == ("activate", '[data-testid="reg-period-apply"]')
+    assert ("click", '[data-testid="reg-period-open"]') not in seen
+
+
+def test_분류_선택은_화면값을_되읽어_확인한다(monkeypatch):
+    screen = {}
+
+    def fake_ab(action, **_):
+        screen[action[1]] = action[2]
+        return 0, {}, ""
+    options = ["수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자",
+               "지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물"]
+    from types import SimpleNamespace
+    monkeypatch.setattr(runner, "CFG", SimpleNamespace(dry_run=False))
+    monkeypatch.setattr(runner, "ab", fake_ab)
+    monkeypatch.setattr(runner, "wait_css", lambda *_: True)
+    monkeypatch.setattr(runner, "select_state", lambda css: {"value": screen.get(css, ""), "options": options})
+    runner.select_classify(classified())
+    assert screen['[data-testid="reg-category"]'] == "기상·기후 인자"
+    assert screen['[data-testid="reg-datatype"]'] == "지상관측자료"
+    monkeypatch.setattr(runner, "select_state", lambda css: {"value": "", "options": options})
+    with pytest.raises(runner.Fail) as exc:
+        runner.select_classify(classified())
+    assert "들어가지 않았다" in str(exc.value)

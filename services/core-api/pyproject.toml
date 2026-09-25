@@ -29,4 +29,8 @@ markers = [
   # 측정 전용 — 기록된 모델 해석을 참조 코퍼스에 재생한다. 게이트 선택자(`search_golden`·`not e2e`)에
   # 들어가지 않으며 환경변수 둘(COLAB_K4_PROBE_INTERP·_OUT)이 없으면 skip 이 아니라 error 다.
   "k4_probe: K4 질의 해석 프로브 — 기록된 해석의 검색 절반 재생(측정 · 판정 게이트 아님)",
+  # 같은 계열의 측정 표식. 환경변수 `COLAB_K3_PROBE_OUT` 이 없으면 skip 이 아니라 error 다.
+  # ⚠ 정답 파일의 ID 무결성 시험에는 **이 표식을 붙이지 않는다** — 그건 환경변수 없이도
+  #   매 게이트에서 돌아야 한다(`tests/test_k3_candidate_recall.py` 머리말).
+  "k3_probe: K3 계보 후보 포함률(J1) 프로브 — 모델 호출 0회(측정 · 판정 게이트 아님)",
 ]

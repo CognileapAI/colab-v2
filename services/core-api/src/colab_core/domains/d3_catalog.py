@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import dataclasses
 import datetime as dt
+import re
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.lineage import LV_CAP, LineageSummary
+from ..ports.lineage import LV_CAP, LineageSummary, LineageSummaryPort
 from .d3_audit import append_snapshot as append_operator_snapshot
 
 # 묘비(삭제된 데이터셋)는 카탈로그 목록에 서지 않는다 — 상세 화면도 없다
@@ -325,6 +326,268 @@ def list_lineage_candidate_cores(
     ) for r in rows]
 
 
+# ════════════════════════════════════════════════════════════════════════════
+# 계보 후보 선정 — K3 `WU1a` (`dev-package/prd/rounds/R-K3-RESUME.md`)
+#
+# **모집단은 사람이 고르는 후보와 같아야 한다.** 그래서 새 질의를 만들지 않고
+# `list_lineage_candidate_cores`(=`listLineageCandidates` 가 쓰는 그 함수)를 그대로 부른다.
+# 질의가 두 벌이 되는 순간 화면의 후보와 AI 가 본 후보가 갈리고, 그 어긋남은 아무도 못 센다.
+#
+# ⚠ **여기까지가 이 함수의 일이다.** 순위·근거·확신도는 D10 의 몫이고(`〈72〉-㉮` 와 같은 분담),
+#   계약·중계 본문은 `WU1b`·`WU0` 의 자리다 — 이 모듈은 계약을 알지 못한다.
+#
+# ⛔ **뺄 ID 가 없다**(`exclude_id=None`). 제안을 묻는 시점의 업로드는 아직 데이터셋이 아니다
+#   (`routes/ingestion.py:538-562` — 인자는 `uploadId` 다). 그래서 **ID 대신 값으로** 가른다 —
+#   ⭑ ⟨2026-09-24 · Ted 결정 ⑦⟩ **이름 초안과 파일명이 둘 다 같은 후보는 뺀다.** 근거는 luna
+#   실측이다: J5 대조군의 억지 선택 6건 중 **5건이 자식 자신**이었고, 본군에서도 한 번 났다
+#   (`dev-package/reports/k3-lineage-probe/README.md` 「luna 실측」). 같은 자료가 이미 등록돼
+#   있으면 그 데이터셋이 후보에 서고, 정답 부모가 사라진 자리를 「글자가 가장 많이 겹치는 후보
+#   = 자기 자신」이 채운다. 모델에게 그것은 후보 밖 ID 가 아니라 **오답**이라 아무 방어선에도
+#   안 걸린다. ⚠ **이름 하나로는 빼지 않는다** — 같은 이름의 다음 판은 이전 판의 부모일 수 있다.
+# ════════════════════════════════════════════════════════════════════════════
+
+#: 전략 두 벌. **둘 다 구현해 나란히 잰다** — Ted 결정 ③(후보 필터)이 열려 있고,
+#: 한쪽만 구현하면 그 결정이 측정 없이 기본값으로 굳는다(라운드 「게이트 ① 판정」).
+RECENT_CANDIDATES = "recent"
+FILTERED_CANDIDATES = "filtered"
+LINEAGE_CANDIDATE_STRATEGIES = (RECENT_CANDIDATES, FILTERED_CANDIDATES)
+
+#: 토큰 경계 = 글자·숫자가 아닌 모든 것. `—`·`·`·`_`·`(`·`.` 가 여기서 갈라진다.
+_TOKEN_BOUNDARY = re.compile(r"[^0-9A-Za-z가-힣]+")
+#: 라틴·숫자만으로 된 조각인가. 한글 토큰과 **길이 기준이 다르다**(아래).
+_LATIN_TOKEN = re.compile(r"^[0-9a-z]+$")
+#: 한 번에 내려보내는 토큰 상한. 토큰 하나가 질의 한 문장이라 상한이 곧 왕복 상한이다.
+_MAX_FILTER_TOKENS = 8
+
+
+@dataclasses.dataclass(frozen=True)
+class LineageCandidate:
+    """후보 한 건 — 카탈로그 사실 + **판정된 경우에만** 가공 단계.
+
+    `processing_level` 이 `None` 인 것은 「Lv0」이 아니라 **「판정이 없다」**다. 두 값을 한
+    칸에 접으면 「원자료」와 「아직 아무도 안 봤다」가 같은 값이 된다(`lineage_state` ⑷⑹).
+    `matched_by` 는 **무엇이 이 후보를 끌어왔는가**의 기록이다 — 결정 ③ 을 수치로 견주려면
+    「주제가 잡았나 · 어느 토큰이 잡았나 · 그냥 최근순이었나」가 남아 있어야 한다.
+
+    ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ `derived_level` 이 더해졌다 — `processing_level` 과 다른 값이다.**
+    저쪽은 **표시·전송용**이라 판정된 경우에만 서지만(위 문단), 이쪽은 계보에서 계산한
+    파생값이라 **언제나 정의된다**(`level_view:processingLevelDerived`). 적격 필터가 쓰는 값이
+    이쪽이고, **요청 본문에는 나가지 않는다** — core-api 안에서만 산다(라운드 열린 권고 ①).
+    계보 요약 Port 를 안 받은 호출에서는 파생값을 모르므로 `None` 이다.
+    """
+
+    core: DatasetCore
+    processing_level: int | None = None
+    matched_by: tuple[str, ...] = ()
+    derived_level: int | None = None
+
+
+def lineage_candidate_tokens(upload_meta: dict) -> list[str]:
+    """업로드 메타에서 후보 필터에 쓸 토큰을 뽑는다. 입력 모양은 계약의 요청 본문과 같다.
+
+    읽는 자리는 둘뿐이다 — `datasetNameDraft`(등록 폼 초안)와 `file.fileName`.
+    **중계가 실제로 가진 값만** 읽는다(`core-ai.yaml#UploadedFileMeta` 는 파일 이름을 하나만
+    나른다). 여기서 파일 목록 전체를 지어내면 제품이 못 가진 신호로 수치가 부풀려진다.
+
+    버리는 것과 그 이유:
+      · **확장자** — `.npy` 한 조각이 코퍼스 절반을 끌고 온다. 자료의 내용이 아니라 담는 그릇이다.
+      · **숫자만인 조각**(`202305`·`100`) — 날짜·해상도는 이름이 아니라 메타의 다른 축이다.
+      · **라틴 2글자 이하**(`Lv`·`GK`·`2A`·`m`) — `%lv%` 는 `(Lv.0)` 을 단 모든 이름에 맞는다.
+        한글은 2글자가 이미 낱말이라(`강수`·`식생`) 기준을 같게 두면 진짜 신호가 사라진다.
+        **언어별 기준이지 이 코퍼스에 맞춘 값이 아니다** — 불용어 목록을 만들지 않는 이유다.
+    """
+    file_meta = upload_meta.get("file") or {}
+    file_name = file_meta.get("fileName") or ""
+    stem = file_name.rpartition(".")[0] or file_name
+    tokens: list[str] = []
+    for source in (upload_meta.get("datasetNameDraft") or "", stem):
+        for raw in _TOKEN_BOUNDARY.split(source):
+            token = raw.casefold()
+            if not token or token.isdigit():
+                continue
+            if _LATIN_TOKEN.match(token):
+                if len(token) < 3:
+                    continue
+            elif len(token) < 2:
+                continue
+            if token not in tokens:
+                tokens.append(token)
+    return tokens[:_MAX_FILTER_TOKENS]
+
+
+def _self_candidate_ids(session: Session, upload_meta: dict,
+                        cores: list[DatasetCore]) -> set[str]:
+    """후보 중 **업로드 자신**인 것의 ID. 둘 다 같을 때만 자신이다(머리말 · Ted 결정 ⑦).
+
+    ⑴ 이름 초안(`datasetNameDraft`)이 후보 이름과 같고, ⑵ 업로드 파일 이름이 그 후보의
+    **본체 파일 이름 중 하나**와 같다. 둘 중 하나만 같으면 빼지 않는다 — 이름만 같은 것은
+    다른 판본이고, 파일명만 같은 것은 같은 원본을 쓴 남의 자료다.
+
+    파일 이름은 이미 있는 질의(`candidate_body_files`)로 읽는다. **새 SQL 을 만들지 않는다** —
+    그 질의는 이 세션의 RLS 를 그대로 타므로 잠긴 데이터셋의 본체는 보이지 않고, 그때는
+    「확인할 수 없으니 남긴다」로 떨어진다. 후보 하나를 덜 빼는 쪽이 진짜 부모를 지우는 쪽보다
+    싸다. 같은 이유로 이름·파일명은 **원문 그대로** 견준다(양끝 공백만 버린다).
+    """
+    draft = (upload_meta.get("datasetNameDraft") or "").strip()
+    file_name = ((upload_meta.get("file") or {}).get("fileName") or "").strip()
+    if not draft or not file_name:
+        return set()
+    # 이름이 같은 후보만 파일을 읽는다 — 보통 0~1건이라 질의가 모집단을 따라 커지지 않는다.
+    same_name = [c.dataset_id for c in cores if (c.name or "").strip() == draft]
+    if not same_name:
+        return set()
+    files = candidate_body_files(session, [Ulid(i) for i in same_name])
+    return {i for i in same_name if file_name in files.get(i, ())}
+
+
+def _candidate_page(session: Session, *, query: str | None = None,
+                    topic: str | None = None, limit: int) -> list[DatasetCore]:
+    """사람이 고르는 후보와 **같은 질의**. 여기서 새 SQL 을 만들지 않는다."""
+    return list_lineage_candidate_cores(
+        session, query=query, category=None, topic=topic, period_start=None,
+        period_end=None, exclude_id=None, cursor_at=None, cursor_id=None, limit=limit)
+
+
+def eligibility_level(core: DatasetCore, summary: LineageSummary | None,
+                      *, derived_known: bool) -> int | None:
+    """적격 판정에 쓰는 **한 값** — 파생 Lv 와 사람이 고른 Lv 의 **큰 쪽**이다(Ted 판정 ③).
+
+    왜 `max` 인가 — 두 값은 어긋날 수 있고(`level_view` 에 `processingLevelMismatch` 가 있는
+    이유가 그것이다) 어긋날 때 **더 높은 쪽을 믿는 것이 안전한 방향**이다. 적격 필터가
+    막으려는 것은 「자손이 부모로 제안되는 것」이라, 한 축이 「이건 Lv2 다」라고 말하는데
+    다른 축이 0 이라고 해서 통과시키면 막으려던 것이 정확히 샌다.
+
+    ⚠ **파생값만 보면 새는 자리가 있다.** 부모가 있고 확정일이 없는 자식은
+    `lineage_state` 가 「확인 필요」라 `processing_level` 이 `None` 으로 실리는데, 파생값은
+    그때도 정의된다 — 2차 실측의 오답(**자기 자식**)이 정확히 그 모양이었다.
+    거꾸로 파생 0 인데 사람이 `Lv2` 라고 적어 둔 행도 있고, 그 자리는 사람 값만이 안다.
+
+    ⚠ **모르면 `None` 이고, `None` 은 「걸지 않는다」다** — 「모른다」를 이유로 진짜 부모를
+    지우지 않는다(라운드 열린 권고 ③ 채택). 파생값을 모르는 것은 계보 요약 Port 를 안 받은
+    호출뿐이다(`derived_known=False`).
+    """
+    human = user_set_level(core)
+    derived = level_view(core, summary)["processingLevelDerived"] if derived_known else None
+    known = [level for level in (derived, human) if level is not None]
+    return max(known) if known else None
+
+
+def select_lineage_candidates(session: Session, *, lab_id, upload_meta: dict,
+                              strategy: str, k: int = 20,
+                              lineage_summaries: LineageSummaryPort | None = None,
+                              upload_level: int | None = None,
+                              ) -> list[LineageCandidate]:
+    """AI 계보 제안에 실을 후보를 골라 **최근 수정순으로** 돌려준다.
+
+    :param lab_id: **경계가 아니다.** 연구실 경계는 이 세션에 이미 걸린 RLS 가 긋는다
+        (`list_dataset_cores` 머리말과 같은 규율). 이 인자는 호출자가 어느 연구실을 향한
+        선정인지 적어 두기 위한 값이고 **질의 조건으로 쓰지 않는다** — 문자열을 SQL 에
+        끼워 넣는 순간 경계가 두 벌이 되고, 두 벌이 된 경계는 언젠가 갈린다.
+    :param upload_meta: 계약 `LineageSuggestionRequest` 와 같은 모양의 dict —
+        `datasetNameDraft`(선택) · `subject`(선택) · `file`(`UploadedFileMeta`).
+        **이름 초안과 파일 이름이 둘 다 같은 후보는 빠진다**(`_self_candidate_ids` · 머리말).
+        두 값 중 하나라도 없으면 자신을 가릴 수 없으므로 아무것도 빼지 않는다.
+    :param strategy: `"recent"` = 오늘의 모집단 그대로(무필터 최근순).
+        `"filtered"` = 같은 모집단을 **주제 ∪ 이름/파일명 토큰**으로 좁힌 것.
+        합집합인 이유는 recall 이 이 회차의 판정 대상이기 때문이다 — 교집합으로 좁히면
+        주제를 안 고른 업로드에서 후보가 통째로 사라진다. 좁힌 결과가 **0건이면 최근순으로
+        떨어진다**: 빈 후보는 「없더라」가 아니라 「못 물어봤다」이고, 그 둘을 접지 않는다.
+    :param k: 후보 상한(권고 20 · 미해결 질문 ④).
+    :param lineage_summaries: D4 사실을 주는 Port. **없으면 가공 단계를 싣지 않는다** —
+        모르는 값을 `0` 으로 채우지 않는다. D3 은 D4 테이블을 직접 읽지 않는다(머리말).
+    :param upload_level: ⭑ **⟨K3 `WU-S1b` 2026-09-24 · Ted 판정 ③⟩ 업로드한 사람이 고른
+        자기 가공 단계.** 주면 「부모 Lv ≤ 자기 Lv」로 후보를 거른다(`eligibility_level` 이
+        그 한 값을 만든다 — 파생과 사람 값의 큰 쪽). **`None` 이면 지금과 같다** — 호출자가
+        하나뿐이고 기본값이 현행을 보존한다.
+
+        ⚠ **Lv3 은 아무것도 거르지 못한다(상한 구멍).** 후보 Lv 의 상한이 3 이라
+        「후보 Lv > 3」인 후보가 존재할 수 없다. Lv3 업로드에서 자기 자손을 막는 것은 이
+        필터가 아니라 자손 배제 축의 일이고, 그것은 이 회차 밖이다.
+    """
+    if strategy not in LINEAGE_CANDIDATE_STRATEGIES:
+        raise ValueError(
+            f"모르는 후보 선정 전략이다: {strategy!r}. "
+            f"고를 수 있는 값은 {LINEAGE_CANDIDATE_STRATEGIES} 뿐이다.")
+    if isinstance(k, bool) or not isinstance(k, int) or k < 1:
+        raise ValueError(f"후보 상한 k 는 1 이상의 정수다: {k!r}")
+
+    cores: dict[str, DatasetCore] = {}
+    matched: dict[str, list[str]] = {}
+
+    def take(core: DatasetCore, why: str) -> None:
+        cores[core.dataset_id] = core
+        reasons = matched.setdefault(core.dataset_id, [])
+        if why not in reasons:
+            reasons.append(why)
+
+    def drop_self() -> None:
+        """모은 뒤·상한 k 로 자르기 **전에** 뺀다.
+
+        모은 것이 k 보다 많으면 빈 자리를 뒤의 진짜 후보가 채운다. ⚠ 다만 질의 하나가
+        k행만 읽어 오므로(위 주석) **늘 채워지지는 않는다** — 결과는 뺀 건수만큼 짧아질 수
+        있고, **어느 쪽이든 k 를 넘지는 않는다.**
+        """
+        for dataset_id in _self_candidate_ids(session, upload_meta, list(cores.values())):
+            cores.pop(dataset_id, None)
+            matched.pop(dataset_id, None)
+
+    if strategy == FILTERED_CANDIDATES:
+        topic = (upload_meta.get("subject") or "").strip() or None
+        if topic:
+            for core in _candidate_page(session, topic=topic, limit=k):
+                take(core, "topic")
+        for token in lineage_candidate_tokens(upload_meta):
+            # 질의 하나당 상위 k 만 읽어도 합집합의 상위 k 는 온전하다 — 어떤 후보가
+            # 합집합 상위 k 안이면 자기를 끌어온 질의 안에서도 상위 k 안이다.
+            for core in _candidate_page(session, query=token, limit=k):
+                take(core, f"token:{token}")
+        # 자신을 뺀 뒤 0건이면 아래 최근순 폴백으로 떨어진다 — 「자신 하나만 걸렸다」를
+        # 「살펴볼 후보가 없다」로 접지 않는다(:param strategy: 의 0건 규율과 같은 자리).
+        drop_self()
+
+    if not cores:
+        for core in _candidate_page(session, limit=k):
+            take(core, RECENT_CANDIDATES)
+        drop_self()
+
+    ordered = sorted(cores.values(), key=lambda c: c.dataset_id)
+    ordered.sort(key=lambda c: c.last_modified_at, reverse=True)
+
+    # **적격 필터는 상한 k 보다 먼저 건다** — 자기 자신 제외(`drop_self`)와 같은 자리다.
+    # 뒤에서 빼면 k 자리 안에서만 사라지고 모집단 뒤쪽의 참인 부모는 영영 안 보인다.
+    # 그래서 계보 요약도 **자르기 전에** 읽는다. `upload_level` 이 없으면 읽는 범위가 종전과
+    # 같다(자른 뒤 k건) — 기본값이 질의 크기까지 현행으로 보존한다.
+    summaries: dict[str, LineageSummary] = {}
+    weighed = ordered if upload_level is not None else ordered[:k]
+    if lineage_summaries is not None:
+        summaries = lineage_summaries.summaries([Ulid(c.dataset_id) for c in weighed])
+    derived_known = lineage_summaries is not None
+    eligible = {c.dataset_id: eligibility_level(c, summaries.get(c.dataset_id),
+                                                derived_known=derived_known)
+                for c in weighed}
+    if upload_level is not None:
+        ordered = [c for c in ordered
+                   if eligible[c.dataset_id] is None or eligible[c.dataset_id] <= upload_level]
+    ordered = ordered[:k]
+
+    picked: list[LineageCandidate] = []
+    for core in ordered:
+        level = None
+        summary = summaries.get(core.dataset_id)
+        if lineage_summaries is not None:
+            declared = bool(summary is not None and summary.marked_unknown)
+            # 「확인 필요」 = 아직 아무도 판정하지 않았다. 그 자리에 파생 `0` 을 싣지 않는다.
+            if lineage_state(core, summary, unknown_declared=declared) != "확인 필요":
+                level = level_view(core, summary)["processingLevel"]
+        picked.append(LineageCandidate(
+            core=core, processing_level=level,
+            matched_by=tuple(matched[core.dataset_id]),
+            # **필터가 무엇으로 걸렀는가**를 남긴다. 나가는 본문에는 실리지 않는다.
+            derived_level=(level_view(core, summary)["processingLevelDerived"]
+                           if derived_known else None)))
+    return picked
+
+
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
     """연구실 경계는 RLS 가 이미 걸었다 — 여기에 lab_id 조건을 다시 적지 않는다."""
     rows = session.execute(_ROWS).mappings().all()
@@ -626,6 +889,36 @@ def periods_of(session: Session, dataset_ids: list[Ulid]) -> dict[str, tuple]:
         return {}
     rows = session.execute(_PERIODS, {"ids": [str(i) for i in dataset_ids]}).mappings()
     return {r["dataset_id"]: (r["period_start"], r["period_end"]) for r in rows}
+
+
+#: ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 후보의 **날값** 6칸을 한 번에.** `_PERIODS` 와 같은 모양이고
+#: 조건도 같은 자리(ID 목록)뿐이다 — **연구실 경계는 이 세션의 RLS 가 긋는다**(`lab_id` 조건을
+#: 다시 적지 않는다 · `list_dataset_cores` 머리말과 같은 규율).
+#: ⚠ `period_start IS NOT NULL` 을 **걸지 않는다** — `_PERIODS` 는 기간 표시가 목적이라 그
+#: 조건이 맞지만, 여기는 좌표계·격자·변수·파일명도 함께 읽는다. 기간이 없다고 나머지 축을
+#: 함께 잃으면 대조할 수 있었던 근거가 사라진다.
+#: ⚠ 이름이 `_AUTOMETA` 가 아닌 이유 — 그 이름은 **상세 한 건**을 읽는 질의가 이미 쓰고 있다
+#: (`find_autometa:860`). 같은 이름으로 두 번 세우면 뒤에 선 쪽이 앞을 조용히 덮고, 앞을 쓰던
+#: 자리는 「bind parameter 가 없다」로 500 을 낸다.
+_AUTOMETA_AXES = text("""
+    SELECT dataset_id, crs, grid, variables, bundle_file_name, period_start, period_end
+      FROM d3_dataset_autometa
+     WHERE dataset_id = ANY(CAST(:ids AS char(26)[]))
+""")
+
+
+def autometa_of(session: Session, dataset_ids: list[Ulid]) -> dict[str, dict]:
+    """여러 건의 자동 메타를 **일괄 질의 하나**로. 후보 수만큼 질의를 열지 않는다(N+1 금지).
+
+    **행이 없으면 열쇠가 없다** — 자동 메타를 한 번도 못 읽은 데이터셋이 실재하고, 그때
+    빈 dict 를 채워 넣으면 「못 읽음」과 「값 없음」이 갈리지 않는다(`periods_of` 와 같은 규율).
+    열 이름 그대로 돌려준다 — 묶음 이름은 `bundle_file_name`(조각 이름이 아니다 · `DataModel §4.3`)
+    이고, 축 이름으로 옮겨 적는 것은 비교기(`d3_lineage_signals.CandidateAxes.from_autometa`)의 일이다.
+    """
+    if not dataset_ids:
+        return {}
+    rows = session.execute(_AUTOMETA_AXES, {"ids": [str(i) for i in dataset_ids]}).mappings()
+    return {r["dataset_id"]: dict(r) for r in rows}
 
 
 def has_reference_grid_file(session: Session, dataset_id: Ulid) -> bool:
@@ -1455,18 +1748,36 @@ def processing_level(summary: LineageSummary | None) -> int:
     return min(summary.max_primary_parent_level + 1, LV_CAP)
 
 
+#: 사람이 고를 수 있는 가공 단계 **4값**. 저장 CHECK(`d3_dataset.processing_level_user_set` ·
+#: 마이그레이션 `0015`)와 계약 enum(`fe-core.yaml listUploadLineageSuggestions`
+#: `processingLevelUserSet`)이 **같은 넷**이다. 순서가 곧 정수값이다.
+USER_SET_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+
+
+def parse_user_set_level(raw: str | None) -> int | None:
+    """`Lv0`~`Lv3` 문자열을 **정수**로 옮기는 유일한 자리. 4값 밖이면 `None` 이다.
+
+    ⭑ **⟨K3 `WU-S1b` 2026-09-24 · Ted 판정 기록⟩ 변환 자리를 여기 하나로 못 박는다.**
+    계약이 그렇게 적었다(`fe-core.yaml` 축자 — 「문자열→정수 변환은 `d3_catalog.user_set_level`
+    **한 곳에만** 둔다. 계약 층에서 정수로 받으면 변환 자리가 둘이 되고 두 벌은 언젠가 갈린다」).
+    그래서 라우트는 질의 문자열을, 이 함수는 저장 문자열을 같은 규칙으로 읽는다.
+
+    ⚠ **모르는 값과 안 고른 값을 같은 `None` 으로 돌려준다** — 둘을 가르는 것은 부르는 쪽이다.
+    저장값은 CHECK 가 4값을 지키므로 여기서 `None` 이면 「안 골랐다」이고, 질의 문자열은
+    아무 글자나 올 수 있으므로 라우트가 「없음」과 「계약 밖」을 가려 400 을 낸다.
+    """
+    return USER_SET_LEVELS.index(raw) if raw in USER_SET_LEVELS else None
+
+
 def user_set_level(core: DatasetCore) -> int | None:
     """사람이 고른 가공 단계를 **정수**로 읽는다. 안 골랐으면 `None` 이다.
 
     저장값은 `Lv0`~`Lv3` 문자열(`d3_dataset.processing_level_user_set` CHECK)이고 응답의
     `processingLevel` 은 정수(`common.json#/$defs/ProcessingLevel`)라, 두 축을 견주려면
     한 번은 옮겨 적어야 한다. **그 자리를 한 곳으로 모은다** — 세 라우트가 각자 자르면
-    갈라진다.
+    갈라진다. 옮겨 적는 규칙 자체는 `parse_user_set_level` 이 쥔다.
     """
-    raw = core.processing_level_user_set
-    if not isinstance(raw, str) or not raw.startswith("Lv") or not raw[2:].isdigit():
-        return None
-    return int(raw[2:])
+    return parse_user_set_level(core.processing_level_user_set)
 
 
 def level_pair(core: DatasetCore, summary: LineageSummary | None) -> dict:

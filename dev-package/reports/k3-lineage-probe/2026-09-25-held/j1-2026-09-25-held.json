@@ -1,0 +1,714 @@
+{
+  "kind": "K3 J1 — core-api 후보 선정의 포함률만. 모델 호출 0회 · 계약 변경 0건 · 판정 게이트 아님",
+  "corpus": "eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json 의 28건을 일회용 DB 에 재생",
+  "sample_limits": {
+    "children": 6,
+    "edges": 10,
+    "candidate_population": 28,
+    "visible_datasets_in_dev": 28,
+    "snapshot_children_with_parents": 13,
+    "snapshot_edges": 18
+  },
+  "visible_datasets_note": "스냅샷의 `visible_datasets` 는 목록이 아니라 dev 의 가시 데이터셋 **수**(28)다. 모집단을 좁힐 수 있는 값이 아니라 코퍼스 28건이 그 부분집합임을 말한다.",
+  "product_cap_note": "제품 권고 상한은 k=20(미해결 질문 ④). 여기서는 전 모집단을 읽고 앞에서 잘라 잰다.",
+  "recent_order_caveat": "참조 코퍼스는 한 번에 적재돼 `last_modified_at` 이 마이크로초 단위로만 갈린다. 그래서 `recent` 의 순서는 실제 최신성이 아니라 **적재 역순**이고, 그 전략의 recall@5·@10 은 이 코퍼스에서 신호가 아니라 배치의 산물이다. recall@20(=모집단 전체)만 전략과 무관하게 읽을 수 있다.",
+  "seed_rows_note": "일회용 DB 에는 시험 시드(DSA1·DSA2)가 같은 연구실에 함께 서 있다. 그 둘도 사람이 고를 수 있는 진짜 후보라 모집단에 세고, 케이스마다 `population_outside_corpus` 로 몇 건인지 드러낸다.",
+  "k_values": [
+    5,
+    10,
+    20
+  ],
+  "strategies": {
+    "recent": {
+      "summary": {
+        "edges": 10,
+        "recall": {
+          "5": 0,
+          "10": 0,
+          "20": 4
+        },
+        "missed_at_20": [
+          "01M39T7N812JDX7GW62F8YFZ0V",
+          "01M39TK0F5P3W4APB91N08KTMY",
+          "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "01M39TB4NTBCFC8TSTNB93N5YP",
+          "01M39TSEPR820QBZ1DBBFKDJEP",
+          "01M39T979PMQKRSK3GPCNYWHH3"
+        ],
+        "population": [
+          29,
+          29,
+          29,
+          29,
+          29,
+          29
+        ]
+      },
+      "cases": [
+        {
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "upload_meta": {
+            "datasetNameDraft": "hsr_sample",
+            "file": {
+              "fileName": "hsr_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "hsr_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "hsr",
+            "sample"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": 27,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "upload_meta": {
+            "datasetNameDraft": "GK2A_NDVI_mean_202305",
+            "file": {
+              "fileName": "GK2A_NDVI_mean_202305.tif",
+              "kind": "본체",
+              "format": "GeoTIFF",
+              "variables": [
+                "band1"
+              ],
+              "crs": "EPSG:4326",
+              "gridDescription": "1280x1280"
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "gk2a",
+            "ndvi",
+            "mean"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": 22,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "upload_meta": {
+            "datasetNameDraft": "pred_sample",
+            "file": {
+              "fileName": "pred_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "pred_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "pred",
+            "sample"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": 25,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": 24,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "upload_meta": {
+            "datasetNameDraft": "Prediction (공간상세화)",
+            "file": {
+              "fileName": "Prediction_20230501.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "Prediction_20230502"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "1280x1280",
+              "partCount": 33
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "prediction",
+            "공간상세화"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": 21,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": 20,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": 19,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": 18,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": 17,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "upload_meta": {
+            "datasetNameDraft": "rn15_sample",
+            "file": {
+              "fileName": "rn15_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "rn15_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "rn15",
+            "sample"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": 26,
+              "matched_by": [
+                "recent"
+              ],
+              "hit": {
+                "5": false,
+                "10": false,
+                "20": false
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "upload_meta": {
+            "datasetNameDraft": "DEM",
+            "file": {
+              "fileName": "DEM.tif",
+              "kind": "본체",
+              "format": "GeoTIFF",
+              "variables": [
+                "band1"
+              ],
+              "crs": "EPSG:4326",
+              "gridDescription": "1280x1280"
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "dem"
+          ],
+          "population": 29,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": []
+        }
+      ]
+    },
+    "filtered": {
+      "summary": {
+        "edges": 10,
+        "recall": {
+          "5": 8,
+          "10": 10,
+          "20": 10
+        },
+        "missed_at_20": [],
+        "population": [
+          8,
+          8,
+          7,
+          6,
+          6,
+          6
+        ]
+      },
+      "cases": [
+        {
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "upload_meta": {
+            "datasetNameDraft": "hsr_sample",
+            "file": {
+              "fileName": "hsr_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "hsr_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "hsr",
+            "sample"
+          ],
+          "population": 8,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": 6,
+              "matched_by": [
+                "topic",
+                "token:hsr"
+              ],
+              "hit": {
+                "5": false,
+                "10": true,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "upload_meta": {
+            "datasetNameDraft": "GK2A_NDVI_mean_202305",
+            "file": {
+              "fileName": "GK2A_NDVI_mean_202305.tif",
+              "kind": "본체",
+              "format": "GeoTIFF",
+              "variables": [
+                "band1"
+              ],
+              "crs": "EPSG:4326",
+              "gridDescription": "1280x1280"
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "gk2a",
+            "ndvi",
+            "mean"
+          ],
+          "population": 8,
+          "population_outside_corpus": [],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": 8,
+              "matched_by": [
+                "topic",
+                "token:gk2a"
+              ],
+              "hit": {
+                "5": false,
+                "10": true,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "upload_meta": {
+            "datasetNameDraft": "pred_sample",
+            "file": {
+              "fileName": "pred_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "pred_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "pred",
+            "sample"
+          ],
+          "population": 7,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": 3,
+              "matched_by": [
+                "topic",
+                "token:sample"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": 2,
+              "matched_by": [
+                "topic",
+                "token:sample"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "upload_meta": {
+            "datasetNameDraft": "Prediction (공간상세화)",
+            "file": {
+              "fileName": "Prediction_20230501.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "Prediction_20230502"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "1280x1280",
+              "partCount": 33
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "prediction",
+            "공간상세화"
+          ],
+          "population": 6,
+          "population_outside_corpus": [],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": 5,
+              "matched_by": [
+                "topic"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": 4,
+              "matched_by": [
+                "topic"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": 3,
+              "matched_by": [
+                "topic"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": 2,
+              "matched_by": [
+                "topic"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": 1,
+              "matched_by": [
+                "topic"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "upload_meta": {
+            "datasetNameDraft": "rn15_sample",
+            "file": {
+              "fileName": "rn15_sample.npy",
+              "kind": "본체",
+              "format": "NumPy",
+              "variables": [
+                "rn15_sample"
+              ],
+              "crs": "WGS84 (기준 격자 파일)",
+              "gridDescription": "128x128",
+              "partCount": 3
+            },
+            "subject": "강우·강수"
+          },
+          "tokens": [
+            "rn15",
+            "sample"
+          ],
+          "population": 6,
+          "population_outside_corpus": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "child_itself_in_population": false,
+          "parents": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": 3,
+              "matched_by": [
+                "topic",
+                "token:rn15"
+              ],
+              "hit": {
+                "5": true,
+                "10": true,
+                "20": true
+              }
+            }
+          ]
+        },
+        {
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "upload_meta": {
+            "datasetNameDraft": "DEM",
+            "file": {
+              "fileName": "DEM.tif",
+              "kind": "본체",
+              "format": "GeoTIFF",
+              "variables": [
+                "band1"
+              ],
+              "crs": "EPSG:4326",
+              "gridDescription": "1280x1280"
+            },
+            "subject": "식생·NDVI"
+          },
+          "tokens": [
+            "dem"
+          ],
+          "population": 6,
+          "population_outside_corpus": [],
+          "child_itself_in_population": false,
+          "parents": []
+        }
+      ]
+    }
+  }
+}

@@ -663,8 +663,8 @@ case "$GATE" in
     #   (`stage2-markers` 가 e2e 를 빼는 것과 같은 규율). 뺀 건수는 요약줄에 deselected 로 나온다.
     # 수집 0건 · 실행 0건(전부 skip) · failed/errors 는 전부 red. venv 부재는 red(준비 · 78).
     case "$GATE" in
-      # `k4_probe` 는 측정 전용(기록된 해석 재생 · env 둘 필수)이라 판정 게이트에서 뺀다 — skip 이 아니라 미수집이다.
-      service-tests-core-api)        exec "$REPO_ROOT/gates/tools/service-tests.sh" core-api        "not e2e and not k4_probe" ;;
+      # `k4_probe`·`k3_probe` 는 측정 전용(env 필수)이라 판정 게이트에서 뺀다 — skip 이 아니라 미수집이다.
+      service-tests-core-api)        exec "$REPO_ROOT/gates/tools/service-tests.sh" core-api        "not e2e and not k4_probe and not k3_probe" ;;
       service-tests-ai-service)      exec "$REPO_ROOT/gates/tools/service-tests.sh" ai-service      "not dictdb" ;;
       service-tests-viz-render)      exec "$REPO_ROOT/gates/tools/service-tests.sh" viz-render      "not e2e and not perf" ;;
       service-tests-pipeline-worker) exec "$REPO_ROOT/gates/tools/service-tests.sh" pipeline-worker "not e2e and not dbint" ;;

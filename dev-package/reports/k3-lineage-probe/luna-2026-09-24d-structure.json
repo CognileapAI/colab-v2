@@ -1,0 +1,4752 @@
+{
+  "kind": "K3 WU-S6 실측 — 기록된 후보·대조군 4종에 두 팔(규칙·모델)을 나란히 건다. 모델 팔은 ai-service 생산자 + core-api 인용 검증까지 제품 그대로다. 후보 선정은 core-api(재생 시험)의 몫이고 여기서 하지 않는다. 판정 게이트가 아니다",
+  "model": "gpt-5.6-luna",
+  "arms": [
+    "rules",
+    "model"
+  ],
+  "groups": [
+    "main",
+    "removed",
+    "descendants",
+    "siblings",
+    "removed_and_siblings"
+  ],
+  "repeats": 2,
+  "timeout_seconds": 8.0,
+  "candidates_source": "dev-package/reports/k3-lineage-probe/candidates-2026-09-24d.json",
+  "candidates_sha256": "2c9584bb32ad906f7d12892ea1e82784f8c5ec731aeeb8f0500212fbd46af9c4",
+  "candidates_local_sha": "b0e5d0153cc328466cbc9e4fce14d4609d90f549",
+  "sample_limits": {
+    "children": 4,
+    "edges": 6,
+    "candidate_population": 9,
+    "visible_datasets_in_dev": 25
+  },
+  "autometa_axes_present": {
+    "period": 0,
+    "crs": 0,
+    "grid": 0,
+    "variables": 0,
+    "fileName": 9
+  },
+  "sibling_rules": [
+    "same_level"
+  ],
+  "strategy": "filtered",
+  "k": 20,
+  "system_prompt_sha256": "0f71e74666ed1c584802e2b37bce722cd0ab524bab9c89b7b022dda92b5f113e",
+  "suggester_sha256": "a2437a42d3d06bfcf3f556fc4a9efeebfdde5b29fc47875863b15f4eec147364",
+  "verifier_sha256": "b4d30a695a419800191a36b6b016e40173c11b701c429164b159a42012427067",
+  "signals_sha256": "480de539dd16000be87da72e524d51e238a6a966ce5ad1140b527ff7968f55c6",
+  "runner_sha256": "e02ff37d2a15ed07e938f1a401e32ae83fe0c694bce0ce9fdc9e829780785a32",
+  "local_sha": "b0e5d0153cc328466cbc9e4fce14d4609d90f549",
+  "model_calls": 30,
+  "judgement": {
+    "rules": {
+      "J1_recall": {
+        "edges": 6,
+        "in_candidates": 6
+      },
+      "J2_hit": {
+        "per_pass": [
+          {
+            "edges": 6,
+            "hit1": 1,
+            "hit3": 2
+          }
+        ]
+      },
+      "J3_citations": {
+        "evidence_claimed": 8,
+        "evidence_discarded": 0,
+        "discard_rate": 0.0,
+        "suggestions_dropped_unverified": 0,
+        "final_citation_errors": 0,
+        "grounding_hard": 0,
+        "grounding_hard_tokens": []
+      },
+      "J4_calibration": {
+        "확실": {
+          "correct": 0,
+          "wrong": 0
+        },
+        "애매": {
+          "correct": 2,
+          "wrong": 2
+        },
+        "모름": {
+          "correct": 0,
+          "wrong": 0
+        }
+      },
+      "J5_groups": {
+        "main": {
+          "cases": 4,
+          "empty": 1,
+          "non_empty": 3,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            2,
+            4,
+            6
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ]
+        },
+        "removed": {
+          "cases": 4,
+          "empty": 2,
+          "non_empty": 2,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            1,
+            2,
+            5
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "non_empty_children": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ]
+        },
+        "descendants": {
+          "cases": 4,
+          "empty": 4,
+          "non_empty": 0,
+          "structural": true,
+          "verdict": "green",
+          "candidate_counts": [
+            0
+          ],
+          "vacuous": 4,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "siblings": {
+          "cases": 4,
+          "empty": 2,
+          "non_empty": 2,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            1,
+            3
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "non_empty_children": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ]
+        },
+        "removed_and_siblings": {
+          "cases": 4,
+          "empty": 4,
+          "non_empty": 0,
+          "structural": true,
+          "verdict": "green",
+          "candidate_counts": [
+            0,
+            1,
+            2,
+            4
+          ],
+          "vacuous": 1,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        }
+      },
+      "J6_outside": {
+        "ids": [],
+        "count": 0,
+        "dropped_by_relay": 0
+      },
+      "J7_format": {
+        "violations": 0,
+        "kinds": []
+      },
+      "J8_latency": {
+        "calls": 0,
+        "timeout_seconds": 8.0,
+        "min": null,
+        "median": null,
+        "max": null,
+        "over_timeout": 0,
+        "transport_errors": []
+      },
+      "J9_determinism": {
+        "main:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "main:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "main:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "main:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "removed:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "removed:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "removed:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "removed:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "descendants:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "descendants:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "descendants:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "descendants:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "siblings:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "siblings:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "siblings:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "siblings:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "removed_and_siblings:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "removed_and_siblings:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "removed_and_siblings:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "removed_and_siblings:01M1SCKW76AZQCHT5HAMZH9KH0": 1
+      },
+      "red": {
+        "structural_leaks": 0,
+        "leak_kinds": [],
+        "final_citation_errors": 0
+      }
+    },
+    "model": {
+      "J1_recall": {
+        "edges": 6,
+        "in_candidates": 6
+      },
+      "J2_hit": {
+        "per_pass": [
+          {
+            "edges": 6,
+            "hit1": 1,
+            "hit3": 1
+          },
+          {
+            "edges": 6,
+            "hit1": 0,
+            "hit3": 0
+          }
+        ]
+      },
+      "J3_citations": {
+        "evidence_claimed": 1,
+        "evidence_discarded": 0,
+        "discard_rate": 0.0,
+        "suggestions_dropped_unverified": 0,
+        "final_citation_errors": 0,
+        "grounding_hard": 0,
+        "grounding_hard_tokens": []
+      },
+      "J4_calibration": {
+        "확실": {
+          "correct": 0,
+          "wrong": 0
+        },
+        "애매": {
+          "correct": 1,
+          "wrong": 0
+        },
+        "모름": {
+          "correct": 0,
+          "wrong": 0
+        }
+      },
+      "J5_groups": {
+        "main": {
+          "cases": 8,
+          "empty": 7,
+          "non_empty": 1,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            2,
+            4,
+            6
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": [
+            "01M1SCGX4PFD796VX8093WQMS7"
+          ]
+        },
+        "removed": {
+          "cases": 8,
+          "empty": 8,
+          "non_empty": 0,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            1,
+            2,
+            5
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "descendants": {
+          "cases": 8,
+          "empty": 8,
+          "non_empty": 0,
+          "structural": true,
+          "verdict": "green",
+          "candidate_counts": [
+            0
+          ],
+          "vacuous": 8,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "siblings": {
+          "cases": 8,
+          "empty": 8,
+          "non_empty": 0,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            1,
+            3
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "removed_and_siblings": {
+          "cases": 8,
+          "empty": 8,
+          "non_empty": 0,
+          "structural": true,
+          "verdict": "green",
+          "candidate_counts": [
+            0,
+            1,
+            2,
+            4
+          ],
+          "vacuous": 2,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        }
+      },
+      "J6_outside": {
+        "ids": [],
+        "count": 0,
+        "dropped_by_relay": 0
+      },
+      "J7_format": {
+        "violations": 0,
+        "kinds": []
+      },
+      "J8_latency": {
+        "calls": 30,
+        "timeout_seconds": 8.0,
+        "min": 1.2681328969774768,
+        "median": 2.00511834747158,
+        "max": 3.2038276119856164,
+        "over_timeout": 0,
+        "transport_errors": []
+      },
+      "J9_determinism": {
+        "main:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "main:01M1SCGX4PFD796VX8093WQMS7": 2,
+        "main:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "main:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "removed:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "removed:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "removed:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "removed:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "descendants:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "descendants:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "descendants:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "descendants:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "siblings:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "siblings:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "siblings:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "siblings:01M1SCKW76AZQCHT5HAMZH9KH0": 1,
+        "removed_and_siblings:01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "removed_and_siblings:01M1SCGX4PFD796VX8093WQMS7": 1,
+        "removed_and_siblings:01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "removed_and_siblings:01M1SCKW76AZQCHT5HAMZH9KH0": 1
+      },
+      "red": {
+        "structural_leaks": 0,
+        "leak_kinds": [],
+        "final_citation_errors": 0
+      }
+    }
+  },
+  "passes": {
+    "rules": [
+      [
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "rules",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "rules",
+          "group": "main",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                  "candidateValue": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+                }
+              ],
+              "grounding": {
+                "tokens": 11,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                  "candidateValue": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+                }
+              ],
+              "grounding": {
+                "tokens": 11,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": 1,
+              "hit1": true,
+              "hit3": true,
+              "confidence": "애매",
+              "suggested_parent_role": "주입력",
+              "evidence_fields": [
+                "fileName"
+              ],
+              "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다."
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "main",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_dataset_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "hsr_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_dataset_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "hsr_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 2,
+          "evidence_verified": 2,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": 2,
+              "hit1": false,
+              "hit3": true,
+              "confidence": "애매",
+              "suggested_parent_role": "주입력",
+              "evidence_fields": [
+                "fileName"
+              ],
+              "rationale": "파일명(hsr_sample.npy) 가 업로드 파일과 맞는다."
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "rules",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "rules",
+          "group": "removed",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "rules",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "rules",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "rules",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "rules",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(Prediction_20230501.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "Prediction_20230501.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+              "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "파일명(pred_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "Prediction_20230501.npy",
+                  "candidateValue": "pred_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 7,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "empty_declaration": null,
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+              "parent_dataset_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+              "evidence": [
+                "fileName"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "rules",
+          "group": "removed_and_siblings",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "rules",
+          "group": "removed_and_siblings",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "rules",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "대조 축이 맞는 후보가 없습니다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        }
+      ]
+    ],
+    "model": [
+      [
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 3.142001378000714,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                  "candidateValue": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+                }
+              ],
+              "grounding": {
+                "tokens": 11,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "fileName",
+                  "uploadValue": "GK2A_NDVI_mean_202305.tif",
+                  "candidateValue": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"fileName\",\"uploadValue\":\"GK2A_NDVI_mean_202305.tif\",\"candidateValue\":\"gk2a_ami_le2_vgt_ko_202305010000.nc\"}]}]}",
+          "seconds": 3.2038276119856164,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 1,
+          "evidence_verified": 1,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": 1,
+              "hit1": true,
+              "hit3": true,
+              "confidence": "애매",
+              "suggested_parent_role": "주입력",
+              "evidence_fields": [
+                "fileName"
+              ],
+              "rationale": "파일명(gk2a_ami_le2_vgt_ko_202305010000.nc) 가 업로드 파일과 맞는다."
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.7219135800842196,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.601702118990943,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.6190409789560363,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.2497419300489128,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.7570572689874098,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.9172601508907974,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.031666786991991,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.3035375240724534,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.8424258020240813,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.8474932130193338,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.4654005949851125,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.651091234991327,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.8876182649983093,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 1.9785699079511687,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.4719074439490214,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 3.0248962249606848,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.145274353097193,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 1.9653069840278476,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.2681328969774768,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.3452639549504966,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.8777862809365615,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.090470692026429,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "01M1SCH9DF18DXH793JTP01W61"
+          ],
+          "group_counts": {
+            "population": 3,
+            "in_pool": 3,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.706382034928538,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.9453580570407212,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCJTXHXT37CZD22TKMJ13P"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.7487881829729304,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 2,
+          "candidate_ids": [
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 2,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "01M1SCC8BZZJSCEW4MRPE4W9M8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 1.8465331399347633,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+              "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+              "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+              "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+          "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "01M1SCC27AN4NZD3K978YFDCVD",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.7757587910164148,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+              "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M1SCCM2Q4ST81GZK3YM0PFZR"
+          ],
+          "group_counts": {
+            "population": 4,
+            "in_pool": 4,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.6357819519471377,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+              "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+              "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  "calls": [
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.142001378000714,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.2038276119856164,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"fileName\",\"uploadValue\":\"GK2A_NDVI_mean_202305.tif\",\"candidateValue\":\"gk2a_ami_le2_vgt_ko_202305010000.nc\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.7219135800842196,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.601702118990943,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.6190409789560363,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.2497419300489128,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.7570572689874098,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.9172601508907974,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.031666786991991,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.3035375240724534,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.8424258020240813,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.8474932130193338,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.4654005949851125,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.651091234991327,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.8876182649983093,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.9785699079511687,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.4719074439490214,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.0248962249606848,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.145274353097193,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.9653069840278476,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.2681328969774768,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.3452639549504966,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.8777862809365615,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.090470692026429,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.706382034928538,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.9453580570407212,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.7487881829729304,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.8465331399347633,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.7757587910164148,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.6357819519471377,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    }
+  ]
+}

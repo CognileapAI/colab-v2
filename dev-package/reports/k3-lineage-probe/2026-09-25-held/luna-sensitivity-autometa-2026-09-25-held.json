@@ -1,0 +1,5529 @@
+{
+  "kind": "K3 WU-S6 실측 — 기록된 후보·대조군 4종에 두 팔(규칙·모델)을 나란히 건다. 모델 팔은 ai-service 생산자 + core-api 인용 검증까지 제품 그대로다. 후보 선정은 core-api(재생 시험)의 몫이고 여기서 하지 않는다. 판정 게이트가 아니다 · ⭑ 상한 민감도 — 업로드 메타를 --upload-meta-override 값으로 갈아 끼운 실행. 합격선 아님",
+  "upload_meta_override": {
+    "source": "eval/k3-lineage/fixtures/snapshot-autometa-upload-meta-2026-09-25.json",
+    "sha256": "2bcca50fb30710fc547aeb21a8e08fe57675e59f02b33a584c09cfd52b116531"
+  },
+  "model": "gpt-5.6-luna",
+  "arms": [
+    "model"
+  ],
+  "groups": [
+    "main",
+    "removed",
+    "descendants",
+    "siblings",
+    "removed_and_siblings"
+  ],
+  "repeats": 2,
+  "timeout_seconds": 8.0,
+  "candidates_source": "dev-package/reports/k3-lineage-probe/2026-09-25-held/candidates-2026-09-25-held.json",
+  "candidates_sha256": "f6dc9ad65bf4b40b93db5f683fa036731c92508f7ffe98c2bdfcbf9cfbd6d0e9",
+  "candidates_local_sha": "9cf99b181c4c4712639d89d3b3052f925524b732",
+  "sample_limits": {
+    "children": 6,
+    "edges": 10,
+    "candidate_population": 28,
+    "visible_datasets_in_dev": 28,
+    "snapshot_children_with_parents": 13,
+    "snapshot_edges": 18
+  },
+  "autometa_axes_present": {
+    "period": 28,
+    "crs": 24,
+    "grid": 26,
+    "variables": 0,
+    "fileName": 28
+  },
+  "sibling_rules": [
+    "same_level"
+  ],
+  "strategy": "filtered",
+  "k": 20,
+  "system_prompt_sha256": "0f71e74666ed1c584802e2b37bce722cd0ab524bab9c89b7b022dda92b5f113e",
+  "suggester_sha256": "a2437a42d3d06bfcf3f556fc4a9efeebfdde5b29fc47875863b15f4eec147364",
+  "verifier_sha256": "b4d30a695a419800191a36b6b016e40173c11b701c429164b159a42012427067",
+  "signals_sha256": "480de539dd16000be87da72e524d51e238a6a966ce5ad1140b527ff7968f55c6",
+  "runner_sha256": "bced0dd06d88c1358080345a22c5748165b9053d329293ce90249c8e04c67844",
+  "local_sha": "484747aad9e5ba84872470af0ebede8341d7ba6a",
+  "model_calls": 48,
+  "judgement": {
+    "model": {
+      "J1_recall": {
+        "edges": 10,
+        "in_candidates": 10
+      },
+      "J2_hit": {
+        "per_pass": [
+          {
+            "edges": 10,
+            "hit1": 1,
+            "hit3": 2
+          },
+          {
+            "edges": 10,
+            "hit1": 0,
+            "hit3": 0
+          }
+        ]
+      },
+      "J3_citations": {
+        "evidence_claimed": 42,
+        "evidence_discarded": 5,
+        "discard_rate": 0.119,
+        "suggestions_dropped_unverified": 1,
+        "final_citation_errors": 0,
+        "grounding_hard": 0,
+        "grounding_hard_tokens": []
+      },
+      "J4_calibration": {
+        "확실": {
+          "correct": 2,
+          "wrong": 0
+        },
+        "애매": {
+          "correct": 0,
+          "wrong": 0
+        },
+        "모름": {
+          "correct": 0,
+          "wrong": 0
+        }
+      },
+      "J5_groups": {
+        "main": {
+          "cases": 12,
+          "empty": 11,
+          "non_empty": 1,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            5,
+            6,
+            7
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": [
+            "01M39TCARM2C2NJ8S9SA4QBSER"
+          ]
+        },
+        "removed": {
+          "cases": 12,
+          "empty": 9,
+          "non_empty": 3,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            1,
+            4,
+            5,
+            6
+          ],
+          "vacuous": 0,
+          "leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "evidence": [
+                "period",
+                "period"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "evidence": [
+                "crs",
+                "grid"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "evidence": [
+                "crs"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "evidence": [
+                "crs",
+                "grid"
+              ]
+            }
+          ],
+          "non_empty_children": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ]
+        },
+        "descendants": {
+          "cases": 12,
+          "empty": 12,
+          "non_empty": 0,
+          "structural": true,
+          "verdict": "green",
+          "candidate_counts": [
+            0,
+            1
+          ],
+          "vacuous": 10,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "siblings": {
+          "cases": 12,
+          "empty": 12,
+          "non_empty": 0,
+          "structural": false,
+          "verdict": "record",
+          "candidate_counts": [
+            0,
+            1,
+            11,
+            12
+          ],
+          "vacuous": 2,
+          "leaks": [],
+          "true_cited_non_parents": [],
+          "non_empty_children": []
+        },
+        "removed_and_siblings": {
+          "cases": 12,
+          "empty": 4,
+          "non_empty": 8,
+          "structural": true,
+          "verdict": "red",
+          "candidate_counts": [
+            1,
+            3,
+            4
+          ],
+          "vacuous": 0,
+          "leaks": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "non_empty_children": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TCARM2C2NJ8S9SA4QBSER",
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TCARM2C2NJ8S9SA4QBSER",
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ]
+        }
+      },
+      "J6_outside": {
+        "ids": [],
+        "count": 0,
+        "dropped_by_relay": 0
+      },
+      "J7_format": {
+        "violations": 0,
+        "kinds": []
+      },
+      "J8_latency": {
+        "calls": 48,
+        "timeout_seconds": 8.0,
+        "min": 1.5406767789972946,
+        "median": 5.279802264005411,
+        "max": 8.081100874929689,
+        "over_timeout": 10,
+        "transport_errors": [
+          "TimeoutError"
+        ]
+      },
+      "J9_determinism": {
+        "main:01M39TA6QY5NEAR8ZPZ6AF9KNE": 1,
+        "main:01M39TSEPR820QBZ1DBBFKDJEP": 1,
+        "main:01M39TCARM2C2NJ8S9SA4QBSER": 2,
+        "main:01M39TZ0SCEYHHMBWZ991M1QGN": 1,
+        "main:01M39TB4NTBCFC8TSTNB93N5YP": 1,
+        "main:01M39TTPB2T87ESQKHCZPBAKD6": 1,
+        "removed:01M39TA6QY5NEAR8ZPZ6AF9KNE": 1,
+        "removed:01M39TSEPR820QBZ1DBBFKDJEP": 1,
+        "removed:01M39TCARM2C2NJ8S9SA4QBSER": 1,
+        "removed:01M39TZ0SCEYHHMBWZ991M1QGN": 2,
+        "removed:01M39TB4NTBCFC8TSTNB93N5YP": 2,
+        "removed:01M39TTPB2T87ESQKHCZPBAKD6": 1,
+        "descendants:01M39TA6QY5NEAR8ZPZ6AF9KNE": 1,
+        "descendants:01M39TSEPR820QBZ1DBBFKDJEP": 1,
+        "descendants:01M39TCARM2C2NJ8S9SA4QBSER": 1,
+        "descendants:01M39TZ0SCEYHHMBWZ991M1QGN": 1,
+        "descendants:01M39TB4NTBCFC8TSTNB93N5YP": 1,
+        "descendants:01M39TTPB2T87ESQKHCZPBAKD6": 1,
+        "siblings:01M39TA6QY5NEAR8ZPZ6AF9KNE": 1,
+        "siblings:01M39TSEPR820QBZ1DBBFKDJEP": 1,
+        "siblings:01M39TCARM2C2NJ8S9SA4QBSER": 1,
+        "siblings:01M39TZ0SCEYHHMBWZ991M1QGN": 1,
+        "siblings:01M39TB4NTBCFC8TSTNB93N5YP": 1,
+        "siblings:01M39TTPB2T87ESQKHCZPBAKD6": 1,
+        "removed_and_siblings:01M39TA6QY5NEAR8ZPZ6AF9KNE": 1,
+        "removed_and_siblings:01M39TSEPR820QBZ1DBBFKDJEP": 1,
+        "removed_and_siblings:01M39TCARM2C2NJ8S9SA4QBSER": 2,
+        "removed_and_siblings:01M39TZ0SCEYHHMBWZ991M1QGN": 1,
+        "removed_and_siblings:01M39TB4NTBCFC8TSTNB93N5YP": 1,
+        "removed_and_siblings:01M39TTPB2T87ESQKHCZPBAKD6": 1
+      },
+      "red": {
+        "structural_leaks": 10,
+        "leak_kinds": [
+          "other"
+        ],
+        "final_citation_errors": 0
+      }
+    }
+  },
+  "passes": {
+    "model": [
+      [
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.081100874929689,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.050976436003111,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_dataset_name": "rn15_sample",
+              "parent_processing_level": null,
+              "confidence": "확실",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) · 파일명(rn15_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                },
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "rn15_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "확실",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) · 파일명(hsr_sample.npy) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                },
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "hsr_sample.npy"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "파일명",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_dataset_name": "rn15_sample",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                },
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "rn15_sample.npy"
+                }
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                },
+                {
+                  "field": "fileName",
+                  "uploadValue": "pred_sample.npy",
+                  "candidateValue": "hsr_sample.npy"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TB4NTBCFC8TSTNB93N5YP\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"},{\"field\":\"fileName\",\"uploadValue\":\"pred_sample.npy\",\"candidateValue\":\"rn15_sample.npy\"}]},{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"},{\"field\":\"fileName\",\"uploadValue\":\"pred_sample.npy\",\"candidateValue\":\"hsr_sample.npy\"}]}]}",
+          "seconds": 6.37563084193971,
+          "error": null,
+          "raw_suggestions": 2,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 6,
+          "evidence_verified": 6,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": 2,
+              "hit1": false,
+              "hit3": true,
+              "confidence": "확실",
+              "suggested_parent_role": "보조입력",
+              "evidence_fields": [
+                "crs",
+                "grid",
+                "fileName"
+              ],
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) · 파일명(hsr_sample.npy) 가 업로드 파일과 맞는다."
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": 1,
+              "hit1": true,
+              "hit3": true,
+              "confidence": "확실",
+              "suggested_parent_role": "주입력",
+              "evidence_fields": [
+                "crs",
+                "grid",
+                "fileName"
+              ],
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) · 파일명(rn15_sample.npy) 가 업로드 파일과 맞는다."
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 4.91680154891219,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.020623963908292,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 1.629447435028851,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 6,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.059535062988289,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 6,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.8015617799246684,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.04766857298091,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 5,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "기간(2023-05-01T00:00:00+00:00) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)\"}]}]}",
+          "seconds": 7.594533104100265,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 2,
+          "evidence_discarded": 1,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "evidence": [
+                "period",
+                "period"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "확실",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                }
+              ],
+              "grounding": {
+                "tokens": 9,
+                "missing": [
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                }
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 7.23611170402728,
+          "error": null,
+          "raw_suggestions": 2,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 5,
+          "evidence_verified": 3,
+          "evidence_discarded": 2,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "evidence": [
+                "crs",
+                "grid"
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "evidence": [
+                "crs"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.7456530439667404,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TVD38600D4EKH13EV55DV"
+          ],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 1,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 4.931218363926746,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.516707857954316,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 1.5406767789972946,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.4620612140279263,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 4.069069465971552,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 11,
+          "candidate_ids": [
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 11,
+            "survived": 11,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 4
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 4.617858130950481,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 6.5695545739727095,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 3,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39VM0GYXG98CXDJKFD8RPYJ"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 6,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.1692031560232863,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                }
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"}]}]}",
+          "seconds": 6.773235840955749,
+          "error": null,
+          "raw_suggestions": 2,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 6,
+          "evidence_verified": 6,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 5,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "기간(2023-05-01T00:00:00+00:00) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"}]}]}",
+          "seconds": 5.43294585600961,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 2,
+          "evidence_verified": 2,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 5.603628295939416,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 3,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 4,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 3.509302914957516,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        }
+      ],
+      [
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.050440666964278,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.055335646960884,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 7,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.030461590969935,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.03525360696949,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 5.126658672001213,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "main",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": null,
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.4666208049748093,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39TB4NTBCFC8TSTNB93N5YP",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 6,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 4.332538791000843,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 6,
+          "candidate_ids": [
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39VM0GYXG98CXDJKFD8RPYJ",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 6,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 5.627471799962223,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "계보 제안 모델에 닿지 못했다 — 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": 8.04883935302496,
+          "error": "TimeoutError",
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 5,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00\"}]}]}",
+          "seconds": 3.701463595032692,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 1,
+          "evidence_claimed": 1,
+          "evidence_verified": 0,
+          "evidence_discarded": 1,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 1,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "확실",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) · 격자(128x128) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                }
+              ],
+              "grounding": {
+                "tokens": 9,
+                "missing": [
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "parent_processing_level": null,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                },
+                {
+                  "field": "grid",
+                  "uploadValue": "128x128",
+                  "candidateValue": "128x128"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"}]}]}",
+          "seconds": 6.643967399955727,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 2,
+          "evidence_verified": 2,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_dataset_name": "hsr_sample",
+              "evidence": [
+                "crs",
+                "grid"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "removed",
+          "candidate_count": 5,
+          "candidate_ids": [
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 5,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.2379254590487108,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 0,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 0,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "descendants",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TVD38600D4EKH13EV55DV"
+          ],
+          "group_counts": {
+            "population": 2,
+            "in_pool": 2,
+            "survived": 1,
+            "blocked_by_level": 1,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.71584968699608,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.375002932967618,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 1.548893739003688,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TZ0SCEYHHMBWZ991M1QGN"
+          ],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 1,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.218327538925223,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "group_counts": {
+            "population": 1,
+            "in_pool": 0,
+            "survived": 0,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 1
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴볼 가공 전 데이터 후보가 요청에 없다 — 살펴보고 못 찾은 것이 아니다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": null,
+          "seconds": null,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 12,
+          "candidate_ids": [
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 12,
+            "survived": 12,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 3
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 6.647893953952007,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "siblings",
+          "candidate_count": 11,
+          "candidate_ids": [
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5",
+            "01M39V005J6SQ9SW8MZ8D16ZWK",
+            "01M39V0T17DHQ5PF5XSSERTZ8H",
+            "01M39VBGCMRM3K31W963PGG7E8",
+            "01M39XWZBR39ZDX38RZVADF3BR",
+            "01M39Y5NEBAW44F2Y2Q0WJE5QX",
+            "01M39YP2K5A3CEEF99M5TNVR44",
+            "01M39YSE2MMXGA14SHG08PHY6S",
+            "01M39ZCMYVKSA6N5SS3HJZ225F",
+            "01M39ZK1YKQRT84W0PSJFD89SJ"
+          ],
+          "group_counts": {
+            "population": 15,
+            "in_pool": 11,
+            "survived": 11,
+            "blocked_by_level": 0,
+            "removed_by_design": 0,
+            "not_in_pool": 4
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 2.6930637629702687,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        },
+        {
+          "id": "K3-LIN-001",
+          "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "child_name": "hsr_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39XZFZ6NYXQ48YD4KZN168X",
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 6.402850669925101,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 3,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_name": "HSR 레이더 반사도 원자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-002",
+          "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "child_name": "GK2A_NDVI_mean_202305",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39VM0GYXG98CXDJKFD8RPYJ"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 6,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\": []}",
+          "seconds": 2.700976568972692,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_name": "GK-2A 일 단위 식생자료",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-003",
+          "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+          "child_name": "pred_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 4,
+          "candidate_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3",
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 7,
+            "in_pool": 7,
+            "survived": 4,
+            "blocked_by_level": 0,
+            "removed_by_design": 3,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+            "01M39TB4NTBCFC8TSTNB93N5YP"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "보조입력",
+              "evidence": [
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 6.435126191005111,
+          "error": null,
+          "raw_suggestions": 2,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 2,
+          "evidence_verified": 2,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_dataset_name": "rn15 15분 누적강수",
+              "kind": "other"
+            },
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+              "parent_name": "hsr_sample",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+              "parent_name": "rn15_sample",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-004",
+          "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+          "child_name": "Prediction (공간상세화)",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 6,
+            "in_pool": 6,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 5,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39TSEPR820QBZ1DBBFKDJEP",
+            "01M39TT0S5PSJ0DQNR0XMTHFNW",
+            "01M39TTPB2T87ESQKHCZPBAKD6",
+            "01M39TVD38600D4EKH13EV55DV",
+            "01M39TW21793T8631ATHJREHK5"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "기간(2023-05-01T00:00:00+00:00) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                }
+              ],
+              "grounding": {
+                "tokens": 8,
+                "missing": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-01T00:00:00+00:00",
+                  "candidateValue": "2023-05-01T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2023-05-31T00:00:00+00:00",
+                  "candidateValue": "2023-05-31T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)\"}]}]}",
+          "seconds": 6.018367835902609,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 2,
+          "evidence_discarded": 1,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+              "parent_dataset_name": "GK-2A 일 단위 식생자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+              "parent_name": "GK2A_NDVI_mean_202305",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+              "parent_name": "HLS_S30_NDVI_mean_202305",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+              "parent_name": "DEM",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+              "parent_name": "Aspect",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            },
+            {
+              "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+              "parent_name": "LULC_2023",
+              "parent_role": "보조입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-005",
+          "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "child_name": "rn15_sample",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 3,
+          "candidate_ids": [
+            "01M39T7N812JDX7GW62F8YFZ0V",
+            "0000000000000000000000DSA2",
+            "0000000000000000000000DSA1"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 3,
+            "blocked_by_level": 0,
+            "removed_by_design": 2,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [
+            "01M39T979PMQKRSK3GPCNYWHH3"
+          ],
+          "suggestions": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "확실",
+              "rationale": "기간(2019-07-28T00:00:00+00:00) · 좌표계(WGS84 (기준 격자 파일)) 가 업로드 파일과 맞는다.",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ],
+              "grounding": {
+                "tokens": 13,
+                "missing": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "hard": [],
+                "soft": [
+                  "기간",
+                  "좌표계",
+                  "업로드",
+                  "파일과",
+                  "맞는다"
+                ],
+                "upload_only": [],
+                "ok": true,
+                "strict_ok": false
+              },
+              "citation_errors": []
+            }
+          ],
+          "claimed_suggestions": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "parent_processing_level": 0,
+              "confidence": "애매",
+              "rationale": "근거 검증 대기",
+              "suggested_parent_role": "주입력",
+              "evidence": [
+                {
+                  "field": "period",
+                  "uploadValue": "2019-07-28T00:00:00+00:00",
+                  "candidateValue": "2019-07-28T00:00:00+00:00"
+                },
+                {
+                  "field": "period",
+                  "uploadValue": "2024-07-09T00:00:00+00:00",
+                  "candidateValue": "2024-07-09T00:00:00+00:00"
+                },
+                {
+                  "field": "crs",
+                  "uploadValue": "WGS84 (기준 격자 파일)",
+                  "candidateValue": "WGS84 (기준 격자 파일)"
+                }
+              ]
+            }
+          ],
+          "empty_declaration": null,
+          "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+          "seconds": 5.738388895057142,
+          "error": null,
+          "raw_suggestions": 1,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 3,
+          "evidence_verified": 3,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [
+            {
+              "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+              "parent_dataset_name": "HSR 레이더 반사도 원자료",
+              "kind": "other"
+            }
+          ],
+          "true_cited_non_parents": [],
+          "edges": [
+            {
+              "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+              "parent_name": "rn15 15분 누적강수",
+              "parent_role": "주입력",
+              "rank": null,
+              "hit1": false,
+              "hit3": false,
+              "confidence": null,
+              "suggested_parent_role": null,
+              "evidence_fields": [],
+              "rationale": null
+            }
+          ]
+        },
+        {
+          "id": "K3-LIN-006",
+          "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "child_name": "DEM",
+          "arm": "model",
+          "group": "removed_and_siblings",
+          "candidate_count": 1,
+          "candidate_ids": [
+            "01M39TK0F5P3W4APB91N08KTMY"
+          ],
+          "group_counts": {
+            "population": 5,
+            "in_pool": 5,
+            "survived": 1,
+            "blocked_by_level": 0,
+            "removed_by_design": 4,
+            "not_in_pool": 0
+          },
+          "true_parent_ids": [],
+          "suggestions": [],
+          "claimed_suggestions": [],
+          "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+          "raw": "{\"suggestions\":[]}",
+          "seconds": 3.5326926009729505,
+          "error": null,
+          "raw_suggestions": 0,
+          "outside_dropped": 0,
+          "unverified_dropped": 0,
+          "evidence_claimed": 0,
+          "evidence_verified": 0,
+          "evidence_discarded": 0,
+          "outside_candidate_ids": [],
+          "format_violations": [],
+          "structural_leaks": [],
+          "true_cited_non_parents": [],
+          "edges": []
+        }
+      ]
+    ]
+  },
+  "calls": [
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.081100874929689,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.050976436003111,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.37563084193971,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TB4NTBCFC8TSTNB93N5YP\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"},{\"field\":\"fileName\",\"uploadValue\":\"pred_sample.npy\",\"candidateValue\":\"rn15_sample.npy\"}]},{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"},{\"field\":\"fileName\",\"uploadValue\":\"pred_sample.npy\",\"candidateValue\":\"hsr_sample.npy\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.91680154891219,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.020623963908292,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.629447435028851,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.059535062988289,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.8015617799246684,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.04766857298091,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 7.594533104100265,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 7.23611170402728,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00 ~ 2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.7456530439667404,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.931218363926746,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.516707857954316,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.5406767789972946,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.4620612140279263,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.069069465971552,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.617858130950481,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.5695545739727095,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.1692031560232863,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.773235840955749,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.43294585600961,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.603628295939416,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.509302914957516,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.050440666964278,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.055335646960884,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.030461590969935,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.03525360696949,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.126658672001213,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.4666208049748093,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.332538791000843,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.627471799962223,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 8.04883935302496,
+      "raw": null,
+      "error": "TimeoutError"
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.701463595032692,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00 ~ 2023-05-31T00:00:00+00:00\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.643967399955727,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TA6QY5NEAR8ZPZ6AF9KNE\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"},{\"field\":\"grid\",\"uploadValue\":\"128x128\",\"candidateValue\":\"128x128\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.2379254590487108,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.71584968699608,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.375002932967618,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 1.548893739003688,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.218327538925223,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.647893953952007,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.6930637629702687,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.402850669925101,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.700976568972692,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.435126191005111,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T979PMQKRSK3GPCNYWHH3\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]},{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"보조입력\",\"evidence\":[{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 6.018367835902609,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39TK0F5P3W4APB91N08KTMY\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2023-05-01T00:00:00+00:00\",\"candidateValue\":\"2023-05-01T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2023-05-31T00:00:00+00:00\",\"candidateValue\":\"2023-05-31T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"Lambert Conformal Conic (30.0/60.0, 38.0/126.0) → WGS84 (파일 내 투영 속성)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.738388895057142,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M39T7N812JDX7GW62F8YFZ0V\",\"suggestedParentRole\":\"주입력\",\"evidence\":[{\"field\":\"period\",\"uploadValue\":\"2019-07-28T00:00:00+00:00\",\"candidateValue\":\"2019-07-28T00:00:00+00:00\"},{\"field\":\"period\",\"uploadValue\":\"2024-07-09T00:00:00+00:00\",\"candidateValue\":\"2024-07-09T00:00:00+00:00\"},{\"field\":\"crs\",\"uploadValue\":\"WGS84 (기준 격자 파일)\",\"candidateValue\":\"WGS84 (기준 격자 파일)\"}]}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.5326926009729505,
+      "raw": "{\"suggestions\":[]}",
+      "error": null
+    }
+  ]
+}

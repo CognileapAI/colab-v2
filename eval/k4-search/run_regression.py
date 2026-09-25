@@ -1,6 +1,7 @@
 """Run the model-free K4 helper suite and the public API golden regression."""
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 import sys
@@ -11,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "eval" / "k4-search"
 REPORTS = HERE / "fixtures" / "reference"
+GOLDEN_TEST = ROOT / "services" / "core-api" / "tests" / "test_search_reference_evidence.py"
 HELPER_FILES = (
     "test_condition_assessment.py",
     "test_golden_baseline.py",
@@ -19,6 +21,17 @@ HELPER_FILES = (
     "test_stage_evidence.py",
     "test_structured_probe.py",
 )
+
+
+def golden_summary(total: int, source: Path = GOLDEN_TEST) -> str:
+    """The API test requires its failure set to equal V2_RETRIEVAL_GAPS exactly, so green = total - M pass."""
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    gaps = next(ast.literal_eval(node.value) for node in tree.body
+                if isinstance(node, ast.Assign)
+                and any(isinstance(t, ast.Name) and t.id == "V2_RETRIEVAL_GAPS" for t in node.targets))
+    return f"골든 회귀 {total - len(gaps)}/{total} 통과 · {len(gaps)} 면제(V2_RETRIEVAL_GAPS)"
+
+
 def run_suite(suite: unittest.TestSuite) -> int:
     count = suite.countTestCases()
     if count == 0:
@@ -46,7 +59,7 @@ def validate_golden_inputs() -> int:
         (REPORTS / "expanded-normalized-02.json").read_text(encoding="utf-8")
     )["expansion"]["responses"]
     snapshot = json.loads(
-        (REPORTS / "dev-data-snapshot.json").read_text(encoding="utf-8")
+        (REPORTS / "dev-data-snapshot-v2.json").read_text(encoding="utf-8")
     )["datasets"]
     packet = json.loads(
         (REPORTS / "stage-evidence-packet-02.json").read_text(encoding="utf-8")
@@ -76,7 +89,7 @@ def main() -> int:
     )
     if completed.returncode:
         return completed.returncode
-    print(f"검색 public API 골든 회귀 green — {golden_count}문항")
+    print(f"검색 public API {golden_summary(golden_count)}")
     return 0
 
 

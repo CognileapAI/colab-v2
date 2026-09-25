@@ -1,0 +1,1418 @@
+{
+  "kind": "K3 계보 제안 실측 — 기록된 후보에 제품 LlmLineageSuggester 로 순위·근거·확신도를 붙인다. 후보 선정은 core-api(재생 시험)의 몫이고 여기서 하지 않는다. 판정 게이트가 아니다",
+  "model": "gpt-5.6-luna",
+  "repeats": 2,
+  "timeout_seconds": 8.0,
+  "candidates_source": "dev-package/reports/k3-lineage-probe/candidates-2026-09-24b.json",
+  "candidates_sha256": "22a2931ff1d247dba4bb701ed7e2d90fb54a01ec10aa0c09ba945ac1b7fc3ce3",
+  "candidates_local_sha": "a92a230bea8af82aef7318f95096d1db21c45176",
+  "sample_limits": {
+    "children": 4,
+    "edges": 6,
+    "candidate_population": 9,
+    "visible_datasets_in_dev": 25
+  },
+  "strategy": "filtered",
+  "k": 20,
+  "system_prompt_sha256": "e4818c5a4ae66d06e4adef5fa6b8a7a2f954ab572788707adedce681510702bc",
+  "suggester_sha256": "4154941affc9d828c76403e03ecf63de4ccd7dbdf2f6ff2fd05345088fbebff6",
+  "runner_sha256": "4b7d7e4d3d97651e85041fe4f1ed6cd3ff6c7bf48317b226b4b798e3c4a0439c",
+  "local_sha": "c2ac7b0bb6e13442f21d786902f21e014915528b",
+  "model_calls": 16,
+  "control_removed": {
+    "01M1SCGM0K7FACRYTCWVMDDBY8": [
+      "01M1SCC27AN4NZD3K978YFDCVD",
+      "01M1SCC8BZZJSCEW4MRPE4W9M8"
+    ],
+    "01M1SCGX4PFD796VX8093WQMS7": [
+      "01M1SCCM2Q4ST81GZK3YM0PFZR"
+    ],
+    "01M1SCJTXHXT37CZD22TKMJ13P": [
+      "01M1SCGM0K7FACRYTCWVMDDBY8"
+    ],
+    "01M1SCKW76AZQCHT5HAMZH9KH0": [
+      "01M1SCGX4PFD796VX8093WQMS7",
+      "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+    ]
+  },
+  "judgement": {
+    "J2_hit": {
+      "per_pass": [
+        {
+          "edges": 6,
+          "hit1": 3,
+          "hit3": 3
+        },
+        {
+          "edges": 6,
+          "hit1": 4,
+          "hit3": 5
+        }
+      ],
+      "edges_per_pass": 6
+    },
+    "J3_grounding": {
+      "suggestions": 9,
+      "hard_violations": 0,
+      "hard_suggestions": 0,
+      "soft_violations": 23,
+      "strict_clean": 1,
+      "hard_tokens": [],
+      "soft_tokens": [
+        "검증자료이며",
+        "기간은",
+        "대상",
+        "보조입력과",
+        "부합한다",
+        "이다",
+        "일치한다",
+        "자료이며",
+        "주제와",
+        "주제의",
+        "파일명",
+        "파일이고",
+        "포함한다",
+        "표본이",
+        "후보는",
+        "후보의"
+      ]
+    },
+    "J4_calibration": {
+      "확실": {
+        "correct": 6,
+        "wrong": 0
+      },
+      "애매": {
+        "correct": 2,
+        "wrong": 1
+      },
+      "모름": {
+        "correct": 0,
+        "wrong": 0
+      }
+    },
+    "J5_control": {
+      "per_pass": [
+        {
+          "cases": 4,
+          "empty": 0,
+          "non_empty": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCGX4PFD796VX8093WQMS7",
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ]
+        },
+        {
+          "cases": 4,
+          "empty": 1,
+          "non_empty": [
+            "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "01M1SCJTXHXT37CZD22TKMJ13P",
+            "01M1SCKW76AZQCHT5HAMZH9KH0"
+          ]
+        }
+      ]
+    },
+    "J6_outside": {
+      "ids": [],
+      "count": 0,
+      "dropped_by_parser": 0
+    },
+    "J7_format": {
+      "violations": 0,
+      "kinds": []
+    },
+    "J8_latency": {
+      "calls": 16,
+      "timeout_seconds": 8.0,
+      "min": 2.0905610820045695,
+      "median": 4.023831537459046,
+      "max": 5.7270460380241275,
+      "over_timeout": 0,
+      "transport_errors": []
+    },
+    "J9_determinism": {
+      "main": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": 1,
+        "01M1SCGX4PFD796VX8093WQMS7": 1,
+        "01M1SCJTXHXT37CZD22TKMJ13P": 2,
+        "01M1SCKW76AZQCHT5HAMZH9KH0": 2
+      },
+      "control": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": 2,
+        "01M1SCGX4PFD796VX8093WQMS7": 2,
+        "01M1SCJTXHXT37CZD22TKMJ13P": 1,
+        "01M1SCKW76AZQCHT5HAMZH9KH0": 1
+      }
+    }
+  },
+  "main_passes": [
+    [
+      {
+        "id": "K3-LIN-001",
+        "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+        "group": "main",
+        "candidate_count": 5,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_dataset_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "hsr_sample.npy와 강수 — HSR 레이더 합성 반사도 (Lv.0)의 기상 레이더 합성 반사도(HSR)가 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 10,
+              "missing": [
+                "일치한다"
+              ],
+              "hard": [],
+              "soft": [
+                "일치한다"
+              ],
+              "upload_only": [
+                "sample",
+                "npy"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCC27AN4NZD3K978YFDCVD\",\"confidence\":\"확실\",\"rationale\":\"hsr_sample.npy와 강수 — HSR 레이더 합성 반사도 (Lv.0)의 기상 레이더 합성 반사도(HSR)가 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.4885342590278015,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "주입력",
+            "rationale": "hsr_sample.npy와 강수 — HSR 레이더 합성 반사도 (Lv.0)의 기상 레이더 합성 반사도(HSR)가 일치한다."
+          },
+          {
+            "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-002",
+        "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+        "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+        "group": "main",
+        "candidate_count": 3,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "파일명 GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 18,
+              "missing": [
+                "파일명",
+                "후보의",
+                "일치한다"
+              ],
+              "hard": [],
+              "soft": [
+                "파일명",
+                "후보의",
+                "일치한다"
+              ],
+              "upload_only": [
+                "gk2a",
+                "mean",
+                "202305",
+                "tif"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"파일명 GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 4.187581478967331,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "주입력",
+            "rationale": "파일명 GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다."
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-003",
+        "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+        "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+        "group": "main",
+        "candidate_count": 6,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "0000000000000000000000DSA2",
+            "parent_dataset_name": "A 강우 격자화",
+            "parent_processing_level": 1,
+            "confidence": "애매",
+            "rationale": "pred_sample.npy는 '강수 — U-Net 강우 추정 예측장 (Lv.2)'의 파일이고 후보는 '강우·강수'의 '격자화 결과'이다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 14,
+              "missing": [
+                "파일이고",
+                "후보는",
+                "이다"
+              ],
+              "hard": [],
+              "soft": [
+                "파일이고",
+                "후보는",
+                "이다"
+              ],
+              "upload_only": [
+                "pred",
+                "sample",
+                "npy",
+                "net",
+                "추정",
+                "예측장",
+                "lv"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"pred_sample.npy는 '강수 — U-Net 강우 추정 예측장 (Lv.2)'의 파일이고 후보는 '강우·강수'의 '격자화 결과'이다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 5.7270460380241275,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-004",
+        "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+        "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+        "group": "main",
+        "candidate_count": 4,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_dataset_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_processing_level": null,
+            "confidence": "확실",
+            "rationale": "Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.",
+            "suggested_parent_role": "보조입력",
+            "grounding": {
+              "tokens": 11,
+              "missing": [
+                "보조입력과",
+                "검증자료이며",
+                "포함한다"
+              ],
+              "hard": [],
+              "soft": [
+                "보조입력과",
+                "검증자료이며",
+                "포함한다"
+              ],
+              "upload_only": [],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCH2SAEFRXCZ2N6RSNR3GB\",\"confidence\":\"확실\",\"rationale\":\"Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.\",\"suggestedParentRole\":\"보조입력\"}]}",
+        "seconds": 5.090305190067738,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+            "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          },
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_role": "보조입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "보조입력",
+            "rationale": "Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다."
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "id": "K3-LIN-001",
+        "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+        "group": "main",
+        "candidate_count": 5,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_dataset_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "hsr_sample.npy — 강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 8,
+              "missing": [],
+              "hard": [],
+              "soft": [],
+              "upload_only": [
+                "sample",
+                "npy"
+              ],
+              "ok": true,
+              "strict_ok": true
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCC27AN4NZD3K978YFDCVD\",\"confidence\":\"확실\",\"rationale\":\"hsr_sample.npy — 강수 — HSR 레이더 합성 반사도 (Lv.0)\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.823656643042341,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "주입력",
+            "rationale": "hsr_sample.npy — 강수 — HSR 레이더 합성 반사도 (Lv.0)"
+          },
+          {
+            "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-002",
+        "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+        "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+        "group": "main",
+        "candidate_count": 3,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI) 원자료, 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 18,
+              "missing": [
+                "후보의",
+                "일치한다"
+              ],
+              "hard": [],
+              "soft": [
+                "후보의",
+                "일치한다"
+              ],
+              "upload_only": [
+                "gk2a",
+                "mean",
+                "202305",
+                "tif"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI) 원자료, 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.68828359793406,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "주입력",
+            "rationale": "GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI) 원자료, 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다."
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-003",
+        "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+        "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+        "group": "main",
+        "candidate_count": 6,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "parent_dataset_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+            "parent_processing_level": null,
+            "confidence": "애매",
+            "rationale": "강우·강수 주제와 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본이 pred_sample.npy 및 강수 — U-Net 강우 추정 예측장 (Lv.2)와 부합한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 17,
+              "missing": [
+                "주제와",
+                "표본이",
+                "부합한다"
+              ],
+              "hard": [],
+              "soft": [
+                "주제와",
+                "표본이",
+                "부합한다"
+              ],
+              "upload_only": [
+                "pred",
+                "sample",
+                "npy",
+                "net",
+                "추정",
+                "예측장"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCGM0K7FACRYTCWVMDDBY8\",\"confidence\":\"애매\",\"rationale\":\"강우·강수 주제와 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본이 pred_sample.npy 및 강수 — U-Net 강우 추정 예측장 (Lv.2)와 부합한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 5.710945552098565,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "애매",
+            "suggested_parent_role": "주입력",
+            "rationale": "강우·강수 주제와 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본이 pred_sample.npy 및 강수 — U-Net 강우 추정 예측장 (Lv.2)와 부합한다."
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-004",
+        "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+        "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+        "group": "main",
+        "candidate_count": 4,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+            "parent_dataset_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+            "parent_processing_level": null,
+            "confidence": "확실",
+            "rationale": "식생·NDVI 주제의 Lv.1 GK-2A NDVI 자료이며, 대상 기간은 2023-05-01 ~ 2023-05-31이다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 14,
+              "missing": [
+                "주제의",
+                "자료이며",
+                "대상",
+                "기간은",
+                "이다"
+              ],
+              "hard": [],
+              "soft": [
+                "주제의",
+                "자료이며",
+                "대상",
+                "기간은",
+                "이다"
+              ],
+              "upload_only": [
+                "2023",
+                "05",
+                "31"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          },
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_dataset_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_processing_level": null,
+            "confidence": "애매",
+            "rationale": "Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.",
+            "suggested_parent_role": "보조입력",
+            "grounding": {
+              "tokens": 11,
+              "missing": [
+                "보조입력과",
+                "검증자료이며",
+                "포함한다"
+              ],
+              "hard": [],
+              "soft": [
+                "보조입력과",
+                "검증자료이며",
+                "포함한다"
+              ],
+              "upload_only": [],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCGX4PFD796VX8093WQMS7\",\"confidence\":\"확실\",\"rationale\":\"식생·NDVI 주제의 Lv.1 GK-2A NDVI 자료이며, 대상 기간은 2023-05-01 ~ 2023-05-31이다.\",\"suggestedParentRole\":\"주입력\"},{\"parentDatasetId\":\"01M1SCH2SAEFRXCZ2N6RSNR3GB\",\"confidence\":\"애매\",\"rationale\":\"Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.\",\"suggestedParentRole\":\"보조입력\"}]}",
+        "seconds": 5.017351567978039,
+        "error": null,
+        "raw_suggestions": 2,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+            "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": 1,
+            "hit1": true,
+            "hit3": true,
+            "confidence": "확실",
+            "suggested_parent_role": "주입력",
+            "rationale": "식생·NDVI 주제의 Lv.1 GK-2A NDVI 자료이며, 대상 기간은 2023-05-01 ~ 2023-05-31이다."
+          },
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_role": "보조입력",
+            "rank": 2,
+            "hit1": false,
+            "hit3": true,
+            "confidence": "애매",
+            "suggested_parent_role": "보조입력",
+            "rationale": "Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다."
+          }
+        ]
+      }
+    ]
+  ],
+  "control_passes": [
+    [
+      {
+        "id": "K3-LIN-001",
+        "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+        "group": "control",
+        "candidate_count": 3,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "0000000000000000000000DSA2",
+            "parent_dataset_name": "A 강우 격자화",
+            "parent_processing_level": 1,
+            "confidence": "확실",
+            "rationale": "datasetNameDraft의 Lv.1 표본·WGS84 변환·연구대상지 crop과 후보의 A 강우 격자화·격자화 결과가 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 12,
+              "missing": [
+                "datasetnamedraft",
+                "후보의",
+                "결과가",
+                "일치한다"
+              ],
+              "hard": [
+                "datasetnamedraft"
+              ],
+              "soft": [
+                "후보의",
+                "결과가",
+                "일치한다"
+              ],
+              "upload_only": [
+                "lv",
+                "표본",
+                "wgs84",
+                "변환",
+                "연구대상지",
+                "crop"
+              ],
+              "ok": false,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"확실\",\"rationale\":\"datasetNameDraft의 Lv.1 표본·WGS84 변환·연구대상지 crop과 후보의 A 강우 격자화·격자화 결과가 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.090221584890969,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          },
+          {
+            "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-002",
+        "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+        "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+        "group": "control",
+        "candidate_count": 2,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "true_parent_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+            "parent_dataset_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+            "parent_processing_level": null,
+            "confidence": "확실",
+            "rationale": "월 단위 GK-2A NDVI(Lv.1)를 주입력으로 학습한 U-Net 계열 모델의 일별 예측 NDVI와 연결된다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 13,
+              "missing": [
+                "연결된다"
+              ],
+              "hard": [],
+              "soft": [
+                "연결된다"
+              ],
+              "upload_only": [],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCKW76AZQCHT5HAMZH9KH0\",\"confidence\":\"확실\",\"rationale\":\"월 단위 GK-2A NDVI(Lv.1)를 주입력으로 학습한 U-Net 계열 모델의 일별 예측 NDVI와 연결된다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.16108434391208,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-003",
+        "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+        "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+        "group": "control",
+        "candidate_count": 5,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "0000000000000000000000DSA2",
+            "parent_dataset_name": "A 강우 격자화",
+            "parent_processing_level": 1,
+            "confidence": "애매",
+            "rationale": "파일 pred_sample.npy는 본체이고, 후보의 주제는 강우·강수이며 요약은 격자화 결과이다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 12,
+              "missing": [
+                "파일",
+                "본체이고",
+                "후보의",
+                "주제는",
+                "강수이며",
+                "요약은",
+                "결과이다"
+              ],
+              "hard": [],
+              "soft": [
+                "파일",
+                "본체이고",
+                "후보의",
+                "주제는",
+                "강수이며",
+                "요약은",
+                "결과이다"
+              ],
+              "upload_only": [
+                "pred",
+                "sample",
+                "npy"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"파일 pred_sample.npy는 본체이고, 후보의 주제는 강우·강수이며 요약은 격자화 결과이다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 4.490269027999602,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-004",
+        "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+        "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+        "group": "control",
+        "candidate_count": 2,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "Prediction_20230501.npy와 식생 — U-Net NDVI 예측장 (Lv.2)의 식생·NDVI가 GK-2A/AMI 정규식생지수(NDVI)와 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 13,
+              "missing": [
+                "일치한다"
+              ],
+              "hard": [],
+              "soft": [
+                "일치한다"
+              ],
+              "upload_only": [
+                "prediction",
+                "20230501",
+                "npy",
+                "net",
+                "예측장"
+              ],
+              "ok": true,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"Prediction_20230501.npy와 식생 — U-Net NDVI 예측장 (Lv.2)의 식생·NDVI가 GK-2A/AMI 정규식생지수(NDVI)와 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.820254635065794,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+            "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          },
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "id": "K3-LIN-001",
+        "child_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "child_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+        "group": "control",
+        "candidate_count": 3,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "0000000000000000000000DSA2",
+            "parent_dataset_name": "A 강우 격자화",
+            "parent_processing_level": 1,
+            "confidence": "애매",
+            "rationale": "강우·강수, 격자화 결과, 본체",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 5,
+              "missing": [],
+              "hard": [],
+              "soft": [],
+              "upload_only": [
+                "본체"
+              ],
+              "ok": true,
+              "strict_ok": true
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"강우·강수, 격자화 결과, 본체\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 4.205894272075966,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+            "parent_name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          },
+          {
+            "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+            "parent_name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-002",
+        "child_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+        "child_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+        "group": "control",
+        "candidate_count": 2,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "true_parent_ids": [
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "suggestions": [],
+        "empty_declaration": "살펴본 후보 중에 가공 전 데이터로 볼 만한 것이 없었다. 제안 없이 직접 골라 등록할 수 있다.",
+        "raw": "{\"suggestions\": []}",
+        "seconds": 2.0905610820045695,
+        "error": null,
+        "raw_suggestions": 0,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-003",
+        "child_dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+        "child_name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+        "group": "control",
+        "candidate_count": 5,
+        "candidate_ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0",
+          "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "01M1SCC27AN4NZD3K978YFDCVD",
+          "0000000000000000000000DSA2",
+          "0000000000000000000000DSA1"
+        ],
+        "true_parent_ids": [
+          "01M1SCGM0K7FACRYTCWVMDDBY8"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "0000000000000000000000DSA2",
+            "parent_dataset_name": "A 강우 격자화",
+            "parent_processing_level": 1,
+            "confidence": "애매",
+            "rationale": "A 강우 격자화 — 격자화 결과; pred_sample.npy, 본체",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 7,
+              "missing": [],
+              "hard": [],
+              "soft": [],
+              "upload_only": [
+                "pred",
+                "sample",
+                "npy",
+                "본체"
+              ],
+              "ok": true,
+              "strict_ok": true
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"A 강우 격자화 — 격자화 결과; pred_sample.npy, 본체\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 5.4975382660049945,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+            "parent_name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      },
+      {
+        "id": "K3-LIN-004",
+        "child_dataset_id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+        "child_name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+        "group": "control",
+        "candidate_count": 2,
+        "candidate_ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P",
+          "01M1SCCM2Q4ST81GZK3YM0PFZR"
+        ],
+        "true_parent_ids": [
+          "01M1SCGX4PFD796VX8093WQMS7",
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "suggestions": [
+          {
+            "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+            "parent_dataset_name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+            "parent_processing_level": 0,
+            "confidence": "확실",
+            "rationale": "파일명 Prediction_20230501.npy와 datasetNameDraft의 식생·NDVI 및 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.",
+            "suggested_parent_role": "주입력",
+            "grounding": {
+              "tokens": 19,
+              "missing": [
+                "파일명",
+                "datasetnamedraft",
+                "후보의",
+                "일치한다"
+              ],
+              "hard": [
+                "datasetnamedraft"
+              ],
+              "soft": [
+                "파일명",
+                "후보의",
+                "일치한다"
+              ],
+              "upload_only": [
+                "prediction",
+                "20230501",
+                "npy"
+              ],
+              "ok": false,
+              "strict_ok": false
+            }
+          }
+        ],
+        "empty_declaration": null,
+        "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"파일명 Prediction_20230501.npy와 datasetNameDraft의 식생·NDVI 및 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+        "seconds": 3.86008159595076,
+        "error": null,
+        "raw_suggestions": 1,
+        "dropped": 0,
+        "outside_candidate_ids": [],
+        "format_violations": [],
+        "edges": [
+          {
+            "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+            "parent_name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+            "parent_role": "주입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          },
+          {
+            "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+            "parent_name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+            "parent_role": "보조입력",
+            "rank": null,
+            "hit1": false,
+            "hit3": false,
+            "confidence": null,
+            "suggested_parent_role": null,
+            "rationale": null
+          }
+        ]
+      }
+    ]
+  ],
+  "calls": [
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.4885342590278015,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCC27AN4NZD3K978YFDCVD\",\"confidence\":\"확실\",\"rationale\":\"hsr_sample.npy와 강수 — HSR 레이더 합성 반사도 (Lv.0)의 기상 레이더 합성 반사도(HSR)가 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.187581478967331,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"파일명 GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.7270460380241275,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"pred_sample.npy는 '강수 — U-Net 강우 추정 예측장 (Lv.2)'의 파일이고 후보는 '강우·강수'의 '격자화 결과'이다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.090305190067738,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCH2SAEFRXCZ2N6RSNR3GB\",\"confidence\":\"확실\",\"rationale\":\"Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.\",\"suggestedParentRole\":\"보조입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.823656643042341,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCC27AN4NZD3K978YFDCVD\",\"confidence\":\"확실\",\"rationale\":\"hsr_sample.npy — 강수 — HSR 레이더 합성 반사도 (Lv.0)\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.68828359793406,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"GK2A_NDVI_mean_202305.tif와 후보의 GK-2A/AMI 정규식생지수(NDVI) 원자료, 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.710945552098565,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCGM0K7FACRYTCWVMDDBY8\",\"confidence\":\"애매\",\"rationale\":\"강우·강수 주제와 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본이 pred_sample.npy 및 강수 — U-Net 강우 추정 예측장 (Lv.2)와 부합한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.017351567978039,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCGX4PFD796VX8093WQMS7\",\"confidence\":\"확실\",\"rationale\":\"식생·NDVI 주제의 Lv.1 GK-2A NDVI 자료이며, 대상 기간은 2023-05-01 ~ 2023-05-31이다.\",\"suggestedParentRole\":\"주입력\"},{\"parentDatasetId\":\"01M1SCH2SAEFRXCZ2N6RSNR3GB\",\"confidence\":\"애매\",\"rationale\":\"Lv.2 딥러닝 모델의 보조입력과 검증자료이며, 월 단위 HLS S30 NDVI 100 m를 포함한다.\",\"suggestedParentRole\":\"보조입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.090221584890969,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"확실\",\"rationale\":\"datasetNameDraft의 Lv.1 표본·WGS84 변환·연구대상지 crop과 후보의 A 강우 격자화·격자화 결과가 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.16108434391208,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCKW76AZQCHT5HAMZH9KH0\",\"confidence\":\"확실\",\"rationale\":\"월 단위 GK-2A NDVI(Lv.1)를 주입력으로 학습한 U-Net 계열 모델의 일별 예측 NDVI와 연결된다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.490269027999602,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"파일 pred_sample.npy는 본체이고, 후보의 주제는 강우·강수이며 요약은 격자화 결과이다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.820254635065794,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"Prediction_20230501.npy와 식생 — U-Net NDVI 예측장 (Lv.2)의 식생·NDVI가 GK-2A/AMI 정규식생지수(NDVI)와 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 4.205894272075966,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"강우·강수, 격자화 결과, 본체\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 2.0905610820045695,
+      "raw": "{\"suggestions\": []}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 5.4975382660049945,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"0000000000000000000000DSA2\",\"confidence\":\"애매\",\"rationale\":\"A 강우 격자화 — 격자화 결과; pred_sample.npy, 본체\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "seconds": 3.86008159595076,
+      "raw": "{\"suggestions\":[{\"parentDatasetId\":\"01M1SCCM2Q4ST81GZK3YM0PFZR\",\"confidence\":\"확실\",\"rationale\":\"파일명 Prediction_20230501.npy와 datasetNameDraft의 식생·NDVI 및 후보의 GK-2A/AMI 정규식생지수(NDVI), 대상 기간 2023-05-01 ~ 2023-05-31이 일치한다.\",\"suggestedParentRole\":\"주입력\"}]}",
+      "error": null
+    }
+  ]
+}

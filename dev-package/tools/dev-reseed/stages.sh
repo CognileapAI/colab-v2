@@ -742,13 +742,33 @@ EOF
   prelude_login_credential || return 1
 
   log "④ 서비스 운영자 — provision-service-operator.sql (FORCE RLS 아래라 경계를 먼저 건다)"
+  operator_grant "prelude:operator" || return 1
+}
+
+# ── 임시 운영자 창(窓) ───────────────────────────────────────────────────
+# 교수에게 주는 서비스 운영자 자격은 **`accounts` 국면 하나에만** 필요하다(무소속 운영자 4명은
+# `canManageServiceAccounts` 가 있어야 화면에서 만들 수 있다). 그 자격이 켜져 있는 동안
+# 생성 넷(`createProject`·`createUpload`·`initiateUploadTransfer`·`createDataset`)은
+# `X-CoLAB-Target-Lab` 헤더를 **요구한다** — `services/core-api/src/colab_core/app/target_scope.py:8·42-43`.
+# 교수(비운영자)에게는 그 요구가 아예 없고, 오히려 헤더를 실으면 거절된다(`target_scope.py:31-34`).
+# 러너는 그 칸을 채우지 않으므로(`dev-package/tools/dev-seed/runner.py:880-887`)
+# 2026-09-24 회차의 `seed` 가 첫 프로젝트에서 「대상 연구실을 선택해 주세요.」로 멈췄다.
+# ⇒ 창을 `accounts` 국면으로 좁힌다. 화면 세 자리에 연구실 선택을 새로 붙이는 대신
+#   **DR-4 가 28/28 을 세운 그 단일 연구실 경로**로 되돌리는 쪽이다.
+#
+# ⚠ **제품 API(`set_operator`)로 내리지 않는다.** 그 경로는 자격 버전을 올리고 열린 세션을
+#   끊는다(`services/core-api/src/colab_core/kernel/db_credentials.py:260-264`) — 러너의 로그인이
+#   그 자리에서 죽는다. 운영자 여부는 **매 요청 다시 읽으므로**(`kernel/auth.py:25`)
+#   `account_admin.service_operator` 의 행 하나만 빼면 세션을 건드리지 않고 즉시 반영된다.
+#   그 표에는 RLS 가 걸려 있지 않다(`db/platform/schema.sql:155-158`) — 경계를 걸 GUC 가 필요 없다.
+operator_grant() { # $1 = 원격 라벨
   # ⚠ `account_id` 는 **원문 그대로** 넘긴다 — `provision-service-operator.sql` 이 `:'account_id'`
   #   (psql 이 따옴표를 씌우는 꼴)로 읽는다. ② 의 `provision-account.sql` 은 맨 `:account_id` 라
   #   그쪽만 `sqlq` 로 미리 감싼다. 두 파일의 변수 꼴이 다르다 — 값의 꼴은 **파일이 정한다.**
   #   4회차 재개 2(`20260914T023537Z`)가 여기에 감싼 값을 넘겨 `'''<id>'''` 로 조회했고
   #   `INSERT 0 0` → 「지정한 계정이 없어 운영자를 등록하지 못했다」 로 멈췄다.
   #   `SET app.current_lab` 은 SQL 리터럴 자리라 종전대로 `sqlq` 로 감싼다.
-  ssh_script "prelude:operator" <<EOF || return 1
+  ssh_script "$1" <<EOF || return 1
 set -euo pipefail
 $(remote_assign ACCOUNT_ID "$RESEED_ACCOUNT_ID")
 $(remote_assign ACCOUNT_LAB_ID "$LAB_ID")
@@ -762,6 +782,37 @@ docker run --rm --network host --user 0 \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID" \\
     -c "SET app.current_lab = \$ACCOUNT_LAB_ID_Q" \\
     "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/op.sql'
+EOF
+}
+
+# 내리는 문장은 **배포된 트리에 없다**(그 자리는 대상 ref 의 파일만 걸 수 있다) — 그래서
+# 본문을 base64 로 실어 `psql -f -` 의 표준입력으로 넣는다(`lib.sh` `remote_assign` 머리말).
+# 판정 두 개를 같은 트랜잭션(`-1`)에 둔다 — 거절이 서면 DELETE 도 함께 되돌아간다.
+#   ⑴ 그 계정의 행이 남아 있으면 거절     ⑵ 운영자가 **한 명도** 남지 않으면 거절
+# ⑵ 는 제품이 지키는 불변식과 같다(「마지막 관리자는 해제할 수 없다」 · `db_credentials.py:250-252`).
+operator_revoke() { # $1 = 원격 라벨
+  local sql
+  sql="$(cat <<'SQL'
+\set ON_ERROR_STOP on
+DELETE FROM account_admin.service_operator WHERE account_id=:'account_id';
+SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''임시 운영자를 내리지 못했다''; END $check$'
+ WHERE EXISTS (SELECT 1 FROM account_admin.service_operator WHERE account_id=:'account_id')
+\gexec
+SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''운영자가 한 명도 남지 않는다 — 내리지 않는다''; END $check$'
+ WHERE NOT EXISTS (SELECT 1 FROM account_admin.service_operator)
+\gexec
+SQL
+)"
+  ssh_script "$1" <<EOF || return 1
+set -euo pipefail
+$(remote_assign ACCOUNT_ID "$RESEED_ACCOUNT_ID")
+$(remote_assign REVOKE_SQL "$sql")
+export ACCOUNT_ID
+printf '%s\\n' "\$REVOKE_SQL" | docker run --rm -i --network host --user 0 \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
+  -e ACCOUNT_ID \\
+  $PSQL_IMAGE sh -c 'psql -1 -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID" \\
+    "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f -'
 EOF
 }
 
@@ -850,12 +901,35 @@ stage_seed() {
   log "② 러너 — 교수 로그인 · 무소속 운영자 4명 · 프로젝트 · 데이터셋 · 확인 · 보고"
   local runner="$REPO_ROOT/dev-package/tools/dev-seed/runner.py" i phase
   local args=(--base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" --account "$RESEED_ACCOUNT_EMAIL")
+  # 창은 **이 국면이 스스로 연다** — 첫 login 앞에서 올린다(멱등 · `ON CONFLICT DO NOTHING`).
+  # ⚠ prelude 의 올림에 기대면 `--from seed` 재개가 죽는다. 앞 회차가 ③ 에서 이미 내렸으므로
+  #   교수는 평범한 교수이고, `accounts` 국면이 계정 관리 화면(`account-create`)을 열지 못한다
+  #   (2026-09-24 로컬 검증 실측 — `runner.py` 「계정 관리 화면(account-create)이 열리지 않았다」).
+  #   login **앞**이어야 하는 이유 = 올림 뒤의 세션만 운영자 주장을 싣는다(④ 와 같은 설계 —
+  #   `kernel/login_sessions.py:226-228`). 이미 열린 교수 세션은 여기서 거절되고 login 이 새로 든다.
+  operator_grant "seed:operator-grant" || return 1
   run python3 "$runner" --phase login "${args[@]}" || return 1
   for i in 0 1 2 3; do
     run python3 "$runner" --phase accounts "${args[@]}" --accounts-file "$ACCOUNTS_WORK_DIR/operator-$i.json" \
       --accounts-password-file "$ACCOUNTS_WORK_DIR/initial-$i.txt" || return 1
   done
   run python3 "$RESEED_DIR/accounts.py" check-created --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+
+  log "③ 임시 운영자 해제 — 여기서부터 교수 자격 하나로 돈다(대상 연구실 헤더 요구가 사라진다)"
+  # 계정 넷이 선 것을 확인한 **뒤**에 내린다. 여기부터 `projects`·`datasets`·`verify` 는
+  # DR-4 가 28/28 을 세운 것과 같은 단일 연구실 경로다.
+  operator_revoke "seed:operator-revoke" || return 1
+
+  log "④ 재로그인 — 자격이 바뀐 세션은 제품이 거절한다(설계대로다)"
+  # ⚠ **이 한 줄을 빼면 `projects` 가 로그인 화면을 본다.** 토큰은 발급 시점의 운영자 여부를
+  #   주장으로 싣고, 세션 확인이 `service_operator` 를 **매 요청 다시 읽어** 주장과 어긋나면
+  #   그 세션을 거절한다 — `kernel/session_token.py:59-61` · `kernel/login_sessions.py:192-206`.
+  #   즉 자격을 어떤 길로 내리든(제품 API든 SQL이든) **열린 세션은 반드시 닫힌다.**
+  #   2026-09-24 재개 1 이 이 자리에서 「지목점 project-new-button 해소 실패」로 멈췄고,
+  #   덤프에 찍힌 것은 프로젝트 목록이 아니라 **로그인 화면**이었다.
+  #   `phase_login` 은 멱등이다 — 이미 들어가 있으면 건너뛰고, 아니면 갱신된 자격으로 다시 든다.
+  run python3 "$runner" --phase login "${args[@]}" || return 1
+
   for phase in projects datasets verify report; do
     run python3 "$runner" --phase "$phase" "${args[@]}" || return 1
   done
@@ -868,12 +942,111 @@ stage_seed() {
 #        core-api 가 10,02x ms 에 끊어 503 을 냈다(`dev-package/sessions/DR-3-run-2026-09-13.md §6`).
 #        뒷단 개선은 이 회차 범위 밖(`PV-2`)이라 여기서는 **판정만** 한다.
 PREVIEW_WAIT_MS="${COLAB_RESEED_PREVIEW_WAIT_MS:-45000}"
+# 보기 전 정착 규칙 — 러너 `preview_settled`(`dev-seed/runner.py`)와 같다.
+#   파일 선택값 있음 · 보기 활성 · slot `idle` 이 PREVIEW_STABLE_MS 이상 **이어진** 뒤에만 누른다(대기 상한 PREVIEW_WAIT_MS).
+# ⚠ 이미 선택된 파일을 다시 고르지 않는다 — 배포 프론트(`ea21d8c2aa54` DatasetPreviewSection.tsx)는
+#   같은 파일 재선택에서 onPick 이 설명을 비우고(:347-351) 파일 id 가 바뀔 때만 다시 받아(:169-183)
+#   보기가 영구 비활성(:355)이 된다. agent-browser 0.27.0 은 비활성 버튼 클릭도 성공으로 답한다.
+# 누른 뒤 PREVIEW_CLICK_ACK_MS 안에 slot 이 idle 을 떠나지 않으면 「클릭 미반영」으로 적는다(전체 대기 없이).
+PREVIEW_STABLE_MS="${COLAB_RESEED_PREVIEW_STABLE_MS:-1000}"
+PREVIEW_CLICK_ACK_MS="${COLAB_RESEED_PREVIEW_CLICK_ACK_MS:-5000}"
 
 # 브라우저 세션 — 러너(`dev-seed/runner.py` `DEFAULT_SESSION`)가 로그인해 둔 **그 세션**을 이름으로 쓴다.
 # ⚠ `AGENT_BROWSER_SESSION_NAME` 환경변수는 agent-browser 가 읽지 않는다(4회차 `20260914T035058Z` 실측 —
 #   env 만 준 호출은 `default` 세션으로 가 로그인 화면을 27번 열었다). 세션은 **`--session` 인자로만** 고른다.
 AB_SESSION="${COLAB_RESEED_BROWSER_SESSION:-colab-dev}"
 ab_dev() { run_capture agent-browser --session "$AB_SESSION" "$@"; }
+
+# ── 보기 누름 — 적중 검사 · 초점 ＋ Enter · JS click 폴백 (러너 `press_preview_draw` 와 같은 규칙) ──
+# ⚠ dev 2026-09-25 00:45–01:00 KST(7ba6cdaf) — 정착 확인 뒤 `click` 이 26행 모두 종료 0 인데 slot 이 idle 에
+#   머물렀다(onClick → draw() 미실행 · 배포 프론트 `ea21d8c2aa54` DatasetPreviewSection.tsx:224-250,354).
+#   로컬 대역 페이지 실측(agent-browser 0.27.0): 좌표 클릭은 버튼이 화면 밖이면 스크롤 없이 화면 밖을 누르고,
+#   버튼 중심이 고정 층에 덮이면 그 층을 누른다 — 둘 다 종료 0 · 처리기 0회.
+#   그래서 누르기 전에 버튼 중심의 적중 대상을 재어 로그·판정표 비고에 남기고, 초점 ＋ Enter 로 누른 뒤
+#   slot 이 idle 을 떠났는지 본다. 떠나지 않으면 JS click 한 번으로 폴백하고 먹힌 방법을 적는다.
+PREVIEW_DRAW_SEL='[data-testid="dt-preview-draw"]'
+AB_JS_SUB="e""val"
+PREVIEW_HIT_JS="$(cat <<'HITJS'
+(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return '보기 단추 없음';
+  const probe = () => {
+    const r = btn.getBoundingClientRect();
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    const where = '(' + x + ',' + y + ')';
+    if (!(x >= 0 && y >= 0 && x < innerWidth && y < innerHeight)) return where + ' 화면 밖(창 ' + innerWidth + 'x' + innerHeight + ')';
+    const el = document.elementFromPoint(x, y);
+    if (!el) return where + ' 적중 요소 없음';
+    if (el === btn || btn.contains(el)) return where + ' = 보기 단추';
+    const near = el.closest('[data-testid]');
+    const cls = typeof el.className === 'string' ? el.className : (el.getAttribute('class') || '');
+    const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    return where + ' 을 덮은 요소 = ' + el.tagName.toLowerCase()
+      + (el.getAttribute('data-testid') ? ' testid=' + el.getAttribute('data-testid') : '')
+      + (near && near !== el ? ' 조상testid=' + near.getAttribute('data-testid') : '')
+      + (cls ? ' class=' + cls.slice(0, 80) : '') + (text ? ' 「' + text + '」' : '');
+  };
+  const before = probe();
+  btn.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+  return ('스크롤 전 중심 ' + before + ' · 스크롤 뒤 중심 ' + probe()).replace(/["\\\t\r\n]/g, ' ');
+})()
+HITJS
+)"
+PREVIEW_JS_CLICK="(() => { const b = document.querySelector('[data-testid=\"dt-preview-draw\"]'); if (!b) return 'none'; b.click(); return 'clicked'; })()"
+
+# 표준출력 = 적중 검사 한 줄(못 재면 빈 값). 버튼을 화면 가운데로 옮긴다.
+preview_hit_test() {
+  ab_dev "$AB_JS_SUB" --stdin <<< "$PREVIEW_HIT_JS" 2>/dev/null | head -1 | sed 's/^"//; s/"$//'
+}
+
+# $1 = 상한 ms. slot 이 idle 을 떠나면 그 값을 찍고 0, 아니면 마지막 값을 찍고 1.
+preview_wait_left_idle() {
+  local t0 s; t0="$(date +%s%3N)"
+  while :; do
+    s="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+    if [ -n "$s" ] && [ "$s" != idle ]; then printf '%s' "$s"; return 0; fi
+    [ "$(( $(date +%s%3N) - t0 ))" -lt "$1" ] || { printf '%s' "$s"; return 1; }
+    sleep 0.05
+  done
+}
+
+# 표준출력 = `방법|slot` (방법 = focus+Enter · js-click · none). none 이면 종료 1.
+preview_press() {
+  local s=""
+  if ab_dev focus "$PREVIEW_DRAW_SEL" >/dev/null 2>&1 && ab_dev press Enter >/dev/null 2>&1; then
+    if s="$(preview_wait_left_idle "$PREVIEW_CLICK_ACK_MS")"; then printf 'focus+Enter|%s' "$s"; return 0; fi
+  fi
+  ab_dev "$AB_JS_SUB" --stdin <<< "$PREVIEW_JS_CLICK" >/dev/null 2>&1
+  if s="$(preview_wait_left_idle "$PREVIEW_CLICK_ACK_MS")"; then printf 'js-click|%s' "$s"; return 0; fi
+  printf 'none|%s' "$s"; return 1
+}
+
+# 보기 전 정착 대기 — 파일 선택값 있음 · 보기 활성 · slot idle 이 PREVIEW_STABLE_MS 이상 이어질 때까지(상한 PREVIEW_WAIT_MS).
+# 호출한 쪽(stage_verify)의 preview_file · draw_enabled · slot_state · unsupported_n 에 마지막 관측값을 남긴다.
+# $1 = unsupported 면 미지원 표시(`dt-preview-unsupported`)도 함께 본다 — 그릴 조각이 아예 없으면 배포 프론트가
+#      열자마자 그 표시를 세우고 보기는 비활성으로 둔다(`ea21d8c2aa54` DatasetPreviewSection.tsx:155-156,355).
+# 종료 0 = 정착 · 1 = 상한까지 정착 못 함 · 2 = 누르기 전에 미지원 표시가 섰다.
+preview_settle() {
+  local t_end now stable_since=""
+  t_end=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+  while :; do
+    now="$(date +%s%3N)"; [ "$now" -lt "$t_end" ] || return 1
+    if [ "${1:-}" = unsupported ]; then
+      unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+      [ "$unsupported_n" = 1 ] && return 2
+    fi
+    preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
+    draw_enabled="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
+    slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+    if [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && [ "$slot_state" = idle ]; then
+      [ -n "$stable_since" ] || stable_since="$now"
+      [ "$(( $(date +%s%3N) - stable_since ))" -lt "$PREVIEW_STABLE_MS" ] || return 0
+    else
+      stable_since=""
+    fi
+    sleep 0.05
+  done
+}
 
 # 미리보기 판정 — `preview-unavailable` 의 **계수 한 개**로 가른다.
 #   0        → 성립      (「볼 수 없다」 표시가 없다)
@@ -925,6 +1098,12 @@ CVPY
 
 account_finalize() {
   local binding
+  # `seed` 가 내린 임시 운영자를 **되올린 뒤에** 최종화한다. `accounts.py` 의 최종화는
+  # 교수 계정 최종화의 전제 표식으로 그 운영자 행을 읽고, 없으면
+  # 「final professor credential drift; refusing another reset」 로 거절한다.
+  # 최종화 자신이 마지막에 그 행을 다시 내리므로(`set_operator(..., False)`) 끝 상태는 같다.
+  # 멱등이다 — `provision-service-operator.sql` 이 `ON CONFLICT DO NOTHING` 이다.
+  operator_grant "verify:operator-grant" || return 1
   binding="$(python3 "$RESEED_DIR/accounts.py" check-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" --target-sha "$TARGET_SHA")" || return 1
   python3 "$RESEED_DIR/accounts.py" finalize --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
     --binding "$binding" --base-url "$DEV_URL" --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR"
@@ -992,6 +1171,7 @@ PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
   local seq did name expected t0 t1 ms shown level unset_lv usage login_n info_n slot_state preview_file display_total unsupported_n
+  local draw_enabled hit press press_method verdict u_press u_verdict u_unavail seen settle_rc
   while IFS=$'\t' read -r seq did name expected; do
     [ -n "$seq" ] || continue
     [ "$name" = - ] && name=""
@@ -1006,43 +1186,80 @@ PY
       continue
     fi
     if [ "$expected" = "미성립(포맷 미지원 · 판정 표에 이름으로)" ]; then
-      unsupported_n=""; t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
-      while [ "$(date +%s%3N)" -lt "$t1" ]; do
-        unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
-        [ "$unsupported_n" = 1 ] && break
-        sleep 0.05
-      done
+      # 배포 프론트의 `dt-preview-unsupported` 는 보기(draw)를 누르고 create 가 「그릴 수 없음」
+      #   (NotRenderableError)으로 돌아온 뒤에만 그려진다(`ea21d8c2aa54` DatasetPreviewSection.tsx:239-240,362-366 ·
+      #   그때 slot = failed). 누르지 않고 기다리기만 하면 끝내 서지 않는다(dev 1차 시도 seq 13·14 「미지원 상태 미확인」).
+      # 그래서 다른 행과 같은 정착 → 적중 검사 → 초점 ＋ Enter(JS click 폴백)로 누른 뒤 표시를 기다린다.
+      # 그릴 조각이 아예 없어 열자마자 표시가 서면(:155-156) 비활성 보기를 누르지 않는다.
+      # 기대(미성립)는 바꾸지 않는다. 화면에 **실제로 보인 것**을 비고에 그대로 적어 판단 근거로 남긴다.
+      unsupported_n=""; u_press="누름 없음"; ms=0; slot_state=""
+      preview_settle unsupported; settle_rc=$?
+      if [ "$settle_rc" = 0 ]; then
+        hit="$(preview_hit_test)"; hit="${hit:-못 잼}"
+        log "seq=$seq $name — 보기 적중 검사: $hit"
+        t0="$(date +%s%3N)"
+        press="$(preview_press)"; press_method="${press%%|*}"; slot_state="${press#*|}"
+        log "seq=$seq $name — 보기 누름 = $press_method · slot [$slot_state]"
+        u_press="누름 $press_method · 적중 $hit"
+        if [ "$press_method" != none ]; then
+          # 누른 순간부터 PREVIEW_WAIT_MS 안에 미지원 표시 · 또는 terminal(slot failed/done)을 기다린다.
+          while :; do
+            unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+            [ "$unsupported_n" = 1 ] && break
+            slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+            case "$slot_state" in
+              failed|done)
+                unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+                break ;;
+            esac
+            [ "$(( $(date +%s%3N) - t0 ))" -lt "$PREVIEW_WAIT_MS" ] || break
+            sleep 0.05
+          done
+        fi
+        ms=$(( $(date +%s%3N) - t0 ))
+      elif [ "$settle_rc" = 1 ]; then
+        log "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
+      fi
       login_n="$(ab_dev get count '[data-testid="login-submit"]' 2>/dev/null | tr -d ' \t\r\n')"
       info_n="$(ab_dev get count '[data-testid="basic-info"]' 2>/dev/null | tr -d ' \t\r\n')"
       level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
       unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
       usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
+      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      draw_enabled="$(ab_dev is enabled "$PREVIEW_DRAW_SEL" 2>/dev/null | tr -d ' \t\r\n')"
+      u_unavail="$(ab_dev get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
+      seen="미지원 표시 [$unsupported_n] · slot [$slot_state] · 보기 활성 [$draw_enabled] · preview-unavailable [$u_unavail] · 로그인 [$login_n] · 상세 [$info_n] · $u_press"
+      log "seq=$seq $name — 정본 미성립 행 화면: $seen"
       if [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$unsupported_n" = 1 ]; then
-        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원\n' "$seq" "$name" "$level" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+        printf '%s\t%s\t%s\t미성립\t%s\t%s\t%s\t정본상 포맷 미지원 · %s\n' "$seq" "$name" "$level" "$ms" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+      elif [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$slot_state" = done ]; then
+        # 눌렀더니 그려졌다 — 기대(미성립)는 그대로 두고 불일치로 적는다(아래 대조가 「기대와 달리 미리보기 성립」을 낸다).
+        printf '%s\t%s\t%s\t성립\t%s\t%s\t%s\t기대와 달리 미리보기 성립 · %s\n' "$seq" "$name" "$level" "$ms" "$unset_lv" "$usage" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 기대와 달리 미리보기 성립(정본 미성립 · 포맷 미지원) · $seen"
       else
-        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다"
+        printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t미지원 상태 미확인 · %s\n' "$seq" "$name" "$ms" "$seen" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다 · $seen"
       fi
       continue
     fi
-    preview_file=""; local draw_enabled=""
-    t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
-    while [ "$(date +%s%3N)" -lt "$t1" ]; do
-      preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
-      draw_enabled="$(ab_dev is enabled '[data-testid="dt-preview-draw"]' 2>/dev/null | tr -d ' \t\r\n')"
-      [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && break
-      sleep 0.05
-    done
-    if [ -z "$preview_file" ] || [ "$draw_enabled" != true ] \
-      || ! ab_dev select '[data-testid="dt-pick-file"]' "$preview_file" >/dev/null 2>&1; then
-      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name — 미리보기 파일 명시 선택 실패"
+    # 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다 — 다시 고르지 않는다(위 PREVIEW_STABLE_MS 주석).
+    preview_file=""; draw_enabled=""; slot_state=""
+    preview_settle; settle_rc=$?
+    if [ "$settle_rc" != 0 ]; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 정착 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 보기 전 정착 미확인(${PREVIEW_WAIT_MS}ms · 파일 [$preview_file] · 보기 활성 [$draw_enabled] · slot [$slot_state]) · 보기를 누르지 않았다"
       continue
     fi
+    # 적중 검사 — 누르기 전에 보기 단추 중심이 무엇에 닿는지 남긴다(위 PREVIEW_HIT_JS 주석).
+    hit="$(preview_hit_test)"; hit="${hit:-못 잼}"
+    log "seq=$seq $name — 보기 적중 검사: $hit"
     t0="$(date +%s%3N)"
-    if ! ab_dev click '[data-testid="dt-preview-draw"]' >/dev/null 2>&1; then
-      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name — 미리보기 보기 명시 실행 실패"
+    # 누름 반영 확인 — 종료 0 은 반영의 증거가 아니다(비활성·덮인 버튼도 0). slot 이 idle 을 떠나야 한다.
+    press="$(preview_press)"; press_method="${press%%|*}"; slot_state="${press#*|}"
+    log "seq=$seq $name — 보기 누름 = $press_method · slot [$slot_state]"
+    if [ "$press_method" = none ]; then
+      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t클릭 미반영 · 누름 none · 적중 %s\n' "$seq" "$name" "$(( $(date +%s%3N) - t0 ))" "$hit" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 클릭 미반영(focus+Enter · JS click 모두 ${PREVIEW_CLICK_ACK_MS}ms 안에 slot 이 idle 을 떠나지 않았다 · 받은 값 [$slot_state] · 적중 검사 [$hit])"
       continue
     fi
     # Container presence is not completion: its slot starts in idle/drawing.
@@ -1073,7 +1290,7 @@ PY
     # 계수도 같은 이유로 `tr -dc` 를 쓰지 않는다 — 숫자만 남기면 「못 받음」이 「0」이 된다.
     unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
     usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
-    local verdict; verdict="$(preview_verdict "$shown")"
+    verdict="$(preview_verdict "$shown")"
     if [ "${login_n:-x}" != 0 ]; then
       verdict=판정불가; level=""; unset_lv=""; usage=""
       blocked_add verify "seq=$seq $name — 로그인 화면이다(login-submit 계수 [$login_n]) · 브라우저 세션 $AB_SESSION 미로그인 · 판정 불가"
@@ -1091,8 +1308,8 @@ PY
     fi
     # 받은 값을 **그대로** 적는다. `:-0`·`:-?` 로 기본값을 박으면 표만 보고는
     # 「0 을 받았다」와 「아무 값도 못 받았다」를 가를 수 없다.
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n' \
-      "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t누름 %s · 적중 %s\n' \
+      "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" "$press_method" "$hit" >> "$RUN_DIR/preview-judgment.tsv"
   done <<< "$ids"
 
   log "② 계수 대조 — 러너 verify.json ＋ 순회 결과 ＋ 정본 등재표"
@@ -1136,7 +1353,10 @@ invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
 expected_unestablished = sorted((s for s, value in preview_expected.items()
                                  if value == no_preview_text), key=int)
 unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
-missing_unestablished = sorted(set(expected_unestablished) - set(unestablished), key=int)
+# 「기대와 달리 미리보기 성립」은 **실제로 성립한 행**에만 붙인다 — 판정불가는 재지 못한 것이지 성립이 아니다
+# (판정불가는 위 「미리보기 판정불가」로 따로 낸다).
+established = [r[0] for r in rows if r[3] == "성립"]
+missing_unestablished = sorted(set(expected_unestablished) & set(established), key=int)
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},

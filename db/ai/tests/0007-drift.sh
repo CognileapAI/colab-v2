@@ -130,6 +130,19 @@ else
 fi
 
 # ㈑ 선언 정본 ↔ 적용 결과 (schema-diff 가 보는 것과 같은 사실).
+#
+# ⭑ ⟨개정 2026-09-24 · D10 실행 원장⟩ **견주기 전에 두 DB 를 체인 head 까지 올린다.**
+#   `schema.sql` 은 **체인 전체의 선언**이지 이 회차까지의 선언이 아니다. 종전에는 이 머지가
+#   곧 head 라 둘이 우연히 같았고, 뒤에 회차가 하나 붙자(`0008_d10_model_call_ledger`)
+#   이 자리가 red 를 냈다 — **고칠 것은 새 회차가 아니라 이 비교의 상대**다.
+#   `0006-drift.sh` 가 WU-C13 에서 같은 것을 먼저 배웠다(거기 주석 ⭑ 와 같은 자리).
+#   ⛔ 위 ㈎㈏㈐㈒ 는 그대로 **이 회차만** 본다 — 두 순서의 수렴이 이 파일의 몫이고,
+#     그 판정은 이미 위에서 끝났다(`norm` 과 행 대조가 0007 상태에서 돌았다).
+render "upgrade $HEAD_REV:head" "$TMP/tail.sql"
+for db in dev_db stg_db; do
+  psql_f "$db" "$TMP/tail.sql" || red "체인 head 까지의 잔여 델타를 적용하지 못했다($db)."
+  norm "$db"
+done
 mkdb decl_db; psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
 norm decl_db
 for db in dev_db stg_db; do

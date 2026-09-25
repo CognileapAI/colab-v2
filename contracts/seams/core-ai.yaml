@@ -67,8 +67,10 @@ paths:
       operationId: suggestLineage
       summary: 업로드된 파일의 계보를 제안한다 (제안만 — 저장하지 않는다)
       description: |
-        업로드된 파일에서 읽은 메타(헤더 자동 추출값)와 D9 지식 그래프 조회를 근거로
-        **가공 전 데이터 후보**와 **가공 방식**을 제안한다.
+        업로드된 파일에서 읽은 메타(헤더 자동 추출값)와 **core-api 가 실어 보낸 후보
+        목록**(`candidates`)만을 근거로 순위·근거 한 줄·확신도를 낸다. 후보 밖의
+        데이터셋을 만들지 않는다 — 찾는 것은 D3 의 주인인 core-api 이고, 매기는 것이
+        이 표면의 일이다.
 
         이 오퍼레이션은 **읽기다.** `POST` 인 이유는 파일 메타가 본문에 실리기 때문이고,
         ai-service 쪽에 계보가 만들어지지 않는다. 반환된 `suggestionId` 는 화면이 항목을
@@ -77,6 +79,25 @@ paths:
         빈 연구실의 첫 업로드는 **정상 응답**이다 — `suggestions: []` + `rawDataLikely`
         + `scope.searchedCount: 0`. 억지 제안을 만들지 않는다
         (`Policy_업로드와_계보_확정 §3.2 · §8 AI 제안 영역 — 정직한 빈 상태`).
+
+        ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 근거 인용 모형.**
+        「부모가 후보에 없으면 제안이 빈다」를 모델 성향이 아니라 **구조**가 만든다
+        (`Policy_업로드와_계보_확정 §8` · 라운드 `R-K3-STRUCTURE`). 분담이 세 토막이다.
+
+        ⑴ **적격은 core-api 가 가른다.** 「부모 Lv ≤ 자기 Lv」로 후보를 거르고
+        (`LineageStep.tsx` 의 사람 규칙과 같은 기준), 그 결과만 `candidates` 에 실린다.
+        업로드 Lv 는 `processingLevel` 로 함께 오지만 **이 표면은 그 값으로 거르지
+        않는다** — 거르는 자리가 둘이면 어느 쪽이 걸렀는지 셀 수 없다.
+
+        ⑵ **이 표면이 하는 일은 후보별 근거 `인용`까지다.** 모델은 후보마다
+        `evidence` 에 「어느 축이 · 업로드에서 무슨 값이 · 후보에서 무슨 값이」를
+        적는다. 축을 스스로 대조해야 하므로 core-api 는 **날값만 보내고 파생 신호를
+        보내지 않는다**(보내면 자기가 보낸 값을 자기가 검증하게 된다).
+
+        ⑶ **검증·폐기·확신도는 core-api 가 한다.** 인용된 값을 실제 업로드 메타·후보
+        자동 메타와 대조해 **틀린 항목은 그 제안째 버리고**, 검증된 근거 **종류 수**에서
+        `confidence` 를 파생한다(≥2 확실 · 1 애매 · 0 이면 제안이 아니다). 그래서 이
+        표면이 싣는 `confidence`·`rationale` 은 **잠정값**이다 — 정본은 core-api 가 쓴다.
       requestBody:
         required: true
         content:
@@ -200,6 +221,153 @@ components:
           minLength: 1
         file:
           $ref: "#/components/schemas/UploadedFileMeta"
+        processingLevel:
+          # ⚠ **`common.json#/$defs/ProcessingLevel` 을 `$ref` 하지 않는다 — 인라인이다.**
+          #    그 타입은 스스로 `readOnly: true`(「파생값 · 응답 타입 전용」)라고 적었고,
+          #    요청 본문에 실으면 그 산문이 **거짓이 된다.** 여기 오는 값은 파생 Lv 가
+          #    아니라 **사람이 고른 값**이라 애초에 다른 사실이기도 하다.
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 사람이 등록 폼 ① 에서
+            고른 자기 가공 단계**(`d3_dataset.processing_level_user_set` · `LineageStep.tsx`).
+
+            **「부모 Lv ≤ 자기 Lv」의 기준값이고, 적격 필터는 core-api 가 건다** —
+            이쪽은 이 값을 필터에 쓰지 않는다(`〈72〉-㉮` 분담 · `CLAUDE.md §3-1`).
+            해석 단서로만 쓴다.
+
+            ⚠ **`readOnly` 인 `ProcessingLevel` 을 참조하지 않고 인라인으로 적는다.**
+            그 타입은 「파생값 · 응답 타입 전용」이라고 스스로 적었고(`common.json`),
+            요청에 실으면 그 문장이 거짓이 된다. 상한 `3` 은 `LV_CAP` 과 같은 값이다
+            (`PLAN-SoT §9-⑳` · 마이그레이션 `0015` 의 4값 CHECK).
+
+            ⚠ **안 골랐으면 생략한다** — 그때는 기준값이 없어 적격을 가를 수 없고,
+            제안 자체가 없는 것이 참이다. `0` 으로 채우면 「Lv0 이다」로 읽힌다.
+        candidates:
+          type: array
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU0` — Ted 서명⟩ 살펴볼 가공 전 데이터 후보.** 선택 필드다.
+
+            ⓐ **후보는 core-api 가 고른다** — D3 의 주인이 모집단을 정하고, 매기는 것만
+            이쪽으로 온다(`〈72〉-㉮` 검색과 같은 분담). ai-service 는 카탈로그에 닿지
+            않으므로 스스로 후보를 찾을 수 없다(`CLAUDE.md §3-1`). 모집단은 사람이
+            고르는 후보(`listLineageCandidates`)와 **같아야 한다** — 두 벌이 되면 화면의
+            후보와 AI 가 본 후보가 갈리고 그 어긋남은 아무도 못 센다.
+
+            ⓑ 응답의 `parentDatasetId` 는 **이 목록 안의 값**이어야 한다. 밖의 값을 실은
+            제안은 core-api 가 버린다(응답 `scope` 가 다르면 버리는 것과 같은 자리).
+            그러므로 여기 없는 데이터셋은 제안될 수 없다.
+
+            ⓒ 생략하거나 빈 배열이면 ai-service 는 **모델을 부르지 않고** 빈 제안으로
+            답한다(`suggestions: []` + 사유). 살펴볼 것이 없는데 토큰을 태우지 않는다.
+            안 보내던 소비자가 그대로 200 을 받는 자리이기도 하다.
+          maxItems: 20
+          items: { $ref: "#/components/schemas/LineageParentCandidate" }
+
+    LineageParentCandidate:
+      type: object
+      description: |
+        ⭑ **⟨2026-09-24 · K3 `WU0` — 사용자 승인(Ted 서명)⟩ core-api 가 D3 에서 골라
+        실어 보낸 후보 한 건.** 찾는 것은 D3 의 주인이고 매기는 것만 D10 이다
+        (`CLAUDE.md §3-1` · `DOMAINS §2 D3·D10`). 화면에서 사람이 고르는 후보
+        (`Policy_업로드와_계보_확정 §5 가공 전 데이터`)와 **같은 모집단**이다.
+
+        **근거로 인용할 수 있는 값만 싣는다.** 파일 목록은 싣지 않는다 — 본문이 커지고
+        근거 판정이 흐려진다. 여기 실린 말이 곧 근거 한 줄의 재료이고, `rationale` 이
+        이 집합 밖의 말을 쓰면 지어낸 것이다.
+
+        ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 원메타 4축(`crs`·`grid`·`variables`·
+        `fileName`)이 더해졌다** — 종전 「변수 전체는 싣지 않는다」를 **뒤집은 자리다.**
+        뒤집은 이유: 모델이 후보별 근거를 **인용**하려면 대조할 날값이 있어야 하고,
+        그 값이 없으면 모델은 이름·설명만 보고 축을 지어낸다. ⚠ **날값만 싣는다** —
+        겹침·교집합 같은 **파생 신호는 싣지 않는다**(라운드 `R-K3-STRUCTURE` 열린 권고 ①
+        채택). 신호를 보내면 모델이 그대로 베껴 돌려주고, core-api 는 자기가 보낸 값을
+        자기가 검증하게 되어 인용 검증이 오라클 구실을 못 한다.
+
+        ⚠ **모르는 값은 열쇠를 만들지 않는다.** 판정하지 못한 항목은 **생략한다** —
+        `null` 이나 빈 문자열로 채우면 "못 읽음"과 "값 없음"이 갈리지 않는다
+        (`UploadedFileMeta` 머리말과 같은 규율).
+      required: [datasetId, name]
+      additionalProperties: false
+      properties:
+        datasetId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+        name:
+          type: string
+          description: 사람이 적은 묶음 이름(`DataModel §4.3`). 정본값은 D3 에 있다.
+          minLength: 1
+        topic:
+          type: string
+          description: |
+            주제. 값 집합은 DB CHECK 4값이 지킨다(`〈55〉`) — 계약 층 enum 을 만들지 않는다
+            (`sessions/D2c.md §9 NB-E`). 안 고른 데이터셋이면 생략한다.
+          minLength: 1
+        summary:
+          type: string
+          description: |
+            연구자가 직접 쓴 설명(`DatasetCreate.summary`). 후보를 가늠하는 가장 두꺼운
+            단서다. 상한은 본문이 부풀지 않게 이쪽에서 건다 — 넘치면 core-api 가 잘라
+            보낸다(D3 의 저장값에는 상한이 없다).
+          minLength: 1
+          maxLength: 200
+        sourceLabel:
+          type: string
+          description: |
+            원천 표기 — **데이터셋이 아니라 표기다**(`Policy §4 용어` · `DatasetCreate`
+            의 같은 이름 열쇠와 같은 상한).
+          minLength: 1
+          maxLength: 60
+        processingLevel:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/ProcessingLevel" }]
+          description: |
+            후보의 **가공 단계**. 「부모 Lv ≤ 자기 Lv」 를 사람이 화면에서 가늠하는 값이다.
+
+            ⚠ **판정된 것만 싣는다** — 판정이 없는 후보에 `0` 이나 `null` 을 실으면
+            「Lv0 이다」로 읽힌다. 미지와 Lv0 은 다른 사실이다
+            (`ParentCandidateSuggestion.parentProcessingLevel` 과 같은 규율).
+        periodStart:
+          $ref: "../schemas/common.json#/$defs/Timestamp"
+        periodEnd:
+          $ref: "../schemas/common.json#/$defs/Timestamp"
+        crs:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 후보의 좌표계 표기.**
+            `d3_dataset_autometa.crs` 의 **날값 그대로**다 — 정규화하거나 비교 결과로
+            바꾸지 않는다(`DataModel §4.1` 자동 메타).
+        grid:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 후보의 격자 표기.**
+            `d3_dataset_autometa.grid` 의 날값이다. 업로드 쪽 같은 축은
+            `UploadedFileMeta.gridDescription` 이고, **이름이 다른 것은 저장 열 이름이
+            다르기 때문이다** — 둘을 맞대는 축 이름은 `evidence.field` 의 `grid` 하나다.
+        variables:
+          type: array
+          maxItems: 50
+          items: { type: string, minLength: 1 }
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 후보의 변수 이름들.**
+            `d3_dataset_autometa.variables` 의 날값이다(교집합·개수 같은 **파생 신호를
+            보내지 않는다** — 보내면 모델이 그것을 그대로 베껴 돌려주고 core-api 는 자기가
+            보낸 값을 자기가 검증하게 된다).
+            상한 `50` 은 본문이 부풀지 않게 **이쪽에서 건다** — D3 저장값(`text[]`)에는
+            상한이 없고, 넘치면 core-api 가 잘라 보낸다(`summary` 의 `maxLength` 와 같은 규율).
+            ⚠ 빈 배열이 정상인 자리다 — 변수 행이 한 줄도 없는 데이터셋이 실재한다.
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 후보의 묶음 파일 이름.**
+            `d3_dataset_autometa.bundle_file_name` — **조각 이름이 아니라 묶음 이름**이다
+            (`DataModel §4.3` 합치는 규칙의 결과). 업로드 쪽 같은 축은
+            `UploadedFileMeta.fileName` 이고, 맞대는 축 이름은 `evidence.field` 의 `fileName` 이다.
 
     UploadedFileMeta:
       type: object
@@ -288,10 +456,25 @@ components:
           enum: ["가공 전 데이터", "가공 방식"]
         confidence:
           allOf: [{ $ref: "../schemas/common.json#/$defs/AiConfidence" }]
-          description: 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.**
+          description: |
+            3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.**
+
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 값의 산지가 옮겨졌다.**
+            이 값은 모델의 선언이 아니라 **core-api 가 검증한 근거 종류 수에서 파생한
+            값**이다(≥2 `확실` · 1 `애매`). 「모름」은 나오지 않는다 — 그 자리는 **빈 제안**이다.
+            ⚠ 그러므로 ai-service 가 싣는 값은 이 스키마의 `required` 를 채우는
+            **잠정값**이고, core-api 가 파생값으로 **덮어쓴다.** 소비자는 core-api 를
+            거친 값만 본다. **타입은 그대로 두고 만드는 주체만 바뀌었다** — 빼면
+            파괴적 변경이고 화면의 3값도 유지된다.
         rationale:
           allOf: [{ $ref: "../schemas/common.json#/$defs/AiRationale" }]
-          description: 왜 이 제안인지 한 줄. nullable 이 아니다.
+          description: |
+            왜 이 제안인지 한 줄. nullable 이 아니다.
+
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 최종 문장은 core-api 가 쓴다.**
+            ai-service 가 싣는 문장은 `required` 를 채우는 **잠정값**이고, core-api 가
+            **검증된 근거로 다시 써서** 덮어쓴다 — 검증에서 버려진 인용이 근거 문장에
+            남아 있으면 화면이 거짓 근거를 그린다.
 
     LineageSuggestion:
       description: |
@@ -340,6 +523,52 @@ components:
                 ⚠ **제안이지 판정이 아니다** — 정본값은 D3 에 있고 core 가 다시 붙인다
                 (`parentDatasetName` 과 같은 자리).
               $ref: "../schemas/common.json#/$defs/ProcessingLevel"
+            evidence:
+              description: |
+                ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 모델이 인용한 근거.**
+                선택 필드다 — 안 보내던 생산자가 그대로 유효하다.
+
+                **여기 실린 값은 주장이지 판정이 아니다.** core-api 가 항목마다 업로드
+                메타(`LineageSuggestionRequest.file`)와 후보 자동 메타
+                (`LineageParentCandidate`)의 실제 값에 대조하고, **틀린 항목이 하나라도
+                있으면 그 제안째 버린다.** 검증된 항목이 **0이면 제안이 아니다**
+                (`Policy_업로드와_계보_확정 §8` — 억지 제안을 만들지 않는다).
+
+                `confidence` 는 여기서 **검증된 근거 종류 수**로 파생된다
+                (≥2 `확실` · 1 `애매` · 0 이면 제안 없음) — 이 배열의 길이가 아니라
+                **살아남은 종류의 수**다.
+
+                ⚠ 축 이름 5값은 core-api 비교기의 축 이름과 **같은 문자열**이다 —
+                두 벌이 되면 「인용한 축」과 「검증하는 축」이 갈린다.
+              type: array
+              maxItems: 5
+              items:
+                type: object
+                additionalProperties: false
+                required: [field, uploadValue, candidateValue]
+                properties:
+                  field:
+                    description: |
+                      대조한 축. `period` 는 기간 겹침, `crs`·`grid` 는 표기 동등,
+                      `variables` 는 교집합 1개 이상, `fileName` 은 토큰 접두를 뜻한다.
+                      **판정 규칙은 core-api 에 한 벌로 있다** — 이쪽은 어느 축을
+                      인용했는지만 적는다.
+                    type: string
+                    enum: [period, crs, grid, variables, fileName]
+                  uploadValue:
+                    description: |
+                      업로드 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                      `LineageSuggestionRequest.file` 의 실제 값과 대조한다.
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                  candidateValue:
+                    description: |
+                      후보 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                      `LineageParentCandidate` 의 실제 값과 대조한다.
+                    type: string
+                    minLength: 1
+                    maxLength: 200
 
     ProcessingMethodSuggestion:
       allOf:

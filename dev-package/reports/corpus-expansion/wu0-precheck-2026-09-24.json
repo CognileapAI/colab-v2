@@ -1,0 +1,214 @@
+{
+  "schema": "colab-corpus-expansion-precheck/1",
+  "measured_at": "2026-09-24T07:02Z",
+  "work_unit": ["WU0", "WU1"],
+  "intent": "dev-package/intent/2026-09-24-corpus-expansion-dev-reseed.md",
+  "base_commit": "fb89cd71cfafa3d4e657dceeda1848ffba04224b",
+  "dev_deployed_sha": "ea21d8c2aa54",
+  "reseed_target_ref": "origin/develop",
+  "reseed_target_sha": "02d251d81b54",
+
+  "dev_platform": {
+    "datasets_live": 0,
+    "datasets_deleted": 0,
+    "dataset_description": 0,
+    "accounts": 0,
+    "labs": 1,
+    "projects": 0,
+    "project_dataset": 0,
+    "files": 0,
+    "uploads": 0,
+    "autometa_rows": 0,
+    "variable_rows": 0,
+    "lineage_edges": 0,
+    "lineage_unknown": 0,
+    "autometa_fill": {
+      "format": 0,
+      "variables": 0,
+      "period_start": 0,
+      "period_end": 0,
+      "crs": 0,
+      "grid": 0
+    },
+    "alembic_version_platform": "0033_admin_body_access",
+    "repo_platform_head_develop": "0033_admin_body_access",
+    "repo_platform_head_k3_resume": "0033_admin_body_access"
+  },
+
+  "dev_ai": {
+    "alembic_version_ai": "0007_merge_vocab_and_category",
+    "tables": ["alembic_version_ai", "d9_concept", "d9_concept_edge", "d9_method_term", "d9_place_alias", "d9_topic_synonym"],
+    "counts": {
+      "d9_concept": 49,
+      "d9_concept_edge": 19,
+      "d9_method_term": 13,
+      "d9_place_alias": 4,
+      "d9_topic_synonym": 18
+    }
+  },
+
+  "ai_chain_loss_prediction": {
+    "method": "key-level set diff — dev live keys vs the rows the migration seeds insert",
+    "keys_compared": {
+      "d9_method_term": "term",
+      "d9_topic_synonym": "synonym",
+      "d9_place_alias": "alias",
+      "d9_concept": "concept_id",
+      "d9_concept_edge": "(src, relation, dst)"
+    },
+    "per_table": {
+      "d9_concept": {"now": 49, "after_reset": 49, "lost": 0, "only_on_dev": []},
+      "d9_concept_edge": {"now": 19, "after_reset": 19, "lost": 0, "only_on_dev": []},
+      "d9_method_term": {"now": 13, "after_reset": 13, "lost": 0, "only_on_dev": []},
+      "d9_place_alias": {"now": 4, "after_reset": 4, "lost": 0, "only_on_dev": []},
+      "d9_topic_synonym": {"now": 18, "after_reset": 18, "lost": 0, "only_on_dev": []}
+    },
+    "total_lost_rows": 0,
+    "seed_sources": {
+      "db/ai/seed/k2_ontology_seed.sql": {"d9_method_term": 13, "d9_topic_synonym": 5, "d9_place_alias": 4},
+      "db/ai/seed/topic_synonym_six.sql": {"d9_topic_synonym": 13},
+      "db/ai/seed/k2b_concept_graph_seed.sql": {"d9_concept": 49, "d9_concept_edge": 19}
+    },
+    "seed_files_identical_develop_vs_k3_resume": true,
+    "codex_ai_search_next_not_on_dev": {
+      "0008_dataset_knowledge": "creates schema knowledge.* — never applied on dev",
+      "0009_practitioner_lexicon": {"d9_topic_synonym": 9, "d9_place_alias": 4},
+      "0010_practitioner_concept": {"d9_concept": 5, "d9_concept_edge": 1},
+      "rows_total": 19,
+      "at_risk_now": 0,
+      "note": "dev head is 0007; none of these rows exist on dev, so reset cannot lose them"
+    },
+    "two_heads_warning": {
+      "k3_resume": "0008_d10_model_call_ledger (down_revision 0007_merge_vocab_and_category)",
+      "codex_ai_search_next": "0008_dataset_knowledge (down_revision 0007_merge_vocab_and_category)",
+      "consequence": "if both branches ever merge, the ai chain has two heads and `alembic upgrade head` refuses"
+    }
+  },
+
+  "reseed_inputs": {
+    "plan_manifest": "dev-package/tools/dev-seed/plan-manifest.yaml",
+    "expected": {"datasets": 28, "edges": 18, "data_bytes": 3641736593},
+    "build_plan_dry_run": {
+      "datasets": 28, "edges": 18, "files": 543,
+      "bytes": 3641736593, "grid_bytes": 1534685472, "load_sum": 5176422065,
+      "missing_files": 0, "row_mismatches": 0
+    },
+    "projects": {"precipitation": 5, "vegetation": 7, "drought": 2, "포멧테스트": 14},
+    "processing_level_key": "level",
+    "processing_level_present": "28/28",
+    "level_distribution": {"Lv0": 10, "Lv1": 16, "Lv2": 2},
+    "format_distribution": {"npy": 11, "GeoTIFF": 7, "NetCDF4": 3, "GeoPackage": 2, "HDF4": 2, "bin(gzip)": 2, "GRIB1": 1},
+    "parents_schema": {"shape": "list of parent names (scalar)", "has_role_column": false, "has_method_column": false},
+    "canonical_metadata": {
+      "rows": 28,
+      "columns": ["seq", "name", "start", "end", "granularity", "basis", "registrationNote"],
+      "start_filled": 28, "end_filled": 28, "granularity_filled": 28, "basis_filled": 28,
+      "auxiliaryParents": 2
+    },
+    "approved_accounts_file": {
+      "path": "~/.config/colab-platform/dev-reseed-accounts-approved.json",
+      "mode": "0600",
+      "rows": 5,
+      "columns": ["account_id", "admin", "email", "initial_password_strategy", "lab", "lab_id", "name", "role"]
+    }
+  },
+
+  "reference_data": {
+    "COLAB_REF_ROOT": "<checkout-sibling 03 Reference-Data> (exists)",
+    "files": 2474,
+    "total_bytes": 4686003775,
+    "by_extension": {
+      "npy": {"files": 1831, "bytes": 3867520824},
+      "tif": {"files": 62, "bytes": 288294102},
+      "grib": {"files": 1, "bytes": 149514336},
+      "nc": {"files": 186, "bytes": 123439450},
+      "png": {"files": 249, "bytes": 100992268},
+      "hdf": {"files": 8, "bytes": 55249549},
+      "gpkg": {"files": 2, "bytes": 49594368},
+      "gz": {"files": 22, "bytes": 32340384},
+      "(none)": {"files": 20, "bytes": 17732230},
+      "other": {"files": 93, "bytes": 1325906}
+    },
+    "plan_selects_bytes": 3641736593
+  },
+
+  "repin_targets": {
+    "01M1SC": {
+      "total_occurrences": 4424,
+      "distinct_ulids_in_live_files": 122,
+      "live_execution_path": {
+        "eval/k4-search/fixtures/reference/expanded-normalized-02.json": 228,
+        "eval/k4-search/fixtures/reference/dev-data-snapshot.json": 123,
+        "eval/k4-search/golden-cases.json": 113,
+        "eval/k4-search/golden-set.md": 11,
+        "eval/k3-lineage/lineage-cases.json": 10,
+        "eval/k3-lineage/test_llm_lineage_probe.py": 5,
+        "subtotal": 490
+      },
+      "documents_optional": {
+        "dev-package/intent/2026-09-24-corpus-expansion-dev-reseed.md": 3,
+        "dev-package/intent/2026-09-24-k3-lineage-suggestion-resume.md": 2,
+        "dev-package/prd/rounds/R-K3-RESUME.md": 2,
+        "dev-package/intent/2026-09-22-k4-luna-interpreter-probe.md": 1,
+        "dev-package/sessions/20260912-ai-search-data-readiness.md": 10,
+        "dev-package/sessions/20260911-stage12-final-verification.md": 1,
+        "subtotal": 19
+      },
+      "historical_reports_do_not_edit": {"files": 33, "occurrences": 3915},
+      "services_source": 0
+    },
+    "01M2F4": {
+      "total_occurrences": 6,
+      "execution_path": 0,
+      "records_only": {
+        "dev-package/sessions/DR-4-run-20260914T050442Z.md": 2,
+        "dev-package/intent/2026-09-24-corpus-expansion-dev-reseed.md": 2,
+        "dev-package/reports/k4-luna-probe/README.md": 1,
+        "dev-package/intent/2026-09-22-k4-luna-interpreter-probe.md": 1
+      }
+    },
+    "hardcoded_count": {"file": "eval/k4-search/golden_baseline.py", "line": 134, "text": "if len(expected) != 9:"},
+    "name_keyed_no_repin": {"file": "eval/k4-search/fixtures/reference/stage-evidence-packet-02.json", "id_occurrences": 0}
+  },
+
+  "gates": {
+    "seed-plan-drift": "green",
+    "dev-reseed-selftest": "green",
+    "tally": {"green": 2, "red_judgment": 0, "red_readiness": 0}
+  },
+
+  "preflight": {
+    "command": "bash dev-package/tools/dev-reseed/reseed.sh --preflight-only",
+    "passed": 9,
+    "failed": 2,
+    "failed_items": ["dev-sha", "resources"],
+    "dev_sha": "dev runs ea21d8c2aa54, target 02d251d81b54; expected while the deploy stage is off",
+    "resources": {
+      "ec2_disk_avail_bytes": 1894973440,
+      "required_bytes": 2147483648,
+      "shortfall_bytes": 252510208,
+      "disk_total_bytes": 21396172800,
+      "disk_used_pct": 92,
+      "docker_reclaimable_bytes": 4034000000,
+      "remedy": "docker image prune on the dev host reclaims ~3.9 GB of images plus ~124 MB build cache"
+    }
+  },
+
+  "rehearsal": {
+    "command": "bash dev-package/tools/dev-reseed/reseed.sh --rehearse",
+    "outcome": "did not run — preflight fail-closed before any remote primitive",
+    "remote_primitives_executed": 0,
+    "blockers": ["preflight:dev-sha", "preflight:resources", "rehearse:release-plan (--release-plan absent -> exit 78)"],
+    "read_only_proof": {
+      "psql_master_query": "stages.sh:1037 — SELECT only",
+      "ssh_script": "stages.sh:1038-1045 — printf echo only",
+      "compose_ps": "stages.sh:1047-1052 — `compose ps --services`",
+      "migrator_platform/ai": "stages.sh:1055-1065 — `alembic current`, never upgrade",
+      "reset_tool_s3_plan": "stages.sh:1071-1080 — `--phase s3-plan` only; deletion lives solely in `--phase s3-apply` (reset_dev_environment.py:429-446) which needs --apply-plan + --plan-sha256; the temp dir $REMOTE_OUT/rehearse is mkdir-ed then rm -rf-ed",
+      "psql_owner_url": "stages.sh:1082-1090 — `:ro` mount, `select 1`",
+      "doctor_summary_line": "stages.sh:1092-1097 -> infra/ops/probes/deploy-verification.sh — /repo:ro /state:ro /etc/colab:ro, --rm; deploy_doctor.py:318-319 connects with default_transaction_read_only=on; S3 access is ListObjects only",
+      "runner_phase_report": "stages.sh:1100-1107 -> runner.py:1968 phase_report — prints a table from the local state file, no network",
+      "agent_browser_title": "stages.sh:1109-1112 — open + get title"
+    }
+  }
+}
