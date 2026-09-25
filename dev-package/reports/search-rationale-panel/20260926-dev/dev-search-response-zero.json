@@ -1,0 +1,25 @@
+{
+  "env": "dev",
+  "sha": "592ff4b7693d",
+  "account_role": "운영자(무소속)",
+  "method": "POST",
+  "url": "https://d31zgpff2091oh.cloudfront.net/api/v1/dataset-searches",
+  "status": 200,
+  "request": {
+    "query": "화산 분화 이산화황 가스 농도",
+    "limit": 20
+  },
+  "response": {
+    "scope": {
+      "operatorScope": true,
+      "labName": "전체 연구실",
+      "searchedCount": 28
+    },
+    "isDataQuery": true,
+    "degraded": false,
+    "items": [],
+    "totalCount": 0,
+    "nextCursor": null,
+    "interpretation": "llm"
+  }
+}

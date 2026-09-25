@@ -1,0 +1,111 @@
+{
+  "env": "dev",
+  "sha": "592ff4b7693d",
+  "captured": "2026-09-26",
+  "account_role": "운영자(무소속)",
+  "bannedWordsInCards": {
+    "온톨로지": 0,
+    "계보": 0,
+    "못했어요": 0
+  },
+  "queries": [
+    {
+      "query": "강수",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 5,
+      "kindsSeen": [
+        "term"
+      ]
+    },
+    {
+      "query": "레이더 반사도로 강우를 예측한 모델 결과",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 3,
+      "kindsSeen": [
+        "evidence",
+        "term"
+      ]
+    },
+    {
+      "query": "U-Net 강우 예측 모델의 입력으로 쓴 전처리 자료",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 3,
+      "kindsSeen": [
+        "evidence",
+        "term"
+      ]
+    },
+    {
+      "query": "강우 예측 pred_sample.npy 파일의 바로 앞 입력 데이터셋",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 5,
+      "kindsSeen": [
+        "evidence",
+        "linked",
+        "term"
+      ]
+    },
+    {
+      "query": "식생 지수 NDVI 위성 자료",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "식생·NDVI",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 4,
+      "kindsSeen": [
+        "term"
+      ]
+    },
+    {
+      "query": "화산 분화 이산화황 가스 농도",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": null,
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 0,
+      "kindsSeen": []
+    }
+  ]
+}
