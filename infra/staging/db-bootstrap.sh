@@ -52,6 +52,10 @@ su_psql() {
 }
 
 case "$STEP" in
+protect-ontology)
+  [ -z "$MASTER_URL_FILE" ] || { echo "ontology protection: remote AWS policy is not supported by this ST installer" >&2; exit 78; }
+  su_psql -d colab_ai < "$HERE/ontology-protection.sql"
+  ;;
 roles)
   # 소유자 롤 — 테이블을 소유하고 마이그레이션을 돌린다. NOBYPASSRLS 는 여기서도 지킨다.
   su_psql -d postgres -v owner_pw="$COLAB_OWNER_PASSWORD" <<'SQL'
@@ -65,8 +69,15 @@ SQL
   for db in colab_platform colab_ai; do
     su_psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$db'" | grep -q 1 \
       || su_psql -d postgres -c "CREATE DATABASE $db OWNER colab_owner"
-    su_psql -d "$db" -c "ALTER SCHEMA public OWNER TO colab_owner; REVOKE CREATE ON SCHEMA public FROM PUBLIC;"
+    if [ "$db" = colab_platform ] || [ -n "$MASTER_URL_FILE" ]; then
+      su_psql -d "$db" -c "ALTER SCHEMA public OWNER TO colab_owner; REVOKE CREATE ON SCHEMA public FROM PUBLIC;"
+    fi
   done
+  if [ -z "$MASTER_URL_FILE" ]; then
+    su_psql -d colab_ai < "$HERE/ontology-protection.sql"
+  else
+    echo "ontology protection: ST-only policy, AWS protection not applied"
+  fi
   echo "roles/databases: ok"
   ;;
 app-grants)
@@ -102,6 +113,11 @@ BEGIN
   IF n > 0 THEN RAISE EXCEPTION 'colab_ai_app 에 SELECT 밖 권한이 % 건 있다', n; END IF;
 END $$;
 SQL
+  if [ -z "$MASTER_URL_FILE" ]; then
+    su_psql -d colab_ai < "$HERE/ontology-protection.sql"
+  else
+    echo "ontology protection: ST-only policy, AWS protection not applied"
+  fi
   echo "app role grants: ok (colab_app@platform · colab_ai_app@ai · SELECT only)"
   ;;
 account-admin)
@@ -131,5 +147,5 @@ verify)
   su_psql -d colab_ai       -c "SELECT 'ai' AS chain, version_num FROM alembic_version_ai;"
   ;;
 *)
-  echo "사용: db-bootstrap.sh {roles|app-grants|account-admin|verify|required-env}" >&2; exit 2 ;;
+  echo "사용: db-bootstrap.sh {roles|app-grants|protect-ontology|account-admin|verify|required-env}" >&2; exit 2 ;;
 esac

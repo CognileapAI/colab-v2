@@ -25,6 +25,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if not url:
         raise pytest.UsageError(f"core-api xdist worker DB URL이 비었다: {worker_id}")
     os.environ["COLAB_CORE_TEST_DATABASE_URL"] = url
+    if os.environ.get("COLAB_SERVICE_DB_MODE") == "pipeline-worker":
+        os.environ["COLAB_PIPELINE_DB_URL"] = url
     admin_dir = os.environ.get("COLAB_CORE_XDIST_ADMIN_DB_DIR")
     if not admin_dir:
         raise pytest.UsageError("core-api xdist worker admin DB 배선이 없다")

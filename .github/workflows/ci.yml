@@ -72,6 +72,7 @@ jobs:
               - 'gates/**'
             core-api:
               - 'services/core-api/**'
+              - 'tests/integration/**'
               - 'contracts/**'
               - 'db/platform/**'
             pipeline-worker:
@@ -188,6 +189,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 계약 생성기 Python 준비
+        run: |
+          set -euo pipefail
+          python3 -m venv services/core-api/.venv
+          services/core-api/.venv/bin/python -m pip install --disable-pip-version-check "$(grep -E '^PyYAML==' gates/requirements.txt)"
       # 도구는 lock 파일이 **정확히** 고정한다. 캐시 키도 그 lock 의 해시다 —
       # lock 이 한 글자라도 바뀌면 키가 바뀌어 낡은 도구가 재사용될 수 없다.
       # (게이트 스크립트는 캐시 적중 여부와 무관하게 도구 부재를 red 로 낸다. 캐시는 속도만 바꾼다.)
@@ -227,6 +236,8 @@ jobs:
           test -x contracts/node_modules/.bin/spectral
           test -d gates/tools/node/node_modules/ajv
           test -x frontend/node_modules/.bin/openapi-typescript
+      - name: 지식 수명주기 JSON 계약 수용·거절 시험
+        run: node --test contracts/tests/knowledge-lifecycle.test.cjs
       - name: seam 스펙 린트
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "contract-lint" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh contract-lint
       - name: 고정 이벤트 비교 SHA 확보
@@ -475,7 +486,7 @@ jobs:
       # 이 단위가 이 회차의 판정 대상인가. `contracts` 필터는 `contracts/**` ＋ `gates/**` 라
       # **게이트를 고치면 네 단위가 전부 다시 판정된다** — 판정기를 고치고 대상을 안 보는 것이
       # 이 레포의 대표 실패형이다.
-      RUN: ${{ needs.changes.outputs[matrix.service] == 'true' || needs.changes.outputs.contracts == 'true' }}
+      RUN: ${{ needs.changes.outputs[matrix.service] == 'true' || needs.changes.outputs.contracts == 'true' || (matrix.service == 'core-api' && (needs.changes.outputs.ai-service == 'true' || needs.changes.outputs.pipeline-worker == 'true')) }}
     steps:
       - uses: actions/checkout@v4
       - name: 이 회차의 판정 대상인가 (건너뛴 것을 드러낸다)
@@ -509,6 +520,18 @@ jobs:
       - name: 설치 확인 (pytest 가 실물로 있는가)
         if: env.RUN == 'true'
         run: services/${{ matrix.service }}/.venv/bin/python -c 'import pytest'
+      - name: core 통합시험의 별도 AI·D5 프로세스 환경 준비
+        if: env.RUN == 'true' && matrix.service == 'core-api'
+        run: |
+          set -euo pipefail
+          for service in ai-service pipeline-worker; do
+            python -m venv "services/$service/.venv"
+            "services/$service/.venv/bin/pip" install -q --disable-pip-version-check -r "services/$service/requirements.txt"
+            if [ -f "services/$service/requirements-dev.txt" ]; then
+              "services/$service/.venv/bin/pip" install -q --disable-pip-version-check -r "services/$service/requirements-dev.txt"
+            fi
+            "services/$service/.venv/bin/pip" install -q --disable-pip-version-check -e "services/$service"
+          done
       # 증명이 먼저, 판정이 다음 — `dormant-tests` 와 같은 배치다.
       # 「전부 green」과 「전부 무력」을 구분하는 것이 이 스텝이다.
       - name: 게이트가 수집 0건·실행 0건·실패를 red 로 냄을 증명

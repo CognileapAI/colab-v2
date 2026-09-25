@@ -13,7 +13,6 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../backup/lib.sh"
-load_config
 : "${COLAB_STAGING_PG_CONTAINER:=colab_v2_staging_pg}"
 
 DB=""; OWNER=""; DUMP=""; CONFIRM=0
@@ -26,6 +25,10 @@ while [ $# -gt 0 ]; do
     *) die "모르는 인자: $1" ;;
   esac
 done
+if [ "$DB" = colab_ai ]; then
+  die "ONTOLOGY_PROTECTED: colab_ai 제자리 삭제 복원은 금지한다. 별도 빈 DB에 복원하여 검증하라."
+fi
+load_config
 [ -n "$DB" ] && [ -n "$OWNER" ] && [ -n "$DUMP" ] || die "사용: restore-db.sh --db <DB> --owner <롤> --dump <덤프.sql.gz> --yes-drop-schema"
 [ -f "$DUMP" ] || die "덤프를 찾지 못했다"
 

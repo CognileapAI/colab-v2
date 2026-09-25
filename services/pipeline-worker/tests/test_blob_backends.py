@@ -18,6 +18,31 @@ from pathlib import Path
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def deny_external_network(monkeypatch):
+    """Keep this module's real loopback health tests; never contact external services."""
+    from urllib.parse import urlsplit
+    original=urllib.request.urlopen
+    def guarded(request,*args,**kwargs):
+        url=request.full_url if hasattr(request,'full_url') else request
+        if urlsplit(url).hostname not in {'127.0.0.1','localhost','::1'}:
+            raise AssertionError('blob unit attempted external network')
+        return original(request,*args,**kwargs)
+    monkeypatch.setattr(urllib.request,'urlopen',guarded)
+
+
+@pytest.mark.parametrize('stream',[False,True])
+def test_missing_blob_client_transport_cannot_contact_external_service(stream):
+    from colab_pipeline.kernel.s3 import S3Client
+    from colab_pipeline.kernel.sigv4 import Credentials
+    client=S3Client(bucket='unit-only',region='ap-northeast-2',creds=Credentials(access_key='unit',secret_key='unit'))
+    with pytest.raises(AssertionError,match='external network'):
+        if stream:
+            client.get_object_stream('unused')
+        else:
+            client.head_object('unused')
+
 from colab_pipeline.app import health
 from colab_pipeline.kernel import storage_layout
 from colab_pipeline.kernel.blob_backends import (
@@ -130,7 +155,8 @@ class _StubS3:
             raise S3Error(404, "NoSuchKey", key)
         return self.head_size.get(key, len(self.objects[key])), '"etag"'
 
-    def get_object_stream(self, key: str, *, chunk_size: int = 0):
+    def get_object_stream(self, key: str, *, chunk_size: int = 0, expected_etag=None):
+        assert expected_etag == '"etag"', 'materialize omitted observed source identity'
         self.calls.append(("get", key))
         if key not in self.objects:
             raise S3Error(404, "NoSuchKey", key)
@@ -140,6 +166,26 @@ class _StubS3:
             for i in range(0, len(body), self.chunk):
                 yield body[i:i + self.chunk]
         return chunks()
+
+
+def test_s3_materialize_rejects_missing_observed_etag(tmp_path):
+    client=_StubS3({'source':b'abc'})
+    client.head_object=lambda key:(3,'')
+    with pytest.raises(OSError,match='identity'):
+        S3UploadBlobs(client,tmp_path).materialize(key='source',dest=tmp_path/'input',file_name='source.npy')
+    assert not (tmp_path/'input/source.npy').exists()
+
+
+def test_s3_materialize_conditional_change_leaves_no_partial_or_final(tmp_path):
+    client=_StubS3({'source':b'abc'})
+    def changed(key,*,expected_etag=None):
+        assert expected_etag=='"etag"'
+        raise S3Error(412,'PreconditionFailed','test-only')
+    client.get_object_stream=changed
+    with pytest.raises(S3Error) as error:
+        S3UploadBlobs(client,tmp_path).materialize(key='source',dest=tmp_path/'input',file_name='source.npy')
+    assert error.value.status==412
+    assert list((tmp_path/'input').iterdir())==[]
 
 
 def _s3_keys() -> tuple[str, str]:

@@ -3,7 +3,7 @@
 // `unavailable` 이 `ready(0건)` 과 **다른 상태로 서 있는 것**이 이 파일의 요점이다 —
 // 하나로 합치면 「검색이 죽었다」가 「없다」로 둔갑한다.
 import { useEffect, useRef, useState } from 'react';
-import { SearchUnavailable, type SearchResults, type SearchSource } from './types';
+import { SearchUnavailable, type SearchResults, type SearchSource, type SearchContext } from './types';
 
 export type SearchState =
   | { status: 'loading' }
@@ -15,7 +15,7 @@ export type SearchState =
  * 토글은 **상태가 아니라 질의**이고, 바뀌면 다시 묻는다.
  */
 export function useSearch(source: SearchSource, query: string,
-                          verifiedOnly = false): SearchState {
+                          verifiedOnly = false, context?: SearchContext): SearchState {
   const [state, setState] = useState<SearchState>({ status: 'loading' });
   //: 지금 화면에 그려져 있는 결과가 어느 질문의 것인가.
   const shown = useRef<string | null>(null);
@@ -27,7 +27,7 @@ export function useSearch(source: SearchSource, query: string,
     // 질문이 바뀐 것이면 그때는 지운다 — 다른 질문의 결과를 남겨 두면 화면이 거짓말을 한다.
     if (shown.current !== query) setState({ status: 'loading' });
     source
-      .search({ query, ...(verifiedOnly ? { verified: true } : {}) })
+      .search({ query, ...(verifiedOnly ? { verified: true } : {}), ...(context ? { context } : {}) })
       .then((results) => {
         if (!alive) return;
         shown.current = query;
@@ -44,7 +44,7 @@ export function useSearch(source: SearchSource, query: string,
     return () => {
       alive = false;
     };
-  }, [source, query, verifiedOnly]);
+  }, [source, query, verifiedOnly, context]);
 
   return state;
 }

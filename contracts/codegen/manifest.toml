@@ -1,4 +1,34 @@
 # codegen manifest — 생성물 등기부 (SSoT)
+[[output]]
+id = "ids-ai"
+source = "services/core-api/src/colab_core/kernel/ids.py"
+output = "services/ai-service/src/colab_ai/kernel/ids.py"
+command = "python3 contracts/codegen/gen_knowledge_wire.py --ids {OUT}"
+
+[[output]]
+id = "knowledge-wire-core"
+source = "contracts/schemas/knowledge-lifecycle.json"
+output = "services/core-api/src/colab_core/kernel/knowledge_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_knowledge_wire.py {OUT}"
+
+[[output]]
+id = "knowledge-wire-ai"
+source = "contracts/schemas/knowledge-lifecycle.json"
+output = "services/ai-service/src/colab_ai/kernel/knowledge_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_knowledge_wire.py {OUT}"
+
+[[output]]
+id = "search-semantics-core"
+source = "contracts/search/semantics.json"
+output = "services/core-api/src/colab_core/kernel/search_semantics.py"
+command = "python3 contracts/codegen/gen_search_semantics.py {OUT}"
+
+[[output]]
+id = "search-semantics-ai"
+source = "contracts/search/semantics.json"
+output = "services/ai-service/src/colab_ai/kernel/search_semantics.py"
+command = "python3 contracts/codegen/gen_search_semantics.py {OUT}"
+
 #
 # `generated-up-to-date` 게이트가 읽는 유일한 정본이다. 엔트리마다
 # 「계약(source) → 생성 명령(command) → 커밋된 산출물(output)」을 못 박고,
@@ -111,3 +141,15 @@ id = "s3-kernel-s3-viz"
 source = "services/core-api/src/colab_core/kernel/s3.py"
 output = "services/viz-render/src/colab_viz/kernel/s3.py"
 command = "cp services/core-api/src/colab_core/kernel/s3.py {OUT}"
+
+[[output]]
+id = "ontology-wire-core"
+source = "contracts/seams/core-ai.yaml"
+output = "services/core-api/src/colab_core/kernel/ontology_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_ontology_wire.py {OUT}"
+
+[[output]]
+id = "ontology-wire-ai"
+source = "contracts/seams/core-ai.yaml"
+output = "services/ai-service/src/colab_ai/kernel/ontology_wire.py"
+command = "services/core-api/.venv/bin/python contracts/codegen/gen_ontology_wire.py {OUT}"

@@ -19,7 +19,10 @@ from pathlib import Path
 
 KINDS = ("method", "topic", "place")
 KIND_LABEL = {"method": "가공 방식 어휘", "topic": "주제", "place": "지명"}
-EXPECTED = {"method": 13, "topic": 4, "place": 4}
+#: 기준 파일이 **조용히 줄어드는 것**을 막는 자물쇠다. 값을 고칠 때는 기준 TSV 와 같은 판정을
+#: 근거로 적는다 — 여기만 고쳐 기준을 줄이면 그것이 곧 green 조작이다.
+#: ⭑ ⟨2026-09-18 · Ted 판정 결정 3⟩ place 4 → 6 (한반도·충청권). 기준 TSV 머리말과 같은 근거다.
+EXPECTED = {"method": 13, "topic": 4, "place": 6}
 
 
 def red(msg: str) -> None:
@@ -92,7 +95,7 @@ def main() -> int:
             print(f"   - [{KIND_LABEL[k]}] {v}\n       정본 인용: {c}")
         return 1
 
-    print("k2-coverage green — 핵심 어휘 미커버 0건 (기준 21건 전부 적재됨).")
+    print(f"k2-coverage green — 핵심 어휘 미커버 0건 (기준 {len(standard)}건 전부 적재됨).")
     return 0
 
 

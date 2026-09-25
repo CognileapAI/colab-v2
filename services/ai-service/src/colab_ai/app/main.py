@@ -28,10 +28,14 @@
 from __future__ import annotations
 
 import json
+import hmac
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
+from colab_ai.app import ontology_manifest
+from colab_ai.kernel.ontology_wire import MANIFEST_PATH
 from colab_ai.app.dictionaries import SqlDictionaries
 from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
 from colab_ai.app.ledger import build_ledger
@@ -78,6 +82,7 @@ MAX_PROCESSING_LEVEL = 3
 FILE_KINDS = ("본체", "기준 격자 파일")
 MAX_LIMIT = 100
 DEFAULT_LIMIT = 20
+MAX_PROPOSAL_BODY = 128 * 1024
 
 
 def build_suggester(settings: Settings, ledger=None) -> LineageSuggesterPort:
@@ -185,7 +190,8 @@ def create_app(settings: Settings | None = None,
     app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
     app.add_middleware(TraceMiddleware, service_name="ai-service")
 
-    dictionaries = (SqlDictionaries(make_engine(settings.dict_db_url))
+    ontology_engine = make_engine(settings.dict_db_url) if settings.dict_db_url else None
+    dictionaries = (SqlDictionaries(ontology_engine)
                     if settings.dict_db_url else _UnavailableDictionaries())
     # 해석 방식은 **설정이 정한다** — 키 유무가 아니다 (`PLAN-SoT §9 〈136〉`).
     # 이번 릴리즈의 기본은 `literal` 이고, 그건 고장이 아니라 결정이라 사유 문구도 다르다.
@@ -214,6 +220,94 @@ def create_app(settings: Settings | None = None,
         interpreter = LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON)
     service = SearchService(interpreter=interpreter, dictionaries=dictionaries)
     suggester = suggester or build_suggester(settings, ledger)
+
+    from .ontology_lookup import ContentReader
+    from ..kernel.ontology_wire import LOOKUP_PATH
+    concept_reader=ContentReader(ontology_engine)
+
+    from .concept_proposals import SonnetConceptProposer
+    from ..kernel.ontology_wire import PROPOSAL_PATH
+    concept_proposer = SonnetConceptProposer(
+        api_key=settings.anthropic_api_key,
+        model=settings.concept_model,
+        timeout_seconds=settings.model_timeout_seconds,
+    )
+
+    @app.post(PROPOSAL_PATH)
+    async def propose_search_concepts(request: Request):
+        if not settings.service_token:
+            return _error(503, "proposal_unavailable", "개념 제안 서비스 인증이 설정되지 않았다.")
+        authorization = request.headers.get("Authorization", "")
+        if not hmac.compare_digest(authorization.encode(), ("Bearer " + settings.service_token).encode()):
+            return _error(401, "unauthorized", "서비스 인증이 필요하다.")
+
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > MAX_PROPOSAL_BODY:
+                return _error(400, "invalid_request", "개념 제안 입력을 확인해 주세요.")
+        try:
+            data = json.loads(body)
+            if not isinstance(data, dict) or set(data) != {"source", "concepts"}:
+                raise ValueError
+            source, concepts = data["source"], data["concepts"]
+            if not isinstance(source, dict) or set(source) != {"facts"}:
+                raise ValueError
+            facts = source["facts"]
+            if not isinstance(facts, list) or len(facts) > 100 or not all(isinstance(fact, dict) for fact in facts):
+                raise ValueError
+            if not isinstance(concepts, list) or len(concepts) > 6 or not all(isinstance(item, dict) for item in concepts):
+                raise ValueError
+        except (ValueError, TypeError, json.JSONDecodeError):
+            return _error(400, "invalid_request", "개념 제안 입력을 확인해 주세요.")
+        if not settings.anthropic_api_key:
+            return _error(503, "proposal_unavailable", "개념 제안 모델이 설정되지 않았다.")
+        try:
+            return await run_in_threadpool(concept_proposer.propose, source, concepts)
+        except ValueError:
+            return _error(503, "proposal_unavailable", "개념 제안 모델을 사용할 수 없다.")
+
+    @app.post(LOOKUP_PATH)
+    async def lookup_ontology_concepts(request: Request):
+        if not settings.service_token:
+            return _error(503, "ontology_unavailable", "온톨로지 서비스 인증이 설정되지 않았다.")
+        if not hmac.compare_digest(request.headers.get("Authorization", "").encode(), ("Bearer "+settings.service_token).encode()):
+            return _error(401, "unauthorized", "서비스 인증이 필요하다.")
+        body=bytearray()
+        async for chunk in request.stream():
+            if len(body)+len(chunk)>128*1024:
+                return _error(400, "invalid_request", "개념 조회 입력이 너무 큽니다.")
+            body.extend(chunk)
+        try:
+            data=json.loads(body)
+            if (not isinstance(data,dict) or set(data)!={'query','expected_version'}
+                or not isinstance(data['query'],str) or len(data['query'])>16000
+                or not isinstance(data['expected_version'],str) or len(data['expected_version'])!=64):
+                raise ValueError('invalid input')
+        except (ValueError,TypeError):
+            return _error(400, "invalid_request", "개념 조회 입력을 확인해 주세요.")
+        if ontology_engine is None:
+            return _error(503, "ontology_unavailable", "온톨로지 조회가 준비되지 않았다.")
+        try:
+            return await run_in_threadpool(concept_reader.lookup,query=data['query'],expected_version=data['expected_version'])
+        except ValueError:
+            return _error(409, "ontology_changed", "온톨로지 버전을 다시 읽어 주세요.")
+        except Exception:
+            return _error(503, "ontology_unavailable", "온톨로지 내용을 읽지 못했다.")
+
+    @app.get(MANIFEST_PATH)
+    def get_ontology_manifest(request: Request):
+        if not settings.service_token:
+            return _error(503, "ontology_unavailable", "온톨로지 서비스 인증이 설정되지 않았다.")
+        authorization=request.headers.get("Authorization", "")
+        if not hmac.compare_digest(authorization.encode(), ("Bearer "+settings.service_token).encode()):
+            return _error(401, "unauthorized", "서비스 인증이 필요하다.")
+        if ontology_engine is None:
+            return _error(503, "ontology_unavailable", "온톨로지 조회가 준비되지 않았다.")
+        try:
+            return ontology_manifest.load_manifest(ontology_engine)
+        except Exception:
+            return _error(503, "ontology_unavailable", "온톨로지 내용을 읽지 못했다.")
 
     @app.get("/healthz")
     def healthz() -> dict:

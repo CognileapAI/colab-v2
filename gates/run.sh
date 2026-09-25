@@ -655,8 +655,8 @@ case "$GATE" in
     #
     # 선택자는 **여기 한 곳에만** 적는다(스크립트 안에 기본값을 두지 않는다 — 두면 갈린다):
     #   viz-render      `not e2e and not perf`  e2e·perf 는 원천 3.5 GB 마운트가 필요하다
-    #   pipeline-worker `not e2e and not dbint` dbint 는 COLAB_PIPELINE_DB_URL 이 필요하다
-    #   ai-service      `not dictdb`            dictdb 는 COLAB_AI_TEST_DICT_DB_URL 이 필요하다
+    #   pipeline-worker `not e2e`               일회용 platform DB로 dbint도 실행한다
+    #   ai-service      `not e2e`               일회용 AI DB로 dictdb도 실행한다
     #   core-api        `not e2e`               e2e 는 원천 마운트가 필요하다. 나머지 전부는
     #                                           게이트가 **일회용 Postgres 를 스스로 세워** 돈다
     # ⚠ 뺀 표식은 **취소가 아니다** — 표식은 붙어 있고, 그 환경이 있는 실행에서 함께 돈다
@@ -664,10 +664,11 @@ case "$GATE" in
     # 수집 0건 · 실행 0건(전부 skip) · failed/errors 는 전부 red. venv 부재는 red(준비 · 78).
     case "$GATE" in
       # `k4_probe`·`k3_probe` 는 측정 전용(env 필수)이라 판정 게이트에서 뺀다 — skip 이 아니라 미수집이다.
+      # ai-service 는 일회용 AI DB·knowledge writer 롤을 세우므로(`service-tests.sh`) dictdb 시험도 판정에 넣는다.
       service-tests-core-api)        exec "$REPO_ROOT/gates/tools/service-tests.sh" core-api        "not e2e and not k4_probe and not k3_probe" ;;
-      service-tests-ai-service)      exec "$REPO_ROOT/gates/tools/service-tests.sh" ai-service      "not dictdb" ;;
+      service-tests-ai-service)      exec "$REPO_ROOT/gates/tools/service-tests.sh" ai-service      "not e2e" ;;
       service-tests-viz-render)      exec "$REPO_ROOT/gates/tools/service-tests.sh" viz-render      "not e2e and not perf" ;;
-      service-tests-pipeline-worker) exec "$REPO_ROOT/gates/tools/service-tests.sh" pipeline-worker "not e2e and not dbint" ;;
+      service-tests-pipeline-worker) exec "$REPO_ROOT/gates/tools/service-tests.sh" pipeline-worker "not e2e" ;;
     esac
     ;;
   service-tests-selftest)

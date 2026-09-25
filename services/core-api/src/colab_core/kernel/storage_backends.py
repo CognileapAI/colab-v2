@@ -8,13 +8,14 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import datetime as dt
 import os
 import pathlib
 import shutil
 import urllib.parse
 from collections.abc import Iterator, Sequence
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Callable
 
 from colab_core.kernel import errors, storage_layout
 from colab_core.kernel.s3 import S3Client, S3Error
@@ -44,6 +45,12 @@ class PresignedGet:
     expires_at: dt.datetime
 
 
+@dataclasses.dataclass(frozen=True)
+class PreparedRegistration:
+    verified_ids: frozenset[str]
+    cleanup: Callable[[], None] = dataclasses.field(repr=False)
+
+
 def content_disposition(file_name: str) -> str:
     """`attachment; filename*=UTF-8''<url-encoded>` — 계약(`getDownloadBytes` 헤더 산문) 그대로.
 
@@ -62,6 +69,15 @@ def _read_chunks(fh, chunk_size: int) -> Iterator[bytes]:
             yield chunk
     finally:
         fh.close()
+
+
+def _verify_measurement(chunks: Iterator[bytes], measurement: dict) -> None:
+    digest, size = hashlib.sha256(), 0
+    for chunk in chunks:
+        digest.update(chunk)
+        size += len(chunk)
+    if size != measurement["size_bytes"] or digest.hexdigest() != measurement["digest"]:
+        raise OSError("registered bytes do not match file measurement")
 
 #: S3 단일 PutObject 의 하드 리밋. 그 위는 멀티파트뿐이고, 서버 경유 경로는 멀티파트를
 #: 하지 않는다 — 큰 파일의 정문은 프리사인드 전송(`〈338〉`)이다.
@@ -117,10 +133,19 @@ class LocalFilesystemStorage:
             return
 
     def relocate(self, *, files: Sequence[Any],
-                 new_keys: dict[str, str]) -> None:
+                 new_keys: dict[str, str], measurements: dict[str, dict] | None = None) -> set[str]:
+        return set(self._relocate(files=files,new_keys=new_keys,measurements=measurements).verified_ids)
+
+    def prepare_registration(self, *, files: Sequence[Any], new_keys: dict[str,str],
+                             measurements: dict[str,dict]) -> PreparedRegistration:
+        return self._relocate(files=files,new_keys=new_keys,measurements=measurements,keep_sources=True)
+
+    def _relocate(self, *, files, new_keys, measurements=None, keep_sources=False):
         # 같은 볼륨 안의 이름 바꾸기(os.replace)라 바이트를 복사하지 않는다.
         # 도중 실패하면 옮긴 것을 역순으로 되돌린다 — 반쪽 이동을 남기지 않는다.
         done: list[tuple[pathlib.Path, pathlib.Path]] = []
+        verified: set[str] = set()
+        identities = {}
         try:
             for f in files:
                 new_key = new_keys[f.file_id]
@@ -130,14 +155,51 @@ class LocalFilesystemStorage:
                 if not src.is_file():
                     continue  # 바이트가 이미 없다. 원장은 새 자리를 적는다
                 dst.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(src, dst)
-                done.append((src, dst))
+                if keep_sources:
+                    stat=src.stat()
+                    identity=(stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)
+                    with src.open('rb') as reader,dst.open('xb') as writer:
+                        done.append((src,dst))
+                        shutil.copyfileobj(reader,writer,length=STREAM_CHUNK)
+                    stat=src.stat()
+                    if (stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)!=identity:
+                        raise OSError('registration source identity changed during preparation')
+                    identities[src]=identity
+                elif measurements and f.file_id in measurements:
+                    # Exclusive destination creation: never overwrite someone else's bytes.
+                    os.link(src, dst)
+                    try:
+                        src.unlink()
+                    except OSError:
+                        dst.unlink()  # Only this invocation's new link; source still exists.
+                        raise
+                    done.append((src, dst))
+                else:
+                    os.replace(src, dst)
+                    done.append((src, dst))
+                if measurements and f.file_id in measurements:
+                    _verify_measurement(self.open(key=new_key), measurements[f.file_id])
+                    verified.add(f.file_id)
         except OSError:
             for src, dst in reversed(done):
-                src.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(dst, src)
+                if keep_sources:
+                    dst.unlink()
+                else:
+                    src.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(dst, src)
             raise
         self._prune_upload_dirs([f.storage_key for f in files])
+        def cleanup():
+            for source,identity in identities.items():
+                try:
+                    stat=source.stat()
+                except FileNotFoundError:
+                    continue
+                if (stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)!=identity:
+                    raise OSError('registration source identity changed; retained')
+                source.unlink()
+            self._prune_upload_dirs([f.storage_key for f in files])
+        return PreparedRegistration(frozenset(verified),cleanup)
 
     def duplicate(self, *, pairs: Sequence[tuple[str, str]]) -> None:
         created: list[pathlib.Path] = []
@@ -226,28 +288,63 @@ class S3UploadStorage:
         self._client.delete_objects([key])  # DeleteObjects 는 없는 키에도 조용하다
 
     def relocate(self, *, files: Sequence[Any],
-                 new_keys: dict[str, str]) -> None:
+                 new_keys: dict[str, str], measurements: dict[str, dict] | None = None) -> set[str]:
+        return set(self._relocate(files=files,new_keys=new_keys,measurements=measurements).verified_ids)
+
+    def prepare_registration(self, *, files: Sequence[Any], new_keys: dict[str,str],
+                             measurements: dict[str,dict]) -> PreparedRegistration:
+        return self._relocate(files=files,new_keys=new_keys,measurements=measurements,keep_sources=True)
+
+    def _relocate(self, *, files, new_keys, measurements=None, keep_sources=False):
         copied: list[str] = []
         moved_src: list[str] = []
+        verified: set[str] = set()
+        source_etags = {}
         try:
             for f in files:
                 new_key = new_keys[f.file_id]
                 if not f.storage_key or f.storage_key == new_key:
                     continue
+                if keep_sources or (measurements and f.file_id in measurements):
+                    try:
+                        self._client.head_object(new_key)
+                    except S3Error as error:
+                        if error.status != 404 and error.code != "NoSuchKey":
+                            raise
+                    else:
+                        raise FileExistsError("file measurement destination already exists")
                 try:
-                    self._client.copy_object(f.storage_key, new_key)
+                    if keep_sources or (measurements and f.file_id in measurements):
+                        _, source_etag = self._client.head_object(f.storage_key)
+                        if not source_etag:
+                            raise OSError("file measurement source identity unavailable")
+                        self._client.copy_object(f.storage_key, new_key, expected_etag=source_etag)
+                        source_etags[f.storage_key]=source_etag
+                    else:
+                        self._client.copy_object(f.storage_key, new_key)
                 except S3Error as e:
                     if e.status == 404 or e.code == "NoSuchKey":
                         continue  # 바이트가 이미 없다 — 로컬 구현과 같은 규칙
                     raise
                 copied.append(new_key)
+                if measurements and f.file_id in measurements:
+                    _, destination_etag = self._client.head_object(new_key)
+                    if not destination_etag:
+                        raise OSError("file measurement destination identity unavailable")
+                    _verify_measurement(self._client.get_object_stream(new_key, expected_etag=destination_etag),
+                                        measurements[f.file_id])
+                    verified.add(f.file_id)
                 moved_src.append(f.storage_key)
-        except S3Error:
+        except (S3Error, OSError):
             if copied:
                 self._client.delete_objects(copied)
             raise
-        if moved_src:
+        if moved_src and not keep_sources:
             self._client.delete_objects(moved_src)
+        def cleanup():
+            for key,etag in source_etags.items():
+                self._client.delete_object_if_match(key,etag)
+        return PreparedRegistration(frozenset(verified),cleanup)
 
     def duplicate(self, *, pairs: Sequence[tuple[str, str]]) -> None:
         copied: list[str] = []

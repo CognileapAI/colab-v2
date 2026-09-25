@@ -286,4 +286,3 @@ def test_an_inactive_account_never_crosses_the_lab_boundary(p2_client) -> None:
     client = p2_client()
     _make_inactive_member(client, inactive=True)
     assert set(members(client, "b1-prof-token")) == {ACC_B_PROF}
-

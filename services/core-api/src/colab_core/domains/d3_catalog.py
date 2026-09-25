@@ -588,9 +588,16 @@ def select_lineage_candidates(session: Session, *, lab_id, upload_meta: dict,
     return picked
 
 
-def list_dataset_cores(session: Session) -> list[DatasetCore]:
+def list_dataset_cores(session: Session, dataset_ids: list[str] | None = None) -> list[DatasetCore]:
     """연구실 경계는 RLS 가 이미 걸었다 — 여기에 lab_id 조건을 다시 적지 않는다."""
-    rows = session.execute(_ROWS).mappings().all()
+    if dataset_ids == []:
+        return []
+    if dataset_ids is None:
+        rows = session.execute(_ROWS).mappings().all()
+    else:
+        from sqlalchemy import bindparam
+        bounded = text(str(_ROWS) + ' AND d.id IN :ids').bindparams(bindparam('ids', expanding=True))
+        rows = session.execute(bounded, {'ids':dataset_ids}).mappings().all()
     return [
         DatasetCore(
             dataset_id=r["id"], name=r["name"], topic=r["topic"], summary=r["summary"],
@@ -1018,8 +1025,11 @@ _PREFIX_TSQUERY = """
     WHERE pfx.e IS NOT NULL)::tsquery
 """
 
+from . import d3_search_annotations as search_annotations
+_ONTOLOGY_MATCH="(oc.dataset_id IS NOT NULL)"
+
 _SEARCH = text("""
-WITH q AS (
+WITH """+search_annotations.CANDIDATE_CTES+""", q AS (
   SELECT """ + _PREFIX_TSQUERY + """ AS tq
 )
 SELECT d.id AS dataset_id,
@@ -1031,9 +1041,11 @@ SELECT d.id AS dataset_id,
        (am.search_vector @@ q.tq) AS hit_autometa,
        (d.search_vector  @@ q.tq) AS hit_source,
        (d.id = ANY(CAST(:evidence_ids AS char(26)[]))) AS hit_evidence,
+       """+_ONTOLOGY_MATCH+""" AS hit_ontology,
        m.matched AS matched_terms,
        count(*) OVER () AS total_count
   FROM d3_dataset d
+  LEFT JOIN ontology_candidates oc ON oc.dataset_id=d.id
   CROSS JOIN q
   LEFT JOIN d3_dataset_description dd ON dd.dataset_id = d.id
   LEFT JOIN d3_dataset_autometa    am ON am.dataset_id = d.id
@@ -1050,7 +1062,9 @@ SELECT d.id AS dataset_id,
      OR am.search_vector @@ q.tq
      OR d.search_vector  @@ q.tq)
      AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text)))
-     OR d.id = ANY(CAST(:evidence_ids AS char(26)[])))
+     OR d.id = ANY(CAST(:evidence_ids AS char(26)[]))
+     OR ("""+_ONTOLOGY_MATCH+"""
+         AND (CAST(:topic AS text) IS NULL OR dd.topic=CAST(:topic AS text))))
    AND NOT (d.id = ANY(CAST(:excluded_ids AS char(26)[])))
  ORDER BY rank DESC, d.id ASC
  LIMIT :limit OFFSET :offset
@@ -1061,7 +1075,8 @@ SELECT d.id AS dataset_id,
 _WHERE_LABELS = (("hit_description", "이름·주제·요약"),
                  ("hit_autometa", "포맷·변수"),
                  ("hit_source", "원천 표기"),
-                 ("hit_evidence", "확인한 파일 근거"))
+                 ("hit_evidence", "확인한 파일 근거"),
+                 ("hit_ontology", "온톨로지 연결 근거"))
 
 #: 유사도 문턱 (`〈89〉-㉮②`). `pg_trgm` 의 기본값 0.3 을 **코드에 명시**한다 —
 #: `SET pg_trgm.similarity_threshold` 는 세션 설정이라 접속마다 달라질 수 있고,
@@ -1081,12 +1096,15 @@ _TRGM_WHERE = ("이름(비슷한 말)",)
 #: 순위는 `유사도 DESC, 식별자 ASC` 다. 둘 다 DB 가 낸 결정적 값이라 같은 질의가 같은
 #: 순서를 낸다 (`〈89〉-㉮③` — 이 팔이 도는 동안 `tsvector` 순위는 존재하지 않는다).
 _SEARCH_TRGM = text("""
+WITH """+search_annotations.CANDIDATE_CTES+"""
 SELECT d.id AS dataset_id,
        CASE WHEN s.sim >= :threshold THEN s.sim ELSE 0 END AS rank,
        (d.id = ANY(CAST(:evidence_ids AS char(26)[]))) AS hit_evidence,
+       """+_ONTOLOGY_MATCH+""" AS hit_ontology,
        m.matched AS matched_terms,
        count(*) OVER () AS total_count
   FROM d3_dataset d
+  LEFT JOIN ontology_candidates oc ON oc.dataset_id=d.id
   JOIN d3_dataset_description dd ON dd.dataset_id = d.id
   LEFT JOIN LATERAL (
     SELECT max(similarity(dd.name, u.t)) AS sim
@@ -1100,7 +1118,9 @@ SELECT d.id AS dataset_id,
  WHERE d.deleted_at IS NULL
    AND ((s.sim >= :threshold
          AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text)))
-        OR d.id = ANY(CAST(:evidence_ids AS char(26)[])))
+        OR d.id = ANY(CAST(:evidence_ids AS char(26)[]))
+     OR ("""+_ONTOLOGY_MATCH+"""
+         AND (CAST(:topic AS text) IS NULL OR dd.topic=CAST(:topic AS text))))
    AND NOT (d.id = ANY(CAST(:excluded_ids AS char(26)[])))
  ORDER BY rank DESC, d.id ASC
  LIMIT :limit OFFSET :offset
@@ -1132,7 +1152,7 @@ def _websearch(terms: tuple[str, ...]) -> bool:
 
 def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | None,
                     limit: int, offset: int, evidence_ids: tuple[str, ...] = (),
-                    excluded_ids: tuple[str, ...] = ()) -> tuple[list[SearchMatch], int]:
+                    excluded_ids: tuple[str, ...] = (), include_ontology: bool = False) -> tuple[list[SearchMatch], int]:
     """`tsvector` 로 후보를 뽑고 **순위를 낸다** (`〈72〉-㉮` · `〈81〉`).
 
     **D3 는 core-api 의 자기 도메인이다** — 이 질의는 도메인 경계를 넘지 않는다.
@@ -1153,13 +1173,18 @@ def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | No
     """
     if not _websearch(terms):
         return [], 0
+    if include_ontology:
+        # Nested source RLS produces thousands of JIT functions, dwarfing this
+        # short query's execution. Keep the setting within the request transaction.
+        session.execute(text("SET LOCAL jit=off"))
     params = {"terms": list(terms), "topic": topic, "limit": limit, "offset": offset,
-              "evidence_ids": list(evidence_ids), "excluded_ids": list(excluded_ids)}
-    if evidence_ids or excluded_ids:
+              "evidence_ids": list(evidence_ids), "excluded_ids": list(excluded_ids), "ontology_enabled":include_ontology, "ontology_terms":[t.casefold() for t in terms],
+              "selector":search_annotations.SELECTOR_VERSION,"extractor":search_annotations.EXTRACTOR_VERSION}
+    if evidence_ids or excluded_ids or include_ontology:
         # Freeze the fallback decision before evidence adds/removes candidates.
         # A later page or an all-excluded result must not switch search strategy.
         original = session.execute(_SEARCH, {**params, "limit": 1, "offset": 0,
-                                             "evidence_ids": [], "excluded_ids": []}).first()
+                                             "evidence_ids": [], "excluded_ids": [], "ontology_enabled":False}).first()
         statement = _SEARCH if original else _SEARCH_TRGM
         rows = session.execute(statement, {**params, "threshold": TRGM_THRESHOLD}).mappings().all()
         matches = [SearchMatch(
@@ -1167,7 +1192,8 @@ def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | No
             matched_terms=tuple(r["matched_terms"] or ()),
             where=(tuple(lb for key, lb in _WHERE_LABELS if r[key]) if original else
                    ((_TRGM_WHERE if r["matched_terms"] else ()) +
-                    (("확인한 파일 근거",) if r["hit_evidence"] else ())))) for r in rows]
+                    (("확인한 파일 근거",) if r["hit_evidence"] else ()) +
+                    (("온톨로지 연결 근거",) if r["hit_ontology"] else ())))) for r in rows]
         return matches, int(rows[0]["total_count"]) if rows else 0
     rows = session.execute(_SEARCH, params).mappings().all()
     if rows:

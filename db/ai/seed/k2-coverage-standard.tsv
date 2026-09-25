@@ -1,7 +1,15 @@
 # db/ai/seed/k2-coverage-standard.tsv — K2 완료 오라클의 정본 (SoT)
 #
 # 03-HANDOFF §1 K2 행이 못 박은 커버리지 기준을 기계가 읽는 형태로 옮긴 것이다.
-#   커버리지 = ONTOLOGY-SCOPE §2.6-(1) 정본 인용 13개 + 주제 4값(문서 기준 - 토지피복·LULC) + 지명 4개
+#   커버리지 = ONTOLOGY-SCOPE §2.6-(1) 정본 인용 13개 + 주제 4값(문서 기준 - 토지피복·LULC) + 지명 6개
+#
+# ⭑ <2026-09-18 · Ted 판정 결정 3 · intent/2026-09-18-practitioner-cases-ontology.md> 지명 4 -> 6.
+#   더한 둘은 한반도·충청권이고, 새로 발명한 값이 아니라 k2b_concept_graph_seed.sql 이 2026-08-25 에
+#   등급 (2) 로 이미 적재한 개념 노드다. 사전에만 없어 비대칭이던 것을 없앤다.
+#   같은 회차가 심는 별칭 Korea -> 한반도, southern Gyeonggi and Chungcheong regions -> 충청권 은
+#   여기 기준 행이 되지 않는다. 이 오라클의 place 사실은 d9_place_alias.place_name 이고
+#   (k2-coverage-check.sh 의 SELECT), 별칭은 그 열에 나타나지 않는다. 별칭까지 기준으로 삼으려면
+#   사실 질의를 먼저 고쳐야 하며 그것은 이 판정의 범위가 아니다.
 #   판정 = "핵심 어휘 미커버 0" (WORK-UNITS §8 K2 완료 정의)
 #
 # 이 파일은 **기준**이고, db/ai/seed/k2_ontology_seed.sql 은 **적재물**이다.
@@ -38,3 +46,5 @@ place	낙동강 유역	목업 E-02 데이터_찾기_260817 검색 근거 «'낙�
 place	한강 상류	목업 제품_260817 검색 예시 «한강 상류 DEM 원자료» · 프로젝트 «한강 상류 DEM 기반 유역 경계 재산정»
 place	금강 하굿둑	목업 E-02 데이터_찾기_260817 0건 검색어 «2019년 금강 하굿둑 염분 데이터» · 목업 제품_260817 프로젝트 «금강 하굿둑 염분 확산 모의»
 place	한강 유역	목업 제품_260817 연구실 한 줄 소개 «기후·수문 자료를 모아 유역 단위 물 순환을 분석하는 연구실이에요. 낙동강·한강 유역을 주로 다뤄요.»
+place	한반도	SEED-DATA §5.3 «한반도 전역 852x1200 격자» · 개념 노드 p-korea-peninsula 등급 ② (Ted 판정 2026-09-18 결정 3 — 사전-그래프 비대칭 해소)
+place	충청권	SEED-DATA §5.3 KWRA README(한글) 좌표 126.70~127.96E, 36.08~37.36N · 개념 노드 p-chungcheong 등급 ② (Ted 판정 2026-09-18 결정 3)

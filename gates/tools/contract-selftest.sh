@@ -98,6 +98,15 @@ C="$(mkfixture lint-conf)"
 clean_spec | sed 's|^                  id: .*|                  confidence: { type: number }\n&|' > "$C/seams/bad.openapi.yaml"
 expect red "lint: 숫자 확신도 필드" env COLAB_SEAM_DIR="$C/seams" "$LINT"
 
+C="$(mkfixture lint-generation)"
+clean_spec | sed 's|^                  id: .*|                  generation: { type: integer }\n&|' > "$C/seams/good.openapi.yaml"
+expect green "lint: 처리 generation은 확신도가 아님" env COLAB_SEAM_DIR="$C/seams" "$LINT"
+for key in ratio confidenceScore match_confidence confidence_ratio; do
+  C="$(mkfixture lint-confidence-$key)"
+  clean_spec | sed "s|^                  id: .*|                  $key: { type: number }\\n\&|" > "$C/seams/bad.openapi.yaml"
+  expect red "lint: 숫자 확신도 형제 $key" env COLAB_SEAM_DIR="$C/seams" "$LINT"
+done
+
 # ⑤ 배치 승인 엔드포인트
 C="$(mkfixture lint-batch)"
 clean_spec | sed 's|/datasets/{datasetId}:|/lineage/approve-all:|; s|- name: datasetId|- name: q|; s|in: path|in: query|' > "$C/seams/bad.openapi.yaml"

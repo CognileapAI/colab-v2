@@ -12,6 +12,54 @@ from fixture_builders import make_hsr_bin_gz, make_npy_2d, make_netcdf, make_til
 
 
 @pytest.mark.stage2
+def test_measurement_hash_and_parse_use_owned_bytes_despite_original_replacement(tmp_path,monkeypatch):
+    import hashlib
+    from colab_pipeline.d5 import pipeline
+    source=make_npy_2d(tmp_path/'value.npy',6,8,start=1)
+    original=source.read_bytes()
+    parse=pipeline.parse_metadata
+    def replace_original(path,detection):
+        source.write_bytes(b'x'*len(original))
+        return parse(path,detection)
+    monkeypatch.setattr(pipeline,'parse_metadata',replace_original)
+    result=pipeline.run_file(source,workdir=tmp_path/'out')
+    assert result.metadata is not None, 'parser read mutable original rather than owned snapshot'
+    assert result.measurement == {'parser_version':'file-measurement-v1','format':'npy',
+                                  'digest':hashlib.sha256(original).hexdigest(),'size_bytes':len(original)}
+    assert result.parsed_metadata.crs=='[미상]'
+
+
+@pytest.mark.stage2
+def test_no_measurement_for_magic_or_parse_failure(tmp_path):
+    source=tmp_path/'false.npy';source.write_bytes(b'not numpy')
+    result=run_file(source,workdir=tmp_path/'out')
+    assert getattr(result,'measurement','missing') is None
+
+
+@pytest.mark.stage2
+@pytest.mark.parametrize('fmt',['npy','netcdf','tif','hdf5'])
+def test_measurement_format_subset_requires_real_magic_and_parser(tmp_path,fmt):
+    import hashlib
+    from fixture_builders import make_readable_geotiff
+    if fmt=='npy':
+        source=make_npy_2d(tmp_path/'sample.npy',4,5)
+    elif fmt=='netcdf':
+        source=make_netcdf(tmp_path/'sample.nc')
+    elif fmt=='tif':
+        source=make_readable_geotiff(tmp_path/'sample.tif')
+    else:
+        import h5py
+        import numpy as np
+        source=tmp_path/'sample.h5'
+        with h5py.File(source,'w') as handle:
+            handle.create_dataset('values',data=np.arange(20,dtype='f4').reshape(4,5))
+    original=source.read_bytes()
+    result=run_file(source,workdir=tmp_path/'out')
+    assert result.measurement=={'parser_version':'file-measurement-v1','format':fmt,
+                                'digest':hashlib.sha256(original).hexdigest(),'size_bytes':len(original)}
+
+
+@pytest.mark.stage2
 def test_coords_missing_returns_failure_not_success(tmp_path: Path):
     # 완료조건 ① 핵심 음성 — 좌표 못 찾은 파일이 「성공」을 반환하지 않는다
     nx, ny = 8, 6

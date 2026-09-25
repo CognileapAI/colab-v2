@@ -151,6 +151,18 @@ class Settings:
     viz_base_url: str | None = None
     viz_service_token: str | None = None
     ai_base_url: str | None = None
+    ai_service_token: str | None = dataclasses.field(default=None, repr=False)
+    knowledge_source_enabled: bool = False
+    knowledge_callback_token: str | None = dataclasses.field(default=None, repr=False)
+    knowledge_deletion_token: str | None = dataclasses.field(default=None, repr=False)
+    knowledge_deletion_lab: str | None = None
+    knowledge_deletion_enabled: bool | None = None
+
+
+def _knowledge_enabled(raw: str) -> bool:
+    if raw not in {'true','false'}:
+        raise ValueError('knowledge source enabled must be true or false')
+    return raw == 'true'
 
 
 def _positive_int(name: str, raw: str | None, fallback: int) -> int:
@@ -236,4 +248,11 @@ def load_settings() -> Settings:
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
         viz_service_token=resolve_env_or_file(os.environ, ENV_VIZ_SERVICE_TOKEN),
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,
+        ai_service_token=resolve_env_or_file(os.environ,"COLAB_AI_SERVICE_TOKEN"),
+        knowledge_source_enabled=_knowledge_enabled(os.environ.get('COLAB_KNOWLEDGE_SOURCE_ENABLED', 'false')),
+        knowledge_callback_token=resolve_env_or_file(os.environ,'COLAB_KNOWLEDGE_CALLBACK_TOKEN'),
+        knowledge_deletion_token=resolve_env_or_file(os.environ,'COLAB_KNOWLEDGE_DELETION_TOKEN'),
+        knowledge_deletion_lab=os.environ.get('COLAB_KNOWLEDGE_DELETION_LAB'),
+        knowledge_deletion_enabled=(_knowledge_enabled(os.environ['COLAB_KNOWLEDGE_DELETION_ENABLED'])
+            if 'COLAB_KNOWLEDGE_DELETION_ENABLED' in os.environ else None),
     )

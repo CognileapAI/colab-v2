@@ -128,6 +128,8 @@ class S3UploadBlobs:
 
     def materialize(self, *, key: str, dest: Path, file_name: str) -> Path:
         expected, _etag = self.client.head_object(key)
+        if not _etag:
+            raise OSError('source object identity unavailable')
         safe = _safe_name(file_name, Path(key).name)
         dest.mkdir(parents=True, exist_ok=True)
         final = dest / safe
@@ -135,7 +137,7 @@ class S3UploadBlobs:
         received = 0
         try:
             with partial.open("wb") as fh:
-                for chunk in self.client.get_object_stream(key):
+                for chunk in self.client.get_object_stream(key,expected_etag=_etag):
                     fh.write(chunk)
                     received += len(chunk)
             if received != expected:

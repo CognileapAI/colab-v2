@@ -28,7 +28,9 @@ export class SearchUnavailable extends Error {}
  * 결과가 켜도 오지 않았다(`〈295〉`-㉲-ⓑ 가 적어 둔 한계).
  * **생략은 「거르지 않는다」다** — `false` 를 굳이 싣지 않는다.
  */
-export type SearchRequest = { query: string; limit?: number; verified?: boolean };
+export type SearchRequest = Omit<S['SearchQuery'], 'limit'> & Partial<Pick<S['SearchQuery'], 'limit'>>;
+export type SearchContext = S['SearchContext'];
+export type SearchAssessment = S['SearchAssessment'];
 
 /**
  * 결과를 채우는 곳. 실서버(`searchDatasets`) 하나뿐이다 —

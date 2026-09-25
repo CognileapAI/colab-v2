@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import pathlib
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 #: D9 사전 DB 의 접속 URL. **값 대신 경로로 받을 수 있다** — `COLAB_AI_DB_URL_FILE`
 #: (`PLAN-SoT §9 〈121〉-㉯`). `docker inspect` 의 환경변수 목록에 접속 문자열이 통째로
@@ -103,6 +103,9 @@ class Settings:
     #: 환경변수는 대문자라 걸리지 않으므로 **배선 이름은 그대로 두고** 파이썬 쪽 이름만
     #: 오퍼레이션 이름(`suggestLineage`)을 따른다.
     suggest_lineage_mode: str = "off"
+    service_token: str | None = field(default=None, repr=False)
+    anthropic_api_key: str | None = field(default=None, repr=False)
+    concept_model: str = "claude-sonnet-4-5"
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -112,6 +115,9 @@ class Settings:
         # 같은 규율. 오타(`LLM_`)는 `off` 로 떨어지고, 모델 호출이 몰래 켜지지 않는다.
         suggest = (e.get("COLAB_AI_LINEAGE_SUGGESTION") or "").strip().lower()
         return cls(
+            service_token=resolve_env_or_file(e, "COLAB_AI_SERVICE_TOKEN"),
+            anthropic_api_key=resolve_env_or_file(e, "ANTHROPIC_API_KEY"),
+            concept_model=e.get("COLAB_AI_CONCEPT_MODEL") or "claude-sonnet-4-5",
             dict_db_url=resolve_env_or_file(e, ENV_DB_URL),
             openai_api_key=e.get("OPENAI_API_KEY") or None,
             model=e.get("COLAB_MODEL_HELPER") or "gpt-5.6-luna",

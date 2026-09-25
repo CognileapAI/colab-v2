@@ -17,11 +17,20 @@
 #   요약줄은 체인별로 따로 내고 합계를 함께 낸다(어느 체인이 줄었는지가 한 줄에 보여야 한다).
 # 2026-09-08 WU-C13 — db/ai +1벌(`0007-drift.sh` · 두 순서 수렴) → **3**. platform 무변(14).
 # 2026-09-24 D10 원장 — db/ai +1벌(`0008-drift.sh` · 표 하나 신설) → **4**. platform 무변.
+# 2026-09-18 develop 동기화 — db/platform +1벌(`0032-private-owner-drift.sh`) → **26**.
+#   재부모화한 `0032_private_owner_access` 가 `0033_admin_body_access` 의 관리자 갈래를
+#   지우지 않고 소유자 갈래만 더하는지 재는 자리다. ai 체인 무변(3).
+# 2026-09-18 재부모화 봉합 — db/platform +1벌(`0042-drift.sh`) → **27**.
+#   구 체인을 이미 적용한 DB 는 재부모화로 건너뛴 두 리비전을 다시 돌리지 않는다.
+#   그 드리프트를 `0042_reconcile_admin_access` 가 메우는지 재는 자리다. ai 체인 무변(3).
+# 2026-09-25 ai-search-integration 병합 — 두 갈래를 합친 실측. platform 27(갈래 쪽 +2) ·
+#   ai 6(0004-0005·0006·0007·0008 원장·0009·0010). 갈래는 0009·0010 을 더하고도 ai 를 3 으로
+#   두었다 — 그 누락을 여기서 바로잡는다.
 
 [[chain]]
 dir = "db/platform/tests"
-min = 25
+min = 27
 
 [[chain]]
 dir = "db/ai/tests"
-min = 4
+min = 6

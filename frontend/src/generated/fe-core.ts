@@ -3679,6 +3679,7 @@ export interface components {
          *     P-9·P-10). `core-ai.yaml` 의 `SearchRequest.scope` 를 FE 가 채우지 않는 이유가 이것이다.
          */
         SearchQuery: {
+            context?: components["schemas"]["SearchContext"];
             /** @description 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`). */
             query: string;
             /**
@@ -3708,6 +3709,7 @@ export interface components {
          *     **0건이 정상**이다 (`Policy_데이터_찾기 §1.3-7`·§3.3).
          */
         SearchResults: components["schemas"]["ListEnvelope"] & {
+            assessment?: components["schemas"]["SearchAssessment"];
             /** @description 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.** */
             scope: components["schemas"]["AiSearchScope"];
             /**
@@ -3724,6 +3726,61 @@ export interface components {
             /** @description 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다. */
             degradedReason?: string;
             items: components["schemas"]["SearchResultRow"][];
+        };
+        /** @description 사용자가 이번 요청에서 명시한 연구 조건 또는 기준 파일. 개인 이력이나 권한을 대신하지 않는다. */
+        SearchContext: {
+            referenceFileId?: components["schemas"]["Ulid"];
+            research?: {
+                /** @enum {string} */
+                variable?: "land_surface_temperature" | "air_temperature" | "precipitation" | "wind_speed" | "water_quality" | "particulate_matter";
+                /** @enum {string} */
+                region?: "seoul" | "jeju" | "korean_peninsula";
+                period?: {
+                    /** Format: date */
+                    start: string;
+                    /** Format: date */
+                    end: string;
+                };
+                statistics?: ("instantaneous" | "daily_mean" | "daily_max" | "daily_min" | "monthly_mean" | "monthly_mean_daily_max" | "monthly_mean_daily_min")[];
+                maxResolutionM?: number;
+            };
+        };
+        /** @description 클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다. */
+        SearchAssessment: {
+            /** @enum {string} */
+            status: "clarification" | "partial" | "answered";
+            text: string;
+            questions: string[];
+            /** @enum {string} */
+            intent: "discover" | "recommend" | "compare" | "reference_match" | "latest" | "finest";
+            conditions: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            asOf: string;
+            semanticVersion: string;
+            scope: string;
+            candidateLimitReached: boolean;
+            unknownCount: number;
+            comparisons: {
+                datasetId: components["schemas"]["Ulid"];
+                name: string;
+                /** @enum {string} */
+                status: "supported" | "unknown" | "contradicted";
+                checks: {
+                    [key: string]: "supported" | "unknown" | "contradicted";
+                };
+                fileId: components["schemas"]["Ulid"] | null;
+                fileName: string | null;
+                facts: {
+                    [key: string]: unknown;
+                };
+                source: {
+                    label?: string;
+                    locator?: string;
+                    sha256?: string;
+                } | null;
+            }[];
         };
         /**
          * @description 검색 결과 카드 한 장 = **카탈로그 행 그대로 + AI 가 보탠 두 값.**
@@ -4045,6 +4102,15 @@ export interface components {
         };
         /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
         SearchEvidenceFacts: {
+            /** @enum {string} */
+            representation?: "spatial_grid" | "point_observations" | "table" | "array";
+            /** @enum {string} */
+            platform?: "satellite" | "ground" | "model" | "mixed";
+            /** @enum {string} */
+            format?: "npy" | "csv" | "netcdf" | "tif" | "hdf5";
+            provider?: string;
+            unit?: string;
+            statistics?: ("instantaneous" | "daily_mean" | "daily_max" | "daily_min" | "monthly_mean" | "monthly_mean_daily_max" | "monthly_mean_daily_min")[];
             roles?: ("model_input" | "auxiliary_input" | "validation" | "prediction" | "index" | "documentation" | "analysis_code")[];
             period?: {
                 /** Format: date */
@@ -4054,7 +4120,7 @@ export interface components {
             };
             region?: string;
             /** @enum {string} */
-            cadence?: "daily" | "weekly" | "monthly" | "15min";
+            cadence?: "daily" | "weekly" | "monthly" | "15min" | "hourly";
             model?: string;
             variable?: string;
             directObservation?: boolean;

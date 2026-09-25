@@ -1,4 +1,5 @@
-"""**적재된 그래프 실물**로 `K4-b` 를 증명한다 — 노드 49 · 엣지 19 (`PLAN-SoT §9-〈86〉`).
+"""**적재된 그래프 실물**로 `K4-b` 를 증명한다 — 노드 54 · 엣지 20 (`PLAN-SoT §9-〈86〉`
++ Ted 판정 2026-09-18 결정 4·5, `0010_practitioner_concept`).
 
 `test_graph_expansion.py` 는 규칙을 축소판 그래프로 증명한다. **여기서는 시드가 그 규칙을
 실제로 먹이는가**를 본다. 둘이 갈리면 「규칙은 맞는데 시드가 그 규칙을 안 쓴다」가 조용히
@@ -24,12 +25,17 @@ def _graphed(dictionaries, query: str):
             {h.term: (h.relation, h.parent) for h in out.graph_hops})
 
 
-def test_시드가_노드_49_엣지_19_다(dictionaries) -> None:
-    """`〈86〉` 의 확정값. 여기가 흔들리면 아래 오라클이 전부 다른 것을 재게 된다."""
+def test_시드가_노드_54_엣지_20_다(dictionaries) -> None:
+    """`〈86〉` 의 확정값 + 2026-09-18 결정 4·5. 여기가 흔들리면 아래 오라클이 다른 것을 잰다.
+
+    49·19 → 54·20 은 원천표기 3(`s-era5`·`s-ecmwf`·`s-ecmwf-ko`) + 주제 2(`t-drought`·
+    `t-fileformat`) + 엣지 `E1-12` 다. `~의 한 가지다` 7 은 **바뀌지 않는다** — 새 엣지는
+    `같은 말이다` 하나뿐이고 `~이 제공한다` 는 결정 8 이 닫아 두었다.
+    """
     graph = dictionaries.load_graph()
-    assert len(graph.nodes) == 49
-    assert len(graph.edges) == 19
-    assert sum(1 for e in graph.edges if e.relation == SAME_AS) == 11
+    assert len(graph.nodes) == 54
+    assert len(graph.edges) == 20
+    assert sum(1 for e in graph.edges if e.relation == SAME_AS) == 12
     assert sum(1 for e in graph.edges if e.relation == KIND_OF) == 7
 
 
