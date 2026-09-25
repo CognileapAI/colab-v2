@@ -9,7 +9,10 @@
 //  - **미리보기는 등록 내내 접히지 않는다** (§8 — 정본이 그렇게 못 박았다).
 //  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
 //  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
+//  - 새 부모는 `useUploadModalPresence`(이 파일 아래) 필수 — 훅의 `key={session}` · 닫기 전환 처리 없이 모달을
+//    걸면 등록 확정 뒤 닫는 도중 다시 열 때 끝난 모달이 되살아난다(「완료된 닫기」 경계 · design-fix 후속 20260925 Q8e).
+//    지금 부모 = `UploadEntry` · `GridAttachEntry`.
+import{ useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
 import { TargetLabSelect } from '../common/TargetLabSelect';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
