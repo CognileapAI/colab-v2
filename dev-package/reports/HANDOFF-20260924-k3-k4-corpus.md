@@ -11,6 +11,7 @@
 ## 0. 지금 무엇을 하던 중이었나 (재개 지점)
 
 ⛔ **2026-09-25 dev 재시드 동결** — reset 게이트 수선 전 실행 금지(§8). 아래 §0 은 9-24 기록이고 현재 재개 지점은 §8 이다.
+✅ **2026-09-25 동결 해제(사용자 GO) · 9-24 재시드 마무리** — nonce 무잔존 거부 실측(#144) 뒤 해제했다. 실패 꼬리만 이어 끝냈다(§8 ✅ 줄). 비어 있지 않은 dev 의 reset 은 여전히 매 회차 명시 GO ＋ 사용자 터미널 토큰(`.agents/rules/deploy.md` 11번).
 
 **진행 중이던 레인 1건 — 「재시드 재개 전 로컬 검증」**(가지 `corpus-local-verify`, 미완).
 로컬 일회용 스택에서 재시드 러너의 `accounts → 임시 운영자 해제 → 재로그인 → projects` 순서가
@@ -134,6 +135,7 @@ dev 를 28건 실물로 재시드하면 `format·crs·grid·period` 4축이 살�
 
 ### (b) dev 3회차 재개
 ⛔ **2026-09-25 dev 재시드 동결** — reset 게이트 수선 전 실행 금지(§8).
+✅ **2026-09-25 동결 해제(사용자 GO) · 9-24 재시드 마무리** — nonce 무잔존 거부 실측(#144) 뒤 해제했다. 실패 꼬리만 이어 끝냈다(§8 ✅ 줄). 비어 있지 않은 dev 의 reset 은 여전히 매 회차 명시 GO ＋ 사용자 터미널 토큰(`.agents/rules/deploy.md` 11번).
 
 백업 24h 확인 → preflight 11/11 → `COLAB_RESEED_TARGET_REF=ea21d8c2aa54 bash dev-package/tools/dev-reseed/reseed.sh --from seed --run-dir <기존 run-dir>`
 (env 는 레포 밖 dev 접속 env 감싸개(`with-dev-env.sh`) · `COLAB_DEV_SECRETS_DIR` unset).
@@ -214,6 +216,7 @@ dev-package/sessions/DR-4-run-20260924T*.md      재시드 실행 기록 2건
 - ⚠ **사고** — 9-24 08:33Z 1차 reset 이 비어 있지 않은 dev(4,189행 · S3 1,778 키)를 지웠다. 전제 「dev DB 0」은 거짓 0(§3-1·§3-3 정정).
   경위·공동 원인·복구 창(≈2026-10-24) = `corpus-expansion/dev-reseed-rca-2026-09-25.md` §0′.
 - ⛔ **dev 재시드 동결** — reset 게이트를 고칠 때까지. 게이트 = DROP 직전 계수가 0 이 아니면 멈춘다 · 계수는 BYPASSRLS 롤 또는 API 로만 센다. 아래 (b)의 재시도·최종화도 이 동결 아래 있다.
+- ✅ **동결 해제 · 재시드 마무리 — 2026-09-25.** 거부 실측: #138 게이트(dev 23cdf03c) → #144(nonce 무잔존) 머지 뒤 토큰 없는 `--from reset` 이 ①ᵇ 에서 거부 · nonce 0 · 계수·스키마·앱·S3 불변 → 사용자 GO 로 해제. 이어 사용자 「실패한 것만」 → `reseed.sh --from verify --verify-from <wu2-20260924T0834Z>`(가지 `reseed-verify-resume`): 판정표 통과 25행은 잇고 seq 13·14·16 만 다시 재어 #133·#134 모양 그대로 면제(`dev-package/tools/dev-reseed/known-defects.json` · 사용자 확인) → 대조 전건 일치 → record-details → **계정 최종화 complete**(교수 초기 자격 복귀 · 임시 운영자 해제 · 소유자 관리 운영자 1건은 초기 자격 검사 제외 · 나머지 운영자 3건 불변) · 데이터 계수 불변(28/571/96/4/18). 재개 시도 1 은 verify 에 로그인 절차가 없어 로그인 화면을 쟀다 → 도구 수정 뒤 시도 2 성공. 이어 받은 25행은 ea21d8c2aa54 배포에서 잰 값이다(두 배포 사이 미리보기 경로 차이는 CSS 뿐 — 사람 검토). 남은 제품 결함 = #133·#134(고치면 known-defects.json 에서 뺀다).
 - 결정(2026-09-25 · 사용자) — QA 자료는 복원하지 않는다(팀 공지는 사용자) · 백업을 로컬에 따로 보존하지 않는다.
 - 최종 가지 **`corpus-reseed-final`** = `corpus-verify-preview-5`(`c24c03d4`) ＋ 문제 기록. `k3-resume`(`4b162d54`) 위 선형 사슬 · develop 미병합.
 - **(a) 로컬 검증 — 끝남**(`corpus-local-verify` `8f90f7d7`).
@@ -222,7 +225,7 @@ dev-package/sessions/DR-4-run-20260924T*.md      재시드 실행 기록 2건
 - 수선 재시도 **3회 소진**(사용자 규칙 — 무변경 재시도 금지 · 수선 재시도 최대 3회 · 매 시도 전 전략 서면).
   남은 항목(seq 13·14 GeoPackage 판정불가 · seq 16 미성립)은 `corpus-expansion/dev-reseed-issues-2026-09-24.md` #21·#22.
 - 업로드 필수 칸 28행은 사용자 서명 확정(`b210ce5c` · `dev-package/tools/dev-seed/upload-classify.json`).
-- **(c) 스냅샷 재포획 · (d) 골든 재박기(사용자 서명 2건) · (e) 재측정 — 미착수.** 적재된 dev 데이터로 진행할 수 있다.
+- **(c) 스냅샷 재포획 · (d) 골든 재박기(사용자 서명 2건) · (e) 재측정 — 미착수.** 적재된 dev 데이터로 진행할 수 있다. → **2026-09-25 완료**(PR #151 병합).
 - 최종화 재시도 여부·방법은 사용자 판단(동결 해제 뒤). 문제 기록 26건과 §9 개선 항목이 dev-reseed 개선 intent 의 입력이다.
 - 제품 후속 후보 5건(문제 기록 §7 = RCA §5 P1~P5)은 미수선 · GitHub 이슈 등재 여부는 사용자.
 - 실행 자리 run-dir = `.claude/worktrees/agent-a9c33a67acf039b61/dev-package/reports/dev-reseed-runs/wu2-20260924T0834Z/`
