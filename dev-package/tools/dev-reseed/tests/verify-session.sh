@@ -161,7 +161,9 @@ BUILD_PLAN_PY="$TMP/build_plan_stub.py"; : > "$BUILD_PLAN_PY"
 COLAB_DEV_SSH='ec2-user@<대역>'
 COLAB_DEV_KEY_FILE="$TMP/no-such-key"
 EXPECT_DATASETS=1; EXPECT_PROJECTS=1; EXPECT_EDGES=0
-COLAB_RESEED_PREVIEW_WAIT_MS=200
+# 정착 대기 상한 — 대역 호출이 프로세스마다 떠 부하 중(게이트 병렬 실행)에는 200ms 안에 40ms 정착을 못 채워
+# 로그인 화면 사례가 「정착 미확인」으로 새는 일이 있었다(2026-09-25 게이트 2회 중 1회). 판정 규칙은 바꾸지 않는다.
+COLAB_RESEED_PREVIEW_WAIT_MS=800
 export FIXTURE_AB_LOG="$TMP/ab.log"
 
 relpath() { printf '%s' "$1"; }
@@ -170,6 +172,7 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+verify_login() { return 0; }  # 교수 로그인 대역 — 이 픽스처는 로그인된 세션·로그인 화면 판정만 본다
 # 정착 유지 창은 기본값(1 s)을 한 번 재고, 나머지 케이스는 짧게 줄여 픽스처를 빠르게 돈다.
 DEFAULT_STABLE_MS="${PREVIEW_STABLE_MS:-}"
 PREVIEW_STABLE_MS=40
@@ -182,6 +185,12 @@ export COLAB_RESEED_ACCOUNTS_PROFILE="$ACCOUNTS_FILE"
 TARGET_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 # This fixture isolates detail traversal. Account store/login behavior is tested in test_accounts.py.
 account_finalize() { :; }
+# 알려진 결함 면제는 verify-resume.sh 가 잰다. 여기서는 면제 없음을 **명시**한다 — 실제 목록(seq 13·14·16)은
+# 이 픽스처의 작은 등재표에 없어 대조가 목록 판정 불가로 실패한다(fail-closed · 빈 목록으로 접지 않는다).
+# 다른 목록은 픽스처 표지(COLAB_RESEED_FIXTURE=1)가 있을 때만 받는다.
+COLAB_RESEED_FIXTURE=1
+KNOWN_DEFECTS_FILE="$TMP/known-defects-none.json"
+printf '{"schema": "colab-reseed-known-defects/1", "entries": []}\n' > "$KNOWN_DEFECTS_FILE"
 
 
 cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
