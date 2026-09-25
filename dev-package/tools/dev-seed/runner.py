@@ -77,6 +77,27 @@ PREVIEW_FORMAT_SEQS = set(x[0] for x in PREVIEW_SEQS)
 
 ULID_RE = re.compile(r"/datasets/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 ANALYZE_DONE_CSS = '[data-testid="up-analyze"][data-stage="3"]'
+
+# ── 기준 격자 — 서버 수용과 전체 파일 렌더를 따로 본다 ─────────────────────────
+# 「예상 영역」(up-grid-expected-bounds)은 grid-options 의 currentGrid 로 선다
+# (UploadModal.tsx `status.ready` → `upload.gridOptions` · GridUploadBlock.tsx).
+# 서버가 격자 쌍을 받아 격자 프로파일을 세웠다는 뜻이고 렌더와 무관하다.
+# 「맞습니다」(up-grid-accept)는 전체 파일 렌더가 성공해야만 선다(gridFlow.ts `위치 확인`).
+# 렌더가 RENDER_TIMEOUT 으로 실패하면 up-preview-error 만 남고 판정 표시는 끝내 오지 않는다
+# (dev 4회차 seq 18 · 143파일 463MB npy · 846s 정체).
+GRID_ACCEPTED_CSS = '[data-testid="up-grid-expected-bounds"]'
+PREVIEW_ERROR_CSS = '[data-testid="up-preview-error"]'
+PREVIEW_BUSY_CSS = ('[data-testid="up-preview-stage"],[data-testid="up-grid-spinner"],'
+                    '[data-testid="up-grid-progress"]')
+# 서버 수용 뒤 렌더 판정을 기다리는 상한(s). dev 실측 RENDER_TIMEOUT 139~147s 보다 넉넉히.
+GRID_RENDER_WAIT_S = int(os.environ.get("COLAB_SEED_GRID_RENDER_WAIT_S") or 300)
+
+
+def preview_required(ds):
+    """계획이 렌더 성립을 요구하는 행인가(`preview_expected` 가 「렌더 성립…」)."""
+    return str(ds.get("preview_expected") or "").strip().startswith("렌더 성립")
+
+
 PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 
 # ── 「가공 단계」(Lv) ────────────────────────────────────────────────────────
@@ -85,6 +106,24 @@ PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32}
 # 기대지 않는다. 선택지가 빈 값으로 시작하도록 바뀌어도 같은 동작이 선다.
 LEVEL_CSS = '[data-testid="reg-level"]'
 PROCESSING_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+
+# ── 업로드 마법사의 나머지 필수 칸 (값 원본 = `upload-classify.json` → build_plan → 계획) ──
+# ① 분류·유형 — 6705675d 부터 빈 값으로 시작하고 안 고르면 「다음 →」(reg-next)가 비활성이다.
+# ② 관측 간격 숫자·단위 · ③ Lv0 출처 주소·내려받은 날 — e171c5c2 부터 제출(reg-done) 시 필수다.
+#    화면 검사(`UploadModal.tsx` 제출 검사)와 서버 400(`_validate_create_required_metadata`)이 같다.
+# 저장값 원본 = frontend/src/components/upload/axisDict.ts · RegisterArea.tsx `INTERVAL_UNITS`.
+CATEGORY_CSS = '[data-testid="reg-category"]'
+DATATYPE_CSS = '[data-testid="reg-datatype"]'
+INTERVAL_VALUE_CSS = '[data-testid="reg-interval-value"]'
+INTERVAL_UNIT_CSS = '[data-testid="reg-interval-unit"]'
+SOURCE_URL_CSS = '[data-testid="reg-source-url"]'
+SOURCE_DATE_CSS = '[data-testid="reg-source-downloaded-on"]'
+CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자", "사회·경제 인자", "환경 인자")
+DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료", "수치모형자료", "합성자료", "관측 기반 산출물")
+INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+# 주제 6값 — 정본 = db/platform/schema.sql `d3_dataset_description.topic` CHECK(build_plan.py `TOPICS` 와 같은 값).
+# 등록 화면에 주제 칸이 없어(RegisterArea.tsx 2026-09-14 개정) 등록 뒤 공식 `PATCH /datasets/{id}` 로 싣는다.
+TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC", "가뭄", "파일 포맷 예제")
 PERIOD_PARTS = ("year", "month", "day", "hour", "minute", "second")
 PERIOD_UNITS = ("년", "월", "일", "시", "분", "초")
 PERIOD_PATTERNS = {
@@ -212,6 +251,69 @@ def level_action(ds, options=None):
         raise Fail("가공 단계 선택지에 없는 값: " + name + " · " + value
                    + " · 화면 선택지 = " + ",".join(str(o) for o in options))
     return ["select", LEVEL_CSS, value]
+
+
+def _row_name(ds):
+    return str(ds.get("name") or ("순번 " + str(ds.get("seq"))))
+
+
+def classify_actions(ds):
+    """계획 한 행 → ① 분류·유형 선택 동작 두 개. 비었거나 사전 밖이면 이름을 대고 실패한다."""
+    name = _row_name(ds)
+    category = str(ds.get("category") or "").strip()
+    data_type = str(ds.get("data_type") or "").strip()
+    if category not in CATEGORIES:
+        raise Fail("분류 값이 계획에 없거나 5값 밖이다: " + name + " · " + repr(ds.get("category")))
+    if data_type not in DATA_TYPES:
+        raise Fail("유형 값이 계획에 없거나 6값 밖이다: " + name + " · " + repr(ds.get("data_type")))
+    return [["select", CATEGORY_CSS, category], ["select", DATATYPE_CSS, data_type]]
+
+
+def interval_actions(ds):
+    """계획 한 행 → ② 관측 간격 숫자 칸·단위 칸 동작."""
+    interval = ds.get("observation_interval")
+    value = str((interval or dict()).get("value") or "") if isinstance(interval, dict) else ""
+    unit = (interval or dict()).get("unit") if isinstance(interval, dict) else None
+    if not re.fullmatch(r"[1-9]\d*", value) or unit not in INTERVAL_UNITS:
+        raise Fail("관측 간격이 계획에 없거나 형상이 틀렸다: " + _row_name(ds) + " · " + repr(interval))
+    return [["fill", INTERVAL_VALUE_CSS, value], ["select", INTERVAL_UNIT_CSS, unit]]
+
+
+def source_actions(ds):
+    """계획 한 행 → ③ Lv0 출처 주소·내려받은 날 동작. Lv0 가 아니면 빈 목록."""
+    if ds.get("processing_level") != "Lv0":
+        return []
+    source = ds.get("source")
+    url = str((source or dict()).get("url") or "").strip() if isinstance(source, dict) else ""
+    day = (source or dict()).get("downloaded_on") if isinstance(source, dict) else None
+    try:
+        day_ok = isinstance(day, str) and bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", day)) \
+            and datetime.strptime(day, "%Y-%m-%d").strftime("%Y-%m-%d") == day
+    except ValueError:
+        day_ok = False
+    if not url or not day_ok:
+        raise Fail("Lv0 출처(주소·내려받은 날)가 계획에 없거나 틀렸다: " + _row_name(ds) + " · " + repr(source))
+    return [["fill", SOURCE_URL_CSS, url], ["fill", SOURCE_DATE_CSS, day]]
+
+
+def planned_topic(ds):
+    """계획 한 행의 주제. 비었거나 6값 밖이면 이름을 대고 실패한다."""
+    topic = ds.get("topic")
+    if topic not in TOPICS:
+        raise Fail("주제가 계획에 없거나 6값 밖이다: " + _row_name(ds) + " · " + repr(topic))
+    return topic
+
+
+def plan_field_problems(rows):
+    """계획 전행의 필수 칸 값 검사 — 업로드 **전에** 한 번에 본다. 반환 = 실패 문면 목록."""
+    problems = []
+    for ds in rows:
+        for build in (classify_actions, interval_actions, source_actions, planned_topic):
+            try:
+                build(ds)
+            except Fail as exc:
+                problems.append(str(exc))
+    return problems
 
 
 def failure_path(reg_open_exists, reg_open_enabled, reason):
@@ -1037,11 +1139,17 @@ def period_form_actions(ds):
 
 def fill_period(ds):
     actions = period_form_actions(ds)
-    ab(actions[0])
+    # ⚠ 2026-09-24 로컬 실측(ea21d8c2 번들) — ② 로 넘어온 직후 「기간」 단추의 중심이 모달 머리(`.modal-h`)
+    #   아래에 깔려 `click` 이 rc 0 을 돌려주고도 머리를 눌렀다(팝오버 0). 여는 단추와 적용 단추는
+    #   `activate`(보이는 자리로 옮기고 초점 ＋ Enter)로 누른다 — 「+ 추가」와 같은 처방이다.
+    activate(actions[0][1], "기간 고르기 열기")
     if not wait_css('[data-testid="reg-period-pop"]', 10, "기간 고르기"):
         raise Fail("기간 고르기가 열리지 않았다: " + str(ds.get("name")))
-    for action in actions[1:]:
+    for action in actions[1:-1]:
         ab(action)
+    activate(actions[-1][1], "기간 적용")
+    if not CFG.dry_run and not wait_gone('[data-testid="reg-period-pop"]', 10, "기간 고르기 닫힘"):
+        raise Fail("기간 적용 뒤에도 기간 고르기가 닫히지 않았다: " + str(ds.get("name")))
     log("  · 기간 = " + ds["period"]["start"] + " ~ " + ds["period"]["end"]
         + " (" + ds["period"]["granularity"] + ")")
 
@@ -1065,6 +1173,58 @@ def select_level(st, ds):
     st.setdefault("selectors", dict())["reg-level"] = ["testid", "reg-level"]
     log("  · 가공 단계 = " + action[2] + " (계획값 명시 지정)")
     return action[2]
+
+
+def select_state(css):
+    """select 한 칸의 현재 값과 선택지(LEVEL_READ_JS 재사용). 못 읽으면 None."""
+    got = js(LEVEL_READ_JS.replace("__SEL__", json.dumps(css)), default=None)
+    if isinstance(got, dict) and isinstance(got.get("options"), list):
+        return got
+    return None
+
+
+def _select_checked(action, label, ds):
+    """select 동작 하나를 내고 화면값을 되읽어 확인한다 — rc 0 만으로 성립시키지 않는다."""
+    ab(list(action))
+    if CFG.dry_run:
+        return
+    after = select_state(action[1])
+    if after is None or after.get("value") != action[2]:
+        raise Fail(label + " 값이 들어가지 않았다: " + _row_name(ds) + " · 기대 " + action[2]
+                   + " · 화면 " + str((after or dict()).get("value")))
+
+
+def select_classify(ds):
+    """① 분류·유형을 계획값으로 고른다. 이 둘이 비면 「다음 →」이 비활성이다(6705675d)."""
+    actions = classify_actions(ds)
+    if not wait_css(CATEGORY_CSS, 60, "분류 선택 칸"):
+        raise Fail("「분류」 선택 칸이 없다: " + _row_name(ds))
+    for action, label in zip(actions, ("분류", "유형")):
+        _select_checked(action, label, ds)
+    log("  · 분류 = " + actions[0][2] + " · 유형 = " + actions[1][2] + " (계획값 명시 지정)")
+
+
+def fill_interval(ds):
+    """② 관측 간격 숫자·단위를 채운다(e171c5c2 부터 제출 시 필수)."""
+    actions = interval_actions(ds)
+    if not wait_css(INTERVAL_VALUE_CSS, 30, "관측 간격 칸"):
+        raise Fail("「관측 간격」 칸이 없다: " + _row_name(ds))
+    ab(list(actions[0]))
+    _select_checked(actions[1], "관측 간격 단위", ds)
+    log("  · 관측 간격 = " + actions[0][2] + " " + actions[1][2])
+
+
+def fill_source(ds):
+    """③ Lv0 출처 주소·내려받은 날을 채운다. Lv0 가 아니면 아무것도 하지 않는다."""
+    actions = source_actions(ds)
+    if not actions:
+        return
+    if not CFG.dry_run and not wait_css(SOURCE_URL_CSS, 30, "출처 주소 칸"):
+        dump_failure(str(ds["seq"]).zfill(2) + "-source", "출처 블록 미출현")
+        raise Fail("「출처 주소」 칸이 없다(부모가 붙은 Lv0 는 화면이 출처 블록을 숨긴다): " + _row_name(ds))
+    for action in actions:
+        ab(list(action))
+    log("  · 출처 = " + actions[0][2] + " · 내려받은 날 " + actions[1][2])
 
 
 def activate(css, label=""):
@@ -1129,7 +1289,10 @@ def ensure_step_two(st):
 
 
 def do_grid(st, ds):
-    """기준 격자 — 쌍 지정 또는 건너뛰기. 불일치는 자동 진행하지 않는다."""
+    """기준 격자 — 쌍 지정 또는 건너뛰기. 불일치는 자동 진행하지 않는다.
+
+    반환 = 미리보기 없이 등록으로 잇는 사유(전체 파일 렌더 미확인) 또는 None.
+    """
     grid = ds.get("grid_files") or []
     if ds.get("grid_skip") or not grid:
         log("  · 기준 격자 건너뛰기")
@@ -1155,13 +1318,41 @@ def do_grid(st, ds):
     reject_css = ('[data-testid="up-grid-block"][data-grid-state="형상 불일치"],'
                   '[data-testid="up-grid-block"][data-grid-state="축 판별 실패"],'
                   '[data-testid="up-grid-block"][data-grid-state="짝 불일치"]')
-    outcome = wait_any([
+    verdicts = [
         ["mismatch", lambda: count('[data-testid="up-grid-mismatch"]') > 0],
         ["reject", lambda: count(reject_css) > 0],
         ["bounds", lambda: count(bound_css) > 0],
         ["gate", lambda: count('[data-testid="grid-attach-confirm"]') > 0],
         ["accept", lambda: count('[data-testid="up-grid-accept"]') > 0],
+    ]
+    # 1단 — 판정 표시 또는 서버 격자 수용(예상 영역). 불일치는 같은 응답으로 서므로 먼저 본다.
+    started = time.time()
+    outcome = wait_any(verdicts + [
+        ["accepted", lambda: count(GRID_ACCEPTED_CSS) > 0],
     ], limit, label="격자 판정", dry="accept")
+    if outcome == "accepted":
+        # 2단 — 전체 파일 렌더 판정을 상한 안에서 본다. 렌더 성립을 요구하는 행은
+        # 종전 상한을 그대로 쓰고, 그 밖의 행은 GRID_RENDER_WAIT_S 까지만 본다.
+        strict = preview_required(ds)
+        left = max(1, int(limit - (time.time() - started)))
+        bound = left if strict else min(left, GRID_RENDER_WAIT_S)
+        log("  · 격자 서버 수용(예상 영역) — 전체 파일 렌더 판정 대기 상한 " + str(bound) + "s")
+        outcome = wait_any(verdicts + [
+            ["render_failed", lambda: count(PREVIEW_ERROR_CSS) > 0
+                and count(PREVIEW_BUSY_CSS) == 0],
+        ], bound, label="격자 렌더 판정")
+        if outcome in (None, "render_failed"):
+            render_reason = ("전체 파일 렌더 " + ("실패" if outcome else "미도착("
+                             + str(bound) + "s)") + " — 격자는 서버 수용, 위치 확인 없이 등록")
+            if strict:
+                dump_failure(str(ds["seq"]).zfill(2) + "-grid-render", render_reason)
+                raise Fail("렌더 성립을 요구하는 행인데 " + render_reason)
+            log("  ! " + render_reason + "(seq " + str(ds["seq"]) + ")")
+            st.setdefault("grid_render_unverified", [])
+            if ds["seq"] not in st["grid_render_unverified"]:
+                st["grid_render_unverified"].append(ds["seq"])
+            save_state(st)
+            return render_reason
     if outcome == "bounds":
         # 화면 축자 — 「격자를 적용했지만 결과 위치가 한반도 밖으로 나왔습니다.
         # 지도형을 만들지 않았습니다.」 등록 자체는 막히지 않는다 — 기록하고 이어간다.
@@ -1340,6 +1531,33 @@ def reconcile_auxiliary_lineage(st, ds, child_id):
     return len(desired)
 
 
+def reconcile_topics(st, rows):
+    """등록된 행의 주제를 계획값으로 맞춘다 — 저장값이 다를 때만 공식 `PATCH /datasets/{id}` 를 친다.
+
+    반복 실행에 안전하다(이미 맞으면 GET 만). 반환 = PATCH 건수. 저장 확인이 어긋나면 이름을 대고 실패한다.
+    """
+    if CFG.dry_run:
+        return 0
+    patched = 0
+    for ds in rows:
+        cur = st["datasets"].get(str(ds["seq"])) or {}
+        did = cur.get("dataset_id")
+        if not did or not is_registered(cur.get("status")):
+            continue
+        topic = planned_topic(ds)
+        path = "/api/v1/datasets/" + str(did)
+        stored = authenticated_api("GET", path).get("topic")
+        if stored != topic:
+            stored = authenticated_api("PATCH", path, {"topic": topic}).get("topic")
+            patched += 1
+        if stored != topic:
+            raise Fail("주제 저장 확인 실패: " + _row_name(ds) + " · 계획 " + topic + " · 저장 " + repr(stored))
+        cur["topic"] = stored
+        save_state(st)
+    log("· 주제 " + str(patched) + "건 PATCH · 계획 " + str(len(rows)) + "행")
+    return patched
+
+
 def handle_analysis_failure(st, ds, outcome):
     """분석 실패 자리 — **등록으로 잇는다.** 반환 = 실패 사유 문면(등록은 이어감).
 
@@ -1444,8 +1662,9 @@ def do_dataset(st, ds):
     open_register(st)
     # 「가공 단계」는 계획값을 **매 행 명시 지정**한다(등록 카드 ① 단계).
     st["datasets"][seq]["processing_level"] = select_level(st, ds)
+    select_classify(ds)
     save_state(st)
-    do_grid(st, ds)
+    grid_no_preview = do_grid(st, ds)
     ensure_step_two(st)
 
     spot(st, "reg-name", [("testid", "reg-name"), ("label", "데이터셋 이름")],
@@ -1453,6 +1672,7 @@ def do_dataset(st, ds):
     spot(st, "reg-summary", [("testid", "reg-summary"), ("label", "설명")],
          action="fill", text=ds["summary"])
     fill_period(ds)
+    fill_interval(ds)
 
     goto_step(st, "③ 연결", "reg-step-3", '[data-testid="reg-proj-select"]')
     # option 의 value 는 projectId 다(RegisterArea.tsx `value={r.projectId}`) — 이름이 아니라 id 로 고른다.
@@ -1467,6 +1687,8 @@ def do_dataset(st, ds):
     log("  · 연관 프로젝트 담김 " + ds["project"])
 
     do_lineage(st, ds)
+    # 출처 블록은 연결 0건일 때만 선다 — 계보를 다 붙인 **뒤**에 채운다.
+    fill_source(ds)
 
     settle_grid(st)
     if not CFG.dry_run and not enabled('[data-testid="reg-done"]'):
@@ -1497,9 +1719,12 @@ def do_dataset(st, ds):
     elapsed = round(time.time() - started, 1)
     SHOT_DIR.mkdir(parents=True, exist_ok=True)
     ab(["screenshot", str(SHOT_DIR / (seq.zfill(2) + ".png"))], expect_ok=False)
-    st["datasets"][seq]["status"] = "registered_no_preview" if no_preview else "done"
+    st["datasets"][seq]["status"] = ("registered_no_preview"
+                                     if no_preview or grid_no_preview else "done")
     if no_preview:
         st["datasets"][seq]["analysis_failure_reason"] = no_preview
+    if grid_no_preview:
+        st["datasets"][seq]["no_preview_reason"] = grid_no_preview
     st["datasets"][seq]["dataset_id"] = did
     st["datasets"][seq]["auxiliary_verified"] = auxiliary_verified
     st["datasets"][seq]["finished"] = now()
@@ -1511,6 +1736,12 @@ def do_dataset(st, ds):
 
 def phase_datasets(st, plan):
     rows = sorted(plan["datasets"], key=lambda d: d["seq"])
+    # 업로드 마법사 필수 칸 값 — 계획 **전행**을 첫 업로드 전에 본다(한 행이라도 비면 파일을 올리지 않는다).
+    problems = plan_field_problems(rows)
+    if problems:
+        raise Fail("계획에 업로드 필수 칸 값이 없다 " + str(len(problems)) + "건 — "
+                   + " / ".join(problems[:6]) + (" …" if len(problems) > 6 else "")
+                   + " · build_plan.py 가 upload-classify.json(서명본)을 실었는지 본다")
     if CFG.only_seq:
         rows = [d for d in rows if d["seq"] in CFG.only_seq]
     elif CFG.from_seq:
@@ -1542,6 +1773,8 @@ def phase_datasets(st, plan):
             log("x seq " + seq + " 실패: " + str(exc))
             log("  재개 = python3 runner.py --phase datasets --from-seq " + seq)
             sys.exit(2)
+    # 등록 화면에 주제 칸이 없다 — 등록된 전행(건너뛴 이전 행 포함)을 공식 API 로 계획값에 맞춘다.
+    reconcile_topics(st, sorted(plan["datasets"], key=lambda d: d["seq"]))
     done = 0
     for v in st["datasets"].values():
         if is_registered(v.get("status")):
@@ -1748,61 +1981,531 @@ def classify_preview_measurement(slot_state, image_count, decoded_count, unavail
     return "그려짐", ""
 
 
+# 슬롯 안 주 이미지 측정 — 화면(viewport) 교차를 요구하지 않는다.
+# ⚠ dev 2026-09-25 01:20 KST seq 25(HDF4) — 창 1280x577 · 보기 단추가 y≈288 에 오게 스크롤된 채
+#   지도가 범례 아래(접힌 선 밖)에서 시작해 종전 측정(교차하는 이미지만 셈)이 imageCount 0 이었다.
+#   slot done · 「총 2.4초」 · 지도 그려짐인데 120 s 시간 초과(server_no_terminal)로 적혔다.
+#   그래서 slot 이 done 이면 슬롯을 화면으로 스크롤하고, 슬롯 **안의** 이미지를 폭·높이 > 0 과
+#   decode(complete ∧ naturalWidth > 0)로 센다.
+PREVIEW_MEASURE_JS = """(() => {
+  const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+  const slotState = slot?.getAttribute('data-preview-slot-state') || '';
+  if (slot && slotState === 'done') {
+    slot.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'instant'});
+  }
+  const images = slot ? Array.from(slot.querySelectorAll(
+    '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
+      const box = img.getBoundingClientRect();
+      return box.width > 0 && box.height > 0;
+    }) : [];
+  return {
+    slotState,
+    imageCount: images.length,
+    decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
+    unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
+    totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
+  };
+})()"""
+
+
 def _preview_measurement():
-    return js("""(() => {
-      const slot = document.querySelector('[data-testid="dt-preview-slot"]');
-      const images = Array.from(document.querySelectorAll(
-        '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
-          const box = img.getBoundingClientRect();
-          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0
-            && box.top < window.innerHeight && box.left < window.innerWidth;
-        });
-      return {
-        slotState: slot?.getAttribute('data-preview-slot-state') || '',
-        imageCount: images.length,
-        decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
-        unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
-        totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
-      };
-    })()""", default={}) or {}
+    return js(PREVIEW_MEASURE_JS, default={}) or {}
 
 
-def request_selected_preview():
-    """현재 파일을 명시 선택한 뒤 사용자와 같은 `보기` 요청 한 건을 만든다."""
-    deadline = time.time() + 30
-    selected = {}
+def _record_image_counts(entry, measured):
+    """행마다 슬롯 안 주 이미지 계수 · decode 계수를 남긴다(판정표 images · decoded 칸 · 로그)."""
+    entry["images"] = int(measured.get("imageCount") or 0)
+    entry["decoded_images"] = int(measured.get("decodedCount") or 0)
+    log("  · 미리보기 seq " + str(entry.get("seq")) + " 측정 — slot " + str(measured.get("slotState") or "-")
+        + " · imageCount " + str(entry["images"]) + " · decodedCount " + str(entry["decoded_images"])
+        + " · 표시 시간 「" + str(measured.get("totalText") or "").strip() + "」")
+
+
+# ── 보기 클릭 전 정착 대기 ────────────────────────────────────────────────────
+# 화면 사실(배포 트리 ea21d8c2aa54 · frontend/src/components/datasetpreview/DatasetPreviewSection.tsx):
+#  · 보기 버튼 disabled = drawing || !selectedFileId || !description || palettes.length === 0 (:354-355).
+#    drawing 이 아니면 「보기 활성」이 곧 「선택 파일의 describe 도착 · 팔레트 도착」이다.
+#  · 파일 고르개 onPick 은 description 을 비운다(:347-351). describe effect 는 selectedFileId 가
+#    바뀔 때만 다시 돈다(:169-183 · 의존 [source, selectedFileId, loadAttempt]). 그래서 **이미 선택된
+#    파일을 다시 고르면 설명이 비워진 채 다시 오지 않고** 보기가 영구 disabled 가 된다.
+#  · 변수·시각 고르개는 description 의 후보로 채워진다(PreviewPickRow.tsx:91-92,143-178).
+#  · agent-browser 0.27.0 의 click 은 disabled 버튼에도 성공을 돌려준다(아무 일도 일어나지 않는다).
+# dev 7회차 seq 15 = describe 도착 뒤 같은 파일 재선택 → 곧바로 클릭 → POST /api/v1/previews 0건.
+# 그래서 ⑴ 이미 선택된 파일은 다시 고르지 않고 ⑵ 고른 뒤에는 그 파일의 설명이 선 상태가
+# 연달아 두 번 관측될 때까지 기다린 뒤에만 누른다.
+PREVIEW_SETTLE_S = int(os.environ.get("COLAB_SEED_PREVIEW_SETTLE_S") or 60)
+PREVIEW_SETTLE_STABLE_S = 1.0
+PREVIEW_DISPLAY_WAIT_S = 120
+PREVIEW_CONTROLS_JS = """(() => {
+  const picker = document.querySelector('[data-testid="dt-pick-file"]');
+  const variable = document.querySelector('[data-testid="dt-pick-variable"]');
+  const instant = document.querySelector('[data-testid="dt-pick-instant"]');
+  const draw = document.querySelector('[data-testid="dt-preview-draw"]');
+  const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+  return {
+    fileId: picker?.value || '',
+    variableCount: variable ? variable.options.length : 0,
+    variableValue: variable?.value || '',
+    instantCount: instant ? instant.options.length : 0,
+    drawEnabled: !!draw && !draw.disabled,
+    slotState: slot?.getAttribute('data-preview-slot-state') || '',
+    now: performance.now(),
+  };
+})()"""
+
+
+def _preview_controls():
+    dry = {"fileId": "dry-run-file", "drawEnabled": True, "slotState": "idle",
+           "variableCount": 1, "variableValue": "dry", "instantCount": 1, "now": 0}
+    return js(PREVIEW_CONTROLS_JS, default=dry) or {}
+
+
+def preview_settled(controls, file_id):
+    """선택 파일의 설명이 선 상태인가 — 파일 일치 · 보기 활성(:355) · 아직 그리기 전(idle)."""
+    return (str(controls.get("fileId") or "") == file_id
+            and controls.get("drawEnabled") is True
+            and str(controls.get("slotState") or "") == "idle")
+
+
+def _describe_controls(c):
+    return ("파일 " + str(c.get("fileId") or "-") + " · 보기 " + ("활성" if c.get("drawEnabled") else "비활성")
+            + " · 변수 후보 " + str(c.get("variableCount", "?")) + "(" + str(c.get("variableValue") or "-")
+            + ") · 시각 후보 " + str(c.get("instantCount", "?")) + " · slot " + str(c.get("slotState") or "-"))
+
+
+def request_selected_preview(target_file_id=None, diag=None):
+    """선택 파일의 설명이 선 뒤에 사용자와 같은 `보기` 요청 한 건을 만든다.
+
+    target_file_id 를 주지 않으면 화면이 이미 고른 파일(기본 후보)을 그대로 쓴다.
+    누르기 직전 요청·콘솔 기록을 비워 시간 초과 때 「누름 뒤」 증거만 남게 한다.
+    diag(dict) 에 적중 검사·누름 방법을 채운다(`press_preview_draw`).
+    """
+    deadline = time.time() + PREVIEW_SETTLE_S
+    controls = {}
     while time.time() < deadline:
-        selected = js("""(() => {
-          const picker = document.querySelector('[data-testid="dt-pick-file"]');
-          const draw = document.querySelector('[data-testid="dt-preview-draw"]');
-          return {fileId: picker?.value || '', drawEnabled: !!draw && !draw.disabled};
-        })()""", default={"fileId": "dry-run-file", "drawEnabled": True}) or {}
-        if str(selected.get("fileId") or "").strip() and selected.get("drawEnabled") is True:
+        controls = _preview_controls()
+        if str(controls.get("fileId") or "").strip():
             break
+        time.sleep(0.2)
+    current = str(controls.get("fileId") or "").strip()
+    target = str(target_file_id or current).strip()
+    if not target:
+        raise Fail("미리보기 파일 후보가 준비되지 않았다(" + str(PREVIEW_SETTLE_S) + "s) — "
+                   + _describe_controls(controls))
+    if current != target:
+        ab(["select", '[data-testid="dt-pick-file"]', target])
+        log("  · 파일 선택 " + target + " — 이 파일의 설명(describe) 도착을 기다린다")
+    else:
+        # 같은 값을 다시 고르면 설명이 비워지고 다시 오지 않는다(:347-351 · :169-183).
+        log("  · 파일 " + target + " 은 이미 선택돼 있다 — 다시 고르지 않는다")
+
+    started = time.time()
+    deadline = started + PREVIEW_SETTLE_S
+    stable_since = None
+    while time.time() < deadline:
+        controls = _preview_controls()
+        if preview_settled(controls, target):
+            if stable_since is None:
+                stable_since = time.time()
+            if time.time() - stable_since >= PREVIEW_SETTLE_STABLE_S or CFG.dry_run:
+                break
+        else:
+            stable_since = None
+        time.sleep(0.25)
+    else:
+        raise Fail("미리보기 정착 대기 초과(" + str(PREVIEW_SETTLE_S) + "s) — 보기를 누르지 않았다(준비 안 됨) · "
+                   + _describe_controls(controls))
+    log("  · 정착 확인 " + format(time.time() - started, ".1f") + "s — 기다린 것 = 파일 일치 · 보기 활성"
+        + "(설명·팔레트 도착 · DatasetPreviewSection.tsx:355) · slot idle · 연속 "
+        + str(PREVIEW_SETTLE_STABLE_S) + "s · " + _describe_controls(controls))
+    press_preview_draw(diag if diag is not None else {})
+    return target
+
+
+# ── 보기 누름 — 적중 검사 · 초점 ＋ Enter · JS click 폴백 ─────────────────────
+# ⚠ dev 2026-09-25 00:45–01:00 KST(f938198c) — 정착 확인 뒤 `agent-browser click` 이 5행 모두 rc 0 인데
+#   클릭 뒤 요청 0건 · slot idle 그대로였다(onClick → draw() 미실행 · DatasetPreviewSection.tsx:224-250,354).
+#   로컬 대역 페이지 실측(agent-browser 0.27.0): 좌표 클릭은 ⑴ 버튼이 화면 밖이면 스크롤 없이 화면 밖
+#   좌표를 누르고 ⑵ 버튼 중심이 고정 층에 덮이면 그 층을 누른다 — 둘 다 rc 0 · 처리기 0회.
+#   그래서 누르기 전에 버튼 중심의 적중 대상을 재어 남기고, 초점 ＋ Enter 로 누른 뒤 slot 이 idle 을
+#   떠났는지 확인한다. 떠나지 않으면 JS click 한 번으로 폴백하고 어느 방법이 먹혔는지 적는다.
+PREVIEW_DRAW_CSS = '[data-testid="dt-preview-draw"]'
+PREVIEW_PRESS_ACK_S = 5.0
+PREVIEW_HIT_JS = """(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return {found: false};
+  const probe = () => {
+    const r = btn.getBoundingClientRect();
+    const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const inViewport = x >= 0 && y >= 0 && x < vw && y < vh;
+    const el = inViewport ? document.elementFromPoint(x, y) : null;
+    const onButton = !!el && (el === btn || btn.contains(el));
+    const near = el && el.closest ? el.closest('[data-testid]') : null;
+    const cls = el ? (typeof el.className === 'string' ? el.className : (el.getAttribute('class') || '')) : '';
+    return {x, y, vw, vh, inViewport, onButton, cover: (!el || onButton) ? null : {
+      tag: el.tagName.toLowerCase(), testid: el.getAttribute('data-testid') || '',
+      ancestorTestid: near ? (near.getAttribute('data-testid') || '') : '', cls: cls.slice(0, 80),
+      text: (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 80)}};
+  };
+  const before = probe();
+  btn.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+  return {found: true, before, after: probe()};
+})()"""
+PREVIEW_JS_CLICK = """(() => {
+  const btn = document.querySelector('[data-testid="dt-preview-draw"]');
+  if (!btn) return {clicked: false};
+  btn.click();
+  return {clicked: true};
+})()"""
+
+
+def _describe_point(p):
+    if not isinstance(p, dict):
+        return "못 잼"
+    where = "(" + str(p.get("x")) + "," + str(p.get("y")) + ")"
+    if not p.get("inViewport"):
+        return where + " 화면 밖(창 " + str(p.get("vw")) + "x" + str(p.get("vh")) + ")"
+    if p.get("onButton"):
+        return where + " = 보기 단추"
+    c = p.get("cover") or dict()
+    if not c:
+        return where + " 적중 요소 없음"
+    return (where + " 을 덮은 요소 = " + str(c.get("tag") or "?")
+            + (" testid=" + str(c.get("testid")) if c.get("testid") else "")
+            + (" 조상testid=" + str(c.get("ancestorTestid"))
+               if c.get("ancestorTestid") and c.get("ancestorTestid") != c.get("testid") else "")
+            + (" class=" + str(c.get("cls")) if c.get("cls") else "")
+            + (" 「" + str(c.get("text")) + "」" if c.get("text") else ""))
+
+
+def describe_hit(hit):
+    """적중 검사 결과 한 줄 — 스크롤 전(좌표 클릭이 누를 자리)과 스크롤 뒤 버튼 중심의 적중 대상."""
+    if not isinstance(hit, dict):
+        return "적중 검사 못 함"
+    if not hit.get("found"):
+        return "보기 단추 없음"
+    return ("스크롤 전 중심 " + _describe_point(hit.get("before"))
+            + " · 스크롤 뒤 중심 " + _describe_point(hit.get("after")))
+
+
+def _slot_left_idle(seconds):
+    """slot 이 idle 을 떠난 값(drawing·done·failed)을 기다린다. 못 떠나면 None."""
+    deadline = time.time() + seconds
+    while True:
+        state = str(_preview_controls().get("slotState") or "")
+        if state and state != "idle":
+            return state
+        if time.time() >= deadline:
+            return None
         time.sleep(0.1)
-    file_id = str(selected.get("fileId") or "").strip()
-    if not file_id or selected.get("drawEnabled") is not True:
-        raise Fail("미리보기 파일 후보 또는 보기 버튼이 준비되지 않았다")
-    ab(["select", '[data-testid="dt-pick-file"]', file_id])
-    ab(["click", '[data-testid="dt-preview-draw"]'])
-    return file_id
 
 
-def require_preview_outcome(outcome):
+def press_preview_draw(diag):
+    """보기를 누른다 — 적중 검사 → 증거 기록 비우기 → 초점 ＋ Enter → (미반영이면) JS click 한 번.
+
+    diag 에 hit_test(원자료) · hit_summary · activation(focus+Enter | js-click | none) · slot_after 를 채운다.
+    """
+    hit = js(PREVIEW_HIT_JS, default=None)
+    diag["hit_test"] = hit
+    diag["hit_summary"] = "(dry-run)" if CFG.dry_run else describe_hit(hit)
+    log("  · 보기 적중 검사 — " + diag["hit_summary"])
+    for args in (["network", "requests", "--clear"], ["console", "--clear"], ["errors", "--clear"]):
+        rc, _, err = ab(args, expect_ok=False, quiet=True)
+        if rc != 0:
+            log("  ! 증거 기록 비우기 실패(" + " ".join(args) + "): " + str(err))
+    if CFG.dry_run:
+        ab(["focus", PREVIEW_DRAW_CSS], expect_ok=False)
+        ab(["press", "Enter"], expect_ok=False)
+        diag["activation"] = "focus+Enter"
+        return
+    rc, _, err = ab(["focus", PREVIEW_DRAW_CSS], expect_ok=False)
+    if rc == 0:
+        ab(["press", "Enter"], expect_ok=False)
+        left = _slot_left_idle(PREVIEW_PRESS_ACK_S)
+        if left:
+            diag["activation"] = "focus+Enter"
+            diag["slot_after"] = left
+            log("  · 보기 누름 = focus+Enter · slot " + left)
+            return
+        log("  ! focus+Enter 뒤 " + str(PREVIEW_PRESS_ACK_S) + "s 안에 slot 이 idle 을 떠나지 않았다 — JS click 한 번")
+    else:
+        log("  ! 보기 초점 실패(" + str(err) + ") — JS click 한 번")
+    js(PREVIEW_JS_CLICK, default=None)
+    left = _slot_left_idle(PREVIEW_PRESS_ACK_S)
+    diag["activation"] = "js-click" if left else "none"
+    diag["slot_after"] = left or "idle"
+    log("  · 보기 누름 = " + diag["activation"] + " · slot " + diag["slot_after"])
+
+
+# ── 시간 초과 증거 · 분류 · 행별 판정 ────────────────────────────────────────
+# 정책(Ted 판단 2026-09-25): 미리보기 행 실패 중 `client_no_request`(정착 확인 뒤 보기를 눌렀는데
+# POST /api/v1/previews 가 관측되지 않음)는 「관측 · 제품 결함 추적」으로 기록하고 verify 단계를
+# 실패시키지 않는다. 그 밖의 실패(server_* · 증거 판정불가 · 준비 안 됨 · 안 그려짐 등)는 종전대로 차단한다.
+NON_BLOCKING_PREVIEW_CLASSES = {"client_no_request"}
+PREVIEW_OBSERVED_VERDICT = "관측 · 제품 결함 추적"
+PREVIEWS_POST_PATH = "/api/v1/previews"
+PREVIEW_TABLE_NAME = "verify-previews.tsv"
+PREVIEW_PERF_JS = """(() => ({posts: performance.getEntriesByType('resource').filter((e) =>
+  new URL(e.name, location.href).pathname.replace(/\\/+$/, '') === '__PATH__'
+  && e.initiatorType === 'fetch').length}))()""".replace("__PATH__", PREVIEWS_POST_PATH)
+
+
+def _is_previews_post(req):
+    from urllib.parse import urlparse
+    path = urlparse(str(req.get("url") or "")).path.rstrip("/")
+    return str(req.get("method") or "").upper() == "POST" and path == PREVIEWS_POST_PATH
+
+
+def classify_preview_timeout(network_ok, requests, perf_posts):
+    """보기 클릭 뒤 terminal/display 시간 초과의 분류.
+
+    network_ok = 요청 기록을 읽었는가 · requests = 클릭 뒤 기록 · perf_posts = 페이지 자원 기록의 POST 수.
+    """
+    if not network_ok:
+        return "evidence_unavailable"
+    posts = [r for r in (requests or []) if isinstance(r, dict) and _is_previews_post(r)]
+    if not posts:
+        # 요청 기록은 비었는데 페이지가 POST 를 봤다면 기록을 믿지 않는다(비차단으로 새지 않게).
+        return "evidence_unavailable" if int(perf_posts or 0) > 0 else "client_no_request"
+    status = posts[-1].get("status")
+    if status is None:
+        return "server_pending"
+    if int(status) >= 400:
+        return "server_http_" + str(int(status))
+    return "server_no_terminal"
+
+
+def preview_row_blocks(entry):
+    """이 행이 verify 단계를 실패시키는가(정책 2026-09-25 · 위 주석)."""
+    if entry.get("render") == "그려짐":
+        return False
+    return str(entry.get("classification") or "") not in NON_BLOCKING_PREVIEW_CLASSES
+
+
+def _preview_verdict(entry):
+    if entry.get("render") == "그려짐":
+        return "통과"
+    return "차단" if preview_row_blocks(entry) else PREVIEW_OBSERVED_VERDICT
+
+
+def _work_rel(path):
+    try:
+        return str(Path(path).relative_to(WORK_DIR))
+    except ValueError:
+        return str(path)
+
+
+def collect_preview_evidence(tag, diag=None):
+    """시간 초과 행의 증거 — 누름 뒤 요청(민감 칸 제외)·콘솔·페이지 오류·화면 상태를 fail/ 에 남긴다.
+
+    diag = 누름 진단(`press_preview_draw`) — 누름 방법·적중 검사를 같은 JSON 에 싣는다.
+    반환 = (분류 · 증거 경로 목록 · 한 줄 요약).
+    """
+    diag = diag or dict()
+    FAIL_DIR.mkdir(parents=True, exist_ok=True)
+    rc, data, err = ab(["network", "requests"], expect_ok=False, quiet=True)
+    raw = (data or {}).get("requests") if isinstance(data, dict) else None
+    network_ok = rc == 0 and isinstance(raw, list)
+    requests = []
+    for r in raw or []:
+        if isinstance(r, dict):
+            # 헤더·본문은 싣지 않는다(인증 값이 들어 있을 수 있다).
+            requests.append({k: r.get(k) for k in ("method", "url", "status", "resourceType",
+                                                     "timestamp", "requestId") if k in r})
+    perf = js(PREVIEW_PERF_JS, default={"posts": 0}) or {}
+    perf_posts = int(perf.get("posts") or 0) if isinstance(perf, dict) else 0
+    classification = classify_preview_timeout(network_ok, requests, perf_posts)
+    posts = [r for r in requests if _is_previews_post(r)]
+    page = _preview_controls()
+    network_path = FAIL_DIR / (tag + "-network.json")
+    network_path.write_text(json.dumps({
+        "classification": classification,
+        "network_read": {"rc": rc, "error": err if rc != 0 else ""},
+        "previews_posts": posts,
+        "requests_since_click": requests,
+        "page_resource_previews_posts": perf_posts,
+        "page_state": page,
+        "activation": diag.get("activation") or "",
+        "hit_test": diag.get("hit_summary") or "",
+        "hit_test_raw": diag.get("hit_test"),
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    crc, cdata, cerr = ab(["console"], expect_ok=False, quiet=True)
+    erc, edata, eerr = ab(["errors"], expect_ok=False, quiet=True)
+    messages = [{"type": m.get("type"), "text": str(m.get("text") or "")[:2000]}
+                for m in ((cdata or {}).get("messages") or []) if isinstance(m, dict)]
+    errors = (edata or {}).get("errors") if isinstance(edata, dict) else None
+    console_path = FAIL_DIR / (tag + "-console.json")
+    console_path.write_text(json.dumps({
+        "console_read": {"rc": crc, "error": cerr if crc != 0 else ""},
+        "messages_since_click": messages,
+        "errors_read": {"rc": erc, "error": eerr if erc != 0 else ""},
+        "page_errors_since_click": errors if isinstance(errors, list) else [],
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    summary = (classification + " · POST " + PREVIEWS_POST_PATH + " " + str(len(posts)) + "건"
+               + ("(" + ",".join(str(p.get("status", "대기")) for p in posts) + ")" if posts else "")
+               + " · 요청 기록 " + ("읽음" if network_ok else "못 읽음")
+               + " · 콘솔 error " + str(sum(1 for m in messages if m.get("type") == "error")) + "건"
+               + " · 누름 " + str(diag.get("activation") or "-")
+               + " · " + _describe_controls(page))
+    return classification, [_work_rel(network_path), _work_rel(console_path)], summary
+
+
+def write_preview_table(previews):
+    """행별 판정표 — 작업 자리의 verify-previews.tsv 와 로그에 같은 내용을 남긴다."""
+    head = ["seq", "name", "format", "preview_expected", "outcome", "classification", "verdict",
+            "evidence", "activation", "hit_test", "images", "decoded"]
+    lines = ["\t".join(head)]
+    for p in previews:
+        cols = [str(p.get("seq")), str(p.get("name") or "-"), str(p.get("format")),
+                str(p.get("preview_expected") or "-"), str(p.get("outcome") or p.get("render") or "-"),
+                str(p.get("classification") or "-"), _preview_verdict(p),
+                ",".join(p.get("evidence") or []) or "-",
+                str(p.get("activation") or "-"), str(p.get("hit_test") or "-"),
+                str(p.get("images", "-")), str(p.get("decoded_images", "-"))]
+        lines.append("\t".join(c.replace("\t", " ").replace("\n", " ") for c in cols))
+    log("· 미리보기 행별 판정표")
+    for line in lines:
+        log("  " + line.replace("\t", " | "))
+    if not CFG.dry_run:
+        (WORK_DIR / PREVIEW_TABLE_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        log("  = " + PREVIEW_TABLE_NAME)
+
+
+def _preview_timeout_entry(entry, tag, reason, outcome, diag):
+    """누른 뒤 terminal/display 에 닿지 못한 행 — 증거(누름 방법·적중 검사 포함)를 남기고 분류한다."""
+    classification, evidence, summary = collect_preview_evidence(tag, diag)
+    _record_image_counts(entry, _preview_measurement())
+    dump_failure(tag, reason + " · " + classification + " · 누름 " + str(diag.get("activation") or "-")
+                 + " · 적중 검사 " + str(diag.get("hit_summary") or "-"))
+    entry["render"] = "미확인"
+    entry["outcome"] = outcome
+    entry["classification"] = classification
+    entry["status_text"] = reason
+    entry["evidence"] = evidence + [_work_rel(FAIL_DIR / (tag + ".txt")),
+                                    _work_rel(FAIL_DIR / (tag + ".png"))]
+    log("  ! 미리보기 seq " + str(entry["seq"]) + "(" + str(entry["format"]) + ") 분류 = " + summary)
+    return entry
+
+
+def verify_preview_row(entry):
+    """한 행 — 정착 뒤 보기 · terminal/display 대기 · 측정. 실패해도 예외를 밖으로 내지 않는다."""
+    seq = entry["seq"]
+    fmt = entry["format"]
+    tag = "verify-preview-" + str(seq).zfill(2) + "-" + fmt
+    open_url("/datasets/" + str(entry["dataset_id"]))
+    wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+    diag = dict()
+    try:
+        entry["file_id"] = request_selected_preview(diag=diag)
+    except Fail as exc:
+        # 보기를 누르지 않았다 — POST 부재를 제품 결함으로 읽지 않는다(차단).
+        entry["render"] = "미확인"
+        entry["outcome"] = "준비 안 됨"
+        entry["classification"] = "runner_not_ready"
+        entry["status_text"] = str(exc)[:400]
+        dump_failure(tag, str(exc))
+        entry["evidence"] = [_work_rel(FAIL_DIR / (tag + ".txt")), _work_rel(FAIL_DIR / (tag + ".png"))]
+        log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 준비 안 됨 — " + str(exc))
+        return entry
+    entry["activation"] = diag.get("activation") or "-"
+    entry["hit_test"] = diag.get("hit_summary") or "-"
+    if entry["activation"] == "none":
+        # 어떤 누름도 slot 을 움직이지 못했다 — 표시 대기(120 s)를 하지 않고 곧바로 증거를 남긴다.
+        reason = ("보기 누름 미반영(focus+Enter · JS click 모두 " + str(PREVIEW_PRESS_ACK_S)
+                  + "s 안에 slot idle 유지)")
+        return _preview_timeout_entry(entry, tag, reason, "누름 미반영", diag)
+    outcome = wait_any([
+        ["displayed", lambda: (lambda m: m.get("slotState") == "done"
+         and int(m.get("imageCount") or 0) > 0
+         and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
+         and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
+        ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
+    ], PREVIEW_DISPLAY_WAIT_S, label="미리보기 terminal/display")
     if outcome is None:
-        raise Fail("미리보기 terminal/display 시간 초과 — 후속 요청을 중단한다")
-    return outcome
+        reason = "미리보기 terminal/display 시간 초과(" + str(PREVIEW_DISPLAY_WAIT_S) + "s)"
+        return _preview_timeout_entry(entry, tag, reason, "시간 초과", diag)
+    measured = _preview_measurement()
+    slot_state = measured.get("slotState") or outcome or ""
+    bad = int(measured.get("unavailable") or 0)
+    imgs = int(measured.get("imageCount") or 0)
+    decoded = int(measured.get("decodedCount") or 0)
+    total_text = str(measured.get("totalText") or "")
+    entry["preview_section"] = count('[data-testid="dataset-preview"]')
+    entry["slot_state"] = slot_state
+    entry["unavailable"] = bad
+    _record_image_counts(entry, measured)
+    entry["display_total"] = total_text
+    entry["status_text"] = ""
+    if bad > 0:
+        rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
+                         expect_ok=False, quiet=True)
+        entry["status_text"] = ((data or dict()).get("text") or "")[:400]
+    entry["render"], measured_reason = classify_preview_measurement(
+        slot_state, imgs, decoded, bad, total_text)
+    if measured_reason and not entry["status_text"]:
+        entry["status_text"] = measured_reason
+    entry["outcome"] = entry["render"]
+    # terminal 실패는 서버가 실패를 돌려준 것이다(POST 는 나갔다).
+    entry["classification"] = ("" if entry["render"] == "그려짐"
+                               else ("server_failed" if slot_state == "failed" else "display_incomplete"))
+    SHOT_DIR.mkdir(parents=True, exist_ok=True)
+    shot = SHOT_DIR / (tag + ".png")
+    ab(["screenshot", str(shot)], expect_ok=False)
+    entry["screenshot"] = shot.name
+    entry["evidence"] = [_work_rel(shot)]
+    return entry
+
+
+def verify_previews(st, plan):
+    """PREVIEW_SEQS 전부를 점검한다 — 한 행의 실패가 다음 행을 막지 않는다."""
+    plan_by_seq = {int(d["seq"]): d for d in plan.get("datasets", []) if "seq" in d}
+    previews = []
+    for pair in PREVIEW_SEQS:
+        seq = pair[0]
+        fmt = pair[1]
+        row = st["datasets"].get(str(seq)) or dict()
+        ds = plan_by_seq.get(seq) or dict()
+        entry = dict()
+        entry["seq"] = seq
+        entry["format"] = fmt
+        entry["name"] = ds.get("name") or row.get("name") or ""
+        entry["preview_expected"] = ds.get("preview_expected") or ""
+        entry["dataset_id"] = row.get("dataset_id")
+        if not entry["dataset_id"]:
+            entry["render"] = "미확인"
+            entry["outcome"] = "미확인"
+            entry["classification"] = "dataset_id_missing"
+            entry["reason"] = "데이터셋 id 미확보"
+            previews.append(entry)
+            continue
+        try:
+            verify_preview_row(entry)
+        except Fail as exc:
+            entry["render"] = "미확인"
+            entry["outcome"] = "실패"
+            entry["classification"] = "runner_error"
+            entry["status_text"] = str(exc)[:400]
+            log("  ! 미리보기 seq " + str(seq) + "(" + fmt + ") 러너 실패 — " + str(exc))
+        previews.append(entry)
+        log("· 미리보기 " + fmt + "(seq " + str(seq) + ") = " + str(entry.get("render"))
+            + " · " + _preview_verdict(entry))
+    write_preview_table(previews)
+    return previews
 
 
 def verify_result_passes(result):
     passed = result.get("dataset_count_ui") == result.get("dataset_count_expected")
     passed = passed and result.get("periods_ok") == result.get("periods_expected")
     passed = passed and not result.get("periods_missing")
+    passed = passed and result.get("topics_expected") is not None
+    passed = passed and result.get("topics_ok") == result.get("topics_expected")
+    passed = passed and not result.get("topics_missing")
     passed = passed and result.get("model_input_descriptions_ok") == 2
     passed = passed and not result.get("model_input_descriptions_missing")
     passed = passed and result.get("edges_ok") == result.get("edges_expected")
     passed = passed and not result.get("edges_missing")
-    return passed and all(p.get("render") == "그려짐" for p in result.get("previews", []))
+    return passed and not any(preview_row_blocks(p) for p in result.get("previews", []))
 
 
 def phase_verify(st, plan):
@@ -1833,6 +2536,8 @@ def phase_verify(st, plan):
 
     periods_ok = 0
     periods_missing = []
+    topics_ok = 0
+    topics_missing = []
     descriptions_ok = 0
     descriptions_missing = []
     for ds in plan["datasets"]:
@@ -1849,6 +2554,12 @@ def phase_verify(st, plan):
         else:
             periods_missing.append({"name": ds["name"], "expected": ds["period"],
                                     "stored": stored})
+        stored_topic = ds.get("topic") if CFG.dry_run else detail.get("topic")
+        if ds.get("topic") in TOPICS and stored_topic == ds.get("topic"):
+            topics_ok += 1
+        else:
+            topics_missing.append({"name": ds["name"], "expected": ds.get("topic"),
+                                   "stored": stored_topic})
         if ds["name"] in ("DEM", "Aspect"):
             stored_summary = ds["summary"] if CFG.dry_run else detail.get("summary")
             if stored_summary == ds["summary"] and "파일 내부 날짜 정보는 없음" in stored_summary:
@@ -1858,9 +2569,13 @@ def phase_verify(st, plan):
     result["periods_ok"] = periods_ok
     result["periods_expected"] = len(plan["datasets"])
     result["periods_missing"] = periods_missing
+    result["topics_ok"] = topics_ok
+    result["topics_expected"] = len(plan["datasets"])
+    result["topics_missing"] = topics_missing
     result["model_input_descriptions_ok"] = descriptions_ok
     result["model_input_descriptions_missing"] = descriptions_missing
     log("· 저장 기간 " + str(periods_ok) + " / " + str(len(plan["datasets"])))
+    log("· 저장 주제 " + str(topics_ok) + " / " + str(len(plan["datasets"])))
 
     edges_ok = 0
     edges_missing = []
@@ -1896,60 +2611,7 @@ def phase_verify(st, plan):
     result["edges_missing"] = edges_missing
     log("· 계보 간선 " + str(edges_ok) + " / " + str(len(plan["edges"])))
 
-    previews = []
-    for pair in PREVIEW_SEQS:
-        seq = pair[0]
-        fmt = pair[1]
-        row = st["datasets"].get(str(seq)) or dict()
-        did = row.get("dataset_id")
-        entry = dict()
-        entry["seq"] = seq
-        entry["format"] = fmt
-        entry["dataset_id"] = did
-        if not did:
-            entry["render"] = "미확인"
-            entry["reason"] = "데이터셋 id 미확보"
-            previews.append(entry)
-            continue
-        open_url("/datasets/" + str(did))
-        wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
-        entry["file_id"] = request_selected_preview()
-        outcome = wait_any([
-            ["displayed", lambda: (lambda m: m.get("slotState") == "done"
-             and int(m.get("imageCount") or 0) > 0
-             and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
-             and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
-            ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
-        ], 120, label="미리보기 terminal/display")
-        require_preview_outcome(outcome)
-        measured = _preview_measurement()
-        slot_state = measured.get("slotState") or outcome or ""
-        bad = int(measured.get("unavailable") or 0)
-        imgs = int(measured.get("imageCount") or 0)
-        decoded = int(measured.get("decodedCount") or 0)
-        total_text = str(measured.get("totalText") or "")
-        entry["preview_section"] = count('[data-testid="dataset-preview"]')
-        entry["slot_state"] = slot_state
-        entry["unavailable"] = bad
-        entry["images"] = imgs
-        entry["decoded_images"] = decoded
-        entry["display_total"] = total_text
-        entry["status_text"] = ""
-        if bad > 0:
-            rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
-                             expect_ok=False, quiet=True)
-            entry["status_text"] = ((data or dict()).get("text") or "")[:400]
-        entry["render"], measured_reason = classify_preview_measurement(
-            slot_state, imgs, decoded, bad, total_text)
-        if measured_reason and not entry["status_text"]:
-            entry["status_text"] = measured_reason
-        SHOT_DIR.mkdir(parents=True, exist_ok=True)
-        shot = SHOT_DIR / ("verify-preview-" + str(seq).zfill(2) + "-" + fmt + ".png")
-        ab(["screenshot", str(shot)], expect_ok=False)
-        entry["screenshot"] = shot.name
-        previews.append(entry)
-        log("· 미리보기 " + fmt + "(seq " + str(seq) + ") = " + entry["render"])
-    result["previews"] = previews
+    result["previews"] = verify_previews(st, plan)
 
     open_url("/projects")
     # 프로젝트도 카드다 — id 는 testid 접미에 실려 있다(ProjectCards.tsx:31).
@@ -1962,7 +2624,7 @@ def phase_verify(st, plan):
     mark_step(st, "verify", "done" if passed else "partial")
     log("· verify.json 기록 · 판정 = " + ("전건 통과" if passed else "미달 있음"))
     if not passed:
-        raise Fail("저장 기간·모델 입력 설명·계보 역할·미리보기 검증 중 미달이 있다")
+        raise Fail("저장 기간·주제·모델 입력 설명·계보 역할·미리보기 검증 중 미달이 있다")
 
 
 def phase_report(st, plan):

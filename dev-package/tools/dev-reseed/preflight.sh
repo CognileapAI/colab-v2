@@ -237,6 +237,8 @@ pf_resources() {
 }
 
 # ⑽ 계획 생성기 — 정본 md 에서 28/18 이 나오는가. 여기서 어긋나면 seed 가 틀린 계획으로 돈다.
+#   ⑽′ 업로드 필수 칸 값(`dev-seed/upload-classify.json`)의 **서명**도 여기서 요구한다(`--require-signed-classify`).
+#   서명 전이면 reset·seed 로 들어가기 전에 멈춘다 — 2026-09-24 dev 3회차가 ① 분류에서 선 자리다.
 #
 # ⚠ 생성기의 요약줄은 **두 모양**이다 — `--dry-run` 경로는 `datasets 28 edges 18`,
 #   `--check-manifest` 경로는 뒤에 ` data_bytes N` 이 더 붙는다
@@ -248,7 +250,7 @@ pf_build_plan() {
   local tmp; tmp="$(mktemp)"
   local out rc=0
   python3 "$BUILD_PLAN_PY" \
-    --dry-run --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" > "$tmp" 2>&1 || rc=$?
+    --dry-run --require-signed-classify --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" > "$tmp" 2>&1 || rc=$?
   out="$(cat "$tmp")"; rm -f "$tmp"
   printf '%s\n' "$out" | redact >> "$STAGE_LOG"
   if [ "$rc" -ne 0 ]; then

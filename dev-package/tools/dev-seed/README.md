@@ -13,6 +13,14 @@
 
 - **정본 사슬 = `DATASETS.md` 4건 → `build_plan.py` → `plan-manifest.yaml` ＋ `upload-plan.json`.**
   값을 고칠 자리는 md 하나뿐이고, 뒤의 둘은 생성물이다.
+- 예외 셋은 `canonical-metadata.json`(레포 정본)이 계획 행에 덧씌운다 — 기간 · 보조입력 간선
+  (`auxiliaryParents` 5건) · 등록 설명(`registrationSummary` · seq 3·4·5·6·7·8·12·13·14 는 md 한 줄 요약 대신
+  md `description` 기반 문장). 등재표(`plan-manifest.yaml`)는 md 한 줄 요약을 그대로 두고,
+  러너 입력(`upload-plan.json`)만 덧씌운 값을 싣는다. 근거 = 2026-09-25 dev 보정(O4·O7) ·
+  `dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md` §7.
+- 주제(`topic` · 28행 전부 · 참조자료 폴더별 한 값: 강수 → 강우·강수 · 식생 → 식생·NDVI · 가뭄 → 가뭄 ·
+  파일 포맷 → 파일 포맷 예제)도 같은 정본이 싣는다. 등록 화면에 주제 칸이 없어 러너가 datasets 단계 끝에
+  공식 `PATCH /datasets/{id}` 로 맞추고(저장값이 다를 때만), verify 가 28/28 을 요구한다. 근거 = 같은 보고서 §8.
 - md 4건의 자리(참조자료 뿌리 기준) = `01.level-data/01.precipitation/DATASETS.md` ·
   `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` ·
   `02.File-format/DATASETS.md`. 레포 안 거울 사본은 `dev-package/reports/reference-data/datasets-md/`.
@@ -203,6 +211,14 @@ python3 runner.py --phase datasets --from-seq <실패 순번> --base-url <주소
   **다시** 누르지 않으면 기준 격자가 붙지 않는다(러너가 등록 직전에 한 번 더 확인한다).
 - 경계 위생 실패(한반도 밖)는 등록을 막지 않는다 — 지도형만 안 생긴다. 기록하고 이어간다.
   형상·축·짝 불일치와 `up-grid-mismatch` 는 판정이 필요하므로 멈춘다.
+- **격자 대기는 두 단이다**(⭑ 2026-09-24 · dev 4회차 seq 18 846초 정체). 1단은 판정 표시 또는
+  서버 격자 수용 = 「예상 영역」(`up-grid-expected-bounds`, grid-options `currentGrid` · 렌더와 무관)을
+  기다린다. 수용 뒤 2단은 전체 파일 렌더의 판정(「맞습니다」 등)을 상한 안에서 본다.
+  렌더가 실패(`up-preview-error` · 진행 표시 없음)하거나 상한(`COLAB_SEED_GRID_RENDER_WAIT_S`,
+  기본 300초)을 넘기면 — 계획 `preview_expected` 가 「렌더 성립…」인 행은 **멈추고**, 그 밖의 행은
+  등록을 잇는다. 상태 `registered_no_preview` · 사유 `no_preview_reason` · 목록 `grid_render_unverified`.
+  「맞습니다」는 미리보기 칸의 표시 상태만 바꾸고(`UploadModal` 이 `onAccept` 을 넘기지 않는다)
+  격자 파일은 업로드에 이미 「기준 격자 파일」로 실려 등록된다.
 
 ### 6-4. 계보 행 지목
 

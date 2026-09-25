@@ -32,6 +32,11 @@
 #      지난·소진·만료·nonce 없는 토큰과 판정 불가 계수를 거부하며, 거부 메시지가 완성 명령을 찍지 않는다.
 #      `--from s3` 는 같은 실행 자리의 reset 판정 없이 계획을 세우지 않고, 계획은 DROP 직전 재계수 sha256 에 묶인다.
 #      왜 = 2026-09-24 08:33Z 재시드가 d3_file 585 · d3_dataset 35 가 센 dev 를 `test -s` 만 보고 지웠다.
+#   ⓗ `tests/operator-window.sh` **임시 운영자 자격이 켜져 있는 구간**을 판정한다 —
+#      `accounts` 국면 뒤에 내리고 `projects` 앞에서 내려가 있으며, 계정 최종화 직전에만 되올린다.
+#      왜 = `bafae4a7` 이후 생성 넷이 운영자에게 `X-CoLAB-Target-Lab` 을 요구하는데
+#      러너는 그 칸을 모른다(`app/target_scope.py:42-43`). 2026-09-24 재시드가 첫 프로젝트에서
+#      멈춘 자리이고, **국면 순서를 보는 검사는 어디에도 없었다.**
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -64,6 +69,8 @@ CASES=(
   "$RESEED_DIR/tests/verify-session.sh"
   "$RESEED_DIR/tests/deploy-rehearsal.sh"
   "$RESEED_DIR/tests/reset-gate.sh"
+  "$RESEED_DIR/tests/operator-window.sh"
+  "$RESEED_DIR/tests/upload-classify.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -115,5 +122,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수·지문 계수·1회용 사용자 GO·고아 객체·s3 계획 reset 묶임)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수·지문 계수·1회용 사용자 GO·고아 객체·s3 계획 reset 묶임 · 업로드 필수 칸 값 서명 · 임시 운영자 창)"
 exit 0
