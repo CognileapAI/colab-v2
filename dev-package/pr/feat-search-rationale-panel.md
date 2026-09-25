@@ -1,0 +1,124 @@
+# 검색 사용자가 결과 카드에서 자료 설명과 「검색된 이유」를 한눈에 구분한다
+
+Plan-Ref: dev-package/intent/2026-09-25-search-rationale-separation.md
+Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
+검증 상태: 부분 검증
+
+<!-- Head-SHA 는 증거 커밋이다. 이 요약 파일 커밋이 그 위에 1개 더 있다 — 게시 직전 PR head 로 갱신한다. -->
+
+## 목적
+- 결과 카드에서 요약(자료 등록자가 쓴 설명)과 검색 근거가 같은 글자·배경으로 붙어 구분되지 않았다(Ted 발의).
+- 근거 문장에 카드마다 같은 공통부와 한계·부정 문장이 반복돼 검색된 이유가 묻혔다.
+- 원한 결과: 요약 아래 별도 「✦ AI」 패널 + 근거 종류별 2단계 목록(이유만) · 공통부는 결과 머리에 한 번.
+
+## 범위
+- 계약(비파괴): `contracts/seams/fe-core.yaml`
+  - `SearchResultRow.rationaleFacts`(선택 · `kind` = term/concept/linked/evidence · `items` = `AiRationale` 한 줄 배열)
+  - `SearchResults.topic`(선택)
+  - `rationale`·검색 오퍼레이션·`degraded` 설명 개정
+  - 생성물 `frontend/src/generated/fe-core.ts` 재생성
+- core-api
+  - `dataset_search.py`: `rationale()` → `rationale_facts` · `ordered_facts` · `rationale_line`, `compose` 인자에서 연구실·건수·주제·해석 여부 제거
+  - `routes/catalog.py`
+    - AI 해석 경로: 종류별 사실 조립, 응답 `topic` 추가
+    - 조건 검색 경로: 고정 문장을 「파일 근거」 1항목(해요체)으로 바꾸고 「미확인입니다」 삭제
+  - `search_evidence_conditions.explain` → `supported_facts`(확인 항목만)
+  - `search_conditions.explain_unverified_conditions` 삭제
+  - `relay.py`: `degraded` 를 합집합으로 계산
+- frontend
+  - `SearchHitCard.tsx`: `RationalePanel` 추가
+  - `search.css`: 패널 규칙 추가, 「코랄」 주석을 보라(accent · 판정 48)로 정정
+  - `SearchResultsPage.tsx`: `ScopeLine` 뒤에 주제 문장 추가
+- 제외(intent 범위 밖): 관련도 막대 · Verified 배지 · 연구실 칩 · `DetailHeader` · 상세 검색 근거 편집 · 조건 검색 판단 패널 · 정본(기획 원본) 파일 · dev 재시드·배포 · `common.json` `AiRationale`(이유 항목도 한 줄이라 무수정)
+
+## 계획
+- 커밋 순서
+  1. `34964b91` 계약 + 생성물
+  2. `c97e5e23` core-api
+  3. `86ed3c17` frontend
+  4. `f4cba295` 브라우저 증거
+  5. 이 요약
+- 남은 단계
+  - advisor ② 수용 검토
+  - 사용자 PR 게시 → develop 병합
+  - dev 배포 후 교수·운영자 계정 실측(가치 가설 확인)
+
+## 결정
+- 새 ADR 없음. 구현 중 판정한 것
+  - 조건 검색 갈래(`AssessmentPanel`)에는 「주제」 문장을 두지 않는다. 그 갈래에는 해석 주제가 없고 서버가 `topic` 을 싣지 않는다(intent 남은 질문 1).
+  - 「파일 근거」
+    - 확인(supported) 조건이 있으면 그것이 일반 문장 「확인한 파일 근거가 질문 조건에 맞았어요」를 대신한다.
+    - 확인 조건이 없는 파일은 항목을 만들지 않는다.
+  - 「관련 개념」
+    - 개념 주석 일치가 있으면 「자료에 적힌 개념 ‘X’에 연결돼요」로 적는다.
+    - 없고 `where == ("온톨로지 연결 근거",)` 뿐이면 「자료에 적힌 개념이 질문과 연결돼요」로 적는다. 이것으로 근거 필수를 지킨다.
+  - 「연결된 자료」: 「‘파일명’ 파일이 속한 자료의 바로 앞 단계 자료예요」로 적고 「계보·부모」 말은 쓰지 않는다.
+  - `degraded` 합집합을 `relay.py` 해석 결과 지점에서 계산한다. 대조 필드는 ai-service 본문 `degraded` 와 `interpretation.source` 다.
+    - 로컬 ai-service 실측 값: `degraded:false` · `source:"literal"` · `degradedReason` 있음(`probe-literal.json` 캡처 시 stub 로그).
+    - 이 경우 응답은 `degraded:true` 이고 헤더 안내가 선다.
+
+## 검증
+- 게이트(task `dadf133f898543d48424f0b693e8f3ad` · `gates/run.sh task` 1회 · 계 **green 8 / red(판정) 0 / red(준비) 0**)
+
+| 게이트 | 종료코드 | 요지 |
+|---|---|---|
+| contract-lint | 0 | seam 3건 · 룰 위반 0 |
+| contract-breaking | 0 | 계약 커밋 전(작업트리 vs HEAD `e040ad59`) 실행: 파괴적 변경 없음 · task 실행분도 green |
+| generated-up-to-date | 0 | 등기부 20건 재생성 일치 |
+| frontend-typecheck | 0 | tsc 오류 0 |
+| frontend-test | 0 | vitest 1899 통과 · 실패 0 |
+| frontend-design-lint | 0 | 색 리터럴 0 · 미정의 var 0 · 인라인은 변수 대입 7건뿐 · 프리미티브 맨 정의 0 |
+| service-tests-core-api | 0 | 1903 통과 · skipped 0 · deselected 9 |
+| intent-ref | 0 | 트레일러 확인 |
+
+- RED 선확인
+  - core-api 43 failed(예: `compose() missing … 'lab_name'`, `KeyError: 'rationaleFacts'`, `assert '확인하지 못' not in …`)
+  - frontend 6 failed(`search-rationale-panel` 없음)
+  - 구현 뒤 green
+
+| 원한 결과 (intent) | 실제 | 근거 | 가치 상태 |
+|---|---|---|---|
+| 요약 아래 별도 DOM 근거 패널(면 accent-50 · 좌측 2px AI 선 · 본문 text-body) | `.hit-rationale` 이 `hit-summary` 와 다른 요소로 선다. 계측값: 라이트 bg `rgb(241,232,255)`·선 `2px solid rgb(103,66,245)` · 다크 bg `rgb(48,36,69)`·선 `rgb(198,175,255)` | `SearchHitCard.tsx` `RationalePanel` · `search.css` `.hit-rationale` · `probe-llm.json` · vitest 「근거는 요약과 다른 요소…」 | 확인됨 |
+| 맨 위 왼쪽 「✦ AI」 태그(accent-700 글자 · accent-200 테두리 · surface 바탕 · 내용 폭) | 태그 높이 20px · 폭 44px(패널 804px) · 목록 밖 · 목록보다 앞 | `probe-llm.json` `tagWidth`·`tagOutsideFacts` · vitest | 확인됨 |
+| 2단계 목록(상위 = 굵은 종류 + 보라 점 · 하위 = 「–」 들여쓰기) | 종류 4개가 서버 순서대로 그려지고, 빈 종류는 생략된다 | vitest 「근거 종류가 서버 순서대로…」·「사실이 없는 종류는…」 · 캡처 | 확인됨 |
+| 잠긴·Verified 카드도 같은 패널 | 두 카드 모두 패널이 선다 | 캡처 `search-rationale-llm-light-1280.png` · vitest | 확인됨 |
+| 한계·부정 문장 제거 · 이유만 | 서버 단언: 부정 문구 7종 부재 · 파일 근거는 확인 항목만. `test_search_reference_evidence` 골든 011·012 에서 「미확인」「불일치」 부재 | `test_search_assembly.py` · `test_search_evidence_conditions.py` · `test_search_reference_evidence.py` · `test_search_numeric_quality.py` | 확인됨 |
+| 관련 개념만으로 맞아도 이유 ≥1 · 「온톨로지」 미노출 | concept 항목 1개가 남는다. 실제 개념 선택 경로에서도 concept 에 ‘강수’가 있다 | `test_관련_개념으로만_맞아도_이유가_하나_이상_있다` · `test_search_concept_integration.py` | 확인됨 |
+| 공통부를 결과 머리에 한 번(범위 · 주제 · 해석 없이) | 범위 줄 「… 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.」가 서고 카드에는 없다. literal 해석이면 degraded 안내가 선다 | `probe-llm.json` `scope` · `probe-literal.json` `degradedNotice:true` · relay 시험 topic 유무·합집합 | 확인됨 |
+| `rationaleFacts` 없으면 `rationale` 한 줄로 그림(구 응답 호환) | 같은 패널 안 `search-rationale` 에 원문 그대로 그린다 | vitest 「rationaleFacts 가 없으면…」 | 확인됨 |
+| agent-browser 캡처(라이트·다크 · 폰 폭) | 격리 fixture + 이 브랜치 서버로 5장을 찍었다. 가로 넘침 없음 | 아래 「볼 곳」 | 부분 확인(dev 아님 · LLM 실호출 아님) |
+| 가치 가설(Ted 가 dev 에서 구분·이유만 판정) | 미실행 | dev 배포 전 | 미검증 |
+
+Evidence-Ref: 로컬 task runtime gate-summary(task `dadf133f898543d48424f0b693e8f3ad` · run `0d0ec1bd7b114c0ab0fc72efc45c3759`) — CI 증거 아님
+Evidence-SHA256: 미생성(CI 증거 번들 없음)
+CI-Ref: 미게시(PR 게시 뒤 CI)
+
+## 볼 곳
+- `dev-package/reports/search-rationale-panel/20260926/`
+  - `search-rationale-llm-light-1280.png`
+  - `search-rationale-llm-dark-1280.png`
+  - `search-rationale-llm-light-390.png`
+  - `search-rationale-llm-dark-390.png`
+  - `search-rationale-literal-light-1280.png`(해석 없이 → 헤더 안내)
+  - `probe-llm.json` · `probe-literal.json`
+- 실행 방법
+  - `scripts/e2e-login.py --journey`(격리 fixture DB · 실제 로그인 · 새로고침 지속 · 로그아웃 포함 PASS)
+  - agent-browser 0.27 · `set media light|dark` · `set viewport 1280×900 | 390×844`
+
+## 남은 제약
+- 실제 LLM 해석은 부르지 않았다.
+  - 로컬 ai-service 가 `COLAB_AI_QUERY_INTERPRETATION=literal` 이다.
+  - 「llm」 캡처는 `source:"llm"` 응답 모양을 내는 loopback 스텁(커밋 안 함)을 경유했다.
+  - 해제 조건: dev 배포 뒤 교수·운영자 계정으로 캡처(intent 가치 가설).
+- 캡처 fixture 는 「낱말 일치」 종류만 만든다. 관련 개념·연결된 자료·파일 근거의 화면 모양은 vitest 로만 확인했다.
+- ⚠ `〈148〉`(PLAN-SoT: 의도적 literal 은 `degraded` 가 아니다)과 긴장이 있다.
+  - 합집합(intent ⑤·⒞ Ted 수용)으로 의도적 literal 환경에서도 헤더에 「질의 해석이 지금 동작하지 않아…」가 선다.
+  - 문구 조정 여부는 Ted 판정이 필요하다.
+- 정본·계약 개정 항목 ①~⑤(한계 병기 · 한 줄 · 코랄 · 「왜 이 결과?」 · degraded)
+  - 계약 설명은 이 PR 에서 고쳤다.
+  - 기획 원본 개정은 별도 절차다.
+- 기존 결함(이 PR 이 만들지 않음 · 검사 밖): 「낱말 일치」 문장의 조사가 받침을 보지 않는다(예: 「‘강우량’가」). 어느 게이트에도 걸리지 않는다.
+
+## 게시 절차
+- 사용자: `feat/search-rationale-panel` → `develop` PR 게시(본문 = 이 파일)
+- 게시 전: Head-SHA 를 PR head 로 갱신하고 `python3 scripts/harness/pr_contract.py dev-package/pr/feat-search-rationale-panel.md --head <sha>` 를 실행한다.
