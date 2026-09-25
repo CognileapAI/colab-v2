@@ -1,0 +1,283 @@
+{
+ "browser": "Chrome/152.0.7977.82",
+ "verified": true,
+ "method": "CDP Emulation.setTouchEmulationEnabled(maxTouchPoints 5) + setDeviceMetricsOverride(mobile:true) for touch; disabled + mobile:false for mouse",
+ "rows": [
+  {
+   "viewport": {
+    "w": 320,
+    "h": 568,
+    "touch": true,
+    "label": "phone-se"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 320,
+    "height": 568,
+    "dpr": 1,
+    "clientWidth": 320,
+    "visualViewport": {
+     "w": 320,
+     "h": 568,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 360,
+    "h": 780,
+    "touch": true,
+    "label": "phone-android"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 360,
+    "height": 780,
+    "dpr": 1,
+    "clientWidth": 360,
+    "visualViewport": {
+     "w": 360,
+     "h": 780,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 390,
+    "h": 844,
+    "touch": true,
+    "label": "phone-iphone"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 390,
+    "height": 844,
+    "dpr": 1,
+    "clientWidth": 390,
+    "visualViewport": {
+     "w": 390,
+     "h": 844,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 844,
+    "h": 390,
+    "touch": true,
+    "label": "phone-landscape"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 844,
+    "height": 390,
+    "dpr": 1,
+    "clientWidth": 844,
+    "visualViewport": {
+     "w": 844,
+     "h": 390,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 507,
+    "h": 820,
+    "touch": true,
+    "label": "foldable/small-tablet"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 507,
+    "height": 820,
+    "dpr": 1,
+    "clientWidth": 507,
+    "visualViewport": {
+     "w": 507,
+     "h": 820,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 744,
+    "h": 1133,
+    "touch": true,
+    "label": "ipad-mini"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 744,
+    "height": 1133,
+    "dpr": 1,
+    "clientWidth": 744,
+    "visualViewport": {
+     "w": 744,
+     "h": 1133,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 820,
+    "h": 1180,
+    "touch": true,
+    "label": "ipad-air"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 820,
+    "height": 1180,
+    "dpr": 1,
+    "clientWidth": 820,
+    "visualViewport": {
+     "w": 820,
+     "h": 1180,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 1024,
+    "h": 1366,
+    "touch": true,
+    "label": "ipad-pro"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 1024,
+    "height": 1366,
+    "dpr": 1,
+    "clientWidth": 1024,
+    "visualViewport": {
+     "w": 1024,
+     "h": 1366,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 1180,
+    "h": 820,
+    "touch": true,
+    "label": "ipad-landscape"
+   },
+   "media": {
+    "hoverNone": true,
+    "pointerCoarse": true,
+    "anyHover": false,
+    "anyPointerFine": false,
+    "maxTouchPoints": 5,
+    "width": 1180,
+    "height": 820,
+    "dpr": 1,
+    "clientWidth": 1180,
+    "visualViewport": {
+     "w": 1180,
+     "h": 820,
+     "scale": 1
+    },
+    "controlHeightToken": "44px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  },
+  {
+   "viewport": {
+    "w": 1440,
+    "h": 900,
+    "touch": false,
+    "label": "desktop-mouse"
+   },
+   "media": {
+    "hoverNone": false,
+    "pointerCoarse": false,
+    "anyHover": true,
+    "anyPointerFine": true,
+    "maxTouchPoints": 0,
+    "width": 1440,
+    "height": 900,
+    "dpr": 1,
+    "clientWidth": 1425,
+    "visualViewport": {
+     "w": 1425,
+     "h": 900,
+     "scale": 1
+    },
+    "controlHeightToken": "40px",
+    "theme": "light"
+   },
+   "scene": "catalog"
+  }
+ ],
+ "browserLaunch": "own headless Chrome for Testing 152 (agent-browser binary ~/.agent-browser/browsers/chrome-152.0.7977.82) with scenes.json browser.args + --blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2, attached as agent-browser session resp-audit-d406 via connect 9347",
+ "priorAttempts": [
+  "agent-browser default launch (scenes.json args only): touch viewports correct, but 1440 mouse read hover:none=true, pointer:coarse=false, pointer:none=true, any-pointer:fine=false, --control-height 40px (headless has no pointing device)",
+  "CDP Emulation.setEmulatedMedia features hover/pointer/any-hover/any-pointer: accepted, no effect",
+  "agent-browser --args cannot carry --blink-settings because it splits on commas"
+ ]
+}
