@@ -15,8 +15,8 @@ import type { SearchScope, SearchSource, SearchContext } from '../components/sea
 import { AssessmentPanel } from '../components/search/SearchAssessment';
 import '../components/search/search.css';
 
-function ScopeLine(props: { scope: SearchScope }) {
-  const { scope } = props;
+function ScopeLine(props: { scope: SearchScope; topic?: string | undefined }) {
+  const { scope, topic } = props;
   return (
     <p className="scope" data-testid="search-scope">
       {/* ⚠ 0건일 때 **판정 문장을 여기서 말하지 않는다** — 목업 F-02 의 0건 상태가
@@ -27,6 +27,9 @@ function ScopeLine(props: { scope: SearchScope }) {
           결과 헤드를 **다른 줄**로 적었고, 건수는 `Verified만 보기` 토글에 따라 갱신되어야
           하므로 토글과 같은 줄에 있어야 한다. */}
       {scope.labName} 데이터 {scope.searchedCount}건을 뒤졌어요.
+      {/* 주제로 좁혔으면 **여기서 한 번** 말한다 — 종전에는 카드 근거마다 반복됐다
+          (intent `2026-09-25-search-rationale-separation.md` Q8 · 응답 `topic`). */}
+      {topic && ` 주제 ‘${topic}’로 좁혀 뒤졌어요.`}
     </p>
   );
 }
@@ -112,7 +115,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
       {state.status === 'ready' && (
         <>
           {/* 뒤진 범위가 먼저다 — 0건이어도, degraded 여도 이 줄이 맨 앞이다 (정본 §3.3) */}
-          {state.results.assessment ? <AssessmentPanel assessment={state.results.assessment} onContext={value => setContext({query,value})} /> : <ScopeLine scope={state.results.scope} />}
+          {state.results.assessment ? <AssessmentPanel assessment={state.results.assessment} onContext={value => setContext({query,value})} /> : <ScopeLine scope={state.results.scope} topic={state.results.topic} />}
 
           {state.results.degraded && (
             <div className="notice notice--degraded" data-testid="search-degraded">

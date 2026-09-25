@@ -1,4 +1,4 @@
-// 결과 카드 한 장 = 카탈로그 행 그대로 + AI 가 보탠 둘(관련도 막대 · 근거 한 줄).
+// 결과 카드 한 장 = 카탈로그 행 그대로 + AI 가 보탠 둘(관련도 막대 · 검색 근거 패널).
 //
 // **잠긴 데이터도 이 카드로 선다** (`P-13`·`P-34`) — 이름은 보이고 본체만 막힌다.
 // **관련도는 막대의 길이로만 산다** — 퍼센트·등급 텍스트를 만들면 그 자리가 확신도 숫자가 된다
@@ -11,6 +11,56 @@ import type { SearchResultRow } from './types';
 
 function day(ts: string): string {
   return ts.slice(0, 10);
+}
+
+type RationaleKind = NonNullable<SearchResultRow['rationaleFacts']>[number]['kind'];
+
+/** 근거 종류의 화면 이름 — 내부 기법 이름(온톨로지·계보)을 쓰지 않는다 (intent Q7). */
+const KIND_LABEL: Record<RationaleKind, string> = {
+  term: '낱말 일치',
+  concept: '관련 개념',
+  linked: '연결된 자료',
+  evidence: '파일 근거',
+};
+
+/**
+ * 검색 근거 패널 — 요약(사람이 적은 값)과 **다른 요소·다른 면**이다
+ * (intent `2026-09-25-search-rationale-separation.md` 트랙 A · 시안 A).
+ * 맨 위 왼쪽 작은 태그 「✦ AI」 → 다음 줄에 2단계 목록(상위 = 근거 종류 · 하위 = 사실).
+ * 순서는 서버가 정했다 — 다시 매기지 않는다. 사실 없는 종류는 그리지 않는다.
+ * `rationaleFacts` 가 없는 응답(구 서버)은 `rationale` 한 줄을 같은 패널에 그린다.
+ * 펼침·더보기는 두지 않는다 — 항목은 항상 전부 보인다.
+ */
+function RationalePanel(props: { row: SearchResultRow }) {
+  const { row } = props;
+  const facts = (row.rationaleFacts ?? []).filter((f) => f.items.length > 0);
+  return (
+    <div className="hit-rationale" data-testid="search-rationale-panel">
+      <span className="hit-ai-tag" data-testid="search-rationale-tag">
+        <span aria-hidden="true">✦</span> AI
+      </span>
+      {facts.length > 0 ? (
+        <ul className="hit-facts" data-testid="search-rationale-facts">
+          {facts.map((fact) => (
+            <li key={fact.kind} className="hit-fact">
+              <span className="hit-fact-kind" data-testid="search-rationale-kind">
+                {KIND_LABEL[fact.kind]}
+              </span>
+              <ul className="hit-fact-items" data-testid="search-rationale-items">
+                {fact.items.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="hit-why" data-testid="search-rationale">
+          {row.rationale}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: string): void }) {
@@ -74,9 +124,7 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
         {orEmpty(row.summary)}
       </p>
 
-      <p className="hit-why" data-testid="search-rationale">
-        {row.rationale}
-      </p>
+      <RationalePanel row={row} />
 
       <div className="hit-meta">
         {/* **정렬 이유를 카드가 말한다** (정본 §8 「Verified 카드」 축자 · §1.3-5 「올린 이유를
