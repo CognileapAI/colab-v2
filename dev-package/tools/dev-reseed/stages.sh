@@ -1472,6 +1472,15 @@ VFPY
   return 1
 }
 
+# `seed` 를 거치지 않은 회차(`--from verify`)의 교수 로그인 — 브라우저 세션이 앞 회차 것이라 끊겼을 수 있다.
+#   2026-09-25 재개 시도 1 이 이 자리 없이 seq 13·14·16 을 **로그인 화면**으로 쟀다(판정불가 · 최종화 미진입).
+#   `phase_login` 은 멱등이다 — 이미 들어가 있으면 건너뛰고, 아니면 작업 폴더의 교수 자격으로 다시 든다.
+#   함수로 둔 것은 픽스처가 대역으로 바꾸기 위해서다.
+verify_login() {
+  run python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" --phase login --base-url "$DEV_URL" \
+    --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" --account "$RESEED_ACCOUNT_EMAIL"
+}
+
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 러너 verify.json 계수 대조(데이터셋 $EXPECT_DATASETS · 프로젝트 $EXPECT_PROJECTS · 간선 $EXPECT_EDGES)"
@@ -1513,6 +1522,10 @@ ACCOUNT_RESUME
   # `--verify-from` = 앞 실행의 판정표를 잇고 **그 판정표에서 실패한 행만** 다시 잰다(2026-09-25 사용자 요청
   #   「재시드에서 실패한 것만」). 통과 행은 앞 판정표 행을 그대로 두고, 다시 잰 행을 덧붙인 뒤 seq 순으로 맞춘다.
   #   아래 ② 대조 → record-details → 계정 최종화는 같은 길로 간다.
+  if ! stage_enabled seed; then
+    log "① 앞 — 교수 로그인(seed 없이 verify 부터 연 회차 · 멱등)"
+    verify_login || { blocked_add verify "교수 로그인 실패 — 상세 화면을 잴 수 없다"; return 1; }
+  fi
   local walk_only=""
   if [ -n "${VERIFY_FROM:-}" ]; then
     verify_from_prior apply "$state" "$manifest" || return 1

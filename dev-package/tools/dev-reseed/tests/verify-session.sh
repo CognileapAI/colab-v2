@@ -172,6 +172,7 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+verify_login() { return 0; }  # 교수 로그인 대역 — 이 픽스처는 로그인된 세션·로그인 화면 판정만 본다
 # 정착 유지 창은 기본값(1 s)을 한 번 재고, 나머지 케이스는 짧게 줄여 픽스처를 빠르게 돈다.
 DEFAULT_STABLE_MS="${PREVIEW_STABLE_MS:-}"
 PREVIEW_STABLE_MS=40

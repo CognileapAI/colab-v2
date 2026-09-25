@@ -109,6 +109,8 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+# 교수 로그인 대역 — seed 없이 verify 부터 연 회차는 순회 전에 한 번 든다(2026-09-25 재개 시도 1 결함).
+verify_login() { printf 'LOGIN\n' >> "$FIXTURE_AB_LOG"; return 0; }
 ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
 ACCOUNTS_FILE="$TMP/approved-profile.json"
 cp "$RESEED_DIR/accounts-profile.example.json" "$ACCOUNTS_FILE"; chmod 600 "$ACCOUNTS_FILE"
@@ -189,6 +191,7 @@ reset_run; VERIFY_FROM="$TMP/prior"
 run_verify; rc=$?
 [ "$rc" -eq 0 ] || note "ⓐ 9-24 모양 앞 판정표로 verify 가 통과하지 못했다(rc $rc): $(grep -E '대조 결과|면제|거부|verify-from' "$TMP/out" | tail -4)"
 [ "$(opened)" = "ID13 ID14 ID16" ] || note "ⓐ′ 실패 행만 열지 않았다 — 연 id [$(opened)]"
+[ "$(head -1 "$FIXTURE_AB_LOG")" = "LOGIN" ] || note "ⓐ⁵ seed 없이 연 회차가 순회 전에 교수 로그인을 하지 않았다"
 [ "$(head -1 "$RUN_DIR/preview-judgment.tsv")" = "$ROW1" ] || note "ⓐ″ 통과 행(seq 1)을 앞 판정표 그대로 잇지 않았다"
 cmp -s "$TMP/prior/preview-judgment.tsv" "$RUN_DIR/prior-preview-judgment.tsv" || note "ⓐ‴ 앞 판정표를 prior-preview-judgment.tsv 로 보관하지 않았다"
 awk -F'\t' '$1==13 && $3 ~ /Lv1/ && $6=="0" && $7=="1"' "$RUN_DIR/preview-judgment.tsv" | grep -q . \
