@@ -5376,7 +5376,7 @@ components:
               items: { $ref: "#/components/schemas/SearchResultRow" }
 
     SearchContext:
-      description: "사용자가 이번 요청에서 명시한 연구 조건 또는 기준 파일. 개인 이력이나 권한을 대신하지 않는다."
+      description: "사용자가 이번 요청에서 명시한 연구 조건 또는 기준 파일. 개인 이력이나 권한을 대신하지 않는다. [정본 무근거] 가장 가까운 비정본 출처 — dev-package/prd/rounds/R-AI-SEARCH-CLIENT.md 「구조와 인터페이스」(기존 /dataset-searches에 선택적 연구/참조 문맥 추가) · dev-package/sessions/20260914-ai-search-client.md 「구현 구조」 6·7."
       type: object
       additionalProperties: false
       properties:
@@ -5408,7 +5408,7 @@ components:
             maxMissingRatePercent: { type: number, minimum: 0, maximum: 100 }
 
     SearchAssessment:
-      description: "클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다."
+      description: "클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다. [정본 무근거] 가장 가까운 비정본 출처 — dev-package/prd/rounds/R-AI-SEARCH-CLIENT.md 「구조와 인터페이스」(조건 판정 응답 추가) · dev-package/sessions/20260914-ai-search-client.md 「구현 구조」 4·8 · 「알려진 범위」."
       type: object
       required: [status, text, questions, intent, conditions, asOf, semanticVersion, scope, candidateLimitReached, comparisons, unknownCount]
       additionalProperties: false
