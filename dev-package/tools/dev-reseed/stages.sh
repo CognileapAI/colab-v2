@@ -927,7 +927,7 @@ stage_seed() {
   #   즉 자격을 어떤 길로 내리든(제품 API든 SQL이든) **열린 세션은 반드시 닫힌다.**
   #   2026-09-24 재개 1 이 이 자리에서 「지목점 project-new-button 해소 실패」로 멈췄고,
   #   덤프에 찍힌 것은 프로젝트 목록이 아니라 **로그인 화면**이었다.
-  #   `phase_login` 은 멱등이다 — 이미 들어가 있으면 건너뛰고, 아니면 회전된 비밀번호로 다시 든다.
+  #   `phase_login` 은 멱등이다 — 이미 들어가 있으면 건너뛰고, 아니면 갱신된 자격으로 다시 든다.
   run python3 "$runner" --phase login "${args[@]}" || return 1
 
   for phase in projects datasets verify report; do
@@ -1099,7 +1099,7 @@ CVPY
 account_finalize() {
   local binding
   # `seed` 가 내린 임시 운영자를 **되올린 뒤에** 최종화한다. `accounts.py` 의 최종화는
-  # 교수 비밀번호를 초기값으로 되돌릴 자격의 표식으로 그 운영자 행을 읽고, 없으면
+  # 교수 계정 최종화의 전제 표식으로 그 운영자 행을 읽고, 없으면
   # 「final professor credential drift; refusing another reset」 로 거절한다.
   # 최종화 자신이 마지막에 그 행을 다시 내리므로(`set_operator(..., False)`) 끝 상태는 같다.
   # 멱등이다 — `provision-service-operator.sql` 이 `ON CONFLICT DO NOTHING` 이다.

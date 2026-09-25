@@ -12,7 +12,7 @@
 #      (2026-09-24 로컬 검증 실측).
 #   ⓑ `account_finalize` 가 `accounts.py finalize` 를 부르기 **전에** 자격을 되올린다.
 #      되올리지 않으면 `accounts.py` 의 「final professor credential drift」 가 나서
-#      교수 비밀번호를 초기값으로 되돌리지 못한다.
+#      교수 계정 최종화가 거절된다.
 #   ⓒ 내리는 SQL 은 **그 계정 한 행만** 지우고, 한 트랜잭션(`-1`)으로 돌며,
 #      운영자가 한 명도 남지 않으면 **거절**한다.
 #   ⓓ 올리는 길은 `provision-service-operator.sql` 그대로다(문장을 두 벌 두지 않는다).
@@ -122,7 +122,7 @@ fi
 account_finalize >/dev/null 2>&1
 i_grant="$(idx 'operator-grant')"
 i_final="$(idx 'accounts.py finalize')"
-[ -n "$i_grant" ] || note 'ⓑ 계정 최종화 전에 임시 운영자를 되올리지 않는다 — 교수 비밀번호를 되돌리지 못한다'
+[ -n "$i_grant" ] || note 'ⓑ 계정 최종화 전에 임시 운영자를 되올리지 않는다 — 교수 계정 최종화가 거절된다'
 [ -n "$i_final" ] || note 'ⓑ 자취에 accounts.py finalize 가 없다'
 if [ -n "$i_grant" ] && [ -n "$i_final" ]; then
   [ "$i_grant" -lt "$i_final" ] || note 'ⓑ 되올림이 accounts.py finalize 뒤에 온다'

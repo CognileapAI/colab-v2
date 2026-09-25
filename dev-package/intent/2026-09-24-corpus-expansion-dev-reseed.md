@@ -1,6 +1,6 @@
 # Intent: K3/K4 측정 코퍼스를 dev 재생성 28건으로 넓히고 골든 ID 를 다시 박는다
 
-메타 — 발의자: Ted(「권고대로 해」 · 2026-09-24) · 정리 Claude(researcher) · 작성 2026-09-24 · 승인 **미승인**(이름→새 ID 대응표 서명 대기)
+메타 — 발의자: Ted(「권고대로 해」 · 2026-09-24) · 정리 Claude(researcher) · 작성 2026-09-24 · 승인 **사용자 서명 2026-09-25 — ① 옛→새 대응 9행 + 이름→ID 28행 · ② 12문항 scope·required**(`dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md` §1·§2 서명 줄). 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」). 아래 「제약」의 dev 상시 승인은 2026-09-25 개정된 `.agents/rules/deploy.md` 11번이 대신한다 — 비어 있지 않은 dev 의 reset 은 회차별 명시 GO 와 사용자 터미널 토큰이 필요하다.
 
 ## 문제
 
