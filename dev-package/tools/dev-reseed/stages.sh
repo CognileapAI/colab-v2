@@ -212,6 +212,9 @@ reset_recover_apps() {
 #   토큰 = sha256(계수 바이트 ‖ "\n" ‖ nonce). nonce 는 **거부한 회차가 원격에 남긴 1회용 challenge** 에 있고
 #   만료(RESET_ACK_TTL_SECONDS)가 있으며, 한 번 쓰면 지운다 — export 해 둔 값은 다음 회차에 통하지 않는다.
 #   GO 근거(COLAB_RESEED_ACK_BASIS · 누가 어디서)가 없으면 받지 않는다. 판정·근거는 `reset-ack.json` 에 남는다.
+#   nonce 는 **원격 challenge 에만** 둔다 — 실행 자리(로그 · stderr · blocked.jsonl · reset-ack.json · 사본)에는
+#   nonce·challenge 본문을 남기지 않고 감사용 `nonceSha256`·`ackTokenSha256` 만 남긴다(2026-09-25 dev 검증 — 거부
+#   회차가 RUN 로그에 challenge base64 를, reset-ack.json 에 nonce 를 남겨 count-before.json 과 함께 토큰을 다시 셀 수 있었다).
 #   ⛔ 에이전트는 두 값을 채우지 않는다. 공용 Bash 훅(`scripts/harness/hooks/git-guard.sh` ⑹)은 할당 꼴만 거부한다 —
 #   우발적 주입 경로를 줄일 뿐 자동 보안 경계가 아니다(`AGENTS.md`). 남는 경로는 아래 토큰 출력 주석과 같다.
 # 판정 불가(파일 없음 · 옛 모양 · 전수 경로 표지 없음 · 지문 없음 · 표 누락)는 0 으로 읽지 않고 멈춘다.
@@ -225,8 +228,9 @@ RESET_STALE_FILES="count-before.json count-at-drop.json schema.json plan.json s3
 #   남기지 않는다. stdout 이 터미널이 아니면(에이전트 · 파이프 · 리다이렉트) 토큰 없이 「자기 터미널에서
 #   다시 열어야 보인다」만 남긴다 — 에이전트가 거부 출력을 읽어 토큰을 채우는 우발적 경로를 줄인다(2026-09-25 검토 조건).
 #   ⚠ 자동 보안 경계가 아니다. 남는 경로 — 의사 터미널(pty)로 stdout 받기 · 실행 자리 count-before.json ＋ 원격
-#   challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입.
+#   challenge nonce(dev 호스트에서 sudo 로만 읽힌다 — 실행 자리에는 없다)로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입.
 RESET_TOKEN_MARK="@@colab-reseed-reset-token@@"
+RESET_CHALLENGE_MARK="@@colab-reseed-reset-challenge@@"
 reset_show_token() {
   if [ -t 1 ]; then
     printf '   토큰 = %s\n' "$1"
@@ -252,14 +256,13 @@ reset_nonempty_gate() {
   fi
   ( umask 077; printf '%s' "$b64" | base64 -d > "$RUN_DIR/count-before.json" ) || {
     blocked_add reset "정지 게이트 판정 불가 — count-before.json base64 복원 실패"; return 1; }
+  # challenge(nonce)는 메모리로만 오간다 — 실행 자리에 사본을 두지 않고, 원격에는 표준입력으로 싣는다.
   chal="$(ssh_dev_capture "sudo base64 -w0 $REMOTE_OUT/$RESET_CHALLENGE 2>/dev/null || true")"
-  ( umask 077; printf '%s' "$chal" | base64 -d > "$RUN_DIR/challenge-in.json" 2>/dev/null ) || : > "$RUN_DIR/challenge-in.json"
-  rm -f "$RUN_DIR/challenge-out.json"
-  local out; rc=0
-  out="$(RESET_TOKEN_MARK="$RESET_TOKEN_MARK" python3 - "$RUN_DIR" "$RUN_ID" "${COLAB_RESEED_OPERATOR:-$(id -un)}" "$RESET_GATE_TABLES" \
+  local out chal_out; rc=0
+  out="$(RESET_TOKEN_MARK="$RESET_TOKEN_MARK" RESET_CHALLENGE_MARK="$RESET_CHALLENGE_MARK" RESET_CHALLENGE_B64="$chal" python3 - "$RUN_DIR" "$RUN_ID" "${COLAB_RESEED_OPERATOR:-$(id -un)}" "$RESET_GATE_TABLES" \
       "${COLAB_RESEED_ACK_NONEMPTY-}" "${COLAB_RESEED_ACK_BASIS-}" "$RESET_ACK_TTL_SECONDS" \
       "d3_dataset=${EXPECT_DATASETS:-} d6_project=${EXPECT_PROJECTS:-} d4_lineage_edge=${EXPECT_EDGES:-}" <<'PY'
-import datetime, hashlib, json, os, secrets, sys
+import base64, datetime, hashlib, json, os, secrets, sys
 run_dir, run_id, who, tables, ack, basis, ttl, baseline = sys.argv[1:9]
 tables = tables.split()
 raw = open(os.path.join(run_dir, "count-before.json"), "rb").read()
@@ -268,14 +271,18 @@ now = datetime.datetime.now(datetime.timezone.utc)
 stamp = lambda t: t.isoformat(timespec="seconds")
 def token_of(nonce): return hashlib.sha256(raw + b"\n" + nonce.encode("ascii")).hexdigest()
 TOKEN_MARK = os.environ["RESET_TOKEN_MARK"]
+CHALLENGE_MARK = os.environ["RESET_CHALLENGE_MARK"]
+sha = lambda s: hashlib.sha256(s.encode("utf-8")).hexdigest()
+# 감사 기록에는 nonce 대신 그 sha256 만 — 기록과 count-before.json 으로 토큰을 다시 셀 수 없다.
+audit = lambda c: {"nonceSha256": sha(c["nonce"]), "issuedAt": c.get("issuedAt"), "expiresAt": c.get("expiresAt")}
 
 nonempty, refs, orphans, excess, challenge = {}, None, None, {}, None
 def done(decision, lines, code, **extra):
-    body = {"schema": "colab-reseed-reset-ack/2", "runId": run_id, "operator": who,
+    body = {"schema": "colab-reseed-reset-ack/3", "runId": run_id, "operator": who,
             "recordedAt": stamp(now), "countBefore": "count-before.json", "countBeforeSha256": content,
             "decision": decision, "nonEmpty": nonempty, "referencedKeys": refs, "orphanUploads": orphans,
             "excessOverSeed": excess, "challenge": challenge, "ackProvided": bool(ack),
-            "ackToken": ack if decision == "acknowledged" else None,
+            "ackTokenSha256": sha(ack) if decision == "acknowledged" else None,
             "ackBasis": basis if decision == "acknowledged" else None,
             "toolAckSha256": content if decision == "acknowledged" else None}
     body.update(extra)
@@ -320,7 +327,7 @@ if not nonempty:
     done("empty", [f"정지 게이트 — 빈 DB ({counts} · {s3line}) · 토큰 불요"], 0, consumeChallenge=True)
 
 try:
-    chal = json.loads(open(os.path.join(run_dir, "challenge-in.json"), "rb").read() or b"null")
+    chal = json.loads(base64.b64decode(os.environ.get("RESET_CHALLENGE_B64", ""), validate=True) or b"null")
 except ValueError:
     chal = None
 why = None
@@ -339,17 +346,16 @@ elif ack != token_of(chal["nonce"]):
 elif not basis.strip():
     why = "COLAB_RESEED_ACK_BASIS(사용자 GO 근거 — 누가 · 어디서 · 언제)가 없다"
 if why is None:
-    challenge = {"nonce": chal["nonce"], "issuedAt": chal.get("issuedAt"), "expiresAt": chal.get("expiresAt")}
+    challenge = audit(chal)
     done("acknowledged", [f"정지 게이트 — 비어 있지 않음 ({counts} · {s3line}) · 사용자 GO 토큰 일치 · 근거 「{basis}」 · challenge 소진"],
          0, consumeChallenge=True)
 
 nonce = secrets.token_hex(16)
-challenge = {"nonce": nonce, "issuedAt": stamp(now),
-             "expiresAt": stamp(now + datetime.timedelta(seconds=int(ttl)))}
-fd = os.open(os.path.join(run_dir, "challenge-out.json"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-with os.fdopen(fd, "w", encoding="utf-8") as f:
-    json.dump(dict(challenge, schema="colab-reseed-reset-challenge/1", runId=run_id,
-                   countBeforeSha256=content), f, ensure_ascii=False)
+issued = {"nonce": nonce, "issuedAt": stamp(now),
+          "expiresAt": stamp(now + datetime.timedelta(seconds=int(ttl)))}
+chal_b64 = base64.b64encode(json.dumps(dict(issued, schema="colab-reseed-reset-challenge/1", runId=run_id,
+                                            countBeforeSha256=content), ensure_ascii=False).encode("utf-8")).decode("ascii")
+challenge = audit(issued)
 over = [f"{t} +{n} ({rows[t]}/기준 {rows[t] - n})" for t, n in excess.items() if n > 0]
 first = ("⛔ 정지 게이트 — 시드 기준선 초과: " + " · ".join(over) + " — 시드가 아닌 행일 수 있다") if over else \
         "⛔ 정지 게이트 — 시드 기준선 초과 없음(행수만의 판정이다 — 사람 자료가 없다는 증거가 아니다)"
@@ -360,12 +366,16 @@ done("refused", [
     f"   {why}. 앱 정지·DROP·S3 는 하나도 하지 않았다.",
     f"   이번 계수 = 실행 자리 count-before.json · 1회용 challenge 만료 {challenge['expiresAt']}",
     f"{TOKEN_MARK}{token_of(nonce)}",
+    f"{CHALLENGE_MARK}{chal_b64}",
     "   넘기는 것은 **사용자**가 이 계수를 보고 명시 GO 를 준 뒤 **자기 터미널에서** 한다 —",
     "   COLAB_RESEED_ACK_NONEMPTY 에 이번 토큰, COLAB_RESEED_ACK_BASIS 에 GO 근거(누가 · 어디서 · 언제)를 두고",
     "   reset 부터 다시 연다. 에이전트는 이 값을 채우지 않는다(.agents/rules/deploy.md 11번 증보).",
 ], 1)
 PY
 )" || rc=$?
+  # challenge 줄은 원격으로만 보낸다 — 단계 로그·stderr·blocked.jsonl 로 가는 out 에서 먼저 뺀다.
+  chal_out="$(printf '%s\n' "$out" | sed -n "s/^$RESET_CHALLENGE_MARK//p")"
+  out="$(printf '%s\n' "$out" | grep -vF -- "$RESET_CHALLENGE_MARK")"
   printf '%s\n' "$out" | while IFS= read -r line; do
     case "$line" in
       "$RESET_TOKEN_MARK"*) reset_show_token "${line#"$RESET_TOKEN_MARK"}" ;;
@@ -374,10 +384,13 @@ PY
   done
   if [ "$rc" -ne 0 ]; then
     blocked_add reset "$(printf '%s\n' "$out" | grep -vF -- "$RESET_TOKEN_MARK" | head -2 | tr '\n' ' ')"
-    if [ -s "$RUN_DIR/challenge-out.json" ]; then
-      ssh_dev "printf '%s' '$(base64 -w0 < "$RUN_DIR/challenge-out.json")' | base64 -d | sudo tee $REMOTE_OUT/$RESET_CHALLENGE >/dev/null && sudo chmod 600 $REMOTE_OUT/$RESET_CHALLENGE" \
+    if [ -n "$chal_out" ]; then
+      # 표준입력으로 싣는다 — argv 에 실으면 RUN 로그(단계 로그 · stderr)와 원격 ps 에 challenge 가 남는다.
+      printf '%s' "$chal_out" \
+        | ssh_dev "umask 077; base64 -d | sudo tee $REMOTE_OUT/$RESET_CHALLENGE >/dev/null && sudo chmod 600 $REMOTE_OUT/$RESET_CHALLENGE" \
         || warn "1회용 challenge 를 원격에 남기지 못했다 — 위 토큰은 통하지 않는다. 다시 연다"
     fi
+    chal_out=""
     return 1
   fi
   # 비었거나 GO 가 확인됐으면 challenge 를 지운다(1회 소진). 못 지우면 같은 토큰이 다시 통하므로 멈춘다.
@@ -405,7 +418,8 @@ stage_reset() {
   ssh_dev "mkdir -p $REMOTE_OUT && chmod 700 $REMOTE_OUT" || return 1
   # 옛 회차 파일을 먼저 지운다 — 계수가 실패해도 지난 계수가 이번 것처럼 남지 않는다.
   ssh_dev "sudo rm -f$(printf " $REMOTE_OUT/%s" $RESET_STALE_FILES)" || return 1
-  rm -f "$RUN_DIR/count-before.json" "$RUN_DIR/count-at-drop.json" "$RUN_DIR/reset-ack.json"
+  rm -f "$RUN_DIR/count-before.json" "$RUN_DIR/count-at-drop.json" "$RUN_DIR/reset-ack.json" \
+        "$RUN_DIR/challenge-in.json" "$RUN_DIR/challenge-out.json"
   ssh_script "reset:count" <<EOF || return 1
 set -euo pipefail
 $(reset_count_precheck)
