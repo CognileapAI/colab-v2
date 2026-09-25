@@ -174,7 +174,12 @@ def test_invalid_shapes_and_client_hash_are_rejected(p2_client) -> None:
     assert response.status_code == 400, response.text
 
 
-def test_operator_body_access_preserves_evidence_lab_boundary(p2_client, session_factory, sql):
+def test_operator_reads_evidence_across_labs_while_members_keep_the_boundary(
+        p2_client, session_factory, sql):
+    """⭑ ⟨intent 2026-09-25-operator-search-scope.md §설계트리 Q7 · 사용자 승인⟩ 종전 판은
+    「운영자에게도 근거 표는 자기 연구실 경계」였다. 그 경계 때문에 무소속 운영자의 조건 검색
+    후보가 0건이었고(이슈 #158), 0044 가 `operator_read`(FOR SELECT)를 더했다. 비운영자 경계와
+    쓰기 경계는 그대로다 — 쓰기 거절은 `db/platform/tests/0044-assertions.sql` ④ 가 잰다."""
     from conftest import ACC_B_PROF, LAB_B
     from colab_core.kernel.auth import Subject
     from colab_core.kernel.ids import Ulid
@@ -185,9 +190,11 @@ def test_operator_body_access_preserves_evidence_lab_boundary(p2_client, session
     assert _save(client, _payload(file_revision=_file_revision(client), status='reviewed')).status_code == 200
     other_operator = Subject(account_id=Ulid(ACC_B_PROF), lab_id=Ulid(LAB_B), operator=True)
     with read_only_scope(session_factory, other_operator, operator_read=True) as db:
-        # Main's operator metadata/file visibility is active; evidence keeps its own lab boundary.
         assert db.execute(text('SELECT count(*) FROM d3_file WHERE id=:id'), {'id': FILE_A1}).scalar_one() == 1
-        assert d3_search_evidence.read_reviewed(db) == []
+        assert [r['dataset_id'] for r in d3_search_evidence.read_reviewed(db)] == [DS_A1]
+    other_member = Subject(account_id=Ulid(ACC_B_PROF), lab_id=Ulid(LAB_B))
+    with read_only_scope(session_factory, other_member) as db:
+        assert d3_search_evidence.read_reviewed(db) == [], "비운영자의 근거 경계가 넓어졌다."
     sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES(:id,:lab,'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'", {'id': DS_A1, 'lab': LAB_A})
     own_operator = Subject(account_id=Ulid(ACC_A_RES), lab_id=Ulid(LAB_A), operator=True)
     try:
