@@ -135,6 +135,7 @@ def test_results_are_catalog_rows_found_by_core_and_enriched(p2_client, fake_ai)
     item = items[0]
     assert 0.0 <= item["relevanceBar"] <= 1.0
     assert item["rationale"] and "\n" not in item["rationale"]
+    assert item["rationaleFacts"][0]["kind"] == "term" and item["rationaleFacts"][0]["items"]
     for field in ("name", "processingLevel", "uploader", "lineageState", "verified",
                   "accessState", "bodyAccessible", "lastModifiedAt", "fileCount", "projects"):
         assert field in item, f"카탈로그 값 {field} 를 core 가 안 붙였다 — 카드가 안 그려진다."
@@ -256,7 +257,52 @@ def test_a_degraded_interpretation_still_searches(p2_client, fake_ai) -> None:
     body = r.json()
     assert body["degraded"] is True and body["degradedReason"]
     assert len(body["items"]) == 2
-    assert all("질의 해석 없이" in i["rationale"] for i in body["items"])
+    # 「질의 해석 없이」는 카드 근거가 아니라 응답 머리(`degraded`)가 한 번 말한다
+    # (intent `2026-09-25-search-rationale-separation.md` Q8 · ⑤).
+    assert all("질의 해석 없이" not in i["rationale"] for i in body["items"])
+
+
+@pytest.mark.parametrize("source", ["literal", None])
+def test_an_interpretation_not_from_the_model_is_degraded_even_if_ai_says_not(
+        p2_client, fake_ai, source) -> None:
+    """**헤더 안내 조건 = 해석 `source != "llm"` 또는 ai-service `degraded`(합집합)** — intent ⑤·⒞.
+
+    카드 근거에서 「질의 해석 없이…」를 뺐으므로, 저쪽이 `degraded: false` 로 답해도 해석이
+    모델에서 오지 않았으면 응답 `degraded` 가 그 사실을 싣는다. 사실이 화면에서 사라지지 않는다."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source=source, degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["degraded"] is True and r.json()["items"]
+
+
+def test_a_model_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="llm", degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200 and r.json()["degraded"] is False
+
+
+def test_topic_is_said_once_in_the_response_not_on_each_card(p2_client, fake_ai, sql) -> None:
+    """주제로 좁혔으면 응답 최상위 `topic` 이 한 번 말하고 카드 근거는 반복하지 않는다 (Q8)."""
+    from conftest import LAB_A
+    sql("UPDATE d3_dataset_description SET topic='강우·강수' WHERE dataset_id IN (:a,:b)", {"a": DS_A1, "b": DS_A2})
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, topic="강우·강수")
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    body = r.json()
+    assert r.status_code == 200 and body["topic"] == "강우·강수" and body["items"]
+    assert all("좁혀 뒤졌어요" not in i["rationale"] for i in body["items"])
+
+
+def test_no_topic_means_no_topic_field(p2_client, fake_ai) -> None:
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, topic=None)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200 and "topic" not in r.json()
 
 
 def test_an_unreadable_answer_is_not_a_zero_hit_result(p2_client, fake_ai) -> None:

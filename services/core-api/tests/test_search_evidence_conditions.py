@@ -1,4 +1,4 @@
-from colab_core.app.search_evidence_conditions import assess, candidates, explain, parse
+from colab_core.app.search_evidence_conditions import assess, candidates, parse, supported_facts
 
 
 def record(file='f1', dataset='d1', **facts):
@@ -29,8 +29,11 @@ def test_native_resolution_mismatch_is_related_not_silently_removed():
     criteria = parse('100m로 직접 관측한 월평균 NDVI')
     assert assess(criteria, rows[0]['facts'])['직접 관측'][0] == 'contradicted'
     assert candidates(criteria, rows, {'d1': {'f1'}})[1] == []
-    line = explain('기존 근거.', criteria, rows)
-    assert '불일치' in line and '처리 설명서' in line and '\n' not in line
+    # 카드 근거는 확인된 조건만 싣는다 — 불일치·미확인 조건은 근거 항목이 되지 않는다
+    # (intent `2026-09-25-search-rationale-separation.md` Q6).
+    facts = supported_facts(criteria, rows)
+    assert facts and all('처리 설명서' in f and '\n' not in f for f in facts)
+    assert not [f for f in facts if '불일치' in f or '미확인' in f or '직접 관측' in f]
 
 
 def test_unknown_subject_cannot_expand_by_date_alone():
@@ -47,7 +50,8 @@ def test_alternative_roles_and_explicit_exclusion_are_distinguished():
 def test_source_text_cannot_insert_line_breaks_into_rationale():
     r=record(cadence='monthly')
     r['source']['label']='문서\n이름'; r['file_name']='파일\r이름'
-    assert '\n' not in explain('기존 근거.', parse('월평균 NDVI'), [r])
+    facts = supported_facts(parse('월평균 NDVI'), [r])
+    assert facts and all('\n' not in f and '\r' not in f for f in facts)
 
 
 def test_unknown_region_is_not_declared_geographically_disjoint():
