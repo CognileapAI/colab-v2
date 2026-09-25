@@ -197,6 +197,8 @@ jobs:
           set -euo pipefail
           python3 -m venv services/core-api/.venv
           services/core-api/.venv/bin/python -m pip install --disable-pip-version-check "$(grep -E '^PyYAML==' gates/requirements.txt)"
+          # setup-python 이 PATH 의 python3 를 바꾼다 — 그 python3 로 yaml 을 여는 게이트(seam-consistency 등)도 같은 고정본을 받는다.
+          python3 -m pip install --disable-pip-version-check "$(grep -E '^PyYAML==' gates/requirements.txt)"
       # 도구는 lock 파일이 **정확히** 고정한다. 캐시 키도 그 lock 의 해시다 —
       # lock 이 한 글자라도 바뀌면 키가 바뀌어 낡은 도구가 재사용될 수 없다.
       # (게이트 스크립트는 캐시 적중 여부와 무관하게 도구 부재를 red 로 낸다. 캐시는 속도만 바꾼다.)
