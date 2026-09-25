@@ -339,7 +339,7 @@ describe('FP-1 관성 갱신 함수는 멱등이다 — StrictMode(DEV 이중 �
 /* ═══ A30 — 놓은 속도가 스프링으로 인계된다 ═════════════════════════════════════ */
 
 describe('A30 속도 인계 — 첫 프레임 = spring(놓은 자리, 목표, v, t)', () => {
-  it('16ms 마다 1px 씩 끌고 놓은 뒤 첫 프레임(16ms)의 자리가 놓은 속도 인계 값이다', async () => {
+  it('16ms 간격으로 11 · 1 · 1px 끌고 놓은 뒤 첫 프레임(16ms)의 자리가 놓은 속도 인계 값이다', async () => {
     const { viewport, layers } = await mountDetail();
     fakeClock();
     fireEvent.pointerDown(viewport, { pointerId: 1, clientX: 300, clientY: 300, button: 0 });

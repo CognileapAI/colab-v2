@@ -22,7 +22,8 @@
     "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
     "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector).",
     "gnb-more has widths 375/768 only: .gnb-more is visible at <= 900px.",
-    "primitives (P5 · spec S-DESIGN-STRUCTURE-P5-20260924) is the primitive gallery: static markup of primitives.css classes only, no GNB (STANDALONE in audit-design.tsx), no product components."
+    "primitives (P5 · spec S-DESIGN-STRUCTURE-P5-20260924) is the primitive gallery: static markup of primitives.css classes only, no GNB (STANDALONE in audit-design.tsx), no product components.",
+    "upload-register-ok (spec S-DESIGN-FIX-FOLLOWUPS-20260925 Q4) is audit-upload.html?register=ok: register/attach succeed locally and the modal is opened by the real parents UploadEntry and GridAttachEntry (useUploadModalPresence). Without the query audit-upload.html is unchanged."
   ],
   "scenes": [
     {
@@ -879,6 +880,37 @@
         },
         {
           "scrollIntoView": ".up-steps"
+        }
+      ],
+      "settleMs": 800,
+      "account": {
+        "upload": true,
+        "labSettings": false,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload-register-ok",
+      "entry": "audit-upload.html",
+      "query": {
+        "register": "ok"
+      },
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "click": "[data-testid=gnb-upload]"
+        },
+        {
+          "waitFor": "[data-testid=upload-modal]"
         }
       ],
       "settleMs": 800,

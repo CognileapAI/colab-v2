@@ -94,6 +94,8 @@ export function PreviewPanel(props: {
   /** ㈎ 확장보기가 열려 있나 (R-A′ 이관). 닫는 길은 `closeExpand` 하나다 — 갈래를 만들지 않는다. */
   const [expanded, setExpanded] = useState(false);
   const [palettes, setPalettes] = useState<PaletteOption[] | null>(null);
+  /** design-fix 후속 20260925 Q8a — 팔레트 「다시 시도」 회차(아래 `loadAttempt` 와 같은 모양). */
+  const [paletteAttempt, setPaletteAttempt] = useState(0);
   const [palette, setPalette] = useState('');
   const [classCount, setClassCount] = useState(DEFAULT_CLASS_COUNT);
   const [job, setJob] = useState<RenderJob | null>(null);
@@ -160,6 +162,8 @@ export function PreviewPanel(props: {
         if (!alive) return;
         setPalettes(list);
         setPalette((cur) => cur || list[0]?.palette || '');
+        // design-fix 후속 20260925 Q2f — 0개는 그릴 수 없으므로 조회 실패와 같은 오류 상태다(안내가 아니다).
+        if (list.length === 0) setError(UNAVAILABLE);
       })
       .catch(() => {
         if (!alive) return;
@@ -171,7 +175,7 @@ export function PreviewPanel(props: {
     return () => {
       alive = false;
     };
-  }, [source]);
+  }, [source, paletteAttempt]);
 
   useEffect(
     () => () => {
@@ -466,7 +470,7 @@ export function PreviewPanel(props: {
             /* ⭑ ⟨design-fix 20260924 · F-ci⟩ 팔레트가 오기 전에는 누를 수 없다. 전에는 눌러도
                `draw()` 첫 줄에서 **조용히** 버려져 사용자 클릭이 사라졌다(PR #141 CI idle 경합).
                팔레트를 못 받으면(오류·빈 목록) 비활성인 채로 남되, 이유는 기존 자리가 말한다 —
-               오류는 `up-preview-error`(UNAVAILABLE), 빈 목록은 `up-palette-issue`. */
+               오류·빈 목록은 `up-preview-error`(UNAVAILABLE ＋ 「다시 시도」 · 후속 20260925 Q2f · Q8a). */
             disabled={!palette}
             onClick={() => void draw(false)}
           >
@@ -516,7 +520,8 @@ export function PreviewPanel(props: {
         </button>
       </div>
 
-      {palettes !== null && palettes.length !== 3 ? (
+      {/* design-fix 후속 20260925 Q2f — 받은 목록을 표시한다는 안내는 받은 것이 있을 때만(1개 이상 · 3개 아님). */}
+      {palettes !== null && palettes.length > 0 && palettes.length !== 3 ? (
         <p className="pv-failure" role="alert" data-testid="up-palette-issue">
           팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
         </p>
@@ -589,6 +594,22 @@ export function PreviewPanel(props: {
         <div className="vizerr" role="alert" aria-live="assertive" data-testid="up-preview-error">
           {failure?.message ?? error ?? UNAVAILABLE}
         </div>
+      )}
+      {/* design-fix 후속 20260925 Q8a · 우려 4 ⓐ — 팔레트 조회 실패 · 0개일 때만 오류 문장 옆에 「다시 시도」
+          (문구·크기 = `SearchEvidenceEditor` 선례). `error` 는 그리기와 함께 쓰므로 표시는 팔레트 상태로만 정한다 —
+          그리기는 팔레트가 있어야 시작되므로 그리기 실패 때 `palettes` 는 1개 이상이다. */}
+      {error && palettes?.length === 0 && (
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => {
+            setError(null);
+            setPalettes(null);
+            setPaletteAttempt((n) => n + 1);
+          }}
+        >
+          다시 시도
+        </button>
       )}
 
       {/* 부분 실패는 실패가 아니다 — 읽힌 조각으로 그리고 안내만 붙인다 (§9) */}

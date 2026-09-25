@@ -223,7 +223,8 @@ describe('#10 `.btn-strong:hover`', () => {
 // ═══ WU-A4 — 업로드 `:active` (값 17) ══════════════════════════════════════════
 describe('WU-A4 업로드 누름 피드백', () => {
   const cases: [string, string, string][] = [
-    ['.btn-strong:active', 'background', 'var(--color-primary-700)'],
+    // design-fix 후속 20260925 Q3a — 파란 채움 누름 = hover(primary-700)보다 한 단 진한 primary-800.
+    ['.btn-strong:active', 'background', 'var(--color-primary-800)'],
     // design-fix 20260924 F-final · A21 — hover 가 surface-hover 인 누름 자리 = 값 19.
     ['.dr-nav button:active', 'background', 'var(--color-surface-pressed)'],
     ['.dr-cal-d:active', 'background', 'var(--color-primary-200)'],

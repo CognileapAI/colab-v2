@@ -3,7 +3,8 @@
    **둘 이상 화면이 쓰는 이름만 여기 둔다. 한 화면(한 컴포넌트)만 쓰는 이름은 그 화면 루트 클래스 범위에 둔다**
    (대안 B · spec `S-DESIGN-STRUCTURE-P1-20260924`). 화면 CSS 에 `:root`·`@import` 를 다시 만들지 않는다 —
    게이트 `frontend-design-lint` 가 정본 밖 `:root` 정의 · 미정의 참조 · 다크 누락 · 화면 `:root`/`@import` 를 잰다.
-   구조: 라이트 `:root` 한 블록(원시 눈금 → 의미 토큰) → 900px 분기 → 다크 `[data-theme="dark"]` 한 블록 → 640px 분기.
+   구조: 라이트 `:root` 한 블록(원시 눈금 → 의미 토큰) → 900px 분기 → 다크 `[data-theme="dark"]` 한 블록 → 640px 분기 →
+   터치가 주 입력인 기기 `(pointer: coarse)` 분기(`--control-height` 만 · 여백 토큰 불변 · design-fix 후속 20260925 Q3c).
    미디어 분기는 **반드시 기본 `:root` 뒤에** 둔다 — 특이도가 (0,1,0)으로 같아 순서가 이긴다.
    다크에 두지 않는 색 이름은 `gates/fixtures/frontend-design-lint/same-in-dark.txt` 에 사유와 함께 적는다.
    ※ 2026-09-12 승인 intent 의 공통 디자인 기준(종전 `[data-design="calm"]` 블록)을 기본 `:root` 로 합쳤다 — 제품은
@@ -192,6 +193,11 @@
     --space-page: 16px;
     --space-card: 20px;
     --space-section: 20px;
+    --control-height: 44px;
+  }
+}
+@media (pointer: coarse) {
+  :root {
     --control-height: 44px;
   }
 }

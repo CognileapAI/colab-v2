@@ -246,7 +246,7 @@ body {
   transition: background var(--ease);
 }
 .gnb-upload:hover { background: var(--color-primary-700); }
-.gnb-upload:active { background: var(--color-primary-700); }
+.gnb-upload:active { background: var(--color-primary-800); } /* 파란 채움 누름 = primary-800(design-fix 후속 20260925 Q3a) */
 
 .avatar-wrap { position: relative; }
 /* 사용자 표기 = **표시**다 (⟨개정 2026-09-13 · `D-5`⟩ · `.labswitch` 와 같은 이유).

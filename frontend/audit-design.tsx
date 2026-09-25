@@ -229,6 +229,11 @@ function PrimitivesGallery() {
     </section>
   </main>;
 }
+// design-fix 후속 20260925 Q7c · 우려 3 ⓐ — `?mismatch=1` 일 때만 첫 행에 처리 수준 불일치 표식(「불일치」)을 단다.
+// 1회 계측용 최소 자료다. 질의가 없으면 `undefined` → 기본 `FIXTURE_ROWS` 그대로(캡처 장면 불변).
+const mismatchRows = previewParams.get('mismatch') === '1'
+  ? FIXTURE_ROWS.map((row, i) => (i === 0 ? {...row, processingLevelMismatch: true} : row))
+  : undefined;
 function Scene() {
   const [open, setOpen] = useState(true);
   const close = () => setOpen(false);
@@ -250,7 +255,7 @@ function Scene() {
   if (scene === 'access' || scene === 'pending') return <main className="detail-page" data-screen="S-05"><h1>잠긴 데이터셋</h1><AccessRequestPanel datasetId="fixture" canRequestAccess accessRequestPending={scene === 'pending'} source={approval} /></main>;
   if (scene === 'approval' || scene === 'approval-dialog') return <main className="detail-page" data-screen="S-05"><h1>승인된 데이터셋</h1><VerificationAction detail={{...Object.values(FIXTURE_DETAILS)[0]!, actions: {...Object.values(FIXTURE_DETAILS)[0]!.actions, canRequestVerification:false, canApproveVerification:false, canCancelVerification:true}}} source={approval} /></main>;
   if (scene === 'detail') return <Routes><Route path="/datasets/:datasetId" element={<DatasetDetailPage source={fixtureDetailSource()} lineageSource={fixtureLineageSource()} />} /></Routes>;
-  return <Routes><Route path="/datasets" element={<DatasetsPage source={fixtureCatalogSource()} />} /><Route path="/datasets/:datasetId" element={<main data-screen="fixture-detail"><h1>데이터셋 상세 진입 확인</h1></main>} /></Routes>;
+  return <Routes><Route path="/datasets" element={<DatasetsPage source={fixtureCatalogSource(mismatchRows)} />} /><Route path="/datasets/:datasetId" element={<main data-screen="fixture-detail"><h1>데이터셋 상세 진입 확인</h1></main>} /></Routes>;
 }
 // 계정 플래그 — `scripts/visual-baseline/scenes.json` 이 장면마다 `upload`·`labSettings`·`operator` 를 고정한다.
 // 값이 없으면 종전 기본값(업로드 = full 또는 detail · 연구실 설정 켬 · 운영자 아님)을 쓴다.

@@ -62,6 +62,12 @@
   cursor: pointer;
 }
 
+/* 비활성 = 단추 프리미티브와 같은 두 값(design-fix 후속 20260925 Q1e) — 열 수 없을 때 `›` 가 남아도 흐리게 보인다. */
+.dash-section-label:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .dash-card {
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -311,6 +317,12 @@
   padding-inline: 8px;
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
+}
+
+/* 처리 중 비활성 = 단추 프리미티브와 같은 두 값(design-fix 후속 20260925 Q1e). */
+.titem button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .todo-more,

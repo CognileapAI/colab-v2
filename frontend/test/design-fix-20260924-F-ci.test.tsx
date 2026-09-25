@@ -121,12 +121,15 @@ describe('F-ci ④ 팔레트를 못 받으면 비활성이되 이유가 화면�
     expect(screen.getByTestId('up-preview-draw')).toBeDisabled();
   });
 
-  it('팔레트 목록이 비어 있으면 버튼은 비활성이고 기존 팔레트 안내가 선다', async () => {
+  // design-fix 후속 20260925 Q2f · Q8a — 0개는 조회 실패와 같은 오류 상태다. 안내 없이 `UNAVAILABLE` ＋ 「다시 시도」.
+  it('팔레트 목록이 비어 있으면 버튼은 비활성이고 기존 오류 문면과 「다시 시도」가 선다(안내 없음)', async () => {
     const src = source(async () => []);
     mount(src);
 
-    const issue = await screen.findByTestId('up-palette-issue');
-    expect(issue.textContent).toContain('팔레트 목록이 예상한 3종과 달라요.');
+    const err = await screen.findByTestId('up-preview-error');
+    expect(err.textContent).toBe('지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.');
+    expect(screen.queryByTestId('up-palette-issue')).toBeNull();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeTruthy();
     expect(screen.getByTestId('up-preview-draw')).toBeDisabled();
   });
 });

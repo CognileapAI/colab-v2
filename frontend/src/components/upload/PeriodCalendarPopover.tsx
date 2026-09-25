@@ -10,7 +10,7 @@
 //  - **Esc 는 이 층이 스스로 받는다**(⟨advisor ② · F2⟩). 열려 있는 동안
 //    `data-esc-layer="기간"` 표식을 달아 업로드 모달이 Esc 를 먹지 않게 하고, 그 Esc 로
 //    팝오버 하나만 닫는다 — 표식만 달고 Esc 를 안 받으면 Esc 가 무동작이 된다.
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ESC_LAYER_ATTR, useEscLayer } from './escLayer';
 import { GRANULARITIES, PARTS, partsFor, type PeriodParts } from './periodParts';
 
@@ -91,6 +91,13 @@ export function PeriodCalendarPopover(props: {
   const [shown, setShown] = useState(() => initialMonth(props.startParts));
   const { onClose } = props;
   useEscLayer(useCallback(() => onClose(), [onClose]));
+  // design-fix 후속 20260925 Q2d — 열 때 한 번, 본문을 스크롤해 팝오버 전체를 고정 단추줄 위에 보인다
+  //   (가장 가까운 위치 · 즉시). 단추줄 여백은 `.dr-pop` 의 `scroll-margin-bottom`(upload.css) 이 쥔다.
+  //   jsdom 에는 이 API 가 없어 optional call 이다(선례: 포인터 capture).
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    rootRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, []);
 
   const open = partsFor(unit);
   const openKeys = new Set(open.map((p) => p.key));
@@ -121,6 +128,7 @@ export function PeriodCalendarPopover(props: {
 
   return (
     <div
+      ref={rootRef}
       className="dr-pop"
       role="dialog"
       aria-label="기간 고르기"

@@ -173,8 +173,8 @@ describe('WU-A1 · 버튼 누름(값 14)', () => {
   it('plain · ghost · secondary 누름 = gray-100', () => {
     expect(decls(body(PRIM, '.btn:where(:not(.btn-primary)):active'))).toContain('background: var(--color-gray-100)');
   });
-  it('`.btn-primary:active` 는 그대로 primary-700', () => {
-    expect(decls(body(PRIM, '.btn-primary:active'))).toEqual(['background: var(--color-primary-700)']);
+  it('`.btn-primary:active` = primary-800(design-fix 후속 20260925 Q3a · hover 보다 한 단 진한 값)', () => {
+    expect(decls(body(PRIM, '.btn-primary:active'))).toEqual(['background: var(--color-primary-800)']);
   });
   it('primitives.css 에 `!important` 0', () => {
     expect(PRIM).not.toMatch(/!important/);
@@ -214,8 +214,10 @@ describe('#12 · `.btn-sm`(값 11)', () => {
       ].sort(),
     );
   });
-  it('640px 이하에서는 `--control-height` 하한', () => {
-    expect(decls(body(PRIM, '.btn-sm', '@media (max-width: 640px)'))).toContain('min-height: var(--control-height)');
+  it('640px 이하 또는 터치가 주 입력인 기기에서는 `--control-height` 하한(design-fix 후속 20260925 Q3c)', () => {
+    expect(decls(body(PRIM, '.btn-sm', '@media (max-width: 640px), (pointer: coarse)'))).toContain(
+      'min-height: var(--control-height)',
+    );
   });
 });
 
@@ -361,7 +363,7 @@ describe('WU-A2 · 셸 대화형 10종 누름(값 15)', () => {
     ['.project-detail .backlink:active', 'var(--color-gray-100)'],
     ['.mainnav a:active', 'var(--color-surface-pressed)'], // F-css A3 · A10 · 값 19
     ['.gnb-settings:active', 'var(--color-gray-100)'],
-    ['.gnb-upload:active', 'var(--color-primary-700)'],
+    ['.gnb-upload:active', 'var(--color-primary-800)'], // design-fix 후속 20260925 Q3a
     ['.gnb-more:active', 'var(--color-gray-100)'],
     ['.gnb-more-item:active', 'var(--color-gray-100)'],
     ['.gnb-logout:active', 'var(--color-gray-100)'],

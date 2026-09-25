@@ -14,6 +14,9 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
+  /* design-fix 후속 20260925 Q2b — 뒤판도 본체와 같은 시간·곡선으로 배경색만 전환한다(열기 = `@starting-style` 투명 →
+     기본 · 닫기 = closing 투명). 닫기 시간·JS 는 본체 그대로다. 동작 줄이기는 전역 reduced-motion 규칙이 끈다. */
+  transition: background-color 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 .modal.modal-takeover {
   width: 100%;
@@ -29,10 +32,11 @@
 }
 @starting-style {
   .modal.modal-takeover { transform: translateY(3%); opacity: 0; }
+  .modal-back.mb-takeover { background-color: transparent; }
 }
 .modal.modal-takeover[data-state="closing"] { transform: translateY(3%); opacity: 0; }
 /* 닫는 동안 배경은 누름을 통과시킨다 — 그 사이 업로드 단추를 다시 누르면 닫기가 되돌아간다(값 2). */
-.modal-back.mb-takeover[data-state="closing"] { pointer-events: none; }
+.modal-back.mb-takeover[data-state="closing"] { pointer-events: none; background-color: transparent; }
 
 .modal-takeover .modal-h {
   display: flex;
@@ -207,6 +211,8 @@
   padding: 6px 12px;
   cursor: pointer;
 }
+/* design-fix 후속 20260925 Q1e — 아직 갈 수 없는 단계는 흐리게 · 금지 커서(프리미티브 `.btn:disabled` 와 같은 두 값). */
+.regsteps button:disabled { opacity: 0.5; cursor: not-allowed; }
 .regsteps button.is-active { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-text); }
 .regsteps .cnt { margin-left: 6px; font-size:13px; }
 .regsteps .rs-f { margin-left: auto; color: var(--color-text-muted); font-size:13px; }
@@ -307,7 +313,8 @@ textarea.inp { resize: vertical; }
   align-items: center;
   justify-content: center;
 }
-.confirm-back .modal { background: var(--color-surface); border-radius: var(--radius-lg); max-width: 420px; width: 90%; }
+/* design-fix 후속 20260925 Q2a — 가운데 대화상자는 그림자 대신 1px border-strong(`.modal--dialog` 모양). 전역 `.modal` 불변. */
+.confirm-back .modal { background: var(--color-surface); border-radius: var(--radius-lg); max-width: 420px; width: 90%; box-shadow: none; border: 1px solid var(--color-border-strong); }
 .confirm-back .modal-h, .confirm-back .modal-b, .confirm-back .modal-f { padding: 16px 20px; }
 .confirm-back .modal-f { display: flex; justify-content: flex-end; gap: 8px; }
 
@@ -317,8 +324,9 @@ textarea.inp { resize: vertical; }
    1.05/1.10:1 이었다. primitives 층은 화면에 지므로 값은 여기 둔다. */
 /* design-fix 20260924 F-final — 비활성 단추는 hover 에서 뺀다(`:where()` 안 · 특이도 무변 · primitives `.btn-primary` 선례). */
 .btn-strong:where(:not(:disabled)):hover { background: var(--color-primary-700); }
-/* WU-A4 — 누름 = hover 의 한 단 진한 값(값 17). 파란 채움은 선례 `.btn-primary:active` 와 같이 primary-700. */
-.btn-strong:active { background: var(--color-primary-700); }
+/* WU-A4 — 누름 = hover 의 한 단 진한 값(값 17). design-fix 후속 20260925 Q3a — 파란 채움은 hover(primary-700)보다
+   한 단 진한 primary-800(`.btn-primary:active` · `.gnb-upload:active` 와 같다). */
+.btn-strong:active { background: var(--color-primary-800); }
 
 
 /* 격자 업로드 블록 (`S1-PLAN-REFOUND §E`) — 미리보기 패널 **안**에서 열린다.
@@ -421,7 +429,10 @@ textarea.inp { resize: vertical; }
   background: var(--color-surface); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.thumbrow .th-slot:hover { border-color: var(--color-primary-600); }
+/* design-fix 후속 20260925 Q1e — 고를 수 없는 칸은 hover 테두리를 받지 않고(`:where()` 안 · 특이도 무변 · 프리미티브 선례)
+   흐리게 · 금지 커서로 선다. */
+.thumbrow .th-slot:where(:not(:disabled)):hover { border-color: var(--color-primary-600); }
+.thumbrow .th-slot:disabled { opacity: 0.5; cursor: not-allowed; }
 .thumbrow .th-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .thumbrow .th-ph { width: 24px; height: 24px; border-radius: 4px; background: var(--color-border); }
 .thumbrow .th-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -496,7 +507,10 @@ textarea.inp { resize: vertical; }
 .dr-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:60;
   background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);
   box-shadow:var(--shadow-lg);padding:14px 16px 12px;width:576px;max-width:calc(100vw - 48px);
-  transform-origin:top left;transition:opacity var(--ease),transform var(--ease);}
+  transform-origin:top left;transition:opacity var(--ease),transform var(--ease);
+  /* design-fix 후속 20260925 Q2d · 우려 2 ⓐ — 열 때 스크롤(`PeriodCalendarPopover`)이 고정 단추줄 위까지 올린다.
+     값은 등록 본문 아래 여백(88px · 아래 `[data-scene="register"] .up-body`)과 같다 — 단추줄 높이가 바뀌면 함께 고친다. */
+  scroll-margin-bottom:88px;}
 /* design-review 20260924 #2 — 여는 전환(값 3). 칸 아래 왼쪽 정렬 자리에서 커진다(기준점 = 칸 쪽).
    닫기는 지금처럼 즉시다(판정 문구가 「여는 전환」만 말한다). 전역 reduced-motion 규칙이 전환을 끈다. */
 @starting-style{.dr-pop{opacity:0;transform:scale(0.96);}}
@@ -557,8 +571,10 @@ textarea.inp { resize: vertical; }
    `max-width:min(96vw,1100px)` · `height:min(70vh,640px)`). 그 인라인 값을 클래스로 옮긴다. */
 .modal-back.pvx-back{position:fixed;inset:0;z-index:250;background:var(--color-overlay);
   display:flex;align-items:center;justify-content:center;padding:16px;}
+/* design-fix 후속 20260925 Q2a — 그림자 0 ＋ 1px border-strong(닫기 확인창과 같은 모양). */
 .modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background: var(--color-surface);
-  border-radius:var(--radius-lg);display:flex;flex-direction:column;overflow:hidden;}
+  border-radius:var(--radius-lg);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:none;border:1px solid var(--color-border-strong);}
 /* ⭑ ⟨R-BUGFIX-260912 `#28`⟩ 방향 미선언이라 기본 `row` 가 걸렸고, 고르개 줄·진행 표시·
    그림·확대 줄이 가로로 늘어서며 확대 줄 버튼 글자가 세로로 접혔다. 세로로 쌓는다.
    본문 높이(`min(70vh,640px)`)는 그대로 둔다 — 늘어난 줄만큼 그림 자리가 줄어든다(우려 1 ⓐ). */
