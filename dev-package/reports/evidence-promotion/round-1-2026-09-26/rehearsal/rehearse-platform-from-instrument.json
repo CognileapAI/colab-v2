@@ -1,0 +1,17 @@
+{
+ "rule": "platform-from-instrument",
+ "promoted_facts": 26,
+ "datasets": 26,
+ "files": 541,
+ "bodies": 541,
+ "unchanged": 0,
+ "reviewed_facts_before": 2071,
+ "reviewed_facts_kept": 2071,
+ "promoted_added": 541,
+ "collisions": [],
+ "dropped": [],
+ "not_reviewed": 0,
+ "ok": true,
+ "contract_validated": 541,
+ "sent": 0
+}

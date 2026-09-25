@@ -1,0 +1,17 @@
+{
+ "rule": "representation-from-shape",
+ "promoted_facts": 28,
+ "datasets": 28,
+ "files": 543,
+ "bodies": 543,
+ "unchanged": 0,
+ "reviewed_facts_before": 2083,
+ "reviewed_facts_kept": 2083,
+ "promoted_added": 543,
+ "collisions": [],
+ "dropped": [],
+ "not_reviewed": 0,
+ "ok": true,
+ "contract_validated": 543,
+ "sent": 0
+}

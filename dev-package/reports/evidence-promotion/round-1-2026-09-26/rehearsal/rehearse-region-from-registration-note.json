@@ -1,0 +1,17 @@
+{
+ "rule": "region-from-registration-note",
+ "promoted_facts": 1,
+ "datasets": 1,
+ "files": 72,
+ "bodies": 72,
+ "unchanged": 0,
+ "reviewed_facts_before": 216,
+ "reviewed_facts_kept": 216,
+ "promoted_added": 72,
+ "collisions": [],
+ "dropped": [],
+ "not_reviewed": 0,
+ "ok": true,
+ "contract_validated": 72,
+ "sent": 0
+}
