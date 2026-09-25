@@ -107,20 +107,31 @@ def _search(session_factory, conditions):
     return sorted(by_id[row["dataset_id"]] for row in rows if row["dataset_id"] in by_id)
 
 
+#: probe 가 없는 두 등급. `blocked` 는 구조적 불가(자료·성분 부재)이고 `blocked_draft` 는
+#: 규칙 추론값이 초안이라 이번 회차에 판정하지 않는 것이다(2026-09-21 Ted 결정 1).
+NO_CLAIM_MODES = ("blocked", "blocked_draft")
+
 CASES = {case["id"]: case for case in ORACLE["cases"]}
-ASSERTABLE = [case["id"] for case in ORACLE["cases"] if case["mode"] != "blocked"]
-BLOCKED = [case["id"] for case in ORACLE["cases"] if case["mode"] == "blocked"]
+ASSERTABLE = [case["id"] for case in ORACLE["cases"] if case["mode"] not in NO_CLAIM_MODES]
+BLOCKED = [case["id"] for case in ORACLE["cases"] if case["mode"] in NO_CLAIM_MODES]
 
 
 def test_oracle_shape_is_the_one_ted_approved():
-    """가능 8 · 부분 3 · blocked 3 — Ted 결정 6 의 집계다. 수가 바뀌면 판정이 바뀐 것이다."""
+    """2회차 집계 — 가능 3 · 부분 5 · blocked 3 · blocked_draft 3.
+
+    1회차는 가능 8 · 부분 3 · blocked 3 이었다. 줄어든 자리는 **규칙 추론값을 초안으로 내린
+    것**이다(Ted 결정 1). platform·directObservation 으로 서 있던 probe 는 조건 검색이
+    reviewed 만 읽으므로 판정이 서지 않는다 — green 을 주장하지 않고 등급으로 드러낸다.
+    수가 바뀌면 판정이 바뀐 것이다.
+    """
     modes = [case["mode"] for case in ORACLE["cases"]]
     assert len(modes) == 14
-    assert modes.count("full") == 8
-    assert modes.count("partial") == 3
+    assert modes.count("full") == 3
+    assert modes.count("partial") == 5
     assert modes.count("blocked") == 3
+    assert modes.count("blocked_draft") == 3
     for case in ORACLE["cases"]:
-        if case["mode"] == "blocked":
+        if case["mode"] in NO_CLAIM_MODES:
             assert case["probes"] == [] and case["reason"].strip()
         else:
             assert case["probes"], f"{case['id']} 에 probe 가 없다 — 판정할 것이 없는 사례다"
@@ -128,10 +139,51 @@ def test_oracle_shape_is_the_one_ted_approved():
 
 @pytest.mark.parametrize("case_id", BLOCKED)
 def test_blocked_cases_claim_nothing(case_id):
-    """구조적 불가 3건은 green 을 주장하지 않는다. 이유만 기록된다."""
+    """판정이 서지 않는 6건은 green 을 주장하지 않는다. 이유만 기록된다."""
     case = CASES[case_id]
-    assert case["mode"] == "blocked"
+    assert case["mode"] in NO_CLAIM_MODES
     assert case["expectedCount"] is None
+
+
+def test_rule_inferred_facts_are_never_loaded_as_reviewed():
+    """규칙 추론값은 reviewed 사실에 섞이지 않는다 — 초안은 DB 에 실리지 않는다(결정 1).
+
+    `d3_search_evidence` 는 `file_id` 가 PK 이고 `status` 가 행 단위라 한 파일이 reviewed 와
+    draft 를 함께 가질 수 없다. 그래서 적용기는 `draftFacts` 를 쓰지 않는다. 이 시험은 생성물이
+    그 경계를 지키고 있는지, 초안마다 `rule:<ID>` locator 가 남아 있는지를 본다.
+    """
+    if not PAYLOAD_PATH.exists():
+        pytest.skip("생성물이 없다 — 적재 전 red 의 자리다")
+    payloads = json.loads(PAYLOAD_PATH.read_text(encoding="utf-8"))
+    rules = set(payloads["rules"])
+    drafted = 0
+    for row in payloads["datasets"]:
+        assert row["status"] == "reviewed"
+        for key in row["draftFacts"]:
+            assert key not in row["facts"], f"{row['name']}: 규칙값 {key} 가 reviewed 에 섞였다"
+            locator = row["draftProvenance"][key]
+            assert "rule:" in locator, f"{row['name']}: 초안 {key} 에 규칙 ID 가 없다"
+            assert locator.split("rule:", 1)[1].split(" ", 1)[0] in rules
+            drafted += 1
+        for key, note in row["provenance"].items():
+            assert note.startswith("정본전재"), f"{row['name']}: {key} 가 정본전재가 아니다"
+    assert drafted == sum(payloads["ruleSummary"].values())
+
+
+def test_bbox_auxiliary_rule_only_speaks_inside_the_peninsula():
+    """보조 규칙은 한반도 상자 안에 **온전히** 들어갈 때만 말한다(Ted 결정 2 — 보조)."""
+    if str(TOOLS) not in sys.path:
+        sys.path.insert(0, str(TOOLS))
+    from dataset_evidence_backfill import region_from_bbox  # noqa: PLC0415
+
+    assert region_from_bbox({"west": 126.0, "south": 34.0,
+                             "east": 129.0, "north": 38.0}) == "한반도"
+    assert region_from_bbox({"west": 126.0, "south": 34.0,
+                             "east": 140.0, "north": 38.0}) is None  # 상자 밖으로 새어 나간다
+    assert region_from_bbox({"west": -180.0, "south": -90.0,
+                             "east": 180.0, "north": 90.0}) is None  # 전지구
+    assert region_from_bbox(None) is None                            # 없는 것은 말하지 않는다
+    assert region_from_bbox({"west": 126.0, "south": 34.0}) is None  # 반쪽 상자
 
 
 @pytest.mark.parametrize("case_id", ASSERTABLE)

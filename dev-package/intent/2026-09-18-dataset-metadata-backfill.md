@@ -202,3 +202,103 @@ psql "$COLAB_DEV_DB_URL" -c "DELETE FROM d3_search_evidence e WHERE NOT EXISTS (
   `dev-package/reports/reference-data/datasets-md/**/DATASETS.md`
 - 계약: `contracts/seams/fe-core.yaml` `SearchEvidenceFacts` · `contracts/schemas/knowledge-lifecycle.json`
 - spec: 미작성.
+
+---
+
+# 2회차 (2026-09-21)
+
+⭑ **위 절들은 1회차 기록이다. 한 글자도 고치지 않았다.** 이 절이 2회차에 바뀐 것만 적는다.
+
+## 사용자 판정 (2026-09-21 · Ted · 축자)
+
+> 1. 다 초안으로 넣는다. 실제로 얼마나 히트했냐를 측정하고 이에 따라 승격 또는 폐기하는 구조를
+>    가져야한다. (온톨로지를 만들때 이를 검토하는 형태)
+
+> 2. 가를 넣고, 보조하는 용도로 나를 해야하지 않을까?
+
+> 3. 가 권고대로
+
+- **결정 1** = 1회차 미해결의 마지막 줄(규칙 추론 필드)에 대한 판정. 규칙 추론값은 전부 **초안**이다.
+- **결정 2** = 지역 문면(1회차 후속 7번). ㈎ 정본 문면으로 지명을 세우고 ㈏ bbox 로 **보조** 검증한다.
+- **결정 3** = cadence 의 빈칸(1회차 후속 6번). ㈎ `5min`·`10min`·`yearly` 를 연다.
+
+## 무엇이 바뀌었나
+
+### ① 규칙 추론값 → 초안 (결정 1)
+
+`platform`·`representation`·`directObservation`·`interpolated` 와 규칙으로 이어받은
+`nativeResolutionM`(seq 3)·`region`(seq 16) — 110칸이 `draftFacts` 로 갈라졌다.
+
+⚠ **초안 행을 따로 쓰지 못한다.** `d3_search_evidence` 는 `file_id` 가 PRIMARY KEY 이고
+`status` 가 **행 단위**다(`db/platform/schema.sql:813`). 한 파일이 reviewed 사실과 draft 사실을
+동시에 가질 수 없고, 행을 통째로 `draft` 로 내리면 **정본 전재 사실까지** 조건 검색에서 사라진다.
+그래서 초안은 `rule:<규칙ID>` locator 를 단 채 **생성물에만** 남고 적용기는 `draft_withheld` 로
+칸 수만 보고한다. 이 제약은 1회차가 열어 둔 자리가 아니라 표 구조가 정한 것이다.
+
+승격·폐기 **구조 자체는 이 회차가 만들지 않는다**(별도 intent — 조사자가 초안 작성 중).
+이 회차가 남기는 것은 그 구조가 찾아올 자리와 셈뿐이다:
+`dev-package/tools/generated/dataset-evidence-payloads-rule-summary.json` 과 생성기 stdout 의
+규칙별 셈 — platform 26 · representation 28 · directObservation 26 · interpolated 28 ·
+native-resolution-carried 1 · region-from-registration-note 1 · bbox-korea-peninsula 0.
+
+**오라클이 그만큼 green 주장을 거둔다.** 1회차 가능 8 · 부분 3 · blocked 3 →
+2회차 **가능 3 · 부분 5 · blocked 3 · blocked_draft 3**. 새 등급 `blocked_draft` 의 사유 문구는
+「규칙 추론값은 초안 — 사람 확인 후 승격」이다. pytest 는 그 등급을 blocked 과 같은 자리에서
+「green 을 주장하지 않는다」로 검사한다(`test_blocked_cases_claim_nothing`) — 초안 사실 위에
+서 있던 probe 8개는 **삭제가 아니라 등급으로** 드러난다. 승격되면 그대로 되살아난다.
+
+### ② 지역 — 후보표만 (결정 2)
+
+**정본 `DATASETS.md` 4건을 고치지 않았다.** 대신 Ted 확인용 후보표를 만들었다 —
+`dev-package/reports/practitioner-place-candidates-260921.md`(28행). 후보가 선 행은 **8행**
+(직접 3 = seq 7·13·14 · 간접 5 = 기관 문면뿐인 seq 1·2·6·19·20)이고 나머지 20행은 「?」다.
+
+보조(㈏)는 생성기의 `region_from_bbox` 로 구현했다 — bbox 가 한반도 상자(위도 33~39 ·
+경도 124~132) 안에 **온전히** 들어갈 때만 `rule:bbox-korea-peninsula` 초안 `region` 을 만든다.
+보조이므로 값이 서도 초안이고 reviewed `region` 은 정본 문면에서만 온다.
+⭑ **지금 만든 초안이 0건이다** — `d3_dataset_grid_profile` 에도 `canonical-metadata.json` 에도
+bbox 가 0건이다. 규칙은 서 있고 먹일 값이 없다.
+
+### ③ cadence 3값 (결정 3)
+
+`5min`·`10min`·`yearly` 를 `hourly`(1회차 `cade1f40`)와 **같은 방식**으로 열었다 —
+계약 ＋ 생성물 3종 재생성 ＋ 서버 검증 ＋ 자연어 해석 ＋ 근거 문면 표 ＋ 편집기 선택지.
+값은 정본 축자로만 채웠다 — seq 1 「시/공간해상도 5분 / 0.5 km」 · seq 17 「10분 간격으로 담은」 ·
+seq 11 「연 단위 100 m 토지피복지도」. `contract-breaking` error 0 · warning 12(enum value added).
+
+seq 19·20(HSR 합성)과 seq 18(LST 변환 결과)은 **정본이 주기를 말하지 않아 비웠다** —
+같은 계열이라고 부모의 주기를 자식에 적지 않는다(`PLAN-SoT §9-㊴-②`).
+
+## 2회차 완료 정의와 실측
+
+1. 규칙 추론값이 `reviewed` 로 실리지 않는다. ⭑ 실측 — reviewed 123칸 · draft 110칸.
+   `test_rule_inferred_facts_are_never_loaded_as_reviewed` 가 생성물에서 그 경계를 검사한다.
+2. 초안마다 `rule:<ID>` locator 가 남는다. ⭑ 같은 시험이 검사한다. 규칙별 셈이 JSON 으로 나간다.
+3. 보조 bbox 규칙이 한반도 상자 안일 때만 말한다. ⭑ `test_bbox_auxiliary_rule_only_speaks_inside_the_peninsula`.
+4. cadence 3값이 계약·생성물·서버·편집기에 같은 커밋으로 들어간다. ⭑ `generated-up-to-date` green.
+5. 오라클이 초안 위에서 green 을 주장하지 않는다. ⭑ 17 passed · blocked_draft 3.
+6. 전/후가 수치로 기록된다. ⭑ `eval/k4-search/README.md` 「2026-09-21 재측정」 절.
+7. 정본과 DEV 를 고치지 않는다. ⭑ `DATASETS.md` 무변경 · DEV 제품 DB 에 쓴 것 0건.
+
+## 2회차가 남기는 의문
+
+- **승격 구조가 없는 동안 조건 검색은 좁아졌다.** platform·directObservation 축이 0건이 되었고
+  그것은 사용자가 보기에 **후퇴**다. 「초안을 쓰지 않는 것」과 「검색이 되는 것」을 함께 만족시키려면
+  승격 단계가 서야 한다 — 그 intent 가 언제 서는지가 이 회차 밖의 의존이다.
+- **초안을 DB 에 둘 자리가 없다.** 지금 초안은 생성물 파일에만 있어 「얼마나 히트했냐」를 잴
+  대상이 제품 DB 에 존재하지 않는다. 승격 구조는 아마 `d3_search_evidence` 밖의 자리
+  (파일 단위 PK 가 아닌 표)를 필요로 한다 — 그 설계는 이 회차가 하지 않았다.
+- **지역 후보 8/28 중 5건이 「기관 이름」 근거다.** 기상청 = 남한, GK-2A = 한반도/동아시아 —
+  둘 다 정본이 말하지 않는다. 승격해도 초안 등급이 맞는지 Ted 판정이 필요하다.
+- **bbox 가 어디에도 없다.** 보조 규칙은 죽은 채로 서 있다. DEV 의 `d3_dataset_grid_profile` 을
+  이 회차에서도 직접 질의하지 않았다(결정 5 ㈎ 유지) — DEV 에 값이 있으면 후보표를 다시 채워야 한다.
+- `schema-diff` 의 블로커 72 는 이번 회차도 DB 객체를 하나도 만들지 않았다는 사실과 무관하다.
+
+## 2회차 커밋
+
+| | 제목 |
+|---|---|
+| C1 | cadence 에 5min·10min·yearly 를 더해 정본이 말하는 주기를 적을 수 있게 한다 |
+| C2 | 규칙 추론값을 초안으로 내리고 오라클에서 그만큼 green 주장을 거둔다 |
+| C3 | 정본을 고치지 않고 28건의 지역 후보표를 Ted 확인용으로 남긴다 |
+| C4 | 2회차 재측정을 기록하고 intent 에 결정 3건을 축자로 남긴다 |

@@ -3,7 +3,7 @@
   "generated": {
     "by": "dev-package/tools/dataset_evidence_backfill.py",
     "note": "생성물 — 손으로 고치지 않는다. 값을 바꾸려면 정본을 고치고 다시 돌린다.",
-    "at": "2026-09-18"
+    "at": "2026-09-21"
   },
   "sourceHashes": {
     "dev-package/tools/dev-seed/canonical-metadata.json": "2edf26d663fff09c6e660a2388e064e55ad6dd1984ef6f60c7efa358da078789",
@@ -19,8 +19,19 @@
     "direct-observation-from-level": "정본의 Lv 과 계보로 가른다 — 관측계열 원자료와 그 좌표변환·평균 산출물=true · 재분석·예측·지수=false.",
     "interpolated-from-lineage": "정본 설명이 좌표변환·crop·재격자·평균을 말하면 true, 「재격자 없이 원자료 격자 위에 그대로」면 false.",
     "native-resolution-carried": "좌표변환·crop 만 한 산출물은 부모의 원 관측 해상도를 잇는다(재격자화 크기가 아니다 — semantics.json invariants 축자).",
-    "region-from-registration-note": "정본 note 가 공간 범위를 말하면 그대로 적는다 — seq 16 축자「전지구 격자라 한반도 경계 밖」."
+    "region-from-registration-note": "정본 note 가 공간 범위를 말하면 그대로 적는다 — seq 16 축자「전지구 격자라 한반도 경계 밖」.",
+    "bbox-korea-peninsula": "보조 규칙(2026-09-21 Ted 결정 2 「가를 넣고, 보조하는 용도로 나를」) — 정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) 안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다."
   },
+  "ruleSummary": {
+    "platform-from-instrument": 26,
+    "representation-from-shape": 28,
+    "direct-observation-from-level": 26,
+    "interpolated-from-lineage": 28,
+    "native-resolution-carried": 1,
+    "region-from-registration-note": 1,
+    "bbox-korea-peninsula": 0
+  },
+  "draftNote": "규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 않고 이 payload 에만 남는다. 승격 단계는 rule:<ID> locator 로 찾아온다.",
   "datasets": [
     {
       "seq": 1,
@@ -37,16 +48,23 @@
         "variable": "반사도",
         "nativeResolutionM": 500.0,
         "provider": "기상청",
-        "platform": "ground",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "cadence": "5min"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/1 · 기간 근거 축자 「10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시」",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
@@ -74,18 +92,23 @@
         "format": "netcdf",
         "variable": "강수량",
         "cadence": "15min",
-        "provider": "기상청",
-        "platform": "ground",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "provider": "기상청"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 2 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
-        "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+        "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
@@ -115,19 +138,24 @@
         "provider": "기상청",
         "roles": [
           "model_input"
-        ],
-        "platform": "ground",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": true,
-        "nativeResolutionM": 500.0
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/3 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 3 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": true,
+        "nativeResolutionM": 500.0
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
@@ -159,11 +187,7 @@
         "provider": "기상청",
         "roles": [
           "validation"
-        ],
-        "platform": "ground",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/4 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
@@ -171,7 +195,16 @@
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
@@ -201,18 +234,23 @@
         "model": "U-Net",
         "roles": [
           "prediction"
-        ],
-        "platform": "model",
-        "representation": "spatial_grid",
-        "directObservation": false,
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/5 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 5 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
         "model": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "model",
+        "representation": "spatial_grid",
+        "directObservation": false,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
@@ -241,11 +279,7 @@
         "variable": "NDVI",
         "cadence": "daily",
         "nativeResolutionM": 2000.0,
-        "provider": "국가기상위성센터",
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "provider": "국가기상위성센터"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/6 · 기간 근거 축자 「파일명 전월 범위」",
@@ -253,7 +287,16 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
-        "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+        "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
@@ -288,11 +331,7 @@
         "region": "경기남부충청",
         "roles": [
           "model_input"
-        ],
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/7 · 기간 근거 축자 「파일명 월과 정본 설명」",
@@ -302,7 +341,16 @@
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
@@ -335,11 +383,7 @@
         ],
         "roles": [
           "validation"
-        ],
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/8 · 기간 근거 축자 「파일명 월과 정본 설명」",
@@ -347,7 +391,16 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
@@ -378,9 +431,7 @@
         "provider": "Copernicus",
         "roles": [
           "auxiliary_input"
-        ],
-        "representation": "spatial_grid",
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/9 · 기간 근거 축자 「2026-09-16 사용자 제공 맥락; 파일 내부 날짜 없음」",
@@ -388,7 +439,14 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 9 축자 「Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 9 축자 「Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환」",
         "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 9 축자 「Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 9 축자 「Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환」",
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 9 축자 「Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "representation": "spatial_grid",
+        "interpolated": true
+      },
+      "draftProvenance": {
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9"
       },
@@ -417,9 +475,7 @@
         "provider": "Copernicus",
         "roles": [
           "auxiliary_input"
-        ],
-        "representation": "spatial_grid",
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/10 · 기간 근거 축자 「2026-09-16 사용자 제공 맥락; 파일 내부 날짜 없음」",
@@ -427,7 +483,14 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 10 축자 「Copernicus GLO-30 DEM 을 100 m 로 변환한 뒤 GIS 프로그램으로 경사향을 추출」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 10 축자 「Copernicus GLO-30 DEM 을 100 m 로 변환한 뒤 GIS 프로그램으로 경사향을 추출」",
         "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 10 축자 「Copernicus GLO-30 DEM 을 100 m 로 변환한 뒤 GIS 프로그램으로 경사향을 추출」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 10 축자 「Copernicus GLO-30 DEM 을 100 m 로 변환한 뒤 GIS 프로그램으로 경사향을 추출」",
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 10 축자 「Copernicus GLO-30 DEM 을 100 m 로 변환한 뒤 GIS 프로그램으로 경사향을 추출」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "representation": "spatial_grid",
+        "interpolated": true
+      },
+      "draftProvenance": {
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10"
       },
@@ -455,16 +518,23 @@
         "roles": [
           "model_input"
         ],
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "cadence": "yearly"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/11 · 기간 근거 축자 「파일명 연도와 정본 설명」",
         "format": "정본전재 · plan-manifest.yaml seq 11 format GeoTIFF → 계약 enum tif",
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
+        "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
@@ -495,11 +565,7 @@
         "model": "U-Net",
         "roles": [
           "prediction"
-        ],
-        "platform": "model",
-        "representation": "spatial_grid",
-        "directObservation": false,
-        "interpolated": true
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/12 · 기간 근거 축자 「파일명 일 범위」",
@@ -507,7 +573,16 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "model": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "model",
+        "representation": "spatial_grid",
+        "directObservation": false,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
@@ -537,18 +612,23 @@
         "region": "대한민국시군구",
         "roles": [
           "index"
-        ],
-        "platform": "ground",
-        "representation": "table",
-        "directObservation": false,
-        "interpolated": false
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/13 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
         "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "table",
+        "directObservation": false,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
@@ -578,18 +658,23 @@
         "region": "대한민국시군구",
         "roles": [
           "index"
-        ],
-        "platform": "ground",
-        "representation": "table",
-        "directObservation": false,
-        "interpolated": false
+        ]
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/14 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
         "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "table",
+        "directObservation": false,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
@@ -613,14 +698,19 @@
         "period": {
           "start": "2025-09-01",
           "end": "2025-09-01"
-        },
+        }
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "model",
         "representation": "spatial_grid",
         "directObservation": false,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
@@ -646,17 +736,22 @@
           "end": "2025-09-01"
         },
         "format": "npy",
-        "cadence": "hourly",
+        "cadence": "hourly"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+        "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
+        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "model",
         "representation": "spatial_grid",
         "directObservation": false,
         "interpolated": true,
         "region": "전지구"
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
-        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
@@ -684,15 +779,22 @@
         },
         "format": "netcdf",
         "variable": "지표온도",
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "cadence": "10min"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/17 · 기간 근거 축자 「NetCDF 내부 관측시각」",
         "format": "정본전재 · plan-manifest.yaml seq 17 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
+        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
@@ -718,16 +820,21 @@
           "end": "2020-05-01"
         },
         "format": "npy",
-        "variable": "지표온도",
+        "variable": "지표온도"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+        "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": true
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
@@ -753,16 +860,21 @@
           "end": "2025-08-13"
         },
         "variable": "반사도",
-        "provider": "기상청",
+        "provider": "기상청"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+        "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "ground",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
-        "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
@@ -789,17 +901,22 @@
         },
         "format": "npy",
         "variable": "반사도",
-        "provider": "기상청",
-        "platform": "ground",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": true
+        "provider": "기상청"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/20 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
-        "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+        "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "ground",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": true
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
@@ -825,16 +942,21 @@
           "end": "2025-12-25"
         },
         "format": "tif",
-        "region": "T51SYB",
+        "region": "T51SYB"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
@@ -860,16 +982,21 @@
           "end": "2025-12-27"
         },
         "format": "tif",
-        "region": "T52SCE",
+        "region": "T52SCE"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
@@ -895,16 +1022,21 @@
           "end": "2025-12-25"
         },
         "format": "npy",
-        "region": "T51SYB",
+        "region": "T51SYB"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
@@ -930,16 +1062,21 @@
           "end": "2025-12-27"
         },
         "format": "npy",
-        "region": "T52SCE",
+        "region": "T52SCE"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
@@ -965,16 +1102,21 @@
           "end": "2019-10-31"
         },
         "variable": "엽면적지수",
-        "region": "h27v05",
+        "region": "h27v05"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
@@ -1000,16 +1142,21 @@
           "end": "2019-10-31"
         },
         "variable": "엽면적지수",
-        "region": "h28v05",
+        "region": "h28v05"
+      },
+      "provenance": {
+        "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": false
       },
-      "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
@@ -1036,17 +1183,22 @@
         },
         "format": "npy",
         "variable": "엽면적지수",
-        "region": "h27v05",
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "region": "h27v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
@@ -1073,17 +1225,22 @@
         },
         "format": "npy",
         "variable": "엽면적지수",
-        "region": "h28v05",
-        "platform": "satellite",
-        "representation": "spatial_grid",
-        "directObservation": true,
-        "interpolated": false
+        "region": "h28v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+      },
+      "draftStatus": "draft",
+      "draftFacts": {
+        "platform": "satellite",
+        "representation": "spatial_grid",
+        "directObservation": true,
+        "interpolated": false
+      },
+      "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28",

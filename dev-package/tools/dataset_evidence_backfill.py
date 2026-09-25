@@ -11,13 +11,21 @@
   · `dev-package/tools/dev-seed/plan-manifest.yaml`       — 프로젝트·포맷·레벨·계보
   · `dev-package/reports/reference-data/datasets-md/**/DATASETS.md` 4건 — 설명 축자
 
-두 등급으로 나누어 적고, 등급은 payload 의 `provenance` 에 필드마다 남는다:
-  ㈎ **정본전재** — 정본 문면이 값을 직접 고정한다. 아래 `READINGS` 의 `quote` 가
-     그 문면이고, 생성기는 **그 문자열이 실제 정본 설명에 있는지 확인한 뒤에만** 적는다.
-     없으면 비영 종료한다 — 옮겨 적기가 어긋난 것을 조용히 지나치지 않는다.
-  ㈏ **규칙** — `RULES` 의 규칙이 정본의 레벨·계보·기기 이름을 읽어 낸다(계획 §6-2 의
-     platform·representation·directObservation·interpolated). 규칙 ID 가 provenance 에
-     남아 되돌림 경로가 된다.
+두 등급으로 **갈라 담는다**(2026-09-21 Ted 결정 1 「다 초안으로 넣는다」):
+  ㈎ **정본전재 → `facts` · `status: reviewed`** — 정본 문면이 값을 직접 고정한다.
+     아래 `READINGS` 의 `quote` 가 그 문면이고, 생성기는 **그 문자열이 실제 정본 설명에
+     있는지 확인한 뒤에만** 적는다. 없으면 비영 종료한다 — 옮겨 적기가 어긋난 것을
+     조용히 지나치지 않는다. 조건 검색이 읽는 것은 이 등급뿐이다.
+  ㈏ **규칙 추론 → `draftFacts` · `status: draft`** — `RULES` 의 규칙이 정본의 레벨·계보·
+     기기 이름을 읽어 낸다(계획 §6-2 의 platform·representation·directObservation·
+     interpolated ＋ 보조 규칙 `bbox-korea-peninsula`). 1회차는 이것을 `reviewed` 행에
+     함께 실어 조건 검색이 규칙값을 사람 확인 없이 근거로 썼다. 2회차는 **싣지 않는다.**
+
+⚠ **왜 draft 행을 따로 쓰지 못하는가** — `d3_search_evidence` 는 `file_id` 가 PRIMARY KEY 이고
+`status` 가 **행 단위**다(`db/platform/schema.sql:813`). 한 파일이 reviewed 사실과 draft 사실을
+동시에 가질 수 없다. 그래서 규칙 추론값은 payload 의 `draftFacts` 에 `rule:<규칙ID>` locator 와
+함께 남고 **DB 에 실리지 않는다**. 승격·폐기 구조(히트 측정 뒤 승격)는 별도 intent 의 몫이며
+이 파일은 그 구조가 찾아갈 수 있는 자리와 셈만 만든다 — `ruleSummary` 와 그 옆 JSON 이다.
 
 **정본에 없으면 만들지 않는다**(`PLAN-SoT §9-㊴-②`). 값이 없는 칸은 비운다 —
 `EvidenceFacts` 는 성분 하나만 있으면 통과한다.
@@ -72,13 +80,42 @@ RULES = {
                                 "(재격자화 크기가 아니다 — semantics.json invariants 축자).",
     "region-from-registration-note": "정본 note 가 공간 범위를 말하면 그대로 적는다 — seq 16 축자"
                                     "「전지구 격자라 한반도 경계 밖」.",
+    "bbox-korea-peninsula": "보조 규칙(2026-09-21 Ted 결정 2 「가를 넣고, 보조하는 용도로 나를」) — "
+                           "정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) "
+                           "안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 "
+                           "지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다.",
 }
+
+#: 보조 검증용 한반도 상자. 정본이 지명을 말하지 않는 자료의 **초안** region 에만 쓴다.
+KOREA_PENINSULA = {"latMin": 33.0, "latMax": 39.0, "lonMin": 124.0, "lonMax": 132.0}
+
+
+def region_from_bbox(bbox: dict | None) -> str | None:
+    """bbox 가 한반도 상자 **안에 온전히** 들어가면 「한반도」, 아니면 None.
+
+    이것은 **보조**다(Ted 결정 2 — 「가를 넣고, 보조하는 용도로 나를 해야하지 않을까?」).
+    그래서 값이 서도 초안이고 `rule:bbox-korea-peninsula` locator 를 달고 나간다.
+    bbox 가 없으면 아무 말도 하지 않는다 — 없는 것을 「미상」이 아니라 사실로 바꾸지 않는다.
+    """
+    if not isinstance(bbox, dict):
+        return None
+    try:
+        west, south = float(bbox["west"]), float(bbox["south"])
+        east, north = float(bbox["east"]), float(bbox["north"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (west < east and south < north):
+        return None
+    inside = (KOREA_PENINSULA["lonMin"] <= west and east <= KOREA_PENINSULA["lonMax"]
+              and KOREA_PENINSULA["latMin"] <= south and north <= KOREA_PENINSULA["latMax"])
+    return "한반도" if inside else None
 
 #: 정본 판독표. `quote` 는 그 seq 의 정본 `description` 안에 **그대로 있어야 한다**.
 #: `facts` 는 그 문면이 고정하는 값이고, `rules` 는 위 `RULES` 로 읽어 낸 값이다.
 READINGS: dict[int, dict] = {
     1: {"quote": "시/공간해상도 5분 / 0.5 km, 변량은 반사도",
-        "facts": {"variable": "반사도", "nativeResolutionM": 500.0, "provider": "기상청"},
+        "facts": {"variable": "반사도", "nativeResolutionM": 500.0, "provider": "기상청",
+                  "cadence": "5min"},
         "rules": {"platform": "ground", "representation": "spatial_grid",
                   "directObservation": True, "interpolated": False}},
     2: {"quote": "지상 격자 15분 누적강수",
@@ -124,7 +161,8 @@ READINGS: dict[int, dict] = {
                    "roles": ["auxiliary_input"]},
          "rules": {"representation": "spatial_grid", "interpolated": True}},
     11: {"quote": "Landsat-8 위성의 밴드를 이용해",
-         "facts": {"variable": "토지피복", "roles": ["model_input"]},
+         "quotes": {"cadence": "연 단위 100 m 토지피복지도"},
+         "facts": {"variable": "토지피복", "roles": ["model_input"], "cadence": "yearly"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     12: {"quote": "Lv.0 처럼 일 단위 시간해상도를 갖고",
@@ -152,7 +190,7 @@ READINGS: dict[int, dict] = {
                    "directObservation": False, "interpolated": True,
                    "region": "전지구"}},
     17: {"quote": "GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료",
-         "facts": {"variable": "지표온도"},
+         "facts": {"variable": "지표온도", "cadence": "10min"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     18: {"quote": "변수는 지표온도 하나이고",
@@ -276,13 +314,15 @@ def build() -> dict:
     aux_roles = {row["child"]: row["role"] for row in canonical.get("auxiliaryParents", [])}
 
     datasets = []
+    rule_summary: dict[str, int] = {rule: 0 for rule in RULES}
     for seq in range(1, 29):
         canon, source, plan = canon_by_seq[seq], md[seq], manifest[seq]
         reading = READINGS[seq]
-        if reading["quote"] not in source.get("description", ""):
-            raise SystemExit(
-                f"seq {seq}: 판독표의 축자가 정본 설명에 없다 — {reading['quote']!r}.\n"
-                f"  정본({source['document']}): {source.get('description', '')!r}")
+        for quote in [reading["quote"], *reading.get("quotes", {}).values()]:
+            if quote not in source.get("description", ""):
+                raise SystemExit(
+                    f"seq {seq}: 판독표의 축자가 정본 설명에 없다 — {quote!r}.\n"
+                    f"  정본({source['document']}): {source.get('description', '')!r}")
         if canon["name"] != source.get("name") or canon["name"] != plan.get("name"):
             raise SystemExit(f"seq {seq}: 세 정본의 이름이 어긋난다.")
 
@@ -297,16 +337,32 @@ def build() -> dict:
                                     f"{plan['format']} → 계약 enum {enum_format}")
         for key, value in reading["facts"].items():
             facts[key] = value
-            provenance[key] = f"정본전재 · {source['document']} seq {seq} 축자 「{reading['quote']}」"
+            quote = reading.get("quotes", {}).get(key, reading["quote"])
+            provenance[key] = f"정본전재 · {source['document']} seq {seq} 축자 「{quote}」"
+
+        # 규칙 추론값은 **reviewed 사실에 섞지 않는다**(Ted 결정 1). 초안 칸으로 따로 담고
+        # locator 에 규칙 ID 를 박아 승격·폐기 구조가 나중에 찾아올 수 있게 둔다.
+        draft_facts: dict = {}
+        draft_provenance: dict = {}
+        rule_of = {"platform": "platform-from-instrument",
+                   "representation": "representation-from-shape",
+                   "directObservation": "direct-observation-from-level",
+                   "interpolated": "interpolated-from-lineage",
+                   "nativeResolutionM": "native-resolution-carried",
+                   "region": "region-from-registration-note"}
         for key, value in reading["rules"].items():
-            facts[key] = value
-            rule = {"platform": "platform-from-instrument",
-                    "representation": "representation-from-shape",
-                    "directObservation": "direct-observation-from-level",
-                    "interpolated": "interpolated-from-lineage",
-                    "nativeResolutionM": "native-resolution-carried",
-                    "region": "region-from-registration-note"}[key]
-            provenance[key] = f"규칙 · rule:{rule} · 읽은 정본 = {source['document']} seq {seq}"
+            draft_facts[key] = value
+            rule = rule_of[key]
+            rule_summary[rule] += 1
+            draft_provenance[key] = (f"규칙 · rule:{rule} · 읽은 정본 = "
+                                     f"{source['document']} seq {seq}")
+        bbox_region = region_from_bbox(canon.get("bbox"))
+        if bbox_region and "region" not in draft_facts and "region" not in facts:
+            draft_facts["region"] = bbox_region
+            rule_summary["bbox-korea-peninsula"] += 1
+            draft_provenance["region"] = (
+                "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = "
+                f"canonical-metadata.json#/datasets/{seq}/bbox {canon.get('bbox')}")
 
         text = (f"{source['description']}\n"
                 f"기간 근거: {canon['basis']} ({canon['start']} ~ {canon['end']}, "
@@ -322,6 +378,9 @@ def build() -> dict:
             "status": "reviewed",
             "facts": facts,
             "provenance": provenance,
+            "draftStatus": "draft",
+            "draftFacts": draft_facts,
+            "draftProvenance": draft_provenance,
             "source": {
                 "label": f"{source['document']} · seq {seq} {canon['name']}"[:200],
                 "locator": f"DATASETS.md#{source['document']}#seq-{seq}"[:300],
@@ -345,6 +404,11 @@ def build() -> dict:
                for path in sorted(DATASETS_MD_ROOT.rglob("DATASETS.md"))},
         },
         "rules": RULES,
+        "ruleSummary": rule_summary,
+        "draftNote": ("규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). "
+                      "d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 "
+                      "reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 "
+                      "않고 이 payload 에만 남는다. 승격 단계는 rule:<ID> locator 로 찾아온다."),
         "datasets": datasets,
     }
 
@@ -358,10 +422,25 @@ def main() -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payloads, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     filled = sum(len(row["facts"]) for row in payloads["datasets"])
+    drafts = sum(len(row["draftFacts"]) for row in payloads["datasets"])
     topics = sum(1 for row in payloads["datasets"] if row["topic"])
     labels = sum(1 for row in payloads["datasets"] if row["sourceLabel"])
-    print(f"{out} — 데이터셋 {len(payloads['datasets'])}건 · 사실 {filled}칸 · "
-          f"topic {topics}건 · source_label {labels}건")
+    print(f"{out} — 데이터셋 {len(payloads['datasets'])}건 · reviewed 사실 {filled}칸 · "
+          f"draft 사실 {drafts}칸 · topic {topics}건 · source_label {labels}건")
+
+    # 승격·폐기 구조가 찾아올 자리 — 규칙 ID 별 초안 셈. 그 구조 자체는 별도 intent 의 몫이고
+    # 이 파일은 셈만 낸다(2026-09-21 Ted 결정 1 「얼마나 히트했냐를 측정하고 승격 또는 폐기」).
+    summary_path = out.with_name(out.stem + "-rule-summary.json")
+    summary_path.write_text(json.dumps({
+        "schema": "colab-dataset-evidence-rule-summary/1",
+        "payload": out.name,
+        "note": payloads["draftNote"],
+        "draftFactsTotal": drafts,
+        "reviewedFactsTotal": filled,
+        "byRule": payloads["ruleSummary"],
+    }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"{summary_path} — 규칙별 초안 셈 " + " · ".join(
+        f"{rule} {count}" for rule, count in payloads["ruleSummary"].items()))
     return 0
 
 
