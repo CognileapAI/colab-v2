@@ -22,6 +22,9 @@
   · 제외 — `maxMissingRatePercent` probe 는 `d3_dataset_variable` 을 읽어 근거 사실과 독립이다
     → 「근거 독립·제외」. 골든 `manual` 문항은 assess 가 판정하지 않는다 → 제외. heldout 은 승격
     근거에서 빼고 **사후 확인 열**로만 낸다(intent 위험 절).
+  · 경로 1 오라클 — practitioner-conditions.json 의 `probes` 와 `measureOnlyProbes`(초안 값 측정 전용 ·
+    정답 주장 아님 · 2026-09-26 Ted 「전부 권고대로」). `supersedes` 가 있는 measure_only probe 는 초안
+    보류 때문에 기대가 바뀐 기존 probe 를 측정에서 대신한다.
 
 **제품 코드가 아니다. 일회용 DB 전용이다.** localhost·127.0.0.1 이 아닌 URL 은 거절한다
 (도커 브리지 IP 로만 닿는 게이트용 컨테이너는 `--i-know-this-is-disposable` 로 명시한다).
@@ -62,7 +65,6 @@ GOLDEN = HERE / "golden-cases.json"
 PRACTITIONER = HERE / "practitioner-conditions.json"
 HELDOUT = HERE / "heldout-cases.json"
 INTERPRET_FIXTURE = HERE / "interpret-fixture.json"
-REFERENCE_PROBES = HERE / "draft-contribution-reference-probes.json"
 
 #: 일회용 DB 의 시드 주체(`services/core-api/tests/fixtures/seed.sql` 의 A 연구실 · 소유 연구원).
 LAB = "0000000000000000000000000A"
@@ -96,7 +98,7 @@ HELDOUT_CONDITION = {"period": ("기간", "period"), "interpolation": ("보간",
                      "direct_observation": ("직접 관측", "directObservation")}
 
 DECISION_GROUPS = ("A", "B")
-SIDE_GROUPS = ("heldout_A", "heldout_B", "reference_A")
+SIDE_GROUPS = ("heldout_A", "heldout_B")
 
 
 class Refused(Exception):
@@ -302,17 +304,48 @@ def fingerprints_equal(before: dict, after: dict) -> bool:
     return before["rows"] == after["rows"] and before["sha256"] == after["sha256"]
 
 
-def rehearse(rows: list[dict], facts: list[dict], rule: str, seq_of_dataset: dict) -> dict:
-    """규칙 하나를 병합한 PUT 본문(`EvidenceWrite`)을 만들고 reviewed 사실이 하나도 빠지지 않음을 대조한다.
+def rule_list(value) -> list[str]:
+    """`a,b` 또는 목록 → 규칙 ID 목록(순서 유지·중복 제거)."""
+    items = value.split(",") if isinstance(value, str) else list(value)
+    return list(dict.fromkeys(r.strip() for r in items if r.strip()))
+
+
+def promote_payload(payload: dict, rules, note: str) -> dict:
+    """승격 판정을 반영한 payload 사본 — 규칙의 draftFacts 를 `facts` 로 옮기고 provenance 에 판정을 적는다.
+
+    생성물(원본 payload)은 손대지 않는다. 결과는 **기존 적재기**(`dataset_evidence_apply.py`)의 입력이다 —
+    적재기는 `facts` 전체를 reviewed 로 싣고, 같은 facts 면 쓰지 않는다(멱등). reviewed 값과 겹치는 성분이
+    있으면 덮지 않고 거절한다(전체 교체 API 에서 조용히 값이 바뀌지 않게).
+    """
+    wanted = set(rule_list(rules))
+    out = json.loads(json.dumps(payload, ensure_ascii=False))
+    moved = 0
+    for row in out["datasets"]:
+        for key in list(row.get("draftFacts") or {}):
+            found = re.search(r"rule:([A-Za-z0-9_-]+)", row["draftProvenance"].get(key, ""))
+            if not found or found[1] not in wanted:
+                continue
+            if key in row["facts"]:
+                raise Refused(f"seq {row['seq']} {key}: reviewed 사실과 겹친다 — 승격이 값을 덮는다")
+            row["facts"][key] = row["draftFacts"].pop(key)
+            row["provenance"][key] = f"승격 · {row['draftProvenance'].pop(key)} · {note}"
+            moved += 1
+    out["promotion"] = {"rules": sorted(wanted), "movedFacts": moved, "note": note}
+    return out
+
+
+def rehearse(rows: list[dict], facts: list[dict], rule, seq_of_dataset: dict) -> dict:
+    """규칙(하나 또는 여럿)을 병합한 PUT 본문(`EvidenceWrite`)을 만들고 reviewed 사실이 하나도 빠지지 않음을 대조한다.
 
     `rows` = 현재 행({file_id, dataset_id, revision, file_revision, status, facts, source_label,
     source_locator, source_text}). **보내지 않는다.** 같은 facts 면 본문을 만들지 않는다(멱등 판정).
     """
+    rules = rule_list(rule)
     promoted = {}
     for fact in facts:
-        if fact["rule"] == rule:
+        if fact["rule"] in rules:
             promoted.setdefault(fact["seq"], {})[fact["key"]] = fact["value"]
-    report = {"rule": rule, "promoted_facts": sum(len(v) for v in promoted.values()),
+    report = {"rule": ",".join(rules), "promoted_facts": sum(len(v) for v in promoted.values()),
               "datasets": len(promoted), "files": 0, "bodies": 0, "unchanged": 0,
               "reviewed_facts_before": 0, "reviewed_facts_kept": 0, "promoted_added": 0,
               "collisions": [], "dropped": [], "not_reviewed": 0}
@@ -440,23 +473,35 @@ def load_cases() -> dict:
     practitioner = json.loads(PRACTITIONER.read_text(encoding="utf-8"))["cases"]
     heldout = json.loads(HELDOUT.read_text(encoding="utf-8"))
     interpret = {e["id"]: e for e in json.loads(INTERPRET_FIXTURE.read_text(encoding="utf-8"))["entries"]}
-    reference = json.loads(REFERENCE_PROBES.read_text(encoding="utf-8"))["probes"]
     for case in [*golden, *heldout]:
         if case["id"] not in interpret or interpret[case["id"]]["query"] != case["query"]:
             raise Refused(f"녹화 해석이 없거나 질의가 다르다: {case['id']}")
     probes, excluded = [], []
     for case in practitioner:
+        # measure_only(2026-09-26 Ted 「전부 권고대로」) — 2회차가 거두거나 바꾼 1회차 probe. 조건 검색
+        # pytest 의 green 주장에는 안 들어가지만 **이 측정의 공식 오라클**이다. supersedes 가 있으면
+        # 그 이름의 probe(초안 보류 때문에 기대가 바뀐 것) 대신 이것을 잰다.
+        restored = case.get("measureOnlyProbes") or []
+        superseded = {m["supersedes"]: f"{case['id']}#m{i}" for i, m in enumerate(restored, 1) if m.get("supersedes")}
         for index, probe in enumerate(case.get("probes") or [], 1):
             pid = f"{case['id']}#p{index}"
             if set(probe["conditions"]) & EVIDENCE_INDEPENDENT:
                 excluded.append({"id": pid, "path": "A", "reason": "근거 독립·제외(maxMissingRatePercent → d3_dataset_variable)"})
                 continue
+            if probe["name"] in superseded:
+                excluded.append({"id": pid, "path": "A", "reason": (
+                    f"{superseded[probe['name']]}(measure_only)가 대신한다 — 초안 보류 때문에 바뀐 기대다")})
+                continue
             probes.append(dict(probe, id=pid))
-        if not case.get("probes"):
+        for index, probe in enumerate(restored, 1):
+            if probe.get("mode") != "measure_only":
+                raise Refused(f"{case['id']} measureOnlyProbes[{index}] 의 mode 가 measure_only 가 아니다")
+            probes.append(dict(probe, id=f"{case['id']}#m{index}"))
+        if not case.get("probes") and not restored:
             excluded.append({"id": case["id"], "path": "A",
                              "reason": f"probe 0건(mode {case['mode']}) — 판정할 것이 없다"})
     return {"golden": golden, "probes": probes, "heldout": heldout, "interpret": interpret,
-            "reference": [dict(p) for p in reference], "excluded": excluded}
+            "excluded": excluded}
 
 
 def heldout_targets() -> dict:
@@ -603,8 +648,6 @@ class Evaluator:
         out = {g: {} for g in (*DECISION_GROUPS, *SIDE_GROUPS)}
         for probe in self.cases["probes"]:
             out["A"][probe["id"]] = self.path_a_probe(probe)
-        for probe in self.cases["reference"]:
-            out["reference_A"][probe["id"]] = self.path_a_probe(probe)
         reviewed = self.db.d3_search_evidence.read_reviewed(self.s, include_source_text=False)
         reviewed_by_ds: dict[str, list] = {}
         for r in sorted(reviewed, key=lambda r: r["file_id"]):
@@ -726,19 +769,18 @@ def render_markdown(result: dict) -> str:
               "", "## 기준선 (green 케이스 수)", "",
               "| 케이스군 | 케이스 | 초안 전부 포함 | 초안 전부 제외 |", "|---|---:|---:|---:|"]
     labels = {"A": "경로 1 (결정 근거)", "B": "경로 2 (결정 근거)", "heldout_A": "heldout 경로 1 (사후 확인)",
-              "heldout_B": "heldout 경로 2 (사후 확인)", "reference_A": "1회차 복원 probe 경로 1 (참고)"}
+              "heldout_B": "heldout 경로 2 (사후 확인)"}
     for group, s in result["summary"].items():
         lines.append(f"| {labels[group]} | {s['cases']} | {s['withAllDrafts']} | {s['withoutAnyDraft']} |")
     lines += ["", "## 규칙 단위 (결정 5)", "",
               "형식: green 포함→제외 · 기여 · 역전 · 측정 여부", "",
-              "| 규칙 | 초안 | 경로 1 | 경로 2 | heldout 1/2 뒤집힘 | 1회차 복원 probe 뒤집힘(참고) | 제안 |",
-              "|---|---:|---|---|---|---|---|"]
+              "| 규칙 | 초안 | 경로 1 | 경로 2 | heldout 1/2 뒤집힘(사후 확인) | 제안 |",
+              "|---|---:|---|---|---|---|"]
     for row in result["rules"]:
         side = (f"{len(row['heldout_A']['flipped'])}/{len(row['heldout_B']['flipped'])} 기여 · "
                 f"{len(row['heldout_A']['reversal'])}/{len(row['heldout_B']['reversal'])} 역전")
-        ref = row["reference_A"]
         lines.append(f"| `{row['rule']}` | {row['facts']} | {_cell(row, 'A')} | {_cell(row, 'B')} | {side} | "
-                     f"기여 {len(ref['flipped'])} · 역전 {len(ref['reversal'])} | {row['제안']} |")
+                     f"{row['제안']} |")
     lines += ["", "뒤집힌 케이스:", ""]
     for row in result["rules"]:
         bits = [f"{k} {row[k]}" for k in ("flipped_case_ids_A", "reversal_case_ids_A",
@@ -753,7 +795,7 @@ def render_markdown(result: dict) -> str:
     for row in result["facts"]:
         lines.append(f"| `{row['fact_id']}` {row['dataset_name']} | `{json.dumps(row['value'], ensure_ascii=False)}` | "
                      f"`{row['rule_id']}` | {_cell(row, 'A')} | {_cell(row, 'B')} | {row['제안']} |")
-    lines += ["", "사실 단위 뒤집힘(경로 1·2 · heldout · 참고):", ""]
+    lines += ["", "사실 단위 뒤집힘(경로 1·2 · heldout):", ""]
     for row in result["facts"]:
         bits = [f"{k} {row[k]}" for k in ("flipped_case_ids_A", "reversal_case_ids_A",
                                            "flipped_case_ids_B", "reversal_case_ids_B") if row[k]]
@@ -769,7 +811,9 @@ def render_markdown(result: dict) -> str:
               "- 「미측정(술어 없음)」 = 그 경로가 이 성분을 읽지 않는다(경로 1 은 interpolated, 경로 2 는 platform·representation). "
               "「미측정(케이스 0)」 = 읽지만 그 술어를 부르는 케이스가 없다 — 폐기 근거가 아니다(결정 3).",
               "- 사실 단위 제안은 1회차라 회차 이력이 없다 — 승격(2회차)·폐기(K=3)는 「1회차 관측」으로만 낸다. 역전만 즉시 폐기 제안이다.",
-              "- heldout 과 1회차 복원 probe 는 제안에 쓰지 않는다(과적합 완화 · 참고).",
+              "- heldout 은 제안에 쓰지 않는다(과적합 완화 · 사후 확인).",
+              "- 경로 1 오라클 = practitioner-conditions.json 의 probes(판정용) + measureOnlyProbes(초안 값 측정 전용 · "
+              "정답 주장 아님 · 2026-09-26 Ted 「전부 권고대로」로 되살린 1회차 probe). `#m` 이 measure_only 다.",
               "- 경로 2 는 `routes/catalog.py` 경로 2 블록의 도메인 재현이다. 라우트의 verified·잠김 조립·근거 문장은 green 판정에 들어가지 않는다.",
               ""]
     return "\n".join(lines)
@@ -784,8 +828,12 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--output", type=pathlib.Path, help="산출 디렉터리(새 경로)")
     p.add_argument("--seed-dev-like", action="store_true",
                    help="빈 일회용 DB 에 스냅숏 v2 28건과 payload 를 먼저 싣는다(이것만 커밋)")
-    p.add_argument("--rehearse-promote", metavar="RULE_ID",
-                   help="규칙 하나의 승격 PUT 본문을 만들어 reviewed 사실 보존만 대조한다(보내지 않는다)")
+    p.add_argument("--rehearse-promote", metavar="RULE_ID[,RULE_ID]",
+                   help="규칙(쉼표로 여럿)의 승격 PUT 본문을 만들어 reviewed 사실 보존만 대조한다(보내지 않는다)")
+    p.add_argument("--write-promoted-payload", type=pathlib.Path, metavar="PATH",
+                   help="리허설과 함께 승격 반영 payload 사본을 쓴다 — dataset_evidence_apply.py 의 입력")
+    p.add_argument("--promotion-note", default="판정 결과 미기재",
+                   help="승격 payload provenance 에 붙일 판정 근거(회차 intent 판정 결과 절)")
     p.add_argument("--i-know-this-is-disposable", action="store_true",
                    help="localhost 가 아닌 일회용 DB(도커 브리지 IP 등)임을 명시한다")
     return p
@@ -829,8 +877,10 @@ def main(argv: list[str] | None = None) -> int:
 
 def _rehearse(db, session, payload, facts, args) -> int:
     from colab_core.app.routes.search_evidence import EvidenceWrite  # noqa: PLC0415 — 계약 검증만
-    if args.rehearse_promote not in {f["rule"] for f in facts}:
-        raise Refused(f"payload 에 그 규칙의 초안이 없다: {args.rehearse_promote}")
+    rules = rule_list(args.rehearse_promote)
+    missing = [r for r in rules if r not in {f["rule"] for f in facts}]
+    if missing:
+        raise Refused(f"payload 에 그 규칙의 초안이 없다: {missing}")
     names = {r["name"]: r["seq"] for r in payload["datasets"]}
     seq_of = {r["id"]: names[r["name"]] for r in session.execute(db.text(
         "SELECT d.id::text AS id, dd.name FROM d3_dataset d JOIN d3_dataset_description dd ON dd.dataset_id=d.id"
@@ -838,18 +888,27 @@ def _rehearse(db, session, payload, facts, args) -> int:
     rows = [dict(r) for r in session.execute(db.text(
         """SELECT file_id::text AS file_id, dataset_id::text AS dataset_id, revision, file_revision, status, facts,
            source_label, source_locator, source_text FROM d3_search_evidence ORDER BY file_id""")).mappings()]
-    out = rehearse(rows, facts, args.rehearse_promote, seq_of)
+    out = rehearse(rows, facts, rules, seq_of)
     for item in out["bodies"]:
         EvidenceWrite.model_validate(item["body"])  # 전체 교체 본문이 계약을 통과하는지 — 보내지는 않는다
     report = dict(out["report"], contract_validated=len(out["bodies"]), sent=0)
     print(json.dumps(report, ensure_ascii=False))
     if args.output:
-        target = args.output / f"rehearse-{args.rehearse_promote}.json"
+        target = args.output / f"rehearse-{'+'.join(rules)}.json"
         if target.exists():
             raise Refused(f"리허설 산출물이 이미 있다 — {target}")
         args.output.mkdir(parents=True, exist_ok=True)
         target.write_text(
             json.dumps(report, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    if args.write_promoted_payload:
+        if args.write_promoted_payload.exists():
+            raise Refused(f"승격 payload 가 이미 있다 — {args.write_promoted_payload}")
+        promoted = promote_payload(payload, rules, args.promotion_note)
+        args.write_promoted_payload.parent.mkdir(parents=True, exist_ok=True)
+        args.write_promoted_payload.write_text(
+            json.dumps(promoted, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"승격 payload {args.write_promoted_payload} — 옮긴 사실 {promoted['promotion']['movedFacts']}칸 · "
+              f"sha256 {sha256_file(args.write_promoted_payload)}")
     return 0 if report["ok"] else 1
 
 
@@ -893,7 +952,7 @@ def _measure(db, factory, session, payload, facts, args) -> int:
                         "ruleSummary": payload.get("ruleSummary"),
                         "regeneration": regeneration_check(payload)},
             "caseSets": {p.name: sha256_file(p) for p in (GOLDEN, PRACTITIONER, HELDOUT, INTERPRET_FIXTURE,
-                                                          REFERENCE_PROBES, SNAPSHOT_V2)},
+                                                          SNAPSHOT_V2)},
             "planNow": PLAN_NOW.isoformat(), "searchLimit": SEARCH_LIMIT, "modelCalls": 0,
         },
         "seed": seed,
@@ -902,7 +961,6 @@ def _measure(db, factory, session, payload, facts, args) -> int:
         "evaluations": evaluator.evaluations,
         "cases": {"A": sorted(evaluator.case_reads["A"]), "B": sorted(evaluator.case_reads["B"]),
                   "heldout": [c["id"] for c in cases["heldout"]],
-                  "reference": [p["id"] for p in cases["reference"]],
                   "excluded": evaluator.excluded()},
         "bodyFilesByDataset": {str(evaluator.seq_of[ds]): len(ids) for ds, ids in evaluator.body_files.items()},
         **table,

@@ -226,7 +226,7 @@ services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 
 ## 초안 사실 기여 측정 (intent `2026-09-21-evidence-promotion`)
 
-규칙 추론 초안(payload `draftFacts` 110칸)을 일회용 DB 의 reviewed 사실에 한 트랜잭션 안에서 겹쳐 쓰고, 규칙 단위·사실 단위로 하나씩 빼며 경로 1(`d3_client_search.candidates`)·경로 2(`search_evidence_conditions` → `search_datasets`)를 따로 잰 뒤 rollback 한다. 경로 2 해석은 `interpret-fixture.json`(규칙 기반 녹화 — LLM 녹화는 후속 단계)으로 고정하고 모델을 부르지 않는다. heldout 은 사후 확인 열, `draft-contribution-reference-probes.json`(2회차가 거둔 1회차 probe)은 참고 열이며 둘 다 제안에 쓰지 않는다.
+규칙 추론 초안(payload `draftFacts` 110칸)을 일회용 DB 의 reviewed 사실에 한 트랜잭션 안에서 겹쳐 쓰고, 규칙 단위·사실 단위로 하나씩 빼며 경로 1(`d3_client_search.candidates`)·경로 2(`search_evidence_conditions` → `search_datasets`)를 따로 잰 뒤 rollback 한다. 경로 2 해석은 `interpret-fixture.json`(규칙 기반 녹화 — LLM 녹화는 후속 단계)으로 고정하고 모델을 부르지 않는다. heldout 은 사후 확인 열이며 제안에 쓰지 않는다. 경로 1 오라클은 `practitioner-conditions.json` 의 `probes` 와 `measureOnlyProbes`(2회차가 거두거나 바꾼 1회차 probe · 초안 값 측정 전용 · 정답 주장 아님 · 2026-09-26 Ted 「전부 권고대로」)다 — 조건 검색 pytest 는 measure_only 를 green 으로 세지 않는다.
 
 ```bash
 CONTAINER=<일회용 컨테이너> DB=colab_platform bash services/core-api/tests/fixtures/setup-db.sh   # 앱 롤 URL 출력

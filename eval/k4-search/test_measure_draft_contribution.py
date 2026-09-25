@@ -52,7 +52,6 @@ def fixture_evaluate(removed):
         "A": {"P-hit": cell(F_HIT not in removed), "P-cad": cell(True), "P-res": cell(F_BAD in removed)},
         "B": {"G-hit": cell(F_HIT not in removed), "G-int": cell(False)},
         "heldout_A": {}, "heldout_B": {"H1": cell(F_HIT not in removed)},
-        "reference_A": {"R1": cell(True)},
     }
 
 
@@ -199,6 +198,33 @@ class RehearsalTest(unittest.TestCase):
         body = out["bodies"][0]["body"]
         self.assertEqual(body["facts"], {**self.ROWS[0]["facts"], "platform": "ground"})
         self.assertEqual((body["expectedRevision"], body["status"]), (2, "reviewed"))
+
+    def test_two_rules_rehearse_together(self):
+        facts = self.FACTS + [{"fact_id": "seq01.directObservation", "seq": 1, "name": "d1",
+                               "key": "directObservation", "value": True,
+                               "rule": "direct-observation-from-level"}]
+        out = M.rehearse(self.ROWS, facts, "platform-from-instrument,direct-observation-from-level",
+                         {"D1": 1, "D2": 2})
+        self.assertTrue(out["report"]["ok"])
+        self.assertEqual(out["bodies"][0]["body"]["facts"]["directObservation"], True)
+        self.assertEqual(len(out["bodies"]), 2)
+
+    def test_promoted_payload_moves_only_the_judged_rules(self):
+        payload = {"datasets": [{
+            "seq": 1, "facts": {"variable": "precipitation"}, "provenance": {"variable": "정본전재"},
+            "draftFacts": {"platform": "ground", "interpolated": False},
+            "draftProvenance": {"platform": "규칙 · rule:platform-from-instrument · x",
+                                "interpolated": "규칙 · rule:interpolated-from-lineage · x"}}]}
+        out = M.promote_payload(payload, ["platform-from-instrument"], "1회차 판정")
+        row = out["datasets"][0]
+        self.assertEqual(row["facts"], {"variable": "precipitation", "platform": "ground"})
+        self.assertEqual(row["draftFacts"], {"interpolated": False})
+        self.assertIn("rule:platform-from-instrument", row["provenance"]["platform"])
+        self.assertEqual(out["promotion"]["movedFacts"], 1)
+        self.assertEqual(payload["datasets"][0]["draftFacts"]["platform"], "ground")  # 원본 무변경
+        payload["datasets"][0]["facts"]["platform"] = "satellite"
+        with self.assertRaises(M.Refused):
+            M.promote_payload(payload, ["platform-from-instrument"], "x")
 
     def test_collision_is_reported_not_overwritten(self):
         rows = [dict(self.ROWS[1], facts={"platform": "satellite"})]
