@@ -20,11 +20,21 @@
 #   contracts/**            seam·이벤트 계약
 # 예외 = `COLAB_ALLOW_TEST_EDIT=1` — 시험 자체가 틀렸다는 판단은 **사람이 선언한 뒤** 한다.
 #
+# ⚠ 경계 (2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 A2·A3):
+#   · 대상 도구 = Edit/Write 뿐(`.claude/settings.json` PreToolUse matcher `Edit|Write`). `sed -i` ·
+#     리다이렉션 · `tee` · `python -c` 같은 Bash 쓰기는 대상이 아니다.
+#   · `COLAB_FIX_LANE=1` 은 Codex 경로(`scripts/agent-bridge.py` tool_environment · `scripts/dev.ps1`)만 넘긴다.
+#     Claude Code 는 hook env 를 lane 별로 줄 수 없어 Claude lane 에서는 이 hook 이 통과한다(편집 시점 차단 없음).
+#   · Bash 쓰기와 Claude lane 까지 잡는 사후 검사 = `lifecycle begin --scope <glob>` 를 선언한 task 의
+#     handoff/H7 대조(인계 시점 · 도구 무관 · `docs/development/lifecycle-evidence.md` 「인계」).
+#
 # ── PreToolUse 입력 스키마 (stdin · 문서 인용) ────────────────────────────────
 #   https://code.claude.com/docs/en/hooks — 스키마 전문은 `git-guard.sh` 머리말에 있다.
 #   · `tool_name`·`tool_input` 은 이벤트별이고, Edit·Write 의 대상은 `tool_input.file_path` 한 자리다.
 #   · exit 2 = "Blocks the tool call" · 차단 메시지는 stderr.
-#   ⚠ exit 1 은 통과다. 판정을 못 하면 통과가 기본값이다 — 훅이 깨져 작업이 멈추지 않게.
+#   ⚠ 실패 방향은 2단이다. ⑴ 준비 실패(python3 부재 · envelope 이상 — 아래 validate-input) = exit 2
+#     차단(2026-09-09 계약). ⑵ envelope 통과 뒤 판정 불가 = 통과. exit 1 은 Claude Code 규약상 비차단이나
+#     이 hook 은 exit 1 을 내지 않는다.
 # Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
@@ -39,7 +49,6 @@ command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 mi
 payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field file_path)" || exit 2
 
 [ -n "$payload" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
 
 mapfile -t _f < <(printf '%s' "$payload" | python3 -c '
 import json,sys
