@@ -110,10 +110,17 @@ Ted 가 확정한 값의 귀결이다. 판정 항목이 아니며, 다시 보려
 - 다음 design-review 회차의 실화면 계측 잔여와 감사 축은 `dev-package/sessions/design-review-20260924.md` §9 · §11 이 정본이다. 이 intent 는 복제하지 않는다.
 
 ## 설계트리 (grill-me 결과)
-- 미실시 — 초안이다. Ted 판정 뒤에 채운다.
+- 진행 중 — 2026-09-25 부터 가지별로 채운다. 각 가지의 「사실」은 develop `80aa95ac` 에서 조사·재계산한 값이다.
+- Q1 (a)-1 비활성 단추 모양
+  - 사실: `frontend/src/shell/primitives.css` 의 btn 계열 `:disabled` 규칙 0(hover 제외만 `:31`·`:35`) · btn 계열이면서 `disabled` 를 가진 단추 58(흰 단추 plain·secondary·ghost 34 · 채움 primary 14 · `.btn-strong` 8 · `.btn-danger` 2) 중 56 이 활성과 같은 모양 · 층 순서 `tokens, base, primitives, patterns, screens`(`frontend/src/shell/layers.css:1`) — `.btn-strong`(`frontend/src/components/upload/upload.css:315`)·`.btn-danger`(`deletion.css:36` · `approval.css:15`)는 screens 층에서 배경을 정해 primitives 의 배경 규칙이 닿지 않고 opacity·cursor 는 닿는다 · 비활성 모양 정본·토큰 0 · apple-design 지침에 비활성 규칙 없음 · `frontend-design-lint` 는 opacity·cursor 를 보지 않는다.
+  - Q1a 구분 방식 → A 흐리게 — `opacity: .5`, `primitives.css` 규칙 하나로 58 전부 (권장안 수용)
+    - 글자 대비가 라이트 2.12(파란 채움)–3.46(흰 단추) · 다크 3.24–4.61 로 내려간다. WCAG 1.4.3·1.4.11 은 비활성 컴포넌트를 제외하지만 저장소 합격선(`.agents/skills/design-review/SKILL.md:17` · 예외 = `:active` 뿐)에는 없으므로 비활성 예외 문구를 함께 넣는다.
+    - 기각 — 회색 채움(`frontend/src/auth/login.css:88` 방식): gray-500 대 활성 primary-600 명도비 1.01:1(라이트·다크)이라 색상만 다르고, 흰 단추 34 의 모양이 따로 필요하며, screens 층 3파일에 반복해야 한다. 새 값: 새 토큰 이름·값 판정이 필요하다.
+  - Q1b 비활성 단추 위 커서 → A `cursor: not-allowed` (권장안 수용) — 선례 `deletion.css:41` · `frontend/src/components/lineage/lineage.css:257`. 기각: `default`(선례 `login.css:88` 1곳).
+  - Ted 원문(Q1a·Q1b 에 대한 답 · 2026-09-25): "권고"
 
 ## 미해결 질문
-- Q1 (a)-1 비활성 모양: 선례 A(색 교체) · 선례 B(opacity) · 새 값 중 무엇으로 할지.
+- Q1 (a)-1 비활성 모양: 방식·커서는 판정 완료(설계트리 Q1a·Q1b). 남음 — 로그인 제출 단추를 같은 방식으로 맞출지 · `deletion.css:41`–`44` 의 겹치는 규칙 정리 · 합격선 비활성 예외 문구의 자리.
 - Q2 (a)-2 ~ (a)-6: 항목별로 채택 · 현행 유지 · 다음 회차 중 무엇인지.
 - Q3 (a)-7 · (a)-8: 확정 값을 다시 열지. 연다면 이 intent 를 승인하고 별건 spec 으로 진행한다.
 - Q4 (b)-3: dev 쓰기 승인 범위와 시험 데이터 정리 방법.
