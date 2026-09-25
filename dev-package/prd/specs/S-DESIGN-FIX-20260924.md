@@ -404,3 +404,17 @@ F-css · F-upload · F-preview 병합 뒤(충돌 0) 남은 것. 단일 레인(�
 | 3 | `.btn-strong:hover` 에 `:disabled` 제외(A2 와 같은 결함 · 새 값 없음) | `upload.css` · 시험 |
 | 4 | F-upload 시험 제목이 단언과 다름(FU-1 · 「inert 가 남지 않는다」인데 inert 를 재지 않음) — 단언을 제목에 맞춘다 | `design-fix-20260924-F-upload.test.tsx` |
 | 5 | `spring.ts` 문서 주석 공백 복원(FP-3) · F-preview 보고서의 A41 서술 정정(효과 정리 stopInertia 는 언마운트 때만 · A41 은 remeasure 가 담당 · FP-2) | `spring.ts` · `dev-package/sessions/design-fix-20260924-F-preview.md` |
+
+### CI 경합 수정 레인 F-ci (2026-09-25 · Ted 「제품+시험 같이」)
+
+PR #141 의 CI `frontend-gates` 가 두 시도 연속 red(attempt 1 `thumb-nudge-20260905` 17 · attempt 2 `preview-slot-4x3` — 둘 다 `data-preview-slot-state="idle"`). 진단 워크플로(재현 170회 · 코드 경로 · CI 이력 · 반박 2 · Fable 판정 `flake`) 결론: 이 PR 이전부터 있던 경합. 업로드 미리보기 패널의 「미리보기 그리기」(`up-preview-draw`)는 `uploadId` 만 있으면 첫 렌더부터 누를 수 있는데, `palette` 는 `source.palettes()` 가 끝나야 채워지고 `draw()` 는 `if (!uploadId || !palette) return;`(`components/upload/PreviewPanel.tsx`)에서 **조용히** 빠진다. 시험은 버튼이 보이자마자 누르고, 실제 사용자도 같은 클릭을 잃는다. 5초 대기 한도는 원인이 아니다(클릭이 버려진 뒤엔 무한히 기다려도 그려지지 않는다). 9/17 의 `15062c91`(바깥 한도 20초)은 효과가 없었다.
+
+| # | 항목 | 파일 |
+|---|---|---|
+| 1 | 제품 — 팔레트가 준비되기 전에는 `up-preview-draw` 를 비활성(`disabled`)으로 둔다. 팔레트 목록을 못 받은 경우(오류·빈 목록)에도 버튼이 영구히 죽은 채 설명 없이 남지 않게 기존 오류·안내 경로를 따른다. 새 색·토큰·문구는 만들지 않는다(필요하면 멈추고 보고) | `frontend/src/components/upload/PreviewPanel.tsx` |
+| 2 | 시험 — 팔레트 준비 전 버튼 비활성 · 준비 뒤 활성 · 비활성 중 클릭은 그리기를 시작하지 않음 · 준비 뒤 클릭은 그린다 | 새 시험 `frontend/test/design-fix-20260924-F-ci.test.tsx` |
+| 3 | 시험 — 「버튼이 활성화될 때까지 기다린 뒤 누른다」 공용 헬퍼로 경합 클릭 자리 전부 교체(`thumb-nudge-20260905` `drawn()` · `preview-slot-4x3` · `grid-preview` · `upload-preview-poll-20260903` · `preview-pick-and-fallback` · `upload-pick-conditional-20260913` · `upload.test.tsx` · `preview-layout-20260912` · `upload-progress-recovery` 등 — 전수는 grep 으로 확정) | `frontend/test/**` |
+| 4 | `15062c91` 의 `DRAWN_TIMEOUT_MS = 20_000` 처럼 원인과 무관하게 늘린 한도는 되돌린다(기록 · 커밋 메시지에 근거) | 해당 시험 |
+
+- 커밋마다 꼬리표 `Intent-Ref: dev-package/intent/2026-09-25-design-fix-20260924.md`(develop #140 의 intent-ref 검사).
+- 이 브랜치엔 다른 세션도 커밋한다 — push 는 fetch 뒤 fast-forward 로만.
