@@ -587,4 +587,6 @@
   - T10: Claude advisor Bash 유지 · C9ⓑ 흡수 · 재판정 = L7 뒤.
   - PR 2 반입 5건(phase 2 상세화 때 반드시 포함): C3 ①(`ci.yml` 주석 → B4) · C8 ③(`lifecycle-evidence.md` measurement-lane 절) · C9 ①(`lane-worker.md:27` → L3) · T8(L1 spec 1줄) · T10(L7 입력).
   - spec 정정(레인 병합 뒤 반영): V14 의 README 검사 = decision-number-guard 행만(`README.md:74` migration-guard 행은 PR 3 · 레인 통지 2026-09-26).
+- 2026-09-26 T9 실행 — Ted 원문 "엉 삭제승인항게" · 이틀 넘은 `/tmp/service-tests-*` 210개 삭제(남은 131개는 최근 이틀 · gate 임시 postgres 없음 확인 뒤).
+- 2026-09-26 T3 33 실행 — Ted 원문 "33체크아웃이 뭔지모르겠다" · 관측: `33 CoLAB-v2` 는 2026-09-18 01:04 GitHub clone(HEAD 기록 = clone 1줄 · 이후 전환 · 커밋 0 · 전용 DB 컨테이너 없음) → 권고대로 `_worktree-archive-20260926/33 CoLAB-v2` 로 이동(삭제 아님 · 되돌릴 수 있음). 32 는 PR 3 병합 뒤 갱신 그대로.
 
