@@ -219,4 +219,10 @@
 
 **승격 적용 계획:** `dev-package/reports/evidence-promotion/round-1-2026-09-26/promotion-plan/apply-plan.md`. 두 규칙 52칸을 `facts` 로 옮긴 승격 payload(sha256 `724dcbd6ad56ff0330df1e550dbb54d203bd5705bc3181cd68ddd858708c1941`)를 기존 적재기(`dataset_evidence_apply.py`, `--reviewer <ULID>`)로 싣는다. 순서 = 되돌림 스냅숏 → dry-run → 적용 → 멱등 재확인. 되돌림은 원본 payload 재적재. 일회용 DB 리허설: PUT 본문 541건 계약 검증 · reviewed 사실 누락 0 · 적재 dry-run evidence 541 / unchanged 2 · 재실행 0 / 543.
 
-**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다.
+~~**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다.~~ → 아래 「승격 판정(2026-09-26)」으로 GO.
+
+**승격 판정(2026-09-26, Ted, 원문 그대로):**
+> 전부 권고대로
+
+- ① dev 반영 GO ② 결정 5 목록 밖이던 native-resolution-carried 도 승격 — **승격 규칙 3개**(platform-from-instrument · direct-observation-from-level · native-resolution-carried) ③ 공용 AI 게이트 DB(`colab_ai_applied_30`) 재구성 승인 — 별도 레인 몫(이 회차는 손대지 않는다).
+- 세 규칙 승격 payload sha256 `41f488a42ffb07c1c64d4460ea86a6b98c72b63494ec45291f72f5c73561c6fc`(53칸 이동 · 두 규칙판 `724dcbd6…` 대체). 일회용 DB 리허설: PUT 본문 541건 계약 검증 · reviewed 사실 2071 → 2071 · 승격 추가 1083 · 충돌·누락 0 · 적재 dry-run evidence 541 / unchanged 2 · 적용 뒤 재실행 0 / 543. 계획 = `promotion-plan/apply-plan.md`.
