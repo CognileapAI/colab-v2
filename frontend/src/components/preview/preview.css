@@ -346,6 +346,12 @@
   font-size: 13px;
 }
 
+/* 확대 한계 비활성 = 단추 프리미티브와 같은 두 값(design-fix 후속 20260925 Q1e). */
+.pv-zoom button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .pv-shot {
   display: flex;
   gap: 8px;

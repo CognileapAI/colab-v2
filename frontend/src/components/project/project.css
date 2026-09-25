@@ -371,6 +371,12 @@
   cursor: pointer;
 }
 
+/* 제출 중 비활성 = 단추 프리미티브와 같은 두 값(design-fix 후속 20260925 Q1e). */
+.pj-x:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .pj-modal-b {
   padding: var(--space-card);
   overflow-y: auto;

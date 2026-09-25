@@ -25,7 +25,8 @@
   transition: background var(--ease), border-color var(--ease);
 }
 /* hover — plain·ghost·secondary 는 gray-50, primary 는 primary-700(design-fix 20260924 #9 · 값 10 · 억눌린 hover 해소).
-   누름(`:active`) = hover 의 한 단 진한 값 — plain·ghost·secondary 는 gray-100, primary 는 primary-700 유지(WU-A1 · 값 14).
+   누름(`:active`) = hover 의 한 단 진한 값 — plain·ghost·secondary 는 gray-100(WU-A1 · 값 14), primary 는 primary-800
+   (design-fix 후속 20260925 Q3a).
    비활성 단추는 hover 에서 뺀다 — `:disabled` 제외를 `:where()` 안에 두어 특이도가 누름 규칙과 같게 남는다(뒤에 선 누름이
    이긴다 · 수용 검토 A2 · A5 · A13). */
 .btn:where(:not(.btn-primary, :disabled)):hover { background: var(--color-gray-50); }
@@ -33,12 +34,16 @@
 .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
 .btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
 .btn-primary:where(:not(:disabled)):hover { background: var(--color-primary-700); }
-.btn-primary:active { background: var(--color-primary-700); }
+.btn-primary:active { background: var(--color-primary-800); }
 .btn:where(:not(.btn-primary)):active { background: var(--color-gray-100); }
-/* 작은 단추(#12 · 값 11 · v2 목업 `.btn-sm`) — 640px 이하는 터치 하한 `--control-height`(44px)를 지킨다.
+/* 비활성 = 흐리게 · 금지 커서(design-fix 후속 20260925 Q1a · Q1b) — btn 계열 전부. 화면 층 파생(파란 강조 · 빨간 삭제)은
+   배경만 정하므로 opacity · cursor 는 이 규칙이 닿는다. 대비는 합격선 밖(WCAG 1.4.3 · 1.4.11 비활성 예외). */
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* 작은 단추(#12 · 값 11 · v2 목업 `.btn-sm`) — 640px 이하 또는 터치가 주 입력인 기기(`pointer: coarse` · design-fix 후속
+   20260925 Q3c)는 터치 하한 `--control-height`(44px)를 지킨다.
    `label.btn-sm`(파일 고르기)도 글자가 세로 가운데에 오도록 inline-flex · center(수용 검토 A4). */
 .btn-sm { display: inline-flex; align-items: center; height: 29px; min-height: 29px; padding: 0 11px; font-size: var(--text-caption); }
-@media (max-width: 640px) {
+@media (max-width: 640px), (pointer: coarse) {
   .btn-sm { min-height: var(--control-height); }
 }
 

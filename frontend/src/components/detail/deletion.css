@@ -38,8 +38,4 @@
   border-color: var(--fg-danger);
   color: var(--color-on-danger);
 }
-.detail-page .btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 }

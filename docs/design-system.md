@@ -40,7 +40,7 @@
 <!-- generated:tokens -->
 입력(sha256):
 
-- `frontend/src/shell/tokens.css` `f0874beaa703f5a80a43d5dcd6c5fccf6bdcc2673f739109e4ccdc6956a06294`
+- `frontend/src/shell/tokens.css` `b626fef9b9a274eb7858a85d77e5b2ebb2b23356cab46a3d45df399c852082a2`
 - `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
 라이트 `:root` 이름 85 · 다크 블록 이름 43 · 폭 분기에서 다시 정의하는 이름 5 · 다크 동일 면제 6
@@ -124,7 +124,7 @@
 | `--space-page` | `32px` | — | `(max-width: 640px): 16px` |
 | `--space-card` | `24px` | — | `(max-width: 640px): 20px` |
 | `--space-section` | `24px` | — | `(max-width: 640px): 20px` |
-| `--control-height` | `40px` | — | `(max-width: 640px): 44px` |
+| `--control-height` | `40px` | — | `(max-width: 640px): 44px`<br>`(pointer: coarse): 44px` |
 | `--radius-sm` | `8px` | — |  |
 | `--radius-md` | `10px` | — |  |
 | `--radius-lg` | `12px` | — |  |
@@ -170,7 +170,7 @@
 
 | 계열 | 마크업 | 수식자·조각 |
 |---|---|---|
-| btn | `<button class="btn" type="button">` | `.btn-primary` · `.btn-secondary` · `.btn-ghost` · `.btn-danger` · `.btn-sm`(작은 단추 · 640px 이하에서는 `--control-height`) |
+| btn | `<button class="btn" type="button">` | `.btn-primary` · `.btn-secondary` · `.btn-ghost` · `.btn-danger` · `.btn-sm`(작은 단추 · 640px 이하 또는 터치가 주 입력인 기기에서는 `--control-height`) · `disabled`(opacity .5 · cursor not-allowed) |
 | field | `<input class="inp">` · `<select class="sel">` | `disabled` · `textarea.inp`(크기 조절은 업로드 화면 규칙) |
 | chip | `<span class="chip">` | `.chip--off` · `.chip--verified` · `.chip--lineage` · `.chip--neutral` · `.chip--warning` |
 | card | `<div class="card"><div class="card-h"><h3>…</h3></div><div class="card-b">…</div></div>` | — |
@@ -180,33 +180,33 @@
 <!-- generated:primitives -->
 입력(sha256):
 
-- `frontend/src/shell/primitives.css` `32f6c90ada5b9352c2a21b844403a32a95a17eb35b2144fc9aae6a638a6c048c`
+- `frontend/src/shell/primitives.css` `b3af79994a05b56e430c8bb3dae4031395b1f09ecdbd2c24d11aada259390aba`
 - `gates/fixtures/frontend-design-lint/primitives.txt` `82e423d8d2ffd7e4e92cab80301bcbf15e6ea87437310a0f99568aab4c14253f`
 - `gates/fixtures/frontend-design-lint/primitives-exempt.txt` `25f7aa495f529320af9ae53c064479bac5a3c08f1b07ee8cf9b631dc3f001eda`
 - `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-목록 클래스 22(계열 6) · `primitives.css` 규칙 36 · 선언 123
+목록 클래스 22(계열 6) · `primitives.css` 규칙 37 · 선언 125
 
 | 계열 | 목록 클래스 | 규칙 | 기본값 선언 |
 |---|---:|---:|---:|
-| btn | 6 | 10 | 29 |
+| btn | 6 | 11 | 31 |
 | field | 2 | 2 | 8 |
 | chip | 2 | 7 | 25 |
 | card | 3 | 4 | 16 |
 | table | 3 | 6 | 18 |
 | modal | 6 | 7 | 27 |
-| **계** | 22 | 36 | 123 |
+| **계** | 22 | 37 | 125 |
 
 규칙 = 그 클래스가 `:not()`·`:has()` 인자 밖에 나오는 `primitives.css` 규칙(폭 분기 포함). 한 규칙이 두 클래스에 걸리면(`:is(.inp, .sel)`) 아래 표의 두 행에 모두 세고, 계열 합계는 한 번만 센다. 「정의 없음」 = 목록에는 있어 화면 파일의 맨 정의가 막히지만 기본값이 없다.
 
 | 계열 | 클래스 | 규칙 | 선언 | 선택자 |
 |---|---|---:|---:|---|
-| btn | `.btn` | 3 | 13 | `.btn`<br>`.btn:where(:not(.btn-primary, :disabled)):hover`<br>`.btn:where(:not(.btn-primary)):active` |
+| btn | `.btn` | 4 | 15 | `.btn`<br>`.btn:where(:not(.btn-primary, :disabled)):hover`<br>`.btn:where(:not(.btn-primary)):active`<br>`.btn:disabled` |
 | btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:where(:not(:disabled)):hover`<br>`.btn-primary:active` |
 | btn | `.btn-secondary` | 1 | 3 | `.btn-secondary` |
 | btn | `.btn-ghost` | 1 | 1 | `.btn-ghost` |
 | btn | `.btn-danger` | 정의 없음 | — |  |
-| btn | `.btn-sm` | 2 | 7 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px) |
+| btn | `.btn-sm` | 2 | 7 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px), (pointer: coarse) |
 | field | `.inp` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
 | field | `.sel` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
 | chip | `.chip` | 2 | 16 | `.chip`<br>`.chip:where(:not([class*="chip--"]))` |
@@ -237,7 +237,7 @@ P2b 가 기본값을 모으면서 **오늘 값 그대로 남긴** 화면 쪽 편
 
 | 계열 | 화면 범위 규칙으로 옮긴 편차(P2b 신설) | 남긴 특이도 편차 |
 |---|---|---|
-| btn | `upload.css` `.btn-strong:where(:not(:disabled)):hover { background: primary-700 }`(design-fix 20260924 #10 · 비활성 제외 F-final) | `.modal-takeover .reg-actions .btn` · `.detail-page label.btn` · `.labinfo-card .card-h .btn` · `.account-row-actions > .btn` · `.approval-dialog .btn-danger` · `.detail-page .btn-danger(:disabled)` |
+| btn | `upload.css` `.btn-strong:where(:not(:disabled)):hover { background: primary-700 }`(design-fix 20260924 #10 · 비활성 제외 F-final) | `.modal-takeover .reg-actions .btn` · `.detail-page label.btn` · `.labinfo-card .card-h .btn` · `.account-row-actions > .btn` · `.approval-dialog .btn-danger` · `.detail-page .btn-danger` |
 | field | — | `.modal-takeover .inp/.sel(:focus-visible)` · `.vartable td .inp(:focus/-visible)` · `textarea.inp` · 배치 문맥 9(`.pv-pick-f .sel` 등) |
 | chip | `members.css` `.memtbl .chip--off { margin-left: 6px }` | `.detail-page .chip(--neutral/--warning)` · `.search-page .chip` · `.lin .chip` · `.pc-m/.pd-m .chip` · `.fname .chip` · `.up-analyze .chip.is-analyzing` |
 | card | `upload.css` `.up-card { border-width; border-style }` | `.catalog-page .card` · `.project-detail .card` · `.memgrid .card-b` · `.up-card > .card-b` · `.modal-takeover .up-steps .card(-h/-b)` · `.up-empty .up-card > .card-b` |
@@ -277,8 +277,9 @@ patterns 층은 이름만 선언돼 있고 파일이 없다. 아래 규칙은 `f
 
 - 새 CSS 파일은 `@layer screens { … }` 한 블록으로 감싸고 `styles.ts` 에 import 를 더한다(① 층 함정).
 - 새 화면·새 상태는 `frontend/scripts/visual-baseline/scenes.json` 에 캡처 장면을 더하고(3폭 × 2테마) 착수 기준 캡처와 대조한다(⑧).
-- 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상(예외 — 누르는 동안(`:active`)만의 순간 상태는 이 합격선 밖이다. 평상시·hover·초점 상태는 그대로 4.5:1 · 실측 라이트 카탈로그 행 회색 글자 on 누름 면 4.23:1 · 다크 보조 글자 on 누름 면 4.02:1 · design-fix 20260924 값 20) · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
-- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100, 파란 채움은 primary-700(design-fix 20260924 WU-A1–A4). hover 가 `--color-surface-hover` 인 자리의 누름은 `--color-surface-pressed`(값 19)를 쓴다(예: 카탈로그 표 행 · 상단 메뉴 링크 · 업로드 달력 `.dr-nav button` · `.dr-useg button`) — 두 테마에서 누름 ≠ hover.
+- 글자 13px 이상(장식 글리프 `::before`/`::after` 는 제외 — #15) · 대비 4.5:1 이상(예외 — 누르는 동안(`:active`)만의 순간 상태는 이 합격선 밖이다. 평상시·hover·초점 상태는 그대로 4.5:1 · 실측 라이트 카탈로그 행 회색 글자 on 누름 면 4.23:1 · 다크 보조 글자 on 누름 면 4.02:1 · design-fix 20260924 값 20 · 비활성(`:disabled`) 컨트롤은 합격선 밖 — WCAG 1.4.3 · 1.4.11 비활성 예외(흐린 단추 글자 대비 라이트 2.12–3.46 · 다크 3.24–4.61 · design-fix 후속 20260925 Q1f)) · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 인터랙션 하한은 `design-review` 스킬 §0 의 정적 합격선과 `frontend-visual` 게이트가 본다.
+- 누름 피드백 = hover 의 한 단 진한 값(`:active`) — 흰 면·투명 단추는 gray-100(design-fix 20260924 WU-A1–A4), 파란 채움은 primary-800(`.btn-primary` · `.btn-strong` · `.gnb-upload` · design-fix 후속 20260925 Q3a). hover 가 `--color-surface-hover` 인 자리의 누름은 `--color-surface-pressed`(값 19)를 쓴다(예: 카탈로그 표 행 · 상단 메뉴 링크 · 업로드 달력 `.dr-nav button` · `.dr-useg button`) — 두 테마에서 누름 ≠ hover.
+- 비활성 = opacity .5 · cursor not-allowed(`:disabled` · 단추 프리미티브 `.btn:disabled` 한 규칙 ＋ btn 계열 밖 단추는 화면 CSS 에 같은 두 값 · design-fix 후속 20260925 Q1a · Q1b · Q1e).
 
 ## ⑥ 게이트 `frontend-design-lint` — 조건 a~h
 
@@ -308,6 +309,7 @@ P1~P3 · P2a · P2b · P5 보고서에서 「Ted 판정」·「판정 필요」�
 | # | 항목 | 오늘 렌더 | 선택지 | 출처 |
 |---|---|---|---|---|
 | 10 | 화면 편차 통일(③ 화면 편차 목록 · 버튼 높이·모서리·칩 여백 등) | 화면마다 다름 | 편차 목록 유지 · 통일안 | P2b 우려 1 · P5 우려 1 |
+| 17 | 빨간 삭제 단추 hover · 누름 없음 | 기본 = hover = 누름 | 새 빨간 단계 토큰 · 전역 `.btn-danger` | intent `dev-package/intent/2026-09-25-design-fix-followups.md` Q3b · Q5 |
 
 ### 닫힘 — design-review 20260924
 
