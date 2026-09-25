@@ -164,10 +164,12 @@ def check_accounts(work,profile,target):
         checked=json.loads(accounts.private(work/'verification.json').read_text())
         identity={'profile':accounts.fingerprint(entries),'binding':binding}
         if final.get('state')!='complete' or any(final.get(k)!=v or checked.get(k)!=v for k,v in identity.items()):raise ValueError()
-        required={'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False}
+        required={'accounts':5,'operators':4,'professors':1,'password_changed_by_check':False}
         if any(checked.get(k)!=v for k,v in required.items()):raise ValueError()
         # 소유자 관리 운영자 수는 승인 프로필과 같아야 한다(0 이면 표시가 없던 종전 증거도 받는다).
-        owners=sum(map(accounts.owner_managed,entries))
+        # must_change_password = 변경 요구가 남은 계정 수(소유자 관리 운영자 제외). 종전 증거의 True 는 소유자 관리 0명일 때만.
+        owners=sum(map(accounts.owner_managed,entries));mcp=checked.get('must_change_password')
+        if not ((type(mcp) is int and mcp==5-owners) or (mcp is True and owners==0)):raise ValueError()
         if checked.get('owner_managed',0)!=owners or checked.get('initial_logins',5)!=5-owners:raise ValueError()
     except Exception as exc:
         raise ValueError('required account verification evidence missing or changed') from exc
@@ -263,12 +265,12 @@ def main() -> int:
         doc["previewJudgment"] = rows
     if doctor:
         doc["doctorSummary"] = doctor
-    # `--verify-from` 재개 출처 — 앞 실행 자리 이름·runId·대상 sha·옮긴 파일 hash(절대경로 없음).
+    # `--verify-from` 재개 출처 — 앞 실행 자리 이름·runId·대상 sha·이은 행 수·다시 잰 seq·앞 파일 hash(절대경로 없음).
     vf = _load(run / "verify-from.json", None)
     if isinstance(vf, dict):
         doc["verifyFrom"] = {k: vf.get(k) for k in ("priorRunDirName", "priorRunId", "priorTargetSha",
                                                     "priorApprovalTargetSha", "targetShaMatches", "priorOutcome",
-                                                    "priorFailedStage", "files")}
+                                                    "priorFailedStage", "carriedRows", "rewalkedSeq", "files")}
 
     schema = json.loads(pathlib.Path(args.schema).read_text(encoding="utf-8"))
     errs = validate(doc, schema)
@@ -311,7 +313,8 @@ def main() -> int:
                    for e in kd.get("unneeded", [])))) if isinstance(kd, dict) else "— 대조 미실행"
     vfd = doc.get("verifyFrom")
     verify_from = ("앞 실행 `{priorRunDirName}` · runId `{priorRunId}` · 대상 sha `{priorTargetSha}` · "
-                   "상세 화면 순회 생략(판정표·계수 옮김)").format(**vfd) + (
+                   "통과 {carriedRows}행 이음 · 실패 행 seq {rewalk} 만 다시 잼").format(
+                       rewalk=",".join(vfd.get("rewalkedSeq") or []) or "없음", **vfd) + (
                    "" if vfd.get("targetShaMatches") else " · ⚠ 이번 대상 sha 와 다르다 — 두 배포 사이 미리보기 경로 변경 확인"
                    ) if vfd else "없음(상세 화면 순회)"
     pathlib.Path(args.session_out).write_text(SESSION_TEMPLATE.format(

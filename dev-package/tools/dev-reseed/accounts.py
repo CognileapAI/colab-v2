@@ -4,7 +4,7 @@ from urllib.request import Request,urlopen
 from urllib.parse import urlsplit
 DEFAULT_PROFILE=pathlib.Path(os.environ.get('COLAB_RESEED_ACCOUNTS_PROFILE',str(pathlib.Path.home()/'.config/colab-platform/dev-reseed-accounts-approved.json'))).expanduser()
 IDENTITY=('email','name','admin','role','lab','account_id','lab_id','initial_password_strategy')
-# ownerManaged = 소유자가 비밀번호를 관리하는 운영자(2026-09-25 사용자 결정). 없으면 false 다.
+# ownerManaged = 소유자가 비밀번호를 관리하는 운영자(소유자가 비밀번호를 이미 바꾼 운영자 항목에만 둔다). 없으면 false 다.
 # 최종화·검증은 그 계정의 「초기 자격」 조건(비밀번호 = 이메일 · 변경 요구)만 건너뛰고 비밀번호를 바꾸지 않는다.
 # 교수 계정에는 둘 수 없다 — 교수 최종화는 초기 비밀번호로 되돌리는 절차다.
 def owner_managed(e):
@@ -76,7 +76,9 @@ def finalize_store(store,entries,verify_password):
   cred=store.find(email)
   if final[email].operator is not e['admin'] or cred is None or cred.status!='active':raise ValueError('final account policy mismatch')
   if not owner_managed(e) and (not cred.must_change_password or not verify_password(email,cred.password)):raise ValueError('final account policy mismatch')
- return {'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False,'owner_managed':sum(map(owner_managed,entries))}
+ owners=sum(map(owner_managed,entries))
+ # must_change_password = 변경 요구를 확인한 계정 수 — 소유자 관리 운영자는 빼고 센다(그 계정은 변경 요구를 검사하지 않는다).
+ return {'accounts':5,'operators':4,'professors':1,'must_change_password':5-owners,'password_changed_by_check':False,'owner_managed':owners}
 
 def verify_logins(entries,base_url,opener=urlopen):
  def request(method,path,data=None,token=None,status=200):
@@ -95,7 +97,7 @@ def verify_logins(entries,base_url,opener=urlopen):
    if any(me.get(k)!=v for k,v in {'email':e['email'],'name':e['name'],'mustChangePassword':True,'canManageServiceAccounts':e['admin']}.items()) or (me.get('role') or '')!=e['role'] or (me.get('labName') or '')!=e['lab']:raise ValueError('initial login identity/policy mismatch')
   finally:request('DELETE','/sessions/current',token=token,status=204)
  owners=sum(map(owner_managed,entries))
- return {'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False,'owner_managed':owners,'initial_logins':5-owners}
+ return {'accounts':5,'operators':4,'professors':1,'must_change_password':5-owners,'password_changed_by_check':False,'owner_managed':owners,'initial_logins':5-owners}
 
 def clear_legacy(paths,backup):
  backup=pathlib.Path(backup);backup.mkdir(mode=0o700,parents=True,exist_ok=True)

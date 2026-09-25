@@ -151,7 +151,7 @@ def test_default_profile_is_private_external_config(tmp_path,monkeypatch):
  approved.chmod(0o644)
  with pytest.raises(ValueError):m.main()
 
-# ── ownerManaged 운영자 — 소유자가 비밀번호를 관리하는 운영자 계정(2026-09-25 사용자 결정) ──
+# ── ownerManaged 운영자 — 소유자가 비밀번호를 관리하는 운영자 계정(소유자가 비밀번호를 바꾼 운영자 항목만) ──
 def owner_profile():
  p=profile();p[0]['ownerManaged']=True;return p
 
@@ -244,8 +244,17 @@ def test_report_requires_owner_managed_count_to_match_profile(tmp_path,monkeypat
  for f in [seed/'state.json',seed/'verify.json',run/'counts.json',run/'preview-judgment.tsv']:f.write_text('{}')
  binding=m.proof(p,work,run,'a'*12,True);identity={'profile':m.fingerprint(p),'binding':binding}
  m.save(work/'finalization.json',{**identity,'state':'complete'})
- base={**identity,'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False,'initial_logins':4}
+ base={**identity,'accounts':5,'operators':4,'professors':1,'must_change_password':4,'password_changed_by_check':False,'initial_logins':4}
  s=importlib.util.spec_from_file_location('reseed_report',P/'report.py');r=importlib.util.module_from_spec(s);s.loader.exec_module(r)
  m.save(work/'verification.json',{**base,'owner_managed':1});r.check_accounts(work,approved,'a'*12)
  m.save(work/'verification.json',{**base,'owner_managed':0})
  with pytest.raises(ValueError):r.check_accounts(work,approved,'a'*12)
+ # 변경 요구 요약은 소유자 관리 계정을 뺀 수다 — 「5명 모두 변경 요구」(True·5)를 소유자 관리가 있는 증거로 받지 않는다.
+ for claimed in (True,5):
+  m.save(work/'verification.json',{**base,'owner_managed':1,'must_change_password':claimed})
+  with pytest.raises(ValueError):r.check_accounts(work,approved,'a'*12)
+
+def test_finalize_summary_counts_must_change_password_without_owner_managed():
+ m=mod();p=owner_profile();store,_,_=owner_store(p)
+ result=m.finalize_store(store,p,lambda pw,hash:pw==hash)
+ assert result['must_change_password']==4 and result['owner_managed']==1

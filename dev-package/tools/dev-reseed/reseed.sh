@@ -136,7 +136,7 @@ DEV_URL="${COLAB_DEV_WEB_URL:-${COLAB_DEV_URL:-}}"
 RELEASE_PLAN=""
 MD_ROOT=""
 SEED_WORK_DIR=""
-# 앞 실행의 판정표로 verify 대조만 다시 한다(`--from verify` 전용 · 상세 화면 순회 생략).
+# 앞 실행의 판정표를 잇고 실패 행만 다시 잰 뒤 대조한다(`--from verify` 전용 · 전수 재순회 없음).
 VERIFY_FROM="${COLAB_RESEED_VERIFY_FROM:-}"
 
 usage() {
@@ -182,10 +182,11 @@ usage() {
                                 --rehearse는 --check만, deploy는 같은 보호 사본을 check한 뒤
                                 기존 executor run 1회로 배포·검증한다. --dry-run은 실행하지 않는다.
   --md-root <자리>              정본 md 뿌리(기본 = 참조자료 뿌리).
-  --verify-from <앞 실행 자리>  `--from verify` 전용(환경 COLAB_RESEED_VERIFY_FROM). 앞 실행의 판정표·계수를
-                                옮겨 대조(알려진 결함 면제 known-defects.json)만 다시 하고 record-details →
-                                계정 최종화로 간다. 상세 화면 순회는 하지 않는다. 앞·이번 대상 sha 가
-                                다르면 주의 줄을 찍고 verify-from.json 에 남긴다 · --run-dir 은 새 자리.
+  --verify-from <앞 실행 자리>  `--from verify` 전용(환경 COLAB_RESEED_VERIFY_FROM). 앞 실행의 판정표에서
+                                통과 행은 잇고 **실패 행만** 상세 화면을 다시 잰 뒤 대조(알려진 결함 면제
+                                known-defects.json) → record-details → 계정 최종화로 간다. 앞 자리는 preflight
+                                전에(dry-run 포함) 로컬로 검사하고 거부면 종료 2. 앞·이번 대상 sha 가 다르면
+                                주의 줄을 찍고 verify-from.json 에 남긴다 · --run-dir 은 새 자리.
 USAGE
 }
 
@@ -323,6 +324,15 @@ else
   DEV_SSH_MISSING=()
 fi
 export COLAB_DEV_SSH="${COLAB_DEV_SSH:-}" COLAB_DEV_KEY_FILE="${COLAB_DEV_KEY_FILE:-}"
+
+# `--verify-from` 앞 실행 자리는 **dev 에 닿기 전에**(preflight 전에) 로컬 파일로 검사한다 — 거부면 바꾸는 단계가
+# 하나도 돌지 않았으므로 회차 기록을 레포에 남기지 않고 종료 2 로 끝난다. verify 단계는 같은 검사를 다시 한다.
+if [ -n "$VERIFY_FROM" ]; then
+  if ! verify_from_prior check "$SEED_WORK_DIR/state.json" "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml"; then
+    echo "--verify-from 앞 실행 자리를 이을 수 없다 — dev 에 닿기 전에 멈췄다(로그 $(relpath "$STAGE_LOG"))" >&2
+    exit 2
+  fi
+fi
 
 # ── 순차 실행 ────────────────────────────────────────────────────────────
 # 단계 하나가 비영 종료하면 **그 자리에서 멈춘다** — 단계 이름과 로그 경로를 낸다.

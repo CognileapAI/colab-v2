@@ -69,12 +69,13 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 �
 - 교수는 자료 적재·검증 동안만 임시 운영자로 사용한다. 자료 검증 후 초기 비밀번호로 돌리고
   임시 운영자 권한을 해제한다. 최종화 재개 때 완료한 비밀번호 초기화를 반복하거나 권한을 다시 부여하지 않는다.
 - 기존 파일 기반 인증 계정은 앱 기동 전에 보호 백업 후 비우고, 새 DB 계정 외의 로그인이 남지 않게 확인한다.
-- 5명 모두 실제 초기 로그인·신원·역할·소속·비밀번호 변경 요구를 검사하고 로그아웃한다.
+- 5명 모두(아래 소유자 관리 운영자는 제외) 실제 초기 로그인·신원·역할·소속·비밀번호 변경 요구를 검사하고 로그아웃한다.
   검증 중 비밀번호를 변경하지 않는다. 계정 생성 수만으로 완료를 판정하지 않는다.
-- **소유자 관리 운영자**(`"ownerManaged": true` · 2026-09-25 사용자 결정) — 비밀번호를 소유자가 관리하는 운영자 항목에만
-  둘 수 있다(교수 항목·불리언 아닌 값은 프로필 무효). 최종화·검증은 그 계정의 **초기 자격 조건만**(비밀번호 = 이메일 ·
-  변경 요구) 건너뛰고 초기 로그인을 시도하지 않는다. 계정 존재 · 활성 자격 · 운영자 권한 · 연구실 미소속 · 이름·역할·소속
-  대조는 그대로 하고, 그 계정의 비밀번호는 읽기만 하며 바꾸지 않는다. 결과의 `owner_managed` 가 그 수다.
+- **소유자 관리 운영자**(`"ownerManaged": true`) — **소유자가 비밀번호를 이미 바꾼 운영자 항목에만** 둔다. 아직 초기 자격
+  정책 아래 있는 운영자 항목에 붙이면 그 계정의 초기 자격 검사가 조용히 빠지므로 붙이지 않는다(교수 항목·불리언 아닌 값은
+  프로필 무효). 최종화·검증은 그 계정의 **초기 자격 조건만**(비밀번호 = 이메일 · 변경 요구) 건너뛰고 초기 로그인을 시도하지
+  않는다. 계정 존재 · 활성 자격 · 운영자 권한 · 연구실 미소속 · 이름·역할·소속 대조는 그대로 하고, 그 계정의 비밀번호는 읽기만
+  하며 바꾸지 않는다. 결과의 `owner_managed` 가 그 수이고 `must_change_password`·`initial_logins` 는 그 수를 뺀 계정 수다.
   표시는 **승인 프로필 자체**에 넣는다 — `--accounts-file` 후보가 승인 프로필에 없는 표시를 덧붙이면 `ACCOUNT_PROFILE_INVALID`
   (preflight `seed-inputs` 미달)다. 승인 프로필을 hash 로 묶는 기록은 없다 — 재승인 = 보호 파일(0600 · 일반 파일)을 직접 고치는 것.
   표시를 바꾸면 프로필 지문이 바뀌므로 같은 seed 작업 폴더에 **다른 지문의** `accounts/finalization.json`·`details-verified.json` 이
@@ -182,19 +183,32 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 �
   `s3` 는 그 실행 자리의 `reset-ack.json`·`count-at-drop.json` 없이 계획을 세우지 않는다.
 - `preflight` 미달은 이름으로 나온다. 이름을 고치기 전에 다음 단계로 넘어가지 않는다.
 
-### 실패한 꼬리만 잇기 — verify 재개 (2026-09-25 사용자 결정)
+### 실패한 꼬리만 잇기 — verify 재개 (2026-09-25 사용자 요청 「재시드에서 실패한 것만」)
 
 - 적재는 끝났고 verify 대조만 실패했으면 reset·전수 재순회 없이 잇는다 —
   `--from verify --verify-from <앞 실행 자리> --run-dir <새 자리>`(환경 `COLAB_RESEED_VERIFY_FROM`).
   seed 작업 폴더(`COLAB_SEED_WORK_DIR`)는 **앞 실행이 쓴 그 폴더**다(state.json · verify.json · accounts/).
-- 흐름 = preflight → 러너 verify.json 계약 → 앞 판정표·계수 복사(상세 화면 순회 생략) → 대조(알려진 결함 면제) →
-  record-details → 계정 최종화 → report. `--from verify` 가 아닌 실행·`--preflight-only`·`--rehearse` 와 함께 주면 종료 2.
-- 거부 = 앞 자리의 `preview-judgment.tsv`·`counts.json`·`result.json` 부재 · 데이터셋/프로젝트/간선 기대 불일치 ·
-  앞 seed 가 ok 아님 · 판정표 seq·이름 ≠ 지금 state.json · 앞 대상 sha 부재·승인 기록과 불일치 · 이번 실행 자리와 같음.
-  앞·이번 대상 sha 가 다르면 거부하지 않고 주의 줄 ＋ `verify-from.json`·`result.json` `verifyFrom.targetShaMatches=false` —
-  두 배포 사이 미리보기 경로 변경은 사람이 확인한다.
+- 흐름 = (로컬) 앞 자리 검사 → preflight → 러너 verify.json 계약 → 앞 판정표 보관(`prior-preview-judgment.tsv`) ·
+  통과 행은 잇고 **실패 행만** 상세 화면을 다시 잰다 → 대조(알려진 결함 면제) → record-details → 계정 최종화 → report.
+  실패 행 = 판정이 성립(정본 포맷 미지원 행은 미성립)이 아니거나 가공 단계 미확인·불일치 · 미지정 > 0 · usage 0 · 계수 칸 미확인.
+  앞 counts.json 은 옮기지 않는다(대조가 다시 만든다). `--from verify` 가 아닌 실행·`--preflight-only`·`--rehearse` 와 함께 주면 종료 2.
+- 앞 자리 검사는 **dev 에 닿기 전**(preflight 전 · `--dry-run` 포함)에 한다 — 거부면 종료 2, 회차 기록을 레포에 남기지 않는다.
+  거부 = 앞 자리의 `preview-judgment.tsv`·`counts.json`·`result.json`·`logs/verify.log` 부재 · 앞 `dryRun` 이 false 가 아님 ·
+  앞 대상 sha 부재·hex 12/40자 아님·승인 기록과 불일치 · 데이터셋/프로젝트/간선 기대 불일치 · 앞 seed 가 ok 아님 ·
+  판정표 seq·이름 ≠ 지금 state.json · **적재 묶음 불일치**(state.json 의 dataset_id 가 앞 verify 로그의 상세 화면 연 줄 또는
+  「verify-from 묶음」 줄에 없음 = 다른 적재를 잰 판정표) · 이번 실행 자리와 같음.
+  앞·이번 대상 sha 가 다르면 거부하지 않고 주의 줄 ＋ `verify-from.json`·`result.json` `verifyFrom.targetShaMatches=false`.
 - **알려진 결함 면제** = `dev-package/tools/dev-reseed/known-defects.json`(스키마 `colab-reseed-known-defects/1` · 항목
-  seq·name·issue·expectedVerdict·notePrefix·reason·approved). seq·이름·관측 판정·비고 머리가 모두 맞는 행만 면제하고,
-  그 판정불가 행이 `?` 로 적은 파생(계수·가공 단계)도 함께 면제한다. 다른 행·실제로 읽은 값의 불일치는 종전대로 실패한다.
-  목록 부재·깨짐·칸 오류·등재표와 다른 이름은 실패(빈 목록으로 접지 않는다). 면제 건수와 「seq · 이름 · 이슈」는 단계 로그와
+  seq·name·issue·expectedVerdict·notePrefix·noteContains·reason·approved). seq·이름·관측 판정·비고 머리·비고 필수 조각
+  (noteContains **전부** — 13·14 는 로그인 [0]·상세 [1]·보기 활성 [false]·미지원 표시 [0]·누름 없음, 16 은 slot [failed]·
+  preview-unavailable [0])이 모두 맞는 행만 면제한다. 파생(계수·가공 단계 판정불가 · 가공 단계 불일치)은 그 칸이 **정확히 `?`**
+  일 때만 함께 면제한다 — 빈 값·다른 값·실제로 읽은 값의 불일치·미지정·미연결·다른 행은 종전대로 실패한다.
+  #134 거절 코드(MAP_BOUNDS_IMPLAUSIBLE)는 상세 화면 DOM 에 없어 면제 조건에 넣지 못했다.
+  목록은 레포 파일 하나다 — `KNOWN_DEFECTS_FILE` 은 픽스처 표지(`COLAB_RESEED_FIXTURE=1`) 없이는 실패. 목록 부재·깨짐·칸 오류·
+  등재표와 다른 이름도 실패(빈 목록으로 접지 않는다). 면제 건수·「seq · 이름 · 이슈」·목록 경로·sha256·승인 상태는 단계 로그와
   `result.json` `counts.knownDefects` 에 남는다. 결함이 고쳐져 행이 정상이면 「면제 불필요 — known-defects.json 에서 뺄 것」.
+- ⚠ 면제 항목의 `approved` 는 「확인 대기」다. 13·14·16 을 결함으로 면제하는 것은 **dev 실행·PR 전에 사용자 확인**을 받고
+  그 문구를 확인 사실로 바꾼다.
+- 로컬 시험 — `bash gates/tools/dev-reseed-selftest.sh` 는 PyYAML 이 필요하다. `tests/test_accounts.py` 는 게이트가 돌리지 않으므로
+  pytest·pyyaml 을 넣은 venv 에서 손으로 돌린다(`python -m pytest dev-package/tools/dev-reseed/tests/test_accounts.py`).
+  `dev-package/tools/dev-seed/tests` 도 pyyaml 없이는 수집 단계에서 멈춘다(pytest INTERNALERROR · 종료 3).
