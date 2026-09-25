@@ -542,6 +542,9 @@ export function PreviewPanel(props: {
               type="button"
               className="btn btn-ghost btn-sm"
               data-testid="up-preview-without-grid"
+              /* ⭑ ⟨design-fix 20260924 · F-ci 수정 라운드⟩ `up-preview-draw` 와 같은 `draw()` 경로 —
+                 팔레트 전 클릭은 버려지므로 같은 조건으로 비활성. 이유 문면도 같은 경로를 쓴다. */
+              disabled={!palette}
               onClick={() => void draw(true)}
             >
               짝 파일 없이 그려 보기
