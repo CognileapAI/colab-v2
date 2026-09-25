@@ -12,7 +12,7 @@
 //  - 새 부모는 `useUploadModalPresence`(이 파일 아래) 필수 — 훅의 `key={session}` · 닫기 전환 처리 없이 모달을
 //    걸면 등록 확정 뒤 닫는 도중 다시 열 때 끝난 모달이 되살아난다(「완료된 닫기」 경계 · design-fix 후속 20260925 Q8e).
 //    지금 부모 = `UploadEntry` · `GridAttachEntry`.
-import{ useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
 import { TargetLabSelect } from '../common/TargetLabSelect';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
