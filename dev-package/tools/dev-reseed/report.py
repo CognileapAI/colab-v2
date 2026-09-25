@@ -125,6 +125,8 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 {counts_block}
 
 - `deploy_doctor` 요약줄 축자 = `{doctor}`
+- 알려진 결함 면제 {known_defects}
+- verify 재개 = {verify_from}
 
 ## 3. 미리보기 판정 표 ({preview_n} 행 · 성립 {preview_ok} · 판정불가 {preview_undecided})
 
@@ -162,8 +164,13 @@ def check_accounts(work,profile,target):
         checked=json.loads(accounts.private(work/'verification.json').read_text())
         identity={'profile':accounts.fingerprint(entries),'binding':binding}
         if final.get('state')!='complete' or any(final.get(k)!=v or checked.get(k)!=v for k,v in identity.items()):raise ValueError()
-        required={'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False}
+        required={'accounts':5,'operators':4,'professors':1,'password_changed_by_check':False}
         if any(checked.get(k)!=v for k,v in required.items()):raise ValueError()
+        # 소유자 관리 운영자 수는 승인 프로필과 같아야 한다(0 이면 표시가 없던 종전 증거도 받는다).
+        # must_change_password = 변경 요구가 남은 계정 수(소유자 관리 운영자 제외). 종전 증거의 True 는 소유자 관리 0명일 때만.
+        owners=sum(map(accounts.owner_managed,entries));mcp=checked.get('must_change_password')
+        if not ((type(mcp) is int and mcp==5-owners) or (mcp is True and owners==0)):raise ValueError()
+        if checked.get('owner_managed',0)!=owners or checked.get('initial_logins',5)!=5-owners:raise ValueError()
     except Exception as exc:
         raise ValueError('required account verification evidence missing or changed') from exc
 
@@ -258,6 +265,12 @@ def main() -> int:
         doc["previewJudgment"] = rows
     if doctor:
         doc["doctorSummary"] = doctor
+    # `--verify-from` 재개 출처 — 앞 실행 자리 이름·runId·대상 sha·이은 행 수·다시 잰 seq·앞 파일 hash(절대경로 없음).
+    vf = _load(run / "verify-from.json", None)
+    if isinstance(vf, dict):
+        doc["verifyFrom"] = {k: vf.get(k) for k in ("priorRunDirName", "priorRunId", "priorTargetSha",
+                                                    "priorApprovalTargetSha", "targetShaMatches", "priorOutcome",
+                                                    "priorFailedStage", "carriedRows", "rewalkedSeq", "files")}
 
     schema = json.loads(pathlib.Path(args.schema).read_text(encoding="utf-8"))
     errs = validate(doc, schema)
@@ -293,6 +306,17 @@ def main() -> int:
         "- `{stage}` · **앱 재기동** — {reason} (종료코드 {exitCode})".format(**r)
         for r in recovery) or "- 0 건 — 정지 뒤 실패가 없었다."
 
+    kd = counts.get("knownDefects") if isinstance(counts, dict) else None
+    known_defects = ("{n}건{rows}".format(n=kd.get("exemptedCount", 0), rows="".join(
+        " · seq {seq} {name} {issue}".format(**e) for e in kd.get("exempted", [])))
+        + ("".join(" · 면제 불필요 seq {seq} {name} {issue}(known-defects.json 에서 뺄 것)".format(**e)
+                   for e in kd.get("unneeded", [])))) if isinstance(kd, dict) else "— 대조 미실행"
+    vfd = doc.get("verifyFrom")
+    verify_from = ("앞 실행 `{priorRunDirName}` · runId `{priorRunId}` · 대상 sha `{priorTargetSha}` · "
+                   "통과 {carriedRows}행 이음 · 실패 행 seq {rewalk} 만 다시 잼").format(
+                       rewalk=",".join(vfd.get("rewalkedSeq") or []) or "없음", **vfd) + (
+                   "" if vfd.get("targetShaMatches") else " · ⚠ 이번 대상 sha 와 다르다 — 두 배포 사이 미리보기 경로 변경 확인"
+                   ) if vfd else "없음(상세 화면 순회)"
     pathlib.Path(args.session_out).write_text(SESSION_TEMPLATE.format(
         date=dt.date.today().isoformat(),
         approval=doc["approvalRecord"] or "없음(reset 단계 미실행)",
@@ -300,7 +324,7 @@ def main() -> int:
         outcome=doc["outcome"],
         failed_note=f"(멈춘 단계 `{failed_stage}`)" if failed_stage else "",
         duration=duration, stage_rows=stage_rows, counts_block=counts_block,
-        doctor=doctor or "—", preview_n=len(rows),
+        doctor=doctor or "—", known_defects=known_defects, verify_from=verify_from, preview_n=len(rows),
         preview_ok=sum(1 for r in rows if r["verdict"] == "성립"),
         preview_undecided=sum(1 for r in rows if r["verdict"] == "판정불가"),
         preview_rows=preview_rows, blocked_n=len(blocked), blocked_block=blocked_block,

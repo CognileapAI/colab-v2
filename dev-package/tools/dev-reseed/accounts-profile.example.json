@@ -29,7 +29,8 @@
     "admin": true,
     "role": "",
     "lab": "",
-    "initial_password_strategy": "email"
+    "initial_password_strategy": "email",
+    "ownerManaged": false
   },
   {
     "email": "professor@example.invalid",
