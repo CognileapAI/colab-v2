@@ -9,7 +9,7 @@
 - 온톨로지 보호: DB·schema·D9 guardian 소유와 런타임 권한 GREEN.
 - D9 보존: concept 49, edge 19, method term 13, place alias 4, topic synonym 18.
 - 검색 refresh 계정·스케줄·worker 설정은 배선하지 않았다. 조건 판정 여정 구간의 core-api `POST /dataset-searches`는 200 두 건이고 ai-service `/searches`·모델 경로 요청은 0건이었다.
-- 원본 운영 증거: `/home/ttlhi10/colab-v2-releases/pipeline.log`, `/home/ttlhi10/colab-v2-releases/release-ledger.tsv`, `.git/deploy-releases/st-b462b558aab74b139679c541c2ebcac0/state.json`.
+- 원본 운영 증거: `~/colab-v2-releases/pipeline.log`, `~/colab-v2-releases/release-ledger.tsv`, `.git/deploy-releases/st-b462b558aab74b139679c541c2ebcac0/state.json`.
 
 ## 실제 브라우저 여정
 

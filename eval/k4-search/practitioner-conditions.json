@@ -13,7 +13,7 @@
   "cases": [
     {
       "id": "PC-1-1",
-      "source": "#1-1 (구서영)",
+      "source": "#1-1 (사례 제공자 #1)",
       "mode": "partial",
       "question": "집중호우 분석을 위해 사용할 수 있는 기상자료 중 현재 내 연구에 가장 적합한 데이터셋",
       "requiredEvidence": ["variable", "period", "region", "cadence"],
@@ -26,7 +26,7 @@
     },
     {
       "id": "PC-1-2",
-      "source": "#1-2 (구서영)",
+      "source": "#1-2 (사례 제공자 #1)",
       "mode": "blocked_draft",
       "question": "ERA5, 위성 강수, 레이더 강수 자료의 특성 차이 비교",
       "requiredEvidence": ["platform", "nativeResolutionM", "period"],
@@ -37,7 +37,7 @@
     },
     {
       "id": "PC-1-3",
-      "source": "#1-3 (구서영)",
+      "source": "#1-3 (사례 제공자 #1)",
       "mode": "partial",
       "question": "한반도 레이더 자료와 같은 기간·지역을 포함하는 NWP 자료",
       "requiredEvidence": ["period", "region", "nativeResolutionM"],
@@ -50,7 +50,7 @@
     },
     {
       "id": "PC-1-4",
-      "source": "#1-4 (구서영)",
+      "source": "#1-4 (사례 제공자 #1)",
       "mode": "full",
       "question": "시간해상도 1시간 이하이고 공간해상도가 가장 높은 강수자료",
       "requiredEvidence": ["cadence", "nativeResolutionM"],
@@ -67,7 +67,7 @@
     },
     {
       "id": "PC-1-5",
-      "source": "#1-5 (구서영)",
+      "source": "#1-5 (사례 제공자 #1)",
       "mode": "blocked",
       "question": "CCTV 강수 관측자료와 위치·시간이 겹치는 AWS·disdrometer 자료",
       "requiredEvidence": ["지점 좌표", "반경 거리"],
@@ -77,7 +77,7 @@
     },
     {
       "id": "PC-1-6",
-      "source": "#1-6 (구서영)",
+      "source": "#1-6 (사례 제공자 #1)",
       "mode": "blocked_draft",
       "question": "레이더 반사도를 강수량으로 변환하거나 지상관측으로 보정한 자료",
       "requiredEvidence": ["directObservation", "roles", "interpolated"],
@@ -88,7 +88,7 @@
     },
     {
       "id": "PC-2-1",
-      "source": "#2-1 (변종윤)",
+      "source": "#2-1 (사례 제공자 #2)",
       "mode": "partial",
       "question": "집중호우 발생 원인을 머신러닝으로 분석할 때 가장 적합한 기상자료",
       "requiredEvidence": ["variable", "period", "region", "cadence", "결측 여부"],
@@ -101,7 +101,7 @@
     },
     {
       "id": "PC-2-2",
-      "source": "#2-2 (변종윤)",
+      "source": "#2-2 (사례 제공자 #2)",
       "mode": "blocked_draft",
       "question": "레이더 강수, 위성 강수, ERA5 강수 자료의 차이 비교",
       "requiredEvidence": ["platform", "nativeResolutionM", "period", "variable"],
@@ -112,7 +112,7 @@
     },
     {
       "id": "PC-2-3",
-      "source": "#2-3 (변종윤)",
+      "source": "#2-3 (사례 제공자 #2)",
       "mode": "partial",
       "question": "2022년 한반도 레이더 강수자료와 같은 기간·지역을 포함하는 NWP 자료",
       "requiredEvidence": ["period", "region", "nativeResolutionM"],
@@ -124,7 +124,7 @@
     },
     {
       "id": "PC-2-4",
-      "source": "#2-4 (변종윤)",
+      "source": "#2-4 (사례 제공자 #2)",
       "mode": "full",
       "question": "시간해상도 1시간 이하, 공간해상도 5 km 이하 한반도 강수자료",
       "requiredEvidence": ["cadence", "nativeResolutionM", "region"],
@@ -139,7 +139,7 @@
     },
     {
       "id": "PC-2-5",
-      "source": "#2-5 (변종윤)",
+      "source": "#2-5 (사례 제공자 #2)",
       "mode": "blocked",
       "question": "CCTV 강수 영상과 촬영 위치·시간이 겹치는 강우관측 자료",
       "requiredEvidence": ["지점 좌표", "반경 거리", "중첩 기간"],
@@ -149,7 +149,7 @@
     },
     {
       "id": "PC-2-6",
-      "source": "#2-6 (변종윤)",
+      "source": "#2-6 (사례 제공자 #2)",
       "mode": "blocked",
       "question": "850 hPa 바람과 700 hPa 상대습도를 한반도에서 2016~2025년 사용할 수 있는 자료",
       "requiredEvidence": ["pressure level"],
@@ -159,7 +159,7 @@
     },
     {
       "id": "PC-2-7",
-      "source": "#2-7 (변종윤)",
+      "source": "#2-7 (사례 제공자 #2)",
       "mode": "full",
       "question": "2016~2025년 한반도 여름철 강수 자료 중 결측치가 가장 적은 데이터",
       "requiredEvidence": ["variable", "period", "결측률"],
@@ -173,7 +173,7 @@
     },
     {
       "id": "PC-2-8",
-      "source": "#2-8 (변종윤)",
+      "source": "#2-8 (사례 제공자 #2)",
       "mode": "partial",
       "question": "레이더 강수·ERA5·AWS 자료의 공통기간과 공통지역",
       "requiredEvidence": ["period", "bbox"],

@@ -29,4 +29,4 @@
 
 ## 로컬 증거
 
-`/home/ttlhi10/.cache/colab-st-search-journey-20260913/`에 사전 PLAN.json, evidence-after-reload.json, quality-results.json, private-own-locked.png, search-reviewed.png, search-quality.png, evidence-detail.png와 합성 입력 파일을 보존했다. 이들은 이번 브라우저 실측이며 이전 로컬 고정 API 골든 검사와 구분한다.
+`~/.cache/colab-st-search-journey-20260913/`에 사전 PLAN.json, evidence-after-reload.json, quality-results.json, private-own-locked.png, search-reviewed.png, search-quality.png, evidence-detail.png와 합성 입력 파일을 보존했다. 이들은 이번 브라우저 실측이며 이전 로컬 고정 API 골든 검사와 구분한다.
