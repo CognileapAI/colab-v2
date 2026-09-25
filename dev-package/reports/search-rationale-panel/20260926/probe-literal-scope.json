@@ -1,0 +1,14 @@
+[
+ {
+  "scope": "A 연구실 데이터 2건을 뒤졌어요. 질문의 낱말 그대로 찾았어요.",
+  "scopeColor": "rgb(86, 92, 99)",
+  "scopeLines": 1,
+  "degradedNotice": false,
+  "cards": 2,
+  "panels": 2,
+  "hScroll": false,
+  "theme": "light",
+  "width": 1280,
+  "screenshot": "search-rationale-literal-scope-light-1280.png"
+ }
+]

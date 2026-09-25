@@ -37,8 +37,10 @@ def test_quality_percentage_does_not_add_unrelated_hits(p2_client, sql, fake_ai,
     assert result.status_code == 200, result.text
     items = result.json()["items"]
     assert [item["datasetId"] for item in items] == [DS_A1]
-    assert "품질" in items[0]["rationale"]
-    assert "확인하지 못" in items[0]["rationale"]
+    # 질문의 품질 조건을 검색이 확인하지 못해도 카드 근거는 **이유만** 싣는다 — 한계·부정
+    # 문장을 붙이지 않는다 (intent `2026-09-25-search-rationale-separation.md` Q6 · Ted 2026-09-26).
+    for word in ("확인하지 못", "미확인", "불일치", "보장하지 않"):
+        assert word not in items[0]["rationale"]
 
 
 @pytest.mark.parametrize("name", ["0%", "SPEI03", "2023년", "100m"])

@@ -135,6 +135,7 @@ def test_results_are_catalog_rows_found_by_core_and_enriched(p2_client, fake_ai)
     item = items[0]
     assert 0.0 <= item["relevanceBar"] <= 1.0
     assert item["rationale"] and "\n" not in item["rationale"]
+    assert item["rationaleFacts"][0]["kind"] == "term" and item["rationaleFacts"][0]["items"]
     for field in ("name", "processingLevel", "uploader", "lineageState", "verified",
                   "accessState", "bodyAccessible", "lastModifiedAt", "fileCount", "projects"):
         assert field in item, f"카탈로그 값 {field} 를 core 가 안 붙였다 — 카드가 안 그려진다."
@@ -256,7 +257,73 @@ def test_a_degraded_interpretation_still_searches(p2_client, fake_ai) -> None:
     body = r.json()
     assert body["degraded"] is True and body["degradedReason"]
     assert len(body["items"]) == 2
-    assert all("질의 해석 없이" in i["rationale"] for i in body["items"])
+    # 「질의 해석 없이」는 카드 근거가 아니라 응답 머리(`degraded`)가 한 번 말한다
+    # (intent `2026-09-25-search-rationale-separation.md` Q8 · ⑤).
+    assert all("질의 해석 없이" not in i["rationale"] for i in body["items"])
+
+
+def test_an_intentional_literal_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
+    """**설정으로 고른 낱말 그대로 해석은 `degraded` 가 아니다** (`PLAN-SoT §9-〈148〉`).
+
+    `degraded` 는 ai-service 의 `degraded` 그대로다. 「해석 없이 찾았다」는 사실은
+    응답 `interpretation: "literal"` 이 싣고, 화면 범위 줄이 한 번 말한다
+    (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26)."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="literal", degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["degraded"] is False and body["interpretation"] == "literal" and body["items"]
+
+
+def test_a_broken_literal_interpretation_stays_degraded(p2_client, fake_ai) -> None:
+    """켜려 했는데 못 켠 낱말 그대로 해석은 여전히 `degraded` 다 — 둘을 접지 않는다 (`〈148〉`-㉰)."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="literal", degraded=True)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["degraded"] is True and r.json()["interpretation"] == "literal"
+
+
+def test_an_unknown_interpretation_source_is_not_said(p2_client, fake_ai) -> None:
+    """출처를 모르면 `interpretation` 을 싣지 않는다 — 모르는 것을 「낱말 그대로」로 말하지 않는다."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source=None, degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["degraded"] is False and "interpretation" not in r.json()
+
+
+def test_a_model_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="llm", degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200 and r.json()["degraded"] is False
+    assert r.json()["interpretation"] == "llm"
+
+
+def test_topic_is_said_once_in_the_response_not_on_each_card(p2_client, fake_ai, sql) -> None:
+    """주제로 좁혔으면 응답 최상위 `topic` 이 한 번 말하고 카드 근거는 반복하지 않는다 (Q8)."""
+    from conftest import LAB_A
+    sql("UPDATE d3_dataset_description SET topic='강우·강수' WHERE dataset_id IN (:a,:b)", {"a": DS_A1, "b": DS_A2})
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, topic="강우·강수")
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    body = r.json()
+    assert r.status_code == 200 and body["topic"] == "강우·강수" and body["items"]
+    assert all("좁혀 뒤졌어요" not in i["rationale"] for i in body["items"])
+
+
+def test_no_topic_means_no_topic_field(p2_client, fake_ai) -> None:
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, topic=None)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200 and "topic" not in r.json()
 
 
 def test_an_unreadable_answer_is_not_a_zero_hit_result(p2_client, fake_ai) -> None:

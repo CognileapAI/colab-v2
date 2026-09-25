@@ -38,7 +38,13 @@ function hit(over: Partial<SearchResultRow> = {}): SearchResultRow {
     summary: '한강 유역 지점 강수 관측 원자료',
     period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
     relevanceBar: 1,
-    rationale: '수자원순환연구실 안 128건에서 ‘강수’가 이름에 맞았다 — 기간·지역·품질은 이 검색이 확인하지 못했다.',
+    // ⭑ 근거 = 검색된 이유만 (intent `2026-09-25-search-rationale-separation.md` Q6·Q7).
+    // `rationale` 은 `rationaleFacts` 항목을 이은 한 줄이다(서버 `dataset_search.rationale_line`).
+    rationale: '‘강수’가 이름에 맞았어요. 자료에 적힌 개념 ‘강수’에 연결돼요.',
+    rationaleFacts: [
+      { kind: 'term', items: ['‘강수’가 이름에 맞았어요'] },
+      { kind: 'concept', items: ['자료에 적힌 개념 ‘강수’에 연결돼요'] },
+    ],
     ...over,
   };
 }
@@ -149,6 +155,44 @@ describe('S-06 뒤진 범위', () => {
     const scope = await screen.findByTestId('search-scope');
     expect(scope.textContent).toContain('128건');
   });
+
+  it('주제로 좁혔으면 범위 줄 뒤에 주제 문장을 한 번 말한다 — 카드마다 반복하지 않는다', async () => {
+    renderResults(sourceOf(results({ topic: '강우·강수' })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.');
+    const card = await screen.findByTestId('search-hit');
+    expect(card.textContent).not.toContain('좁혀 뒤졌어요');
+  });
+
+  it('주제가 없으면 주제 문장이 없다', async () => {
+    renderResults(sourceOf(results()));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
+  });
+
+  // 설정으로 고른 낱말 그대로 해석은 고장이 아니다(`PLAN-SoT §9-〈148〉`) — 경고 상자 대신
+  // 범위 줄이 그 사실을 한 번 말한다 (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26).
+  it('낱말 그대로 해석이고 degraded 가 아니면 범위 줄 끝에 한 번 말하고 경고 상자는 없다', async () => {
+    renderResults(sourceOf(results({ topic: '강우·강수', interpretation: 'literal' })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe(
+      '수자원순환연구실 데이터 128건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요. 질문의 낱말 그대로 찾았어요.',
+    );
+    expect(screen.queryByTestId('search-degraded')).toBeNull();
+  });
+
+  it('degraded 면 경고 상자가 말하고 범위 줄은 낱말 그대로 문장을 겹쳐 말하지 않는다', async () => {
+    renderResults(sourceOf(results({ interpretation: 'literal', degraded: true })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
+    expect((await screen.findByTestId('search-degraded')).textContent).toContain('낱말 그대로');
+  });
+
+  it('모델 해석이면 낱말 그대로 문장이 없다', async () => {
+    renderResults(sourceOf(results({ interpretation: 'llm' })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -156,13 +200,79 @@ describe('S-06 뒤진 범위', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('S-06 결과 카드', () => {
-  it('카드마다 근거가 한 줄로 붙는다 — 펼침·더보기가 없다', async () => {
+  it('근거는 요약과 다른 요소·다른 클래스의 AI 패널에 서고, 태그 「AI」는 사실 목록 밖이다', async () => {
     renderResults(sourceOf(results()));
     const card = await screen.findByTestId('search-hit');
-    const why = within(card).getByTestId('search-rationale');
-    expect(why.textContent).toBe(hit().rationale);
-    expect(why.textContent).not.toContain('\n');
+    const summary = within(card).getByTestId('hit-summary');
+    const panel = within(card).getByTestId('search-rationale-panel');
+    const facts = within(panel).getByTestId('search-rationale-facts');
+    expect(panel).not.toBe(summary);
+    expect(panel.contains(summary)).toBe(false);
+    expect(panel.className).not.toBe(summary.className);
+    const tag = within(panel).getByTestId('search-rationale-tag');
+    expect(tag.textContent).toContain('AI');
+    expect(facts.contains(tag)).toBe(false);
+    // 태그가 목록보다 먼저다(맨 위 왼쪽 · 다음 줄에 목록).
+    expect(tag.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // 요약 문단은 그대로다 — 근거가 요약 안으로 섞이지 않는다.
+    expect(summary.textContent).toBe(hit().summary);
     expect(within(card).queryByText('더보기')).toBeNull();
+  });
+
+  it('근거 종류가 서버 순서대로 상위 항목으로 서고 하위 사실이 그대로 그려진다', async () => {
+    renderResults(sourceOf(results({ items: [hit({ rationaleFacts: [
+      { kind: 'term', items: ['‘강수’가 이름에 맞았어요'] },
+      { kind: 'concept', items: ['자료에 적힌 개념 ‘강수’에 연결돼요'] },
+      { kind: 'linked', items: ['‘a.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요'] },
+      { kind: 'evidence', items: ['a.npy에서 변수 조건이 맞았어요 (출처 설명서 · 1절)', 'b.npy에서 기간 조건이 맞았어요 (출처 설명서 · 2절)'] },
+    ] })] })));
+    const facts = await screen.findByTestId('search-rationale-facts');
+    const kinds = within(facts).getAllByTestId('search-rationale-kind');
+    expect(kinds.map((k) => k.textContent)).toEqual(['낱말 일치', '관련 개념', '연결된 자료', '파일 근거']);
+    const groups = within(facts).getAllByTestId('search-rationale-items');
+    expect(groups.map((g) => Array.from(g.querySelectorAll('li')).map((li) => li.textContent))).toEqual([
+      ['‘강수’가 이름에 맞았어요'],
+      ['자료에 적힌 개념 ‘강수’에 연결돼요'],
+      ['‘a.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요'],
+      ['a.npy에서 변수 조건이 맞았어요 (출처 설명서 · 1절)', 'b.npy에서 기간 조건이 맞았어요 (출처 설명서 · 2절)'],
+    ]);
+    // 내부 기법 이름은 화면에 쓰지 않는다 (Q7).
+    expect(facts.textContent).not.toMatch(/온톨로지|계보/);
+  });
+
+  it('사실이 없는 종류는 그리지 않는다', async () => {
+    renderResults(sourceOf(results({ items: [hit({ rationaleFacts: [
+      { kind: 'term', items: ['‘강수’가 이름에 맞았어요'] },
+      { kind: 'linked', items: [] },
+    ] })] })));
+    const facts = await screen.findByTestId('search-rationale-facts');
+    expect(within(facts).getAllByTestId('search-rationale-kind').map((k) => k.textContent)).toEqual(['낱말 일치']);
+    expect(facts.textContent).not.toMatch(/관련 개념|연결된 자료|파일 근거/);
+  });
+
+  it('rationaleFacts 가 없으면 rationale 한 줄을 같은 패널에 그린다 (구 응답 호환)', async () => {
+    const old = '‘강수’가 이름에 맞았어요.';
+    const legacy = hit({ rationale: old });
+    delete legacy.rationaleFacts;
+    renderResults(sourceOf(results({ items: [legacy] })));
+    const panel = await screen.findByTestId('search-rationale-panel');
+    const why = within(panel).getByTestId('search-rationale');
+    expect(why.textContent).toBe(old);
+    expect(why.textContent).not.toContain('\n');
+    expect(within(panel).getByTestId('search-rationale-tag').textContent).toContain('AI');
+    expect(within(panel).queryByTestId('search-rationale-facts')).toBeNull();
+  });
+
+  it('잠긴 카드와 Verified 카드에도 같은 패널이 선다', async () => {
+    renderResults(sourceOf(results({ totalCount: 2, items: [
+      hit({ datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA1', verified: true }),
+      hit({ datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA2', accessState: '잠김', bodyAccessible: false }),
+    ] })));
+    const cards = await screen.findAllByTestId('search-hit');
+    for (const card of cards) {
+      expect(within(card).getByTestId('search-rationale-panel')).toBeTruthy();
+      expect(within(card).getByTestId('search-rationale-facts')).toBeTruthy();
+    }
   });
 
   it('관련도는 막대 하나다 — 퍼센트도 등급 텍스트도 숫자도 화면에 없다', async () => {

@@ -101,8 +101,10 @@ def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql
     quality=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-011']['items'])
     native=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-012']['items'])
     roles=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-005']['items'])
-    assert '미확인' in quality and '품질' in quality
-    assert '불일치' in native and '2000m' in native and '직접 관측이 아닌' in native
+    # 카드 근거는 이유만 싣는다 — 품질 미확인·해상도 불일치는 근거 문장이 되지 않는다
+    # (intent `2026-09-25-search-rationale-separation.md` Q6 · Ted 2026-09-26).
+    for word in ('미확인','불일치','보장하지 않','확인하지 못'):
+        assert word not in quality and word not in native
     if 'SEARCH-GOLD-005' not in V2_RETRIEVAL_GAPS:
         assert 'HLS_S30_NDVI_mean_202305.tif' in roles and '검증 자료' in roles and '보조 입력' in roles
     # Evidence for a different topic must not erase legacy metadata candidates,

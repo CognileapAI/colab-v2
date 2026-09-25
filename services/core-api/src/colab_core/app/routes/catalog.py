@@ -532,6 +532,7 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     answer["terms"] = search_conditions.candidate_terms(query, answer["terms"])
     items: list[dict] = []
     next_cursor = None
+    search_topic = None
     if answer["isDataQuery"] and answer["terms"]:
         offset = dataset_search.decode_cursor(cursor)
         # ⭑ **⟨16차 해제 · `〈298〉`⟩ `verified` 를 켜면 `limit` 보다 먼저 거른다.**
@@ -578,11 +579,11 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
                 evidence_ids=tuple(include_ids), excluded_ids=tuple(exclude_ids),
                 include_ontology=True)
             concept_matches=d3_search_annotations.matching(ro,terms=answer['terms'],dataset_ids=[m.dataset_id for m in matches])
+        # ⭑ 근거는 **검색된 이유만** 싣는다(intent `2026-09-25-search-rationale-separation.md`
+        # Q6·Q8). 뒤진 범위·주제·해석 여부는 응답 머리(`scope`·`topic`·`degraded`)가 한 번 말한다.
         hits, next_cursor = dataset_search.compose(
-            matches, lab_name=lab_name, searched=searched_count, topic=search_topic,
-            # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
-            interpretation_degraded=answer["source"] != "llm",
-            # 그래프가 데려온 말이면 근거 한 줄이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
+            matches,
+            # 그래프가 데려온 말이면 「낱말 일치」 항목이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
             expansions=answer.get("expansions"),
             total=total, offset=fetch_offset)
 
@@ -595,20 +596,25 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             enriched = {k: v for k, v in row.items() if not k.startswith("_")}
             # **잠김 표시는 여기서 붙는다** — `accessState`·`bodyAccessible` 은 D2 의 값이다.
             enriched["relevanceBar"] = hit["relevanceBar"]
-            enriched["rationale"] = search_conditions.explain_unverified_conditions(
-                hit["rationale"], query)
-            if evidence_by_dataset.get(hit['datasetId']):
-                base = hit['rationale'].replace(
-                    '기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요',
-                    '기록되지 않은 조건과 자료 품질은 보장하지 않아요')
-                enriched['rationale'] = search_evidence_conditions.explain(
-                    base, criteria, evidence_by_dataset[hit['datasetId']])
+            # 근거 종류별 사실 — 이유만 싣는다. 한계·부정 문장(미확인 조건 · 파일 근거의
+            # 불일치·미확인 · 「보장하지 않아요」)은 싣지 않는다 (intent Q6 · Ted 2026-09-26).
+            # 내부 기법 이름(온톨로지·계보)은 문구에 쓰지 않는다 (Q7).
+            facts = {f["kind"]: list(f["items"]) for f in hit["rationaleFacts"]}
+            supported = search_evidence_conditions.supported_facts(
+                criteria, evidence_by_dataset.get(hit['datasetId'], []))
+            if supported:
+                # 확인된 파일별 조건이 「확인한 파일 근거가 맞았어요」보다 구체적이라 그것을 대신한다.
+                facts['evidence'] = supported
             if concept_matches.get(hit['datasetId']):
-                labels=', '.join(dict.fromkeys(r['label'] for r in concept_matches[hit['datasetId']]))
-                enriched['rationale'] += re.sub(r'\s+', ' ', f' 자료에 적힌 {labels}의 온톨로지 연결을 확인했어요.')
+                labels = ', '.join(f'‘{label}’' for label in dict.fromkeys(
+                    r['label'] for r in concept_matches[hit['datasetId']]))
+                facts['concept'] = [f'자료에 적힌 개념 {labels}에 연결돼요']
             if source_notes.get(hit['datasetId']):
-                names = ', '.join(dict.fromkeys(source_notes[hit['datasetId']]))
-                enriched['rationale'] += re.sub(r'\s+', ' ', f' {names}가 속한 자료의 직접 부모 관계로 확인했어요.')
+                names = ', '.join(f'‘{n}’' for n in dict.fromkeys(source_notes[hit['datasetId']]))
+                facts.setdefault('linked', []).append(f'{names} 파일이 속한 자료의 바로 앞 단계 자료예요')
+            enriched["rationaleFacts"] = dataset_search.ordered_facts(
+                [{"kind": kind, "items": values} for kind, values in facts.items()])
+            enriched["rationale"] = dataset_search.rationale_line(enriched["rationaleFacts"])
             # ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약** — 상세와 **같은 열**에서 온 값을 옮긴다.
             enriched["summary"] = row["_summary"]
             items.append(enriched)
@@ -657,6 +663,14 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     }
     if answer.get("degradedReason"):
         out["degradedReason"] = answer["degradedReason"]
+    if search_topic:
+        # 주제로 좁혀 뒤졌을 때만 싣는다 — 화면 머리가 한 번 말한다 (intent Q8 · 종전 카드마다 반복).
+        out["topic"] = search_topic
+    if answer.get("source") in ("llm", "literal"):
+        # 해석 출처. `degraded` 와 접지 않는다 — 설정으로 고른 낱말 그대로 해석은 고장이 아니다
+        # (`PLAN-SoT §9-〈148〉`). 화면 범위 줄이 「질문의 낱말 그대로 찾았어요.」를 한 번 말한다
+        # (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26).
+        out["interpretation"] = answer["source"]
     return out
 
 
@@ -714,7 +728,9 @@ def _client_search(request, subject, db, plan, context, lab_name, searched_count
         for match in selected:
             row = rows[match['datasetId']]
             out = {k:v for k,v in row.items() if not k.startswith('_')}
-            out.update(relevanceBar=1.0, rationale='현재 파일의 검토된 근거에서 해석된 조건을 함께 확인했습니다. 기록되지 않은 품질은 미확인입니다.',
+            # 이유만 싣는다 — 종전 뒷절 「기록되지 않은 품질은 미확인입니다」는 뺐다 (intent Q6).
+            facts = [{'kind':'evidence','items':['현재 파일의 검토된 근거에서 해석된 조건을 함께 확인했어요']}]
+            out.update(relevanceBar=1.0, rationaleFacts=facts, rationale=dataset_search.rationale_line(facts),
                        summary=row['_summary'],period=None)
             if match['facts'].get('period'):
                 # Evidence days are represented at the start of each Seoul calendar day.
