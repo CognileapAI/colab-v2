@@ -363,10 +363,18 @@ class LifecycleRedTests(unittest.TestCase):
             self.assertEqual(report['task_evidence']['before']['run_id'], task['run_id'])
             self.assert_routes('lane-worker', self.marker(task, 'complete'), 0 if code == 0 else 2)
 
+    def commit_ledger_as_origin_develop(self):
+        git = ['git', '-C', str(self.root)]
+        subprocess.run(git + ['add', 'dev-package/PLAN-SoT.md'], check=True)
+        subprocess.run(git + ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                              'commit', '-qm', 'ledger'], check=True)
+        subprocess.run(git + ['update-ref', 'refs/remotes/origin/develop', 'HEAD'], check=True)
+
     def test_codex_decision_content_hits_shared_judge_without_editing_file(self):
         ledger = self.put('dev-package/PLAN-SoT.md','| 〈5〉 | existing |')
         maximum = self.put('dev-package/prd/tools/max-decision.sh','#!/usr/bin/env bash\necho 5\n')
         maximum.chmod(0o755)
+        self.commit_ledger_as_origin_develop()
         for number, allowed in ((6, True), (99999, False)):
             event = dict(cwd=str(self.root),hook_event_name='PreToolUse',tool_name='apply_patch',
                          tool_input=dict(command='*** Begin Patch\n*** Update File: dev-package/PLAN-SoT.md\n@@\n+| 〈%d〉 | decision |\n*** End Patch' % number))
@@ -377,6 +385,35 @@ class LifecycleRedTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         bridge.dispatch_event(event)
             self.assertEqual(ledger.read_text(),'| 〈5〉 | existing |')
+
+    def test_decision_guard_without_origin_develop_blocks_only_new_decision_numbers(self):
+        """A6 — 기준 = origin/develop. ref 가 없으면 새 결정 번호 후보가 있는 편집만 readiness 로 막는다(워킹트리 대체 없음)."""
+        self.put('dev-package/PLAN-SoT.md', '| 〈5〉 | existing |\n')
+        maximum = self.put('dev-package/prd/tools/max-decision.sh', '#!/usr/bin/env bash\necho 5\n')
+        maximum.chmod(0o755)
+        hook = ROOT/'.claude/hooks/decision-number-guard.sh'
+
+        def run(payload):
+            return subprocess.run(['bash', str(hook)], input=json.dumps(payload), text=True,
+                                  capture_output=True, cwd=self.root, env=self.env)
+
+        edit = lambda text: dict(cwd=str(self.root), hook_event_name='PreToolUse', tool_name='Edit',
+                                 tool_input=dict(file_path='dev-package/PLAN-SoT.md',
+                                                 old_string='| 〈5〉 | existing |', new_string=text))
+        for name, payload, expected in (
+            ('read', dict(cwd=str(self.root), tool_name='Read', tool_input=dict(file_path='dev-package/PLAN-SoT.md')), 0),
+            ('non-decision', edit('| 〈5〉 | existing |\n| 비고 | 번호 없는 행 |'), 0),
+            ('quote-only', edit('| 〈5〉 | existing — 〈5〉 인용 |'), 0),
+            ('new-decision', edit('| 〈5〉 | existing |\n| 〈6〉 | decision |'), 2),
+        ):
+            with self.subTest(case=name):
+                result = run(payload)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                if expected == 2:
+                    self.assertIn('hook readiness failure', result.stderr)
+                    self.assertIn('origin/develop', result.stderr)
+                else:
+                    self.assertEqual(result.stderr, '')
 
     def test_raw_ledger_requires_content_and_normalizes_relative_paths(self):
         ledger = self.put('dev-package/PLAN-SoT.md','| 〈5〉 | existing |')
