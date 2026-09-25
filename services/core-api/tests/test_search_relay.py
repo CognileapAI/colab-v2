@@ -262,19 +262,39 @@ def test_a_degraded_interpretation_still_searches(p2_client, fake_ai) -> None:
     assert all("질의 해석 없이" not in i["rationale"] for i in body["items"])
 
 
-@pytest.mark.parametrize("source", ["literal", None])
-def test_an_interpretation_not_from_the_model_is_degraded_even_if_ai_says_not(
-        p2_client, fake_ai, source) -> None:
-    """**헤더 안내 조건 = 해석 `source != "llm"` 또는 ai-service `degraded`(합집합)** — intent ⑤·⒞.
+def test_an_intentional_literal_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
+    """**설정으로 고른 낱말 그대로 해석은 `degraded` 가 아니다** (`PLAN-SoT §9-〈148〉`).
 
-    카드 근거에서 「질의 해석 없이…」를 뺐으므로, 저쪽이 `degraded: false` 로 답해도 해석이
-    모델에서 오지 않았으면 응답 `degraded` 가 그 사실을 싣는다. 사실이 화면에서 사라지지 않는다."""
+    `degraded` 는 ai-service 의 `degraded` 그대로다. 「해석 없이 찾았다」는 사실은
+    응답 `interpretation: "literal"` 이 싣고, 화면 범위 줄이 한 번 말한다
+    (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26)."""
     from conftest import LAB_A
-    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source=source, degraded=False)
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="literal", degraded=False)
     r = p2_client(ai_base_url=fake_ai["url"]).post(
         SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
-    assert r.json()["degraded"] is True and r.json()["items"]
+    body = r.json()
+    assert body["degraded"] is False and body["interpretation"] == "literal" and body["items"]
+
+
+def test_a_broken_literal_interpretation_stays_degraded(p2_client, fake_ai) -> None:
+    """켜려 했는데 못 켠 낱말 그대로 해석은 여전히 `degraded` 다 — 둘을 접지 않는다 (`〈148〉`-㉰)."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source="literal", degraded=True)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["degraded"] is True and r.json()["interpretation"] == "literal"
+
+
+def test_an_unknown_interpretation_source_is_not_said(p2_client, fake_ai) -> None:
+    """출처를 모르면 `interpretation` 을 싣지 않는다 — 모르는 것을 「낱말 그대로」로 말하지 않는다."""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, source=None, degraded=False)
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["degraded"] is False and "interpretation" not in r.json()
 
 
 def test_a_model_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
@@ -283,6 +303,7 @@ def test_a_model_interpretation_is_not_degraded(p2_client, fake_ai) -> None:
     r = p2_client(ai_base_url=fake_ai["url"]).post(
         SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
     assert r.status_code == 200 and r.json()["degraded"] is False
+    assert r.json()["interpretation"] == "llm"
 
 
 def test_topic_is_said_once_in_the_response_not_on_each_card(p2_client, fake_ai, sql) -> None:

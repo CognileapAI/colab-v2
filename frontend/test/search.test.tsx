@@ -169,6 +169,30 @@ describe('S-06 뒤진 범위', () => {
     const scope = await screen.findByTestId('search-scope');
     expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
   });
+
+  // 설정으로 고른 낱말 그대로 해석은 고장이 아니다(`PLAN-SoT §9-〈148〉`) — 경고 상자 대신
+  // 범위 줄이 그 사실을 한 번 말한다 (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26).
+  it('낱말 그대로 해석이고 degraded 가 아니면 범위 줄 끝에 한 번 말하고 경고 상자는 없다', async () => {
+    renderResults(sourceOf(results({ topic: '강우·강수', interpretation: 'literal' })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe(
+      '수자원순환연구실 데이터 128건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요. 질문의 낱말 그대로 찾았어요.',
+    );
+    expect(screen.queryByTestId('search-degraded')).toBeNull();
+  });
+
+  it('degraded 면 경고 상자가 말하고 범위 줄은 낱말 그대로 문장을 겹쳐 말하지 않는다', async () => {
+    renderResults(sourceOf(results({ interpretation: 'literal', degraded: true })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
+    expect((await screen.findByTestId('search-degraded')).textContent).toContain('낱말 그대로');
+  });
+
+  it('모델 해석이면 낱말 그대로 문장이 없다', async () => {
+    renderResults(sourceOf(results({ interpretation: 'llm' })));
+    const scope = await screen.findByTestId('search-scope');
+    expect(scope.textContent).toBe('수자원순환연구실 데이터 128건을 뒤졌어요.');
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════

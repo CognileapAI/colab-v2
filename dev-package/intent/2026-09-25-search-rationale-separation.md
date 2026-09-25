@@ -127,6 +127,10 @@
 - ④ 라벨 문구 — **Ted 수용 · 정본/계약 개정 동반(별도 절차)**: `Policy §4:96`·`§8:148` 「왜 이 결과?」. Ted 결정은 「AI」 태그다. 정본 용어표 개정 항목.
 - ⑤ 해석 degraded 표기 — **Ted 수용 · 정본/계약 개정 동반(별도 절차)**: 카드 접두 조건은 `interpretation.source != "llm"`(`catalog.py:584` · `relay.py:462-463`)이고 헤더 안내 조건은 응답 `degraded`(`relay.py:466` ← ai-service 본문)다. 두 값은 서로 다른 필드에서 온다. 헤더로 올릴 때 `source != "llm"`이고 `degraded == false`인 경우가 생기면 해석 없이 찾은 사실이 화면에서 사라진다 `[미확인 · 확인 항목]`.
   - 결정(2026-09-26): 헤더 degraded 안내의 표시 조건을 합집합(`source != "llm"` 또는 `degraded == true`)으로 둔다. 카드 접두를 없애도 「해석 없이 찾았다」는 사실이 화면에서 사라지지 않는다. 구현 때 dev에서 두 필드를 모두 실측·대조한다.
+  - 추기 2026-09-26(정정 · 오케스트레이터 결정 교체 · Ted 판정 아님): 위 합집합 결정을 교체한다. 합집합은 설정으로 고른 낱말 그대로 해석(ai-service `degraded:false` · `source:"literal"`)에도 경고 상자 「질의 해석이 지금 동작하지 않아…」를 세웠다. 이는 `PLAN-SoT §9-〈148〉`(설정으로 고른 상태는 `degraded`가 아니다)과 어긋난다.
+    - `degraded`는 ai-service `degraded` 그대로 둔다(`relay.py` · 합집합 이전 뜻). 〈148〉의 뜻을 유지한다.
+    - 「해석 없이 찾았다」는 사실은 응답 선택 필드 `interpretation`(`llm`|`literal` · `fe-core.yaml SearchResults`)이 싣는다.
+    - 화면은 `interpretation == "literal"`이고 `degraded == false`일 때 범위 줄(`ScopeLine`) 끝에 「질문의 낱말 그대로 찾았어요.」를 한 번 적는다. 주제 문장이 있으면 그 뒤다. `degraded == true`면 기존 안내 상자만 서고 범위 줄 문장은 겹쳐 적지 않는다.
 
 ## 설계트리 (grill-me 결과)
 - Q0 트랙 A(시각 분리)와 트랙 B(근거 재구성)를 한 intent로 → **합친다** [답: Ted 2026-09-25 「ab 둘다 이번에 합쳐서 허자 / 나머진 권고대로」]
@@ -158,6 +162,7 @@
   - ⒜ 확장어 문구(「‘강우’와 같은 말인 ‘강수’」)와 그래프 확장 홉(`dataset_search._matched_phrase`)은 「낱말 일치」 아래에 둔다. 「관련 개념」은 온톨로지 개념 주석 일치(`d3_search_annotations.matching`)에만 쓴다.
   - ⒝ 옛 `rationale` 문자열은 새 사실(`rationaleFacts`)에서 다시 만든다. 이유만 담고 한 줄이며 한계·부정 절은 넣지 않는다. 패널은 `rationaleFacts`를 그리고, 필드가 없으면 `rationale`로 대체해 그린다.
   - ⒞ degraded 표기(⑤): 헤더 안내 조건 = `source != "llm"` 또는 `degraded == true`(합집합). 위 ⑤ 결정 참조.
+    - 추기 2026-09-26: 이 해소는 ⑤의 「추기 2026-09-26」로 교체됐다(`degraded`는 ai-service 값 그대로 · 낱말 그대로 사실은 `interpretation`과 범위 줄 문장).
 - 남은 질문
   - 조건 검색 갈래(`AssessmentPanel` · `catalog.py:708-723`)의 헤더에 「주제」 문장을 둘지. 이 갈래는 `ScopeLine` 대신 `AssessmentPanel`이 선다(`SearchResultsPage.tsx:115`). 구현 때 정하고 PR 요약에 적는다.
   - 정본·계약 개정 항목 ①~⑤를 누가 어느 절차로 여는지(기획 원본은 무수정 · 계약 설명 문구는 이 구현 PR에서 고칠 수 있음).

@@ -666,6 +666,11 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     if search_topic:
         # 주제로 좁혀 뒤졌을 때만 싣는다 — 화면 머리가 한 번 말한다 (intent Q8 · 종전 카드마다 반복).
         out["topic"] = search_topic
+    if answer.get("source") in ("llm", "literal"):
+        # 해석 출처. `degraded` 와 접지 않는다 — 설정으로 고른 낱말 그대로 해석은 고장이 아니다
+        # (`PLAN-SoT §9-〈148〉`). 화면 범위 줄이 「질문의 낱말 그대로 찾았어요.」를 한 번 말한다
+        # (intent `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26).
+        out["interpretation"] = answer["source"]
     return out
 
 

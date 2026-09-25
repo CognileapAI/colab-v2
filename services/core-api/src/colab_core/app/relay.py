@@ -463,10 +463,7 @@ class HttpDatasetSearchRelay:
         source = interpretation.get("source")
         return {
             "unavailable": False,
-            # ⭑ 합집합 — ai-service 의 `degraded` 또는 해석이 모델에서 오지 않음(`source != "llm"`).
-            # 카드 근거에서 「질의 해석 없이…」 접두를 뺐으므로 그 사실을 응답 머리가 대신 싣는다
-            # (intent `2026-09-25-search-rationale-separation.md` ⑤·⒞ · Ted 2026-09-26).
-            "degraded": bool(body.get("degraded", False)) or source != "llm",
+            "degraded": bool(body.get("degraded", False)),
             "degradedReason": body.get("degradedReason"),
             "isDataQuery": bool(body.get("isDataQuery", True)),
             "terms": terms,

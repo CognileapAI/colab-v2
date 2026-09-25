@@ -3729,11 +3729,20 @@ export interface components {
              * @description AI 가 제 몫을 못 했다. `true` 면 결과가 비었거나 부분적이다 —
              *     **5xx 로 끝내지 않는다.** 카탈로그·업로드는 그대로 돈다
              *     (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
-             *     [사용자 승인] 질의 해석이 모델에서 오지 않았을 때(해석 `source` 가 `llm` 이 아님)도
-             *     `true` 다 — 카드 근거에서 뺀 「질의 해석 없이 찾았다」를 응답 머리가 대신 말한다
-             *     (intent `2026-09-25-search-rationale-separation.md` ⑤·⒞ 합집합).
+             *     **설정으로 고른 낱말 그대로 해석은 `degraded` 가 아니다**(`PLAN-SoT §9-〈148〉`) —
+             *     그 사실은 `interpretation` 이 싣는다.
              */
             degraded: boolean;
+            /**
+             * @description 이번 질의 해석이 **어디서 왔는가**(`core-ai.yaml` 해석 `source` 그대로). `literal` 은
+             *     모델 없이 질문의 낱말 그대로 찾은 것이다. 화면은 `literal` 이고 `degraded` 가
+             *     `false` 일 때 범위 줄에 「질문의 낱말 그대로 찾았어요.」를 한 번 적는다 — 카드 근거에서
+             *     뺀 「질의 해석 없이」를 응답 머리가 대신 말한다(intent
+             *     `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26). 해석을 거치지 않은
+             *     조건 검색 갈래(`assessment`)에는 싣지 않는다.
+             * @enum {string}
+             */
+            interpretation?: "llm" | "literal";
             /** @description 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다. */
             degradedReason?: string;
             /**
