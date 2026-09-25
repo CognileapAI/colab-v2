@@ -16,6 +16,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource as UploadPreviewSource } from '../src/components/upload/types';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
@@ -141,9 +142,8 @@ const SCREENS = [
     /** 업로드는 사람이 「미리보기 그리기」를 눌러야 그린다. */
     async start(source: ReturnType<typeof uploadSource>) {
       render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-      const draw = await screen.findByTestId('up-preview-draw');
       await waitFor(() => expect(source.describe).toHaveBeenCalled(), WAIT);
-      fireEvent.click(draw);
+      await clickPreviewDrawWhenReady();
     },
     renderSpy: (s: ReturnType<typeof uploadSource>) => s.createRender,
   },

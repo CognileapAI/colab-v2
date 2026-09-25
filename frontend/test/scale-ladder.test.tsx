@@ -20,6 +20,7 @@ import type { RenderJob, RenderResult } from '../src/components/preview/types';
 import type { PreviewSource } from '../src/components/upload/types';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import {
   KM_PER_DEG_LON_EQUATOR,
   SCALE_LADDER_KM,
@@ -252,7 +253,7 @@ describe('세 화면 공유 — 같은 `.pv-zoom` 버튼 세 개', () => {
 
   it('업로드 — 같은 마크업의 버튼 세 개', async () => {
     await renderUpload();
-    fireEvent.click(await screen.findByRole('button', { name: /미리보기 그리기/ }));
+    await clickPreviewDrawWhenReady();
     const group = await screen.findByTestId('up-preview-zoom');
     expect(group.querySelectorAll('button')).toHaveLength(3);
     expect(group.className).toContain('pv-zoom');
@@ -260,7 +261,7 @@ describe('세 화면 공유 — 같은 `.pv-zoom` 버튼 세 개', () => {
 
   it('확장보기 — 같은 마크업의 버튼 세 개 · 층 규칙(`data-esc-layer`)은 그대로다', async () => {
     await renderUpload();
-    fireEvent.click(await screen.findByRole('button', { name: /미리보기 그리기/ }));
+    await clickPreviewDrawWhenReady();
     await screen.findByTestId('up-preview-zoom');
     fireEvent.click(screen.getByTestId('pv-expand'));
     const overlay = await screen.findByTestId('pv-expand-overlay');

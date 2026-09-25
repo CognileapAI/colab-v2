@@ -18,6 +18,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { DatasetPreviewSource, ValueLookupResult } from '../src/components/datasetpreview/types';
 import type { RenderJob } from '../src/components/preview/types';
 import type { PreviewSource as UploadSource } from '../src/components/upload/types';
@@ -88,9 +89,8 @@ function uploadSource(): UploadSource {
 
 async function mountUpload() {
   render(<PreviewPanel source={uploadSource()} uploadId={UPLOAD_ID} hasReferenceGrid />);
-  const draw = await screen.findByTestId('up-preview-draw');
   await waitFor(() => expect(screen.getByTestId('up-style-palette')).toBeTruthy(), WAIT);
-  fireEvent.click(draw);
+  await clickPreviewDrawWhenReady();
   const viewport = await screen.findByTestId('up-preview-viewport');
   return { viewport, layers: screen.getByTestId('up-preview-layers') };
 }

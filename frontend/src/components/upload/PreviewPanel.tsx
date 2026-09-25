@@ -463,6 +463,11 @@ export function PreviewPanel(props: {
             type="button"
             className="btn btn-strong btn-sm"
             data-testid="up-preview-draw"
+            /* ⭑ ⟨design-fix 20260924 · F-ci⟩ 팔레트가 오기 전에는 누를 수 없다. 전에는 눌러도
+               `draw()` 첫 줄에서 **조용히** 버려져 사용자 클릭이 사라졌다(PR #141 CI idle 경합).
+               팔레트를 못 받으면(오류·빈 목록) 비활성인 채로 남되, 이유는 기존 자리가 말한다 —
+               오류는 `up-preview-error`(UNAVAILABLE), 빈 목록은 `up-palette-issue`. */
+            disabled={!palette}
             onClick={() => void draw(false)}
           >
             미리보기 그리기
@@ -537,6 +542,9 @@ export function PreviewPanel(props: {
               type="button"
               className="btn btn-ghost btn-sm"
               data-testid="up-preview-without-grid"
+              /* ⭑ ⟨design-fix 20260924 · F-ci 수정 라운드⟩ `up-preview-draw` 와 같은 `draw()` 경로 —
+                 팔레트 전 클릭은 버려지므로 같은 조건으로 비활성. 이유 문면도 같은 경로를 쓴다. */
+              disabled={!palette}
               onClick={() => void draw(true)}
             >
               짝 파일 없이 그려 보기

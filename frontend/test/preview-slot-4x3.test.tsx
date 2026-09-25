@@ -18,9 +18,10 @@
 import { readFileSync } from 'node:fs';
 // @ts-expect-error — 같은 이유.
 import { resolve } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { PREVIEW_SLOT_STATES } from '../src/components/preview/PreviewSlot';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
@@ -125,7 +126,7 @@ describe('WU-C1 ⑵ — idle→drawing→done→failed 네 상태에서 바깥 �
     boxes.push(slotBox()); // ① idle
     expect(screen.getByTestId('up-preview-slot').getAttribute('data-preview-slot-state')).toBe('idle');
 
-    fireEvent.click(screen.getByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await screen.findByTestId('up-preview-stage');
     boxes.push(slotBox()); // ② drawing
 
@@ -137,7 +138,7 @@ describe('WU-C1 ⑵ — idle→drawing→done→failed 네 상태에서 바깥 �
     render(
       <PreviewPanel source={sequenceSource([FAILED_JOB])} uploadId={UPLOAD_ID} hasReferenceGrid />,
     );
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await waitFor(() => expect(screen.getByTestId('up-preview-error')).toBeTruthy(), WAIT);
     boxes.push(slotBox()); // ④ failed
     expect(screen.getByTestId('up-preview-slot').getAttribute('data-preview-slot-state')).toBe('failed');
@@ -154,7 +155,7 @@ describe('WU-C1 ⑵ — idle→drawing→done→failed 네 상태에서 바깥 �
 
   it('실패해도 틀이 접히지 않고 `UNAVAILABLE` 문면이 그 안에 뜬다', async () => {
     render(<PreviewPanel source={sequenceSource([FAILED_JOB])} uploadId={UPLOAD_ID} hasReferenceGrid />);
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     const err = await screen.findByTestId('up-preview-error');
     expect(err.textContent).toContain('지금 미리보기를 만들 수 없어요.');
     expect(screen.getByTestId('up-preview-slot').contains(err)).toBe(true);
@@ -170,7 +171,7 @@ describe('WU-C1 ⑶ — 진행 3단계 문면과 표식이 그대로다', () => 
         hasReferenceGrid
       />,
     );
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     const seen: string[] = [];
     for (const stage of STAGES) {
       await waitFor(

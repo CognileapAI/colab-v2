@@ -16,6 +16,7 @@ import { resolve } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
@@ -112,9 +113,8 @@ function detailSource(job: RenderJob) {
 async function drawUpload(job: RenderJob) {
   const source = uploadSource(job);
   render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-  const draw = await screen.findByTestId('up-preview-draw');
   await waitFor(() => expect(source.describe).toHaveBeenCalled(), WAIT);
-  fireEvent.click(draw);
+  await clickPreviewDrawWhenReady();
   return source;
 }
 
@@ -204,13 +204,12 @@ describe('㈆ 팔레트·구간 수는 접힌 메뉴 밖 고르개 줄 컨테이
   it('옮긴 뒤에도 팔레트·구간 수를 바꿔 그리면 같은 요청이 한 번 더 돈다', async () => {
     const source = uploadSource(doneJob());
     render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-    const draw = await screen.findByTestId('up-preview-draw');
     await waitFor(() => expect(source.describe).toHaveBeenCalled(), WAIT);
-    fireEvent.click(draw);
+    await clickPreviewDrawWhenReady();
     await waitFor(() => expect(source.createRender).toHaveBeenCalledTimes(1), WAIT);
 
     fireEvent.change(screen.getByTestId('up-style-classcount'), { target: { value: '7' } });
-    fireEvent.click(screen.getByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await waitFor(() => expect(source.createRender).toHaveBeenCalledTimes(2), WAIT);
     expect(source.createRender).toHaveBeenLastCalledWith(
       expect.objectContaining({ style: { palette: 'viridis', classCount: 7 } }),

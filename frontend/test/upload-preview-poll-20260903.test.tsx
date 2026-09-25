@@ -11,9 +11,10 @@
  *
  * 이 파일은 `upload.test.tsx`(동시 편집 중인 핫 파일)를 건드리지 않으려고 따로 세웠다.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
@@ -61,12 +62,10 @@ describe('업로드 미리보기 — 옛 폴링이 새 화면을 덮지 않는�
     } as unknown as PreviewSource;
 
     render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-    const draw = await screen.findByTestId('up-preview-draw');
-
-    fireEvent.click(draw); // ① 옛 렌더 — 조회가 붙잡혀 돌아오지 않는다
+    await clickPreviewDrawWhenReady(); // ① 옛 렌더 — 조회가 붙잡혀 돌아오지 않는다
     await waitFor(() => expect(source.getRender).toHaveBeenCalledWith(OLD_ID), WAIT);
 
-    fireEvent.click(draw); // ② 새 렌더 — 먼저 끝난다
+    await clickPreviewDrawWhenReady(); // ② 새 렌더 — 먼저 끝난다
     await waitFor(
       () => expect(screen.getByTestId('up-preview-badge').textContent).toBe('새 렌더'),
       WAIT,
@@ -88,7 +87,7 @@ describe('업로드 미리보기 — 옛 폴링이 새 화면을 덮지 않는�
     } as unknown as PreviewSource;
 
     const view = render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await waitFor(() => expect(source.getRender).toHaveBeenCalledTimes(1), WAIT);
 
     view.unmount();
