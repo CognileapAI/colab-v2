@@ -236,6 +236,7 @@ psql "$COLAB_DEV_DB_URL" -c "DELETE FROM d3_search_evidence e WHERE NOT EXISTS (
 칸 수만 보고한다. 이 제약은 1회차가 열어 둔 자리가 아니라 표 구조가 정한 것이다.
 
 승격·폐기 **구조 자체는 이 회차가 만들지 않는다**(별도 intent — 조사자가 초안 작성 중).
+추기 2026-09-25 — 그 초안 = `dev-package/intent/2026-09-21-evidence-promotion.md`(미승인 · 초안, 2026-09-21 작성 · 9-25 레포 반입).
 이 회차가 남기는 것은 그 구조가 찾아올 자리와 셈뿐이다:
 `dev-package/tools/generated/dataset-evidence-payloads-rule-summary.json` 과 생성기 stdout 의
 규칙별 셈 — platform 26 · representation 28 · directObservation 26 · interpolated 28 ·
