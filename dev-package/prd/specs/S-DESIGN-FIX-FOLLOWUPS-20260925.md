@@ -353,9 +353,11 @@ L2(`frontend/test/design-fix-followups-20260925-L2.test.tsx`)
 | production build | — | — | — | ○ |
 
 - `frontend-visual`: `COLAB_VISUAL_URLS` 선언 필수 · CSS 변경 레인에서 `COLAB_VISUAL_EXEMPT=1` 금지 · 서버가 없으면 red(준비 78)를 그대로 보고. 동작(actions)이 필요한 장면은 첫 화면만 잰다 — 그 상태는 캡처 대조와 부록 D 가 본다.
-  - B0 · L1 = `frontend/scripts/visual-baseline/scenes.json` 34장면 전체 — 프리미티브 · 토큰 변경은 모든 화면에 닿는다(catalog · lab · empty · projects · project-table · project-detail · project-dialog · project-close · detail · settings · members · lab-dialog · search · search-empty · search-down · search-degraded · preview · preview-done · preview-expired · access · pending · approval · approval-dialog · lineage-picker · login · not-found · upload · upload-classify · upload-metadata · upload-link · account-admin · password-change · gnb-more · primitives)
-  - L2 = upload · upload-classify · upload-metadata · upload-link · upload-register-ok(L2 가 추가)
-  - E = 34 ＋ upload-register-ok = 35장면
+  - URL 은 `scenes.json` 의 진입점을 따른다. 디자인 30장면 = `audit-design.html?design=full&scene=<장면>`, 업로드 4장면 = 첫 화면이 같은 `audit-upload.html` 하나(단계는 동작으로 이동 · 첫 화면만 잰다). `audit-design.html?scene=upload…` 는 대체 화면이라 쓰지 않는다(B0 보고 「보충 B0b」).
+  - B0 · L1 = 디자인 30장면 × 라이트/다크 ＋ `audit-upload.html` × 라이트/다크 = 62 URL(목록 원본 = B0 보고). 다크 = `&theme=dark`(업로드는 `?theme=dark`).
+  - L2 = `audit-upload.html` × 라이트/다크 ＋ 등록 성공 장면 URL × 라이트/다크(L2 가 추가).
+  - E = B0 의 62 URL ＋ 등록 성공 장면 × 라이트/다크.
+  - 판정 페이지 수를 보고한다 — `live_audit.sh` 결과 파일 이름 절단(하네스 intent H1)으로 긴 이름 장면이 덮어써질 수 있다. 같은 선언끼리만 비교한다.
   - 장면 이름은 `scenes.json` 에 있는 것만 쓴다. 다크는 `&theme=dark` URL 을 따로 선언할지 첫 실행에서 확인한다.
 - 캡처 대조: `scenes.json` 이 바뀌어 manifest sha 가 다르므로 E 는 `visual:diff --subset` 으로 `fixfu0925-base` 대 `fixfu0925-final` 을 잰다. 새 장면은 대조 없이 존재 · 스크린샷만 보고한다.
   - 예상 변화(확실): primitives · login · password-change(V1).
