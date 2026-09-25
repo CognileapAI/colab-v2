@@ -150,3 +150,102 @@ def test_default_profile_is_private_external_config(tmp_path,monkeypatch):
  m.main()
  approved.chmod(0o644)
  with pytest.raises(ValueError):m.main()
+
+# ── ownerManaged 운영자 — 소유자가 비밀번호를 관리하는 운영자 계정(2026-09-25 사용자 결정) ──
+def owner_profile():
+ p=profile();p[0]['ownerManaged']=True;return p
+
+def owner_store(p,changed=True,**drift):
+ rows=[];creds={};calls=[]
+ for i,e in enumerate(p):
+  rows.append(types.SimpleNamespace(email=e['email'],name=e['name'],role=e.get('role') or None,lab_name=e.get('lab') or None,lab_id=e.get('lab_id'),account_id=e.get('account_id') or str(i),operator=True))
+  creds[e['email']]=types.SimpleNamespace(password=e['email'] if e['admin'] else 'temporary',must_change_password=e['admin'],status='active')
+ owner=p[0]['email']
+ if changed:creds[owner].password='owner-chosen';creds[owner].must_change_password=False
+ for k,v in drift.items():
+  if k=='status':creds[owner].status=v
+  else:setattr(rows[0],k,v)
+ class Store:
+  def list_accounts(self):return rows
+  def find(self,e):return creds[e]
+  def reset_password(self,aid,pw):
+   calls.append(('reset',aid));x=next(r for r in rows if r.account_id==aid);creds[x.email].password=pw;creds[x.email].must_change_password=True;return 2
+  def set_operator(self,aid,v,actor_account_id):
+   calls.append(('operator',aid));next(r for r in rows if r.account_id==aid).operator=v;return v
+ return Store(),creds,calls
+
+def test_owner_managed_operator_skips_only_initial_credential_checks():
+ m=mod();p=owner_profile();store,creds,calls=owner_store(p)
+ result=m.finalize_store(store,p,lambda pw,hash:pw==hash)
+ assert result['owner_managed']==1 and result['accounts']==5
+ # 소유자 관리 계정의 비밀번호는 읽기만 한다 — 초기화·권한 변경 호출은 교수 계정에만 간다.
+ assert calls and all(aid==p[-1]['account_id'] for _,aid in calls)
+ assert creds[p[0]['email']].password=='owner-chosen' and creds[p[0]['email']].must_change_password is False
+
+def test_owner_managed_operator_still_enforces_identity_and_operator_state():
+ m=mod();p=owner_profile()
+ for drift in [dict(status='disabled'),dict(operator=False),dict(lab_id='00000000000000000000HYMETS'),dict(name='다른 이름')]:
+  store,_,calls=owner_store(p,**drift)
+  with pytest.raises(ValueError):m.finalize_store(store,p,lambda pw,hash:pw==hash)
+  assert not any(aid=='0' for _,aid in calls)
+
+def test_operator_without_owner_flag_still_requires_initial_credential():
+ m=mod();p=profile();store,_,_=owner_store(p)
+ with pytest.raises(ValueError):m.finalize_store(store,p,lambda pw,hash:pw==hash)
+
+def test_owner_managed_refused_on_professor_and_must_be_approved():
+ m=mod();p=profile();bad=json.loads(json.dumps(p));bad[-1]['ownerManaged']=True
+ with pytest.raises(ValueError):m.validate(bad,bad)
+ odd=json.loads(json.dumps(p));odd[0]['ownerManaged']='yes'
+ with pytest.raises(ValueError):m.validate(odd,odd)
+ # 실행 후보가 승인 기준에 없는 소유자 관리 표시를 덧붙이면 거부한다.
+ with pytest.raises(ValueError):m.validate(owner_profile(),p)
+ m.validate(owner_profile(),owner_profile())
+
+def test_owner_managed_login_is_not_attempted_with_initial_password(tmp_path):
+ import io
+ m=mod();p=owner_profile();entries=m.prepare(p,tmp_path);calls=[];active={}
+ class Response(io.StringIO):
+  def __init__(self,value,status):super().__init__(json.dumps(value));self.status=status
+ def opener(req,timeout):
+  calls.append((req.method,req.full_url))
+  if req.method=='POST':
+   data=json.loads(req.data);assert data['accountName']!=p[0]['email'];active['entry']=next(e for e in entries if e['email']==data['accountName']);return Response({'token':'fixture'},201)
+  if req.method=='DELETE':return Response(None,204)
+  e=active['entry'];return Response(dict(email=e['email'],name=e['name'],role=e['role'] or None,labName=e['lab'] or None,labId=e.get('lab_id'),accountId=e.get('account_id','fixture'),mustChangePassword=True,canManageServiceAccounts=e['admin']),200)
+ result=m.verify_logins(entries,'https://fixture.invalid',opener)
+ assert result['accounts']==5 and result['owner_managed']==1 and result['initial_logins']==4
+ assert len(calls)==12
+
+def test_real_remote_verify_skips_owner_managed_initial_credential(tmp_path):
+ import subprocess,sys,os
+ p=owner_profile();env=dict(os.environ,COLAB_CORE_S3_BUCKET='colab-platform-data-dev')
+ for key,name,data in [('COLAB_CORE_SUBJECTS_FILE','subjects','{}'),('COLAB_CORE_CREDENTIALS_FILE','credentials','{}'),('COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE','db','postgresql://x:y@colab-platform-dev-db.example/db')]:
+  path=tmp_path/name;path.write_text(data);env[key]=str(path)
+ prefix='''import sys,types,json
+entries=json.loads(sys.argv.pop(2));owner=entries[0]['email']
+class Store:
+ def __init__(self,*a):pass
+ def list_accounts(self):return [types.SimpleNamespace(email=e['email'],name=e['name'],role=e['role'],lab_name=e['lab'],lab_id=e.get('lab_id'),account_id=e.get('account_id',str(i)),operator=e['admin']) for i,e in enumerate(entries)]
+ def find(self,email):return types.SimpleNamespace(password='owner-chosen' if email==owner else email,must_change_password=email!=owner,status='active')
+ def reset_password(self,*a,**kw):raise AssertionError('unexpected reset')
+ def set_operator(self,*a,**kw):raise AssertionError('unexpected operator mutation')
+for name,values in {'sqlalchemy':{'create_engine':lambda x:None},'sqlalchemy.orm':{'sessionmaker':lambda x:None},'colab_core.kernel.db_credentials':{'DatabaseCredentialStore':Store},'colab_core.kernel.password':{'verify_password':lambda p,h:p==h}}.items():
+ mod=types.ModuleType(name);mod.__dict__.update(values);sys.modules[name]=mod
+'''
+ result=subprocess.run([sys.executable,'-c',prefix+(P/'accounts.py').read_text(),'remote-verify',json.dumps(p)],env=env,input=json.dumps({'entries':p}),text=True,capture_output=True)
+ assert result.returncode==0,result.stderr
+ assert json.loads(result.stdout)['owner_managed']==1
+
+def test_report_requires_owner_managed_count_to_match_profile(tmp_path,monkeypatch):
+ p=owner_profile();approved=tmp_path/'owner-approved.json';approved.write_text(json.dumps(p));approved.chmod(0o600)
+ monkeypatch.setenv('COLAB_RESEED_ACCOUNTS_PROFILE',str(approved))
+ m=mod();seed=tmp_path/'seed';seed.mkdir();run=tmp_path/'run';run.mkdir();work=seed/'accounts';work.mkdir()
+ for f in [seed/'state.json',seed/'verify.json',run/'counts.json',run/'preview-judgment.tsv']:f.write_text('{}')
+ binding=m.proof(p,work,run,'a'*12,True);identity={'profile':m.fingerprint(p),'binding':binding}
+ m.save(work/'finalization.json',{**identity,'state':'complete'})
+ base={**identity,'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False,'initial_logins':4}
+ s=importlib.util.spec_from_file_location('reseed_report',P/'report.py');r=importlib.util.module_from_spec(s);s.loader.exec_module(r)
+ m.save(work/'verification.json',{**base,'owner_managed':1});r.check_accounts(work,approved,'a'*12)
+ m.save(work/'verification.json',{**base,'owner_managed':0})
+ with pytest.raises(ValueError):r.check_accounts(work,approved,'a'*12)

@@ -8,6 +8,7 @@ dev 가 도는 `ea21d8c2aa54` 와 줄이 같다(`routes/ingestion.py` 만 달라
 run-dir 인용(`logs/verify.log` 등)은 `…/agent-a9c33a67acf039b61/dev-package/reports/dev-reseed-runs/wu2-20260924T0834Z/` 기준.
 추기 2026-09-25 RCA — 근본 원인 분석 `dev-reseed-rca-2026-09-25.md`(같은 폴더) · #21·#22 **원인 확정** · #23 대부분 확정(bin 행 미확정) · 제품 결함 5건 확정(RCA §5).
 추기 2026-09-25 사고 — 1차 `reset` 이 비어 있지 않은 dev(4,189행 · S3 1,778 키)를 지웠다 → **#26** · RCA §0′. dev 재시드는 reset 게이트 수선까지 동결.
+추기 2026-09-25 재개 경로(가지 `reseed-verify-resume` · 사용자 결정 「실패한 꼬리만」) — #21·#22 세 행(seq 13·14 #133 · 16 #134)은 `dev-package/tools/dev-reseed/known-defects.json` 로 대조에서 면제(행·판정·비고 머리 일치만 · 그 밖은 종전대로 실패) · `reseed.sh --from verify --verify-from <3/3 실행 자리>` 가 상세 화면 순회 없이 3/3 판정표로 대조 → record-details → 계정 최종화 → report 를 잇는다 · 소유자 관리 운영자는 프로필 `ownerManaged` 로 초기 자격 조건만 건너뛴다(`SKILL.md` 「실패한 꼬리만 잇기」).
 주장 검증 정정(RCA 가 우선) — #21 필요 원인 둘(describe() 415 미매핑 ＋ describe catch) · #15 139.5s 는 seq 17 · 원인은 파일 수 × 파일별 좌표 처리 · 637 MB 는 413 · #17 재선택은 러너 전용 · 파일 2개 이상이면 다른 파일로 복구 ·
 #22 거절 지점은 warp 전 검사 `preview.py:261` · #23 09-13 측정은 자동 러너(고정 6초 대기 · bin 행 오염 가능) · §7 은 RCA §5 P1~P5 로 다시 맞췄다(P3 조용한 정체 아님 — 배너 문구 모순 · P4 503 7건 · 11.8~21.7s · 재선택·보기 단추 위치는 제외).
 

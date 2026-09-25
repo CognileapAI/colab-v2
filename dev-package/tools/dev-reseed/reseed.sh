@@ -136,6 +136,8 @@ DEV_URL="${COLAB_DEV_WEB_URL:-${COLAB_DEV_URL:-}}"
 RELEASE_PLAN=""
 MD_ROOT=""
 SEED_WORK_DIR=""
+# 앞 실행의 판정표로 verify 대조만 다시 한다(`--from verify` 전용 · 상세 화면 순회 생략).
+VERIFY_FROM="${COLAB_RESEED_VERIFY_FROM:-}"
 
 usage() {
   sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -180,6 +182,10 @@ usage() {
                                 --rehearse는 --check만, deploy는 같은 보호 사본을 check한 뒤
                                 기존 executor run 1회로 배포·검증한다. --dry-run은 실행하지 않는다.
   --md-root <자리>              정본 md 뿌리(기본 = 참조자료 뿌리).
+  --verify-from <앞 실행 자리>  `--from verify` 전용(환경 COLAB_RESEED_VERIFY_FROM). 앞 실행의 판정표·계수를
+                                옮겨 대조(알려진 결함 면제 known-defects.json)만 다시 하고 record-details →
+                                계정 최종화로 간다. 상세 화면 순회는 하지 않는다. 앞·이번 대상 sha 가
+                                다르면 주의 줄을 찍고 verify-from.json 에 남긴다 · --run-dir 은 새 자리.
 USAGE
 }
 
@@ -197,10 +203,18 @@ while [ $# -gt 0 ]; do
     --base-url) DEV_URL="$2"; shift 2 ;;
     --release-plan) RELEASE_PLAN="$2"; shift 2 ;;
     --md-root) MD_ROOT="$2"; shift 2 ;;
+    --verify-from) VERIFY_FROM="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "모르는 인자: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+# `--verify-from` 은 **verify 에서 시작하는 실행**에서만 받는다 — 앞 단계(seed 등)가 다시 돌면 그 판정표는
+# 이번 적재를 잰 것이 아니다. preflight 는 그대로 돈다(대상 sha 해석 · dev 실행 sha 대조).
+if [ -n "$VERIFY_FROM" ] && { [ "$FROM_STAGE" != verify ] || [ "$PREFLIGHT_ONLY" = 1 ] || [ "$REHEARSE" = 1 ]; }; then
+  echo "--verify-from(COLAB_RESEED_VERIFY_FROM) 은 --from verify 로만 쓴다 — 지금 --from ${FROM_STAGE}$([ "$PREFLIGHT_ONLY" = 1 ] && echo ' --preflight-only')$([ "$REHEARSE" = 1 ] && echo ' --rehearse')" >&2
+  exit 2
+fi
 
 # ── 단계 집합 ────────────────────────────────────────────────────────────
 # **preflight 는 언제나 돈다.** 읽기 전용이고, 배포 대상 sha 를 해석하는 자리가 거기 하나뿐이다.

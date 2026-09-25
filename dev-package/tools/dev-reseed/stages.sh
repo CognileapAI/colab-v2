@@ -1141,8 +1141,268 @@ raise SystemExit(1 if bad else 0)
 PY
 }
 
+# ② 계수 대조 — 판정표(`$RUN_DIR/preview-judgment.tsv`) ＋ 러너 verify.json ＋ 등재표 ＋ 알려진 결함 면제.
+# 순회 경로와 `--verify-from` 경로가 같은 대조를 쓴다. 출력은 단계 로그(실행 기록)에 남긴다.
+# $1 = verify.json · $2 = plan-manifest.yaml · 종료 1 = 대조 미달(면제 목록 판정 불가 포함)
+verify_compare() {
+  local verify="$1" manifest="$2"
+  # 계수 칸 판정을 먼저 따로 낸다(판정불가 포함). 아래 대조가 그 결과를 그대로 읽는다.
+  count_verdict "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/count-verdict.json" || true
+  python3 - "$verify" "$manifest" "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/counts.json" \
+      "$EXPECT_DATASETS" "$EXPECT_PROJECTS" "$EXPECT_EDGES" "$RUN_DIR/count-verdict.json" \
+      "${KNOWN_DEFECTS_FILE:-$RESEED_DIR/known-defects.json}" "$RUN_DIR/blocked.jsonl" <<'PY' | log_lines
+import json, os, re, sys
+try:
+    import yaml
+except ImportError:
+    raise SystemExit("PyYAML 이 없다 — 등재표 대조 불가")
+verify, manifest, tsv, out, nds, nproj, nedge, cvpath, kdpath, blockedpath = sys.argv[1:11]
+v = json.load(open(verify))
+m = yaml.safe_load(open(manifest))
+cv = json.load(open(cvpath))
+rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
+want = {}
+preview_expected = {}
+for d in m.get("datasets", []):
+    want[str(d.get("seq"))] = str(d.get("processing_level") or d.get("level") or "")
+    preview_expected[str(d.get("seq"))] = str(d.get("preview_expected") or "").strip()
+got = {r[0]: r[2] for r in rows}
+level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
+# 등재표 쪽 가공 단계가 비어 있으면 **대조할 것이 없었던 것**이다.
+# 종전에는 `if w and …` 로 그 행을 건너뛰어, 양쪽이 다 비면 통과로 접혔다(fail-open).
+manifest_level_missing = sorted((s for s, w in want.items() if not w), key=lambda x: int(x) if x.isdigit() else 0)
+# 계수 칸 판정은 count_verdict 가 낸 것을 그대로 쓴다 — 빈 칸은 0 이 아니다.
+unset = cv["unsetSeq"]
+unlinked = cv["unlinkedSeq"]
+count_undecided = cv["countUndecidedSeq"]
+level_undecided = cv["levelUndecidedSeq"]
+undecided = [r[0] for r in rows if r[3] == "판정불가"]
+unestablished = [r[0] for r in rows if r[3] == "미성립"]
+no_preview_text = "미성립(포맷 미지원 · 판정 표에 이름으로)"
+allowed_no_preview_names = {"SPI-4weeks", "SPEI-4weeks"}
+manifest_preview_missing = sorted((s for s, value in preview_expected.items() if not value), key=int)
+invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
+                             if str(d.get("preview_expected") or "").strip() == no_preview_text
+                             and d.get("name") not in allowed_no_preview_names), key=int)
+expected_unestablished = sorted((s for s, value in preview_expected.items()
+                                 if value == no_preview_text), key=int)
+unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
+# 「기대와 달리 미리보기 성립」은 **실제로 성립한 행**에만 붙인다 — 판정불가는 재지 못한 것이지 성립이 아니다
+# (판정불가는 위 「미리보기 판정불가」로 따로 낸다).
+established = [r[0] for r in rows if r[3] == "성립"]
+missing_unestablished = sorted(set(expected_unestablished) & set(established), key=int)
+# ── 알려진 제품 결함 면제(`known-defects.json` · 2026-09-25 사용자 결정) ──────────────────────
+# 면제 = seq·이름·관측 판정·비고 머리가 **모두** 목록 항목과 맞는 행. 판정불가 면제 행이 `?` 로 적은 파생
+# (계수·가공 단계 판정불가, 그 `?` 때문의 가공 단계 불일치)도 같은 행의 것이라 함께 면제한다.
+# 실제로 읽은 값의 불일치 · 「미지정」 · 미연결 · 다른 행은 면제하지 않는다.
+# 목록이 없거나 틀리면 **빈 목록으로 접지 않고** 대조를 실패시킨다.
+def kd_fail(why):
+    print("대조 결과 — 알려진 결함 면제 목록 판정 불가(%s) · %s" % (os.path.basename(kdpath), why))
+    raise SystemExit(1)
+try:
+    kd = json.load(open(kdpath, encoding="utf-8"))
+except FileNotFoundError:
+    kd_fail("파일 부재")
+except (OSError, ValueError) as exc:
+    kd_fail("읽지 못함 %s" % type(exc).__name__)
+if not isinstance(kd, dict) or kd.get("schema") != "colab-reseed-known-defects/1":
+    kd_fail("스키마가 colab-reseed-known-defects/1 이 아니다")
+if not isinstance(kd.get("entries"), list):
+    kd_fail("entries 목록이 없다")
+manifest_names = {str(d.get("seq")): str(d.get("name") or "") for d in m.get("datasets", [])}
+defects = {}
+for e in kd["entries"]:
+    s = e.get("seq") if isinstance(e, dict) else None
+    if isinstance(s, bool) or not (isinstance(s, int) or (isinstance(s, str) and s.isdigit())):
+        kd_fail("seq 가 숫자가 아닌 항목")
+    s = str(s)
+    for k in ("name", "notePrefix", "reason", "approved"):
+        if not isinstance(e.get(k), str) or not e[k].strip():
+            kd_fail("seq %s 의 %s 칸이 비었다" % (s, k))
+    if not re.fullmatch(r"#[0-9]+", str(e.get("issue") or "")):
+        kd_fail("seq %s 의 issue 가 #번호 가 아니다" % s)
+    if e.get("expectedVerdict") not in ("판정불가", "미성립"):
+        kd_fail("seq %s 의 expectedVerdict 가 판정불가·미성립 이 아니다" % s)
+    if s in defects:
+        kd_fail("seq %s 중복" % s)
+    if s not in manifest_names:
+        kd_fail("seq %s 가 등재표에 없다" % s)
+    if manifest_names[s] != e["name"]:
+        kd_fail("seq %s 이름이 등재표(%s)와 다르다" % (s, manifest_names[s]))
+    defects[s] = e
+rowmap = {r[0]: r for r in rows}
+def kd_matches(s, e):
+    r = rowmap.get(s)
+    return (bool(r) and len(r) > 7 and r[1] == e["name"] and r[3] == e["expectedVerdict"]
+            and r[7].startswith(e["notePrefix"]))
+exempt = {s: e for s, e in defects.items() if kd_matches(s, e)}
+derived = {s for s, e in exempt.items() if e["expectedVerdict"] == "판정불가"}
+f_undecided = [s for s in undecided if s not in exempt]
+f_unexpected_unestablished = [s for s in unexpected_unestablished if s not in exempt]
+f_count_undecided = [s for s in count_undecided if s not in derived]
+f_level_undecided = [s for s in level_undecided if s not in derived]
+f_level_mismatch = [s for s in level_mismatch
+                    if not (s in derived and rowmap[s][2].strip() in ("", "?"))]
+res = {
+    "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
+    "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
+    "edges": {"expected": int(nedge), "ok": v.get("edges_ok"), "missing": v.get("edges_missing")},
+    "periods": {"expected": int(nds), "reportedExpected": v.get("periods_expected"),
+                "ok": v.get("periods_ok"), "missing": v.get("periods_missing")},
+    "modelInputDescriptions": {"expected": 2, "ok": v.get("model_input_descriptions_ok"),
+                               "missing": v.get("model_input_descriptions_missing")},
+    "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset,
+                        "undecidedSeq": level_undecided},
+    "usageUndecidedSeq": count_undecided,
+    "manifestLevelMissingSeq": manifest_level_missing,
+    "projectUnlinkedSeq": unlinked,
+    "previewRows": len(rows),
+    "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
+    "previewUndecidedSeq": undecided,
+    "previewUnestablishedSeq": unestablished,
+    "previewExpectedUnestablishedSeq": expected_unestablished,
+}
+bad = []
+# 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
+if f_undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(f_undecided))
+if manifest_preview_missing: bad.append("등재표 미리보기 기대 부재 seq %s" % ",".join(manifest_preview_missing))
+if invalid_no_preview: bad.append("미리보기 없음 기대 대상 오류 seq %s" % ",".join(invalid_no_preview))
+if f_unexpected_unestablished: bad.append("예상 밖 미리보기 미성립 seq %s" % ",".join(f_unexpected_unestablished))
+if missing_unestablished: bad.append("기대와 달리 미리보기 성립 seq %s" % ",".join(missing_unestablished))
+# 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
+if f_count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(f_count_undecided))
+if f_level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(f_level_undecided))
+if manifest_level_missing: bad.append("등재표 가공 단계 부재 seq %s" % ",".join(manifest_level_missing))
+if res["datasets"]["ui"] != int(nds): bad.append("데이터셋 계수 %s" % res["datasets"]["ui"])
+if res["edges"]["ok"] != int(nedge): bad.append("간선 계수 %s" % res["edges"]["ok"])
+if f_level_mismatch: bad.append("가공 단계 불일치 seq %s" % ",".join(f_level_mismatch))
+if unset: bad.append("「미지정」 seq %s" % ",".join(unset))
+if unlinked: bad.append("프로젝트 미연결 seq %s" % ",".join(unlinked))
+if len(rows) != int(nds): bad.append("판정 표 %d 행" % len(rows))
+failing = set(f_undecided) | set(f_unexpected_unestablished) | set(missing_unestablished) | set(f_count_undecided) \
+    | set(f_level_undecided) | set(f_level_mismatch) | set(unset) | set(unlinked)
+unneeded = [s for s in defects if s not in exempt and s in rowmap and s not in failing]
+# 통과한 회차의 면제 행 차단 항목(순회가 그 행에서 낸 것)은 면제 기록으로 옮긴다 — 남기면 result.json 이
+# failed 로 선다. 실패한 회차는 blocked.jsonl 을 그대로 둔다.
+moved = {s: [] for s in exempt}
+if not bad and exempt and os.path.exists(blockedpath):
+    kept = []
+    for line in open(blockedpath, encoding="utf-8"):
+        if not line.strip():
+            continue
+        b = json.loads(line)
+        hit = next((s for s, e in exempt.items() if b.get("stage") == "verify"
+                    and str(b.get("reason", "")).startswith("seq=%s %s — " % (s, e["name"]))), None)
+        if hit:
+            moved[hit].append(b["reason"])
+        else:
+            kept.append(line if line.endswith("\n") else line + "\n")
+    with open(blockedpath, "w", encoding="utf-8") as f:
+        f.writelines(kept)
+key = lambda s: int(s) if s.isdigit() else 0
+res["knownDefects"] = {
+    "file": os.path.basename(kdpath), "declared": len(defects), "exemptedCount": len(exempt),
+    "exempted": [{"seq": s, "name": e["name"], "issue": e["issue"], "verdict": e["expectedVerdict"],
+                  "reason": e["reason"], "approved": e["approved"], "blocked": moved[s]}
+                 for s, e in sorted(exempt.items(), key=lambda kv: key(kv[0]))],
+    "unneeded": [{"seq": s, "name": defects[s]["name"], "issue": defects[s]["issue"]} for s in sorted(unneeded, key=key)],
+}
+json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
+print("알려진 결함 면제 %d건%s" % (len(exempt), (" — " + " ; ".join(
+    "%s · %s · %s" % (s, e["name"], e["issue"]) for s, e in sorted(exempt.items(), key=lambda kv: key(kv[0])))) if exempt else ""))
+for s in sorted(unneeded, key=key):
+    print("면제 불필요 — %s · %s · %s — known-defects.json 에서 뺄 것" % (s, defects[s]["name"], defects[s]["issue"]))
+for s in sorted(set(defects) - set(exempt) - set(unneeded), key=key):
+    r = rowmap.get(s) or ["", "", "", "행 없음"]
+    print("면제 조건 불일치 — %s · %s · %s (관측 판정 %s) — 종전 판정대로 센다" % (s, defects[s]["name"], defects[s]["issue"], r[3]))
+print("대조 결과 — " + ("전건 일치" if not bad else " · ".join(bad)))
+raise SystemExit(1 if bad else 0)
+PY
+  [ "${PIPESTATUS[0]}" -eq 0 ] || return 1
+}
+
+# 파이프로 받은 줄을 단계 로그(실행 기록)에 남긴다 — 대조·재개 판정이 표준출력에만 머물지 않게.
+log_lines() { local l; while IFS= read -r l; do log "$l"; done; }
+
+# `--verify-from <앞 실행 자리>` — 앞 실행의 판정표·계수를 이 실행 자리로 옮기고 출처를 남긴다.
+# 거부 = 파일 부재 · 이번 실행 자리와 같음 · 데이터셋/프로젝트/간선 기대 불일치 · 앞 대상 sha 부재 ·
+#        앞 result.json 과 승인 기록의 대상 sha 불일치 · 앞 seed 가 ok 가 아님 · 앞 verify 미실행 ·
+#        판정표 seq·이름이 지금 seed 상태와 다름. 앞·이번 대상 sha 가 다르면 거부하지 않고 주의 줄과 기록을 남긴다.
+# $1 = state.json · $2 = plan-manifest.yaml(예약 — 대조는 verify_compare 가 한다)
+verify_from_prior() {
+  python3 - "$VERIFY_FROM" "$RUN_DIR" "$1" "${TARGET_SHA:-}" "$EXPECT_DATASETS" "$EXPECT_PROJECTS" "$EXPECT_EDGES" \
+      "$RUN_DIR/verify-from.json" <<'VFPY' | log_lines
+import hashlib, json, pathlib, shutil, sys
+prior, run, state, sha, nds, nproj, nedge, out = sys.argv[1:9]
+def refuse(why):
+    print("verify-from 거부 — " + why)
+    raise SystemExit(1)
+p, r = pathlib.Path(prior), pathlib.Path(run)
+if not p.is_dir():
+    refuse("앞 실행 자리가 없다")
+if p.resolve() == r.resolve():
+    refuse("앞 실행 자리가 이번 실행 자리와 같다 — --run-dir 을 새 자리로 둔다")
+for name in ("preview-judgment.tsv", "counts.json", "result.json"):
+    if not (p / name).is_file():
+        refuse("앞 실행 자리에 %s 이 없다" % name)
+try:
+    res = json.loads((p / "result.json").read_text(encoding="utf-8"))
+except ValueError:
+    refuse("앞 result.json 을 읽지 못했다")
+if res.get("schema") != "colab-reseed-result/1":
+    refuse("앞 result.json 스키마가 colab-reseed-result/1 이 아니다")
+counts = res.get("counts") or {}
+for key, label, want in (("datasets", "데이터셋", nds), ("projects", "프로젝트", nproj), ("edges", "간선", nedge)):
+    got = (counts.get(key) or {}).get("expected")
+    if got != int(want):
+        refuse("앞 실행의 %s 기대 %s ≠ 지금 %s — 다른 계획으로 적재한 판정표다" % (label, got, want))
+prior_sha = str(res.get("targetSha") or "")
+approval = p / "approval-record.json"
+approval_sha = ""
+if approval.is_file():
+    approval_sha = str(json.loads(approval.read_text(encoding="utf-8")).get("targetSha") or "")
+    if approval_sha and not (approval_sha.startswith(prior_sha) or prior_sha.startswith(approval_sha)):
+        refuse("앞 실행의 result.json 대상 sha [%s] 와 승인 기록 대상 sha [%s] 가 다르다" % (prior_sha, approval_sha))
+if not prior_sha:
+    refuse("앞 result.json 에 대상 sha 가 없다 — 판정표를 잰 배포를 알 수 없다")
+# 대상 sha 가 달라도 거부하지 않는다 — 앞 실행 뒤 dev 가 재배포됐어도 적재 자료는 그대로일 수 있고
+# (2026-09-25 reset 정지 게이트 배포), 전수 재순회를 하지 않는 것이 이 경로의 목적이다. 대신 두 sha 를
+# 찍고 기록해 사람이 두 배포 사이 미리보기 경로 변경 여부를 확인하게 한다.
+sha_match = bool(sha) and (prior_sha.startswith(sha) or sha.startswith(prior_sha))
+if not sha_match:
+    print("verify-from 주의 — 판정표는 대상 sha %s 에서 잰 것이고 이번 대상 sha 는 %s 다 · 두 배포 사이 미리보기 경로 변경은 사람이 확인한다"
+          % (prior_sha, sha or "없음"))
+stages = {s.get("stage"): s.get("status") for s in res.get("stages") or []}
+if stages.get("seed") != "ok":
+    refuse("앞 실행의 seed 가 ok 가 아니다(%s)" % stages.get("seed"))
+if stages.get("verify") in (None, "skipped"):
+    refuse("앞 실행이 verify 를 돌지 않았다 — 판정표가 없다")
+rows = [l.split("\t") for l in (p / "preview-judgment.tsv").read_text(encoding="utf-8").splitlines() if l.strip()]
+st = json.load(open(state)).get("datasets", {})
+want_names = {str(k): str(v.get("name") or "") for k, v in st.items()}
+got_names = {row[0]: (row[1] if len(row) > 1 else "") for row in rows}
+if len(rows) != len(got_names) or got_names != want_names:
+    refuse("앞 판정표의 seq·이름이 지금 seed 상태(state.json)와 다르다")
+if any(not v.get("dataset_id") for v in st.values()):
+    refuse("seed 상태에 데이터셋 id 미확보 행이 있다")
+files = {}
+for name in ("preview-judgment.tsv", "counts.json"):
+    shutil.copyfile(p / name, r / name)
+    files[name] = hashlib.sha256((r / name).read_bytes()).hexdigest()
+prov = {"schema": "colab-reseed-verify-from/1", "priorRunDirName": p.name, "priorRunId": res.get("runId"),
+        "priorTargetSha": prior_sha, "priorApprovalTargetSha": approval_sha or None,
+        "targetSha": sha or None, "targetShaMatches": sha_match,
+        "priorOutcome": res.get("outcome"), "priorFailedStage": res.get("failedStage"), "files": files}
+json.dump(prov, open(out, "w"), ensure_ascii=False, indent=2)
+print("verify-from — 앞 실행 %s(runId %s · 대상 sha %s · 결과 %s/%s) 의 판정표 %d행 · 계수를 옮겼다 · 상세 화면 순회 생략"
+      % (p.name, res.get("runId"), prior_sha, res.get("outcome"), res.get("failedStage"), len(rows)))
+VFPY
+  [ "${PIPESTATUS[0]}" -eq 0 ] || { blocked_add verify "verify-from 거부 — 앞 실행 자리의 판정표를 이을 수 없다(단계 로그 참조)"; return 1; }
+}
+
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
+    [ -z "${VERIFY_FROM:-}" ] || log "DRY verify-from $VERIFY_FROM — 앞 판정표·계수 복사 · 출처(runId·대상 sha) 대조 · 상세 화면 순회 생략 · 대조(알려진 결함 면제) → record-details → 계정 최종화"
     log "DRY 러너 verify.json 계수 대조(데이터셋 $EXPECT_DATASETS · 프로젝트 $EXPECT_PROJECTS · 간선 $EXPECT_EDGES)"
     log "DRY agent-browser open /datasets/<id> ×$EXPECT_DATASETS — 대기 ${PREVIEW_WAIT_MS}ms · 가공 단계 · 「미지정」 · usage-card · 미리보기 판정"
     log "DRY 정본 md 의 가공 단계 분포와 대조 · 미지정 0 · 프로젝트 미연결 0"
@@ -1155,6 +1415,7 @@ stage_verify() {
 
   if [ -f "$ACCOUNTS_WORK_DIR/details-verified.json" ]; then
     log "같은 자료 검증 증거를 확인하고 계정 최종화·로그인 검증만 재개"
+    [ -z "${VERIFY_FROM:-}" ] || log "verify-from 은 쓰지 않는다 — 자료 검증 증거(details-verified.json)가 이미 있다"
     account_finalize || return 1
     python3 - "$ACCOUNTS_WORK_DIR/details-verified.json" "$RUN_DIR" <<'ACCOUNT_RESUME'
 import json,pathlib,shutil,sys
@@ -1169,6 +1430,12 @@ ACCOUNT_RESUME
     [ -f "$f" ] || { blocked_add verify "$(basename "$f") 부재 — seed 단계 산출물이 없다"; return 1; }
   done
 
+  # `--verify-from` = 앞 실행이 이미 잰 판정표로 대조만 다시 한다(2026-09-25 사용자 결정 · 실패한 꼬리만).
+  #   상세 화면 순회(①)를 건너뛰고 아래 ② 대조 → record-details → 계정 최종화는 같은 길로 간다.
+  #   순회 본문은 들여쓰기를 바꾸지 않고 else 갈래에 둔다(변경 범위를 그 갈래 표지로 한정).
+  if [ -n "${VERIFY_FROM:-}" ]; then
+    verify_from_prior "$state" "$manifest" || return 1
+  else
   log "① 상세 화면 순회 — $EXPECT_DATASETS 건 · 한 건당 최대 ${PREVIEW_WAIT_MS}ms · 브라우저 세션 $AB_SESSION"
   # id 가 없는 행은 `-` 로 찍는다 — 탭이 연달아 오면 `read` 가 빈 칸을 접어 **이름이 id 자리로 밀린다**
   # (4회차 `20260914T035058Z` 실측 · seq 13 이 `/datasets/SPI-4weeks` 를 열었다).
@@ -1325,93 +1592,10 @@ PY
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t누름 %s · 적중 %s\n' \
       "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" "$press_method" "$hit" >> "$RUN_DIR/preview-judgment.tsv"
   done <<< "$ids"
+  fi
 
-  log "② 계수 대조 — 러너 verify.json ＋ 순회 결과 ＋ 정본 등재표"
-  # 계수 칸 판정을 먼저 따로 낸다(판정불가 포함). 아래 대조가 그 결과를 그대로 읽는다.
-  count_verdict "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/count-verdict.json" || true
-  python3 - "$verify" "$manifest" "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/counts.json" \
-      "$EXPECT_DATASETS" "$EXPECT_PROJECTS" "$EXPECT_EDGES" "$RUN_DIR/count-verdict.json" <<'PY' || return 1
-import json, sys
-try:
-    import yaml
-except ImportError:
-    raise SystemExit("PyYAML 이 없다 — 등재표 대조 불가")
-verify, manifest, tsv, out, nds, nproj, nedge, cvpath = sys.argv[1:9]
-v = json.load(open(verify))
-m = yaml.safe_load(open(manifest))
-cv = json.load(open(cvpath))
-rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
-want = {}
-preview_expected = {}
-for d in m.get("datasets", []):
-    want[str(d.get("seq"))] = str(d.get("processing_level") or d.get("level") or "")
-    preview_expected[str(d.get("seq"))] = str(d.get("preview_expected") or "").strip()
-got = {r[0]: r[2] for r in rows}
-level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
-# 등재표 쪽 가공 단계가 비어 있으면 **대조할 것이 없었던 것**이다.
-# 종전에는 `if w and …` 로 그 행을 건너뛰어, 양쪽이 다 비면 통과로 접혔다(fail-open).
-manifest_level_missing = sorted((s for s, w in want.items() if not w), key=lambda x: int(x) if x.isdigit() else 0)
-# 계수 칸 판정은 count_verdict 가 낸 것을 그대로 쓴다 — 빈 칸은 0 이 아니다.
-unset = cv["unsetSeq"]
-unlinked = cv["unlinkedSeq"]
-count_undecided = cv["countUndecidedSeq"]
-level_undecided = cv["levelUndecidedSeq"]
-undecided = [r[0] for r in rows if r[3] == "판정불가"]
-unestablished = [r[0] for r in rows if r[3] == "미성립"]
-no_preview_text = "미성립(포맷 미지원 · 판정 표에 이름으로)"
-allowed_no_preview_names = {"SPI-4weeks", "SPEI-4weeks"}
-manifest_preview_missing = sorted((s for s, value in preview_expected.items() if not value), key=int)
-invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
-                             if str(d.get("preview_expected") or "").strip() == no_preview_text
-                             and d.get("name") not in allowed_no_preview_names), key=int)
-expected_unestablished = sorted((s for s, value in preview_expected.items()
-                                 if value == no_preview_text), key=int)
-unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
-# 「기대와 달리 미리보기 성립」은 **실제로 성립한 행**에만 붙인다 — 판정불가는 재지 못한 것이지 성립이 아니다
-# (판정불가는 위 「미리보기 판정불가」로 따로 낸다).
-established = [r[0] for r in rows if r[3] == "성립"]
-missing_unestablished = sorted(set(expected_unestablished) & set(established), key=int)
-res = {
-    "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
-    "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
-    "edges": {"expected": int(nedge), "ok": v.get("edges_ok"), "missing": v.get("edges_missing")},
-    "periods": {"expected": int(nds), "reportedExpected": v.get("periods_expected"),
-                "ok": v.get("periods_ok"), "missing": v.get("periods_missing")},
-    "modelInputDescriptions": {"expected": 2, "ok": v.get("model_input_descriptions_ok"),
-                               "missing": v.get("model_input_descriptions_missing")},
-    "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset,
-                        "undecidedSeq": level_undecided},
-    "usageUndecidedSeq": count_undecided,
-    "manifestLevelMissingSeq": manifest_level_missing,
-    "projectUnlinkedSeq": unlinked,
-    "previewRows": len(rows),
-    "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
-    "previewUndecidedSeq": undecided,
-    "previewUnestablishedSeq": unestablished,
-    "previewExpectedUnestablishedSeq": expected_unestablished,
-}
-json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
-bad = []
-# 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
-if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
-if manifest_preview_missing: bad.append("등재표 미리보기 기대 부재 seq %s" % ",".join(manifest_preview_missing))
-if invalid_no_preview: bad.append("미리보기 없음 기대 대상 오류 seq %s" % ",".join(invalid_no_preview))
-if unexpected_unestablished: bad.append("예상 밖 미리보기 미성립 seq %s" % ",".join(unexpected_unestablished))
-if missing_unestablished: bad.append("기대와 달리 미리보기 성립 seq %s" % ",".join(missing_unestablished))
-# 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
-if count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(count_undecided))
-if level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(level_undecided))
-if manifest_level_missing: bad.append("등재표 가공 단계 부재 seq %s" % ",".join(manifest_level_missing))
-if res["datasets"]["ui"] != int(nds): bad.append("데이터셋 계수 %s" % res["datasets"]["ui"])
-if res["edges"]["ok"] != int(nedge): bad.append("간선 계수 %s" % res["edges"]["ok"])
-if level_mismatch: bad.append("가공 단계 불일치 seq %s" % ",".join(level_mismatch))
-if unset: bad.append("「미지정」 seq %s" % ",".join(unset))
-if unlinked: bad.append("프로젝트 미연결 seq %s" % ",".join(unlinked))
-if len(rows) != int(nds): bad.append("판정 표 %d 행" % len(rows))
-print("대조 결과 — " + ("전건 일치" if not bad else " · ".join(bad)))
-raise SystemExit(1 if bad else 0)
-PY
-  [ "$?" -eq 0 ] || return 1
+  log "② 계수 대조 — 러너 verify.json ＋ 판정표 ＋ 정본 등재표 ＋ 알려진 결함 면제"
+  verify_compare "$verify" "$manifest" || return 1
   python3 "$RESEED_DIR/accounts.py" record-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
     --run-dir "$RUN_DIR" --target-sha "$TARGET_SHA" >/dev/null || return 1
   account_finalize

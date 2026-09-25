@@ -54,7 +54,33 @@
         "processingLevel": { "type": "object" },
         "projectUnlinkedSeq": { "type": "array", "items": { "type": "string" } },
         "previewRows": { "type": "integer" },
-        "previewEstablished": { "type": "integer" }
+        "previewEstablished": { "type": "integer" },
+        "knownDefects": {
+          "type": "object",
+          "description": "알려진 제품 결함 면제(known-defects.json). 면제 행·이슈·옮긴 차단 사유와 「면제 불필요」 행. 목록이 없거나 틀리면 verify 가 실패한다.",
+          "properties": {
+            "file": { "type": "string" },
+            "declared": { "type": "integer" },
+            "exemptedCount": { "type": "integer" },
+            "exempted": { "type": "array", "items": { "type": "object", "required": ["seq", "name", "issue"] } },
+            "unneeded": { "type": "array", "items": { "type": "object", "required": ["seq", "name", "issue"] } }
+          }
+        }
+      }
+    },
+    "verifyFrom": {
+      "type": "object",
+      "description": "--verify-from 재개 출처. 상세 화면 순회 없이 앞 실행의 판정표·계수로 대조했다. 절대경로를 싣지 않는다.",
+      "required": ["priorRunDirName", "priorRunId", "priorTargetSha", "files"],
+      "properties": {
+        "priorRunDirName": { "type": "string" },
+        "priorRunId": { "type": ["string", "null"] },
+        "priorTargetSha": { "type": "string" },
+        "priorApprovalTargetSha": { "type": ["string", "null"] },
+        "targetShaMatches": { "type": ["boolean", "null"], "description": "앞 실행의 대상 sha 와 이번 대상 sha 가 같은가. false 면 두 배포 사이 미리보기 경로 변경을 사람이 확인한다." },
+        "priorOutcome": { "type": ["string", "null"] },
+        "priorFailedStage": { "type": ["string", "null"] },
+        "files": { "type": "object" }
       }
     },
     "previewJudgment": {

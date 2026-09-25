@@ -182,6 +182,10 @@ export COLAB_RESEED_ACCOUNTS_PROFILE="$ACCOUNTS_FILE"
 TARGET_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 # This fixture isolates detail traversal. Account store/login behavior is tested in test_accounts.py.
 account_finalize() { :; }
+# 알려진 결함 면제는 verify-resume.sh 가 잰다. 여기서는 면제 없음을 **명시**한다 — 실제 목록(seq 13·14·16)은
+# 이 픽스처의 작은 등재표에 없어 대조가 목록 판정 불가로 실패한다(fail-closed · 빈 목록으로 접지 않는다).
+KNOWN_DEFECTS_FILE="$TMP/known-defects-none.json"
+printf '{"schema": "colab-reseed-known-defects/1", "entries": []}\n' > "$KNOWN_DEFECTS_FILE"
 
 
 cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'

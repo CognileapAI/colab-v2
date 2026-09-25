@@ -37,6 +37,12 @@
 #      왜 = `bafae4a7` 이후 생성 넷이 운영자에게 `X-CoLAB-Target-Lab` 을 요구하는데
 #      러너는 그 칸을 모른다(`app/target_scope.py:42-43`). 2026-09-24 재시드가 첫 프로젝트에서
 #      멈춘 자리이고, **국면 순서를 보는 검사는 어디에도 없었다.**
+#   ⓘ `tests/verify-resume.sh` **verify 재개**를 판정한다 — 알려진 제품 결함 면제(`known-defects.json`)는 seq·이름·관측
+#      판정·비고 머리가 모두 맞는 행만 면제하고(파생 포함) 그 밖의 불일치는 종전대로 실패하며, 목록 부재·깨짐·칸 오류는
+#      실패(fail-closed)다. `--verify-from` 은 상세 화면 순회 없이 앞 실행의 판정표·계수로 대조해 계정 최종화로 가고,
+#      파일 부재·대상 sha·데이터셋 수·판정표 이름 불일치와 `--from verify` 가 아닌 실행을 거부한다.
+#      왜 = 2026-09-24 재시드가 28/28 적재 뒤 열린 제품 결함(#133·#134) 세 행으로 verify 에서 멈춰 계정 최종화가
+#      돌지 않았다. 사용자 결정(2026-09-25) = 실패한 꼬리만 마친다(reset·전수 재순회 없음).
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -71,6 +77,7 @@ CASES=(
   "$RESEED_DIR/tests/reset-gate.sh"
   "$RESEED_DIR/tests/operator-window.sh"
   "$RESEED_DIR/tests/upload-classify.sh"
+  "$RESEED_DIR/tests/verify-resume.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -122,5 +129,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수·지문 계수·1회용 사용자 GO·고아 객체·s3 계획 reset 묶임 · 업로드 필수 칸 값 서명 · 임시 운영자 창)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면 · reset 정지 게이트 전수·지문 계수·1회용 사용자 GO·고아 객체·s3 계획 reset 묶임 · 업로드 필수 칸 값 서명 · 임시 운영자 창 · 알려진 결함 면제 fail-closed · verify 재개)"
 exit 0
