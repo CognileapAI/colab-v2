@@ -589,4 +589,5 @@
   - spec 정정(레인 병합 뒤 반영): V14 의 README 검사 = decision-number-guard 행만(`README.md:74` migration-guard 행은 PR 3 · 레인 통지 2026-09-26).
 - 2026-09-26 T9 실행 — Ted 원문 "엉 삭제승인항게" · 이틀 넘은 `/tmp/service-tests-*` 210개 삭제(남은 131개는 최근 이틀 · gate 임시 postgres 없음 확인 뒤).
 - 2026-09-26 T3 33 실행 — Ted 원문 "33체크아웃이 뭔지모르겠다" · 관측: `33 CoLAB-v2` 는 2026-09-18 01:04 GitHub clone(HEAD 기록 = clone 1줄 · 이후 전환 · 커밋 0 · 전용 DB 컨테이너 없음) → 권고대로 `_worktree-archive-20260926/33 CoLAB-v2` 로 이동(삭제 아님 · 되돌릴 수 있음). 32 는 PR 3 병합 뒤 갱신 그대로.
+- 2026-09-26 T3 정정 — Ted 원문 "30 31 32 33 프로젝트 클론된게 동시작업을 위해있는건데 음". 30 · 31 · 32 · 33 은 동시 작업용으로 일부러 둔 clone 이다. 33 이동을 즉시 되돌렸다(`33 CoLAB-v2` 원위치 · 보관 폴더 삭제). T3 결론을 바꾼다: 어떤 clone 도 옮기거나 은퇴시키지 않는다 · 문제는 뒤처진 코드(33 = `cb30d344` · 호스트 뮤텍스 없음, 32 = `02d251d8` · `gate_mutex_spawn` 없음)이므로 각 clone 에서 작업을 시작하기 전에 develop 으로 `git pull --ff-only` 한다(갱신 시점은 Ted 확인) · T5 Codex 재신뢰는 그 갱신 직후.
 
