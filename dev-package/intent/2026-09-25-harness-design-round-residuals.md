@@ -1,5 +1,7 @@
 # Intent: design-review·design-fix 20260924 회차에서 드러난 하네스 잔여 — 무엇을 따지고 어떤 증거를 모을지
 메타 — 발의자: agent(PR #141 병합 뒤 잔여 수집 · 초안) · 작성 2026-09-25 · 승인 미승인(초안)
+- 대체됨(2026-09-25) — `dev-package/intent/2026-09-25-harness-improvement.md`(umbrella intent · 그룹별 /grill-me 판정)가 이 초안의 H1–H15 를 흡수한다. H11 · H12 · H13 · H15 는 그 intent 의 「범위 밖」 절(디자인 시스템 후속 intent)로 간다.
+- 이 초안은 미승인 상태로 남기고 삭제하지 않는다. 항목 대응(H → A/B/L/T)은 새 intent 「흡수 대응」 표를 따르고, 이 문서는 판정 · 구현 근거로 쓰지 않는다.
 
 ## 문제
 - design-review 20260924 회차와 design-fix(PR #141 · 병합 커밋 `a808a56f`) 동안 하네스 결함·공백이 여러 건 드러났다. 기록은 PR 본문 「하네스 후속」, 레인 보고(`dev-package/sessions/design-fix-20260924-*.md`), 판정 기록(`dev-package/sessions/design-review-20260924.md` §10), 사용자 메모리(저장소 밖)에 흩어져 있다.
