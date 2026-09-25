@@ -118,10 +118,30 @@ Ted 가 확정한 값의 귀결이다. 판정 항목이 아니며, 다시 보려
     - 기각 — 회색 채움(`frontend/src/auth/login.css:88` 방식): gray-500 대 활성 primary-600 명도비 1.01:1(라이트·다크)이라 색상만 다르고, 흰 단추 34 의 모양이 따로 필요하며, screens 층 3파일에 반복해야 한다. 새 값: 새 토큰 이름·값 판정이 필요하다.
   - Q1b 비활성 단추 위 커서 → A `cursor: not-allowed` (권장안 수용) — 선례 `deletion.css:41` · `frontend/src/components/lineage/lineage.css:257`. 기각: `default`(선례 `login.css:88` 1곳).
   - Ted 원문(Q1a·Q1b 에 대한 답 · 2026-09-25): "권고"
+  - 사실(2라운드): 비활성이 될 수 있는 단추 70 = btn 계열 58 + 밖 12(로그인 제출 `.login-submit` 3 · 비활성 모양 없음 9) · 대비 합격선은 두 곳(`.agents/skills/design-review/SKILL.md:17` · `docs/design-system.md:280`)에 같은 문장 · 감사 도구 `css_audit.py`·`live_probe.js` 는 opacity 를 읽지 않아 흐린 단추 대비를 잡지 않는다(수치는 spec·PR 에 손으로 적는다) · 캡처 변화 확실 = 프리미티브 갤러리 장면(`frontend/audit-design.tsx:175`–`179` 비활성 5개), 가능성 = 상세·업로드 계열·계보 선택 장면.
+  - Q1c 로그인 제출 단추 3곳(`LoginPage.tsx:161` · `PasswordChangePage.tsx:55` · `AccountAdminPage.tsx:267`) → A 같은 모양으로 맞춘다 — `frontend/src/auth/login.css:88`–`91` 을 `opacity: .5` · `cursor: not-allowed` 로 (권장안 수용). 이유 = 회색 채움 기각 사유(명도비 1.01:1)가 같다. 로그인·비밀번호 변경 캡처가 바뀐다.
+  - Q1d 상세 삭제 단추의 겹치는 규칙 `frontend/src/components/detail/deletion.css:41`–`44` → A 지운다 · `docs/design-system.md:240` 편차 칸의 `(:disabled)` 표기를 함께 고친다 (권장안 수용). 참조하는 시험·게이트 픽스처·주석 0.
+  - Q1e btn 계열 밖 비활성 단추 9곳 → A 이번에 포함 — 같은 두 값을 각 화면 CSS 에 두고, 업로드 미리보기 격자 칸은 hover 에서 비활성을 뺀다 (권장안 수용). 대상: 대시보드 할 일 단추 `TodoInbox.tsx:189`·`:201`·`:204` · 미리보기 확대 단추 `PreviewZoomControls.tsx:20` · 프로젝트 모달 닫기 `ProjectCloseModal.tsx:45`·`ProjectFormModal.tsx:112` · 업로드 미리보기 격자 칸 `PreviewPanel.tsx:368` · 등록 단계 `RegisterArea.tsx:1175` · 연구실 구역 제목 `LabPage.tsx:59`. 자리마다 다른 클래스가 이미 비활성을 표현하는지는 레인이 실브라우저로 확인한다. 기각: base 층 `button:disabled` 전역 규칙(뒤 층 `cursor: pointer` 가 이겨 커서가 안 바뀐다).
+  - Q1f 정본 기록 자리 → A 네 곳 — 합격선 두 곳에 「비활성(`:disabled`) 컨트롤은 합격선 밖 — WCAG 1.4.3·1.4.11 비활성 예외」 · `docs/design-system.md:173` btn 행 수식자에 `disabled` · `:281` 누름 규칙 옆에 「비활성 = opacity .5 · cursor not-allowed」 (권장안 수용). 자동 생성 표(`:198`·`:204`)는 `node frontend/scripts/design-docs.mjs` 재생성(게이트 h)을 spec 절차로 둔다.
+  - Ted 원문(Q1c–Q1f 에 대한 답 · 2026-09-25): "권고대로"
+  - 가정(이의 없으면 유지): 입력칸·선택칸(`.inp`·`.sel`)의 비활성 모양은 이 가지 밖이다 — 이번 판정은 단추만 다룬다.
+- Q2 (a)-2 ~ (a)-6 판정 후보 다섯 항목
+  - Q2a (a)-2 업로드 닫기 확인창·미리보기 확대창 그림자 → A 채택 — 그림자를 없애고 1px `--color-border-strong` 테두리(다른 가운데 대화상자 `.modal--dialog` 모양) · `frontend/src/components/upload/upload.css:310`·`:560` 2곳 (권장안 수용)
+    - 사실: 두 곳만 전역 `.modal` 기본 그림자(`frontend/src/shell/primitives.css:138`)를 받고, 다른 가운데 대화상자 11개는 그림자 0 · 합격선 「카드 그림자 0」 허용 목록 밖 · 그림자 효과 라이트 1.18:1 · 다크 1.005:1 · 테두리 없이 다크 가장자리(면 대 뒤판) 1.19:1 → border-strong 으로 2.53:1(라이트 2.32:1).
+    - 기각: 그림자만 제거(다크 1.19:1 유지) · 현행 유지 · 전역 `.modal` 기본값 변경(`dev-package/prd/specs/S-DESIGN-FIX-20260924.md:113` 회귀 잠금을 깬다).
+  - Q2b (a)-3 업로드 모달 뒤판 어둡힘 → A 채택 — 열기·닫기 모두 뒤판 배경색 전환 · `upload.css` 3곳(`.modal-back.mb-takeover` `transition: background-color` · 닫는 중 투명 · `@starting-style` 투명) · 본체와 같은 0.3s `cubic-bezier(0.2, 0, 0, 1)`(새 값 0) · JS 변경 0 (권장안 수용)
+    - 사실: 뒤판(`upload.css:9`–`17`)은 전환 없음 · 닫을 때 본체만 0.3초 흐려지고 뒤판은 언마운트 한 프레임에 사라진다 · 닫기 타이머는 본체 전환 시간만 읽는다(`UploadModal.tsx:1038`·`:1045`) · 모달이 뒤판의 자식이라 opacity 가 아니라 background-color 를 전환한다 · 동작 줄이기는 전역 규칙(`shell.css:433`–`435`)으로 즉시.
+    - 근거: `.agents/skills/apple-design/SKILL.md:142`(들어온 길로 나간다) · `:212`(급격한 밝기 변화 회피). 기각: 닫기만 전환(비대칭) · 현행 유지.
+  - Q2c (a)-3 전환 0.3초 동안 fixed 요소(`.reg-actions` `upload.css:611` · 640px 이하 `.dr-pop` `:682`)의 기준이 모달로 바뀌는 현상 → A 그대로 둔다 (권장안 수용). 사라지는 중인 모달과 함께 움직이고(900px 높이에서 최대 27px), 닫는 중 뒤판은 이미 누름을 통과시킨다. 기각: transform 을 빼고 opacity 만(열고 닫는 이동을 잃는다).
+  - Q2d (a)-4 1440×900 `.dr-pop` 가림 → A 결함 · 열 때 팝오버가 보이도록 본문을 스크롤(가장 가까운 위치 · 하단 단추줄 여백 포함) · TSX 1파일 · 모양·값 변화 0 (권장안 수용)
+    - 사실: 아래 끝 1014.8px(549.8 + 465 · `dev-package/reports/design-review/20260924/fix/live/index.md` §3-e) · 900 높이에서 하단 단추줄(약 65px · 계산값) 아래 약 180px 가려 「적용」 단추가 스크롤 전에 안 보인다 · 위로 뒤집어도 −11.8px · 앱의 팝오버는 위치 계산 없음(640px 이하만 하단 시트) · 스크롤하면 보인다는 실측(§4-3).
+    - 기각: 높이 상한·내부 스크롤(900 에서 약 285px) · 낮은 화면 하단 시트(데스크톱 모양 변경) · 결함 아님.
+  - Q2e (a)-5 파일 고른 뒤 503 실패에서 × 확인 없이 닫힘 → A 결함 아님 · 현행 유지 · dev 재현 확인 생략 (권장안 수용). 근거: 확인 조건 = 제출 중 · 만든 데이터셋 · 사람이 적은 입력(`UploadModal.tsx:786`·`:1020`) · 기획 `dev-package/prd/PRD-260905-적용전기획.md:411`(PRD-14)·`:821`(PRD-34) 「파일만 올림 → 닫기 → 되묻지 않는다」 · 시험 `frontend/test/close-guard-20260905.test.tsx:181`. 503 이면 파일도 올라가지 않아 잃을 입력이 없다.
+  - Q2f (a)-6 빈 팔레트 문면 → A 채택 — 안내(`PreviewPanel.tsx:519`–`523`) 조건을 「1개 이상이면서 3개가 아님」으로 좁히고, 0개면 조회 실패와 같이 기존 `UNAVAILABLE`(`:36` 「지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.」)만 보인다 · 새 문구 0 (권장안 수용)
+    - 사실: 지금은 0개일 때도 「…받은 목록을 표시하고 있어요」가 나오고, 조회 실패(`:164`–`169`) 때는 이 문장과 `UNAVAILABLE` 이 함께 나온다 · 상세 페이지(`DatasetPreviewSection.tsx:313`)는 0개면 안 낸다. 「다시 시도」 경로 없음은 (c)-2 에서 따로 다룬다.
+  - Ted 원문(Q2a–Q2f 에 대한 답 · 2026-09-25): "싹다 권고대로"
 
 ## 미해결 질문
-- Q1 (a)-1 비활성 모양: 방식·커서는 판정 완료(설계트리 Q1a·Q1b). 남음 — 로그인 제출 단추를 같은 방식으로 맞출지 · `deletion.css:41`–`44` 의 겹치는 규칙 정리 · 합격선 비활성 예외 문구의 자리.
-- Q2 (a)-2 ~ (a)-6: 항목별로 채택 · 현행 유지 · 다음 회차 중 무엇인지.
 - Q3 (a)-7 · (a)-8: 확정 값을 다시 열지. 연다면 이 intent 를 승인하고 별건 spec 으로 진행한다.
 - Q4 (b)-3: dev 쓰기 승인 범위와 시험 데이터 정리 방법.
 - Q5 (a) 후보 중 어느 것을 `docs/design-system.md` ⑦ 정본 목록에 올릴지(문서만 · 값 무변). 지금 ⑦ 에는 10–16 만 있고, 이번 후보는 PR 본문·레인 보고·이 문서에만 있다.
