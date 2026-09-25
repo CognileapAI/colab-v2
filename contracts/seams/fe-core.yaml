@@ -5402,6 +5402,10 @@ components:
               uniqueItems: true
               items: { type: string, enum: [instantaneous, daily_mean, daily_max, daily_min, monthly_mean, monthly_mean_daily_max, monthly_mean_daily_min] }
             maxResolutionM: { type: number, exclusiveMinimum: 0 }
+            # 대표 변수의 결측률 상한(%). 근거는 `d3_dataset_variable.missing_rate` 에서 파생된
+            # 수치 칸이며, 그 자유 입력 계약(아래 `missingRate`)은 바뀌지 않는다.
+            # 사람이 적은 문면이 수치로 읽히지 않으면 그 자료는 이 조건에서 빠진다.
+            maxMissingRatePercent: { type: number, minimum: 0, maximum: 100 }
 
     SearchAssessment:
       description: "클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다."

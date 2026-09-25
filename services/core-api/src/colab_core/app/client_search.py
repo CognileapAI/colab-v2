@@ -26,7 +26,7 @@ def validate_context(value):
         raise errors.bad_request('기준 파일 식별자가 올바르지 않습니다.')
     research = value.get('research')
     if 'research' in value:
-        allowed = {'variable','region','period','statistics','maxResolutionM'}
+        allowed = {'variable','region','period','statistics','maxResolutionM','maxMissingRatePercent'}
         if not isinstance(research,dict) or not research or set(research)-allowed:
             raise errors.bad_request('연구 조건 필드가 올바르지 않습니다.')
         for key,facet in [('variable','variables'),('region','regions')]:
@@ -41,6 +41,11 @@ def validate_context(value):
             n = research['maxResolutionM']
             if isinstance(n,bool) or not isinstance(n,(float,int)) or not math.isfinite(n) or n<=0:
                 raise errors.bad_request('최대 해상도는 양의 유한한 미터 값입니다.')
+        if 'maxMissingRatePercent' in research:
+            import math
+            n = research['maxMissingRatePercent']
+            if isinstance(n,bool) or not isinstance(n,(float,int)) or not math.isfinite(n) or not 0<=n<=100:
+                raise errors.bad_request('최대 결측률은 0에서 100 사이의 백분율 값입니다.')
         if 'period' in research:
             span = research['period']
             try:
@@ -221,6 +226,11 @@ def _predicate(key, wanted, facts, metadata, row):
         return None if not facts.get('period') else facts['period'] == wanted
     if key == 'maxResolutionM':
         value = facts.get('nativeResolutionM')
+        return None if value is None else value <= wanted
+    if key == 'maxMissingRatePercent':
+        # 데이터셋 단위 술어라 파일 사실이 아니라 후보 줄에서 읽는다 (`uploadedMonth` 와 같은 자리).
+        # 자유 입력이 수치로 파싱되지 않은 자료는 근거가 없는 것이지 반증된 것이 아니다 → unknown.
+        value = metadata.get('missing_rate_percent')
         return None if value is None else value <= wanted
     if key == 'statistics':
         value = facts.get('statistics')
