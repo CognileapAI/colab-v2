@@ -64,5 +64,6 @@
 - spec: [지식 수명주기 개발 스펙](../prd/specs/knowledge-lifecycle.md).
 - 계약 상세: [권한·Port·처리 순서·운영 검토·수용 시험](../prd/specs/knowledge-lifecycle-contract.md).
 - ADR: [소유권 경계](../../docs/decisions/0001-knowledge-lifecycle-boundaries.md), [독립 실행](../../docs/decisions/0002-knowledge-refresh-execution.md). 상세 설계는 proposed이며 승인된 방향과 구분한다.
+- 추기 2026-09-25(develop 통합): 두 ADR 번호가 develop 의 ADR-0001·0002 와 겹쳐 0008·0009 로 옮겼다 — [소유권 경계](../../docs/decisions/0008-knowledge-lifecycle-boundaries.md), [독립 실행](../../docs/decisions/0009-knowledge-refresh-execution.md). 위 줄의 옛 경로는 이력으로 둔다.
 - 실행 계획: [구현 실행 뷰](../prd/rounds/R-KNOWLEDGE-LIFECYCLE.md). 문서 초안이며 이번 요청에서 실행하지 않는다.
 - 현재 인계: 의도 승인, 설계·실행 문서 검토 단계. 제품 완료 기준 O1~O6은 후속 구현·실측 대상이다.

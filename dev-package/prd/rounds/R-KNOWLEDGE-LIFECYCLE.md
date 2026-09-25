@@ -17,7 +17,7 @@
 - 삭제·권한 취소는 현재 원장으로 즉시 집행한다. 배치 성공을 권한 근거로 삼지 않는다.
 - Sonnet 실제 평가 보류 유지. 결정적 시험·모델 stub 통과로 실제 LLM 품질을 주장하지 않는다.
 - commit·push·PR 게시·통합·배포·재시드는 이 계획의 자동 단계가 아니다.
-- 의도: [승인 intent](../../intent/2026-09-15-knowledge-lifecycle.md). ADR: [경계](../../../docs/decisions/0001-knowledge-lifecycle-boundaries.md), [실행](../../../docs/decisions/0002-knowledge-refresh-execution.md).
+- 의도: [승인 intent](../../intent/2026-09-15-knowledge-lifecycle.md). ADR: [경계](../../../docs/decisions/0008-knowledge-lifecycle-boundaries.md), [실행](../../../docs/decisions/0009-knowledge-refresh-execution.md).
 
 ## 현재 상태와 의존
 - [x] 의도 승인 및 기존 코드의 재사용/공백 구분.

@@ -151,6 +151,6 @@
 실제 구현·운영 활성화·재시드·배포·유료 모델 평가, 새 그래프 DB·브로커·Lambda, 무근거 자동 온톨로지 확장.
 
 ## 산출 계획
-- [소유권 ADR](../../../docs/decisions/0001-knowledge-lifecycle-boundaries.md), [실행 ADR](../../../docs/decisions/0002-knowledge-refresh-execution.md): 상세 설계 proposed.
+- [소유권 ADR](../../../docs/decisions/0008-knowledge-lifecycle-boundaries.md), [실행 ADR](../../../docs/decisions/0009-knowledge-refresh-execution.md): 상세 설계 proposed.
 - [실행 계획](../rounds/R-KNOWLEDGE-LIFECYCLE.md): 계약 → 지식 반영 → 증분 실행 → 제안/release → 외부 검증, 기본 직렬 1레인.
 - 문서 정합은 ADR 구조 검사·참조 확인·독립 설계 검토로 판정한다. 제품 수용 기준은 후속 실행에서만 완료 처리한다.
