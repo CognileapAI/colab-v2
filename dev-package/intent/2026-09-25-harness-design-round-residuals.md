@@ -47,6 +47,7 @@
 | H12 | `tsconfig.audit.json` 이 어느 게이트에도 없음 | 미해소 |
 | H13 | 시각 대조 게이트 승격 | 판정 대기 |
 | H14 | `design-review/SKILL.md:101` 붙어 버린 문장 | 미해소 |
+| H15 | `frontend-test` 부하 시 대기 초과 — flake 와 결함을 가르지 못함 | 미해소 |
 | — | A39 게이트 잠금 fd 상속 | **해소(#130)** |
 
 ### H1 A37 `live_audit.sh` 파일 이름 60자 절단
@@ -147,6 +148,12 @@
 ### H14 `design-review/SKILL.md:101` 붙어 버린 문장
 - 상태: 미해소. `.agents/skills/design-review/SKILL.md:101` 에 「…편집을 막는다보호된 fix 구현 단계에서…」로 두 문장이 붙어 있다. 커밋 `c1de5e31`(공통 경로 이전)에서 생긴 것으로 조사됐다 — 이번 회차 잔여가 아니다.
 - 따질 것: H3 의 SKILL 문구 정리와 한 커밋으로 고칠지.
+
+### H15 `frontend-test` 부하 시 대기 초과 — flake 와 결함을 가르지 못함
+- 상태: 미해소. `frontend/test/dataset-preview-source-grid.test.tsx` 의 `findByTestId('preview-map')` 이 부하가 걸리면 1000ms 를 넘기고, 합친 트리에서 unhandled error 1 이 났다. 단독 실행과 최종 run 은 green 이다. 게이트에서는 `frontend-test` red 로만 드러나 flake 와 결함이 구분되지 않는다.
+- 근거: 디자인 후속 intent `2026-09-25-design-fix-followups.md` (c)-5 · 설계트리 Q8c(2026-09-25 Ted 판정으로 이 intent 에 옮김) · `dev-package/sessions/design-fix-20260924-F-upload.md` §5 · §6 · `dev-package/sessions/design-fix-20260924-acceptance.md` 머리(병합 검사) · PR #141 「알려진 한계」 마지막 줄.
+- 따질 것: 부하를 어떻게 재현할지(레인 동시 실행 · CPU 제한) · 대기 한도를 늘릴지, 원인(렌더 비용)을 고칠지 · 게이트가 재시도 없이 flake 를 따로 표시할 방법.
+- 모을 증거: 부하 조건별 실패율(단독 · 동시 N) · 실패 때의 소요 시간 분포.
 
 ### 해소 확인 — A39 게이트 잠금 fd 상속
 - 상태: **해소(코드 · #130)**. `frontend-visual` 이 띄운 agent-browser 데몬이 호스트 게이트 잠금 fd 를 물려받아 게이트가 끝난 뒤에도 쥐던 결함은 develop 에서 고쳐졌다 — F1 `b549d75d`(`gates/tools/_lock.sh:143` `gate_mutex_spawn` · `gates/tools/frontend-visual.sh:84`) · F2 `ab3de17e`(`live_audit.sh:20` EXIT trap) · #130 병합 `b50047f4`.

@@ -1,5 +1,5 @@
 # Intent: design-fix 20260924(PR #141) 뒤 디자인 후속 — Ted 판정 후보 · dev 실데이터 확인 · 구현 후속 · 관찰
-메타 — 발의자: agent(PR #141 병합 뒤 잔여 수집 · 초안) · 작성 2026-09-25 · 승인 미승인(초안)
+메타 — 발의자: agent(PR #141 병합 뒤 잔여 수집 · 초안) · 작성 2026-09-25 · 승인 미승인(grill-me 판정 완료 2026-09-25 · Ted 확인 대기)
 
 ## 문제
 - PR #141(병합 커밋 `a808a56f` · 2026-09-25)이 design-review 20260924 판정 21건 · 값 17건을 반영했다. 판정표 밖 관찰과 브라우저로 확인하지 못한 항목은 PR 본문(「Ted 판정 후보」·「알려진 한계」·「배포 전에 할 일」·「하지 않은 것」)과 레인 보고(`dev-package/sessions/design-fix-20260924-*.md`)에 흩어져 있다. 정본 목록 `docs/design-system.md` ⑦ 에는 10–16 만 있다.
@@ -18,17 +18,18 @@
 - 확인 방법: (a) 판정 기록 건수 · (b) 확인 행의 pass/fail · 채택 항목 별건 PR 요약의 「원한 결과 ↔ 실제 ↔ 근거」 표.
 
 ## 영향 범위
-- 사용자 / 화면: 판정 뒤에 정해진다. 후보 면 = 단추 프리미티브(`frontend/src/shell/primitives.css`) · 업로드 모달(`frontend/src/components/upload/*`) · 미리보기 끌기(`frontend/src/components/preview/*`) · 업로드 달력 팝오버 `.dr-pop` · 계보(`frontend/src/components/lineage/lineage.css`).
-- 서비스 · 스키마 · 계약: 없음(프론트 CSS·TSX·문면 후보만).
+- 사용자 / 화면(판정 결과): 비활성이 될 수 있는 단추 70곳(btn 계열 58 · 로그인 제출 3 · 그 밖 9)의 비활성 모양 · 파란 채움 단추 3종의 누름 색 · 업로드 모달(닫기 확인창 · 미리보기 확대창 테두리 · 뒤판 전환 · 달력 팝오버 열 때 스크롤 · 팔레트 안내 조건 · 팔레트 재시도 단추) · 터치가 주 입력인 기기의 컨트롤 하한(`--control-height` 를 쓰는 17곳) · 계보 죽은 CSS 규칙 1개. 마우스 기기의 크기 변화 0.
+- 파일 면(예정 · spec 에서 확정): 토큰·프리미티브·셸 CSS(`frontend/src/shell/`) · `frontend/src/auth/login.css` · 업로드 · 상세 · 대시보드 · 미리보기 · 프로젝트 · 연구실 · 계보 화면의 CSS·TSX · 시험 장면(audit 픽스처) · 정본 `docs/design-system.md`(⑤ · ⑦-17 · 합격선) · `.agents/skills/design-review/SKILL.md:17`(합격선).
+- 서비스 · 스키마 · 계약: 없음(프론트 CSS·TSX·문서만).
 - 계약 파괴 여부: 아니오.
-- 이 초안 자체는 문서만 바꾼다. 코드 변경 0.
+- 이 intent 자체는 문서만 바꾼다. 코드 변경은 spec · 레인에서 한다.
 
 ## 제약
 - 확정 값(값 1–17 · 추가 확정 값 18–21 · `dev-package/prd/specs/S-DESIGN-FIX-20260924.md`)을 다시 여는 항목은 이 intent 의 Ted 승인 뒤에만 바꾼다. 승인 intent `2026-09-25-design-fix-20260924.md` 는 고치지 않는다(ADR-0007 `docs/decisions/0007-intent-ref-trailer-and-append-only-approved-intents.md` · 줄 추가만 허용).
 - 새 토큰 이름·값은 Ted 판정 뒤에만 쓴다(`.agents/skills/design-review/SKILL.md` §4).
-- 새 문구(빈 팔레트 안내 등)는 기획 판정 뒤에만 쓴다(`dev-package/sessions/design-fix-20260924-F-ci.md` §8).
-- (b) 1–6 의 공통 선행 = develop `a808a56f` 의 dev 배포. 배포는 Ted 승인 범위이고, 배포 범위는 EC2 SHA 실측으로 확인한다. PR #141 「배포 전에 할 일」의 선행 단계 = 없음(프론트 정적 빌드만 바뀜).
-- (b)-3 은 dev 에 데이터셋을 새로 등록(제품 데이터 쓰기)하므로 dev 쓰기에 대한 Ted 승인이 따로 필요하다.
+- 새 문구(빈 팔레트 안내 등)는 기획 판정 뒤에만 쓴다(`dev-package/sessions/design-fix-20260924-F-ci.md` §8). 이번 판정은 새 문구 0이다(Q2f 기존 `UNAVAILABLE` · Q8a 기존 「다시 시도」).
+- (b)-1 · (b)-2 · (b)-4 · (b)-5 의 선행 = 이 intent 의 레인이 병합된 뒤 develop 의 dev 배포(Q7a). 배포는 Ted 승인 범위이고, 배포 범위는 EC2 SHA 실측과 범위 PR 본문의 선행 절차 대조로 확인한다. PR #141 「배포 전에 할 일」의 선행 단계 = 없음(프론트 정적 빌드만 바뀜).
+- dev 확인은 읽기 전용이다. (b)-3 은 로컬 장면으로 확인해 dev 제품 데이터 쓰기가 없다(Q4). 에이전트의 dev 확인은 dev 재생성 승인 계정 중 교수 계정을 쓴다(Q7b).
 - 게이트는 호스트 단독 순차로 돌린다.
 
 ## 후속 목록
@@ -140,23 +141,90 @@ Ted 가 확정한 값의 귀결이다. 판정 항목이 아니며, 다시 보려
   - Q2f (a)-6 빈 팔레트 문면 → A 채택 — 안내(`PreviewPanel.tsx:519`–`523`) 조건을 「1개 이상이면서 3개가 아님」으로 좁히고, 0개면 조회 실패와 같이 기존 `UNAVAILABLE`(`:36` 「지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.」)만 보인다 · 새 문구 0 (권장안 수용)
     - 사실: 지금은 0개일 때도 「…받은 목록을 표시하고 있어요」가 나오고, 조회 실패(`:164`–`169`) 때는 이 문장과 `UNAVAILABLE` 이 함께 나온다 · 상세 페이지(`DatasetPreviewSection.tsx:313`)는 0개면 안 낸다. 「다시 시도」 경로 없음은 (c)-2 에서 따로 다룬다.
   - Ted 원문(Q2a–Q2f 에 대한 답 · 2026-09-25): "싹다 권고대로"
+- Q3 (a)-7 · (a)-8 확정 값 재개봉 후보 — 이 intent 의 승인으로 연다(승인 intent `2026-09-25-design-fix-20260924.md` 는 고치지 않는다 · ADR-0007)
+  - 비교 근거: Artifact 「CoLAB 단추 비교판」 https://claude.ai/artifact/XP7bJ4CXnafAEJYjo3dfaY (비공개 · 토큰 값 그대로 · 라이트/다크 · 실제 px).
+  - Q3a (a)-7 파란 채움 단추(`.btn-primary` · `.btn-strong` · `.gnb-upload`) 누름 → A `--color-primary-800`(라이트 `#0b4eb6` · 다크 `#d4e7ff` · 기존 토큰) · 선언 3곳 `frontend/src/shell/primitives.css:36` · `frontend/src/components/upload/upload.css:321` · `frontend/src/shell/shell.css:249` + `docs/design-system.md:281` 문구 (권장안 수용)
+    - 사실: 지금 hover = 누름 = primary-700(1.00:1). hover → 누름 명도비 ⓐ 라이트 1.38 · 다크 1.24(기본 → hover 1.10 · 1.18) · 흰 글자 대비 7.56 · 12.56. 정본 `:281` 은 「누름 = hover 의 한 단 진한 값」과 「파란 채움은 primary-700」이 함께 있어 스스로 어긋났다.
+    - 다시 여는 확정 값: 누름을 정한 값 14·15·17 의 파란 채움 부분(값 15 대안 = primary-800). 기각: 현행 유지 + 예외 문구.
+  - Q3b (a)-7 빨간 삭제 단추(`.detail-page .btn-danger` · `.approval-dialog .btn-danger`) hover·누름 없음 → A 다음 디자인 리뷰 회차 (권장안 수용). 이유: 빨간 채움 토큰이 한 단계뿐(`#a3222b` · `#ffadb6`)이라 새 토큰 이름·값 판정과 전역 `.btn-danger` 여부(`deletion.css:28`–`35` 주석)가 함께 걸린다. 입력 자리 = 다음 회차 `.agents/skills/design-review/SKILL.md` §0 「이월·판정 대기」. 기각: 이번에 새 토큰 · 관찰만.
+  - Q3c (a)-8 작은 단추 터치 하한 → A 터치가 주 입력인 기기(`pointer: coarse`)에서 `--control-height` 44px — `frontend/src/shell/tokens.css` 에 별도 `@media (pointer: coarse)` 블록(여백 토큰은 건드리지 않는다) + `primitives.css:41` 조건에 `(pointer: coarse)` 추가 · 새 값 0 (권장안 수용)
+    - 사실: `.btn-sm` 16개 파일 59회 · `pointer: coarse` 선례 0 · 640px 초과 `--control-height` 40px(`tokens.css:121`) · 이 토큰을 쓰는 17곳이 터치 기기에서 40 → 44px(입력칸 · 기본 단추 · 닫기 × `.pj-x` 40 → 44 등). 마우스 기기 변화 0 · 29px 확정 값 유지.
+    - 다시 여는 확정 값: 값 11 의 적용 범위(폭 640px 이하 → 폭 640px 이하 또는 터치 기기). 태블릿 폭 배치 변화는 spec 검증 항목(터치 에뮬레이션 768 캡처)으로 둔다. 기각: 작은 단추만(태블릿 40px) · 768 실기기 뒤 재판정.
+  - Ted 원문(Q3a–Q3c 에 대한 답 · 2026-09-25): "비교 보여줘 판단하기헴들다" → 비교판 게시 뒤 "권고대로"
+- Q4 (b)-3 등록 직후 0.3초 안에 닫고 다시 열기 확인의 자리 → A 로컬 실브라우저 장면 추가 · dev 쓰기 0 (권장안 수용)
+  - 방법: 픽스처에 등록 성공 응답과 실제 닫기 부모(`useUploadModalPresence`)를 둔 시험 장면을 만들고 agent-browser 로 UploadEntry · GridAttachEntry 두 경로를 잰다. 회귀 캡처로 남긴다. 하네스 intent `2026-09-25-harness-design-round-residuals.md` H11(캡처 장면 보강)과 겹치는 부분은 그 intent 와 대조해 한쪽에만 둔다.
+  - 사실: 지금 로컬 픽스처는 등록이 실패하고 닫기 부모가 비어 등록 성공에 닿지 못한다(`dev-package/reports/design-review/20260924/fix/live/index.md:35`·`:78`) · UI 삭제는 데이터셋 묘비 행 · 활동 행 · 감사 행을 남긴다(`services/core-api/src/colab_core/app/routes/deletion.py:164`–`210`) · 행 삭제는 `services/core-api/ops/purge_datasets.py` 뿐(계획 행 + 명시 GO · `.agents/rules/deploy.md:40`–`42`) · dev 재생성 상시 승인은 빈 dev 만(`.agents/skills/dev-reseed/SKILL.md:113`).
+  - 기각: dev 쓰기 + UI 삭제(묘비 잔존 · 다음 재생성 정지 가능) · dev 쓰기 + 재생성 정리(실행마다 GO·토큰) · dev 쓰기 + purge.
+  - Ted 원문(Q4 에 대한 답 · 2026-09-25): "권고대로"
+- Q5 `docs/design-system.md` ⑦ 판정 대기 목록에 올릴 범위 → A 시각 값 표에 1행만 — 17 · 빨간 삭제 단추 hover · 누름 없음(오늘 렌더 = 기본 = hover = 누름 · 선택지 = 새 빨간 단계 토큰 · 전역 `.btn-danger` · 출처 = 이 intent) · 레인 보고 「후속」 절에도 적는다 (권장안 수용)
+  - 사실: ⑦ 은 시각 값 10 · 범위·절차 11–16 · 닫힘 1–9 · 다음 번호 17(`docs/design-system.md:302`–`337`) · 다음 design-review 회차의 이월 입력은 직전 audit/fix 산출물의 「하지 않은 것」·「후속」 절이다(`.agents/skills/design-review/SKILL.md:21` — ⑦ 을 직접 읽지 않는다). 판정 후보 8 중 채택 6 · 결함 아님 1 · 다음 회차 1.
+  - 채택한 규칙(비활성 모양 · 누름 primary-800 · 터치 하한)은 레인이 정본 ⑤ 에 적으므로 ⑦ 에 겹쳐 적지 않는다. 기각: ⑦ 에 올리지 않음(정본에서 안 보임) · 8건 모두(이 intent · spec · ⑤ 와 세 겹).
+  - Ted 원문(Q5 에 대한 답 · 2026-09-25): "이것도 권고대로"
+- Q6 (c)-3 남은 px 글자 크기 리터럴 → rem → A 별건 intent (권장안 수용). dev 「루트 글자 ≠16px」 확인((b)-5) 뒤 리터럴 전환과 px 고정 높이 상자(`.btn` 32 · `.chip` 24 · `.dr-cal-d` 32) 처리를 함께 판정한다. 이 intent 의 레인은 판정 항목만 다룬다.
+  - 사실: `font-size: Npx` 리터럴 193곳 · CSS 16파일(업로드 47 · 프로젝트 31 · 상세 21 …) — 194 는 병합 전 수치(`.lvl-mismatch` 1곳 토큰화) · 검색 px 폴백 11 · `shell/shell.css:431` `max(16px, 1em)` 1 · 16px 루트에서 N/16 rem 은 픽셀 변화 0 · 글자 크기 리터럴을 재는 게이트 없음(`docs/design-system.md:300`) · 지난 판정 #8 ⓐ = 토큰 6개만(`dev-package/sessions/design-review-20260924.md:300`–`302` · `:370`).
+  - 기각: 이번에 기계 전환(잘림 위험 그대로) · 이번에 전환 + 토큰화 + 게이트 조건.
+  - Ted 원문(Q6 에 대한 답 · 2026-09-25): "궏고대로"
+- Q7 (b) 확인의 시점 · 수행자 · 로컬 항목
+  - Q7a dev 배포 시점 → A 이 intent 의 레인 병합 뒤 1회 배포하고 (b)-1 · (b)-2 · (b)-4 · (b)-5 를 확인한다 (권장안 수용). 배포는 Ted 승인 범위이고, 실측 EC2 SHA 와 범위 PR 본문의 선행 절차 대조를 먼저 한다. (b)-5 의 768 터치는 Q3c 44px 하한의 검증을 겸한다. 기각: 지금 develop 배포(배포 2회).
+  - Q7b dev 확인 수행자 → A 나눈다 — 에이전트는 agent-browser 로 마우스 · 휠 확대 · 루트 글자 변경 · 768 터치 에뮬레이션을 확인하고 증거를 남긴다(dev 재생성 승인 계정 중 교수 계정 사용 허용). Ted 는 실제 터치 기기 끌기((b)-2)와 OS 파일 끌어 놓기((b)-4)를 한다. 로그인이 막히면 에이전트 몫도 Ted 체크리스트로 넘긴다 (권장안 수용). 기각: Ted 전부 수동.
+  - Q7c (b)-6 재지 못한 상태 5개(계정 관리 모달 층 200 · 「불일치」 13px · 다크 「필수」 표식 · `.colmenu` 라벨 자간 · 닫는 중 `inert` 누름 차단) → A 이 intent 의 레인에서 로컬 픽스처로 상태를 열어 agent-browser 1회 계측 · 영구 캡처 장면 여부는 하네스 intent H11 판정에 맡긴다 (권장안 수용). 기각: dev 눈 확인 · H11 로 넘김.
+  - Q7d (b)-7 캡처 잔차 3건 → A 닫는다 — 사유: 대조 캡처 세트 `frontend/.visual/fix0924-*` 가 통합 워크트리와 함께 지워져 0개 · 채널 ±1–2 추정 · 이 레인의 캡처 대조에서 같은 장면에 차이가 다시 나오면 그때 본다 (권장안 수용). 기각: PR #141 전후 캡처 재촬영.
+  - Q7e (b)-8 병합 트리 `frontend-visual` 재계측 → A 이 intent 의 레인 첫 단계에서 develop HEAD 기준 `frontend-visual` 을 돌려 기준으로 남긴다(재계측을 겸한다) (권장안 수용). 기각: 측정 레인 별도.
+  - Ted 원문(Q7a–Q7e 에 대한 답 · 2026-09-25): "권고대로"
+- Q8 (c) 구현 후속의 담당 자리
+  - (c)-1 `routes/**` #21 집행 → 기존 판정 그대로 — 다음 design-review 회차의 `routes/**` 레인 · 입력 자리 = `.agents/skills/design-review/SKILL.md` §0 「이월·판정 대기」(Ted 기판정 ⓐ · `dev-package/sessions/design-review-20260924.md` §7 #21). 이번에 묻지 않았다. (c)-3 은 Q6(별건 intent).
+  - Q8a (c)-2 업로드 미리보기 팔레트 조회 실패 뒤 재조회 경로 없음 → A 이 intent 의 레인에서 오류 문장 옆 작은 단추 「다시 시도」(기존 문구 `frontend/src/components/detail/SearchEvidenceEditor.tsx:209` 재사용 · 새 문구 0) · 누르면 팔레트 목록을 다시 조회 (권장안 수용). 기각: 별건 intent(재시도 UX) · 현행 유지.
+  - Q8b (c)-4 `frontend/src/components/lineage/lineage.css:266` `.lin-unknown-why`(쓰는 곳 0) 삭제 · 시험 제목 「16ms 마다 1px 씩」을 실제 이동(11·1·1px)에 맞게 고침(단언은 그대로) → A 이 intent 의 레인 (권장안 수용). 기각: 다음 회차.
+  - Q8c (c)-5 `frontend/test/dataset-preview-source-grid.test.tsx` 부하 시 대기 초과(원인 미진단) → A 하네스 intent `2026-09-25-harness-design-round-residuals.md` 에 H15 로 추가(따질 것 · 모을 증거 = 부하 재현 측정) · 이 레인은 재현되면 로그만 남긴다 (권장안 수용). 이유 = 게이트 판정이 flake 와 결함을 가르지 못하는 문제. 기각: 이 레인에서 진단 · 별건 제품 intent.
+  - Q8d (c)-6 포인터 끌기 경계(수용된 작은 손실 5개) → A dev 실제 터치 끌기 확인((b)-2 · Q7b Ted 몫) 결과 뒤 판정 — 결함이면 별건, 아니면 「수용된 손실」로 닫는다 (권장안 수용). 기각: 이 레인에서 가드 보강.
+  - Q8e (c)-7 「완료된 닫기」 경계 → A 경계 유지 · `UploadModal` 머리 주석에 「새 부모는 `useUploadModalPresence` 필수」 명시 (권장안 수용). 사실: 부모 2곳 `frontend/src/components/upload/UploadEntry.tsx:94` · `GridAttachEntry.tsx:55` 모두 훅을 쓴다. 기각: 모달 쪽 완료 세션 거르기(대표 이미지 실패 뒤 재시도 입력 보존 의도를 바꾼다) · 기록 없음.
+  - Ted 원문(Q8a–Q8e 에 대한 답 · 2026-09-25): "권로대로"
+- 처분 요약(후속 목록 항목 → 처분 → 자리)
+
+  | 항목 | 처분 | 자리 |
+  |---|---|---|
+  | (a)-1 비활성 단추 | 채택 — `opacity: .5` · `cursor: not-allowed` · 70곳 · 정본 4곳(Q1a–Q1f) | 이 intent 의 레인 |
+  | (a)-2 가운데 대화상자 그림자 | 채택 — 그림자 0 · 1px `--color-border-strong`(Q2a) | 레인 |
+  | (a)-3 업로드 모달 뒤판 | 채택 — 열기·닫기 배경색 전환(Q2b) · fixed 기준 변화는 유지(Q2c) | 레인 |
+  | (a)-4 `.dr-pop` 1440 가림 | 채택 — 열 때 본문 스크롤(Q2d) | 레인 |
+  | (a)-5 503 뒤 × | 결함 아님 · 현행 유지(Q2e) | 닫힘 |
+  | (a)-6 빈 팔레트 문면 | 채택 — 조건 좁힘 · 0개 = `UNAVAILABLE`(Q2f) | 레인 |
+  | (a)-7 파란 채움 누름 | 채택 — primary-800(Q3a) | 레인 |
+  | (a)-7 빨간 삭제 단추 | 다음 회차 · ⑦-17(Q3b · Q5) | 다음 design-review · ⑦ 행은 레인이 추가 |
+  | (a)-8 작은 단추 터치 하한 | 채택 — `pointer: coarse` 44px(Q3c) | 레인 |
+  | (b)-1 확대 · (b)-2 관성 끌기 | dev 확인 — 에이전트 마우스·휠 · Ted 실제 터치(Q7a · Q7b) | 레인 병합 뒤 dev 배포 |
+  | (b)-3 등록 직후 닫고 열기 | 로컬 실브라우저 장면(Q4) | 레인 |
+  | (b)-4 dragover 모양 | Ted 수동(Q7b) | dev 배포 뒤 |
+  | (b)-5 루트 글자 ≠16px · 768 터치 | 에이전트 에뮬레이션 + Ted 실기기(Q7b) · 결과는 px 전환 별건 intent 입력 | dev 배포 뒤 |
+  | (b)-6 재지 못한 상태 5 | 로컬 1회 계측(Q7c) | 레인 |
+  | (b)-7 캡처 잔차 3 | 닫힘 — 증거 소실(Q7d) | 닫힘 |
+  | (b)-8 병합 트리 `frontend-visual` | 레인 첫 단계 기준 측정(Q7e) | 레인 |
+  | (c)-1 `routes/**` #21 | 다음 회차(기판정) | 다음 design-review |
+  | (c)-2 팔레트 재시도 | 채택 — 「다시 시도」(Q8a) | 레인 |
+  | (c)-3 px → rem | 별건 intent(Q6) | (b)-5 뒤 |
+  | (c)-4 죽은 규칙 · 시험 제목 | 채택(Q8b) | 레인 |
+  | (c)-5 시험 대기 초과 | 하네스 intent H15(Q8c) | 하네스 intent |
+  | (c)-6 포인터 끌기 경계 | (b)-2 결과 뒤 판정(Q8d) | dev 배포 뒤 |
+  | (c)-7 완료된 닫기 경계 | 유지 · 주석(Q8e) | 레인 |
 
 ## 미해결 질문
-- Q3 (a)-7 · (a)-8: 확정 값을 다시 열지. 연다면 이 intent 를 승인하고 별건 spec 으로 진행한다.
-- Q4 (b)-3: dev 쓰기 승인 범위와 시험 데이터 정리 방법.
-- Q5 (a) 후보 중 어느 것을 `docs/design-system.md` ⑦ 정본 목록에 올릴지(문서만 · 값 무변). 지금 ⑦ 에는 10–16 만 있고, 이번 후보는 PR 본문·레인 보고·이 문서에만 있다.
-- Q6 (c)-3 px 리터럴 전환을 이 intent 에서 착수할지, 별건 intent 로 뺄지.
+- 없음
 
 ## 범위 밖 (명시 제외)
-- 승인 intent `2026-09-25-design-fix-20260924.md` 의 판정 21건 · 값 17건 자체의 변경. (a)-7 · (a)-8 만 재개봉 후보로 올린다.
+- 승인 intent `2026-09-25-design-fix-20260924.md` 의 판정 21건 · 값 17건 자체의 변경. 다시 여는 것은 파란 채움 누름(Q3a)과 작은 단추 하한의 적용 범위(Q3c)뿐이다.
+- 빨간 삭제 단추 hover · 누름(Q3b) — 다음 design-review 회차(⑦-17).
+- 남은 px 글자 크기 리터럴 전환(Q6) — 별건 intent.
+- `routes/**` 단추 편차 #21((c)-1) — 다음 design-review 회차.
+- 미리보기 시험 대기 초과 진단(Q8c) — 하네스 intent H15.
+- 입력칸 · 선택칸(`.inp` · `.sel`)의 비활성 모양(Q1 가정).
 - 하네스 잔여 — `dev-package/intent/2026-09-25-harness-design-round-residuals.md`.
 - 워크트리 · 브랜치 · 임시물 정리.
 - `docs/design-system.md` ⑦ 10–16 의 판정(정본에서 진행).
 
 ## 확인
-- 프론티어 공집합 확인: (미실시)
-- Ted 확인 문장(원문 그대로): (없음 — 미승인 초안)
-- 재개봉 금지: 아니오(초안)
+- 프론티어 공집합 확인: 2026-09-25 — Q1–Q8(가지 판정 28건) 완료 · 미해결 질문 0
+- Ted 확인 문장(원문 그대로): (대기 — 공통 이해 확인 요청 2026-09-25)
+- 재개봉 금지: 아니오(승인 전)
 
 ## 참조
 - PR #141 — 병합 커밋 `a808a56f`(2026-09-25) · 본문 사본 `~/.claude/pr-bodies/PR-BODY-design-fix-20260924.md`(저장소 밖)
@@ -166,4 +234,5 @@ Ted 가 확정한 값의 귀결이다. 판정 항목이 아니며, 다시 보려
 - 레인 보고: `dev-package/sessions/design-fix-20260924-{integration,acceptance,L1,L2,L3,F-css,F-upload,F-preview,F-final,F-int,F-ci}.md`
 - 증거: `dev-package/reports/design-review/20260924/fix/{live,live-ci}/index.md` · `fix/capture-diff.md` · `fix/build-log.txt`
 - 정본: `docs/design-system.md` ⑤ · ⑦
+- 비교판(Q3 근거): https://claude.ai/artifact/XP7bJ4CXnafAEJYjo3dfaY (비공개)
 - 결정: 신규 legacy 결정번호 발급 없음(AGENTS.md).
