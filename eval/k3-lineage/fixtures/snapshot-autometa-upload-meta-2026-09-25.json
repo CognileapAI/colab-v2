@@ -1,0 +1,118 @@
+{
+  "schema": "k3-upload-meta-override/1",
+  "kind": "K3 상한 민감도 입력(ⓐ) — 자식의 스냅샷 v2 autometa(등록 후 자동 메타)를 제품 _uploaded_file_meta 열쇠로 옮긴 값. 정답이 아니다. 2026-09-25 사용자 서명 ①ⓑ 뒤 정답 upload_meta 는 보류 자동 메타(fixtures/held-upload-meta-2026-09-25.json)이고, 이 파일은 러너 --upload-meta-override 로 같은 후보 JSON 에 모델 절반만 1회 거는 민감도 실행에만 쓴다(합격선 아님). 스냅샷과의 동치는 test_k3_candidate_recall.py 가 표식 없이 지킨다.",
+  "cases": [
+    {
+      "id": "K3-LIN-001",
+      "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+      "child_name": "hsr_sample",
+      "upload_meta": {
+        "datasetNameDraft": "hsr_sample",
+        "subject": "강우·강수",
+        "file": {
+          "fileName": "hsr_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "partCount": 3
+        }
+      }
+    },
+    {
+      "id": "K3-LIN-002",
+      "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+      "child_name": "GK2A_NDVI_mean_202305",
+      "upload_meta": {
+        "datasetNameDraft": "GK2A_NDVI_mean_202305",
+        "subject": "식생·NDVI",
+        "file": {
+          "fileName": "GK2A_NDVI_mean_202305.tif",
+          "kind": "본체",
+          "format": "GeoTIFF",
+          "crs": "EPSG:4326",
+          "gridDescription": "1280x1280",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00"
+        }
+      }
+    },
+    {
+      "id": "K3-LIN-003",
+      "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+      "child_name": "pred_sample",
+      "upload_meta": {
+        "datasetNameDraft": "pred_sample",
+        "subject": "강우·강수",
+        "file": {
+          "fileName": "pred_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "partCount": 3
+        }
+      }
+    },
+    {
+      "id": "K3-LIN-004",
+      "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+      "child_name": "Prediction (공간상세화)",
+      "upload_meta": {
+        "datasetNameDraft": "Prediction (공간상세화)",
+        "subject": "식생·NDVI",
+        "file": {
+          "fileName": "Prediction_20230501.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "1280x1280",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-31T00:00:00+00:00",
+          "partCount": 33
+        }
+      }
+    },
+    {
+      "id": "K3-LIN-005",
+      "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+      "child_name": "rn15_sample",
+      "upload_meta": {
+        "datasetNameDraft": "rn15_sample",
+        "subject": "강우·강수",
+        "file": {
+          "fileName": "rn15_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "periodStart": "2019-07-28T00:00:00+00:00",
+          "periodEnd": "2024-07-09T00:00:00+00:00",
+          "partCount": 3
+        }
+      }
+    },
+    {
+      "id": "K3-LIN-006",
+      "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+      "child_name": "DEM",
+      "upload_meta": {
+        "datasetNameDraft": "DEM",
+        "subject": "식생·NDVI",
+        "file": {
+          "fileName": "DEM.tif",
+          "kind": "본체",
+          "format": "GeoTIFF",
+          "crs": "EPSG:4326",
+          "gridDescription": "1280x1280",
+          "periodStart": "2023-05-01T00:00:00+00:00",
+          "periodEnd": "2023-05-01T00:00:00+00:00"
+        }
+      }
+    }
+  ]
+}

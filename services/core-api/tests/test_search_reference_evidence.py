@@ -18,17 +18,27 @@ ROOT=Path(__file__).resolve().parents[3]
 REPORTS=ROOT/'eval/k4-search/fixtures/reference'
 
 
+#: Packet items whose file is not in the v2 corpus (description documents that were not re-registered;
+#: wu4-golden-proposal-2026-09-25.md §1-1). They are dropped by name here, never silently.
+PACKET_FILES_ABSENT_FROM_V2=frozenset({
+    '#processing_description_Precipitation.docx','#processing_description_NDVI.docx',
+    '01.가뭄 데이터 여는 코드.ipynb','[Data Info]SPI-4weeks.docx','[Data Info]SPEI-4weeks.docx'})
+
+
 def seed_reference_corpus(p2_client,sql,fake_ai):
-    """Snapshot 9 datasets (fixed IDs) + evidence packet into the throwaway DB. Returns (client, datasets).
+    """Snapshot v2 datasets (fixed IDs) + evidence packet into the throwaway DB. Returns (client, datasets).
 
     Shared with `test_k4_interpreter_probe.py` so the K4 probe measures on the same corpus.
+    The packet is keyed by the v1 bundle names; items are bound to the v2 dataset that holds the same
+    file (signed correspondence ①: body files identical by name and size).
     """
-    datasets=json.loads((REPORTS/'dev-data-snapshot.json').read_text())['datasets']
+    datasets=json.loads((REPORTS/'dev-data-snapshot-v2.json').read_text())['datasets']
     packet=json.loads((REPORTS/'stage-evidence-packet-02.json').read_text())['items']
     for dataset in datasets:
-        sql('''INSERT INTO d3_dataset(id,lab_id,owner_account_id,uploader_account_id,source_label)
-               VALUES(:id,:lab,:account,:account,:source)''',
-            {'id':dataset['id'],'lab':LAB_A,'account':ACC_A_RES,'source':dataset['source_label']})
+        sql('''INSERT INTO d3_dataset(id,lab_id,owner_account_id,uploader_account_id,source_label,processing_level_user_set)
+               VALUES(:id,:lab,:account,:account,:source,:level)''',
+            {'id':dataset['id'],'lab':LAB_A,'account':ACC_A_RES,'source':dataset['source_label'],
+             'level':dataset['processing_level']})
         sql('''INSERT INTO d3_dataset_description(dataset_id,lab_id,name,topic,summary)
                VALUES(:id,:lab,:name,:topic,:summary)''',
             {'id':dataset['id'],'lab':LAB_A,'name':dataset['name'],'topic':dataset['topic'],'summary':dataset['summary']})
@@ -47,15 +57,29 @@ def seed_reference_corpus(p2_client,sql,fake_ai):
                 {'id':str(Ulid.generate()),'lab':LAB_A,'child':dataset['id'],'parent':edge['parent_dataset_id'],
                  'role':edge['parent_role'],'account':ACC_A_RES})
     client=p2_client(ai_base_url=fake_ai['url'])
-    by_name={d['name']:d for d in datasets}
+    by_file={}
+    for dataset in datasets:
+        for file in dataset['files']:
+            by_file.setdefault(file['file_name'],[]).append((dataset,file))
+    absent={item['file_name'] for item in packet if item['file_name'] not in by_file}
+    assert absent==PACKET_FILES_ABSENT_FROM_V2,absent^PACKET_FILES_ABSENT_FROM_V2
     for item in packet:
-        dataset=by_name[item['dataset_name']]
-        file=next(f for f in dataset['files'] if f['file_name']==item['file_name'])
+        if item['file_name'] in absent: continue
+        assert len(by_file[item['file_name']])==1,('packet file held by two datasets',item['file_name'])
+        (dataset,file),=by_file[item['file_name']]
         response=client.put(f"{API_PREFIX}/datasets/{dataset['id']}/files/{file['id']}/search-evidence",
             headers=auth(TOKEN_RES),json={'expectedRevision':0,'expectedFileRevision':1,
                 'facts':item['facts'],'source':item['source'],'status':'reviewed'})
         assert response.status_code==200,(item['dataset_key'],item['file_name'],response.text)
     return client,datasets
+
+
+#: Explicit exemption for retrieval questions the product misses on the v2 corpus with the frozen
+#: interpretations (expanded-normalized-02.json). The failure set must match exactly: a new miss turns
+#: red, and a closed gap also turns red so the entry is removed.
+#: WU4 (2026-09-25) exempted 005·006·008·009 while every v2 topic was null. The WU4 follow-up filled
+#: the 28 dev topics through the product API (snapshot v2 recaptured) and all four now pass — 0 left.
+V2_RETRIEVAL_GAPS={}
 
 
 def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql,fake_ai):
@@ -72,13 +96,15 @@ def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql
         ids={i['datasetId'] for i in response.json()['items']} & set(case['scope'])
         if case['mode']=='retrieval' and not set(case['required'])<=ids: failures.append((case['id'],'missing',set(case['required'])-ids))
         if case['mode']=='empty' and ids: failures.append((case['id'],'unexpected',ids))
-    assert not failures,failures
+    # Explicit exemption (count + reason): the failure set must equal V2_RETRIEVAL_GAPS exactly.
+    assert {f[0] for f in failures}==set(V2_RETRIEVAL_GAPS) and all(f[1]=='missing' for f in failures),[(f[0],f[1],len(f[2])) for f in failures]
     quality=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-011']['items'])
     native=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-012']['items'])
     roles=' '.join(i['rationale'] for i in responses['SEARCH-GOLD-005']['items'])
     assert '미확인' in quality and '품질' in quality
     assert '불일치' in native and '2000m' in native and '직접 관측이 아닌' in native
-    assert 'HLS_S30_NDVI_mean_202305.tif' in roles and '검증 자료' in roles and '보조 입력' in roles
+    if 'SEARCH-GOLD-005' not in V2_RETRIEVAL_GAPS:
+        assert 'HLS_S30_NDVI_mean_202305.tif' in roles and '검증 자료' in roles and '보조 입력' in roles
     # Evidence for a different topic must not erase legacy metadata candidates,
     # especially locked candidates whose body facts were never available.
     fake_ai['body']=copy.deepcopy(interpretations[0])

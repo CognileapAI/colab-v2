@@ -38,3 +38,12 @@ def test_expected_helper_suite_can_pass():
             self.assertTrue(True)
     suite = unittest.TestSuite([PassingCase()])
     assert runner.run_suite(suite) == 0
+
+
+def test_golden_summary_reports_pass_and_exemption_counts(tmp_path):
+    runner = _runner()
+    source = tmp_path / "test_gaps.py"
+    source.write_text("V2_RETRIEVAL_GAPS={'A':'x','B':('y' 'z')}\n", encoding="utf-8")
+    assert runner.golden_summary(12, source) == "골든 회귀 10/12 통과 · 2 면제(V2_RETRIEVAL_GAPS)"
+    source.write_text("V2_RETRIEVAL_GAPS={}\n", encoding="utf-8")
+    assert runner.golden_summary(12, source) == "골든 회귀 12/12 통과 · 0 면제(V2_RETRIEVAL_GAPS)"
