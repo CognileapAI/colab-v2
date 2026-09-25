@@ -15,9 +15,10 @@
 import { readFileSync } from 'node:fs';
 // @ts-expect-error — 같은 이유.
 import { resolve } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import type { PreviewPiece, TargetDescription } from '../src/components/preview/pick';
 
@@ -93,7 +94,7 @@ async function drawUpload(job: RenderJob, representativeFile: File | null = null
   );
   // 버튼은 팔레트 조회 전에도 존재한다. 화면의 선택값이 준비된 뒤 그린다.
   await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'), WAIT);
-  fireEvent.click(screen.getByTestId('up-preview-draw'));
+  await clickPreviewDrawWhenReady();
   await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
 }
 

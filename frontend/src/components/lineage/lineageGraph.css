@@ -76,7 +76,7 @@
   .detail-page .lrow { grid-template-columns: 1fr auto; }
   .detail-page .lrow .stg { grid-column: 1 / -1; }
 }
-.detail-page .lrow .stg { font-size: 13px; font-weight: 700; letter-spacing: .05em; color: var(--color-gray-500); }
+.detail-page .lrow .stg { font-size: 13px; font-weight: 700; letter-spacing: var(--tracking-label); color: var(--color-gray-500); }
 .detail-page .lrow.is-self { border-color: var(--color-primary-600); }
 .detail-page .lrow.is-self .stg { color: var(--color-primary-600); }
 .detail-page .lrow .ln-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

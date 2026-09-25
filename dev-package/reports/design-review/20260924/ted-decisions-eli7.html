@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>디자인 판정 21건</title>
+<style>
+:root{
+  --bg:#f6f7f9;--surface:#ffffff;--surface-2:#f0f2f5;--text:#15191d;--muted:#5a6168;--line:#dde2e8;
+  --accent:#0f62e0;--accent-soft:#e8f0fe;--ok:#0b6b2e;--ok-bg:#e7f6ec;--bad:#a3222b;--bad-bg:#fdecee;
+  --rec:#7a4a00;--rec-bg:#fff4e0;--shadow:0 1px 2px rgba(0,0,0,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161d;--surface:#1a222c;--surface-2:#202b37;--text:#edf2f7;--muted:#b2bfce;--line:#344251;
+    --accent:#92c2ff;--accent-soft:#203954;--ok:#90dcb2;--ok-bg:#163b2b;--bad:#ffadb6;--bad-bg:#452832;
+    --rec:#f4c37e;--rec-bg:#45321c;--shadow:none;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161d;--surface:#1a222c;--surface-2:#202b37;--text:#edf2f7;--muted:#b2bfce;--line:#344251;
+  --accent:#92c2ff;--accent-soft:#203954;--ok:#90dcb2;--ok-bg:#163b2b;--bad:#ffadb6;--bad-bg:#452832;
+  --rec:#f4c37e;--rec-bg:#45321c;--shadow:none;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif;
+  font-size:16px;line-height:1.65;padding-bottom:88px;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:780px;margin:0 auto;padding:24px 16px}
+a{color:var(--accent)}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere;word-break:break-all}
+header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+h1{font-size:26px;line-height:1.3;margin:0}
+.theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.theme button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:6px 12px;cursor:pointer}
+.theme button[aria-pressed="true"]{background:var(--accent-soft);color:var(--text);font-weight:600}
+.intro{margin:16px 0 8px;padding:0;list-style:none}
+.intro li{margin:4px 0}
+.src{font-size:13px;color:var(--muted)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.index{margin:20px 0}
+.index h2{font-size:18px;margin:0 0 8px}
+.index h3{font-size:14px;color:var(--muted);margin:14px 0 4px;font-weight:600}
+.index ol{list-style:none;margin:0;padding:0}
+.index li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:6px 0;border-top:1px solid var(--line)}
+.index li:first-child{border-top:0}
+.index .n{flex:0 0 26px;font-weight:700;color:var(--muted);text-align:right}
+.index a{flex:1 1 160px;min-width:0;text-decoration:none;color:var(--text)}
+.index a:hover{text-decoration:underline}
+.pill{flex:0 0 auto;font-size:12px;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill.rec{background:var(--rec-bg);color:var(--rec)}
+.pill.mine{background:var(--accent-soft);color:var(--text)}
+.pill.mine:empty{display:none}
+h2.group{font-size:22px;margin:40px 0 4px}
+.group-sub{color:var(--muted);margin:0 0 12px;font-size:15px}
+article.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 18px;margin:16px 0;box-shadow:var(--shadow);scroll-margin-top:16px}
+article.card.done{border-color:var(--accent)}
+.card-h{display:flex;gap:12px;align-items:flex-start}
+.num{flex:0 0 36px;height:36px;border-radius:50%;background:var(--accent-soft);color:var(--text);font-weight:700;display:flex;align-items:center;justify-content:center}
+.card-h > div{min-width:0}
+.card-h h3{font-size:19px;line-height:1.4;margin:4px 0 0}
+.meta{font-size:13px;color:var(--muted);margin:2px 0 0}
+.card h4{font-size:15px;margin:18px 0 4px;color:var(--muted);font-weight:700}
+.card p{margin:4px 0}
+.card ul.plain{margin:4px 0;padding-left:20px}
+.opts{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:640px){.opts{grid-template-columns:1fr 1fr}}
+.opt{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2);min-width:0}
+.opt.is-rec{border-color:var(--rec)}
+.opt .k{font-weight:700;font-size:17px;margin-right:4px}
+.opt .tag{font-size:12px;background:var(--rec-bg);color:var(--rec);padding:1px 8px;border-radius:999px;margin-left:6px;white-space:nowrap}
+.opt .then{margin-top:8px;font-size:14px;color:var(--muted)}
+.opt .then b{color:var(--text);font-weight:600}
+.recbox{margin-top:12px;background:var(--rec-bg);border-radius:12px;padding:10px 14px}
+.recbox b{color:var(--rec)}
+details.tech{margin-top:12px;font-size:14px;border-top:1px dashed var(--line);padding-top:8px}
+details.tech summary{cursor:pointer;color:var(--muted);font-weight:600}
+details.tech ul{margin:6px 0 0;padding-left:18px}
+details.tech li{margin:3px 0}
+fieldset.decide{margin:16px 0 0;border:1px solid var(--line);border-radius:12px;padding:10px 14px 12px;min-width:0}
+fieldset.decide legend{font-weight:700;padding:0 6px;font-size:15px}
+.radios{display:flex;flex-wrap:wrap;gap:8px}
+.radios label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;background:var(--surface);min-height:40px}
+.radios input{accent-color:var(--accent);width:18px;height:18px;margin:0}
+.radios label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+textarea{width:100%;font:inherit;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;resize:vertical}
+.decide textarea{margin-top:10px;min-height:44px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 견본 — 색은 tokens.css 실제 값을 고정으로 쓴다(페이지 테마와 무관) */
+.viz{margin:14px 0 4px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
+.viz-t{font-size:13px;color:var(--muted);margin:0 0 8px;font-weight:600}
+.swrow{display:flex;flex-wrap:wrap;gap:10px}
+.sw{flex:1 1 150px;min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.sw .face{padding:14px 10px;text-align:center;font-weight:600;font-size:15px;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.sw .cap{padding:6px 10px;font-size:12.5px;line-height:1.45;border-top:1px solid var(--line)}
+.sw .cap .r{font-weight:700}
+.sw .cap code{white-space:nowrap;word-break:normal}
+.pass{color:var(--ok)} .fail{color:var(--bad)}
+.verdict{display:inline-block;font-size:12px;font-weight:700;padding:0 6px;border-radius:6px}
+.verdict.pass{background:var(--ok-bg)} .verdict.fail{background:var(--bad-bg)}
+.calc{font-size:11px;color:var(--muted)}
+.fakebtn{display:inline-block;padding:7px 14px;border-radius:8px;border:1px solid transparent;font-weight:600;font-size:14px}
+.fakechip{display:inline-flex;align-items:center;height:24px;padding:2px 10px;border-radius:9999px;font-size:13px;font-weight:600;line-height:1}
+.req{font-size:13px;font-weight:700;border-radius:9999px;padding:1px 5px}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.heads{display:grid;gap:8px}
+.heads .h{background:#ffffff;color:#121619;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow-x:auto}
+.heads .h span.t{display:block;font-size:28px;font-weight:600;line-height:1.3;white-space:nowrap}
+.heads .h span.l{display:block;font-size:12.5px;color:#565c63}
+.heads .h span.l code{background:#f0f2f5}
+.scale-demo label{font-size:14px;display:block;margin-bottom:6px}
+.scale-demo input[type=range]{width:100%;accent-color:var(--accent)}
+.scale-demo .line{background:#ffffff;color:#121619;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;overflow-x:auto}
+.scale-demo .line small{display:block;font-size:12px;color:#565c63}
+.scale-demo .line small code{background:#f0f2f5}
+.layers{display:grid;gap:6px}
+.layer{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--surface)}
+.layer b{flex:0 0 56px;text-align:right;font-variant-numeric:tabular-nums}
+.layer.hl{border-color:var(--rec);background:var(--rec-bg)}
+.shadows{display:flex;flex-wrap:wrap;gap:14px;background:#f9fafb;border-radius:10px;padding:16px}
+.shadows div{flex:1 1 140px;background:#ffffff;color:#121619;border:1px solid #dfe3e8;border-radius:10px;padding:14px;font-size:14px;text-align:center}
+.rows{border-bottom:1px solid var(--line)}
+.rows div{padding:9px 12px;font-size:14px}
+/* 움직임 견본 */
+.demo{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:560px){.demo{grid-template-columns:1fr 1fr}}
+.stage{position:relative;height:150px;border-radius:10px;background:#f9fafb;border:1px solid #dfe3e8;overflow:hidden;color:#121619}
+.stage .lbl{position:absolute;left:10px;top:8px;font-size:12.5px;font-weight:700;color:#565c63}
+.stage .ctl{position:absolute;right:8px;top:6px;font:inherit;font-size:13px;padding:4px 10px;border-radius:8px;border:1px solid #a9b3bf;background:#ffffff;color:#121619;cursor:pointer}
+.mdl{position:absolute;left:12%;right:12%;bottom:14px;height:78px;background:#ffffff;border:1px solid #dfe3e8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.mdl.now{display:none}
+.mdl.now.open{display:flex;animation:rise .46s ease}
+@keyframes rise{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.mdl.alt{transform:translateY(40px);opacity:0;visibility:hidden;transition:transform .46s ease,opacity .46s ease,visibility 0s linear .46s}
+.mdl.alt.open{transform:none;opacity:1;visibility:visible;transition:transform .46s ease,opacity .46s ease,visibility 0s}
+.field{position:absolute;left:12px;top:40px;font-size:13px;padding:5px 10px;border:1px solid #a9b3bf;border-radius:8px;background:#ffffff;color:#121619;cursor:pointer;font-family:inherit}
+.pop{position:absolute;left:12px;top:76px;width:150px;height:62px;background:#ffffff;border:1px solid #dfe3e8;border-radius:10px;font-size:12.5px;display:flex;align-items:center;justify-content:center;box-shadow:0px 6px 10px -4px #17171714,0px 16px 24px -6px #17171714}
+.pop.now{display:none}
+.pop.now.open{display:flex}
+.pop.alt{transform-origin:0 0;transform:scale(.6);opacity:0;visibility:hidden;transition:transform .14s cubic-bezier(.4,0,.2,1),opacity .14s cubic-bezier(.4,0,.2,1),visibility 0s linear .14s}
+.pop.alt.open{transform:none;opacity:1;visibility:visible;transition:transform .14s cubic-bezier(.4,0,.2,1),opacity .14s cubic-bezier(.4,0,.2,1),visibility 0s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+/* 하단 바 */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:10}
+.bar .in{max-width:780px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .prog{font-weight:700;font-variant-numeric:tabular-nums}
+.bar .msg{font-size:13px;color:var(--muted);flex:1 1 80px;min-width:0}
+.bar button{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:10px;padding:10px 16px;background:#0f62e0;color:#ffffff;cursor:pointer}
+:root[data-theme="dark"] .bar button{background:#add2ff;color:#10233c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar button{background:#add2ff;color:#10233c}}
+#result textarea{min-height:220px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
+.btn-plain{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer}
+footer{margin-top:24px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>디자인 판정 21건</h1>
+  <div class="theme" role="group" aria-label="화면 테마">
+    <button type="button" data-t="auto" aria-pressed="true">자동</button>
+    <button type="button" data-t="light" aria-pressed="false">라이트</button>
+    <button type="button" data-t="dark" aria-pressed="false">다크</button>
+  </div>
+</header>
+
+<ul class="intro">
+  <li>2026-09-24 디자인 점검에서 <b>Ted 가 정해야 하는 것 21건</b>을 쉬운 말로 풀었어요.</li>
+  <li>애플 디자인 원칙 8건, 화면 기준(대비·크기·규칙) 13건이에요. 대부분 정하면 화면 모양이 바뀌어요.</li>
+  <li>카드마다 ⓐ · ⓑ · 보류 중 하나를 고르고, 맨 아래 「판정 결과 복사」를 눌러 붙여 넣으면 돼요.</li>
+</ul>
+<p class="src">출처 — <code>dev-package/sessions/design-review-20260924.md</code> §7 「Ted 판정 묶음」 · §2 판정표 · advisor ② 반영. 색 견본은 <code>frontend/src/shell/tokens.css</code> 실제 값이에요. 대비 옆 「계산」 표시는 판정표에 없는 값을 이 페이지가 같은 공식(WCAG 상대휘도)으로 잰 것이에요. 고른 내용은 이 브라우저에만 임시로 저장돼요.</p>
+
+<nav class="box index" aria-label="21건 목록">
+  <h2>한눈에 보기</h2>
+  <h3>Apple 디자인 원칙</h3>
+  <ol>
+    <li><span class="n">1</span><a href="#d1">업로드 창 열림·닫힘 움직임</a><span class="pill rec">추천 닫기는 ⓐ</span><span class="pill mine" data-mine="1"></span></li>
+    <li><span class="n">2</span><a href="#d2">기간 달력이 그냥 튀어나옴</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="2"></span></li>
+    <li><span class="n">3</span><a href="#d3">미리보기 끌기가 마우스 전용</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="3"></span></li>
+    <li><span class="n">4</span><a href="#d4">파일 끌어 놓을 자리가 반응 없음</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="4"></span></li>
+    <li><span class="n">5</span><a href="#d5">놓은 뒤 미끄러지는 움직임</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="5"></span></li>
+    <li><span class="n">6</span><a href="#d6">「동작 줄이기」·「대비 높이기」 대응</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="6"></span></li>
+    <li><span class="n">7</span><a href="#d7">제목 글자 간격이 셋으로 갈림</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="7"></span></li>
+    <li><span class="n">8</span><a href="#d8">글자 크기가 전부 px</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="8"></span></li>
+  </ol>
+  <h3>화면 기준(대비·크기·규칙)</h3>
+  <ol>
+    <li><span class="n">9</span><a href="#d9">기본·보조 버튼 마우스 반응 없음</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="9"></span></li>
+    <li><span class="n">10</span><a href="#d10">강조 버튼 글자가 사라짐</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="10"></span></li>
+    <li><span class="n">11</span><a href="#d11">「꺼짐」 칩이 다크에서 안 읽힘</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="11"></span></li>
+    <li><span class="n">12</span><a href="#d12">작은 버튼 btn-sm 정의 없음</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="12"></span></li>
+    <li><span class="n">13</span><a href="#d13">그림자 금지 규칙의 범위</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="13"></span></li>
+    <li><span class="n">14</span><a href="#d14">같은 창인데 겹침 순서 200·120</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="14"></span></li>
+    <li><span class="n">15</span><a href="#d15">정렬 화살표 9px</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="15"></span></li>
+    <li><span class="n">16</span><a href="#d16">「불일치」 문구 12px</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="16"></span></li>
+    <li><span class="n">17</span><a href="#d17">「필수」 표시가 다크에서 안 보임</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="17"></span></li>
+    <li><span class="n">18</span><a href="#d18">지운 모양 네 가지 되살리기</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="18"></span></li>
+    <li><span class="n">19</span><a href="#d19">안내 문구 설명은 회색, 화면은 주황</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="19"></span></li>
+    <li><span class="n">20</span><a href="#d20">「보관」 줄 배경 칠하기</a><span class="pill rec">추천 ⓑ</span><span class="pill mine" data-mine="20"></span></li>
+    <li><span class="n">21</span><a href="#d21">스타일 없는 문구 두 개</a><span class="pill rec">추천 ⓐ</span><span class="pill mine" data-mine="21"></span></li>
+  </ol>
+</nav>
+
+<main>
+<h2 class="group" id="g-apple">Apple 디자인 원칙</h2>
+<p class="group-sub">누르고, 끌고, 열고, 닫을 때 화면이 어떻게 반응하는지에 대한 8건이에요.</p>
+
+<!-- 1 -->
+<article class="card" id="d1" data-n="1">
+  <div class="card-h"><span class="num">1</span><div><h3>업로드 창이 열릴 때는 0.46초 동안 올라오고, 닫힐 때는 그냥 사라져요</h3><p class="meta">판정-16 이월 · 판정표 #10 · #13</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>업로드 버튼을 누르면 창이 아래에서 0.46초 동안 떠올라요. 이 움직임은 한 번 시작하면 끝까지 가요. 닫을 때는 움직임 없이 한순간에 사라져요.</p>
+  <h4>왜 중요해?</h4>
+  <p>열 때와 닫을 때 모양이 다르면 창이 어디로 갔는지 눈으로 따라가기 어려워요. 업로드하는 모든 사람이 매번 봐요.</p>
+  <div class="viz">
+    <p class="viz-t">직접 눌러 보세요 — 0.46초만 실제 값이고, 움직이는 거리는 설명용이에요</p>
+    <div class="demo">
+      <div class="stage"><span class="lbl">지금</span><button type="button" class="ctl" data-toggle="m1now">열기 / 닫기</button><div class="mdl now" id="m1now">업로드 창</div></div>
+      <div class="stage"><span class="lbl">ⓐ 닫기도 같은 길로</span><button type="button" class="ctl" data-toggle="m1alt">열기 / 닫기</button><div class="mdl alt" id="m1alt">업로드 창</div></div>
+    </div>
+    <p class="note">「동작 줄이기」를 켠 기기에서는 두 칸 모두 움직임 없이 바로 나타나고 사라져요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>열기를 중간에 멈출 수 있는 전환으로 바꾸고, 닫기에도 같은 경로를 둔다.<span class="tag">추천(닫기)</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 창이 올라온 길로 내려가며 닫히고, 열리는 도중에 닫으면 그 자리에서 되돌아가요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>현행 유지.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금처럼 0.46초 동안 올라오고, 닫을 땐 한순간에 사라져요.</p></div>
+  </div>
+  <div class="recbox"><b>추천</b> — 먼저 정본 문장 우선순위를 정해요. <code>apple-design/SKILL.md</code> §3 <code>:62</code>(「모든 애니메이션은 언제든 중단 가능 · 닫히는 모달」)와 <code>:66</code>(「제스처로 구동되는 것만 CSS 전환 금지」)이 부딪혀요. 어느 쪽이든 닫기 경로가 없는 비대칭(#13)은 남으므로 <b>닫기 대칭은 ⓐ</b>예요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>@keyframes</code> 고정 길이 애니메이션 vs 중단 가능한 <code>transition</code></li>
+    <li><code>upload.css:24</code> <code>animation: up-rise 0.46s ease;</code> · <code>:26</code> <code>@keyframes up-rise</code> (#10)</li>
+    <li><code>UploadModal.tsx</code> · <code>PreviewExpandOverlay.tsx</code> 에 <code>closing</code> · <code>isClosing</code> · <code>onAnimationEnd</code> · <code>onTransitionEnd</code> 0건 — 조건부 렌더 해제로 즉시 사라짐 (#13)</li>
+    <li><code>upload.css:30</code>–<code>31</code> up-rise 의 reduced-motion 분기는 있음 (#18)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d1" value="ⓐ">ⓐ</label><label><input type="radio" name="d1" value="ⓑ">ⓑ</label><label><input type="radio" name="d1" value="보류">보류</label>
+  </div><textarea data-memo="1" rows="1" placeholder="메모 (선택) — 예: 정본 우선순위" aria-label="1번 메모"></textarea></fieldset>
+</article>
+
+<!-- 2 -->
+<article class="card" id="d2" data-n="2">
+  <div class="card-h"><span class="num">2</span><div><h3>기간을 고르는 달력이 누른 칸에서 펼쳐지지 않고 그냥 튀어나와요</h3><p class="meta">판정-17 이월 · 판정표 #12</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>업로드 화면에서 기간 칸을 누르면 달력이 떠요. 지금은 한순간에 나타나요. 어느 칸에서 나왔는지 보여 주는 움직임이 없어요.</p>
+  <h4>왜 중요해?</h4>
+  <p>누른 칸에서 달력이 자라나면, 이 달력이 어느 칸 것인지 바로 알아요. 업로드 때 기간을 고르는 사람이 봐요.</p>
+  <div class="viz">
+    <p class="viz-t">직접 눌러 보세요 — 0.14초는 제품 공통 전환 값(<code>--ease</code>)이고, 시작 크기는 설명용이에요</p>
+    <div class="demo">
+      <div class="stage"><span class="lbl">지금</span><button type="button" class="field" data-toggle="p2now">기간 선택 ▾</button><div class="pop now" id="p2now">달력</div></div>
+      <div class="stage"><span class="lbl">ⓐ 누른 칸에서 펼침</span><button type="button" class="field" data-toggle="p2alt">기간 선택 ▾</button><div class="pop alt" id="p2alt">달력</div></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>펼침 기준점(<code>transform-origin</code>)과 여는 전환을 둔다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 누른 칸 모서리에서 달력이 작게 시작해 커지며 열려요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>현행 즉시 표시.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금처럼 한순간에 나타나요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b> — 달력 팝오버 <code>.dr-pop</code> 에만 적용해요. 20260908 권고를 그대로 유지해요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>transform-origin</code> · 팝오버 여는 <code>transition</code></li>
+    <li><code>upload.css:482</code> 주석 「<code>display:none</code> ＋ <code>.dr-pop.open{display:block}</code> 로 여닫는다」</li>
+    <li><code>upload.css:484</code> <code>.dr-pop{position:absolute;top:calc(100% + 6px);left:0;…}</code></li>
+    <li>전수 <code>transform-origin</code> 1건 = <code>preview.css:294</code> <code>0 0</code></li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d2" value="ⓐ">ⓐ</label><label><input type="radio" name="d2" value="ⓑ">ⓑ</label><label><input type="radio" name="d2" value="보류">보류</label>
+  </div><textarea data-memo="2" rows="1" placeholder="메모 (선택)" aria-label="2번 메모"></textarea></fieldset>
+</article>
+
+<!-- 3 -->
+<article class="card" id="d3" data-n="3">
+  <div class="card-h"><span class="num">3</span><div><h3>미리보기를 확대한 뒤 끌어서 옮기는 게 마우스로만 되고, 1px만 움직여도 끌려요</h3><p class="meta">판정-18 이월 · 판정표 #21 · #22</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>미리보기 그림을 확대하면 끌어서 옮길 수 있어요. 그런데 마우스로만 돼요. 손가락이나 펜으로는 안 끌려요. 또 클릭하려다 손이 1px만 움직여도 그림이 따라 움직여요.</p>
+  <h4>왜 중요해?</h4>
+  <p>터치 화면·펜을 쓰는 사람은 확대한 그림을 옮길 수 없어요. 마우스를 쓰는 사람도 클릭하려다 그림이 밀릴 수 있어요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>포인터 이벤트와 포인터 캡처로 옮기고, 약 10px 시작 임계를 둔다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 손가락·펜으로도 끌려요. 약 10px 넘게 움직여야 끌기가 시작되고, 그보다 작으면 그림이 움직이지 않아요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>현행 유지.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금처럼 마우스로만, 1px부터 끌려요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b> — 임계 확정값은 정본에 「약 10px」로만 있어서 값도 함께 정해야 해요. 구현은 TSX(<code>useZoomPan.ts</code>)예요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>MouseEvent</code> → <code>PointerEvent</code> · <code>setPointerCapture</code> · 드래그 시작 임계</li>
+    <li><code>components/preview/useZoomPan.ts:334</code> <code>const onMouseDown = useCallback(</code> · <code>:342</code>–<code>350</code> <code>MouseEvent</code> move/up · <code>onPointerDown</code> · <code>setPointerCapture</code> 0건 (#21)</li>
+    <li><code>useZoomPan.ts:336</code>–<code>337</code> 버튼 확인 후 즉시 <code>drag.current = { x: e.clientX, y: e.clientY }</code> · 임계 상수 0 (#22)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d3" value="ⓐ">ⓐ</label><label><input type="radio" name="d3" value="ⓑ">ⓑ</label><label><input type="radio" name="d3" value="보류">보류</label>
+  </div><textarea data-memo="3" rows="1" placeholder="메모 (선택) — 예: 임계값" aria-label="3번 메모"></textarea></fieldset>
+</article>
+
+<!-- 4 -->
+<article class="card" id="d4" data-n="4">
+  <div class="card-h"><span class="num">4</span><div><h3>파일을 끌어다 놓는 동안 놓을 자리가 아무 반응을 안 해요</h3><p class="meta">판정-19 이월 · 판정표 #23</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>컴퓨터에서 파일을 끌어 업로드 칸 위로 가져가도 칸 모양이 그대로예요. 「여기 놓으면 된다」는 표시가 없어요. 놓아 봐야 들어갔는지 알아요.</p>
+  <h4>왜 중요해?</h4>
+  <p>맞는 자리 위에 있는지 모른 채 손을 놓게 돼요. 파일을 끌어서 올리는 모든 사람이 겪어요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>끌어 들어옴·나감 상태와 그에 맞는 시각 규칙을 둔다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 파일을 칸 위로 가져오면 칸 모양이 바뀌고, 밖으로 빼면 원래대로 돌아와요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>현행 유지.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금처럼 끄는 동안 아무 변화가 없어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b> — 상태 색은 정본에 없어서 색 값도 함께 골라야 해요. 구현은 TSX(<code>FileDropCard.tsx</code>) ＋ CSS예요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>onDragEnter</code> / <code>onDragLeave</code> 상태 · <code>.dropzone</code> 드래그 상태 규칙</li>
+    <li><code>FileDropCard.tsx:173</code>–<code>176</code> <code>onDragOver</code> 는 <code>preventDefault</code> · <code>stopPropagation</code> 만 · <code>onDragEnter</code>/<code>onDragLeave</code> 0건</li>
+    <li><code>upload.css</code> <code>.dropzone</code> 드래그 상태 규칙 0</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d4" value="ⓐ">ⓐ</label><label><input type="radio" name="d4" value="ⓑ">ⓑ</label><label><input type="radio" name="d4" value="보류">보류</label>
+  </div><textarea data-memo="4" rows="1" placeholder="메모 (선택) — 예: 상태 색" aria-label="4번 메모"></textarea></fieldset>
+</article>
+
+<!-- 5 -->
+<article class="card" id="d5" data-n="5">
+  <div class="card-h"><span class="num">5</span><div><h3>끌다가 손을 놓았을 때, 그 속도대로 조금 더 미끄러지게 할까요</h3><p class="meta">판정-21 이월 · 판정표 #24</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>지금은 끌기를 멈추면 그림도 그 자리에서 딱 서요. 휙 밀고 놓아도 더 미끄러지지 않아요. 미끄러지게 하려면 움직임 라이브러리를 새로 들여야 해요.</p>
+  <h4>왜 중요해?</h4>
+  <p>넣으면 손 움직임과 화면이 더 자연스럽게 이어져요. 대신 새 라이브러리가 들어오는데, 쓰는 곳은 미리보기 확대·이동 하나예요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span>탄성 움직임 라이브러리를 들여 놓는 순간의 속도를 넘긴다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 휙 밀고 놓으면 그림이 조금 더 미끄러지다 부드럽게 서요.</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>현행 고정 곡선.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금처럼 놓는 순간 그 자리에 서요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b> — 적용 면이 확대·이동 하나뿐이고 3번이 먼저 돼야 해요. 3번 처리 뒤 다시 봐요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>스프링 애니메이션 · 속도 계승(velocity hand-off)</li>
+    <li><code>frontend/package.json</code> <code>motion</code> · <code>framer-motion</code> · <code>react-spring</code> 0</li>
+    <li><code>useZoomPan.ts:346</code> 매 move 델타 가산, 속도 기록 0</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d5" value="ⓐ">ⓐ</label><label><input type="radio" name="d5" value="ⓑ">ⓑ</label><label><input type="radio" name="d5" value="보류">보류</label>
+  </div><textarea data-memo="5" rows="1" placeholder="메모 (선택)" aria-label="5번 메모"></textarea></fieldset>
+</article>
+
+<!-- 6 -->
+<article class="card" id="d6" data-n="6">
+  <div class="card-h"><span class="num">6</span><div><h3>「동작 줄이기」를 켜면 색이 부드럽게 바뀌는 것까지 꺼지고, 「대비 높이기」엔 반응이 없어요</h3><p class="meta">신규 · 판정표 #17 · #20</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>운영체제에서 「동작 줄이기」를 켠 사람에게는 우리 화면의 전환이 전부 꺼져요. 버튼에 마우스를 올릴 때 색이 0.14초 동안 부드럽게 바뀌던 것도 꺼져요. 색은 여전히 바뀌지만 한순간에 바뀌어요. 「대비 높이기」를 켠 사람을 위한 규칙은 따로 없어요.</p>
+  <h4>왜 중요해?</h4>
+  <p>동작 줄이기 사용자에게서 없어지는 건 0.14초짜리 색 전환 곡선뿐이에요. 색이 바뀌었다는 사실은 그대로 보여요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span>전역 규칙을 위치 이동·변형 속성에만 걸고 색·투명도 전환은 남긴다. 고대비 분기는 반투명 면이 늘 때 단다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 동작 줄이기를 켜도 버튼 색이 0.14초 동안 부드럽게 바뀌어요. 움직이는 것만 멈춰요.</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>현행 유지.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 동작 줄이기를 켜면 지금처럼 색이 한순간에 바뀌어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b>(L4a) — 정본 §14 는 색·투명도 「변화 자체」를 지키라고 하고, 이 규칙은 전환 곡선만 없애요. 투명도 교차 페이드는 코드에 0건이라 잃는 건 0.14초 곡선뿐이에요. 지금 이동 전환은 검색 토글 손잡이 하나, 반투명 면은 세션 만료 덮개 하나예요. 이동 전환이나 반투명 면이 늘면 ⓐ로 다시 봐요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>prefers-reduced-motion: reduce</code> · <code>prefers-contrast: more</code></li>
+    <li><code>shell/shell.css:419</code>–<code>420</code> <code>@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }</code> · <code>shell/styles.ts:26</code> 전역 import (#16)</li>
+    <li>이 규칙이 <code>.btn</code> · GNB · <code>.tbl tr.clk</code> 의 background/color/opacity 전환 곡선까지 끔 — 판정 「있음(전환 곡선 한정 · 색 변화 자체는 유지)」 (#17)</li>
+    <li><code>prefers-contrast: more</code> 전수 grep 0건 (#20)</li>
+    <li>전환 값 <code>--ease: 0.14s cubic-bezier(0.4, 0, 0.2, 1)</code> (<code>tokens.css:118</code>)</li>
+    <li>advisor ② — 판정을 「전환 곡선 한정」으로 좁힘, 권고 ⓑ 유지</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d6" value="ⓐ">ⓐ</label><label><input type="radio" name="d6" value="ⓑ">ⓑ</label><label><input type="radio" name="d6" value="보류">보류</label>
+  </div><textarea data-memo="6" rows="1" placeholder="메모 (선택)" aria-label="6번 메모"></textarea></fieldset>
+</article>
+
+<!-- 7 -->
+<article class="card" id="d7" data-n="7">
+  <div class="card-h"><span class="num">7</span><div><h3>글자 간격 값이 파일마다 따로 적혀 있고, 같은 28px 제목이 세 가지 간격으로 나뉘어요</h3><p class="meta">판정-20 이월 · 판정표 #27 · #28</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>제목 글자 사이 간격을 정하는 공통 값이 없어요. 파일마다 숫자를 직접 적었어요. 그래서 같은 28px 큰 제목인데 화면마다 글자 사이가 조금씩 달라요.</p>
+  <h4>왜 중요해?</h4>
+  <p>화면을 오가면 같은 급 제목의 촘촘함이 달라 보여요. 새 화면을 만드는 사람은 어떤 값을 써야 할지 몰라요.</p>
+  <div class="viz">
+    <p class="viz-t">같은 28px · 굵기 600 제목, 글자 간격만 달라요</p>
+    <div class="heads">
+      <div class="h"><span class="t" style="letter-spacing:-0.02em">데이터 카탈로그 검색</span><span class="l">-0.02em — <code>shell.css:430</code> <code>.page-head h1</code> · <code>search.css:7</code></span></div>
+      <div class="h"><span class="t" style="letter-spacing:-0.023em">데이터 카탈로그 검색</span><span class="l">-0.023em — <code>members.css:20</code> <code>.settings-page h1</code></span></div>
+      <div class="h"><span class="t" style="letter-spacing:-0.03em">데이터 카탈로그 검색</span><span class="l">-0.03em — <code>detail.css:15</code> <code>.dt-header h1</code></span></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span><code>tokens.css</code> 에 제목용·작은 라벨용 두 구간 토큰을 두고 숫자를 바꿔 넣는다. 값은 가장 많이 쓰인 값으로 통일하고, 이름·값은 판정으로 정한다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 28px 제목의 글자 간격이 하나로 같아져요. 일부 화면 제목이 아주 조금 넓어지거나 좁아져요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>현행 유지(파일별 값 · 문서화만).<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 바뀌는 것 없어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L4b) — 20260908 판정-20 이 이미 ⓐ 방향이고, 28px 제목의 -0.02 / -0.023 / -0.03em 차이는 의도로 보이지 않아요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>letter-spacing</code>(tracking) · 토큰은 <code>--tracking-body: 0</code> 1개 (<code>tokens.css:97</code>)</li>
+    <li>리터럴 — <code>login.css:29</code>(0.01em) · <code>catalog.css:36,64,66</code>(0, normal, 0.04em) · <code>dashboard.css:206</code>(-0.02em, 28px) · <code>detail.css:15,64,96,130,143,164,166</code>(0.05em×5, -0.03em×1, 0×1) · <code>lineageGraph.css:79</code>(.05em, 13px) · <code>members.css:20</code>(-0.023em, 28px) · <code>project.css:31,362</code>(-0.03em/31px, -0.02em/20px) · <code>search.css:7</code>(-0.02em, 28px) · <code>upload.css:242,252</code>(0) · <code>shell.css:123,430</code>(-0.02em) (#27)</li>
+    <li>같은 <code>--text-h2</code>(28px) 세 값 (#28)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d7" value="ⓐ">ⓐ</label><label><input type="radio" name="d7" value="ⓑ">ⓑ</label><label><input type="radio" name="d7" value="보류">보류</label>
+  </div><textarea data-memo="7" rows="1" placeholder="메모 (선택) — 예: 토큰 이름·값" aria-label="7번 메모"></textarea></fieldset>
+</article>
+
+<!-- 8 -->
+<article class="card" id="d8" data-n="8">
+  <div class="card-h"><span class="num">8</span><div><h3>글자 크기가 전부 px 라서, 브라우저에서 기본 글자를 키워도 안 커져요</h3><p class="meta">신규 · 판정표 #31</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>브라우저 설정에서 「글꼴 크기」를 크게 바꿔 두는 사람이 있어요. 그런데 우리 화면은 글자 크기를 전부 px 숫자로 적어서 이 설정을 따르지 않아요.</p>
+  <h4>왜 중요해?</h4>
+  <p>기본 글자를 키워 둔 사람에게는 우리 화면만 글자가 작게 남아요.</p>
+  <div class="viz scale-demo">
+    <p class="viz-t">흉내 내기 — 막대를 움직이면 「브라우저 기본 글자 크기」가 바뀌었다고 치고 두 줄을 다시 그려요</p>
+    <label for="fs8">브라우저 기본 글자 크기: <b id="fs8v">16</b>px</label>
+    <input id="fs8" type="range" min="12" max="28" step="1" value="16">
+    <div class="line"><small>px 로 적은 글자 — <code>15px</code> (지금 방식)</small><span style="font-size:15px">본문 글자 예시입니다</span></div>
+    <div class="line"><small>rem 으로 적은 글자 — <code>0.9375rem</code> (기본 16px 일 때 15px)</small><span id="rem8" style="font-size:15px">본문 글자 예시입니다</span></div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span><code>tokens.css</code> 의 <code>--text-*</code> 6개만 rem 으로 바꾸고, 나머지 px 숫자는 별건으로 둔다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 토큰을 쓰는 글자는 설정을 따라 커지고, px 숫자를 직접 적은 글자는 그대로예요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>토큰과 px 숫자 전부 rem 으로 바꾼다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 모든 글자가 설정을 따라 커져요. 고칠 곳이 훨씬 많아요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L4b) — 토큰 한 곳만 바꿔도 <code>var()</code> 로 쓰는 곳이 함께 바뀌어요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>px</code> vs <code>rem</code>(루트 글자 크기 기준 단위)</li>
+    <li><code>shell/tokens.css:89</code>–<code>94</code> <code>--text-h2: 28px</code> · <code>--text-h3: 18px</code> · <code>--text-section: 16px</code> · <code>--text-body: 15px</code> · <code>--text-body-sm: 14px</code> · <code>--text-caption: 13px</code></li>
+    <li>취합 재계수(<code>frontend/src/**/*.css</code>) — <code>font-size: Npx</code> 194 · rem/em 0 · <code>font-size: var(</code> 133. 레인 계수 「px 202 · rem 0 · var() 160」(범위 미기재) · 결론 rem 0 은 같음</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d8" value="ⓐ">ⓐ</label><label><input type="radio" name="d8" value="ⓑ">ⓑ</label><label><input type="radio" name="d8" value="보류">보류</label>
+  </div><textarea data-memo="8" rows="1" placeholder="메모 (선택)" aria-label="8번 메모"></textarea></fieldset>
+</article>
+
+<h2 class="group" id="g-static">화면 기준(대비·크기·규칙)</h2>
+<p class="group-sub">글자가 잘 읽히는지, 크기·그림자·겹침 규칙이 맞는지에 대한 13건이에요. 보통 글자의 대비 기준은 4.5:1 이에요.</p>
+
+<!-- 9 -->
+<article class="card" id="d9" data-n="9">
+  <div class="card-h"><span class="num">9</span><div><h3>파란 기본 버튼과 흰 보조 버튼에 마우스를 올려도 아무 변화가 없어요</h3><p class="meta">⑦-1 · 판정표 #3 · #4</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>보통 버튼에 마우스를 올리면 색이 살짝 바뀌어요. 그런데 파란 기본 버튼(<code>.btn-primary</code>)과 흰 보조 버튼(<code>.btn-secondary</code>)은 그대로예요. 같은 파란 버튼인 상단 「업로드」 버튼과 로그인 버튼은 조금 진해져요.</p>
+  <h4>왜 중요해?</h4>
+  <p>버튼마다 반응이 달라요. 어떤 버튼은 마우스를 올리면 바뀌고, 어떤 버튼은 안 바뀌어요. 모든 화면에서 모든 사용자가 봐요.</p>
+  <div class="viz">
+    <p class="viz-t">파란 버튼 — 평소 → 마우스 올림 (tokens.css 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619"><span class="fakebtn" style="background:#1369e9;color:#ffffff">저장</span>→<span class="fakebtn" style="background:#1369e9;color:#ffffff">저장</span></div><div class="cap">라이트 · 지금 — <code>#1369e9</code> 그대로</div></div>
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619"><span class="fakebtn" style="background:#1369e9;color:#ffffff">저장</span>→<span class="fakebtn" style="background:#0f62e0;color:#ffffff">저장</span></div><div class="cap">라이트 · ⓐ — <code>#0f62e0</code>(primary-700)</div></div>
+      <div class="sw"><div class="face" style="background:#1a222c;color:#edf2f7"><span class="fakebtn" style="background:#92c2ff;color:#10233c">저장</span>→<span class="fakebtn" style="background:#92c2ff;color:#10233c">저장</span></div><div class="cap">다크 · 지금 — <code>#92c2ff</code> 그대로</div></div>
+      <div class="sw"><div class="face" style="background:#1a222c;color:#edf2f7"><span class="fakebtn" style="background:#92c2ff;color:#10233c">저장</span>→<span class="fakebtn" style="background:#add2ff;color:#10233c">저장</span></div><div class="cap">다크 · ⓐ — <code>#add2ff</code>(primary-700)</div></div>
+    </div>
+    <p class="note">흰 보조 버튼의 마우스 올림 색은 아직 값이 없어서 견본을 싣지 않았어요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span><code>.btn-primary:hover</code> 를 primary-700 으로 되살리고 <code>.btn-secondary</code> hover 값을 정한다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 파란 버튼에 마우스를 올리면 상단 업로드 버튼처럼 조금 진해지고, 흰 버튼도 정한 색으로 바뀌어요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>그대로.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 두 버튼은 계속 마우스를 올려도 안 바뀌어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(취합 권고) — <code>tokens.css:31</code> 이 primary-700 을 「hover·pressed·링크」 용도로 정했고, 같은 파란 단추인 <code>.gnb-upload:hover</code>(<code>shell.css:238</code>) · 로그인 단추(<code>login.css:84</code>)가 이미 그 값을 써요. 10번과 함께 정해요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>:hover</code> 상태 · 누름 <code>:active</code> 는 별도(즉시 수정 후보)</li>
+    <li><code>primitives.css:28</code> <code>.btn:where(:not(.btn-primary, .btn-secondary)):hover</code> — 두 수식자를 hover 에서 제외</li>
+    <li><code>primitives.css:31</code> <code>.btn-secondary</code> 정의만 · <code>:32</code> <code>.btn-primary:active { background: var(--color-primary-700); }</code> 는 있음 (#3 · #4)</li>
+    <li>primary-700 = 라이트 <code>#0f62e0</code> · 다크 <code>#add2ff</code> (<code>tokens.css:31</code> · <code>:156</code>)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d9" value="ⓐ">ⓐ</label><label><input type="radio" name="d9" value="ⓑ">ⓑ</label><label><input type="radio" name="d9" value="보류">보류</label>
+  </div><textarea data-memo="9" rows="1" placeholder="메모 (선택) — 예: 보조 버튼 hover 값" aria-label="9번 메모"></textarea></fieldset>
+</article>
+
+<!-- 10 -->
+<article class="card" id="d10" data-n="10">
+  <div class="card-h"><span class="num">10</span><div><h3>업로드 화면 강조 버튼에 마우스를 올리면 글자가 거의 사라져요</h3><p class="meta">⑦-5 · 판정표 #55 · 누름 #5</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>업로드 화면의 파란 강조 버튼(<code>.btn-strong</code>)에 마우스를 올리면 배경이 거의 흰색으로 바뀌어요. 그런데 글자는 흰색 그대로예요. 흰 바탕에 흰 글자라 버튼 이름이 거의 안 보여요. 다크 화면에서도 같아요.</p>
+  <h4>왜 중요해?</h4>
+  <p>누르기 직전에 버튼 이름이 안 보여요. 업로드하는 모든 사람이 겪어요.</p>
+  <div class="viz">
+    <p class="viz-t">마우스를 올렸을 때 버튼 모습 (tokens.css 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#f9fafb;color:#ffffff">업로드 시작</div><div class="cap">라이트 · 지금 — <code>#ffffff</code> on <code>#f9fafb</code> <span class="r fail">1.05:1</span> <span class="verdict fail">미달</span></div></div>
+      <div class="sw"><div class="face" style="background:#202b37;color:#10233c">업로드 시작</div><div class="cap">다크 · 지금 — <code>#10233c</code> on <code>#202b37</code> <span class="r fail">1.10:1</span> <span class="verdict fail">미달</span></div></div>
+      <div class="sw"><div class="face" style="background:#0f62e0;color:#ffffff">업로드 시작</div><div class="cap">라이트 · ⓑ — <code>#ffffff</code> on <code>#0f62e0</code> <span class="r pass">5.46:1</span> <span class="verdict pass">통과</span> <span class="calc">계산</span></div></div>
+      <div class="sw"><div class="face" style="background:#add2ff;color:#10233c">업로드 시작</div><div class="cap">다크 · ⓑ — <code>#10233c</code> on <code>#add2ff</code> <span class="r pass">10.12:1</span> <span class="verdict pass">통과</span> <span class="calc">계산</span></div></div>
+    </div>
+    <p class="note">ⓐ(글자색 변경)는 글자색 값이 정해지지 않아 견본을 싣지 않았어요. 기준은 4.5:1 이에요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span>hover 에서 글자색도 함께 바꾼다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 마우스를 올리면 밝은 배경에 진한 글자로 바뀌어요.</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>hover 배경을 primary-700 으로 바꾼다(다른 파란 단추와 같은 규칙).<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 마우스를 올리면 조금 진한 파랑이 되고, 글자가 그대로 잘 보여요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b>(L1) — 9번을 ⓐ로 정하면 파란 단추 hover 가 한 규칙이 돼요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>WCAG 명도 대비 · 기준 4.5:1 · 규칙 간 상속쌍(배경만 바꾸고 글자색은 상속)</li>
+    <li><code>components/upload/upload.css:309</code> <code>.btn-strong { background: var(--color-primary-600); color: var(--color-on-primary) }</code></li>
+    <li><code>upload.css:311</code> <code>.btn-strong:hover { background: var(--color-gray-50); }</code> — color 재선언 없음</li>
+    <li>라이트 <code>#ffffff</code> on <code>#f9fafb</code> 1.05:1 · 다크 <code>#10233c</code> on <code>#202b37</code> 1.10:1 (취합 재계산 일치 · advisor ② 재현)</li>
+    <li>css_audit 은 같은 규칙 안 색쌍만 재서 L3 표본에서 빠졌음 (§4 M1 · #86)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d10" value="ⓐ">ⓐ</label><label><input type="radio" name="d10" value="ⓑ">ⓑ</label><label><input type="radio" name="d10" value="보류">보류</label>
+  </div><textarea data-memo="10" rows="1" placeholder="메모 (선택)" aria-label="10번 메모"></textarea></fieldset>
+</article>
+
+<!-- 11 -->
+<article class="card" id="d11" data-n="11">
+  <div class="card-h"><span class="num">11</span><div><h3>「꺼짐」 칩이 다크 화면에서 거의 안 읽혀요</h3><p class="meta">⑦-4 · ⑦-6 · 판정표 #52 · #53</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>칩(<code>.chip</code>)은 상태를 보여 주는 작은 둥근 표시예요. 칩 배경은 <code>#eef2f7</code> 로 고정돼 있어서 다크 화면에서도 밝은 그대로예요. 그런데 「꺼짐」 칩 글자는 다크에서 밝은 색으로 바뀌어요. 밝은 바탕에 밝은 글자가 돼요.</p>
+  <h4>왜 중요해?</h4>
+  <p>다크 화면을 쓰는 사람은 「꺼짐」 글자를 거의 못 읽어요.</p>
+  <div class="viz">
+    <p class="viz-t">「꺼짐」 칩 (tokens.css 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#ffffff"><span class="fakechip" style="background:#eef2f7;color:#565c63;border:1px solid #e8ecf2">꺼짐</span></div><div class="cap">라이트 · 지금 — <code>#565c63</code> on <code>#eef2f7</code> <span class="r pass">6.01:1</span> <span class="verdict pass">통과</span></div></div>
+      <div class="sw"><div class="face" style="background:#1a222c"><span class="fakechip" style="background:#eef2f7;color:#b2bfce;border:1px solid #344251">꺼짐</span></div><div class="cap">다크 · 지금 — <code>#b2bfce</code> on <code>#eef2f7</code> <span class="r fail">1.66:1</span> <span class="verdict fail">미달</span></div></div>
+      <div class="sw"><div class="face" style="background:#ffffff"><span class="fakechip" style="background:#f5f7fa;color:#565c63;border:1px solid #e8ecf2">꺼짐</span></div><div class="cap">라이트 · ⓑ surface-alt — <code>#565c63</code> on <code>#f5f7fa</code> <span class="r pass">6.30:1</span> <span class="verdict pass">통과</span> <span class="calc">계산</span></div></div>
+      <div class="sw"><div class="face" style="background:#1a222c"><span class="fakechip" style="background:#202b37;color:#b2bfce;border:1px solid #344251">꺼짐</span></div><div class="cap">다크 · ⓑ surface-alt — <code>#b2bfce</code> on <code>#202b37</code> <span class="r pass">7.69:1</span> <span class="verdict pass">통과</span></div></div>
+      <div class="sw"><div class="face" style="background:#ffffff"><span class="fakechip" style="background:#e8ecf2;color:#565c63;border:1px solid #e8ecf2">꺼짐</span></div><div class="cap">라이트 · ⓑ gray-100 — <code>#565c63</code> on <code>#e8ecf2</code> <span class="r pass">5.70:1</span> <span class="verdict pass">통과</span> <span class="calc">계산</span></div></div>
+      <div class="sw"><div class="face" style="background:#1a222c"><span class="fakechip" style="background:#2b3745;color:#b2bfce;border:1px solid #344251">꺼짐</span></div><div class="cap">다크 · ⓑ gray-100 — <code>#b2bfce</code> on <code>#2b3745</code> <span class="r pass">6.48:1</span> <span class="verdict pass">통과</span> <span class="calc">계산</span></div></div>
+    </div>
+    <p class="note">ⓐ(새 토큰)의 다크 값은 아직 없어서 견본을 싣지 않았어요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span>새 전역 토큰을 만들어 라이트 값은 유지하고 다크 값을 따로 정한다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 라이트는 지금과 똑같고, 다크에서는 새로 정한 배경으로 바뀌어요.</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>기존 다크 대응 토큰(<code>--color-gray-100</code> 또는 <code>--color-surface-alt</code>)으로 바꾼다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 다크에서 칩 배경이 어두워져 글자가 잘 읽히고, 라이트 칩 배경은 아주 조금 바뀌어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b>(L1) — 새 토큰 없이 다크 대비 파탄이 구조적으로 사라져요. 라이트 시각 변경은 fix 단계 advisor ③ 대상이에요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>테마 무관 색 리터럴 · 게이트 f 면제</li>
+    <li><code>shell/primitives.css:55</code> <code>.chip { background: #eef2f7 }</code>(테마 무관) · <code>:62</code> <code>.chip--off { border: …; color: var(--color-text-muted); }</code> 배경 선언 없음 (#52)</li>
+    <li>라이트 <code>#565c63</code> on <code>#eef2f7</code> 6.01:1 · 다크 <code>#b2bfce</code> on <code>#eef2f7</code> 1.66:1 (취합 재계산 일치 · advisor ② 재현)</li>
+    <li><code>gates/fixtures/frontend-design-lint/same-in-dark.txt</code> 게이트 f 면제(「같은 값 토큰 없음 · Ted 판정 대기」) (#53)</li>
+    <li>다크 <code>#b2bfce</code> on <code>#202b37</code> 7.69:1 은 판정표 #51 값</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d11" value="ⓐ">ⓐ</label><label><input type="radio" name="d11" value="ⓑ">ⓑ</label><label><input type="radio" name="d11" value="보류">보류</label>
+  </div><textarea data-memo="11" rows="1" placeholder="메모 (선택) — 예: gray-100 / surface-alt" aria-label="11번 메모"></textarea></fieldset>
+</article>
+
+<!-- 12 -->
+<article class="card" id="d12" data-n="12">
+  <div class="card-h"><span class="num">12</span><div><h3>「작은 버튼」 표시 <code>.btn-sm</code> 이 50곳 넘게 쓰이는데, 크기 정의가 없어요</h3><p class="meta">⑦-3 · 판정표 #54</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>화면 코드 50곳 넘는 버튼에 <code>btn-sm</code>(작은 버튼) 클래스가 붙어 있어요. 그런데 이 클래스의 크기를 정한 CSS 가 없어요. 그래서 이 버튼들은 보통 버튼과 같은 크기로 보여요.</p>
+  <h4>왜 중요해?</h4>
+  <p>만든 사람이 원한 작은 버튼이 화면에 나타나지 않아요. 50여 곳 버튼이 의도와 다른 크기로 보일 수 있어요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span><code>primitives.css</code> 에 작은 버튼 크기를 정의한다(값은 목업 대조).<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — <code>btn-sm</code> 이 붙은 버튼 50여 곳이 한꺼번에 작아져요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>목록에서 빼고 TSX 의 <code>btn-sm</code> 을 걷어낸다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 화면은 지금 그대로이고, 코드에서 표시만 없어져요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L1) — 쓰임새가 넓어서 「의도했는데 빠진」 쪽이에요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>프리미티브 수식자 클래스 · 정의 없는 클래스</li>
+    <li><code>gates/fixtures/frontend-design-lint/primitives.txt</code> 등재 · <code>frontend/src</code> CSS <code>.btn-sm</code> 정의 0</li>
+    <li>TSX 50회 이상(예 <code>components/detail/FileList.tsx:140</code>)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d12" value="ⓐ">ⓐ</label><label><input type="radio" name="d12" value="ⓑ">ⓑ</label><label><input type="radio" name="d12" value="보류">보류</label>
+  </div><textarea data-memo="12" rows="1" placeholder="메모 (선택)" aria-label="12번 메모"></textarea></fieldset>
+</article>
+
+<!-- 13 -->
+<article class="card" id="d13" data-n="13">
+  <div class="card-h"><span class="num">13</span><div><h3>「카드엔 그림자 없음」 규칙을 맨 위 메뉴바와 전체화면 창에도 적용할까요</h3><p class="meta">판정표 #34 · #36</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>우리 규칙은 「카드에는 그림자를 넣지 않는다」예요. 카드들은 지키고 있어요. 그런데 화면 맨 위 메뉴바(<code>.gnb</code>)와 전체화면 창(<code>.modal</code>)에는 아주 옅은 그림자가 있어요. 이 둘이 「카드」인지 정본에 적혀 있지 않아요.</p>
+  <h4>왜 중요해?</h4>
+  <p>규칙 범위가 정해져야 검사 도구가 맞게 잴 수 있어요. 메뉴바는 모든 화면에 나와요.</p>
+  <div class="viz">
+    <p class="viz-t">왼쪽 = <code>--shadow-sm</code> 실제 값 · 오른쪽 = 그림자 없음 (라이트)</p>
+    <div class="shadows">
+      <div style="box-shadow:0px 1px 2px -1px #1717171a">그림자 있음(지금 메뉴바·전체화면 창)</div>
+      <div style="box-shadow:none">그림자 없음</div>
+    </div>
+    <p class="note">차이가 아주 작아요. 아래 가장자리를 비교해 보세요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>카드·대화상자만 대상. 상단바·전체화면 모달은 항상 떠 있는 층으로 예외.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금 그대로. 메뉴바와 전체화면 창의 옅은 그림자가 남아요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>모든 표면에서 그림자를 뺀다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 메뉴바와 전체화면 창의 옅은 그림자가 사라져요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L1) — 20260908 결론과 같고, 대화상자(<code>.modal--dialog</code>)는 이미 그림자 0이에요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>box-shadow</code> · <code>--shadow-sm: 0px 1px 2px -1px #1717171a</code> (<code>tokens.css:116</code>)</li>
+    <li><code>shell/shell.css:114</code> <code>.gnb { box-shadow: var(--shadow-sm) }</code> — 셸 고정바가 「카드」인지 정본 침묵 (#34)</li>
+    <li><code>primitives.css:122</code> <code>.modal { box-shadow: var(--shadow-sm) }</code> vs <code>:130</code> <code>.modal--dialog { box-shadow: none }</code> (#36)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d13" value="ⓐ">ⓐ</label><label><input type="radio" name="d13" value="ⓑ">ⓑ</label><label><input type="radio" name="d13" value="보류">보류</label>
+  </div><textarea data-memo="13" rows="1" placeholder="메모 (선택)" aria-label="13번 메모"></textarea></fieldset>
+</article>
+
+<!-- 14 -->
+<article class="card" id="d14" data-n="14">
+  <div class="card-h"><span class="num">14</span><div><h3>똑같은 모양의 창인데, 겹침 순서 숫자가 200 과 120 으로 달라요</h3><p class="meta">판정표 #58</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>어두운 덮개 위에 가운데 창이 뜨는 모양이 두 곳에 있어요. 보통 창은 겹침 순서(<code>z-index</code>)가 200 이고, 계정 관리 창은 120 이에요. 숫자가 클수록 앞에 그려져요.</p>
+  <h4>왜 중요해?</h4>
+  <p>두 창이 한꺼번에 뜨면 계정 관리 창이 다른 창 뒤에 가려질 수 있어요. 120 을 고른 이유는 코드에 없어요.</p>
+  <div class="viz">
+    <p class="viz-t">겹침 순서 — 위에 있을수록 화면 앞쪽</p>
+    <div class="layers">
+      <div class="layer"><b>10000</b><span>세션 만료 덮개 <code>.auth-expiry-overlay</code></span></div>
+      <div class="layer hl"><b>200</b><span>보통 창 덮개 <code>.modal-back</code></span></div>
+      <div class="layer hl"><b>120</b><span>계정 관리 창 덮개 <code>.account-modal-back</code> — ⓐ 면 200 으로</span></div>
+      <div class="layer"><b>100</b><span>맨 위 메뉴바 <code>.gnb</code></span></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>계정 관리 모달을 200 으로 맞춘다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 평소엔 차이가 없어요. 두 창이 함께 뜰 때 같은 층 규칙을 따라요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>120 유지하고 사유를 주석으로 남긴다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 바뀌는 것 없어요. 코드에 이유만 적혀요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L1) — 120 을 고른 사유가 코드에 없어요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>z-index</code> 층 규칙</li>
+    <li><code>primitives.css:116</code> <code>.modal-back { z-index: 200 }</code> vs <code>auth/login.css:186</code>–<code>187</code> <code>.account-modal-back { z-index: 120 }</code></li>
+    <li>참고 <code>.gnb</code> 100(<code>shell.css:106</code>) · <code>.auth-expiry-overlay</code> 10000(<code>login.css:238</code>)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d14" value="ⓐ">ⓐ</label><label><input type="radio" name="d14" value="ⓑ">ⓑ</label><label><input type="radio" name="d14" value="보류">보류</label>
+  </div><textarea data-memo="14" rows="1" placeholder="메모 (선택)" aria-label="14번 메모"></textarea></fieldset>
+</article>
+
+<!-- 15 -->
+<article class="card" id="d15" data-n="15">
+  <div class="card-h"><span class="num">15</span><div><h3>카탈로그 표 제목 옆 정렬 화살표(▾)가 9px 예요</h3><p class="meta">판정표 #60</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>카탈로그 표 맨 윗줄 제목 옆에 작은 ▾ 표시가 있어요. 크기가 9px 예요. 우리 규칙은 「글자는 13px 이상」이에요.</p>
+  <h4>왜 중요해?</h4>
+  <p>이 ▾ 는 읽는 글자가 아니라 모양 표시예요. 규칙에는 걸리지만 읽기엔 지장이 없어요.</p>
+  <div class="viz">
+    <p class="viz-t">표 제목 예시</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619;font-size:14px"><span><span style="font-size:9px">▾</span> 데이터셋 이름</span></div><div class="cap">지금 — ▾ <code>9px</code></div></div>
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619;font-size:14px"><span><span style="font-size:13px">▾</span> 데이터셋 이름</span></div><div class="cap">비교 — ▾ <code>13px</code></div></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>장식 글리프는 13px 하한에서 제외(예외 등재).<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 화면은 그대로이고, 규칙 문서에 「장식 표시는 예외」가 적혀요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>소폭 확대.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — ▾ 가 조금 커져요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L2) — 읽는 글자가 아니에요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>장식 글리프(<code>::before</code> <code>content</code>) · 13px 하한</li>
+    <li><code>catalog.css:48</code> <code>.tbl thead th &gt; .thf::before { content:"▾"; font-size:9px }</code></li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d15" value="ⓐ">ⓐ</label><label><input type="radio" name="d15" value="ⓑ">ⓑ</label><label><input type="radio" name="d15" value="보류">보류</label>
+  </div><textarea data-memo="15" rows="1" placeholder="메모 (선택)" aria-label="15번 메모"></textarea></fieldset>
+</article>
+
+<!-- 16 -->
+<article class="card" id="d16" data-n="16">
+  <div class="card-h"><span class="num">16</span><div><h3>카탈로그 「불일치」 문구가 12px 예요</h3><p class="meta">판정표 #61</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>카탈로그에 「불일치」를 알려 주는 작은 문구가 있어요. 12px 예요. 규칙은 13px 이상이에요. 이건 모양 표시가 아니라 읽어야 하는 글자예요.</p>
+  <h4>왜 중요해?</h4>
+  <p>무엇이 안 맞는지 알려 주는 문구라서 놓치면 안 돼요. 작을수록 읽기 힘들어요.</p>
+  <div class="viz">
+    <p class="viz-t">크기 비교 (예시 문구)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619;font-weight:400"><span style="font-size:12px">등급 불일치</span></div><div class="cap">지금 — <code>12px</code></div></div>
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619;font-weight:400"><span style="font-size:13px">등급 불일치</span></div><div class="cap">ⓐ — <code>13px</code></div></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>13px 로 올린다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 문구가 1px 커져요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>배지류 별도 하한에 넣는다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 12px 그대로이고, 규칙 문서에 「배지는 따로」가 적혀요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L2) — 배지가 아니라 보조 문구예요(<code>design-review-20260908-L2.md:46</code> 권고 범위 밖).</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>font-size</code> 13px 하한</li>
+    <li><code>catalog.css:138</code> <code>.lvl-mismatch</code> <code>font-size: 12px</code> — 읽는 텍스트</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d16" value="ⓐ">ⓐ</label><label><input type="radio" name="d16" value="ⓑ">ⓑ</label><label><input type="radio" name="d16" value="보류">보류</label>
+  </div><textarea data-memo="16" rows="1" placeholder="메모 (선택)" aria-label="16번 메모"></textarea></fieldset>
+</article>
+
+<!-- 17 -->
+<article class="card" id="d17" data-n="17">
+  <div class="card-h"><span class="num">17</span><div><h3>상세 편집의 「필수」 표시가 다크 화면에서 안 보여요</h3><p class="meta">⑦-9 · 판정표 #64 · #65</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>상세 편집 화면에서 꼭 채워야 하는 칸 옆에 「필수」 표시가 있어요. 진한 배경에 흰 글자예요. 다크 화면에서는 배경이 밝은 회색으로 바뀌는데, 글자는 흰색 그대로예요.</p>
+  <h4>왜 중요해?</h4>
+  <p>다크 화면을 쓰는 사람은 어떤 칸이 필수인지 못 읽어요. 라이트는 문제없어요.</p>
+  <div class="viz">
+    <p class="viz-t">「필수」 표시 (tokens.css 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#ffffff;color:#121619;font-weight:400;font-size:14px">담당자 <span class="req" style="background:#3c4144;color:#ffffff">필수</span></div><div class="cap">라이트 · 지금 — <code>#ffffff</code> on <code>#21272ae0</code>(흰 배경 합성 ≈ <code>rgb(60,65,68)</code>) <span class="r pass">10.3:1</span> <span class="verdict pass">통과</span></div></div>
+      <div class="sw"><div class="face" style="background:#1a222c;color:#edf2f7;font-weight:400;font-size:14px">담당자 <span class="req" style="background:#dce4ed;color:#ffffff">필수</span></div><div class="cap">다크 · 지금 — <code>#ffffff</code> on <code>#dce4ed</code> <span class="r fail">1.28:1</span> <span class="verdict fail">미달</span></div></div>
+    </div>
+    <p class="note">ⓐ 의 새 토큰은 이름·값이 정해지지 않아 견본을 싣지 않았어요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>「색 배경 위 글자」 뜻의 토큰(<code>--color-on-…</code> 계열 · 이름은 판정)을 둔다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 라이트는 그대로이고, 다크에서는 「필수」 글자가 배경과 대비되는 색으로 바뀌어 읽혀요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>그대로.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 다크에서 「필수」가 계속 안 보여요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(취합 권고) — AA 미달이 다크에서만 나요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>WCAG AA 4.5:1 · 뜻 토큰(<code>--color-on-*</code>) — 새 토큰 이름은 Ted 판정 뒤에만(<code>design-review/SKILL.md</code> §4)</li>
+    <li><code>detail.css:166</code> <code>.detail-page .dt-edit .de-req { … background: var(--color-text-body); color: var(--color-white); }</code></li>
+    <li>다크 <code>--color-text-body: #dce4ed</code>(<code>tokens.css:143</code>) ＋ <code>--color-white</code> → 1.28:1 (취합 재계산 일치 · advisor ② 재현) (#65)</li>
+    <li>라이트 <code>#21272ae0</code> 흰 배경 합성 ≈ rgb(60,65,68) ＋ 흰 글자 → 10.3:1 (#64)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d17" value="ⓐ">ⓐ</label><label><input type="radio" name="d17" value="ⓑ">ⓑ</label><label><input type="radio" name="d17" value="보류">보류</label>
+  </div><textarea data-memo="17" rows="1" placeholder="메모 (선택) — 예: 토큰 이름" aria-label="17번 메모"></textarea></fieldset>
+</article>
+
+<!-- 18 -->
+<article class="card" id="d18" data-n="18">
+  <div class="card-h"><span class="num">18</span><div><h3>지난 정리(P2a)에서 지운 모양 네 가지를 되살릴까요</h3><p class="meta">⑦-2 · 판정표 #56 · #57 · #83 · #84</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>지난 정리 작업(P2a)에서, 다른 규칙에 밀려 화면에 나타나지 않던 스타일 네 개를 지웠어요. 그래서 화면은 바뀌지 않았어요. 지금 네 곳은 모두 공통 기본 모양으로 보여요.</p>
+  <ul class="plain">
+    <li>읽기 전용 입력칸의 배경</li>
+    <li>계보 화면 경고 칩 전용 색</li>
+    <li>로그인 입력칸을 눌렀을 때 테두리 색</li>
+    <li>프로젝트 카드 초점 테두리와 카드 사이 2px 간격</li>
+  </ul>
+  <h4>왜 중요해?</h4>
+  <p>넷 다 접근성 문제는 없어요. 초점 표시는 전역 테두리가 대신하고 대비도 통과해요. 예전 의도를 살릴지만 정하면 돼요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span>되살린다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 네 곳 모양이 지금과 조금 달라져요(읽기 전용 칸 배경, 경고 칩 색, 로그인 칸 테두리 색, 카드 초점 간격).</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>그대로 두고 ⑦-2 를 닫는다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 바뀌는 것 없어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b>(카드 초점 간격은 L3 · 나머지 셋은 취합 권고) — 네 건 모두 접근성 결함이 아니고, 오늘 화면을 그대로 둔 값 무변 결과예요. 읽기 전용 칸 구분은 실화면(D23)에서 문제가 보이면 다시 올려요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>억눌린 선언(cascade 에서 진 선언) 제거 · 값 무변</li>
+    <li>#56 <code>upload.css:252</code> <code>.inp[readonly]</code> bg <code>var(--color-surface-alt)</code> · color <code>var(--up-muted)</code> 「삭제」 — <code>dev-package/reports/design-system/20260924/p2a/cascade-verify.md:164</code>–<code>165</code></li>
+    <li>#57 <code>.login-input:focus-visible</code> 테두리색 — <code>cascade-verify.md:11</code> 「changed-live」 · 대신 전역 outline <code>base.css:12</code>–<code>15</code>(#50 라이트 <code>#1369e9</code> on <code>#ffffff</code> 4.97:1 · 다크 <code>#92c2ff</code> on <code>#1a222c</code> 8.70:1)</li>
+    <li>#83 <code>lineage.css:236</code>–<code>237</code> <code>.lin .chip--warning</code> bg <code>var(--lin-over-bg)</code> · color <code>var(--lin-over-ink)</code> 삭제(<code>cascade-verify.md:159</code>–<code>160</code>) · 오늘 렌더 = <code>primitives.css:66</code> <code>.chip--warning</code></li>
+    <li>#84 <code>project.css:119</code>–<code>121</code> <code>.pcard:focus-visible { outline: 2px solid var(--color-primary-600); }</code> offset 없음(<code>cascade-verify.md:17</code>)</li>
+    <li>§4 M4 — 레인의 「해소·변경」 독해는 취합 정정, 네 건 모두 잔존(선택 미결)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d18" value="ⓐ">ⓐ</label><label><input type="radio" name="d18" value="ⓑ">ⓑ</label><label><input type="radio" name="d18" value="보류">보류</label>
+  </div><textarea data-memo="18" rows="1" placeholder="메모 (선택) — 예: 넷 중 일부만" aria-label="18번 메모"></textarea></fieldset>
+</article>
+
+<!-- 19 -->
+<article class="card" id="d19" data-n="19">
+  <div class="card-h"><span class="num">19</span><div><h3>계보 화면 안내 문구 — 코드 설명은 「회색」, 실제 화면은 「주황」</h3><p class="meta">⑦-8 · 판정표 #85</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>계보 화면의 안내 문구는 실제로 주황색이에요. 그런데 코드에 붙은 설명(주석)에는 회색이라고 적혀 있어요. 화면과 설명이 달라요.</p>
+  <h4>왜 중요해?</h4>
+  <p>사용자 화면엔 문제가 없어요. 다음에 코드를 고치는 사람이 설명을 믿고 잘못 고칠 수 있어요.</p>
+  <div class="viz">
+    <p class="viz-t">안내 문구 (라이트 · 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="face" style="background:#f7f8fa;color:#5b6472;font-weight:400;font-size:14px">안내 문구 예시</div><div class="cap">주석이 말하는 색 — <code>#5b6472</code> on <code>#f7f8fa</code> <span class="r pass">5.63:1</span> <span class="verdict pass">통과</span></div></div>
+      <div class="sw"><div class="face" style="background:#f7f8fa;color:#a85400;font-weight:400;font-size:14px">안내 문구 예시</div><div class="cap">실제 화면 — <code>#a85400</code> on <code>#f7f8fa</code> <span class="r pass">5.02:1</span> <span class="verdict pass">통과</span></div></div>
+    </div>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>주석을 렌더(주황 <code>--color-warning-600</code>)에 맞춘다.<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 화면은 그대로 주황이고, 코드 설명만 고쳐요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>렌더를 회색 토큰으로 바꾼다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 안내 문구가 주황에서 회색으로 바뀌어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L3) — 경고 의미와 맞고 대비 5.02:1 로 통과예요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>CSS 주석과 실제 렌더 색 불일치</li>
+    <li><code>lineage.css:165</code> 주석 「안내 줄 <code>#5b6472</code> on <code>#f7f8fa</code> = 5.63:1」</li>
+    <li><code>.lin-over-why</code>(<code>:223</code>) · <code>.lin-unknown-why</code>(<code>:265</code>) <code>color: var(--color-warning-600)</code> <code>#a85400</code> — on <code>#f7f8fa</code> 5.02:1 · on <code>#ffffff</code> 5.34:1</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d19" value="ⓐ">ⓐ</label><label><input type="radio" name="d19" value="ⓑ">ⓑ</label><label><input type="radio" name="d19" value="보류">보류</label>
+  </div><textarea data-memo="19" rows="1" placeholder="메모 (선택)" aria-label="19번 메모"></textarea></fieldset>
+</article>
+
+<!-- 20 -->
+<article class="card" id="d20" data-n="20">
+  <div class="card-h"><span class="num">20</span><div><h3>삭제 화면 「보관」 줄에 배경색을 칠할까요</h3><p class="meta">⑦-7 · 판정표 밖 · §5 취합 정정</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>삭제 화면에 「보관」 줄이 있어요. 지금은 배경이 투명해서 다른 줄과 같아 보여요. 연한 배경색(<code>--color-surface-alt</code>)을 칠할지 정해요.</p>
+  <h4>왜 중요해?</h4>
+  <p>칠하면 보관 줄이 눈에 띄어요. 하지만 칠해야 한다는 근거는 정본에 없어요.</p>
+  <div class="viz">
+    <p class="viz-t">「보관」 줄 (tokens.css 실제 값)</p>
+    <div class="swrow">
+      <div class="sw"><div class="rows"><div style="background:#ffffff;color:#121619">파일 A · 삭제</div><div style="background:#ffffff;color:#121619">파일 B · 보관</div></div><div class="cap">라이트 · 지금(투명)</div></div>
+      <div class="sw"><div class="rows"><div style="background:#ffffff;color:#121619">파일 A · 삭제</div><div style="background:#f5f7fa;color:#121619">파일 B · 보관</div></div><div class="cap">라이트 · ⓐ <code>#f5f7fa</code></div></div>
+      <div class="sw"><div class="rows"><div style="background:#1a222c;color:#edf2f7">파일 A · 삭제</div><div style="background:#1a222c;color:#edf2f7">파일 B · 보관</div></div><div class="cap">다크 · 지금(투명)</div></div>
+      <div class="sw"><div class="rows"><div style="background:#1a222c;color:#edf2f7">파일 A · 삭제</div><div style="background:#202b37;color:#edf2f7">파일 B · 보관</div></div><div class="cap">다크 · ⓐ <code>#202b37</code></div></div>
+    </div>
+    <p class="note">줄 글자는 예시예요. 바탕은 카드 면(<code>--color-surface</code>)이라고 두고 그렸어요.</p>
+  </div>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt"><span class="k">ⓐ</span><code>--color-surface-alt</code> 로 채운다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 보관 줄에 연한 바탕이 생겨 다른 줄과 구분돼요.</p></div>
+    <div class="opt is-rec"><span class="k">ⓑ</span>그대로(투명).<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 바뀌는 것 없어요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓑ</b>(취합 권고) — 늘 투명으로 보여 왔고, 채울 근거가 정본에 없어요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li><code>background: transparent</code> vs <code>var(--color-surface-alt)</code>(라이트 <code>#f5f7fa</code> · 다크 <code>#202b37</code>)</li>
+    <li><code>deletion.css:11</code> <code>background: transparent; /* 종전 var(--color-surface-muted, transparent) — … (P1 · 값 무변) */</code></li>
+    <li>L2 이월 「해소」 → 취합 정정 잔존 — 미정의 참조 소거는 P1(값 무변)이고, ⑦-7(채움 vs 그대로)은 그 뒤 등록된 선택이라 미결</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d20" value="ⓐ">ⓐ</label><label><input type="radio" name="d20" value="ⓑ">ⓑ</label><label><input type="radio" name="d20" value="보류">보류</label>
+  </div><textarea data-memo="20" rows="1" placeholder="메모 (선택)" aria-label="20번 메모"></textarea></fieldset>
+</article>
+
+<!-- 21 -->
+<article class="card" id="d21" data-n="21">
+  <div class="card-h"><span class="num">21</span><div><h3>프로젝트 상세의 문구 두 개에 붙은 클래스에 스타일이 아예 없어요</h3><p class="meta">20260912 D14 부분 · 판정표 밖 · §4 M6</p></div></div>
+  <h4>무슨 일이야?</h4>
+  <p>프로젝트 상세 화면에 「닫힘 안내」(<code>pd-closedbar</code>)와 「링크 없음」(<code>pd-linkempty</code>) 문구가 있어요. 코드가 이 문구에 클래스 이름을 붙였는데, 그 이름에 맞는 CSS 가 없어요. 그래서 기본 글자 모양으로 보여요.</p>
+  <h4>왜 중요해?</h4>
+  <p>빠진 모양인지, 기본 모양이 맞는지 아직 실제 화면으로 본 사람이 없어요. 이번 점검에서 이 화면을 맡은 범위가 다루지 않았어요.</p>
+  <h4>고를 수 있는 것</h4>
+  <div class="opts">
+    <div class="opt is-rec"><span class="k">ⓐ</span>다음 회차 <code>routes/**</code> 담당 레인에 재판정을 배정한다(실화면 D23 과 함께).<span class="tag">추천</span><p class="then"><b>고르면 화면이 이렇게 돼요</b> — 지금은 그대로이고, 다음 점검 때 실제 화면을 보고 정해요.</p></div>
+    <div class="opt"><span class="k">ⓑ</span>「정의 없는 클래스 ≠ 결함」(20260912 D31 기준)으로 종결한다.<p class="then"><b>고르면 화면이 이렇게 돼요</b> — 그대로이고, 이 건은 닫혀요.</p></div>
+  </div>
+  <div class="recbox"><b>추천 ⓐ</b>(L3 이관 요청 · 취합 보강) — 이번 회차 L1 범위에 <code>routes/**</code> 가 있었지만 다루지 않았어요.</div>
+  <details class="tech"><summary>기술 이름 · 근거</summary><ul>
+    <li>정의 없는 CSS 클래스 · 담당 범위 공백</li>
+    <li><code>routes/ProjectDetailPage.tsx:146</code> · <code>:194</code> 사용 · <code>frontend/src</code> CSS 정의 0건(취합 grep)</li>
+    <li>§4 M6 — L3 「레인 밖(<code>routes/</code>)」으로 넘김 · L1 범위에 <code>routes/**</code> 가 있으나 L1 은 D14 를 다루지 않음 → 잔존(부분)</li>
+  </ul></details>
+  <fieldset class="decide"><legend>Ted 판정</legend><div class="radios">
+    <label><input type="radio" name="d21" value="ⓐ">ⓐ</label><label><input type="radio" name="d21" value="ⓑ">ⓑ</label><label><input type="radio" name="d21" value="보류">보류</label>
+  </div><textarea data-memo="21" rows="1" placeholder="메모 (선택)" aria-label="21번 메모"></textarea></fieldset>
+</article>
+</main>
+
+<section class="box" id="result" style="margin-top:28px">
+  <h2 style="font-size:18px;margin:0 0 8px">판정 결과</h2>
+  <p class="src" style="margin:0 0 8px">「판정 결과 복사」를 누르면 여기에 글이 채워지고 클립보드로 복사돼요. 복사가 막힌 환경이면 아래 칸을 전체 선택해 복사하세요.</p>
+  <textarea id="out" rows="10" readonly aria-label="판정 결과 글"></textarea>
+  <p style="margin:10px 0 0"><button type="button" id="reset" class="btn-plain">고른 것 모두 지우기</button></p>
+</section>
+
+<footer>design-review 20260924 · Ted 판정 묶음 21건 · 기준 트리 <code>dc05531c</code> · 정적 판정만(실화면 미계측).</footer>
+</div>
+
+<div class="bar" role="region" aria-label="판정 진행">
+  <div class="in">
+    <span class="prog" id="prog" aria-live="polite">0/21 판정</span>
+    <span class="msg" id="msg"></span>
+    <button type="button" id="copy">판정 결과 복사</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var N=21, KEY='dr20260924-eli7-v1';
+  var st={c:{},m:{},t:'auto'};
+  try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object'){st.c=p.c||{};st.m=p.m||{};st.t=p.t||'auto';}}}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+  var root=document.documentElement;
+  function applyTheme(t){
+    if(t==='light'||t==='dark'){root.setAttribute('data-theme',t);}else{root.removeAttribute('data-theme');t='auto';}
+    st.t=t;
+    var bs=document.querySelectorAll('.theme button');
+    for(var i=0;i<bs.length;i++){bs[i].setAttribute('aria-pressed',bs[i].getAttribute('data-t')===t?'true':'false');}
+  }
+  applyTheme(st.t);
+  document.querySelector('.theme').addEventListener('click',function(e){var b=e.target.closest('button[data-t]');if(!b)return;applyTheme(b.getAttribute('data-t'));save();});
+  for(var n=1;n<=N;n++){
+    var v=st.c[n];
+    if(v){var r=document.querySelector('input[name="d'+n+'"][value="'+v+'"]');if(r)r.checked=true;}
+    var ta=document.querySelector('textarea[data-memo="'+n+'"]');if(ta&&st.m[n])ta.value=st.m[n];
+  }
+  function refresh(){
+    var k=0;
+    for(var n=1;n<=N;n++){
+      var v=st.c[n]||'';if(v)k++;
+      var mine=document.querySelector('[data-mine="'+n+'"]');if(mine)mine.textContent=v?('내 판정 '+v):'';
+      var card=document.getElementById('d'+n);if(card)card.classList.toggle('done',!!v);
+    }
+    document.getElementById('prog').textContent=k+'/'+N+' 판정';
+  }
+  document.addEventListener('change',function(e){
+    var t=e.target;if(t.type==='radio'&&/^d\d+$/.test(t.name)){st.c[t.name.slice(1)]=t.value;save();refresh();}
+  });
+  document.addEventListener('input',function(e){
+    var t=e.target;var n=t.getAttribute&&t.getAttribute('data-memo');if(n){st.m[n]=t.value;save();}
+  });
+  function build(){
+    var L=['design-review-20260924 판정'];
+    for(var n=1;n<=N;n++){
+      var v=st.c[n]||'—';var m=(st.m[n]||'').replace(/\s+/g,' ').trim();
+      L.push(n+': '+v+(m?' (메모: '+m+')':''));
+    }
+    return L.join('\n');
+  }
+  var msg=document.getElementById('msg'), out=document.getElementById('out');
+  function fallback(text){
+    out.value=text;out.focus();out.select();
+    var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    msg.textContent=ok?'복사했어요.':'아래 「판정 결과」 칸을 선택해 복사하세요.';
+    if(!ok){document.getElementById('result').scrollIntoView({block:'start'});}
+  }
+  document.getElementById('copy').addEventListener('click',function(){
+    var text=build();out.value=text;
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(text).then(function(){msg.textContent='복사했어요.';},function(){fallback(text);});
+    }else{fallback(text);}
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    if(!confirm('고른 판정과 메모를 모두 지울까요?'))return;
+    st.c={};st.m={};save();
+    var ins=document.querySelectorAll('input[type=radio]');for(var i=0;i<ins.length;i++)ins[i].checked=false;
+    var tas=document.querySelectorAll('textarea[data-memo]');for(var j=0;j<tas.length;j++)tas[j].value='';
+    out.value='';msg.textContent='';refresh();
+  });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-toggle]');if(!b)return;
+    var el=document.getElementById(b.getAttribute('data-toggle'));if(el)el.classList.toggle('open');
+  });
+  var fs=document.getElementById('fs8'),fsv=document.getElementById('fs8v'),rem=document.getElementById('rem8');
+  if(fs){fs.addEventListener('input',function(){var b=+fs.value;fsv.textContent=b;rem.style.fontSize=(0.9375*b)+'px';});}
+  refresh();
+})();
+</script>
+</body>
+</html>

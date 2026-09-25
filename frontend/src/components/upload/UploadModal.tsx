@@ -134,6 +134,24 @@ function representativeFailure(error: unknown): { message: string; retryBlocked:
   };
 }
 
+/**
+ * design-review 20260924 #1 — 요소의 **계산된** 전환 시간(ms · 지연 포함 최댓값).
+ * 0 이면(전역 reduced-motion 규칙 · 전환 미정의) 닫기를 기다리지 않는다.
+ */
+function transitionMs(el: Element): number {
+  const cs = window.getComputedStyle(el);
+  const secs = (v: string) =>
+    v.split(',').map((t) => {
+      const x = t.trim();
+      const n = parseFloat(x);
+      if (!Number.isFinite(n)) return 0;
+      return x.endsWith('ms') ? n / 1000 : n;
+    });
+  const d = secs(cs.transitionDuration || '');
+  const l = secs(cs.transitionDelay || '');
+  return Math.round(Math.max(0, ...d.map((x, i) => x + (l[i % l.length] ?? 0))) * 1000);
+}
+
 /** 파일명에서 데이터셋 이름 초안을 만든다 (`Policy §5` — 기본값 = 파일명에서 생성). */
 function nameFromFile(fileName: string): string {
   const dot = fileName.lastIndexOf('.');
@@ -156,6 +174,39 @@ export interface GridAttachTarget {
   onAttached?: (() => void) | undefined;
 }
 
+/**
+ * 진입 컴포넌트(`UploadEntry` · `GridAttachEntry`)가 드는 모달의 「열림」·「그려 둠」·세션 번호 한 벌.
+ *
+ * design-review 20260924 #1 값 2 — 닫기 전환 동안에는 열림 false · 그려 둠 true 이고, 그 사이 다시 열면 열림만
+ * 돌아와 모달이 입력을 둔 채 되돌아온다. 전환이 끝나면(`onClose`) 언마운트한다.
+ * design-fix 20260924 F-int — 등록·반영 확정 뒤의 닫기(`completed`) 도중 다시 열면 되살리지 않고 세션 번호를 올려
+ * **새 모달**(① · PRD-13)을 세운다. 부모는 `key={session}` 으로 모달을 건다.
+ */
+export function useUploadModalPresence() {
+  const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const [session, setSession] = useState(0);
+  const completedClosing = useRef(false);
+  const openModal = useCallback(() => {
+    if (completedClosing.current) {
+      completedClosing.current = false;
+      setSession((n) => n + 1);
+    }
+    setOpen(true);
+    setRendered(true);
+  }, []);
+  const onCloseStart = useCallback((close: { completed: boolean }) => {
+    completedClosing.current = close.completed;
+    setOpen(false);
+  }, []);
+  const onClose = useCallback(() => {
+    completedClosing.current = false;
+    setOpen(false);
+    setRendered(false);
+  }, []);
+  return { open, rendered, session, openModal, onCloseStart, onClose };
+}
+
 export function UploadModal(props: {
   sources: UploadSources;
   apiSources?: boolean | undefined;
@@ -168,6 +219,18 @@ export function UploadModal(props: {
    */
   resumeRequest?: { seq: number; uploadId: string } | undefined;
   registerRequest?: { seq: number; uploadId: string } | undefined;
+  /**
+   * design-review 20260924 #1 값 2 — 부모가 든 「열림」. 닫는 중에 `true` 로 돌아오면 닫기를 되돌린다
+   * (입력 유지). 주지 않으면 열림으로 본다.
+   */
+  open?: boolean | undefined;
+  /**
+   * 닫기 전환이 **시작될 때** 부른다 — 부모가 「열림」을 내린다. 「그려 둠」은 `onClose` 에서 내린다.
+   * `completed` = 등록·반영이 확정된 뒤의 닫기다. 값 2 의 되살리기는 사람이 닫은 **미완** 세션에만 적용되므로,
+   * 이때 닫는 도중 다시 열면 부모는 이 모달을 되살리지 않고 **새 모달**(① · PRD-13)을 세운다.
+   */
+  onCloseStart?: ((close: { completed: boolean }) => void) | undefined;
+  /** 닫기 전환이 **끝난 뒤** 한 번 부른다(전환 시간 0 이면 곧바로). 부모는 여기서 언마운트한다. */
   onClose: () => void;
 }) {
   const account = useAccount();
@@ -333,6 +396,13 @@ export function UploadModal(props: {
   // ⭑ ⟨advisor ② · F3⟩ 배경 클릭의 **눌린 자리**. 모달 안에서 눌러 배경에서 뗀 드래그는
   //   click.target 이 공통 조상(배경)이 되므로, 눌린 자리까지 배경일 때만 닫는다.
   const downOnBackdrop = useRef(false);
+  // design-review 20260924 #1 — 닫기 전환 상태. 판정은 ref 로 한다(같은 틱의 두 번째 요청 · transitionend 두 개).
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  /** 지금 진행 중인 닫기가 등록·반영 확정 뒤의 닫기인가(`closeAfterCommit`). */
+  const completedCloseRef = useRef(false);
+  const closeTimer = useRef(0);
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -346,7 +416,7 @@ export function UploadModal(props: {
   useWorkProtection('upload-modal', {
     dirty: hasDraft,
     inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
-    discard: props.onClose,
+    discard: beginClose,
   });
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [step, registerOpen]);
 
@@ -361,6 +431,9 @@ export function UploadModal(props: {
    * 같다」를 증명하지도 못했다(그 구현에서는 마운트가 일어나지 않는다). 지운다 —
    * 하는 일이 없는 코드가 규칙을 지키는 것처럼 읽히는 자리를 남기지 않는다.
    * ⚠ 모달을 DOM 에 남기는 구현으로 바꾸려면 **그 커밋이** 이 리셋을 다시 세워야 한다.
+   * ⭑ design-review 20260924 #1 — 닫기 전환 동안(0.3초)만 DOM 에 남는다. 전환이 끝나면 `onClose` 에서 부모가
+   *   언마운트하므로 **완전히 닫힌 뒤** 다시 열면 여전히 ① 이다. 그 사이 다시 열면 입력을 둔 채 돌아온다(값 2).
+   *   단 등록·반영 확정 뒤의 닫기(`closeAfterCommit`)는 완료된 닫기다 — 그 사이 다시 열어도 부모가 새 모달(①)을 세운다.
    */
 
   const attach = props.attach;
@@ -943,9 +1016,57 @@ export function UploadModal(props: {
     // 생성 전에는 사람이 적거나 확인한 것이 있을 때만 묻는다(WU-A9 · PRD-14).
     // 서버 요청을 보낸 뒤에는 화면을 닫아도 저장이 취소되지 않으므로 입력 유무와 관계없이
     // 현재 저장 상태를 알린다. 본문 갈래와 문면은 `toastCopy.ts` 한 곳이 쥔다.
+    if (closingRef.current) return;
     if (submitLock.current || committedDatasetIdRef.current || hasHumanInput) setConfirmClose(true);
-    else props.onClose();
+    else beginClose();
   }
+
+  /**
+   * ⭑ design-review 20260924 #1 · advisor ① F6 — **모든 닫기 경로의 한 곳.** ×·Esc·배경(확인 없이) ·
+   * 닫기 확인의 두 단추 · 등록/반영 성공(`closeAfterCommit` 경유) · 계정 전환 보호(`discard`)가 모두 이것만 부른다.
+   * `props.onClose` 는 전환이 끝난 뒤 `finishClose` 한 곳에서만 부른다.
+   *
+   * 계산된 전환 시간이 0 이면 같은 틱에 끝낸다(jsdom 기본 · 전역 reduced-motion 규칙). 아니면
+   * `data-state="closing"` 을 붙이고 `transitionend`(모달 자신의 것만) 또는 대비 타이머(전환 시간 ＋ 50ms)
+   * 중 먼저 오는 것에서 끝낸다 — reduced-motion 을 켠 채 전환이 잘리면 transitionend 가 오지 않는다.
+   */
+  function beginClose() {
+    if (closingRef.current) return;
+    setConfirmClose(false);
+    const ms = modalRef.current ? transitionMs(modalRef.current) : 0;
+    closingRef.current = true;
+    if (ms <= 0) {
+      finishClose();
+      return;
+    }
+    setClosing(true);
+    props.onCloseStart?.({ completed: completedCloseRef.current });
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(finishClose, ms + 50);
+  }
+
+  /** 등록·반영이 확정된 뒤의 닫기 — 같은 `beginClose` 를 타되 부모에게 완료된 닫기라고 알린다. */
+  function closeAfterCommit() {
+    if (closingRef.current) return;
+    completedCloseRef.current = true;
+    beginClose();
+  }
+
+  function finishClose() {
+    if (!closingRef.current) return;
+    closingRef.current = false;
+    window.clearTimeout(closeTimer.current);
+    props.onClose();
+  }
+
+  /** 값 2 — 닫는 도중 부모가 다시 열었다. 전환은 지금 값에서 되돌아가고 입력은 그대로다. */
+  useEffect(() => {
+    if (props.open === false || !closingRef.current) return;
+    closingRef.current = false;
+    window.clearTimeout(closeTimer.current);
+    setClosing(false);
+  }, [props.open]);
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   /**
    * Esc 우선순위 (PRD-39 ⑭) — **확장보기 → 찾기 → 계보 수정 → 닫기 확인 → 업로드**.
@@ -983,7 +1104,7 @@ export function UploadModal(props: {
     try {
       await upload.attachGrid(attach.datasetId, uploadId);
       attach.onAttached?.();
-      props.onClose();
+      closeAfterCommit();
     } catch (e) {
       setRegisterError(
         e instanceof UploadGone
@@ -1078,7 +1199,7 @@ export function UploadModal(props: {
           await upload.putRepresentativeImage(createdDatasetId, representativeFile);
         }
         if (lifecycle !== mutationLifecycle.current) return;
-        props.onClose();
+        closeAfterCommit();
         navigate(`/datasets/${createdDatasetId}`);
       } catch (e) {
         if (lifecycle === mutationLifecycle.current) {
@@ -1237,7 +1358,7 @@ export function UploadModal(props: {
         }
       }
       if (lifecycle !== mutationLifecycle.current) return;
-      props.onClose();
+      closeAfterCommit();
       navigate(`/datasets/${made.datasetId}`);
     } catch (e) {
       if (lifecycle !== mutationLifecycle.current) return;
@@ -1265,6 +1386,11 @@ export function UploadModal(props: {
     <div
       className={`modal-back mb-takeover${!registerOpen && !attach && !showingEarlyPreview && !previewFinalNotice ? ' up-empty' : ''}`}
       data-testid="upload-backdrop"
+      data-state={closing ? 'closing' : undefined}
+      // design-fix 20260924 A17 — 닫는 동안 배경과 그 안 **모든** 요소가 누름·초점을 받지 않는다.
+      //   배경의 `pointer-events: none`(값 2)은 안쪽에서 `auto` 를 명시한 패널(미리보기 도구 등)을 덮지 못한다.
+      //   `inert` 는 하위 전체를 hit-test 에서 빼므로 누름은 뒤 화면으로 통과한다. 다시 열면(`closing` 해제) 풀린다.
+      inert={closing ? true : undefined}
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
       //   `event.target === event.currentTarget` 이라 모달 **안쪽** 클릭은 여기 닿지 않는다.
@@ -1285,6 +1411,12 @@ export function UploadModal(props: {
         data-testid="upload-modal"
         data-mode={attach ? 'grid-attach' : 'register'}
         data-scene={registerOpen ? 'register' : picked.length ? 'analyze' : 'pick'}
+        data-state={closing ? 'closing' : undefined}
+        ref={modalRef}
+        onTransitionEnd={(e) => {
+          // 자식(칸 테두리 · 단추 배경)의 전환도 버블로 온다 — 모달 자신의 것만 닫기를 끝낸다.
+          if (e.target === e.currentTarget) finishClose();
+        }}
       >
         <div className="modal-h">
           <h3>{attach ? '기준 격자 추가' : picked.length === 0 ? '파일 올리기' : '업로드'}</h3>
@@ -1788,13 +1920,13 @@ export function UploadModal(props: {
                   data-testid="upload-close-forget"
                   onClick={() => {
                     if (uploadId && pendingLabId) forgetPending(pendingLabId, uploadId);
-                    props.onClose();
+                    beginClose();
                   }}
                 >
                   {UPLOAD_CLOSE_FORGET}
                 </button>
               ) : null}
-              <button type="button" className="btn btn-strong" onClick={props.onClose}>
+              <button type="button" className="btn btn-strong" onClick={beginClose}>
                 {UPLOAD_CLOSE_LEAVE}
               </button>
             </div>

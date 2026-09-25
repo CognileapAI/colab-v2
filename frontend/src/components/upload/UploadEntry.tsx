@@ -9,7 +9,7 @@
 // 규칙이 유지되게** 한다(두 겹이어도 결과는 같다).
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { UploadModal } from './UploadModal';
+import { UploadModal, useUploadModalPresence } from './UploadModal';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
 import { apiProjectSource } from './projectSource';
@@ -41,7 +41,9 @@ export function UploadEntry(props: {
   variant?: 'gnb' | 'menu' | undefined;
 }) {
   const inMenu = props.variant === 'menu';
-  const [open, setOpen] = useState(false);
+  // design-review 20260924 #1 값 2 · design-fix 20260924 F-int — 「열림」·「그려 둠」·세션 번호는 `useUploadModalPresence` 한 벌이다.
+  //   닫는 도중 다시 누르면 입력을 둔 채 되돌아오고, 등록 확정 뒤의 닫기 도중이면 새 모달(①)이 선다.
+  const { open, rendered, session, openModal, onCloseStart, onClose } = useUploadModalPresence();
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
   // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
   const seq = props.openRequest?.seq ?? 0;
@@ -56,7 +58,7 @@ export function UploadEntry(props: {
     const registerUploadId = props.openRequest?.registerUploadId;
     setResumeRequest(resumeUploadId ? { seq, uploadId: resumeUploadId } : null);
     setRegisterRequest(registerUploadId ? { seq, uploadId: registerUploadId } : null);
-    setOpen(true);
+    openModal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seq]);
 
@@ -67,7 +69,7 @@ export function UploadEntry(props: {
         className={inMenu ? 'gnb-more-item' : 'gnb-upload'}
         data-testid={inMenu ? 'gnb-more-upload' : 'gnb-upload'}
         aria-label="업로드"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
       >
         {/* 좁은 화면에서는 `.lbl` 이 숨고 이 아이콘만 남는다 (`shell.css` 640px).
             아이콘이 없으면 버튼이 빈 칸이 된다 — main 의 모바일 반응형 병합에서 실제로 그럴 뻔했다.
@@ -88,15 +90,18 @@ export function UploadEntry(props: {
         </svg>
         <span className="lbl">업로드</span>
       </button>
-      {open && (
+      {rendered && (
         <UploadModal
+          key={session}
+          open={open}
+          onCloseStart={onCloseStart}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.openRequest?.targetLabId}
           lineageStep={props.lineageStep}
           resumeRequest={resumeRequest ?? undefined}
           registerRequest={registerRequest ?? undefined}
-          onClose={() => setOpen(false)}
+          onClose={onClose}
         />
       )}
     </PermissionGate>

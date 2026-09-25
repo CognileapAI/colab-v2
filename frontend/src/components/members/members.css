@@ -17,7 +17,7 @@
 .settings-page h1 {
   margin: 0 0 14px;
   font-size: var(--text-h2);
-  letter-spacing: -0.023em;
+  letter-spacing: var(--tracking-heading);
   color: var(--color-text);
 }
 /* 권한 격자는 스위치 4열 때문에 600px 을 넘는다. 제 스크롤 통이 없으면

@@ -1,0 +1,38 @@
+--- /home/ttlhi10/.claude/jobs/aa678208/tmp/fci-tree/frontend/audit-upload.tsx	2026-09-25 09:54:17.000000000 +0900
++++ audit-upload.tsx	2026-09-25 10:00:25.051587492 +0900
+@@ -1,5 +1,6 @@
+ // 로컬 시각 검수 전용 진입점. 실제 네트워크·저장 API를 사용하지 않는다.
+ import './src/shell/styles';
++import tileUrl from './audit-tile.svg?url';
+ import { createRoot } from 'react-dom/client';
+ import { MemoryRouter, Route, Routes } from 'react-router-dom';
+ import { SessionProvider } from './src/permission/session';
+@@ -13,6 +14,7 @@
+ document.body.classList.add('colab-ui');
+ document.documentElement.dataset.theme = previewParams.get('theme') === 'dark' ? 'dark' : 'light';
+ const id = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
++(window as any).__liveci = { createRender: [], paletteResolvedAt: null };
+ let files: unknown[] = [];
+ const sources = {
+   upload: {
+@@ -26,9 +28,17 @@
+     register: async () => { throw new Error('시각 검수 전용: 저장하지 않습니다'); },
+   },
+   preview: {
+-    palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
+-    createRender: async () => ({ renderId: id, status: '그리는 중', stage: '지도 그리는 중' }),
+-    getRender: async () => { throw new Error('시각 검수 전용 모의 오류'); },
++    palettes: async () => {
++      const d = Number(previewParams.get('paletteDelay') ?? 0);
++      if (d) await new Promise((r) => setTimeout(r, d));
++      (window as any).__liveci.paletteResolvedAt = performance.now(); document.documentElement.setAttribute('data-liveci-palette-at', String((window as any).__liveci.paletteResolvedAt));
++      return [{ palette: 'viridis', label: '비리디스' }];
++    },
++    createRender: async (req: unknown) => { (window as any).__liveci.createRender.push({ at: performance.now(), req }); document.documentElement.setAttribute('data-liveci-create', JSON.stringify((window as any).__liveci.createRender)); return { renderId: id, status: '그리는 중', stage: '지도 그리는 중' }; },
++    getRender: async () => {
++      if (previewParams.get('drawOk') === '1') return { renderId: id, status: '완료', result: { imageUrl: tileUrl, legend: { palette: 'viridis', variable: 'rain', unit: 'mm', classes: [{ color: '#21918c', min: 0, max: 5 }] } } };
++      throw new Error('시각 검수 전용 모의 오류');
++    },
+   },
+   projects: { list: async () => [{
+     projectId: id,

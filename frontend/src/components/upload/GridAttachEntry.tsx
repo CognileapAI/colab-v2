@@ -11,7 +11,7 @@
 // 권한이 꺼지면 **버튼이 숨는다 — 비활성이 아니다** (`P-12`). `UploadEntry` 와 같은 게이트다.
 import { useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { UploadModal } from './UploadModal';
+import { UploadModal, useUploadModalPresence } from './UploadModal';
 import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
 import { apiProjectSource } from './projectSource';
@@ -36,7 +36,9 @@ export function GridAttachEntry(props: {
   onAttached?: (() => void) | undefined;
   sources?: UploadSources | undefined;
 }) {
-  const [open, setOpen] = useState(false);
+  // design-review 20260924 #1 값 2 · design-fix 20260924 F-int — 「열림」·「그려 둠」·세션 번호는 `useUploadModalPresence` 한 벌이다.
+  //   닫는 도중 다시 누르면 입력을 둔 채 되돌아오고, 반영 확정 뒤의 닫기 도중이면 새 모달(①)이 선다.
+  const { open, rendered, session, openModal, onCloseStart, onClose } = useUploadModalPresence();
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
 
   return (
@@ -45,12 +47,15 @@ export function GridAttachEntry(props: {
         type="button"
         className="btn btn-secondary"
         data-testid="grid-attach-open"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
       >
         기준 격자 추가
       </button>
-      {open && (
+      {rendered && (
         <UploadModal
+          key={session}
+          open={open}
+          onCloseStart={onCloseStart}
           sources={sources}
           apiSources={!props.sources}
           initialLabId={props.targetLabId}
@@ -59,7 +64,7 @@ export function GridAttachEntry(props: {
             datasetName: props.datasetName,
             onAttached: props.onAttached,
           }}
-          onClose={() => setOpen(false)}
+          onClose={onClose}
         />
       )}
     </PermissionGate>

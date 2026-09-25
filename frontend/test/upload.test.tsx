@@ -15,6 +15,7 @@ import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { apiUploadSource } from '../src/components/upload/uploadSource';
 import { clearSession, setSession } from '../src/auth/store';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import uploadCss from '../src/components/upload/upload.css?raw';
 import {
   ANALYZING_CHIP,
@@ -554,7 +555,8 @@ describe('§8·§9 기준 격자 없음 — 그릴 수 없는 것과 등록할 �
     expect(await screen.findByTestId('up-nogrid')).toHaveTextContent(
       '위경도를 담은 짝 파일이 없어요.',
     );
-    expect(screen.getByTestId('up-preview-without-grid')).toBeEnabled();
+    // 팔레트가 준비되어야 활성이다(F-ci) — 활성화를 기다린다.
+    await waitFor(() => expect(screen.getByTestId('up-preview-without-grid')).toBeEnabled());
     expect(screen.getByTestId('reg-open')).toBeEnabled();
   });
 
@@ -562,7 +564,7 @@ describe('§8·§9 기준 격자 없음 — 그릴 수 없는 것과 등록할 �
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('body.HDF5')]);
-    await click(await screen.findByTestId('up-preview-without-grid'));
+    await clickPreviewDrawWhenReady({ testId: 'up-preview-without-grid', click });
     await waitFor(() => expect(calls.createRender.length).toBe(1));
     expect(calls.createRender[0]?.withoutReferenceGrid).toBe(true);
   });
@@ -582,7 +584,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
 
     const seen: string[] = [];
     for (const want of ['파일 읽는 중', '지도 그리는 중', '범례 만드는 중']) {
@@ -612,7 +614,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     });
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     expect(screen.getByTestId('up-preview-stage')).toHaveAttribute('aria-live', 'polite');
     const err = await screen.findByTestId('up-preview-error');
     expect(err).toHaveAttribute('aria-live', 'assertive');
@@ -634,7 +636,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     });
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     expect(await screen.findByTestId('up-preview-error')).toHaveTextContent(
       '그리는 데 너무 오래 걸려요',
     );
@@ -646,7 +648,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     await screen.findByTestId('up-preview-map', undefined, { timeout: 4000 });
     expect(screen.queryByTestId('up-preview-stage')).toBeNull();
   });
@@ -672,7 +674,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     });
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     await screen.findByTestId('up-preview-map', undefined, { timeout: 4000 });
     expect(screen.queryByTestId('up-preview-error')).toBeNull();
     expect(screen.getByTestId('up-preview-partial')).toHaveTextContent(
@@ -685,7 +687,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     const img = await screen.findByTestId('up-preview-tile', undefined, { timeout: 4000 });
     expect(img.getAttribute('src')).toBe(
       'https://tiles.example/renders/R1/0/0/0.png?sig=ABC.DEF',
@@ -696,7 +698,7 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     const img = await screen.findByTestId('up-preview-tile', undefined, { timeout: 4000 });
     fireEvent.error(img);
     await act(async () => {});
@@ -1229,7 +1231,7 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     await screen.findByTestId('up-preview-map', undefined, { timeout: 4000 });
     await openRegister();
     await click(stepBtn('②'));
@@ -2130,7 +2132,7 @@ describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다
     });
     await openModal(sources);
     await dropFiles([makeFile('rdr.bin')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
     expect(block).toHaveTextContent('이 파일은 좌표를 자체적으로 갖고 있지 않습니다.');
     expect(screen.getByTestId('reg-open')).toBeEnabled();
@@ -2142,7 +2144,7 @@ describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다
     });
     await openModal(sources);
     await dropFiles([makeFile('rdr.bin')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
     expect(block).toHaveTextContent('이 격자는 이 파일의 것이 아닙니다.');
     expect(screen.getByTestId('reg-open')).toBeEnabled();
@@ -2165,7 +2167,7 @@ describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다
     });
     await openModal(sources);
     await dropFiles([makeFile('rdr.bin')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     await click(await screen.findByTestId('up-grid-skip', undefined, { timeout: 4000 } as never));
     expect(await screen.findByTestId('up-grid-block')).toHaveTextContent('지도 없이 등록합니다.');
     expect(screen.getByTestId('reg-open')).toBeEnabled();
@@ -2188,7 +2190,7 @@ describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다
     });
     await openModal(sources);
     await dropFiles([makeFile('rdr.bin')]);
-    await click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady({ click });
     const before = calls.create;
     fireEvent.change(await screen.findByTestId('up-grid-input', undefined, { timeout: 4000 }), {
       target: { files: [makeFile('Lat_HSR.npy'), makeFile('Lon_HSR.npy')] },
