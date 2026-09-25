@@ -10,6 +10,8 @@
  *  ② 팔레트가 오면 활성이 되고, 누르면 그 팔레트로 그린다
  *  ③ 팔레트가 클릭 시도보다 늦게 와도(강제 지연) 활성화를 기다려 누르면 그려진다
  *  ④ 팔레트를 못 받거나 빈 목록이면 버튼은 비활성이되 **기존 오류·안내 문면**이 이유를 말한다
+ *  ⑤ 같은 `draw()` 를 부르는 「짝 파일 없이 그려 보기」(`up-preview-without-grid`)도 ①·②·④ 와 같다
+ *     (수정 라운드 · Fable advisor ② 요구)
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -46,9 +48,13 @@ function source(palettes: () => Promise<PaletteOption[]>) {
   };
 }
 
-function mount(src: ReturnType<typeof source>) {
+function mount(src: ReturnType<typeof source>, hasReferenceGrid = true) {
   return render(
-    <PreviewPanel source={src as unknown as PreviewSource} uploadId={UPLOAD_ID} hasReferenceGrid />,
+    <PreviewPanel
+      source={src as unknown as PreviewSource}
+      uploadId={UPLOAD_ID}
+      hasReferenceGrid={hasReferenceGrid}
+    />,
   );
 }
 
@@ -122,5 +128,54 @@ describe('F-ci ④ 팔레트를 못 받으면 비활성이되 이유가 화면�
     const issue = await screen.findByTestId('up-palette-issue');
     expect(issue.textContent).toContain('팔레트 목록이 예상한 3종과 달라요.');
     expect(screen.getByTestId('up-preview-draw')).toBeDisabled();
+  });
+});
+
+describe('F-ci ⑤ 「짝 파일 없이 그려 보기」도 팔레트 준비 전 비활성이다 (같은 draw() 경로)', () => {
+  const WITHOUT_GRID = 'up-preview-without-grid';
+
+  it('팔레트가 오기 전 disabled 이고, 그 사이 클릭은 그리기를 시작하지 않는다', async () => {
+    const pal = deferred<PaletteOption[]>();
+    const src = source(() => pal.promise);
+    mount(src, false);
+
+    const btn = await screen.findByTestId(WITHOUT_GRID);
+    expect(btn).toBeDisabled();
+
+    fireEvent.click(btn);
+    await act(async () => {});
+    expect(src.createRender).not.toHaveBeenCalled();
+  });
+
+  it('팔레트 조회가 실패하면 disabled 이고 기존 오류 문면이 선다', async () => {
+    const src = source(async () => {
+      throw new Error('palettes unavailable');
+    });
+    mount(src, false);
+
+    const err = await screen.findByTestId('up-preview-error');
+    expect(err.textContent).toContain('지금 미리보기를 만들 수 없어요.');
+    expect(screen.getByTestId(WITHOUT_GRID)).toBeDisabled();
+  });
+
+  it('팔레트가 오면 활성이 되고, 누르면 withoutReferenceGrid: true 로 그린다', async () => {
+    const pal = deferred<PaletteOption[]>();
+    const src = source(() => pal.promise);
+    mount(src, false);
+    expect(await screen.findByTestId(WITHOUT_GRID)).toBeDisabled();
+
+    await act(async () => {
+      pal.resolve(PALETTES);
+    });
+    await waitFor(() => expect(screen.getByTestId(WITHOUT_GRID)).toBeEnabled());
+
+    await clickPreviewDrawWhenReady({ testId: WITHOUT_GRID });
+    await waitFor(() => expect(src.createRender).toHaveBeenCalledTimes(1));
+    expect(src.createRender).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        withoutReferenceGrid: true,
+        style: expect.objectContaining({ palette: 'viridis' }),
+      }),
+    );
   });
 });

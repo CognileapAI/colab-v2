@@ -555,7 +555,8 @@ describe('§8·§9 기준 격자 없음 — 그릴 수 없는 것과 등록할 �
     expect(await screen.findByTestId('up-nogrid')).toHaveTextContent(
       '위경도를 담은 짝 파일이 없어요.',
     );
-    expect(screen.getByTestId('up-preview-without-grid')).toBeEnabled();
+    // 팔레트가 준비되어야 활성이다(F-ci) — 활성화를 기다린다.
+    await waitFor(() => expect(screen.getByTestId('up-preview-without-grid')).toBeEnabled());
     expect(screen.getByTestId('reg-open')).toBeEnabled();
   });
 
@@ -563,7 +564,7 @@ describe('§8·§9 기준 격자 없음 — 그릴 수 없는 것과 등록할 �
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('body.HDF5')]);
-    await click(await screen.findByTestId('up-preview-without-grid'));
+    await clickPreviewDrawWhenReady({ testId: 'up-preview-without-grid', click });
     await waitFor(() => expect(calls.createRender.length).toBe(1));
     expect(calls.createRender[0]?.withoutReferenceGrid).toBe(true);
   });
