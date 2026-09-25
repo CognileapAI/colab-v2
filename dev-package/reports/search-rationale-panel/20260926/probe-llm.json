@@ -1,0 +1,114 @@
+[
+ {
+  "theme": "light",
+  "width": 1280,
+  "scope": "A 연구실 데이터 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.",
+  "degradedNotice": false,
+  "cards": 2,
+  "panels": 2,
+  "summaryText": "관측 원자료",
+  "summaryInsidePanel": false,
+  "tagText": "✦ AI",
+  "tagOutsideFacts": true,
+  "tagWidth": 44.390625,
+  "panelWidth": 804,
+  "kinds": [
+   "낱말 일치"
+  ],
+  "items": [
+   "‘강수’와 같은 말인 ‘강우’, ‘강우량’가 이름·주제·요약·포맷·변수에 맞았어요"
+  ],
+  "panelBg": "rgb(241, 232, 255)",
+  "panelBorderLeft": "2px solid rgb(103, 66, 245)",
+  "tagColor": "rgb(72, 33, 219)",
+  "tagBorder": "rgb(210, 182, 255)",
+  "tagBg": "rgb(255, 255, 255)",
+  "tagHeight": 20,
+  "hScroll": false,
+  "screenshot": "search-rationale-llm-light-1280.png"
+ },
+ {
+  "theme": "dark",
+  "width": 1280,
+  "scope": "A 연구실 데이터 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.",
+  "degradedNotice": false,
+  "cards": 2,
+  "panels": 2,
+  "summaryText": "관측 원자료",
+  "summaryInsidePanel": false,
+  "tagText": "✦ AI",
+  "tagOutsideFacts": true,
+  "tagWidth": 44.390625,
+  "panelWidth": 804,
+  "kinds": [
+   "낱말 일치"
+  ],
+  "items": [
+   "‘강수’와 같은 말인 ‘강우’, ‘강우량’가 이름·주제·요약·포맷·변수에 맞았어요"
+  ],
+  "panelBg": "rgb(48, 36, 69)",
+  "panelBorderLeft": "2px solid rgb(198, 175, 255)",
+  "tagColor": "rgb(216, 199, 255)",
+  "tagBorder": "rgb(105, 81, 139)",
+  "tagBg": "rgb(26, 34, 44)",
+  "tagHeight": 20,
+  "hScroll": false,
+  "screenshot": "search-rationale-llm-dark-1280.png"
+ },
+ {
+  "theme": "light",
+  "width": 390,
+  "scope": "A 연구실 데이터 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.",
+  "degradedNotice": false,
+  "cards": 2,
+  "panels": 2,
+  "summaryText": "관측 원자료",
+  "summaryInsidePanel": false,
+  "tagText": "✦ AI",
+  "tagOutsideFacts": true,
+  "tagWidth": 44.390625,
+  "panelWidth": 299,
+  "kinds": [
+   "낱말 일치"
+  ],
+  "items": [
+   "‘강수’와 같은 말인 ‘강우’, ‘강우량’가 이름·주제·요약·포맷·변수에 맞았어요"
+  ],
+  "panelBg": "rgb(241, 232, 255)",
+  "panelBorderLeft": "2px solid rgb(103, 66, 245)",
+  "tagColor": "rgb(72, 33, 219)",
+  "tagBorder": "rgb(210, 182, 255)",
+  "tagBg": "rgb(255, 255, 255)",
+  "tagHeight": 20,
+  "hScroll": false,
+  "screenshot": "search-rationale-llm-light-390.png"
+ },
+ {
+  "theme": "dark",
+  "width": 390,
+  "scope": "A 연구실 데이터 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.",
+  "degradedNotice": false,
+  "cards": 2,
+  "panels": 2,
+  "summaryText": "관측 원자료",
+  "summaryInsidePanel": false,
+  "tagText": "✦ AI",
+  "tagOutsideFacts": true,
+  "tagWidth": 44.390625,
+  "panelWidth": 314,
+  "kinds": [
+   "낱말 일치"
+  ],
+  "items": [
+   "‘강수’와 같은 말인 ‘강우’, ‘강우량’가 이름·주제·요약·포맷·변수에 맞았어요"
+  ],
+  "panelBg": "rgb(48, 36, 69)",
+  "panelBorderLeft": "2px solid rgb(198, 175, 255)",
+  "tagColor": "rgb(216, 199, 255)",
+  "tagBorder": "rgb(105, 81, 139)",
+  "tagBg": "rgb(26, 34, 44)",
+  "tagHeight": 20,
+  "hScroll": false,
+  "screenshot": "search-rationale-llm-dark-390.png"
+ }
+]
