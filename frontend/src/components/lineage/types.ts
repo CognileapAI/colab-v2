@@ -7,6 +7,7 @@
 // 사람이 고른 것만 `createDataset` 의 `lineageParents` 로 실린다
 // (`CLAUDE.md §3-2` — D10 → D4 쓰기 경로가 없다 · `fe-core.yaml UploadLineageParent`).
 import type { Schemas } from '../../api/client';
+import type { paths } from '../../generated/fe-core';
 
 export type LineageSuggestionResponse = Schemas['LineageSuggestionResponse'];
 export type LineageSuggestion = Schemas['LineageSuggestion'];
@@ -31,6 +32,22 @@ export type LineageCandidateQuery = {
   cursor?: string;
 };
 export type UploadLineageParent = Schemas['UploadLineageParent'];
+
+/**
+ * ⭑ **⟨2026-09-24 · K3 `WU-S4`⟩ 제안 중계의 가공 단계 질의값** — `Lv0`~`Lv3` 문자열이다.
+ *
+ * **생성물에서 끌어온다.** 계약이 이 열쇠를 스키마가 아니라 **질의 파라미터**로 열었으므로
+ * `Schemas[...]` 에 이름이 없다 — 대신 op 의 질의 타입을 그대로 가리킨다
+ * (`fe-core.yaml listUploadLineageSuggestions` · `CLAUDE.md §3-7` 축자 「타입은 전부
+ * 생성물에서 온다」). ⛔ **여기에 `'Lv0' | 'Lv1' | …` 을 손으로 적지 않는다** — 손으로 적은
+ * enum 은 계약이 바뀌어도 그대로 green 이라 `frontend-typecheck` 의 오라클이 죽는다.
+ */
+export type LineageSuggestionLevel = Exclude<
+  NonNullable<
+    paths['/uploads/{uploadId}/lineage-suggestions']['get']['parameters']['query']
+  >['processingLevelUserSet'],
+  undefined
+>;
 
 /**
  * 부모 관계 한 건 — 화면 상태다. 저장되지 않았고, 확인해야만 등록 요청에 실린다.
@@ -94,7 +111,11 @@ export interface LineageSource {
    */
   suggestions(
     uploadId: string,
-    q: { datasetNameDraft?: string; subject?: string },
+    q: {
+      datasetNameDraft?: string;
+      subject?: string;
+      processingLevelUserSet?: LineageSuggestionLevel;
+    },
   ): Promise<LineageSuggestionResponse>;
   /**
    * `직접 추가` 가 고를 후보 — 연구실 카탈로그(`listDatasets`).

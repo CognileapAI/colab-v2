@@ -1184,6 +1184,23 @@ paths:
           required: false
           description: 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`).
           schema: { type: string, minLength: 1 }
+        - name: processingLevelUserSet
+          in: query
+          required: false
+          description: |
+            ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 등록 폼 ① 에서 사람이 고른
+            자기 가공 단계.** 아직 안 골랐으면 생략한다 — 그때는 적격을 가를 기준값이 없어
+            제안 자체가 없는 것이 참이다 (`Policy_업로드와_계보_확정 §8 가공 단계 칸`).
+
+            **「부모 Lv ≤ 자기 Lv」 적격 필터의 기준값**이고, 거르는 것은 core-api 다
+            (`〈72〉-㉮` 분담). core-api 가 `core-ai.yaml LineageSuggestionRequest.processingLevel`
+            로 정수 변환해 넘긴다.
+
+            ⚠ **문자열 그대로 받는다** — 저장값이 문자열이고
+            (`d3_dataset.processing_level_user_set` CHECK 4값 · 마이그레이션 `0015`),
+            문자열→정수 변환은 `d3_catalog.user_set_level` **한 곳에만 둔다.** 계약 층에서
+            정수로 받으면 변환 자리가 둘이 되고 두 벌은 언젠가 갈린다.
+          schema: { type: string, enum: [Lv0, Lv1, Lv2, Lv3] }
       responses:
         "200":
           description: 제안 결과. **0건도 여기로 온다** — 정직한 빈 상태 (`Policy §8` AI 제안 영역).

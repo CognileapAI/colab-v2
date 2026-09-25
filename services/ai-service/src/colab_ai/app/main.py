@@ -3,11 +3,15 @@
 **계약의 두 표면을 다 연다** — `searchDatasets`(`POST /searches`) ·
 `suggestLineage`(`POST /lineage-suggestions`).
 
-⚠ **계보 제안 표면은 지금 참인 답이 언제나 0건이고, 그 사실을 응답이 스스로 말한다.**
-부모 후보의 출처가 정해지지 않았기 때문이다 — 계약 `LineageSuggestionRequest` 에 후보를
-실을 자리가 없고, 이 배포 단위는 카탈로그(D3)를 읽지 못한다(`〈72〉-㉮`). 그래서 0건을
-`degraded: false`(살펴봤는데 없더라)가 아니라 **`degraded: true` + 사유**로 낸다 —
+⚠ **계보 제안의 후보는 요청이 지고 온다** (⟨2026-09-24 · K3 WU0 — Ted 서명⟩).
+이 배포 단위는 여전히 카탈로그(D3)를 읽지 못한다(`〈72〉-㉮`) — 달라진 것은 **core-api 가
+고른 후보를 계약의 선택 필드 `candidates` 로 실어 보낸다**는 점이다. 그래서 이 표면의 일은
+**받은 후보에 순위·근거 한 줄·3값 확신도를 붙이는 것까지**이고, 후보 밖의 데이터셋은
+제안될 수 없다. 후보가 없으면 모델을 **부르지 않고** 0건 + 사유로 답한다 —
 하지 않은 판정을 했다고 주장하지 않는다.
+
+**기본은 끈 쪽이다.** `COLAB_AI_LINEAGE_SUGGESTION` 이 `llm` 이고 키가 있어야 모델이
+선다(`kernel/config.py`). 그 전까지는 빈 제안이고, 그것은 고장이 아니라 결정이다.
 
 ⚠ **2026-08-25 판정 ㈎ 이후 `/searches` 는 질의를 해석해 돌려줄 뿐 카탈로그를 뒤지지 않는다.**
 찾고 매기는 것은 D3 의 주인인 core-api 다 (`CLAUDE.md §3-1` · `〈72〉-㉮`).
@@ -30,25 +34,124 @@ from fastapi.responses import JSONResponse
 
 from colab_ai.app.dictionaries import SqlDictionaries
 from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
+from colab_ai.app.ledger import build_ledger
+from colab_ai.app.suggest import EmptyLineageSuggester, LlmLineageSuggester
 from colab_ai.domains.d10_ai_services import SearchService
 from colab_ai.domains.d10_suggestion import SuggestionEnvelope
 from colab_ai.kernel.config import Settings
 from colab_ai.kernel.db import make_engine
 from colab_ai.kernel.ids import is_valid_ulid
 from colab_ai.kernel.observability import TraceMiddleware
+from colab_ai.ports import REASON_NO_CREDENTIALS, LineageSuggesterPort, ParentCandidate
 
 #: `Policy_데이터_찾기 §5 검색 질문 — 1~200자`. 계약(`SearchRequest.query`)과 같은 값이다.
 MAX_QUERY = 200
 #: `core-ai.yaml LineageSuggestionRequest` 의 열쇠 전부. 계약이 `additionalProperties: false`
 #: 라 **여기 없는 열쇠가 오면 400 이다** — 소비자의 표류를 표면이 잡는다.
-SUGGEST_KEYS = {"scope", "datasetNameDraft", "subject", "file"}
+#: ⭑ ⟨2026-09-24 · K3 `WU-S0`⟩ `processingLevel` 은 **받기만 한다** — 적격 필터는
+#: core-api 가 건다(`〈72〉-㉮` 분담). 거르는 자리가 둘이면 어느 쪽이 걸렀는지 셀 수 없다.
+SUGGEST_KEYS = {"scope", "datasetNameDraft", "subject", "file", "candidates",
+                "processingLevel"}
 #: `UploadedFileMeta` 의 열쇠 전부. 같은 이유로 닫혀 있다.
 FILE_KEYS = {"fileName", "kind", "format", "variables", "crs", "gridDescription",
              "periodStart", "periodEnd", "partCount", "sourceNoteDraft"}
+#: `LineageParentCandidate` 의 열쇠 전부. **후보 항목도 닫혀 있다** — 바깥 열쇠가 섞여
+#: 들어오면 근거 판정의 오라클(J3)이 흐려지고, 그 어긋남은 아무도 세지 않는다.
+#: ⭑ ⟨2026-09-24 · K3 `WU-S0`⟩ 원메타 4축(`crs`·`grid`·`variables`·`fileName`)이
+#: 더해졌다 — 모델이 축을 **스스로 대조해 인용**하려면 날값이 있어야 한다.
+CANDIDATE_KEYS = {"datasetId", "name", "topic", "summary", "sourceLabel",
+                  "processingLevel", "periodStart", "periodEnd",
+                  "crs", "grid", "variables", "fileName"}
+#: 계약이 `type: string · minLength: 1` 로 적은 후보의 **선택** 열쇠들. 열쇠 집합만 닫고
+#: 값의 모양을 안 보면 숫자·배열이 그대로 아래로 흘러 `candidate_payload` 의
+#: `c.summary[:200]` 에서 `TypeError` 가 되고, **계약대로면 400 일 요청이 500 이 된다** —
+#: 소비자의 표류가 이쪽 고장으로 뒤바뀌는 자리다(게이트 ② 판정 2026-09-24).
+CANDIDATE_TEXT_KEYS = ("topic", "summary", "sourceLabel", "periodStart", "periodEnd",
+                       "crs", "grid", "fileName")
+#: 계약 `candidates.maxItems`. 상한을 표면이 실제로 요구한다.
+MAX_CANDIDATES = 20
+#: 계약 `LineageSuggestionRequest.processingLevel.maximum` = `LV_CAP`
+#: (`PLAN-SoT §9-⑳` · 마이그레이션 `0015` 의 4값 CHECK). **표면이 값을 보지 않으면
+#: 계약 밖 값이 그대로 흘러가** 지시문이 틀린 기준으로 읽는다.
+MAX_PROCESSING_LEVEL = 3
 #: `common.json#FileKind` 의 두 값.
 FILE_KINDS = ("본체", "기준 격자 파일")
 MAX_LIMIT = 100
 DEFAULT_LIMIT = 20
+
+
+def build_suggester(settings: Settings, ledger=None) -> LineageSuggesterPort:
+    """제안 생산자 고르기 — **설정이 정한다.** 키 유무가 아니다 (`〈136〉` 과 같은 규율).
+
+    ⚠ 조립 규칙이 해석기와 같다 — `llm` 인데 키가 없으면 「켜려 했으나 못 켰다」이므로
+    고장 쪽 문구가 맞고, `off` 는 **결정으로 고른 상태**라 고장을 뜻하는 말을 쓰지 않는다
+    (`interpret.py:111-136`).
+
+    ⭑ **실행 원장도 같은 선에서 갈린다** — `llm` 두 갈래에만 붙는다. `off` 는 부를 생각이
+    없던 회차라 「왜 안 불렀나」를 적을 호출 자체가 없다.
+    """
+    if settings.suggest_lineage_mode == "llm":
+        if settings.openai_api_key:
+            return LlmLineageSuggester(
+                api_key=settings.openai_api_key, model=settings.model,
+                timeout_seconds=settings.model_timeout_seconds, ledger=ledger)
+        return EmptyLineageSuggester(
+            EmptyLineageSuggester.NO_CREDENTIALS_REASON, ledger=ledger,
+            not_called_reason=REASON_NO_CREDENTIALS, model=settings.model)
+    return EmptyLineageSuggester(EmptyLineageSuggester.BY_DESIGN_REASON)
+
+
+def _candidates(raw: object) -> tuple[ParentCandidate, ...] | str:
+    """계약대로면 후보들, 아니면 **사유 문자열**(400 이 된다).
+
+    계약 밖 열쇠·정규 ID 아님·상한 초과는 전부 400 이다. 요구하지 않으면 소비자가 계약과
+    다른 모양을 보내도 아무도 모른다 — 실제로 그런 상태였다(`uploadId` 선례).
+    """
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        return "candidates 는 배열이다."
+    if len(raw) > MAX_CANDIDATES:
+        return f"후보는 최대 {MAX_CANDIDATES}건이다 — 계약 maxItems."
+    out = []
+    for item in raw:
+        if not isinstance(item, dict):
+            return "후보 항목이 객체가 아니다."
+        unknown = set(item) - CANDIDATE_KEYS
+        if unknown:
+            return f"후보에 계약에 없는 열쇠다: {sorted(unknown)} — 계약이 닫혀 있다."
+        name = item.get("name")
+        if not is_valid_ulid(item.get("datasetId")):
+            return "후보의 datasetId 가 정규 ID 가 아니다 — 지어내지 않는다."
+        if not isinstance(name, str) or not name.strip():
+            return "후보의 name 이 계약대로가 아니다."
+        level = item.get("processingLevel")
+        if level is not None and (isinstance(level, bool) or not isinstance(level, int)
+                                  or level < 0):
+            return "후보의 processingLevel 이 계약 밖이다 — 0 이상 정수다."
+        for key in CANDIDATE_TEXT_KEYS:
+            text = item.get(key)
+            if text is None:
+                continue                      # 모르는 값은 열쇠가 없다 — 그것이 계약이다
+            if not isinstance(text, str) or not text.strip():
+                return f"후보의 {key} 가 계약대로가 아니다 — 1자 이상 문자열이다."
+        # 계약은 `array · items {type: string, minLength: 1}` 이다. **빈 배열은 정상이다** —
+        # 변수 행이 한 줄도 없는 데이터셋이 실재한다(계약 산문 축자).
+        variables = item.get("variables")
+        if variables is not None:
+            if not isinstance(variables, list) or isinstance(variables, bool):
+                return "후보의 variables 가 계약대로가 아니다 — 문자열 배열이다."
+            if any(not isinstance(v, str) or not v.strip() for v in variables):
+                return "후보의 variables 항목이 계약대로가 아니다 — 1자 이상 문자열이다."
+            variables = tuple(variables)
+        out.append(ParentCandidate(
+            dataset_id=item["datasetId"], name=name, topic=item.get("topic"),
+            summary=item.get("summary"), source_label=item.get("sourceLabel"),
+            processing_level=level, period_start=item.get("periodStart"),
+            period_end=item.get("periodEnd"), crs=item.get("crs"),
+            grid=item.get("grid"), variables=variables,
+            file_name=item.get("fileName")))
+    return tuple(out)
 
 
 def _error(status: int, code: str, message: str) -> JSONResponse:
@@ -73,7 +176,11 @@ async def _raw_body(request: Request) -> bytes:
     return await request.body()
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None,
+               suggester: LineageSuggesterPort | None = None) -> FastAPI:
+    """`suggester` 는 **시험 주입구**다 — 실운전에서는 `build_suggester` 가 고른다.
+    게이트가 모델을 부르지 않으려면 전송을 갈아끼울 자리가 조립에 있어야 한다.
+    """
     settings = settings or Settings.from_env()
     app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
     app.add_middleware(TraceMiddleware, service_name="ai-service")
@@ -84,16 +191,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # 이번 릴리즈의 기본은 `literal` 이고, 그건 고장이 아니라 결정이라 사유 문구도 다르다.
     # LLM 은 **스위치와 키가 둘 다** 있어야 선다 — 스위치만 켜고 키가 없으면 낱말 검색으로
     # 남되, 그때는 「쓰기로 했는데 못 썼다」이므로 기본(고장) 문구가 맞다.
+    # **실행 원장은 모델을 부를 수 있는 조립에만 붙는다** (intent
+    # `2026-09-24-d10-model-call-ledger`). 주소가 없으면 빈 원장이고, 빈 원장은
+    # 터지지 않는다 — 「설정이 하나도 없어도 뜬다」가 원장 때문에 거짓이 되지 않는다.
+    ledger = build_ledger(settings)
     use_llm = settings.query_interpretation == "llm" and bool(settings.openai_api_key)
     if use_llm:
         interpreter = LlmQueryInterpreter(
             api_key=settings.openai_api_key, model=settings.model,
-            timeout_seconds=settings.model_timeout_seconds)
+            timeout_seconds=settings.model_timeout_seconds, ledger=ledger)
     elif settings.query_interpretation == "llm":
-        interpreter = LiteralInterpreter()          # 켜려 했으나 키가 없다 = 고장 문구
+        # 켜려 했으나 키가 없다 = 고장 문구.
+        #
+        # ⚠ **알고 남긴 비대칭이다.** 제안 쪽의 같은 갈래(`build_suggester`)는
+        # `not_called / no_credentials` 행을 남기는데 여기는 남기지 않는다 — 이 자리에서
+        # 행을 남기려면 `LlmQueryInterpreter(api_key=None, …)` 를 세워야 하고, 그러면
+        # 사용자가 읽는 `degradedReason` 문구가 바뀐다(「쓰지 않았다」→「자격 증명이 없다」).
+        # 원장 회차가 화면 문구를 바꾸지 않는다. **Ted 판정 대기** — 문구를 정정할지,
+        # 이 갈래는 행 없이 둘지.
+        interpreter = LiteralInterpreter()
     else:
         interpreter = LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON)
     service = SearchService(interpreter=interpreter, dictionaries=dictionaries)
+    suggester = suggester or build_suggester(settings, ledger)
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -156,7 +276,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(content=body)
 
     @app.post("/lineage-suggestions")
-    async def suggest_lineage(request: Request):
+    def suggest_lineage(request: Request, body: bytes = Depends(_raw_body)):
         """`core-ai.yaml suggestLineage` — **제안만 한다. 저장하지 않는다.**
 
         이 함수 안에 쓰기가 없는 것이 `CLAUDE.md §3-2` 의 코드 쪽 표현이고, 게이트
@@ -165,9 +285,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         **계약을 표면이 실제로 요구한다.** `file` 이 required 이고 열쇠 집합이 닫혀 있다 —
         요구하지 않으면 소비자가 계약과 다른 모양을 보내도 아무도 모른다. 실제로 그런
         상태였다(중계가 계약에 없는 열쇠를 보냈고 생산자가 없어 거절한 적이 없었다).
+
+        ⭑ **`def` 로 바뀌었다 — 코루틴이 아니다** (`/searches` 와 같은 사유). 제안
+        생산자가 켜지면 이 함수가 `urlopen(timeout=8)` 을 붙든다. 코루틴으로 두면 그동안
+        **이벤트 루프가 통째로 멈추고** 같은 프로세스의 `/healthz` 까지 답을 못 한다.
         """
         try:
-            payload = await request.json()
+            payload = json.loads(body)
         except Exception:                                        # noqa: BLE001
             return _error(400, "bad_request", "본문이 JSON 이 아니다.")
         if not isinstance(payload, dict):
@@ -206,6 +330,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return _error(400, "bad_request",
                           f"file.kind 가 계약 밖이다 — 허용은 {list(FILE_KINDS)}.")
 
+        candidates = _candidates(payload.get("candidates"))
+        if isinstance(candidates, str):
+            return _error(400, "bad_request", candidates)
+
+        # ⭑ ⟨2026-09-24 · K3 `WU-S3`⟩ **받기만 한다 — 거르지 않는다**(`〈72〉-㉮` 분담).
+        #   ⚠ `bool` 을 먼저 막는다. 파이썬에서 `True` 는 `1` 이다.
+        #   ⚠ **안 보낸 것(`None`)과 계약 밖 값을 가른다** — 생략은 200 이고(선택 필드),
+        #   `null`·`4`·`"2"` 는 400 이다. 둘을 접으면 소비자의 표류를 아무도 못 센다.
+        upload_level = payload.get("processingLevel")
+        if "processingLevel" in payload:
+            if (isinstance(upload_level, bool)
+                    or not isinstance(upload_level, int)
+                    or not 0 <= upload_level <= MAX_PROCESSING_LEVEL):
+                return _error(400, "bad_request",
+                              f"processingLevel 은 0~{MAX_PROCESSING_LEVEL} 정수다 — 계약 밖이다.")
+
         searched = scope.get("searchedCount")
         if not isinstance(searched, int) or isinstance(searched, bool) or searched < 0:
             searched = 0
@@ -217,14 +357,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                       # **판정 방법을 적지 않았다.** 지어내면 화면이
                                       # 「원천 표기만 남기면 된다」를 근거 없이 띄운다.
                                       raw_data_likely=False)
-        # **0건이 나오는 이유를 코드가 이름으로 말한다.** 「없더라」가 아니라
-        # 「물어볼 재료가 요청에 없다」다 — 두 갈래를 같은 값으로 접지 않는다.
-        body = envelope.build(
-            suggestions=[],
-            empty_declaration=(
-                "부모 후보를 실을 자리가 요청에 없고 이 단위는 카탈로그를 읽지 못한다 — "
-                "살펴보고 못 찾은 것이 아니라 살펴볼 재료를 받지 못한 것이다. "
-                "제안 없이 직접 골라 등록할 수 있다."))
-        return JSONResponse(content=body)
+        # **생산자는 예외를 던지지 않는다** — 못 하면 빈 제안 + 사유다. 0건이 나오는 이유를
+        # 사유 문구가 이름으로 말한다(「후보가 없다」·「켜지 않았다」·「닿지 못했다」는
+        # 사용자에게 다른 사실이고, 두 갈래를 같은 값으로 접지 않는다).
+        outcome = suggester.suggest(
+            file_meta=meta, candidates=candidates,
+            dataset_name_draft=payload.get("datasetNameDraft"),
+            subject=payload.get("subject"), processing_level=upload_level)
+        return JSONResponse(content=envelope.build(
+            suggestions=list(outcome.suggestions),
+            empty_declaration=outcome.empty_declaration))
 
     return app

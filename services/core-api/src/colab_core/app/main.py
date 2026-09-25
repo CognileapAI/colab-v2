@@ -38,8 +38,8 @@ from ..kernel.db import make_engine, make_session_factory
 from ..kernel.download_ticket import DownloadTicketSigner
 from ..kernel.observability import TraceMiddleware
 from ..kernel.session_token import SessionSigner
-from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
-                    HttpPreviewRelay)
+from .relay import HttpDatasetSearchRelay, HttpPreviewRelay
+from .rule_suggest import build_lineage_suggester
 from .routes import (access, accounts, catalog, deletion, download, identity, ingestion,
                      insight, lineage, members, not_implemented, preview, project,
                      representative_image, search_evidence, session, upload_transfers)
@@ -139,7 +139,10 @@ def create_app(settings: Settings | None = None, *, test_static_subjects: bool =
                           if settings.viz_base_url and settings.viz_service_token else None)
     # ai-service 는 주소가 없어도 중계를 세운다 — 그쪽이 **0건 + degraded** 를 만들어 낸다.
     # 「AI 가 없다」가 「업로드를 못 한다」가 되면 안 된다 (CLAUDE.md §3).
-    app.state.suggestions = HttpLineageSuggestionRelay(settings.ai_base_url)
+    # ⭑ ⟨K3 `WU-S5` 2026-09-24⟩ **팔을 고르는 자리는 여기 하나다** — 기본은 모델 팔이라
+    # 이 줄이 기존 동작을 바꾸지 않는다(모르는 값도 같은 자리로 떨어진다). 규칙 팔은
+    # 모델에 닿지 않으므로 주소가 없어도 답이 같다.
+    app.state.suggestions = build_lineage_suggester(settings.ai_base_url)
     # 검색도 같은 규칙이다 — 주소가 없으면 **0건 + degraded** 로 답하고 화면은 산다
     # (`〈80〉-㉯ 5`). 「AI 가 없다」가 「검색 화면이 죽는다」가 되면 안 된다.
     app.state.searches = HttpDatasetSearchRelay(settings.ai_base_url)

@@ -14,13 +14,23 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
-from conftest import LAB_A, TOKEN_RES, auth
+from conftest import ACC_A_RES, DS_A1, DS_A2, DS_B1, LAB_A, TOKEN_RES, auth
 from test_dataset_registration import make_upload
 
 from colab_core.app.main import API_PREFIX
 
 
-def _get(client, upload_id, **params):
+#: ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 가공 단계를 안 고르면 모델을 부르지 않는다**(Ted 판정 ③ ·
+#: 라운드 `WU-S1` Q2a). 그래서 아래 시험들은 「사람이 골랐다」를 **명시한다** — 안 고른 자리의
+#: 응답은 이 파일의 `test_가공_단계를_안_고르면...` 이 따로 재는 **다른 사실**이다.
+#: `Lv1` 인 이유: 시드의 후보(DSA1 파생 0 · DSA2 파생 1)가 둘 다 적격으로 남아 종전 오라클이
+#: 그대로 선다. 적격 필터 자체는 도메인 시험이 잰다.
+DEFAULT_USER_SET_LEVEL = "Lv1"
+
+
+def _get(client, upload_id, *, processingLevelUserSet=DEFAULT_USER_SET_LEVEL, **params):
+    if processingLevelUserSet is not None:
+        params["processingLevelUserSet"] = processingLevelUserSet
     return client.get(f"{API_PREFIX}/uploads/{upload_id}/lineage-suggestions",
                       params=params, headers=auth(TOKEN_RES))
 
@@ -96,15 +106,22 @@ def fake_ai():
 
 
 def test_a_real_answer_is_relayed_without_reshaping(p2_client, fake_ai) -> None:
-    """스키마는 중계라 **재선언하지 않는다** — `core-ai.yaml` 정의를 그대로 지난다."""
+    """스키마는 중계라 **재선언하지 않는다** — `core-ai.yaml` 정의를 그대로 지난다.
+
+    ⭑ **⟨K3 `WU-S2` 2026-09-24⟩ 「모양을 바꾸지 않는다」의 범위가 좁아졌다.**
+    「가공 전 데이터」 제안은 이제 core-api 가 인용을 검증하고 `confidence`·`rationale` 을
+    **다시 쓴다**(Ted 판정 4 — 사실을 쥔 쪽이 문장도 쥔다). 그러므로 **지나가기만 하는 것**을
+    재는 이 시험의 대상은 검증 축이 없는 「가공 방식」이다. 파생 쪽은 아래 `WU-S2` 절이 잰다.
+    """
     base, fake = fake_ai
     fake.status = 200
     fake.payload = {
         "degraded": False,
         "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 3},
         "rawDataLikely": False,
-        "suggestions": [{"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "kind": "가공 전 데이터",
-                         "confidence": "애매", "rationale": "이름이 비슷하다"}],
+        "suggestions": [{"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "kind": "가공 방식",
+                         "confidence": "애매", "rationale": "이름이 비슷하다",
+                         "methodText": "0.25도 격자로 잘랐다"}],
     }
     client = p2_client(ai_base_url=base)
     receipt = make_upload(client)
@@ -357,3 +374,648 @@ def test_소비자와_생산자가_같은_계약_한_벌을_본다(p2_client, re
     assert set(body) <= set(req["properties"])
     assert set(meta["required"]) <= set(body["file"])
     assert set(body["file"]) <= set(meta["properties"])
+
+
+# ═════════ 후보를 골라 실어 보낸다 · 후보 밖 ID 를 버린다 (K3 `WU1b`) ═════════
+#
+# ⚠ **여기까지 오기 전에는 요청이 「무엇을 살펴볼지」를 말하지 않았다.** 생산자는 카탈로그에
+# 닿지 못하므로(`CLAUDE.md §3-1`) 후보를 못 받으면 낼 수 있는 참인 답이 언제나 0건이다.
+# 후보를 고르는 것은 D3 의 주인인 core-api 이고(`〈72〉-㉮` 검색과 같은 분담), 고른 모집단은
+# 사람이 고르는 후보(`listLineageCandidates`)와 **같아야 한다** — `select_lineage_candidates`
+# 한 함수만 부르는 이유다. 되받은 제안 중 **보낸 후보 밖의 부모**를 실은 것은 버린다.
+
+#: ⚠ ULID 알파벳에는 `I`·`L`·`O`·`U` 가 없다 — `DSLNG1` 은 도메인 CHECK 에 걸린다.
+_SUMMARY_SEED = "00000000000000000000DSSMR1"
+_BARE_SEED = "00000000000000000000DSBAR1"
+_VEG_SEED = "00000000000000000000DSVEG1"
+TOPIC_VEG = "식생·NDVI"
+
+
+def _seed_dataset(sql, dataset_id, *, name, topic=None, summary="시험 자료",
+                  source_label=None, modified="2026-03-01T00:00:00Z",
+                  lab=LAB_A, account=ACC_A_RES) -> None:
+    """후보 모집단에 한 건을 더한다. **시드 3건(DSA1·DSA2·DSB1)은 고치지 않는다** —
+    시드를 흔들면 다른 시험의 개수 오라클이 함께 흔들린다."""
+    sql("""INSERT INTO d3_dataset(id, lab_id, owner_account_id, uploader_account_id,
+                                  source_label, uploaded_at, last_modified_at)
+           VALUES(:id, :lab, :account, :account, :source, :modified, :modified)""",
+        {"id": dataset_id, "lab": lab, "account": account,
+         "source": source_label, "modified": modified},
+        account_id=account, lab_id=lab)
+    sql("""INSERT INTO d3_dataset_description(dataset_id, lab_id, name, topic, summary)
+           VALUES(:id, :lab, :name, :topic, :summary)""",
+        {"id": dataset_id, "lab": lab, "name": name, "topic": topic, "summary": summary},
+        account_id=account, lab_id=lab)
+
+
+def _sent_candidates(seen) -> list[dict]:
+    assert seen, "요청이 나가지 않았다."
+    assert "candidates" in seen[0], "후보를 싣지 않으면 생산자가 낼 수 있는 답은 언제나 0건이다."
+    return seen[0]["candidates"]
+
+
+def _by_id(candidates) -> dict[str, dict]:
+    return {c["datasetId"]: c for c in candidates}
+
+
+def test_나가는_요청의_후보가_계약_열쇠_집합_안이다(p2_client, recording_ai) -> None:
+    """`LineageParentCandidate` 가 오라클이다 — `additionalProperties: false` 이므로
+    계약 밖 열쇠는 명시적 위반이고, `required` 둘은 언제나 있어야 한다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schema = _contract_schemas()["LineageParentCandidate"]
+    allowed, required = set(schema["properties"]), set(schema["required"])
+    candidates = _sent_candidates(seen)
+    assert candidates, "연구실에 데이터셋이 2건 있는데 후보가 0건이다."
+    for candidate in candidates:
+        extra = set(candidate) - allowed
+        assert not extra, f"계약에 없는 열쇠를 후보에 실었다: {extra}"
+        assert required <= set(candidate), f"후보의 required 가 없다: {required - set(candidate)}"
+        for key, value in candidate.items():
+            assert value not in ("", [], None), f"{key} 를 빈 값으로 채웠다 — 생략해야 한다"
+
+
+def test_후보에_다른_연구실_데이터셋은_없다(p2_client, recording_ai) -> None:
+    """경계는 세션의 RLS 가 긋는다 — 후보 선정이 그 경계를 넘으면 남의 연구실 이름·설명이
+    모델 입력으로 나간다. 여기가 그 유일한 직접 측정이다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    ids = set(_by_id(_sent_candidates(seen)))
+    assert DS_B1 not in ids, "B 연구실 데이터셋이 후보로 나갔다."
+    assert {DS_A1, DS_A2} <= ids
+
+
+def test_후보의_가공단계는_판정된_것만_싣는다(p2_client, recording_ai, sql) -> None:
+    """**미지와 Lv0 은 다른 사실이다.** 판정이 없는 후보에 `0`·`null` 을 실으면
+    「원자료다」로 읽힌다(계약 `processingLevel` 산문)."""
+    _seed_dataset(sql, _BARE_SEED, name="판정 없는 자료", source_label=None)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    sent = _by_id(_sent_candidates(seen))
+    assert _BARE_SEED in sent, "새로 넣은 후보가 모집단에 없다."
+    assert "processingLevel" not in sent[_BARE_SEED], \
+        "판정이 없는 후보에 가공 단계를 실었다 — 「모른다」가 「Lv0」이 된다."
+    # DSA2 는 확정된 부모(DSA1)가 있다 — 판정이 있는 쪽이다.
+    assert sent[DS_A2]["processingLevel"] == 1
+    for candidate in sent.values():
+        assert candidate.get("processingLevel", 0) is not None
+
+
+def test_후보의_설명과_원천표기를_계약_상한으로_잘라_보낸다(p2_client, recording_ai, sql) -> None:
+    """상한은 본문이 부풀지 않게 **계약이** 걸고, 넘치면 core-api 가 잘라 보낸다
+    (`LineageParentCandidate.summary` 산문). D3 의 저장값에는 상한이 없다."""
+    long_summary, long_label = "가" * 300, "나" * 80
+    _seed_dataset(sql, _SUMMARY_SEED, name="긴 설명 자료",
+                  summary=long_summary, source_label=long_label)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schema = _contract_schemas()["LineageParentCandidate"]["properties"]
+    sent = _by_id(_sent_candidates(seen))[_SUMMARY_SEED]
+    assert len(sent["summary"]) == schema["summary"]["maxLength"]
+    assert long_summary.startswith(sent["summary"])
+    assert len(sent["sourceLabel"]) == schema["sourceLabel"]["maxLength"]
+    assert long_label.startswith(sent["sourceLabel"])
+
+
+def test_후보는_계약_상한_건수를_넘지_않는다(p2_client, recording_ai, sql) -> None:
+    """상한 k=20 — 계약 `maxItems` 와 같은 값이다(미해결 질문 ④ · Ted 결정 ⑥)."""
+    sql("""INSERT INTO d3_dataset(id, lab_id, owner_account_id, uploader_account_id,
+                                  uploaded_at, last_modified_at)
+           SELECT '0000000000000000000000DS' || to_char(n, 'FM00'), :lab, :acc, :acc,
+                  CAST(:modified AS timestamptz), CAST(:modified AS timestamptz)
+             FROM generate_series(1, 21) AS n""",
+        {"lab": LAB_A, "acc": ACC_A_RES, "modified": "2026-04-01T00:00:00Z"})
+    sql("""INSERT INTO d3_dataset_description(dataset_id, lab_id, name, summary)
+           SELECT '0000000000000000000000DS' || to_char(n, 'FM00'), :lab,
+                  '다수 후보 ' || n, '시험 자료'
+             FROM generate_series(1, 21) AS n""",
+        {"lab": LAB_A})
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    cap = _contract_schemas()["LineageSuggestionRequest"]["properties"]["candidates"]["maxItems"]
+    assert len(_sent_candidates(seen)) == cap, "후보 상한을 넘겨 실었다."
+
+
+def test_주제를_고른_업로드는_그_주제의_후보만_받는다(p2_client, recording_ai, sql) -> None:
+    """후보 전략의 **잠정 기본값은 `filtered`** 다(Ted 결정 ① 2026-09-24 · J1 근거).
+    환경변수로 갈아끼우는 자리를 두지 않는다 — 기본값이 측정 없이 흔들리는 자리가 된다."""
+    from colab_core.app.routes import ingestion as _ing
+    from colab_core.domains import d3_catalog as _d3
+
+    assert _ing.LINEAGE_CANDIDATE_STRATEGY == _d3.FILTERED_CANDIDATES
+
+    _seed_dataset(sql, _VEG_SEED, name="A 식생 NDVI 월평균", topic=TOPIC_VEG,
+                  source_label="국립기상과학원")
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"], subject=TOPIC_VEG)
+    assert list(_by_id(_sent_candidates(seen))) == [_VEG_SEED], \
+        "주제를 고른 업로드가 모집단 전체를 받았다 — 필터가 배선되지 않았다."
+
+
+# ─── 자식 자신은 요청에 실리지 않는다 (Ted 결정 ⑦ · intent 「판정 기록 2회차」 7) ───
+#
+# luna 실측 J5 에서 억지 선택 6건 중 5건이 **자식 자신**이었다. 같은 자료가 이미 등록돼
+# 있으면 그 데이터셋이 후보에 서고, 모델에게는 후보 밖 ID 가 아니라 **오답**으로 보인다.
+# 빼는 조건은 이름 초안과 파일명이 **둘 다** 같을 때뿐이다(`d3_catalog` 의 같은 이름 절).
+_TWIN_SEED = "00000000000000000000DSTWN1"
+_TWIN_NAME = "A 강우 재적재 표본"
+_TWIN_FILE = "twin_sample.npy"
+
+
+def _seed_body_file(sql, dataset_id, file_id, *, file_name) -> None:
+    sql("""INSERT INTO d3_file (id, lab_id, dataset_id, kind, file_name,
+                                size_bytes, storage_key)
+           VALUES (:id, :lab, :dataset, '본체', :file_name, 7, :key)""",
+        {"id": file_id, "lab": LAB_A, "dataset": dataset_id,
+         "file_name": file_name, "key": f"k/{file_id}"})
+
+
+def test_이름과_파일명이_둘_다_같은_데이터셋은_후보로_나가지_않는다(
+        p2_client, recording_ai, sql) -> None:
+    """**중계까지 배선됐는가**가 이 시험의 전부다 — 도메인 단위 시험은
+    `test_lineage_candidate_selection.py` 의 같은 이름 절이 따로 본다."""
+    from test_uploads import one_body
+
+    _seed_dataset(sql, _TWIN_SEED, name=_TWIN_NAME, topic="강우·강수",
+                  source_label="기상청", modified="2026-05-01T00:00:00Z")
+    _seed_body_file(sql, _TWIN_SEED, "00000000000000000000000FT1", file_name=_TWIN_FILE)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    receipt = make_upload(client, files=one_body(_TWIN_FILE))
+    _get(client, receipt["uploadId"], datasetNameDraft=_TWIN_NAME)
+    sent = _by_id(_sent_candidates(seen))
+    assert _TWIN_SEED not in sent, "업로드와 이름·파일명이 둘 다 같은 데이터셋을 후보로 실었다."
+    assert DS_A1 in sent, "자기 자신을 빼면서 남의 후보까지 지웠다."
+
+
+def test_이름만_같은_다른_판본은_후보로_그대로_나간다(
+        p2_client, recording_ai, sql) -> None:
+    from test_uploads import one_body
+
+    _seed_dataset(sql, _TWIN_SEED, name=_TWIN_NAME, topic="강우·강수",
+                  source_label="기상청", modified="2026-05-01T00:00:00Z")
+    _seed_body_file(sql, _TWIN_SEED, "00000000000000000000000FT1", file_name=_TWIN_FILE)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    receipt = make_upload(client, files=one_body("다른_표본.npy"))
+    _get(client, receipt["uploadId"], datasetNameDraft=_TWIN_NAME)
+    assert _TWIN_SEED in _by_id(_sent_candidates(seen)), \
+        "이름만 같은 다른 판본을 뺐다 — 사람이 고를 수 있는 부모가 사라진다."
+
+
+def test_후보가_0건이면_후보를_싣지_않고_응답은_여전히_200_0건이다(
+        p2_client, recording_ai, monkeypatch) -> None:
+    """빈 연구실의 첫 업로드는 **정상 응답**이다 — 5xx 로 끝내지 않는다."""
+    from colab_core.app.routes import ingestion as _ing
+
+    calls: list[dict] = []
+
+    def _none(session, **kwargs):
+        calls.append(kwargs)
+        return []
+
+    monkeypatch.setattr(_ing.d3_catalog, "select_lineage_candidates", _none)
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    r = _get(client, make_upload(client)["uploadId"])
+    assert len(calls) == 1, "후보 선정을 부르지 않았다 — 모집단이 두 벌이 되는 자리다."
+    assert r.status_code == 200, r.text
+    assert r.json()["suggestions"] == []
+    assert seen and seen[0].get("candidates", []) == [], \
+        "후보가 0건인데 빈 배열도 생략도 아닌 값을 실었다."
+
+
+def test_후보_밖_ID_를_실은_제안은_버려지고_나머지는_남는다(
+        p2_client, recording_ai, caplog, sql) -> None:
+    """**신뢰하지 않는 쪽에서 거른다** — 응답 `scope` 를 버리는 그 자리와 같은 규율이다
+    (`〈72〉-㉮`). 한 건이 후보 밖이라고 응답 전체를 버리지 않는다."""
+    import logging as _logging
+
+    from colab_core.app import relay as _relay
+
+    outside = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    base, seen = recording_ai
+    _FakeAi.payload = {
+        "degraded": False,
+        "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+        "rawDataLikely": False,
+        "suggestions": [
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FA0", "kind": "가공 전 데이터",
+             "confidence": "애매", "rationale": "이름이 비슷하다",
+             "parentDatasetId": DS_A1, "parentDatasetName": "A 강우 원자료",
+             "suggestedParentRole": "주입력",
+             # ⭑ ⟨WU-S2⟩ **참인 인용이 있어야 살아남는다** — 여기서 재는 것은 「후보 밖 폐기」
+             #   이고, 인용이 없으면 두 규칙 중 어느 쪽이 버렸는지가 갈리지 않는다.
+             "evidence": [{"field": "crs", "uploadValue": _S2_CRS,
+                           "candidateValue": _S2_CRS}]},
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FA1", "kind": "가공 전 데이터",
+             "confidence": "확실", "rationale": "지어낸 부모",
+             "parentDatasetId": outside, "parentDatasetName": "없는 데이터셋",
+             "suggestedParentRole": "주입력"},
+        ],
+    }
+    client = p2_client(ai_base_url=base)
+    with caplog.at_level(_logging.ERROR, logger=_relay.SUGGEST_LOGGER):
+        body = _get(client, _matched_upload(client, sql)["uploadId"]).json()
+    assert DS_A1 in {c["datasetId"] for c in _sent_candidates(seen)}
+    got = [s["parentDatasetId"] for s in body["suggestions"]]
+    assert got == [DS_A1], f"후보 밖 ID 가 응답에 남았거나 나머지까지 버렸다: {got}"
+    rejected = [r for r in caplog.records
+                if getattr(r, "event", None) == "lineage.suggest.rejected"]
+    assert len(rejected) == 1, "버린 사실이 기록에 남지 않았다 — 아무도 건수를 못 센다."
+    line = rejected[0].getMessage()
+    assert "1" in str(getattr(rejected[0], "reason", "")), "버린 건수가 기록에 없다."
+    assert "A 강우 원자료" not in line and "없는 데이터셋" not in line, \
+        "기록에 데이터셋 이름을 적었다."
+
+
+# ═══════════════════ 게이트 ② 판정 2026-09-24 ═══════════════════════════════
+def test_가공_방식_제안의_부모도_후보_안이어야_남는다(p2_client, recording_ai) -> None:
+    """**부모 ID 가 실리는 자리는 둘이다.**
+
+    「가공 전 데이터」는 `parentDatasetId` 로, 「가공 방식」은 어느 부모와의 관계인지를
+    가리키는 `appliesToParentDatasetId` 로 부모를 가리킨다
+    (`core-ai.yaml ProcessingMethodSuggestion` 산문 · `DOMAINS §2 D4`). 한쪽만 보면
+    나머지 한쪽으로 **후보 밖 ID 가 그대로 화면까지 간다** — 계약 산문 ⓑ 가 막으려던 것이
+    문 하나만 잠긴 채 남는다.
+    """
+    outside = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    base, seen = recording_ai
+    _FakeAi.payload = {
+        "degraded": False,
+        "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+        "rawDataLikely": False,
+        "suggestions": [
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB0", "kind": "가공 방식",
+             "confidence": "애매", "rationale": "격자를 잘라 썼다",
+             "methodText": "0.25도 격자로 잘랐다", "appliesToParentDatasetId": DS_A1},
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB1", "kind": "가공 방식",
+             "confidence": "확실", "rationale": "지어낸 부모에 붙었다",
+             "methodText": "평균을 냈다", "appliesToParentDatasetId": outside},
+        ],
+    }
+    client = p2_client(ai_base_url=base)
+    body = _get(client, make_upload(client)["uploadId"]).json()
+    assert DS_A1 in {c["datasetId"] for c in _sent_candidates(seen)}
+    got = [s.get("appliesToParentDatasetId") for s in body["suggestions"]]
+    assert got == [DS_A1], f"후보 밖 부모를 가리킨 가공 방식이 남았거나 나머지까지 버렸다: {got}"
+
+
+def test_부모를_가리키지_않는_가공_방식은_그대로_남는다(p2_client, recording_ai) -> None:
+    """**어느 부모인지 모르면 생략한다**(계약 산문) — 생략을 「후보 밖」으로 읽어 버리면
+    참인 답이 사라진다. 버리는 것은 **가리켰는데 후보 밖일 때**뿐이다."""
+    base, seen = recording_ai
+    _FakeAi.payload = {
+        "degraded": False,
+        "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+        "rawDataLikely": False,
+        "suggestions": [
+            {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FB2", "kind": "가공 방식",
+             "confidence": "모름", "rationale": "어느 부모인지는 모른다",
+             "methodText": "단위를 바꿨다"},
+        ],
+    }
+    client = p2_client(ai_base_url=base)
+    body = _get(client, make_upload(client)["uploadId"]).json()
+    assert len(body["suggestions"]) == 1, "부모를 안 가리킨 제안까지 버렸다"
+
+
+def test_후보의_기간이_나가는_요청에_실린다(p2_client, recording_ai, sql) -> None:
+    """기간은 `d3_dataset_autometa` 가 아는 값이고 **근거 한 줄의 재료**다
+    (`LineageParentCandidate.periodStart`). 여기서 떨어뜨리면 모델은 기간을 못 보는데
+    계약도 게이트도 그 사실을 말하지 않는다 — 왕복의 한쪽 끝을 세는 자리다."""
+    sql("""UPDATE d3_dataset_autometa
+              SET period_start = CAST('2020-01-01T00:00:00Z' AS timestamptz),
+                  period_end   = CAST('2024-12-31T00:00:00Z' AS timestamptz)
+            WHERE dataset_id = :d""", {"d": DS_A1})
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    sent = _by_id(_sent_candidates(seen))[DS_A1]
+    assert sent["periodStart"].startswith("2020-01-01"), sent
+    assert sent["periodEnd"].startswith("2024-12-31"), sent
+
+
+# ═════════ WU-S1b — 가공 단계가 있어야 묻는다 · 원메타 4축을 싣는다 ══════════
+#
+# **Lv 가 없으면 모델을 부르지 않는다**(라운드 `WU-S1` Q2a · Ted 판정 ③). 기준값이 없으면
+# 적격을 가를 수 없고, 적격을 못 가르면 자손이 부모로 제안되는 자리가 그대로 열린다.
+# 그때 참인 답은 「제안이 없다」이고, 그것을 **200 + 0건 + 사유 한 줄**로 말한다.
+
+
+def test_가공_단계를_안_고르면_ai_service_를_부르지_않는다(p2_client, recording_ai) -> None:
+    """**요청이 0회다.** 부르고 버리는 것과 안 부르는 것은 다르다 — 토큰도 감시 기록도 다르다."""
+    from colab_core.app.routes import ingestion as _ing
+
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    r = _get(client, make_upload(client)["uploadId"], processingLevelUserSet=None)
+    assert r.status_code == 200, r.text
+    assert seen == [], "가공 단계를 안 골랐는데 모델 쪽으로 요청이 나갔다."
+    body = r.json()
+    assert body["suggestions"] == []
+    assert body["degraded"] is True
+    assert body["degradedReason"] == _ing.LEVEL_REQUIRED_REASON
+
+
+def test_가공_단계_사유는_기존_영_상태_사유와_다른_문장이다(p2_client, recording_ai) -> None:
+    """**네 번째 영 상태다.** 기존 셋(㈎ 뒤질 대상 0 · ㈏ 뒤졌고 0건 · ㈐ 못 물어봤다)을
+    그대로 두고 옆에 선다 — 사유 문자열이 같으면 화면이 「AI 가 죽었다」와 「네가 아직
+    안 골랐다」를 구별하지 못한다. ⚠ 사유 **코드 enum 을 새로 만들지 않는다**: 오늘
+    `degradedReason` 을 읽는 FE 소비자가 0건이라, 읽는 쪽이 생기는 회차가 그것을 정한다."""
+    from colab_core.app.routes import ingestion as _ing
+
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    not_chosen = _get(client, make_upload(client)["uploadId"],
+                      processingLevelUserSet=None).json()
+    offline = p2_client(ai_base_url=None)
+    not_asked = _get(offline, make_upload(offline)["uploadId"]).json()
+    assert not_chosen["degradedReason"] == _ing.LEVEL_REQUIRED_REASON
+    assert not_chosen["degradedReason"] != not_asked["degradedReason"], \
+        "「안 골랐다」와 「못 물어봤다」가 같은 문장으로 내려간다."
+    assert not_chosen["scope"]["labId"] == LAB_A, "사유만 남기고 범위를 잃었다."
+
+
+@pytest.mark.parametrize("bad", ["Lv9", "1", "lv1", "Lv", ""])
+def test_계약_밖_가공_단계_값은_400_이다(p2_client, recording_ai, bad) -> None:
+    """표면이 계약을 요구한다 — `fe-core.yaml` 의 enum 은 `Lv0`~`Lv3` 넷뿐이다.
+    모르는 값을 조용히 「안 골랐다」로 접으면 오타가 영 상태로 둔갑한다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    r = _get(client, make_upload(client)["uploadId"], processingLevelUserSet=bad)
+    assert r.status_code == 400, r.text
+    assert seen == [], "계약 밖 값인데 모델 쪽으로 요청이 나갔다."
+
+
+def test_나가는_요청에_사람이_고른_가공_단계가_정수로_실린다(p2_client, recording_ai) -> None:
+    """계약 `LineageSuggestionRequest.processingLevel` 은 **정수**다(인라인 0..3).
+    문자열→정수 변환 자리는 `d3_catalog.parse_user_set_level` 한 곳뿐이다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"], processingLevelUserSet="Lv2")
+    assert seen, "요청이 나가지 않았다."
+    sent = seen[0]["processingLevel"]
+    assert sent == 2 and isinstance(sent, int) and not isinstance(sent, bool), sent
+    schema = _contract_schemas()["LineageSuggestionRequest"]["properties"]["processingLevel"]
+    assert schema["minimum"] <= sent <= schema["maximum"]
+
+
+def test_후보의_원메타_네_축은_아는_것만_실린다(p2_client, recording_ai, sql) -> None:
+    """⭑ 모델이 근거를 **인용**하려면 대조할 날값이 있어야 한다(계약 `WU-S0` 산문).
+    ⚠ **날값만 싣는다** — 겹침·교집합 같은 파생 신호는 싣지 않는다(열린 권고 ① 채택).
+    ⚠ **모르는 값은 열쇠를 만들지 않는다** — 자동 메타 행이 아예 없는 후보가 그 자리다."""
+    sql("""UPDATE d3_dataset_autometa
+              SET grid = '0.25도 정규격자', bundle_file_name = 'a1-body.csv'
+            WHERE dataset_id = :d""", {"d": DS_A1})
+    _seed_dataset(sql, _BARE_SEED, name="자동 메타가 없는 자료")
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    sent = _by_id(_sent_candidates(seen))
+    known = sent[DS_A1]
+    assert known["crs"] == "EPSG:5179"
+    assert known["grid"] == "0.25도 정규격자"
+    # 변수 목록의 정본은 `d3_dataset_variable` 이고 트리거가 자동 메타로 옮긴다 — 시드의
+    # DSA1 은 세 행(`강우량`·`기온`·`유출량`)이다. 여기서 재는 것은 **날값 그대로**인가다.
+    assert known["variables"] == ["강우량", "기온", "유출량"]
+    assert known["fileName"] == "a1-body.csv"
+    unknown = sent[_BARE_SEED]
+    for axis in ("crs", "grid", "variables", "fileName"):
+        assert axis not in unknown, f"{axis} 를 모르는데 열쇠를 만들었다 — 미지가 값이 된다"
+    # **파생 신호는 나가지 않는다.** 모델이 베껴 돌려주면 인용 검증이 오라클 구실을 못 한다.
+    allowed = set(_contract_schemas()["LineageParentCandidate"]["properties"])
+    for candidate in sent.values():
+        assert set(candidate) <= allowed, f"계약 밖 열쇠: {set(candidate) - allowed}"
+
+
+def test_원메타_날값은_계약_상한으로_잘라_보낸다(p2_client, recording_ai, sql) -> None:
+    """상한은 본문이 부풀지 않게 이쪽에서 건다 — D3 저장값에는 상한이 없다
+    (`summary`·`sourceLabel` 과 같은 규율)."""
+    sql("""UPDATE d3_dataset_autometa
+              SET crs = :long, grid = :long, bundle_file_name = :long,
+                  variables = CAST(:vars AS text[])
+            WHERE dataset_id = :d""",
+        {"d": DS_A1, "long": "가" * 300,
+         "vars": "{" + ",".join(f"v{n}" for n in range(60)) + "}"})
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schema = _contract_schemas()["LineageParentCandidate"]["properties"]
+    sent = _by_id(_sent_candidates(seen))[DS_A1]
+    for axis in ("crs", "grid", "fileName"):
+        assert len(sent[axis]) == schema[axis]["maxLength"], axis
+    assert len(sent["variables"]) == schema["variables"]["maxItems"]
+
+
+def test_적격_필터가_라우트까지_배선됐다(p2_client, recording_ai) -> None:
+    """도메인 시험이 재는 것은 함수이고, 여기서 재는 것은 **배선**이다.
+    DSA2 는 확정된 부모(DSA1)가 있어 파생 Lv1 이라 `Lv0` 업로드의 부모가 될 수 없다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"], processingLevelUserSet="Lv0")
+    ids = set(_by_id(_sent_candidates(seen)))
+    assert DS_A2 not in ids, "Lv0 업로드에 파생 Lv1 후보가 나갔다 — 필터가 배선되지 않았다"
+    assert DS_A1 in ids, "같은 단계(Lv0) 후보까지 지웠다"
+    assert DS_B1 not in ids, "필터를 걸면서 연구실 경계가 넓어졌다"
+
+
+# ═══════════ WU-S2 — 인용 검증 · 파생 확신도 · 근거 한 줄 재작성 ════════════
+#
+# **여기 실린 값은 주장이지 판정이 아니다**(계약 `evidence` 산문). core-api 가 항목마다
+# 업로드 메타와 후보 자동 메타의 **실제 값**에 대조하고, 검증된 항목만 남긴다. 검증된 근거가
+# 0이면 제안이 아니다. `confidence` 는 **살아남은 축의 종류 수**에서 파생하고(≥2 확실 · 1 애매),
+# `rationale` 도 core-api 가 다시 쓴다 — 검증하지 못한 문장이 화면에 가면 「검증된 근거」라는
+# 약속이 반쪽이 된다(Ted 판정 4 · 사실을 쥔 쪽이 문장도 쥔다).
+#
+# ⚠ **구조가 막는 것과 못 막는 것을 갈라 둔다.** 인용 검증은 「지어낸 근거」를 막지
+#   **비부모를 막지 않는다** — 형제는 좌표계·기간이 진짜로 같을 수 있고, 그 제안은
+#   참인 인용을 달고 살아남는다(Ted 판정 1). 아래 `비부모` 시험이 그 사실을 적어 둔다.
+_S2_CRS = "EPSG:4326"
+_S2_GRID = "0.25도 정규격자"
+_S2_VARIABLES = ["강우량", "기온"]
+_S2_PERIOD_START = "2024-01-01T00:00:00Z"
+_S2_PERIOD_END = "2024-01-31T00:00:00Z"
+_PARENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FC0"
+
+
+def _matched_upload(client, sql, *, candidate=DS_A1) -> dict:
+    """업로드와 후보가 **실제로 맞는 축**을 갖게 만든다.
+
+    맞는 축이 하나도 없으면 어떤 인용도 검증되지 않아 모든 제안이 폐기되고, 그러면 이
+    절의 시험이 전부 「어차피 0건」으로 공짜 통과한다. 업로드 쪽 값은 워커가 냈을
+    사건(`file.header-parsed`)으로 놓는다 — core-api 는 파일을 읽지 않는다.
+    """
+    from test_autometa_from_events import _hold_event
+
+    receipt = make_upload(client)
+    _hold_event(sql, receipt["uploadId"], "file.header-parsed",
+                {"variables": _S2_VARIABLES, "crs": _S2_CRS, "grid": _S2_GRID,
+                 "period": {"start": _S2_PERIOD_START, "end": _S2_PERIOD_END},
+                 "byteSizeTotal": 4096, "unreadableFiles": []})
+    sql("""UPDATE d3_dataset_autometa
+              SET crs = :crs, grid = :grid,
+                  period_start = CAST(:start AS timestamptz),
+                  period_end   = CAST(:end AS timestamptz)
+            WHERE dataset_id = :d""",
+        {"d": candidate, "crs": _S2_CRS, "grid": _S2_GRID,
+         "start": _S2_PERIOD_START, "end": _S2_PERIOD_END})
+    return receipt
+
+
+def _parent_suggestion(*, evidence=None, confidence="모름", rationale="모델이 쓴 문장",
+                       parent=DS_A1, suggestion_id=_PARENT_ID) -> dict:
+    out = {"suggestionId": suggestion_id, "kind": "가공 전 데이터",
+           "confidence": confidence, "rationale": rationale,
+           "parentDatasetId": parent, "parentDatasetName": "A 강우 원자료",
+           "suggestedParentRole": "주입력"}
+    if evidence is not None:
+        out["evidence"] = evidence
+    return out
+
+
+def _answer(*suggestions) -> dict:
+    return {"degraded": False,
+            "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+            "rawDataLikely": False, "suggestions": list(suggestions)}
+
+
+def _suggest(client, sql, payload, *, candidate=DS_A1) -> dict:
+    _FakeAi.payload = payload
+    return _get(client, _matched_upload(client, sql, candidate=candidate)["uploadId"]).json()
+
+
+def test_검증된_인용만_남고_확신도가_종류_수대로_파생된다(
+        p2_client, recording_ai, sql) -> None:
+    """**검증된 축의 종류 수**가 확신도다 — 배열의 길이가 아니다(계약 산문 축자)."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(
+        confidence="모름", rationale="모델이 쓴 문장",
+        evidence=[{"field": "crs", "uploadValue": _S2_CRS, "candidateValue": _S2_CRS},
+                  {"field": "variables", "uploadValue": "강우량", "candidateValue": "강우량"}])))
+    assert len(body["suggestions"]) == 1, body
+    got = body["suggestions"][0]
+    assert got["confidence"] == "확실", "2종이 검증됐는데 확실이 아니다"
+    assert {e["field"] for e in got["evidence"]} == {"crs", "variables"}
+
+
+def test_모델이_쓴_확신도와_근거_문장은_읽지_않고_덮어쓴다(
+        p2_client, recording_ai, sql) -> None:
+    """⚠ **모델의 자연어를 그대로 화면에 옮기지 않는다** — 검증하지 못한 문장이 사용자에게
+    가면 J3 가 다시 「검사」로 후퇴한다. 모델의 문장은 로그·실측 기록에만 남는다."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(
+        confidence="확실", rationale="두 자료는 같은 관측망에서 나왔다",
+        evidence=[{"field": "crs", "uploadValue": _S2_CRS, "candidateValue": _S2_CRS}])))
+    got = body["suggestions"][0]
+    assert got["confidence"] == "애매", "모델이 보낸 `확실` 이 그대로 내려갔다"
+    assert "관측망" not in got["rationale"], "모델의 문장이 화면으로 나갔다"
+    assert got["rationale"].startswith("좌표계("), got["rationale"]
+    assert got["rationale"].endswith("업로드 파일과 맞는다."), got["rationale"]
+
+
+def test_지어낸_값을_인용한_항목만_버리고_나머지로_확신도를_다시_센다(
+        p2_client, recording_ai, sql) -> None:
+    """한 항목이 거짓이라고 제안째 버리지 않는다 — 남은 항목이 1종이면 `애매` 로 산다."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(
+        confidence="확실",
+        evidence=[{"field": "crs", "uploadValue": _S2_CRS, "candidateValue": _S2_CRS},
+                  # 후보의 실제 좌표계는 `EPSG:4326` 이다 — 지어낸 값은 어느 쪽에도 없다.
+                  {"field": "grid", "uploadValue": _S2_GRID, "candidateValue": "1km 격자"}])))
+    got = body["suggestions"][0]
+    assert [e["field"] for e in got["evidence"]] == ["crs"], got["evidence"]
+    assert got["confidence"] == "애매"
+    assert "격자" not in got["rationale"], "검증에서 버린 축이 근거 문장에 남았다"
+
+
+def test_규격_밖_인용_항목은_그것만_무시하고_치명상이_아니다(
+        p2_client, recording_ai, sql) -> None:
+    """`field` 가 enum 밖이거나 값이 문자열이 아니면 **그 항목만** 버린다 — 응답 전체를
+    버리면 저쪽의 표류 한 건이 제품의 0건이 된다(후보 밖 ID 를 다루는 그 규율과 같다)."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(
+        evidence=[{"field": "좌표계", "uploadValue": "가", "candidateValue": "가"},
+                  {"field": "crs", "uploadValue": 4326, "candidateValue": _S2_CRS},
+                  "문자열이 항목으로 왔다",
+                  {"field": "variables", "uploadValue": "강우량",
+                   "candidateValue": "강우량"}])))
+    got = body["suggestions"][0]
+    assert [e["field"] for e in got["evidence"]] == ["variables"]
+    assert got["confidence"] == "애매"
+
+
+@pytest.mark.parametrize("evidence", [
+    None,                                                     # 열쇠가 아예 없다
+    [],                                                       # 빈 배열
+    [{"field": "crs", "uploadValue": "EPSG:5179", "candidateValue": "EPSG:5179"}],
+])
+def test_검증된_근거가_0인_제안은_폐기된다(p2_client, recording_ai, sql, evidence) -> None:
+    """**검증된 근거가 0이면 제안이 아니다**(계약 산문). 억지 제안을 만들지 않는다."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(evidence=evidence)))
+    assert body["suggestions"] == [], body["suggestions"]
+
+
+def test_인용이_거짓인_제안을_버리면_건수만_기록에_남는다(
+        p2_client, recording_ai, sql, caplog) -> None:
+    """⚠ 기록에는 **건수만** 적는다 — 데이터셋 이름을 적으면 감시 로그가 카탈로그 사본이 된다."""
+    import logging as _logging
+
+    from colab_core.app import relay as _relay
+
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    with caplog.at_level(_logging.ERROR, logger=_relay.SUGGEST_LOGGER):
+        body = _suggest(client, sql, _answer(_parent_suggestion(
+            evidence=[{"field": "crs", "uploadValue": "EPSG:5179",
+                       "candidateValue": "EPSG:5179"}])))
+    assert body["suggestions"] == []
+    rejected = [r for r in caplog.records
+                if getattr(r, "event", None) == "lineage.suggest.rejected"]
+    assert len(rejected) == 1, "버린 사실이 기록에 남지 않았다 — 아무도 건수를 못 센다."
+    reason = str(getattr(rejected[0], "reason", ""))
+    assert "1" in reason, f"버린 건수가 기록에 없다: {reason}"
+    assert "A 강우 원자료" not in rejected[0].getMessage(), "기록에 데이터셋 이름을 적었다."
+
+
+def test_참인_인용을_가진_비부모는_살아남는다(p2_client, recording_ai, sql) -> None:
+    """⚠ **이 시험은 통과가 아니라 한계를 적는 자리다**(Ted 판정 1).
+
+    DSA2 는 업로드의 부모가 아니라 **형제 쪽**이고, 그런데도 좌표계·기간이 진짜로 같으면
+    인용이 전부 참이라 구조가 막지 못한다 — 인용 검증이 막는 것은 **지어낸 근거**이지
+    「관계 없음」이 아니다. 그 둘을 한 문장으로 말하면 J3' 의 오라클이 무의미해진다.
+    구조 보장의 판정은 「후손·자기·후보 밖·인용 오류」 넷으로 하고, 참인 인용의 비부모는
+    **기록**한다(`R-K3-STRUCTURE.md` 판정 기록 S6-⑴).
+    """
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    body = _suggest(client, sql, _answer(_parent_suggestion(
+        parent=DS_A2, evidence=[{"field": "crs", "uploadValue": _S2_CRS,
+                                 "candidateValue": _S2_CRS}])), candidate=DS_A2)
+    assert [s["parentDatasetId"] for s in body["suggestions"]] == [DS_A2], \
+        "참인 인용을 가진 비부모를 구조가 막았다 — 막는 축이 늘었다면 그 설계를 적는다"
+    assert body["suggestions"][0]["confidence"] == "애매"
+
+
+def test_인용_검증은_가공_방식_제안을_건드리지_않는다(p2_client, recording_ai, sql) -> None:
+    """「가공 방식」에는 대조할 축이 없다 — `evidence` 가 없다고 버리면 참인 답이 사라진다.
+    저쪽 문장을 다시 쓰는 것도 여기서는 하지 않는다(WU-S3 의 자리다)."""
+    base, _ = recording_ai
+    client = p2_client(ai_base_url=base)
+    method = {"suggestionId": "01ARZ3NDEKTSV4RRFFQ69G5FC1", "kind": "가공 방식",
+              "confidence": "애매", "rationale": "격자를 잘라 썼다",
+              "methodText": "0.25도 격자로 잘랐다", "appliesToParentDatasetId": DS_A1}
+    body = _suggest(client, sql, _answer(method))
+    assert body["suggestions"] == [method], body["suggestions"]

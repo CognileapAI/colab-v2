@@ -4535,9 +4535,26 @@ export interface components {
              * @enum {string}
              */
             kind: "가공 전 데이터" | "가공 방식";
-            /** @description 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.** */
+            /**
+             * @description 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.**
+             *
+             *     ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 값의 산지가 옮겨졌다.**
+             *     이 값은 모델의 선언이 아니라 **core-api 가 검증한 근거 종류 수에서 파생한
+             *     값**이다(≥2 `확실` · 1 `애매`). 「모름」은 나오지 않는다 — 그 자리는 **빈 제안**이다.
+             *     ⚠ 그러므로 ai-service 가 싣는 값은 이 스키마의 `required` 를 채우는
+             *     **잠정값**이고, core-api 가 파생값으로 **덮어쓴다.** 소비자는 core-api 를
+             *     거친 값만 본다. **타입은 그대로 두고 만드는 주체만 바뀌었다** — 빼면
+             *     파괴적 변경이고 화면의 3값도 유지된다.
+             */
             confidence: components["schemas"]["AiConfidence"];
-            /** @description 왜 이 제안인지 한 줄. nullable 이 아니다. */
+            /**
+             * @description 왜 이 제안인지 한 줄. nullable 이 아니다.
+             *
+             *     ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 최종 문장은 core-api 가 쓴다.**
+             *     ai-service 가 싣는 문장은 `required` 를 채우는 **잠정값**이고, core-api 가
+             *     **검증된 근거로 다시 써서** 덮어쓴다 — 검증에서 버려진 인용이 근거 문장에
+             *     남아 있으면 화면이 거짓 근거를 그린다.
+             */
             rationale: components["schemas"]["AiRationale"];
         };
         /**
@@ -4576,6 +4593,43 @@ export interface components {
              *     (`parentDatasetName` 과 같은 자리).
              */
             parentProcessingLevel?: components["schemas"]["ProcessingLevel"];
+            /**
+             * @description ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 모델이 인용한 근거.**
+             *     선택 필드다 — 안 보내던 생산자가 그대로 유효하다.
+             *
+             *     **여기 실린 값은 주장이지 판정이 아니다.** core-api 가 항목마다 업로드
+             *     메타(`LineageSuggestionRequest.file`)와 후보 자동 메타
+             *     (`LineageParentCandidate`)의 실제 값에 대조하고, **틀린 항목이 하나라도
+             *     있으면 그 제안째 버린다.** 검증된 항목이 **0이면 제안이 아니다**
+             *     (`Policy_업로드와_계보_확정 §8` — 억지 제안을 만들지 않는다).
+             *
+             *     `confidence` 는 여기서 **검증된 근거 종류 수**로 파생된다
+             *     (≥2 `확실` · 1 `애매` · 0 이면 제안 없음) — 이 배열의 길이가 아니라
+             *     **살아남은 종류의 수**다.
+             *
+             *     ⚠ 축 이름 5값은 core-api 비교기의 축 이름과 **같은 문자열**이다 —
+             *     두 벌이 되면 「인용한 축」과 「검증하는 축」이 갈린다.
+             */
+            evidence?: {
+                /**
+                 * @description 대조한 축. `period` 는 기간 겹침, `crs`·`grid` 는 표기 동등,
+                 *     `variables` 는 교집합 1개 이상, `fileName` 은 토큰 접두를 뜻한다.
+                 *     **판정 규칙은 core-api 에 한 벌로 있다** — 이쪽은 어느 축을
+                 *     인용했는지만 적는다.
+                 * @enum {string}
+                 */
+                field: "period" | "crs" | "grid" | "variables" | "fileName";
+                /**
+                 * @description 업로드 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                 *     `LineageSuggestionRequest.file` 의 실제 값과 대조한다.
+                 */
+                uploadValue: string;
+                /**
+                 * @description 후보 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                 *     `LineageParentCandidate` 의 실제 값과 대조한다.
+                 */
+                candidateValue: string;
+            }[];
         } & {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6477,6 +6531,21 @@ export interface operations {
                 datasetNameDraft?: string;
                 /** @description 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`). */
                 subject?: string;
+                /**
+                 * @description ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 등록 폼 ① 에서 사람이 고른
+                 *     자기 가공 단계.** 아직 안 골랐으면 생략한다 — 그때는 적격을 가를 기준값이 없어
+                 *     제안 자체가 없는 것이 참이다 (`Policy_업로드와_계보_확정 §8 가공 단계 칸`).
+                 *
+                 *     **「부모 Lv ≤ 자기 Lv」 적격 필터의 기준값**이고, 거르는 것은 core-api 다
+                 *     (`〈72〉-㉮` 분담). core-api 가 `core-ai.yaml LineageSuggestionRequest.processingLevel`
+                 *     로 정수 변환해 넘긴다.
+                 *
+                 *     ⚠ **문자열 그대로 받는다** — 저장값이 문자열이고
+                 *     (`d3_dataset.processing_level_user_set` CHECK 4값 · 마이그레이션 `0015`),
+                 *     문자열→정수 변환은 `d3_catalog.user_set_level` **한 곳에만 둔다.** 계약 층에서
+                 *     정수로 받으면 변환 자리가 둘이 되고 두 벌은 언젠가 갈린다.
+                 */
+                processingLevelUserSet?: "Lv0" | "Lv1" | "Lv2" | "Lv3";
             };
             header?: {
                 /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */

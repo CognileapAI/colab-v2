@@ -37,6 +37,11 @@ _LIVE_EMPTY = {"degraded": False,
 
 
 def _get(client, upload_id, **params):
+    # ⭑ **⟨K3 `WU-S1b` 2026-09-24⟩ 가공 단계를 안 고르면 중계를 부르지 않는다**(Ted 판정 ③).
+    # 이 파일이 재는 것은 **중계가 실패했을 때의 기록**이라, 중계가 실제로 나가는 자리여야
+    # 한다 — 그래서 「사람이 골랐다」를 명시한다. 안 고른 자리의 응답은 다른 사실이고
+    # `test_lineage_suggestions.py` 가 따로 잰다.
+    params.setdefault("processingLevelUserSet", "Lv1")
     return client.get(f"{API_PREFIX}/uploads/{upload_id}/lineage-suggestions",
                       params=params, headers=auth(TOKEN_RES))
 
