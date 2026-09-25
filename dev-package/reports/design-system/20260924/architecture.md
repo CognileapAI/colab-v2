@@ -144,16 +144,16 @@ P0~P5(P2 는 P2a·P2b 로 분할 · P4 는 P3 에 합침)를 순서 P0 → P1 �
 
 ### 판정 대기
 
-`docs/design-system.md` ⑦ 이 목록의 정본이다(16건 — 시각 값 10 · 범위·절차 6). 요지:
+`docs/design-system.md` ⑦ 이 목록의 정본이다(작성 시점 16건 — 시각 값 10 · 범위·절차 6). 〔정정 2026-09-25 — 시각 값 1–9 는 design-review 20260924(PR #141 · 병합 `a808a56f`)로 닫혀 ⑦ 「닫힘 — design-review 20260924」 표로 옮겨졌다. 남은 대기는 10(화면 편차 통일) · 11–16(범위·절차) 7건이다. 현재 목록은 `docs/design-system.md` ⑦ 을 본다.〕 요지(작성 시점):
 
-- 시각 값(결정하면 시각 변경): 억눌린 hover·상태(P2a 후속 1) · `.btn-sm` 기본값 없음 · `.chip--off` 배경 · `.btn-strong:hover` 대비 · `.chip` `#eef2f7` 토큰화 · `.dl-keep` 바탕 · `lineage.css` 안내 줄 색 · `.de-req` 다크 대비 · 화면 편차 통일.
+- 시각 값(결정하면 시각 변경) 〔정정 2026-09-25 — 화면 편차 통일(⑦-10) 말고는 모두 닫힘〕: 억눌린 hover·상태(P2a 후속 1) · `.btn-sm` 기본값 없음 · `.chip--off` 배경 · `.btn-strong:hover` 대비 · `.chip` `#eef2f7` 토큰화 · `.dl-keep` 바탕 · `lineage.css` 안내 줄 색 · `.de-req` 다크 대비 · 화면 편차 통일.
 - 범위·절차: 패턴 이관(`.page` 개명과 묶음) · 별 계열 이름·탭 합치기 · 갤러리 제품 노출 여부 · P3 제품 시험 단언 변경 수용 · P2b `cascade-map verify` 일반화 수용 · 게이트 e 의 `요소.클래스` 판정.
 
 ### 후속
 
 1. **패턴 층** — `shell.css` 「P5 이관 대기」 규칙(페이지 컨테이너 · `.page-head h1` · `.form-row`)을 `.page` 개명(TSX) 별건과 묶어 `patterns.css` 로. 화면 7파일의 경쟁 선언 정리 · 죽은 `@media` padding 판정이 선행(`docs/design-system.md` ④).
 2. **화면 편차** — `docs/design-system.md` ③ 편차 목록의 값 통일 여부(Ted 판정 뒤 이슈별 별건).
-3. **억눌린 상태** — 되살릴 항목을 판정하고 되살릴 때마다 캡처 대조로 시각 변경을 드러낸다.
+3. **억눌린 상태** 〔정정 2026-09-25 — 닫힘: design-review 20260924 판정 #18 ⓑ(그대로 · 코드 0) · `docs/design-system.md` ⑦ 닫힘 표 2〕 — 되살릴 항목을 판정하고 되살릴 때마다 캡처 대조로 시각 변경을 드러낸다.
 4. **캡처 장면 사각** — 편집 모드 · `.vfilter.on` · 확대 미리보기 · 모자이크 · 오류·로딩 상태 · `AppLayout`·`AuthGate` 분기 · hover/focus 상태(갤러리도 정적 상태만)는 캡처 대조가 보지 못한다(P0 · P3 후속 6).
 5. **`tsconfig.audit.json` 게이트** — audit 진입점(갤러리 포함)의 타입 검사는 `npm run audit:build` 에만 있고 어느 게이트에도 걸리지 않는다(P0 후속).
 6. **시각 대조 게이트 승격** — `visual:capture`·`visual:diff` 는 단계마다 수동 실행이다. 게이트로 올릴지(캡처 약 8분 · agent-browser 필요)는 P1 우려 4 그대로 열려 있다. 계산값 대조 도구(`p2b/states/cdump.py`·`compare.py`)를 `frontend/scripts/visual-baseline/` 로 올릴지도 함께(P2a 후속 3 · P3 후속 7).

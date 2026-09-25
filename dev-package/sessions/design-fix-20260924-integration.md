@@ -25,3 +25,4 @@
 
 - 두 명 모두 **go-with-conditions**. 조건 — ① 증거 폴더 커밋(이 커밋) ② PR 에 브라우저 미검증 d5 · h · 확대/이동 픽스처 한정 명시 ＋ dev 배포 뒤 실데이터 확인 3건 ③ visual-gate 서술 정정(위) ④ PR 에 사용자 노출 한계 명시: 641–1024px 터치 기기의 29px `.btn-sm` · 루트 글자≠16px 미검증 · 파란/빨간 채움 단추 누름 = hover · `@starting-style` 미지원 브라우저는 여는 전환 생략(기능 손실 없음) ⑤ 다른 채움 변형 grep → `.btn-danger` 2곳 확인(위).
 - PR 본문(저장소 밖): `~/.claude/pr-bodies/PR-BODY-design-fix-20260924.md`.
+- 〔추가 2026-09-25〕 위 「게이트」의 `fix/build.log` 는 `.gitignore:35`(`*.log`)에 걸려 develop 에 들어가지 않았다 — 같은 내용(바이트 동일)을 `dev-package/reports/design-review/20260924/fix/build-log.txt` 로 추가했다.
