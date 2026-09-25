@@ -120,9 +120,10 @@ class SearchService:
         return [{"term": h.term, "relation": h.relation, "parent": h.parent}
                 for h in (hops or ()) if h.term in live]
 
-    def _envelope(self, *, lab_id: str, lab_name: str, searched: int, is_data_query: bool,
+    def _envelope(self, *, lab_id: str | None, lab_name: str, searched: int, is_data_query: bool,
                   terms: tuple[str, ...], topic: str | None, source: str,
-                  degraded: bool, reason: str | None, expansions: list[dict] | None = None) -> dict:
+                  degraded: bool, reason: str | None, expansions: list[dict] | None = None,
+                  operator_scope: bool = False) -> dict:
         """**`scope` 가 먼저다.** 파이썬 dict 는 삽입 순서를 지키고 json 은 그 순서로 쓴다 —
         「뒤진 범위를 먼저 밝힌다」가 직렬화된 바이트에서도 사실이 된다.
 
@@ -138,8 +139,13 @@ class SearchService:
         `searchedCount` 는 **호출자가 보낸 값을 그대로 되비춘다.** 세는 것은 D3 의 일이고
         이 단위는 D3 를 못 읽는다 — 여기서 지어내면 화면의 범위 표시줄이 거짓이 된다.
         """
+        # Operator scope echoes `common.json#AiOperatorSearchScope` — no lab id
+        # (intent 2026-09-25-operator-search-scope.md Q6).
+        scope = ({"operatorScope": True, "labName": lab_name, "searchedCount": searched}
+                 if operator_scope else
+                 {"labId": lab_id, "labName": lab_name, "searchedCount": searched})
         body: dict = {
-            "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched},
+            "scope": scope,
             "isDataQuery": is_data_query,
             "degraded": degraded,
             "results": {"items": [], "totalCount": 0, "nextCursor": None},
@@ -153,8 +159,8 @@ class SearchService:
             body["degradedReason"] = reason
         return body
 
-    def search(self, *, lab_id: str, lab_name: str, query: str,
-               searched_count: int = 0) -> dict:
+    def search(self, *, lab_id: str | None, lab_name: str, query: str,
+               searched_count: int = 0, operator_scope: bool = False) -> dict:
         interpretation: Interpretation = self._interpreter.interpret(query)
         degraded = interpretation.degraded
         reason = interpretation.degraded_reason
@@ -163,7 +169,8 @@ class SearchService:
             # 오류가 아니다. 화면이 「데이터를 찾는 질문에 답해요」로 안내한다 (`§9`).
             return self._envelope(lab_id=lab_id, lab_name=lab_name, searched=searched_count,
                                   is_data_query=False, terms=(), topic=None,
-                                  source=interpretation.source, degraded=degraded, reason=reason)
+                                  source=interpretation.source, degraded=degraded, reason=reason,
+                                  operator_scope=operator_scope)
 
         # **기능어를 먼저 뺀다** (Ted 판정 2026-08-26 ⑴). 넓히기 전에 빼는 이유 —
         # 사전이 기능어를 동의어로 넓히면 뺀 말이 다른 표기로 되돌아온다.
@@ -182,7 +189,8 @@ class SearchService:
                 is_data_query=True, terms=(), topic=None, source=interpretation.source,
                 degraded=True,
                 reason=(f"질문에 찾을 말이 없다 — {names} 는 무엇을 찾든 붙는 말이라 "
-                        "검색어에서 뺐다. 찾는 자료의 이름·주제·지역·기간을 넣어 다시 물어보라."))
+                        "검색어에서 뺐다. 찾는 자료의 이름·주제·지역·기간을 넣어 다시 물어보라."),
+                operator_scope=operator_scope)
 
         # 사전으로 넓힌다. **사전이 죽어도 원문 검색어로 간다** — 검색이 멈추지 않는다.
         terms, topic = kept, interpretation.topic
@@ -198,7 +206,7 @@ class SearchService:
             # **원시 예외는 로그로만 간다** — 응답에는 안정된 문구가 나간다(위 상수 주석).
             _degraded_log.warning(
                 "event=search.dictionary.unavailable labId=%s exc=%s: %s",
-                lab_id, type(e).__name__, e)
+                lab_id or "operator", type(e).__name__, e)
             degraded = True
             reason = reason or DICTIONARY_UNAVAILABLE_REASON
 
@@ -208,4 +216,5 @@ class SearchService:
         return self._envelope(lab_id=lab_id, lab_name=lab_name, searched=searched_count,
                               is_data_query=True, terms=cut, topic=topic,
                               source=interpretation.source, degraded=degraded, reason=reason,
-                              expansions=self._expansions(cut, hops))
+                              expansions=self._expansions(cut, hops),
+                              operator_scope=operator_scope)

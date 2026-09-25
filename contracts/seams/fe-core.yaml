@@ -5353,9 +5353,14 @@ components:
             assessment:
               $ref: "#/components/schemas/SearchAssessment"
             scope:
-              allOf: [{ $ref: "../schemas/common.json#/$defs/AiSearchScope" }]
+              oneOf:
+                - $ref: "../schemas/common.json#/$defs/AiSearchScope"
+                - $ref: "../schemas/common.json#/$defs/AiOperatorSearchScope"
               description: |
                 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.**
+                [사용자 승인] 시스템 관리자(운영자)는 전 연구실을 뒤지므로 `AiOperatorSearchScope`
+                (`operatorScope: true` · `labId` 없음)로 온다. 비운영자는 종전 `AiSearchScope` 그대로다 —
+                intent `2026-09-25-operator-search-scope.md` §설계트리 Q1·Q6.
             isDataQuery:
               description: |
                 질의가 **데이터를 찾는 질문**인가. `false` 면 `items` 는 비어 있고 화면은
@@ -5502,6 +5507,14 @@ components:
               description: |
                 「왜 이 결과?」 **한 줄.** 한계도 이 한 줄 안에서 함께 밝힌다 —
                 별도 필드를 두지 않는다 (`§4 한계 표시` · `§8 AI 근거 블록`).
+            labName:
+              description: |
+                [사용자 승인] 이 자료가 속한 연구실 이름 — intent `2026-09-25-operator-search-scope.md`
+                §설계트리 Q2. **운영자 범위(`AiOperatorSearchScope`) 응답에만 실린다** — 전 연구실
+                결과에서 같은 이름의 자료를 소속으로 구분하게 한다. 비운영자 응답에는 싣지 않는다
+                (종전 응답 그대로). 이름은 core-api 가 D1 에서 붙인다 — ai-service 는 D1 을 읽지 않는다.
+              type: string
+              minLength: 1
 
     FacetSet:
       description: |

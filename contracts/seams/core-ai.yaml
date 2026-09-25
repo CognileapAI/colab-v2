@@ -956,7 +956,14 @@ components:
       additionalProperties: false
       properties:
         scope:
-          $ref: "#/components/schemas/RequestedScope"
+          description: |
+            [사용자 승인] 연구실 경계(`RequestedScope`)와 운영자 전 연구실 표식
+            (`OperatorRequestedScope`) 중 **정확히 하나**다 — intent
+            `2026-09-25-operator-search-scope.md` §설계트리 Q1·Q6. 비운영자는 종전 그대로
+            `RequestedScope` 를 보낸다.
+          oneOf:
+            - $ref: "#/components/schemas/RequestedScope"
+            - $ref: "#/components/schemas/OperatorRequestedScope"
         query:
           type: string
           description: 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`).
@@ -979,11 +986,16 @@ components:
           required: [scope, isDataQuery, results]
           properties:
             scope:
-              allOf: [{ $ref: "../schemas/common.json#/$defs/AiSearchScope" }]
+              oneOf:
+                - $ref: "../schemas/common.json#/$defs/AiSearchScope"
+                - $ref: "../schemas/common.json#/$defs/AiOperatorSearchScope"
               description: |
                 **뒤진 범위를 먼저 밝힌다.** 0건이어도 어디를 몇 개 뒤졌는지가 먼저다
                 (`Policy_데이터_찾기 §3.3` — "우리 연구실 데이터 128개를 뒤졌지만…").
                 요청의 `scope` 와 다르면 core-api 는 응답을 버린다.
+                [사용자 승인] 요청이 `OperatorRequestedScope` 였으면 `AiOperatorSearchScope` 로
+                되비춘다(`operatorScope: true` · `labId` 없음). 기존 `AiSearchScope` 는 그대로다 —
+                intent `2026-09-25-operator-search-scope.md` §설계트리 Q6.
             isDataQuery:
               type: boolean
               description: |
@@ -1103,6 +1115,35 @@ components:
             좋은 점만 적는 필드가 따로 생긴다 (`Policy_데이터_찾기 §4 한계 표시 · §8 AI 근거 블록`).
 
     # ---- 스코프 -------------------------------------------------------------
+
+    OperatorRequestedScope:
+      type: object
+      description: |
+        [사용자 승인] 시스템 관리자(운영자)의 **전 연구실** 검색 경계 — intent
+        `2026-09-25-operator-search-scope.md` §설계트리 Q1·Q6.
+        경계를 빼는 것이 아니라 **명시적 표식**으로 넘긴다. 파일 상단 판단 근거 그대로 경계는
+        호출자가 밝히고 ai-service 는 추론하지 않는다. `labId` 를 싣지 않는다 — 무소속 운영자에게
+        연구실 식별자가 없고, 가짜 값(`"None"`)을 싣지 않는다.
+        **이중 대조 규칙:** 이 표식이 오면 헤더 `X-CoLAB-Lab` 은 **없어야 한다.** 헤더가 한
+        연구실을 말하면 본문(전 연구실)과 경계가 두 곳에서 갈리므로 400 이다 — `RequestedScope`
+        의 「헤더와 본문 불일치 400」과 같은 규칙이다. 주체 헤더 `X-CoLAB-Account` 는 그대로 필수다.
+        응답은 `common.json#AiOperatorSearchScope` 로 되비추고, core-api 는 되비춤이 다르면 버린다.
+        검색 표면(`SearchRequest`)만 받는다 — 계보 제안(`LineageSuggestionRequest`)은 종전 그대로다.
+      required: [operatorScope, labName]
+      additionalProperties: false
+      properties:
+        operatorScope:
+          type: boolean
+          enum: [true]
+          description: 전 연구실을 뒤진다는 표식. `true` 하나만 받는다.
+        labName:
+          type: string
+          minLength: 1
+          description: 범위의 표기(「전체 연구실」). 응답 `labName` 이 이 값을 그대로 되비춘다.
+        searchedCount:
+          type: integer
+          minimum: 0
+          description: core-api 가 결과와 같은 범위에서 센 값. ai-service 는 되비추기만 한다.
 
     RequestedScope:
       type: object

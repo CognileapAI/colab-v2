@@ -11,11 +11,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchHitCard } from '../components/search/SearchHitCard';
 import { defaultSearchSource } from '../components/search/searchSource';
 import { useSearch } from '../components/search/useSearch';
-import type { AiSearchScope, SearchSource, SearchContext } from '../components/search/types';
+import type { SearchScope, SearchSource, SearchContext } from '../components/search/types';
 import { AssessmentPanel } from '../components/search/SearchAssessment';
 import '../components/search/search.css';
 
-function ScopeLine(props: { scope: AiSearchScope }) {
+function ScopeLine(props: { scope: SearchScope }) {
   const { scope } = props;
   return (
     <p className="scope" data-testid="search-scope">

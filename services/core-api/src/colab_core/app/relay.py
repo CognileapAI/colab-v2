@@ -149,7 +149,7 @@ def _request_binary(url: str, *, method: str, headers: dict[str, str],
         raise RelayUnavailable(str(e)) from e
 
 
-def _scope_headers(lab_id: str, account_id: str,
+def _scope_headers(lab_id: str | None, account_id: str,
                    service_token: str | None = None) -> dict[str, str]:
     """경계는 중계에도 실린다 — 큐에서 꺼낸 메시지처럼 저쪽에는 주체가 없다
     (`envelope.json labId` 주석이 같은 이유를 async 쪽에 적었다).
@@ -158,8 +158,11 @@ def _scope_headers(lab_id: str, account_id: str,
     (`core-viz.yaml` `securitySchemes.serviceToken`). 경계 헤더와 **다른 물건**이고
     둘 다 필요하다 — 경계는 「누구 것을 그리는가」이고 자격 증명은 「부를 자격이 있는가」다.
     """
-    headers = {"X-CoLAB-Lab": lab_id, "X-CoLAB-Account": account_id,
-               "Accept": "application/json"}
+    # No lab header for the operator scope (lab_id None): the body marker is the boundary
+    # (core-ai.yaml OperatorRequestedScope · intent 2026-09-25-operator-search-scope.md Q6).
+    headers = {"X-CoLAB-Account": account_id, "Accept": "application/json"}
+    if lab_id is not None:
+        headers = {"X-CoLAB-Lab": lab_id, **headers}
     traceparent = current_traceparent()
     if traceparent is not None:
         headers["traceparent"] = traceparent
@@ -406,13 +409,28 @@ class HttpDatasetSearchRelay:
     def __init__(self, base_url: str | None) -> None:
         self._base = None if not base_url else base_url.rstrip("/")
 
-    def interpret(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
-                  limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
+    def interpret(self, *, lab_id: str | None, lab_name: str, account_id: str, query: str,
+                  limit: int, cursor: str | None, searched_count: int,
+                  operator_scope: bool = False) -> dict[str, Any]:
+        """``operator_scope`` sends ``core-ai.yaml#OperatorRequestedScope`` instead of a lab.
+
+        intent 2026-09-25-operator-search-scope.md Q1/Q6: a system administrator searches
+        every lab, so the boundary goes out as an explicit marker — no lab id, no lab header.
+        """
         if self._base is None:
             return unreadable_interpretation(
                 "검색 서비스가 아직 연결되지 않았다 — 목록에서 조건으로 찾을 수 있다.")
+        if operator_scope:
+            if lab_id is not None:
+                raise ValueError("operator scope carries no lab id")
+            sent_scope: dict[str, Any] = {"operatorScope": True, "labName": lab_name,
+                                          "searchedCount": searched_count}
+            headers = _scope_headers(None, account_id)
+        else:
+            sent_scope = {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count}
+            headers = _scope_headers(lab_id, account_id)
         payload: dict[str, Any] = {
-            "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
+            "scope": sent_scope,
             "query": query,
             "limit": limit,
         }
@@ -420,7 +438,7 @@ class HttpDatasetSearchRelay:
             payload["cursor"] = cursor
         try:
             status, body = _request(f"{self._base}/searches", method="POST",
-                                    headers=_scope_headers(lab_id, account_id), body=payload)
+                                    headers=headers, body=payload)
         except RelayUnavailable as e:
             return unreadable_interpretation(f"검색 서비스에 닿지 못했다: {e}")
         if status != 200 or not isinstance(body, dict):
@@ -428,7 +446,8 @@ class HttpDatasetSearchRelay:
         # **요청의 범위와 다르면 응답을 버린다** (`core-ai.yaml SearchResponse.scope`).
         # 다른 연구실을 보고 온 해석을 이 화면에 세우면 경계가 응답 한 줄로 무너진다.
         scope = body.get("scope")
-        if not isinstance(scope, dict) or scope.get("labId") != lab_id:
+        if not isinstance(scope, dict) or scope.get("labId") != lab_id or (
+                operator_scope and (scope.get("operatorScope") is not True or "labId" in scope)):
             return unreadable_interpretation("검색 응답의 범위가 요청과 달라 버렸다.")
 
         interpretation = body.get("interpretation")

@@ -38,6 +38,13 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
         >
           {row.name}
         </button>
+        {/* 운영자 범위(전 연구실) 결과에만 서버가 싣는다 — 같은 이름의 자료를 소속으로 가른다
+            (intent `2026-09-25-operator-search-scope.md` Q2). 비운영자 응답에는 칸이 없어 안 선다. */}
+        {row.labName && (
+          <span className="chip chip--neutral" data-testid="hit-lab">
+            {row.labName}
+          </span>
+        )}
         {row.fileCount >= 2 && <span className="chip chip--neutral">조각 {row.fileCount}</span>}
         {/* 승인된 결과에만 배지가 선다 (정본 §8 「Verified 카드」 · 목업 `F-01` 391행).
             ⚠ **카탈로그의 `verified--pending` 취소선을 여기로 옮기지 않는다** — 그 표기는

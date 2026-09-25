@@ -11,6 +11,11 @@ export type SearchResultRow = S['SearchResultRow'];
  */
 export type SearchResults = Omit<S['SearchResults'], 'items'> & { items: SearchResultRow[] };
 export type AiSearchScope = S['AiSearchScope'];
+/**
+ * 범위 줄이 읽는 값 — 비운영자는 `AiSearchScope`, 운영자는 `AiOperatorSearchScope`(전 연구실 ·
+ * `labId` 없음 · intent `2026-09-25-operator-search-scope.md` Q6). 둘 다 `labName`·`searchedCount` 를 싣는다.
+ */
+export type SearchScope = SearchResults['scope'];
 
 /** 검색 질문은 1~200자다 (`SearchQuery.query`). 화면이 이 값을 두 곳에서 정하지 않는다. */
 export const MAX_QUERY_LENGTH = 200;

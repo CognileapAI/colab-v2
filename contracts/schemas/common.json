@@ -202,6 +202,18 @@
       }
     },
 
+    "AiOperatorSearchScope": {
+      "description": "[사용자 승인] 시스템 관리자(운영자)의 AI 검색이 **뒤진 범위 = 전 연구실**. 근거: intent 2026-09-25-operator-search-scope.md §설계트리 Q1·Q6 · Policy_데이터_찾기 §범위 표시줄 · CLAUDE.md §3. `AiSearchScope` 를 고치지 않고 운영자용 변형을 따로 둔다(`fe-core.yaml` `CurrentAccountV2` 선례). 연구실 식별자를 싣지 않고 `operatorScope: true` 로 범위를 밝힌다 — 무소속 운영자에게 없는 식별자를 지어내지 않는다. `labName` 은 범위의 표기(「전체 연구실」)이고 `searchedCount` 는 결과와 같은 범위에서 센 값이다.",
+      "type": "object",
+      "required": ["operatorScope", "labName", "searchedCount"],
+      "additionalProperties": false,
+      "properties": {
+        "operatorScope": { "type": "boolean", "enum": [true] },
+        "labName": { "type": "string", "minLength": 1 },
+        "searchedCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+
     "Cursor": {
       "description": "목록 이어보기 토큰. 불투명 문자열이며 클라이언트가 해석하지 않는다. 근거: 정본은 `+N건 더 보기`(할 일 함 그룹당 5건, 에픽_목록 2026-08-07)만 요구하고 페이지 번호 UI 를 두지 않는다 — 이어보기 방식은 그 화면 요구를 만족시키는 레포 결정이다.",
       "type": "string",
