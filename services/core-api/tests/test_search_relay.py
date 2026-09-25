@@ -33,12 +33,13 @@ def fake_ai():
     **응답 모양을 시험이 재선언하지 않는다** — 계약이 요구하는 세 필드
     (`scope`·`isDataQuery`·`results`)에 판정 ㈎ 가 더한 `interpretation` 만 낸다.
     """
-    state: dict = {"body": None, "status": 200, "seen": []}
+    state: dict = {"body": None, "status": 200, "seen": [], "headers": []}
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):  # noqa: N802
             raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
             state["seen"].append(json.loads(raw or b"{}"))
+            state["headers"].append(dict(self.headers.items()))
             payload = json.dumps(state["body"] or {}, ensure_ascii=False).encode()
             self.send_response(state["status"])
             self.send_header("Content-Type", "application/json")

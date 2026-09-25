@@ -124,6 +124,9 @@ class QueryInterpretationPort(Protocol):
     호출자가 D3 에서 세어 붙인다: 세는 일이 이쪽 도메인이기 때문이다.
     """
 
-    def interpret(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
-                  limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
+    def interpret(self, *, lab_id: str | None, lab_name: str, account_id: str, query: str,
+                  limit: int, cursor: str | None, searched_count: int,
+                  operator_scope: bool = False) -> dict[str, Any]:
+        """``operator_scope`` = 시스템 관리자의 전 연구실 범위 표식(`lab_id` 는 None ·
+        `core-ai.yaml#OperatorRequestedScope` · intent 2026-09-25-operator-search-scope.md Q6)."""
         ...

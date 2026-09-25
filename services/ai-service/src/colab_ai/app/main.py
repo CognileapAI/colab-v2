@@ -20,6 +20,8 @@
 둘 다 보낸다). **둘이 다르면 뒤지지 않고 400 이다** — 어느 쪽을 믿을지 이쪽이 고르면
 경계가 이 파일의 판단이 되고, 그 순간 `CLAUDE.md §3-5` 가 막으려던 「경계가 두 곳에서
 정해지는 상황」이 된다.
+운영자 범위(`scope.operatorScope: true` · intent `2026-09-25-operator-search-scope.md` Q6)는
+연구실 식별자 없이 전 연구실을 말하므로 **연구실 헤더가 없어야** 한다 — 붙으면 400 이다.
 
 **설정이 하나도 없어도 뜬다.** 사전 DB URL 도 모델 키도 없으면 `/searches` 는 5xx 가 아니라
 **질문의 낱말 그대로 + `degraded`** 를 낸다 — core-api 는 그 낱말로 실제 검색을 돌린다
@@ -334,13 +336,26 @@ def create_app(settings: Settings | None = None,
         scope = payload.get("scope")
         if not isinstance(scope, dict):
             return _error(400, "bad_request", "scope 가 없다 — 경계 없이 뒤지지 않는다.")
-        lab_id, lab_name = scope.get("labId"), scope.get("labName")
-        if not is_valid_ulid(lab_id) or not isinstance(lab_name, str) or not lab_name.strip():
-            return _error(400, "bad_request", "scope.labId · scope.labName 이 계약대로가 아니다.")
-
         header_lab = request.headers.get("X-CoLAB-Lab")
         account_id = request.headers.get("X-CoLAB-Account")
-        if header_lab and header_lab != lab_id:
+        # Operator marker (core-ai.yaml OperatorRequestedScope · intent
+        # 2026-09-25-operator-search-scope.md Q1/Q6): exactly one of `labId` or
+        # `operatorScope: true`, and no lab header — a header naming one lab would
+        # make the boundary come from two places again.
+        operator_scope = "operatorScope" in scope
+        lab_id, lab_name = scope.get("labId"), scope.get("labName")
+        if operator_scope:
+            if scope["operatorScope"] is not True or "labId" in scope \
+                    or not isinstance(lab_name, str) or not lab_name.strip():
+                return _error(400, "bad_request",
+                              "scope 는 labId 와 operatorScope: true 중 정확히 하나이고 labName 이 있다.")
+            if header_lab is not None:
+                return _error(400, "bad_request",
+                              "운영자 범위에 연구실 헤더가 붙었다 — 경계를 이쪽이 고르지 않는다.")
+            lab_id = None
+        elif not is_valid_ulid(lab_id) or not isinstance(lab_name, str) or not lab_name.strip():
+            return _error(400, "bad_request", "scope.labId · scope.labName 이 계약대로가 아니다.")
+        elif header_lab and header_lab != lab_id:
             return _error(400, "bad_request",
                           "요청 본문의 연구실과 헤더의 연구실이 다르다 — 경계를 이쪽이 고르지 않는다.")
         if not is_valid_ulid(account_id):
@@ -365,7 +380,8 @@ def create_app(settings: Settings | None = None,
         # `limit`·`cursor` 는 계약이 허용하는 값이라 규칙만 지키고 **쓰지는 않는다** —
         # 쪽 나누기는 결과를 가진 쪽(core-api)의 일이다.
         body = service.search(lab_id=lab_id, lab_name=lab_name,
-                              query=query.strip(), searched_count=searched)
+                              query=query.strip(), searched_count=searched,
+                              operator_scope=operator_scope)
         # `scope` 를 먼저 쓴 dict 를 그대로 직렬화한다 — 뒤진 범위가 바이트에서도 먼저다.
         return JSONResponse(content=body)
 

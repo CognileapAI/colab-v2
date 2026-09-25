@@ -380,6 +380,33 @@ VERIFIED_SCAN_LIMIT = 1000
 OPERATOR_SCOPE_LABEL = "전체 연구실"
 
 
+def _search_scope(subject: Subject, lab_name: str, searched_count: int) -> dict:
+    """응답 `scope` — 운영자는 `common.json#AiOperatorSearchScope`, 그 밖은 종전 `AiSearchScope`.
+
+    intent `2026-09-25-operator-search-scope.md` Q1·Q6: 운영자는 전 연구실을 뒤지므로 연구실
+    식별자를 싣지 않는다(무소속 운영자에게는 식별자가 없어 `"None"` 이 실렸다 · 이슈 #158).
+    """
+    if subject.operator:
+        return {"operatorScope": True, "labName": lab_name, "searchedCount": searched_count}
+    return {"labId": str(subject.lab_id), "labName": lab_name, "searchedCount": searched_count}
+
+
+def _attach_lab_names(db: Session, items: list[dict]) -> None:
+    """운영자 결과 카드에 소속 연구실 이름을 붙인다 (intent `2026-09-25-operator-search-scope.md` Q2).
+
+    전 연구실 결과에서 소속이 없으면 같은 이름의 자료를 구분할 수 없다. 이름은 D1, 소속은 D3 에서
+    읽고 경계는 호출 세션의 운영자 읽기 스코프가 긋는다. 이름을 모르는 행에는 칸을 싣지 않는다.
+    """
+    if not items:
+        return
+    labs = d3_catalog.dataset_labs(db, [Ulid(row["datasetId"]) for row in items])
+    names = {str(lab["id"]).strip(): lab["name"] for lab in d1_identity.list_operator_labs(db)}
+    for row in items:
+        name = names.get(labs.get(row["datasetId"], ""))
+        if name:
+            row["labName"] = name
+
+
 #: 자동완성 후보 상한. 계약 `limit` 과 같은 값이다.
 MAX_SUGGESTIONS = 20
 DEFAULT_SUGGESTIONS = 10
@@ -459,10 +486,12 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     lab = d1_identity.find_lab(db)
     lab_name = ("" if lab is None else lab["name"]) or "연구실"
     # ⭑ **⟨`R-LTH-REVIEW-1` Task 2 · spec §6 ㉰⟩ 범위 줄이 실제로 뒤진 범위를 말한다.**
-    # 운영자의 결과는 아래 `read_only_scope(..., operator_read=subject.operator)` 에서 오는데,
-    # 이름과 분모는 요청 트랜잭션(`scoped_db`)에서 왔다 — 검색은 `POST` 라 거기서는 운영자
-    # 확장이 **꺼진다**(`deps._operator_read` 는 `GET`·`HEAD` 만 연다). 그래서 종전에는
-    # 「전 연구실을 뒤지고 자기 연구실 건수를 말하는」 줄이 섰다.
+    # 운영자의 결과는 아래 `read_only_scope(..., operator_read=subject.operator)` 에서 온다.
+    # 종전에는 이름과 분모가 요청 트랜잭션(`scoped_db`)에서 왔고, 그때 `deps._operator_read` 는
+    # `GET`·`HEAD` 에서만 운영자 확장을 열어 `POST` 검색에서는 꺼졌다 — 그래서 「전 연구실을
+    # 뒤지고 자기 연구실 건수를 말하는」 줄이 섰다. 지금 `deps._operator_read` 는 메서드와
+    # 무관하게 `subject.operator` 를 돌려주지만, 이름은 여기서 운영자 표지로 고정하고 분모는
+    # 아래 결과와 같은 인자의 스코프에서 센다 — 요청 트랜잭션의 설정에 기대지 않는다.
     if subject.operator:
         lab_name = OPERATOR_SCOPE_LABEL
     # **뒤진 범위를 먼저 밝힌다** — 세는 것은 D3 이고, 그것이 이쪽 도메인이다.
@@ -481,9 +510,9 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
                               limit, cursor, verified_only)
 
     answer = request.app.state.searches.interpret(
-        lab_id=str(subject.lab_id), lab_name=lab_name,
+        lab_id=None if subject.operator else str(subject.lab_id), lab_name=lab_name,
         account_id=str(subject.account_id), query=query.strip(), limit=limit, cursor=cursor,
-        searched_count=searched_count,
+        searched_count=searched_count, operator_scope=subject.operator,
     )
 
     if answer.get("unavailable"):
@@ -611,9 +640,15 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
                 "end": None if span[1] is None else _iso(span[1]),
             }
 
+        if subject.operator:
+            # 연구실 이름 조회도 카드 검색(`ro`)과 **같은 인자**의 읽기 전용 스코프에서 돈다 —
+            # 요청 트랜잭션(`db`)의 스코프 설정에 기대지 않는다(조건 검색 갈래와 같은 규칙).
+            with read_only_scope(request.app.state.session_factory, subject,
+                                 operator_read=subject.operator) as names_ro:
+                _attach_lab_names(names_ro, items)
+
     out = {
-        "scope": {"labId": str(subject.lab_id), "labName": lab_name,
-                  "searchedCount": searched_count},
+        "scope": _search_scope(subject, lab_name, searched_count),
         "isDataQuery": answer["isDataQuery"],
         "degraded": answer["degraded"],
         "items": items,
@@ -686,7 +721,9 @@ def _client_search(request, subject, db, plan, context, lab_name, searched_count
                 out['period'] = {k:v+'T00:00:00+09:00' for k,v in match['facts']['period'].items()}
                 out['period']['granularity'] = '일'
             items.append(out)
-    return {'scope':{'labId':str(subject.lab_id),'labName':lab_name,'searchedCount':searched_count},
+        if subject.operator:
+            _attach_lab_names(ro, items)
+    return {'scope':_search_scope(subject, lab_name, searched_count),
             'isDataQuery':True,'degraded':False,'items':items,'totalCount':len(matches),
             'nextCursor':dataset_search.encode_cursor(offset+len(items)) if offset+len(items)<len(matches) else None,
             'assessment':assessment}

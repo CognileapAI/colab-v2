@@ -32,10 +32,14 @@
 #   파싱 불가·범위 밖이 NULL 로 빠질 뿐 등록을 막지 않는지 재는 자리다. ai 체인 무변(3).
 # 2026-09-25 결측률 갈래 병합 — 통합본 실측 platform 28(0043 포함) · ai 6. 위 「ai 체인 무변(3)」은
 #   갈래 기준의 기록이다.
+# 2026-09-25 운영자 검색 범위 — db/platform +1벌(`0044-drift.sh`) → **29**.
+#   `d3_search_evidence` 에 운영자 전 연구실 읽기 정책(`operator_read` · FOR SELECT)이 서고
+#   쓰기는 `lab_boundary` 그대로인지 재는 자리다(intent 2026-09-25-operator-search-scope.md Q7).
+#   ai 체인 무변(6).
 
 [[chain]]
 dir = "db/platform/tests"
-min = 28
+min = 29
 
 [[chain]]
 dir = "db/ai/tests"

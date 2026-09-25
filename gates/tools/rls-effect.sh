@@ -313,6 +313,11 @@ ROLLBACK;
 --   만큼 성질 검사를 더한다: RESTRICTIVE 는 파일 본체 표 2개의 `body_access`여야 하고
 --   `operator_read` 는 모든 표에서 **SELECT 전용 ＋ PERMISSIVE** 여야 한다. 둘 중 하나라도
 --   어긋나면 ⑴ 메타가 목록에서 사라지거나 ⑵ 운영자에게 쓰기가 열린다.
+-- ⭑ ⟨증보 0044⟩ `d3_search_evidence` 에도 `operator_read`(PERMISSIVE · SELECT 전용)가 붙어
+--   근거 표가 `d3_file` 과 같은 세 층(body_access RESTRICTIVE ＋ lab_boundary ＋ operator_read)이
+--   됐다 — 승인 intent `dev-package/intent/2026-09-25-operator-search-scope.md` Q7. 기대 목록을
+--   d3_file 과 같게 맞추고, 위 두 성질 검사(RESTRICTIVE 는 body_access 만 · operator_read 는
+--   SELECT 전용)는 그대로 둔다.
 DO $$
 DECLARE t text; got text; bad text;
 BEGIN
@@ -338,7 +343,7 @@ BEGIN
 
   SELECT string_agg(policyname || ':' || permissive, ',' ORDER BY policyname) INTO got
     FROM pg_policies WHERE schemaname='public' AND tablename = 'd3_search_evidence';
-  IF got IS DISTINCT FROM 'body_access:RESTRICTIVE,lab_boundary:PERMISSIVE' THEN
+  IF got IS DISTINCT FROM 'body_access:RESTRICTIVE,lab_boundary:PERMISSIVE,operator_read:PERMISSIVE' THEN
     RAISE EXCEPTION '[②-구조] d3_search_evidence 의 파일 본체 경계가 무너졌다(%).', got;
   END IF;
 

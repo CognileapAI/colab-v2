@@ -75,10 +75,18 @@ def operator_client(p2_client, fake_ai):  # noqa: F811
     (계정 생성 → 지정 → 로그인)는 이 시험의 대상이 아니다 — 대상은 **라우트가
     `subject.operator` 를 어떤 스코프로 읽는가** 하나다. 주체 밖의 것은 바꾸지 않는다.
     """
-    fake_ai["body"] = _ai_body(TERMS, lab_id=LAB_A)
+    def operator_body(*, is_data_query: bool = True) -> dict:
+        # ⭑ ⟨intent 2026-09-25-operator-search-scope.md Q6⟩ 운영자 요청은 운영자 범위 표식으로
+        # 가고 ai-service 는 그것을 되비춘다 — 연구실 범위로 답하면 중계가 버린다(503).
+        body = _ai_body(TERMS, lab_id=LAB_A, is_data_query=is_data_query)
+        body["scope"] = {"operatorScope": True, "labName": OPERATOR_SCOPE_LABEL,
+                         "searchedCount": 3}
+        return body
+
+    fake_ai["body"] = operator_body()
 
     def build(*, is_data_query: bool = True):
-        fake_ai["body"] = _ai_body(TERMS, lab_id=LAB_A, is_data_query=is_data_query)
+        fake_ai["body"] = operator_body(is_data_query=is_data_query)
         client = p2_client(ai_base_url=fake_ai["url"])
         inner = client.app.state.authenticators
         operator = _subject(operator=True)
@@ -153,22 +161,25 @@ def test_a_member_scope_is_named_after_its_own_lab(p2_client, fake_ai) -> None: 
         f"일반 구성원 범위 줄이 소속 연구실 이름이 아니다: {scope['labName']!r}."
 
 
-def test_the_scope_keeps_a_required_ulid_lab_id_for_both(operator_client, p2_client,
-                                                         fake_ai) -> None:  # noqa: F811
-    """계약 무변 = `AiSearchScope.labId` 는 필수 `Ulid` 로 **남는다**(spec §6 ㉰).
+def test_the_scope_keeps_a_required_ulid_lab_id_for_members_only(operator_client, p2_client,
+                                                                 fake_ai) -> None:  # noqa: F811
+    """계약 = 비운영자 `AiSearchScope.labId` 는 필수 `Ulid` 로 **남고**, 운영자는 변형으로 답한다.
 
-    운영자 응답에서도 소속 연구실 id 가 실리고 `labName` 만 집합을 말한다 — 의미 불일치는
-    스펙에 명시된 것이고, `scopeKind` 류 열쇠를 신설하지 않는다.
+    ⭑ ⟨intent `2026-09-25-operator-search-scope.md` §설계트리 Q6 · 사용자 승인⟩ 종전 판(spec §6 ㉰)은
+    운영자 응답에도 소속 연구실 id 를 싣고 `labName` 만 집합을 말하게 했다 — 「뒤진 범위(전 연구실)
+    와 식별자(한 연구실)의 의미 불일치」를 스펙에 적어 둔 채였고, 무소속 운영자에게는 그 id 가 없어
+    `"None"` 이 실렸다(이슈 #158). 이제 운영자 응답은 `AiOperatorSearchScope`
+    (`operatorScope: true` · `labId` 없음)이고, 기존 `AiSearchScope` 는 한 글자도 바뀌지 않는다.
     """
     from colab_core.kernel.ids import Ulid
 
     operator_scope = _scope_of(operator_client(), OPERATOR_TOKEN)
-    assert Ulid.is_valid(operator_scope["labId"]), operator_scope["labId"]
-    assert operator_scope["labId"] == LAB_A
-    assert LAB_B not in operator_scope["labId"]
+    assert set(operator_scope) == {"operatorScope", "labName", "searchedCount"}, operator_scope
+    assert operator_scope["operatorScope"] is True
 
     fake_ai["body"] = _ai_body(TERMS, lab_id=LAB_A)
     member_scope = _scope_of(p2_client(ai_base_url=fake_ai["url"]), TOKEN_RES)
-    assert Ulid.is_valid(member_scope["labId"])
-    assert set(operator_scope) == set(member_scope) == {"labId", "labName", "searchedCount"}, \
-        "범위 열쇠가 늘거나 줄었다 — 계약(`additionalProperties: false`)이 깨진다."
+    assert Ulid.is_valid(member_scope["labId"]) and member_scope["labId"] == LAB_A
+    assert LAB_B not in member_scope["labId"]
+    assert set(member_scope) == {"labId", "labName", "searchedCount"}, \
+        "비운영자 범위 열쇠가 늘거나 줄었다 — 계약(`additionalProperties: false`)이 깨진다."

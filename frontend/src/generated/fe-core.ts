@@ -3710,8 +3710,13 @@ export interface components {
          */
         SearchResults: components["schemas"]["ListEnvelope"] & {
             assessment?: components["schemas"]["SearchAssessment"];
-            /** @description 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.** */
-            scope: components["schemas"]["AiSearchScope"];
+            /**
+             * @description 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.**
+             *     [사용자 승인] 시스템 관리자(운영자)는 전 연구실을 뒤지므로 `AiOperatorSearchScope`
+             *     (`operatorScope: true` · `labId` 없음)로 온다. 비운영자는 종전 `AiSearchScope` 그대로다 —
+             *     intent `2026-09-25-operator-search-scope.md` §설계트리 Q1·Q6.
+             */
+            scope: components["schemas"]["AiSearchScope"] | components["schemas"]["AiOperatorSearchScope"];
             /**
              * @description 질의가 **데이터를 찾는 질문**인가. `false` 면 `items` 는 비어 있고 화면은
              *     「데이터를 찾는 질문에 답해요」 + 예시로 안내한다 (`§9`). **오류가 아니다.**
@@ -3829,6 +3834,13 @@ export interface components {
              *     별도 필드를 두지 않는다 (`§4 한계 표시` · `§8 AI 근거 블록`).
              */
             rationale: components["schemas"]["AiRationale"];
+            /**
+             * @description [사용자 승인] 이 자료가 속한 연구실 이름 — intent `2026-09-25-operator-search-scope.md`
+             *     §설계트리 Q2. **운영자 범위(`AiOperatorSearchScope`) 응답에만 실린다** — 전 연구실
+             *     결과에서 같은 이름의 자료를 소속으로 구분하게 한다. 비운영자 응답에는 싣지 않는다
+             *     (종전 응답 그대로). 이름은 core-api 가 D1 에서 붙인다 — ai-service 는 D1 을 읽지 않는다.
+             */
+            labName?: string;
         };
         /**
          * @description 조건을 걸 수 있는 다섯 열의 값별 건수.
@@ -4764,6 +4776,13 @@ export interface components {
          * @enum {string}
          */
         ProjectType: "국가과제" | "논문";
+        /** @description [사용자 승인] 시스템 관리자(운영자)의 AI 검색이 **뒤진 범위 = 전 연구실**. 근거: intent 2026-09-25-operator-search-scope.md §설계트리 Q1·Q6 · Policy_데이터_찾기 §범위 표시줄 · CLAUDE.md §3. `AiSearchScope` 를 고치지 않고 운영자용 변형을 따로 둔다(`fe-core.yaml` `CurrentAccountV2` 선례). 연구실 식별자를 싣지 않고 `operatorScope: true` 로 범위를 밝힌다 — 무소속 운영자에게 없는 식별자를 지어내지 않는다. `labName` 은 범위의 표기(「전체 연구실」)이고 `searchedCount` 는 결과와 같은 범위에서 센 값이다. */
+        AiOperatorSearchScope: {
+            /** @enum {boolean} */
+            operatorScope: true;
+            labName: string;
+            searchedCount: number;
+        };
         /**
          * @description 프로젝트 상태. 2값이며 삭제는 없다. 근거: DataModel_공통_기반 §5(상태).
          * @enum {string}
