@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -218,6 +220,350 @@ class TaskRuntimeTests(unittest.TestCase):
             contract.begin(self.root, 'researcher', gates=['check'])
         with self.assertRaises(ValueError):
             contract.begin(self.root, 'auditor', gates=['check'])
+
+
+    # ── L1 lane scope (spec S-EXTERNAL-HARNESS-GAP-20260925 · intent 2026-09-25 원한 결과 6) ──
+    def complete_lane(self, task_id):
+        """Bind a fresh run, write a coherent green report and hand off through stop()."""
+        evidence = contract.gate_start(self.root, task_id)
+        current = contract.load_task(self.root, task_id)
+        path = contract.resolve_task_path(self.root, current, current['report'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.measurement_report(evidence, current['gates'])))
+        handoff = {'task_id': task_id, 'run_id': current['run_id'], 'mode': 'complete',
+                   'summary': 'lane result', 'artifacts': {}}
+        payload = {'cwd': str(self.root), 'agent_type': 'lane-worker',
+                   'last_assistant_message': 'done\nCOLAB_HANDOFF ' + json.dumps(handoff)}
+        return contract.stop(payload, 'lane-worker')
+
+    def write(self, relative, text='x'):
+        target = self.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text)
+
+    def test_lane_scope_blocks_out_of_scope_change_and_names_both_exits(self):
+        self.write('keep.txt', 'baseline')
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**', 'docs/a.md'])
+        self.assertEqual(task['scope'], ['src/**', 'docs/a.md'])
+        self.write('src/deep/module.py')
+        self.write('docs/a.md')
+        self.write('docs/other.md')
+        with self.assertRaises(ValueError) as caught:
+            self.complete_lane(task['task_id'])
+        message = str(caught.exception)
+        self.assertIn('docs/other.md', message)
+        self.assertNotIn('src/deep/module.py', message)
+        self.assertIn('(1)', message); self.assertIn('--scope', message)
+        self.assertIn('(2)', message); self.assertIn('revert', message)
+        # A deletion outside the scope is a change outside the scope too.
+        (self.root / 'docs/other.md').unlink(); (self.root / 'keep.txt').unlink()
+        with self.assertRaisesRegex(ValueError, 'keep.txt'):
+            self.complete_lane(task['task_id'])
+        self.write('keep.txt', 'baseline')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_counts_committed_changes_after_the_working_copy_is_restored(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('docs/other.md', 'out of scope')
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        subprocess.run(git + ['add', 'docs/other.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'out of scope'], check=True)
+        (self.root / 'docs/other.md').unlink()  # working copy back to the baseline, commit remains
+        with self.assertRaisesRegex(ValueError, 'docs/other.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_scope_rejects_forms_that_match_no_file(self):
+        self.write('src/a.py')
+        for bad in (['src/'], ['src']):
+            with self.subTest(scope=bad), self.assertRaisesRegex(ValueError, r'src/\*\*'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+
+    def test_lane_scope_is_rejected_on_the_legacy_schema(self):
+        with self.assertRaisesRegex(ValueError, 'colab-task/2'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], report='dev-package/reports/r/l/gate-summary.json',
+                           legacy=True, scope=['src/**'])
+
+    def test_lane_scope_sees_leading_space_paths_and_staged_only_changes(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['docs/**'])
+        self.write(' docs/x.md', 'out of scope (leading space)')
+        subprocess.run(git + ['add', '--', ' docs/x.md'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'leading space'], check=True)
+        (self.root / ' docs/x.md').unlink()
+        with self.assertRaisesRegex(ValueError, ' docs/x.md'):
+            self.complete_lane(task['task_id'])
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/staged.md', 'staged only')
+        subprocess.run(git + ['add', 'notes/staged.md'], check=True)
+        (self.root / 'notes/staged.md').unlink()          # index keeps it, working copy restored
+        with self.assertRaisesRegex(ValueError, 'notes/staged.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_scope_ignores_entries_staged_before_begin(self):
+        # Round-3 regression: the index was compared with HEAD, so a parent's staged work
+        # that predates the task was blamed on the lane.
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        self.write('notes/parent.md', 'parent work in progress')
+        subprocess.run(git + ['add', 'notes/parent.md'], check=True)
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('src/in.py')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # Staging something out of scope during the task is still the lane's change.
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.write('notes/lane.md', 'lane staged')
+        subprocess.run(git + ['add', 'notes/lane.md'], check=True)
+        (self.root / 'notes/lane.md').unlink()
+        with self.assertRaisesRegex(ValueError, 'notes/lane.md'):
+            self.complete_lane(task['task_id'])
+
+    def test_scoped_begin_records_the_index_and_explains_why_it_cannot(self):
+        git = ['git', '-C', str(self.root), '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        plain = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('started_index', plain)
+        scoped = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        self.assertRegex(scoped['started_index'], r'^[0-9a-f]{40}$')
+        # A held index.lock is not a conflict: git's own reason is reported.
+        lock = self.root / '.git' / 'index.lock'
+        lock.write_text('')
+        try:
+            with self.assertRaisesRegex(ValueError, 'index.lock'):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+        finally:
+            lock.unlink()
+        # A real conflict is refused as one.
+        self.write('c.txt', 'base'); subprocess.run(git + ['add', 'c.txt'], check=True)
+        subprocess.run(git + ['commit', '-qm', 'base'], check=True)
+        subprocess.run(git + ['checkout', '-qb', 'other'], check=True)
+        self.write('c.txt', 'other'); subprocess.run(git + ['commit', '-qam', 'other'], check=True)
+        subprocess.run(git + ['checkout', '-q', '-'], check=True)
+        self.write('c.txt', 'main'); subprocess.run(git + ['commit', '-qam', 'main'], check=True)
+        subprocess.run(git + ['merge', '-q', 'other'], capture_output=True)
+        with self.assertRaisesRegex(ValueError, 'resolve the conflicts first'):
+            contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/**'])
+
+    def test_lane_scope_default_allowed_paths_need_no_declaration(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], scope=['src/*.py'])
+        self.write('src/a.py')
+        self.write('dev-package/reports/round/lane/notes.md')
+        self.write('docs/development/lifecycle-evidence.md')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+        # `*` does not cross a directory; `**` would.
+        self.write('src/nested/b.py')
+        with self.assertRaisesRegex(ValueError, 'src/nested/b.py'):
+            self.complete_lane(task['task_id'])
+
+    def test_lane_without_scope_keeps_current_behavior(self):
+        task = contract.begin(self.root, 'lane-worker', gates=['check'])
+        self.assertNotIn('scope', task)
+        self.write('anywhere/at/all.txt')
+        self.assertEqual(self.complete_lane(task['task_id']), 'H7')
+
+    def test_lane_scope_declarations_are_validated(self):
+        for bad in ([''], ['/abs/**'], ['../up/**'], ['a/../b'], ['src\\x'], ['./src/**'], ['src/**', 'src/**']):
+            with self.subTest(scope=bad), self.assertRaises(ValueError):
+                contract.begin(self.root, 'lane-worker', gates=['check'], scope=bad)
+        with self.assertRaises(ValueError):
+            contract.begin(self.root, 'researcher', scope=['src/**'])
+
+    def test_lane_scope_cli_handoff_is_refused_with_exits(self):
+        (self.root / '.gitignore').write_text('__pycache__/\n')
+        self.write('gates/run.sh', '#!/usr/bin/env bash\necho verified\n')
+        script = str(ROOT / 'scripts/harness/hooks/lifecycle_contract.py')
+        def cli(*args):
+            return subprocess.run([sys.executable, script, *args], cwd=self.root, text=True, capture_output=True)
+        begun = cli('begin', '--role', 'lane-worker', '--gate', 'check', '--scope', 'src/**')
+        self.assertEqual(begun.returncode, 0, begun.stderr)
+        task_id = json.loads(begun.stdout)['task_id']
+        self.write('src/in.py'); self.write('outside.txt')
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        refused = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(refused.returncode, 78)
+        self.assertNotIn('COLAB_HANDOFF', refused.stdout)
+        self.assertIn('outside.txt', refused.stderr)
+        self.assertIn('--scope', refused.stderr); self.assertIn('revert', refused.stderr)
+        (self.root / 'outside.txt').unlink()
+        self.assertEqual(cli('run-gates', '--task', task_id).returncode, 0)
+        accepted = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertIn('COLAB_HANDOFF', accepted.stdout)
+
+class ResearcherTaskHookTests(unittest.TestCase):
+    """R1 — `SubagentStart` (researcher) opens the H6 task so the first Stop is not bounced.
+
+    The failure this replaces: A3 (2026-09-24) — researchers spawned without
+    `lifecycle begin` were bounced by H6 on every Stop until the turn limit.
+    The auto task carries no `--agent-id`: `stop()` compares ids only when the task has one,
+    and SubagentStart/SubagentStop id equality is not yet proven.
+    """
+    HOOK = ROOT / 'scripts/harness/hooks/researcher-task.sh'
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        # A small real checkout: the hook begins with the cwd checkout's own bridge.
+        self.root = Path(self.tmp.name) / 'repo'
+        ignore = shutil.ignore_patterns('__pycache__')
+        (self.root / 'scripts').mkdir(parents=True)
+        shutil.copy2(ROOT / 'scripts/agent-bridge.py', self.root / 'scripts/agent-bridge.py')
+        shutil.copytree(ROOT / 'scripts/harness', self.root / 'scripts/harness', ignore=ignore)
+        shutil.copytree(ROOT / '.claude/hooks', self.root / '.claude/hooks', ignore=ignore)
+        shutil.copy2(ROOT / '.claude/settings.json', self.root / '.claude/settings.json')
+        (self.root / '.gitignore').write_text('__pycache__/\n')
+        git = ['git', '-C', str(self.root)]
+        subprocess.run(git + ['init', '-q'], check=True)
+        subprocess.run(git + ['add', '-A'], check=True)
+        subprocess.run(git + ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                              'commit', '-qm', 'initial'], check=True)
+
+    def run_hook(self, payload, **env):
+        environment = dict(os.environ, **env)
+        if 'COLAB_HOOKS' not in env:
+            environment.pop('COLAB_HOOKS', None)
+        return subprocess.run(['bash', str(self.HOOK)], input=json.dumps(payload), text=True,
+                              capture_output=True, env=environment, timeout=120)
+
+    def start(self, agent_id='spawn-aid'):
+        payload = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart',
+                   'agent_type': 'researcher', 'agent_id': agent_id}
+        result = self.run_hook(payload)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def printed(self, output, key):
+        match = re.search(r'^\s*' + key + r'\s*:\s*([a-f0-9]{32})\s*$', output, re.MULTILINE)
+        self.assertIsNotNone(match, output)
+        return match.group(1)
+
+    def bridge(self, *args, stdin=None):
+        return subprocess.run([sys.executable, 'scripts/agent-bridge.py', 'lifecycle', *args], cwd=self.root,
+                              input=stdin, text=True, capture_output=True, timeout=120)
+
+    def handoff(self, task_id, mode='read-only'):
+        result = self.bridge('handoff', '--task', task_id, '--mode', mode, '--summary', 'actual findings')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        markers = [line for line in result.stdout.splitlines() if line.startswith('COLAB_HANDOFF ')]
+        self.assertEqual(len(markers), 1, result.stdout)
+        return markers[0]
+
+    def stop_payload(self, marker, agent_id):
+        return {'cwd': str(self.root), 'hook_event_name': 'SubagentStop', 'agent_type': 'researcher',
+                'agent_id': agent_id, 'last_assistant_message': 'findings\n' + marker}
+
+    def runtime_tasks(self):
+        common = self.root / '.git' / 'colab-harness'
+        return sorted(common.rglob('task.json')) if common.exists() else []
+
+    def test_a_researcher_start_begins_task_and_prints_ids_and_handoff_command(self):
+        output = self.start()
+        task_id, run_id = self.printed(output, 'task_id'), self.printed(output, 'run_id')
+        task = contract.load_task(self.root.resolve(), task_id)
+        self.assertEqual((task['role'], task['run_id'], task['agent_id']), ('researcher', run_id, None))
+        self.assertIn('spawn-aid', output)
+        self.assertIn(f"python3 scripts/agent-bridge.py lifecycle handoff --task {task_id} --mode read-only", output)
+        self.assertIn('COLAB_HANDOFF', output)
+        self.assertIn('--agent-id spawn-aid --artifact runtime:artifacts/', output)
+        self.assertIn('커밋', output)
+        self.assertLessEqual(len(output.splitlines()), 15)
+
+    def test_b_printed_task_hands_off_and_passes_h6_for_a_different_stop_agent_id(self):
+        task_id = self.printed(self.start(), 'task_id')
+        marker = self.handoff(task_id)
+        # ⓑ′ — the Stop payload's agent_id differs from the one SubagentStart saw.
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'stop-aid-other'), 'researcher'), 'H6')
+        hook = subprocess.run(['bash', str(ROOT / 'scripts/harness/hooks/uncommitted-artifacts.sh')],
+                              input=json.dumps(self.stop_payload(marker, 'stop-aid-other')),
+                              text=True, capture_output=True, timeout=120)
+        self.assertEqual(hook.returncode, 0, hook.stderr)
+
+    def test_b_control_task_begun_with_agent_id_rejects_a_different_stop_agent_id(self):
+        begun = self.bridge('begin', '--role', 'researcher', '--agent-id', 'spawn-aid',
+                            '--artifact', 'runtime:artifacts/notes.md')
+        self.assertEqual(begun.returncode, 0, begun.stderr)
+        task = json.loads(begun.stdout)
+        wrote = self.bridge('write-artifact', '--task', task['task_id'], '--run-id', task['run_id'],
+                            '--agent-id', 'spawn-aid', '--artifact', 'runtime:artifacts/notes.md', stdin='notes')
+        self.assertEqual(wrote.returncode, 0, wrote.stderr)
+        marker = self.handoff(task['task_id'], 'artifacts')
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'spawn-aid'), 'researcher'), 'H6')
+        with self.assertRaisesRegex(ValueError, 'agent identity'):
+            contract.stop(self.stop_payload(marker, 'stop-aid-other'), 'researcher')
+
+    def test_c_second_artifact_task_with_same_agent_id_keeps_first_handoff_valid(self):
+        output = self.start()
+        first = self.printed(output, 'task_id')
+        command = re.search(r'python3 scripts/agent-bridge\.py lifecycle (begin --role researcher --agent-id \S+ '
+                            r'--artifact runtime:artifacts/)<[^>]+>', output)
+        self.assertIsNotNone(command, output)
+        args = command.group(1).split()
+        args[-1] += 'notes.md'
+        second = self.bridge(*args)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        task = json.loads(second.stdout)
+        self.assertEqual(task['agent_id'], 'spawn-aid')
+        wrote = self.bridge('write-artifact', '--task', task['task_id'], '--run-id', task['run_id'],
+                            '--agent-id', 'spawn-aid', '--artifact', 'runtime:artifacts/notes.md', stdin='notes')
+        self.assertEqual(wrote.returncode, 0, wrote.stderr)
+        self.assertEqual(contract.stop(self.stop_payload(self.handoff(first), 'x'), 'researcher'), 'H6')
+        marker = self.handoff(task['task_id'], 'artifacts')
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'spawn-aid'), 'researcher'), 'H6')
+
+    def test_d_non_git_cwd_reports_begin_failure_and_exits_zero(self):
+        outside = Path(self.tmp.name) / 'plain'
+        outside.mkdir()
+        result = self.run_hook({'cwd': str(outside), 'agent_type': 'researcher', 'agent_id': 'a1'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('researcher-task: begin 실패', result.stdout)
+        self.assertIn('사유', result.stdout)
+        self.assertIn('lifecycle begin --role researcher', result.stdout)
+        self.assertNotIn('--agent-id', result.stdout)
+
+    def test_e_disabled_hooks_print_nothing(self):
+        result = self.run_hook({'cwd': str(self.root), 'agent_type': 'researcher', 'agent_id': 'a1'}, COLAB_HOOKS='0')
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+        self.assertFalse(self.runtime_tasks())
+
+    def test_f_other_roles_print_nothing_and_begin_nothing(self):
+        for agent_type in ('lane-worker', 'Explore', 'advisor'):
+            with self.subTest(agent_type=agent_type):
+                result = self.run_hook({'cwd': str(self.root), 'agent_type': agent_type, 'agent_id': 'a1'})
+                self.assertEqual((result.returncode, result.stdout), (0, ''))
+        self.assertFalse(self.runtime_tasks())
+
+    def test_f2_missing_agent_type_is_announced_not_silently_skipped(self):
+        for payload in ({'cwd': str(self.root), 'agent_type': '', 'agent_id': 'a1'},
+                        {'cwd': str(self.root), 'agent_id': 'a1'}):
+            with self.subTest(payload=sorted(payload)):
+                result = self.run_hook(payload)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('researcher-task: agent_type 없음', result.stdout)
+                self.assertIn('lifecycle begin --role researcher', result.stdout)
+        self.assertFalse(self.runtime_tasks())
+
+    def load_bridge(self):
+        spec = importlib.util.spec_from_file_location('fixture_bridge', self.root / 'scripts/agent-bridge.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_codex_subagent_start_carries_output_to_additional_context(self):
+        event = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart', 'agent_type': 'researcher',
+                 'agent_id': 'codex-aid'}
+        context = self.load_bridge().dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        task_id = self.printed(context, 'task_id')
+        self.assertIn('codex-aid', context)
+        self.assertIn(f'lifecycle handoff --task {task_id} --mode read-only', context)
+        self.assertNotIn('prepares dependencies', context)
+        self.assertIsNone(contract.load_task(self.root.resolve(), task_id)['agent_id'])
+
+    def test_codex_payload_without_agent_id_still_begins_without_agent_id(self):
+        event = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart', 'agent_type': 'researcher'}
+        context = self.load_bridge().dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        task_id = self.printed(context, 'task_id')
+        self.assertIsNone(contract.load_task(self.root.resolve(), task_id)['agent_id'])
+        self.assertNotIn('--agent-id <', context)
+        self.assertIn('--artifact runtime:artifacts/', context)
+        marker = self.handoff(task_id)
+        self.assertEqual(contract.stop(self.stop_payload(marker, 'any'), 'researcher'), 'H6')
 
 
 if __name__ == '__main__': unittest.main()

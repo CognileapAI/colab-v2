@@ -76,8 +76,11 @@ def registered_hooks(tool: str, event: str = "PreToolUse") -> list[Path]:
     return paths
 
 
+CODEX_ROLES = ("advisor", "lane-worker", "researcher", "measurement-lane", "gate-runner")
+
+
 def check() -> None:
-    for role in ("advisor", "lane-worker", "researcher", "gate-runner"):
+    for role in CODEX_ROLES:
         config = tomllib.loads((ROOT / f".codex/agents/{role}.toml").read_text(encoding="utf-8"))
         for field in ("name", "description", "developer_instructions"):
             if not isinstance(config.get(field), str) or not config[field]:
@@ -129,7 +132,7 @@ def check() -> None:
             probe = entry["matcher"].split("|")[0]
             count += len(registered_hooks(probe, event))
     adapters = len(skills) - len(codex_only)
-    print(f"green: 4 role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
+    print(f"green: {len(CODEX_ROLES)} role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
 
 
 def run_registered(payload: dict) -> int:
@@ -252,7 +255,7 @@ def codex_payloads(data: dict) -> list[dict]:
     if not isinstance(command, str) or not command.strip():
         raise ValueError("missing tool_input.command")
     base = {"cwd": str(cwd), "hook_event_name": data["hook_event_name"]}
-    for key in ("agent_id", "task_id", "run_id"):
+    for key in ("session_id", "agent_id", "task_id", "run_id"):
         if data.get(key):
             base[key] = data[key]
     if tool == "Bash":
@@ -293,6 +296,14 @@ def codex_event() -> int:
         return 2
 
 
+def hook_context(stdout: str) -> str:
+    """A hook may already emit Claude's additionalContext JSON; carry only its text."""
+    try:
+        return json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    except (ValueError, TypeError, KeyError):
+        return stdout
+
+
 def dispatch_event(data: dict) -> dict:
     """Translate every registered lifecycle event; keep the existing shell judges."""
     if not isinstance(data, dict):
@@ -328,12 +339,13 @@ def dispatch_event(data: dict) -> dict:
             if result.returncode:
                 raise ValueError(f"{hook.name}: {result.stderr.strip() or 'hook failed'} (exit {result.returncode})")
             if result.stdout.strip():
-                messages.append(result.stdout.strip())
+                messages.append(hook_context(result.stdout.strip()))
             if result.stderr.strip():
                 messages.append(result.stderr.strip())
     if event == "SessionStart":
         messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. Use the user's explicit task, PR summary and local plan first. The user's selected round takes precedence over the mtime suggestion above. Verify Git history against the current request; consult work-items.yaml only for unmigrated product items. Claude tools and hooks are not assumed available.")
-    if event == "SubagentStart":
+    if event == "SubagentStart" and data.get("agent_type") != "researcher":
+        # Lane-oriented note; a researcher start carries only its own task instructions.
         messages.append("Confirm the assigned checkout, branch and HEAD before writing. This hook prepares dependencies; it does not create an isolated checkout.")
     if not messages:
         return {}

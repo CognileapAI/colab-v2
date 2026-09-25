@@ -1,5 +1,17 @@
 # infra/staging/tunnel — 터널 ingress 의 레포 측 정본 (WU-IS2)
 
+> ⭑ **⟨개정 2026-09-24 · Ted 판정⟩ `infra/staging/` 은 이제 local 환경이고, `www.colab-hydro.com` 은 prod(CloudFront)다**
+> (`../../prod/README.md §0`). 리소스·파일 이름(`…config.staging` 등)은 호환을 위해 그대로 둔다.
+>
+> 관측(2026-09-24): 커넥터 `colab_v2_staging_cloudflared` 는 떠 있고 연결도 등록돼 있으며, 원격 ingress 에
+> `www.colab-hydro.com` 이 **남아 있다.** 그러나 **공개 DNS 는 `www` 를 터널로 보내지 않는다.**
+>
+> ⛔ **폐기 · 실행 금지** — 이 문서에서 `www.colab-hydro.com` 을 터널에 (다시) 붙이거나 되살리는 절차:
+> §4 의 apply 순서(선언 hostname 기본값이 `www.colab-hydro.com` — `variables.tf`) · §4 롤백 (a)(b) · 대시보드 Public Hostname 복원.
+> 따라 하면 **prod 도메인이 개발자 PC 를 가리킬 수 있다.**
+> 또 `https://www.colab-hydro.com/healthz` 200 은 이제 **prod 의 응답**이다 — 터널·local 상태의 증거로 읽지 않는다.
+> 아래 본문은 이력으로 남긴다.
+
 ## 1. 지금 터널은 어떤 모드인가
 
 **원격 관리형(remotely-managed)** 이다. 실물 근거 두 가지:
@@ -31,6 +43,8 @@ Terraform 은 원격 관리형 구조를 그대로 두고 **대시보드와 같�
 `terraform plan` = **`No changes.`** 레포 선언이 실제 상태와 일치한다. **대시보드가 정본이 아니라 레포가 정본이고 대시보드가 그 산출이다.**
 
 현재 ingress 는 둘뿐이다 — `www.colab-hydro.com → http://nginx:80` · catch-all `http_status:404`.
+⭑ ⟨개정 2026-09-24 · 관측⟩ 규칙은 원격 설정에 그대로지만 공개 DNS 가 `www` 를 터널로 보내지 않아 **요청을 받지 않는 잔재**다.
+규칙 제거 여부는 별도 판정이다(이번 개정은 Cloudflare 무접촉).
 
 ### `ssh.colab-hydro.com` 은 세 겹이었다
 
@@ -86,6 +100,10 @@ apply 세션에서 먼저 설치해야 한다.
 
 ## 4. 순서 — import → plan → apply → 검증 → 롤백
 
+> ⛔ **⟨폐기 2026-09-24 · 실행 금지⟩ §4 는 2026-08-23 에 끝난 ssh 규칙 제거의 기록이다. 다시 돌리지 않는다.**
+> 선언의 hostname 이 `www.colab-hydro.com`(`variables.tf` 기본값)이라 apply 는 prod 도메인 이름을 터널 ingress 에 다시 확정한다.
+> ④ 검증의 `www` 200 은 prod 응답이고, 롤백 (a)(b)는 `www` 를 터널로 되살리는 절차다.
+
 ```bash
 # 0. 자격증명 주입 — 레포 밖 홈 0600 파일에서만 읽는다. 값을 셸 히스토리에 남기지 않는다.
 set -a; . ~/.colab-v2-staging.env; set +a
@@ -128,7 +146,9 @@ terraform plan    # "No changes." 여야 한다.
 
 증상별로 다르다. 셋 중 하나를 고른다.
 
-**(a) 200 이 깨졌다 — ingress 값이 틀렸다.** ssh 규칙을 되살릴 필요는 없다.
+⛔ **⟨폐기 2026-09-24⟩ (a)(b) 는 실행 금지다** — 둘 다 `www.colab-hydro.com` 을 터널로 되살린다. (c) 는 local 스택의 기동·정지로만 읽는다.
+
+**(a) ⛔ 폐기 — ~~200 이 깨졌다 — ingress 값이 틀렸다.~~** ssh 규칙을 되살릴 필요는 없다.
 `tunnel.tf` 를 직전 커밋 상태로 되돌리고 다시 apply 한다. 커넥터 재시작 없이 엣지가 흡수한다.
 
 ```bash
@@ -137,13 +157,15 @@ terraform apply
 curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 ```
 
-**(b) 어쨌든 즉시 원상복구가 필요하다 — Terraform 을 거치지 않는 경로.**
-대시보드 Zero Trust → Networks → Tunnels → 해당 터널 → Public Hostnames 에서
-`www.colab-hydro.com → HTTP → nginx:80` 을 직접 확인·복원한다. 이건 항상 살아 있는 손잡이다.
+**(b) ⛔ 폐기 · 실행 금지 — ~~어쨌든 즉시 원상복구가 필요하다 — Terraform 을 거치지 않는 경로.~~**
+~~대시보드 Zero Trust → Networks → Tunnels → 해당 터널 → Public Hostnames 에서
+`www.colab-hydro.com → HTTP → nginx:80` 을 직접 확인·복원한다. 이건 항상 살아 있는 손잡이다.~~
+대시보드에서 `www` Public Hostname 을 복원하면 **prod 도메인이 개발자 PC 를 가리킬 수 있다.**
 복원 후 `terraform plan` 을 돌려 drift 를 확인하고, `terraform apply -refresh-only` 로 state 에 흡수한다.
 
 **(c) 오리진 자체가 죽었다 (터널 설정 문제가 아니다).** 이건 IS1 의 롤백이다 —
 `infra/staging/README.md` 의 `docker compose ... up -d` / `down` 한 쌍.
+⚠ ⟨2026-09-24⟩ 지금 local 스택은 두 compose 사본에서 나뉘어 떠 있다 — 한쪽만 `down`/`up` 하지 않는다(`../README.md` 상단).
 
 **(d) ssh 규칙이 다시 필요해졌다.** 되살리지 않는다. `PLAN-SoT §9-㉜` 이 삭제로 확정했고,
 오리진을 새로 붙이는 것은 **범위 확대**라 별도 WU 다.
@@ -153,7 +175,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 - **`terraform apply` 를 한 번도 실행하지 않았다.** `init`·`import`·`plan` 도 실행하지 않았다 —
   이 호스트에 Terraform 이 설치돼 있지 않고, API 토큰도 아직 없다.
 - 따라서 Cloudflare 설정은 **지금 이 순간 아무것도 변경되지 않았다.**
-  ssh 규칙은 여전히 엣지에 살아 있다. `www.colab-hydro.com/healthz` 는 계속 200 이다.
+  ssh 규칙은 여전히 엣지에 살아 있다. `www.colab-hydro.com/healthz` 는 계속 200 이다(⟨2026-09-24 주⟩ 당시 기록 — 지금 이 주소는 prod).
 - 이 디렉터리는 **선언만 있는 상태**다. state 파일이 없고, 따라서 레포는 아직
   "지금 뭐가 적용된 상태인지"를 스스로 증명하지 못한다.
 
@@ -166,6 +188,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 승인 검토가 필요하면 새 레포 밖 경로를 정해 `bash infra/staging/tunnel/rehearse-state-recovery.sh --prepare <새-bundle-경로>`를 실행한다. 0700 bundle에 state·전체 plan JSON·saved plan·원문 로그를 0600으로 보존하고, 밖에는 resource 계수와 plan SHA-256만 낸다. 이 bundle에는 민감 값이 있으므로 Git, `dev-package/reports/`, 채팅 첨부에 넣지 않는다. manifest는 선언·state·plan hash, Terraform image digest와 버전을 고정한다.
 
 사용자가 그 **정확한 plan hash**를 승인한 뒤에만 `--apply-approved <bundle> --plan-sha256 <승인-hash>` 모드를 쓴다. 실행기는 bundle 단위 배타 잠금을 잡아 동시 호출을 하나로 제한한다. 적용 직전 공개 staging health와 독립 refresh-only plan의 remote/state drift 0을 확인하고 saved plan을 다시 `show -json`으로 엄격 판정한 뒤, 새 plan으로 바꾸지 않고 `final.tfplan` 한 벌을 1회 소비한다. apply 시도 표식은 원자적으로 먼저 남기므로 성공 여부와 관계없이 같은 plan을 재사용하지 않는다. 이후 새 plan의 detailed exit 0과 공개 staging health가 실제 완료 오라클이다. health·drift·provider 검사가 실패하면 즉시 중단하며, drift가 있으면 새 bundle과 새 승인이 필요하다. 이 apply는 ingress 값 변경 0인 metadata 정착 호출 1회이며, 승인 전에는 절대 실행하지 않는다.
+
+⛔ **⟨2026-09-24⟩ `--apply-approved` 모드는 쓰지 않는다.** 위 「공개 staging health」는 `https://www.colab-hydro.com/healthz`
+(`rehearse-state-recovery.sh` 91행)를 친다 — 지금 그 응답은 prod 의 것이라 apply 직전 검사도, 완료 오라클도 터널 상태를 증명하지 못한다.
+스크립트 수정 전까지 이 모드는 판정 근거가 없다. 기본 읽기 전용 실행은 이 검사를 쓰지 않는다.
 
 rollback에 `terraform state push`를 쓰지 않는다. 보존 state는 자동 롤백 재료가 아니다. 현재 remote 값을 다시 읽어 별도의 복구 plan을 준비하고 같은 검토·hash 승인 절차를 거친다.
 
@@ -207,3 +233,5 @@ terraform plan
 기계적으로는 이것이다 — **apply 이후 `terraform plan` 이 "No changes." 를 내고,
 동시에 `https://www.colab-hydro.com/healthz` 가 200 일 것.**
 둘 중 하나라도 아니면 IS2 는 닫히지 않는다.
+
+⭑ ⟨개정 2026-09-24⟩ 이 오라클은 이력이다. `www.colab-hydro.com/healthz` 200 은 지금 prod(CloudFront) 응답이므로 IS2 의 근거로 다시 쓰지 않는다.

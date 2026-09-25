@@ -36,6 +36,14 @@ python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate contra
 시작 뒤 baseline을 재설정해 이 작업의 미인계 파일을 기존 파일처럼 만들지 않는다.
 이전 작업 기록을 새 작업에 재사용하지 않는다. 실제 런타임의 agent_id 제공 여부는 별도 검증 대상이다.
 
+researcher는 예외로 자동 시작 기록이 있다. SubagentStart 훅 `researcher-task.sh`(matcher `researcher`)가
+스폰 시 cwd의 체크아웃 루트에서 `lifecycle begin --role researcher`를 **`--agent-id` 없이** 실행하고,
+`task_id`·`run_id`·payload `agent_id`·`handoff --task <task_id> --mode read-only` 명령을 맥락에 싣는다.
+SubagentStart와 SubagentStop payload의 agent_id 일치가 증명되지 않았으므로 자동 task는 정지 시 ID를 대조하지 않는다.
+파일 산출물이 필요하면 출력된 agent_id로 `begin --role researcher --agent-id <agent_id> --artifact runtime:artifacts/<파일>`
+task를 하나 더 열고 그 task로 인계한다. 자동 task가 열린 동안 같은 체크아웃에 커밋하면 인계가 거부된다.
+begin이 실패하면 훅은 exit 0으로 「researcher-task: begin 실패 · 사유 · 직접 begin 명령」을 출력하고, researcher는 위 명령을 직접 실행한다.
+
 ## 게이트
 
 ```bash
@@ -75,6 +83,18 @@ python3 scripts/agent-bridge.py lifecycle handoff --task <task_id> --mode comple
 기존 무관한 미추적 파일은 허용하고 이 작업의 누락·미인계 산출물과 범위 밖 변경은 차단한다.
 파일 인계는 승인이나 커밋이 아니다. 다음 사본에 파일을 복사하면 부모가 hash를 대조한다.
 `complete`는 lane-worker의 현재 작업 게이트 증거를 요구한다.
+
+레인 범위: 부모가 파일 범위를 정하면 `begin --role lane-worker --gate … --scope <glob>`(여러 번)로 선언한다.
+`**`는 디렉터리를 건너고 `*`·`?`는 건너지 않는다. 저장소 상대 POSIX 경로만 받고 `..`·절대경로·역슬래시는 거절한다.
+아무 파일과도 맞지 않는 형태(`src/`처럼 `/`로 끝나거나 와일드카드 없는 디렉터리 이름)는 begin에서 거절하고 `src/**`를 안내한다.
+범위는 `colab-task/2` runtime 에서만 쓴다 — `--legacy` 와 함께 쓰면 begin 이 거절한다(begin 시점 커밋이 없어 커밋 변경을 대조할 수 없다).
+범위를 선언한 task의 `handoff --mode complete`와 H7은 baseline 대비 변경 파일 중 범위 밖을 목록으로 내고 차단한다.
+baseline은 begin 시점의 추적·미추적(무시 제외) 파일 전체의 내용 hash다. 여기에 begin 시점 커밋..HEAD 사이에 커밋된 변경과, begin 시점 index 트리(`git write-tree` · task 의 `started_index`) 대비 스테이징 변경을 더해 센다 — 범위 밖 변경을 커밋·스테이징한 뒤 작업 파일만 되돌려도 드러나고, begin 이전부터 스테이징돼 있던 항목은 레인의 변경으로 세지 않는다. 삭제도 변경이다.
+범위를 선언한 begin 은 index 를 트리로 기록해야 한다. 병합 충돌이 남은 index 는 「충돌을 먼저 해결하라」로 거절하고, 그 밖의 실패(예: 다른 git 프로세스의 `index.lock`)는 git 의 메시지를 그대로 담아 거절한다.
+선언 없이 허용되는 경로는 `dev-package/reports/**`·이 문서다. task runtime은 Git common 디렉터리에 있어 대조 대상에 나타나지 않는다.
+차단 메시지의 출구는 둘이다. ⑴ 범위를 넓힌 새 task를 `begin --scope`로 열고 게이트를 다시 돌려 그 task로 인계한다.
+새 task의 baseline은 그 시점 파일을 담아 이미 한 범위 밖 변경을 다시 보지 못하므로, 넓힌 경로와 사유를 `--summary`에 적는다.
+⑵ 범위 밖 변경을 되돌리고 게이트를 다시 돌려 같은 task로 인계한다. 범위를 선언하지 않은 task는 기존 동작 그대로다.
 시험 fixture의 승인 응답은 시험 데이터다. 실제 제품 승인 기록으로 옮기지 않는다.
 
 ## Runtime 산출물 쓰기와 경계

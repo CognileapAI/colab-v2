@@ -6,7 +6,7 @@
 
 ## 제공된 운영 파일 확인
 
-입력은 사용자가 전달한 `C:\Users\ttlhi\Downloads\colab-platform (2)` 안의 `colab-platform`이다.
+입력은 사용자가 전달한 `%USERPROFILE%\Downloads\colab-platform (2)` 안의 `colab-platform`이다.
 환경 파일·DB URL·SSH 키·계정 파일을 비교했으며 비밀 값은 이 문서에 옮기지 않았다.
 버킷·DB 이름은 기존 운영 infra와 일치한다. EC2 조회 권한 추가 후 운영 IP를 확인했다.
 SSH 호스트 키 확인은 미완료이며 브랜치 전환·CI 연결을 먼저 진행한다. 운영 역할의 실제 권한·DB 스키마·설치 상태는 아직 확인하지 못했다.

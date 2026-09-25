@@ -9,6 +9,8 @@
 
 다음은 구조 예시이며 경로·버전·hash를 실제 검토한 배포 패킷으로 바꿔야 한다.
 대상 이름은 `dv`(dev)·`st`(staging)·**`pr`(prod · 2026-09-13 추가 · `infra/prod/*` 도구를 deploy 명령에 넣는다)** 이다.
+⭑ ⟨개정 2026-09-24 · Ted 판정⟩ `st` 는 이름만 staging 이고 대상은 **local 환경**(개발자 PC 의 `infra/staging/` 스택)이다. 공개 주소가 없다.
+`www.colab-hydro.com` 은 `pr` 쪽이다(`infra/prod/README.md §0`).
 `deploy`와 `verify`는 각각 한 개 이상의 argv 배열이다. 셸 문자열이 아니므로 `~`, `$변수`, `&&`는 자동 해석하지 않는다.
 명령은 현재 Git 루트에서 실행된다. 다른 작업 사본의 검증이 필요하면 절대 경로 스크립트 안에서 해당 사본으로 이동한다.
 
@@ -42,6 +44,8 @@ DV 전체 배포 패킷은 기존 `infra/dev/build.sh` → `ship.sh` → 원격 
 ST 전체 배포는 `bash infra/staging/deploy.sh --target staging`을 deploy 명령으로 넣는다.
 ST 프런트만 바꾸면 검증된 이미지에 대해 `docker compose ... up -d --no-deps --no-build frontend`를 사용하고,
 기존 다른 서비스의 불변, 공개 번들 hash, `verify/verify-deploy.sh`를 검증 패킷에 포함한다.
+⚠ ⟨2026-09-24⟩ ST 의 「공개 번들」은 이제 local `http://127.0.0.1:3000` 의 번들이다. `verify/verify-deploy.sh` 의 기본 주소는
+`https://www.colab-hydro.com`(= prod)이므로 ST 검증 패킷에서 그대로 부르면 prod 를 잰다(`infra/staging/README.md` 「무엇이 어디에 있나」 아래 주의).
 부분 배포에 불필요한 전체 스택 재생성이나 마이그레이션을 추가하지 않는다.
 
 검증 명령은 단순 `true`나 예전 보고서 읽기가 아니라 **해당 환경의 현재 버전과 동작**을 검사해야 한다.

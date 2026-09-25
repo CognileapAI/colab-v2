@@ -45,16 +45,33 @@
     11번 문면은 무변이다 — **데이터셋 행 단위 삭제의 유일한 자리는 그대로 `purge_datasets.py` 이고**
     이 도구가 그 자리를 대신하지 않는다. 이 도구는 **접두사 비우기 ＋ 두 체인 스키마 재생성**이라
     성격이 다르고, **dev 밖에서는 어느 조건으로도 돌지 않는다.**
-    **게이트 넷을 모두 만족해야 실행된다**(하나라도 어긋나면 아무것도 지우지 않고 비영 종료) —
+    **게이트 다섯을 모두 만족해야 실행된다**(하나라도 어긋나면 아무것도 지우지 않고 비영 종료) —
     ⑴ `--target dev` ＋ `--yes-reset-dev` ⑵ `COLAB_CORE_S3_BUCKET` 이 `colab-platform-data-dev` 와
     **정확히** 일치 ⑶ 두 DB URL 의 **호스트**에 `-dev` 포함(**DB 이름 단독은 판별력 0** — `colab_platform` 은
-    staging 과 같은 값이다) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다.
+    staging 과 같은 값이다) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다
+    ⑸ ⟨추가 2026-09-25⟩ **BYPASSRLS 계수가 비어 있거나, 비어 있지 않으면 그 계수에 대한 사용자 명시 GO 가 있다.**
+    계수 롤은 BYPASSRLS 여야 한다(`colab_backup` · 두 체인 · `row_security=off`) — 소유자·`colab_app` 롤의 0 은 10번의
+    거짓 0 이다. 「비어 있다」 = 사람 자료 표 일곱(`d1_account`·`account_admin.login_credential`·`d3_dataset`·`d3_file`·
+    `d5_upload`·`d6_project`·`d4_lineage_edge`) 행 0 · DB 참조 저장 키 0 · `uploads/` 객체 0 · 멀티파트 0.
+    도구는 `--phase schema` 의 DROP 직전에 같은 프로세스에서 다시 세어 이 판정을 한 번 더 하고, `--phase s3-plan` 은
+    이번 reset 의 DROP 직전 계수(sha256 대조)와 **지금** DB 가 가리키는 키 0 을 요구한다.
     **S3 는 exact-key 계획 ＋ sha256 대조로만 지운다** — 접두사·`--recursive` 삭제를 쓰지 않는다(선례 `〈354〉`).
     ⛔ **`_ops/` 는 무접촉이다** — 계획에 그 접두사 키가 **1건이라도** 있으면 전체를 거부한다(지우면
     `deploy_doctor` ⑭(백업 24h)가 red 다). staging·prod 식별자에서는 거부한다.
-    ⭑ ⟨개정 2026-09-14 · `DR-4` · 〈398〉⟩ **dev 한정 상시 승인** — `dev-package/tools/dev-reseed/reseed.sh` 를 통해서만 ·
-    위 게이트 넷 충족 시 회차별 GO 불요 · 실행마다 결과 JSON ＋ `dev-package/sessions/` 기록 자동 등재 · Ted 철회 시 소멸.
-    staging·prod 는 무변(매회 GO). ／ 종전 ~~`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — 승인은 1회 소진이다~~
+    ⭑ ⟨개정 2026-09-25 · 사용자 승인 2026-09-25 · 2026-09-24 08:33Z 사고 · reset 정지 게이트⟩ **dev 한정 상시 승인은 「빈 dev」에만 적용된다.**
+    `dev-package/tools/dev-reseed/reseed.sh` 를 통해서만 · 위 게이트 다섯 충족 · 계수가 비어 있으면 회차별 GO 불요 ·
+    실행마다 결과 JSON ＋ `dev-package/sessions/` 기록 자동 등재 · Ted 철회 시 소멸.
+    ⛔ **비어 있지 않은 dev 는 상시 승인 밖이다 — 매 회차 Ted 의 명시 GO 가 있어야 지운다.** GO 는 **현재 대화에서**
+    Ted 가 정지 게이트가 찍은 표별 계수(시드 기준선 초과분 포함)를 보고 준 것이어야 하고, 사용자가 자기 터미널에서
+    그 회차의 1회용 토큰(`COLAB_RESEED_ACK_NONEMPTY` · 만료 30분 · 1회 소진)과 GO 근거(`COLAB_RESEED_ACK_BASIS`)를 넣어
+    넘긴다. 에이전트는 두 값을 채우지 않는다 — 문서·역할 정의·지난 GO 가 이 GO 를 대신하지 않는다.
+    판정·근거는 실행 자리 `reset-ack.json` 에 남는다. ⚠ 공용 Bash 훅 `scripts/harness/hooks/git-guard.sh` ⑹(할당 꼴 거부)과
+    토큰의 터미널 한정 출력(`[ -t 1 ]`)은 우발적 읽기·주입 경로를 줄일 뿐 **자동 보안 경계가 아니다**(`AGENTS.md` —
+    명시적 guard 호출은 자동 보안 경계가 아니다). 남는 경로 — 의사 터미널(pty)로 stdout 받기 · 실행 자리
+    `count-before.json` ＋ 원격 challenge nonce 로 토큰 로컬 재계산 · env 파일·Write 도구로 값 주입.
+    staging·prod 는 무변(매회 GO).
+    ／ 종전(2026-09-14 · `DR-4` · 〈398〉) ~~**dev 한정 상시 승인** — 위 게이트 넷 충족 시 회차별 GO 불요~~ — 2026-09-15·16·24 세 번
+    사람이 만든 자료를 지웠다. ／ 그 전 ~~`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — 승인은 1회 소진이다~~
 
 ## 고치기 전에 돌릴 것
 

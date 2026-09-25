@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path, PurePosixPath
+import re
+import subprocess
 import tomllib
 
 
@@ -18,7 +20,18 @@ TOP_LEVEL = {
     "adapters",
     "paths",
     "publication",
+    "hygiene",
 }
+
+# A user home directory written as an absolute path. The user component is a real account
+# name, so placeholders such as `<u>`, `$USER` or `…` never match. `/mnt/c/Users/<u>/` is
+# listed first so the leftmost match reports the whole WSL form once.
+HOME_PATH = re.compile(
+    r"/mnt/[A-Za-z]/Users/[A-Za-z0-9._-]+/"
+    r"|/home/[A-Za-z0-9._-]+/"
+    r"|/Users/[A-Za-z0-9._-]+/"
+    r"|[A-Za-z]:\\{1,2}Users\\{1,2}[A-Za-z0-9._-]+\\{1,2}"
+)
 
 
 class ContractError(ValueError):
@@ -78,6 +91,26 @@ def validate_contract(value: object) -> dict:
         if not isinstance(item, str) or not item:
             raise ContractError("paths.retired_roots must contain non-empty strings")
         _relative(item, "paths.retired_roots")
+    sources = value.get("sources")
+    if not isinstance(sources, dict):
+        raise ContractError("sources must be an object")
+    registrations = sources.get("hook_registrations")
+    if not isinstance(registrations, dict):
+        raise ContractError("sources.hook_registrations must be an object")
+    for name, entry in registrations.items():
+        if (not isinstance(entry, dict) or set(entry) != {"event", "matcher"}
+                or any(not isinstance(item, str) or not item.strip() for item in entry.values())):
+            raise ContractError(f"sources.hook_registrations.{name} needs non-empty event and matcher")
+    hygiene = value.get("hygiene")
+    if not isinstance(hygiene, dict):
+        raise ContractError("hygiene must be an object")
+    limit = hygiene.get("always_on_max_lines")
+    if type(limit) is not int or limit <= 0:
+        raise ContractError("hygiene.always_on_max_lines must be a positive integer")
+    for field in ("always_on_files", "home_path_roots"):
+        for item in _strings(hygiene.get(field), f"hygiene.{field}"):
+            _relative(item, f"hygiene.{field}")
+    _strings(hygiene.get("home_path_allow"), "hygiene.home_path_allow", nonempty=False)
     return value
 
 
@@ -160,6 +193,7 @@ def check_contract(root: Path, value: dict) -> list[str]:
                 errors.append(f"missing hook adapter: {name}")
         if not (root / "scripts/harness/hooks/lifecycle_contract.py").is_file():
             errors.append("missing shared lifecycle contract")
+        errors += _check_hook_wiring(root, names, value["sources"]["hook_registrations"])
     for name in value["adapters"]["required_files"]:
         if not (root / name).exists():
             errors.append(f"missing required adapter: {name}")
@@ -170,3 +204,120 @@ def check_contract(root: Path, value: dict) -> list[str]:
         if (root / name).exists():
             errors.append(f"retired path still exists: {name}")
     return errors
+
+
+def _check_hook_wiring(root: Path, names: list, registrations: dict) -> list[str]:
+    """Assert each declared hook is wired in `.claude/settings.json` under its event and matcher.
+
+    `agent-bridge check` compares the Claude and Codex event/matcher sets, so dropping a whole
+    matcher is caught there. Dropping one command line under a kept matcher is not — that is
+    the path this check closes (intent 2026-09-25-external-harness-gap, outcome 1).
+    """
+    try:
+        settings = json.loads((root / ".claude/settings.json").read_text(encoding="utf-8"))
+        wired: dict[tuple[str, str], list] = {}
+        for event, entries in settings["hooks"].items():
+            for entry in entries:
+                commands = [hook["command"] for hook in entry["hooks"]]
+                wired.setdefault((event, entry["matcher"]), []).extend(commands)
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:
+        return [f"cannot read hook registrations from .claude/settings.json: {exc}"]
+    errors = []
+    for name in names:
+        if not isinstance(name, str) or not name.endswith(".sh") or PurePosixPath(name).name != name:
+            continue  # already reported as an invalid shared hook name
+        entry = registrations.get(name)
+        if entry is None:
+            errors.append(f"hook has no event/matcher registration: {name}")
+            continue
+        shim = re.compile(r"(?:^|[\s\"'/])\.claude/hooks/" + re.escape(name) + r"(?=$|[\s\"'])")
+        commands = wired.get((entry["event"], entry["matcher"]), [])
+        if not any(isinstance(command, str) and shim.search(command) for command in commands):
+            errors.append(f"hook not registered in .claude/settings.json: {name} "
+                          f"(event {entry['event']}, matcher {entry['matcher']})")
+    for name in sorted(set(registrations) - set(names)):
+        errors.append(f"hook registration names an undeclared hook: {name}")
+    return errors
+
+
+def check_always_on_lines(root: Path, value: dict) -> list[str]:
+    """Documents loaded into every session stay under the declared line budget."""
+    hygiene = value["hygiene"]
+    limit = hygiene["always_on_max_lines"]
+    errors = []
+    for pattern in hygiene["always_on_files"]:
+        if any(char in pattern for char in "*?["):
+            paths = sorted(path for path in root.glob(pattern) if path.is_file())
+            if not paths:
+                errors.append(f"always-on pattern matches no file: {pattern}")
+                continue
+        else:
+            if not (root / pattern).is_file():
+                errors.append(f"always-on document is missing: {pattern}")
+                continue
+            paths = [root / pattern]
+        for path in paths:
+            relative = path.relative_to(root).as_posix()
+            try:
+                count = len(path.read_text(encoding="utf-8").splitlines())
+            except (OSError, UnicodeError) as exc:
+                errors.append(f"cannot read always-on document: {relative}: {exc}")
+                continue
+            if count > limit:
+                errors.append(f"always-on document exceeds {limit} lines: {relative} ({count})")
+    return errors
+
+
+def check_home_paths(root: Path, value: dict, stats: dict | None = None) -> tuple[list[str], str | None]:
+    """Reject user home absolute paths in harness documents.
+
+    Returns (judgement errors, readiness reason). The file list comes from Git (tracked plus
+    untracked-but-not-ignored), so nested worktrees and ignored runtime files are not read.
+    Binary, non-UTF-8 and symlinked files are skipped and counted in `stats` (scanned/skipped)
+    so the caller can print what was not read. Not being able to list or read the files is
+    readiness, not green.
+    """
+    stats = {} if stats is None else stats
+    stats.update(scanned=0, skipped=0)
+    hygiene = value["hygiene"]
+    allowed = set(hygiene["home_path_allow"])
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard",
+             "--", *hygiene["home_path_roots"]],
+            capture_output=True, check=False)
+    except OSError as exc:
+        return [], f"cannot list harness documents: {exc}"
+    if listed.returncode != 0:
+        return [], "cannot list harness documents: " + listed.stderr.decode("utf-8", "replace").strip()
+    names = sorted({name for name in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if name})
+    errors, scanned = [], 0
+    for name in names:
+        path = root / name
+        if path.is_symlink():
+            stats["skipped"] += 1
+            continue
+        if not path.is_file():
+            continue
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            return errors, f"cannot read harness document {name}: {exc}"
+        if b"\0" in data:
+            stats["skipped"] += 1
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            stats["skipped"] += 1
+            continue
+        scanned += 1
+        stats["scanned"] = scanned
+        for number, line in enumerate(text.splitlines(), 1):
+            for match in HOME_PATH.finditer(line):
+                if match.group(0) not in allowed:
+                    shown = name.encode("utf-8", "surrogateescape").decode("utf-8", "backslashreplace")
+                    errors.append(f"home absolute path in {shown}:{number}: {match.group(0)}")
+    if scanned == 0:
+        return errors, "home-path scan found no harness document to read"
+    return errors, None

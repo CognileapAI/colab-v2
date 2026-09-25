@@ -59,7 +59,8 @@ class HarnessSourceLayoutTests(unittest.TestCase):
         names = [
             "bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh",
             "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh",
-            "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh",
+            "ponytail-inject.sh", "researcher-task.sh", "test-file-guard.sh",
+            "uncommitted-artifacts.sh", "worktree-setup.sh",
         ]
         for name in names:
             with self.subTest(name=name):

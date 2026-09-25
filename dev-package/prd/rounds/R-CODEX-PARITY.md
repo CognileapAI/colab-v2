@@ -1,6 +1,8 @@
 > spec: dev-package/prd/specs/dual-agent-development.md
 # Claude·Codex 동작 동등성 구현·검증 계획
 
+> 2026-09-24 배정 변경 — 이 문서의 모델명은 2026-09-09 기준
+
 > 2026-09-09 최종 현재 상태: Codex 신규 전체 평가 **40/40 통과, 판정 실패 0·준비 실패 0**. 실제 CLI `0.153.4` / `gpt-6-astra`, 고유 작업 40개이며 snapshot `3d0d6c9f301b69ab259d35edd849d70300235e8e84e2b844a5bf02f0684265b6`의 2,307개 파일이 실행 전후 일치했다. 독립 최종 감사 승인 완료. 저장소 compact 증거는 `eval/harness/results/codex-40-final-acceptance-20260909.json`, 외부 증거는 `../.parity-20260909/evidence/codex-final-40-h15-h16-v2`와 `../.parity-20260909/evidence/codex-40-final-acceptance.json`이다.
 
 > 2026-09-09 후속 승인 구현 완료: H08의 고정 7곳을 세 CSS의 숫자 px font-size 리터럴 전수 범위로 재정의했다. 소수를 포함한 13px 미만 선언의 전체 위치 집합을 검사하며 주석·비리터럴 값과 공유 선택자의 집계 단위를 명시했다. CSS 원본은 바이트 그대로이고 모델 입력에 정답 개수·좌표·선택자를 주입하지 않았다. 독립 최종 검토의 차단 사항은 없다. 과거 38/40은 수정 전 이력으로 보존하며 소급 재분류하지 않는다.

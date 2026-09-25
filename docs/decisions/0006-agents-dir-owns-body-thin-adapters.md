@@ -14,7 +14,7 @@ Claude와 Codex 두 도구가 같은 규칙·역할·스킬을 읽는다. 각 �
 ## 결정
 규칙·역할·스킬·판정부의 본문은 `.agents/`와 `scripts/harness/`가 단독 소유한다.
 `.claude/`·`.codex/`는 등록과 payload 변환만 소유하며 본문을 복제하지 않는다.
-소유·어댑터 목록의 기계 정본은 `.agents/harness.yaml`의 `sources`(39-50행)와 `adapters`(51-61행)이고,
+소유·어댑터 목록의 기계 정본은 `.agents/harness.yaml`의 `sources`(40-64행)와 `adapters`(65-75행)이고,
 `harness-contract` 게이트가 그 구조를 검사한다 — `gates/README.md:9` 「`.agents/harness.yaml`의 공통 원본·adapter·필수 gate·0/1/78 계약 누락과 경로 이탈」.
 전환 순서 제약을 결정에 포함한다 — `docs/development/dual-agent.md:19-20` 「실행 중인 훅 이전은 원본 복사 → 소비자 경로 전환 → 기존 진입점 어댑터화 순서로 한다.
 기존 진입점을 먼저 없애면 PreToolUse 자체가 실패하여 복구 도구까지 차단된다.」
@@ -27,6 +27,7 @@ Claude와 Codex 두 도구가 같은 규칙·역할·스킬을 읽는다. 각 �
 - 한쪽 도구만 지원하고 다른 쪽을 포기 — 배제. 두 도구를 함께 쓰기로 한 전환 자체가 무의미해진다.
 - 어댑터 등록이 서로에게 자동 적용된다고 가정 — 배제. `AGENTS.md:34` 「Claude의 paths 메타데이터가 Codex에서 자동 적용된다고 가정하지 않는다.」 본문 소유를 한쪽에 둔다고 등록까지 공유되지는 않는다.
 - 어댑터를 먼저 지우고 공통 경로로 한 번에 옮기기 — 배제. 위 전환 순서 제약대로 복구 도구까지 막힌다.
+- `.claude/skills/<이름>`을 `.agents/skills/<이름>` symlink 로 미러(외부 `sungwooHa/ai-sdlc-harness` 방식) — 미채택. Windows/NTFS 체크아웃과 Codex 스킬 로딩의 symlink 호환을 확인하지 않았고 텍스트 어댑터는 두 환경에서 동작한다(재검토 조건: `docs/development/dual-agent.md` 「보류 중인 외부 장치」).
 
 ## 결과와 감수한 비용
 - 얻는 것: 규칙 한 곳을 고치면 두 도구에 같은 본문이 적용된다. 정본 판정 자리가 하나다.
@@ -42,7 +43,7 @@ Claude와 Codex 두 도구가 같은 규칙·역할·스킬을 읽는다. 각 �
 
 ## 근거
 - `docs/development/dual-agent.md:15-20`(「원본과 도구별 연결」 절 머리와 전환 순서 제약). ⚠ 표 본문은 이 ADR에 복제하지 않는다.
-- `.agents/harness.yaml:39-50`(`sources`) · `:51-61`(`adapters`, `required_files` 5건).
+- `.agents/harness.yaml:40-64`(`sources`) · `:65-75`(`adapters`, `required_files` 5건). (2026-09-25 키 추가로 줄 번호 갱신)
 - `gates/README.md:9`(`harness-contract` 게이트가 검사하는 범위).
 - `AGENTS.md:34`.
 - `docs/development/harness-transition-handoff.md:8` · `:26`(2026-09-15 사용자 승인).

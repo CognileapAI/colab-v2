@@ -29,7 +29,7 @@
 | vercel-labs/agent-browser | `https://github.com/vercel-labs/agent-browser` | Apache-2.0 (Copyright 2025 Vercel Inc.) | CLI **0.27.0**(`npm i -g agent-browser`) 이 내는 `agent-browser skills get core` 출력 · Chrome for Testing 152 | **2026-09-08** |
 
 ⚠ mattpocock 은 커밋 SHA 가 아니라 **브랜치 tarball** 이다(`git clone` 미사용 · 지시 제약). 재현 기준은
-「1.2.3 + 2026-09-06」이고, 정확한 SHA 가 필요하면 그 날짜의 `main` 을 다시 받아 대조한다.
+「1.2.3 + 2026-09-06」이고, 정확한 SHA 가 필요하면 그 날짜의 `main` 을 다시 받아 대조한다. 2026-09-25 대조 결과는 아래 「출처 고정」 절.
 
 ## 공통 개조 3종 (Fable 5.1 문안 교정 · 8종 전부)
 
@@ -55,7 +55,7 @@ frontmatter `description` 은 8종 전부 **≤2문장**(후보 목록 경량 �
 |---|---|---|
 | `grilling` | mattpocock | **원문 유지** — 설계트리 → 라운드 → 프론티어 → 번호 질문 + 권장 답 · 「finding facts is your job, never the user's」 · 「프론티어가 빌 때까지 무행동」. **증보 절 1개** — 사실 조회는 `researcher` 서브에이전트로, Ted 에게 묻지 않는다 / Ted 질문은 라운드 단위로 묶고 각 건에 ⓐ·ⓑ 선택지와 권고 1개 / 질문문에 내부 약어 노출 금지(`rules §5-2`·`§5-4`) |
 | `grill-me` | mattpocock | `disable-model-invocation: true` **유지**(명시 호출 전용). **종료 절 신설** — 프론티어 공집합 + Ted 확인 뒤 `dev-package/intent/<YYYY-MM-DD>-<주제>.md` 초안을 `TEMPLATE.md`(스펙 L-1)로 작성 · **확인 문장은 원문 그대로** · **미해결 질문 0건** · 초안은 **Ted 교정·커밋 대기(커밋 = 승인)** 임을 사용자에게 알린다 |
-| `to-spec` | mattpocock | 「재인터뷰 없음」·시험 seam 선정(기존 우선·최소·최고층) **유지**. **삭제** — 이슈트래커 발행 · `ready-for-agent` 라벨 · `/setup-matt-pocock-skills` 전제. **치환** — 산출 = `dev-package/prd/specs/<회차>.md`, 템플릿은 스펙 L-2. **신설** — 「정책 대조」 절(CLAUDE.md §2·§3·§5·계약 파괴 여부)과 「우려 항목(ⓐ/ⓑ)」 절이 **비면 advisor ① 에 올리지 않는다**. description 에서 issue tracker 문구 제거. **개조 2026-09-08** — 「정책 대조」 아래 「디자인 제약 확인」 소항목 신설(`frontend/` 접촉 spec 은 화면별 토큰·13px·4.5:1·그림자 0·컨테이너 여백·인터랙션 하한을 명시, 못 적으면 「우려 항목」으로) |
+| `to-spec` | mattpocock | 「재인터뷰 없음」·시험 seam 선정(기존 우선·최소·최고층) **유지**. **삭제** — 이슈트래커 발행 · `ready-for-agent` 라벨 · `/setup-matt-pocock-skills` 전제. **치환** — 산출 = `dev-package/prd/specs/<회차>.md`, 템플릿은 스펙 L-2. **신설** — 「정책 대조」 절(CLAUDE.md §2·§3·§5·계약 파괴 여부)과 「우려 항목(ⓐ/ⓑ)」 절이 **비면 advisor ① 에 올리지 않는다**. description 에서 issue tracker 문구 제거. **개조 2026-09-25** — 「원한 결과 (V-id)」 절 신설 · 「디자인 제약 확인」 끝에 선택 항목 `mockup.html`(수기 HTML · 명시 호출 전용 스킬 불호출). **개조 2026-09-08** — 「정책 대조」 아래 「디자인 제약 확인」 소항목 신설(`frontend/` 접촉 spec 은 화면별 토큰·13px·4.5:1·그림자 0·컨테이너 여백·인터랙션 하한을 명시, 못 적으면 「우려 항목」으로) |
 | `verification-before-completion` | superpowers | **「intent 대조」 절 신설** — 연결된 intent.md 의 proposed outcome 을 한 줄씩 대조해 **미달·초과 항목을 열거한 뒤에만** 완료를 주장한다. 둘 다 0건이어야 충족이고, 0건이 아니면 그 목록을 보고에 싣는다(advisor ② 가 같은 목록을 요구) |
 | `writing-plans` | superpowers | 산출 경로 치환 — `docs/superpowers/plans/…` → **`dev-package/prd/rounds/R-*.md` · ≤300행 · 첫 줄에 spec 링크**. 라운드 파일은 spec 의 실행 뷰이고 어긋나면 spec 우선. 워크트리 문장은 `Agent(isolation: "worktree")` 로 갱신 |
 | `executing-plans` | superpowers | 공통 3종만 |
@@ -101,3 +101,33 @@ vendoring 은 **파일 5종만** 복사했으므로 `superpowers:<이름>` 형�
 ## agent-browser 중첩 리소스 복구 — 2026-09-09
 
 CLI 0.27.0의 `agent-browser skills get core --full`에서 references 8개와 templates 3개를 원문 그대로 회수했다. 기존 SKILL 본문은 유지하며 그 상대 링크를 원본 디렉터리에서 해소한다. 원 응답 SHA-256 및 파일별 hash는 실행 증거 `../.parity-20260909/resources/resource-manifest.json`, 원 응답은 `eval/harness/results/agent-browser-core-0.27.0.txt`에 보존한다. 템플릿의 입력·ref는 실제 화면 snapshot으로 갱신해서 사용하며 예시를 실행 결과로 인용하지 않는다.
+
+## 출처 고정 — 2026-09-25 재다운로드 대조
+
+`gh api` 로 상류 파일을 다시 받아 SHA-256 을 쟀다(intent `dev-package/intent/2026-09-25-external-harness-gap.md` 원한 결과 8).
+로컬 사본은 개조본이라 hash 가 다르다. 상류 원본의 hash 만 적는다.
+
+| 출처 | 커밋 SHA | 확정 근거 |
+|---|---|---|
+| superpowers | `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`(태그 `v6.3.0`) | 플러그인 캐시 6.3.0 의 아래 7개 파일 hash 가 태그 파일과 전부 일치 |
+| mattpocock/skills | `3cca18b368ae95cdbdebbff572ccafa662551015` | tarball 원본은 보존되지 않았다. 2026-09-06 이전 마지막 `main` 커밋(2026-09-04T08:43Z · 이후 2026-09-06T23:59Z 까지 커밋 0) · 그 커밋의 `package.json` version 1.2.3 · `grilling`·`grill-me` 상류 본문 대비 로컬 삭제 줄 0 |
+| emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`(표의 `d23d7f8` 전체값) | `apple-design` 상류 본문 대비 로컬 삭제 줄 0 |
+| vercel-labs/agent-browser | `c830d1b67dc18b754e305859f0ae587f858a1447`(태그 `v0.27.0`) | `skill-data/core/SKILL.md` 전문이 `eval/harness/results/agent-browser-core-0.27.0.txt`(SHA-256 `d5bbf95b731ab4ce9f10c433e7d30d970c9d66189244996ccdadc301bdef18e8`) 안에 그대로 있음 |
+
+| 상류 파일 | SHA-256 |
+|---|---|
+| superpowers `skills/writing-plans/SKILL.md` | `48508f44bbfd7d24b029fbf3a314f3cd14c9615599059366e922f47b8dc08cf2` |
+| superpowers `skills/executing-plans/SKILL.md` | `c4c3d8b628c51114cd165fb8246fe02744cd8be180032328391252e653028d9b` |
+| superpowers `skills/test-driven-development/SKILL.md` | `bf1b8216e523851a411e91d429a7c1c2a173e79d88957bc78e348218d50edd54` |
+| superpowers `skills/test-driven-development/writing-good-tests.md` | `51471c853306ff92ca8bb41dcaea05f31c0e46b03651f8f3c99754b7172f4ae1` |
+| superpowers `skills/verification-before-completion/SKILL.md` | `2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3` |
+| superpowers `skills/receiving-code-review/SKILL.md` | `091df1629510af1b92fc4abd6f96732ebedb4cb2c0f3457e8f2740b0504a2438` |
+| superpowers `LICENSE` | `a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400` |
+| mattpocock `skills/productivity/grilling/SKILL.md` | `10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2` |
+| mattpocock `skills/productivity/grill-me/SKILL.md` | `caaf8b8de1684f96e26b28f3c29189db5c89cce4b73e1c93d86164f66ef88637` |
+| mattpocock `skills/engineering/to-spec/SKILL.md` | `43ad9cf318e5e7d3d1fa360253a37021796dc87a0c2e595ad262661a10f85088` |
+| mattpocock `LICENSE` | `0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5` |
+| emilkowalski `skills/apple-design/SKILL.md` | `11840b24a11d7f94f39c6aaab074750ae4e4de4ef54ee4b1dd97e16ebd485e61` |
+| emilkowalski `LICENSE` | `4ff5bdb7887ec1435c9cab0e8d1a7caee704d894d65c2a008ccc68b1cc2f260b` |
+| agent-browser `skill-data/core/SKILL.md` | `34243ed8ab696a9060fd7aebaf5d5765db0a615a4cca2b7a07d3d53d70a5fb3e` |
+| agent-browser `LICENSE` | `014bb31e83d5c2e76aea1cc6e82217346ab41362f32cb355ad0f5c10aa0aeaff` |

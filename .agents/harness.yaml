@@ -24,7 +24,8 @@
       "frontend-test",
       "seed-plan-drift",
       "agent-bridge",
-      "harness-contract"
+      "harness-contract",
+      "adr-records"
     ],
     "states": {"green": 0, "red_judgment": 1, "red_readiness": 78},
     "report_schema": "colab-gate-summary/1"
@@ -45,7 +46,20 @@
     "roles": ["advisor", "gate-runner", "lane-worker", "measurement-lane", "researcher"],
     "config": ".agents/harness.yaml",
     "judges": "scripts/harness",
-    "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],
+    "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "ponytail-inject.sh", "researcher-task.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],
+    "hook_registrations": {
+      "bootstrap-diet.sh": {"event": "SessionStart", "matcher": "startup|clear"},
+      "css-edit-audit.sh": {"event": "PostToolUse", "matcher": "Edit|Write"},
+      "decision-number-guard.sh": {"event": "PreToolUse", "matcher": "Edit|Write"},
+      "git-guard.sh": {"event": "PreToolUse", "matcher": "Bash"},
+      "lane-gate-summary.sh": {"event": "SubagentStop", "matcher": "lane-worker|measurement-lane"},
+      "migration-guard.sh": {"event": "PreToolUse", "matcher": "Edit|Write"},
+      "ponytail-inject.sh": {"event": "PostToolUse", "matcher": "Edit|Write"},
+      "researcher-task.sh": {"event": "SubagentStart", "matcher": "researcher"},
+      "test-file-guard.sh": {"event": "PreToolUse", "matcher": "Edit|Write"},
+      "uncommitted-artifacts.sh": {"event": "SubagentStop", "matcher": "researcher"},
+      "worktree-setup.sh": {"event": "SubagentStart", "matcher": "lane-worker"}
+    },
     "codex_only_skills": ["slack-completion"]
   },
   "adapters": {
@@ -79,6 +93,12 @@
       "dev-package/reports"
     ],
     "retired_roots": []
+  },
+  "hygiene": {
+    "always_on_max_lines": 120,
+    "always_on_files": ["AGENTS.md", "CLAUDE.md", ".claude/rules/*.md"],
+    "home_path_roots": ["AGENTS.md", "CLAUDE.md", ".agents", ".claude", ".codex", "docs"],
+    "home_path_allow": ["/home/user/"]
   },
   "adr_gate": {
     "root": "docs/decisions",

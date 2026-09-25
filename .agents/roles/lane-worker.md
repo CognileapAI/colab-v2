@@ -34,7 +34,8 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 수정 전에 `docs/development/lifecycle-evidence.md`의 `begin --role lane-worker`를 실행해
 필수 `--gate`를 선언한다. 새 보고서는 작업별 Git common runtime에 자동 배치된다. 받은 task_id를 실제 게이트 명령의
-`COLAB_TASK_ID`로 전달한다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다.
+`COLAB_TASK_ID`로 전달한다.
+지시문이 파일 범위를 주면 `--scope <glob>`로 함께 선언한다. 범위 밖 변경은 인계에서 차단되며 출구는 범위를 넓힌 새 task 또는 되돌리기다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다.
 
 ## 순서 (`CLAUDE.md §4`)
 
@@ -48,6 +49,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 - 반복 검증은 **변경 대상 서비스의 단독 게이트**로 좁힌다. 전수 `all` 은 병합 직전 1회이고, 그 1회는 보통 오케스트레이터 또는 `gate-runner` 몫이다.
 - **게이트는 배출처를 준 채 돌린다** — `COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh <게이트>`. 그러면 요약과 같은 계수로 `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 선다(스키마 `colab-gate-summary/1` · `gates/README.md`). 배출처를 빠뜨리면 JSON 이 없고, H7 은 그것을 「게이트를 돌리지 않았다」로 읽는다.
+- **다른 레인을 기다리며 턴을 쓰지 않는다.** 게이트 대기는 호스트 뮤텍스가 한다. 기다려야 하면 green 상태로 커밋하고 인계한다 — 형제 레인 대기로 800턴을 쓴 선례가 있다 (intent `dev-package/intent/2026-09-24-agent-model-tiering.md` 판정 ④).
 - 게이트를 우회·비활성화하지 않는다. green 으로 만들려고 검사 대상을 줄이지 않는다.
 - red 를 **판정 red / 준비 red** 로 갈라 읽는다. 준비 red(exit 78 · `::gate-readiness-failure::`)는 환경 미구성이고, 판정 red 는 코드 결함이다. 갈라 적지 않은 계수는 보고에 쓰지 않는다.
 - 워크트리 하나에 전수 두 벌을 동시에 돌리지 않는다.
@@ -68,4 +70,5 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 - 커밋 = 한 WU 의 한 논리적 단계. 계약과 그 소비자는 같은 커밋. 메시지는 한국어(첫 줄 무엇을, 본문 왜).
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋한다(NTFS · `core.filemode=false` · `§4-3`).
 - **최종 메시지** = ≤15행. 결론·값 → 근거 `파일:행` → 남은 위험 → 후속 항목 → `WORKTREE=… BRANCH=…`. 개조식 · 정성어 배제 · 기술 용어에 비유 금지. 산출물(커밋 메시지 · 문서 · 보고)은 한국어, 내부 추론·코드 주석은 영어 허용.
-- 문서·보고에 절대경로를 적지 않는다. 경로는 레포 루트 기준 상대경로.
+- 최종 메시지에 이 task 의 gate-summary **절대경로**(begin 이 돌려준 report)와 3계수를 적는다. 오케스트레이터가 advisor ② 에 그대로 넘긴다 (intent `dev-package/intent/2026-09-24-harness-lane-hygiene.md`).
+- 문서·보고 **파일**에 절대경로를 적지 않는다. 경로는 레포 루트 기준 상대경로(위 최종 메시지의 gate-summary 경로만 예외).

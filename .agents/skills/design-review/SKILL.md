@@ -66,7 +66,7 @@ python3 .agents/skills/design-review/scripts/css_audit.py --root frontend/src --
 8. 스크립트 값을 그대로 믿지 않는다 — 채택하는 행마다 실물 규칙을 열어 확인하고, 오탐은 산출 파일의 소절 「css_audit 오탐」에 적는다. 스크립트는 같은 규칙 안의 색쌍만 재므로 **상속 색쌍(부모 배경 위 자식 글자)은 사람이 계산**한다.
 9. 「파일 내 토큰 정의」 축은 둘로 가른다 — ⓐ 컴포넌트 전용 변수(접두사가 그 화면 고유 · `--pv-*`·`--toast-*` 류) = 없음 / ⓑ 전역 어휘(`--color-*`·`--radius-*`·`--space-*`)를 파일마다 복제 = Ted 판정(`tokens.css` 승격 여부). 이 구분 없이 판정하지 않는다.
 
-모델 = `researcher`(sonnet). L4 인터랙션 레인만 판단이 무거우면 `model: opus` 로 올린다.
+모델 = `researcher`(기본 opus · 2026-09-24 변경). 계수·추출만인 레인은 `model: sonnet` 을 넘길 수 있다.
 
 ### 2-3. 판정표 형식 (레인 산출 · 메인 취합 공통)
 
@@ -93,7 +93,7 @@ python3 .agents/skills/design-review/scripts/css_audit.py --root frontend/src --
 
 - 설치 = `npm i -g agent-browser && agent-browser install` · 점검 = `agent-browser doctor`.
 - **대상 URL 은 로컬 스택 또는 Ted 가 지정한 주소**다. 프론트는 `/api` 를 `127.0.0.1:8000` 로 프록시하므로(`frontend/vite.config.ts`) 백엔드 없이 뜨지 않는다 — 픽스처 모드는 없다. staging 운영 데이터베이스에 쓰는 경로는 열지 않는다(읽기 화면만).
-- 실행 = `scripts/live_audit.sh <out_dir> <url>...` — 페이지마다 라이트·다크 스크린샷 ＋ `live_probe.js`(상속 배경 기준 대비 · computed 글자 크기 · 로드된 `:active`·reduced-motion 규칙 수 · 인터랙티브 요소 transition) JSON ＋ `index.md` 요약표. 로그인은 `agent-browser --session design auth login <name>` 으로 먼저 저장한다.
+- 실행 = `scripts/live_audit.sh <out_dir> <url>...` — 페이지마다 라이트·다크 스크린샷 ＋ `live_probe.js`(상속 배경 기준 대비 · computed 글자 크기 · 로드된 `:active`·reduced-motion 규칙 수 · 인터랙티브 요소 transition) JSON ＋ `index.md` 요약표. 로그인은 `agent-browser --session design auth login <name>` 으로 먼저 저장하고, 로그인 세션을 쓰려면 `AB_SESSION=design scripts/live_audit.sh …` 처럼 넘긴다 — 넘기지 않으면 새 세션(로그아웃 상태)으로 잰다. 넘긴 세션은 호출자 것이라 스크립트가 닫지 않고, 넘기지 않았을 때 만든 고유 세션은 종료 시 스스로 닫는다.
 - 손으로 재는 항목(누름 피드백 · 드래그 추적 · 경계 저항)은 `snapshot -i` → `click`/`hover`/`drag` → `screenshot` 순서로 찍고, 판정은 표의 「근거」에 스크린샷 경로를 적어 사람이 한다. 스크립트는 판정하지 않는다.
 - 산출 = `dev-package/reports/design-review/<YYYYMMDD>/live/` · 스크린샷은 커밋한다(근거).
 - `eval` 은 **읽기 전용 JS** 만 넣는다(`live_probe.js` 처럼 DOM 무변경). 클릭·입력은 CLI 명령으로 한다.

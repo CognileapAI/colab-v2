@@ -279,6 +279,16 @@
         "dev-package"
       ],
       "checks": {
+        "adr-records": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "adr-records"
+          ],
+          "gates": [
+            "adr-records"
+          ]
+        },
         "work-item-consistency": {
           "kind": "gate",
           "command": [

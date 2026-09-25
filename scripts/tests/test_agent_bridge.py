@@ -27,19 +27,33 @@ class EnvironmentTests(unittest.TestCase):
 
 
 class AgentConfigurationTests(unittest.TestCase):
+    # Models that `codex exec -m <model>` accepted on this host's CLI 0.154.0 / ChatGPT account
+    # (2026-09-24). gpt-6-sol and gpt-6-luna returned 400 "not supported".
+    # Source: dev-package/reports/harness/20260924-agent-model-tiering/X-codex-smoke.md
+    SELECTABLE_CODEX_MODELS = frozenset({'gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'})
+
     def test_role_models_are_explicit_and_do_not_claim_parent_inheritance(self):
+        # Difficulty order follows the Claude roles (spec S-AGENT-MODEL-TIERING-20260924 X1),
+        # on the models this account can select (X-codex-smoke.md: GPT-5.6 Luna < Terra < Sol < GPT-6 Astra).
         expected = {
-            'lane-worker': 'gpt-5.6-sol',
-            'researcher': 'gpt-5.6-sol',
-            'gate-runner': 'gpt-6-astra',
-            'advisor': 'gpt-6-astra',
+            'advisor': ('gpt-6-astra', 'high'),
+            'lane-worker': ('gpt-5.6-sol', 'high'),
+            'researcher': ('gpt-5.6-sol', 'medium'),
+            'measurement-lane': ('gpt-5.6-terra', 'low'),
+            'gate-runner': ('gpt-5.6-luna', 'low'),
         }
-        for role, model in expected.items():
+        self.assertEqual(
+            {path.stem for path in (bridge.ROOT/'.codex/agents').glob('*.toml')}, set(expected)
+        )
+        self.assertLessEqual({model for model, _ in expected.values()}, self.SELECTABLE_CODEX_MODELS)
+        self.assertEqual(set(expected), set(bridge.CODEX_ROLES))
+        for role, (model, effort) in expected.items():
             with self.subTest(role=role):
                 config = tomllib.loads(
                     (bridge.ROOT/f'.codex/agents/{role}.toml').read_text(encoding='utf-8')
                 )
                 self.assertEqual(config.get('model'), model)
+                self.assertEqual(config.get('model_reasoning_effort'), effort)
                 instructions = config['developer_instructions'].lower()
                 self.assertNotIn("inherit the parent's model", instructions)
                 self.assertNotIn("inherit the parent's settings", instructions)
@@ -150,6 +164,41 @@ class LifecycleTests(unittest.TestCase):
         payload = json.loads(run.call_args.kwargs['input'])
         self.assertEqual(payload['tool_name'], 'Edit')
         self.assertTrue(payload['tool_input']['file_path'].endswith('tokens.css'))
+
+    @patch.object(bridge.subprocess, 'run')
+    def test_hook_context_json_is_unwrapped_not_nested(self, run):
+        emitted = json.dumps({'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'additionalContext': '[ponytail] x'}})
+        run.return_value = subprocess.CompletedProcess([], 0, emitted, '')
+        event = self.event('PostToolUse', tool_name='apply_patch', tool_input={
+            'command': '*** Begin Patch\n*** Update File: services/core-api/app.py\n@@\n-a\n+b\n*** End Patch'})
+        context = bridge.dispatch_event(event)['hookSpecificOutput']['additionalContext']
+        self.assertIn('[ponytail] x', context)
+        self.assertNotIn('hookSpecificOutput', context)
+
+    def test_codex_payloads_carry_session_id_for_per_session_hooks(self):
+        payloads = bridge.codex_payloads(self.event('PostToolUse', tool_name='apply_patch', session_id='codex-s9', tool_input={
+            'command': '*** Begin Patch\n*** Update File: services/core-api/app.py\n@@\n-a\n+b\n*** End Patch'}))
+        self.assertEqual({p['session_id'] for p in payloads}, {'codex-s9'})
+
+    def test_ponytail_inject_fires_once_per_agent_on_code_paths_only(self):
+        hook = bridge.ROOT / '.claude/hooks/ponytail-inject.sh'
+        with tempfile.TemporaryDirectory() as tmp:
+            def run(path, agent=None):
+                payload = dict(session_id='s1', tool_name='Edit', cwd=str(bridge.ROOT),
+                               tool_input={'file_path': str(bridge.ROOT / path)})
+                if agent:
+                    payload['agent_id'] = agent
+                result = subprocess.run(['bash', str(hook)], input=json.dumps(payload), text=True,
+                                        capture_output=True, env=dict(os.environ, TMPDIR=tmp, COLAB_HOOKS='1'))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                return result.stdout
+            self.assertEqual(run('docs/development/dual-agent.md'), '')
+            self.assertEqual(run('services/core-api/README.md'), '')
+            first = json.loads(run('services/core-api/app.py'))['hookSpecificOutput']
+            self.assertEqual(first['hookEventName'], 'PostToolUse')
+            self.assertIn('colab-ponytail/SKILL.md', first['additionalContext'])
+            self.assertEqual(run('frontend/src/main.ts'), '')
+            self.assertIn('ponytail', run('frontend/src/main.ts', agent='a1'))
 
     @patch.object(bridge.subprocess, 'run')
     def test_session_start_preserves_explicit_round_priority(self, run):

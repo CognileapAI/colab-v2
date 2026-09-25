@@ -1,6 +1,7 @@
 name = "researcher"
 description = "CoLAB 사실 조사와 요구사항 근거 수집. 제품 코드를 수정하지 않는다."
 model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
 developer_instructions = """
 Read docs/development/dual-agent.md, then the body of .agents/roles/researcher.md.
 Follow docs/development/lifecycle-evidence.md: run begin before this task and include the validated COLAB_HANDOFF in your final response.
