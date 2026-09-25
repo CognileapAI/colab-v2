@@ -311,7 +311,7 @@ export function PreviewMap(props: {
                 /* ⚠ `onWheel` 을 여기 두지 않는다 — React 의 휠 위임은 **passive** 라
                    `preventDefault` 가 무효다(검수 #24). 리스너는 `useZoomPan` 이
                    `{ passive: false }` 로 직접 건다. */
-                onMouseDown: zoom.onMouseDown,
+                onPointerDown: zoom.onPointerDown,
                 /* 더블클릭 = **데이터 경계에 맞춤**(여백 0 · 판정 축자). 경계가 없으면
                    기본 배율과 같은 자리라 아무 일도 하지 않는 것과 같다. */
                 onDoubleClick: zoom.fitToData,

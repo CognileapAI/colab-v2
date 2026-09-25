@@ -1,0 +1,50 @@
+{
+  "source": "probe-init.js · data-probe-modal attribute read with `agent-browser get attr html data-probe-modal` · audit-design.html?design=full&scene=catalog (GNB upload → UploadEntry · fixture fetch = 503) · 1440x900 · light (reduced_motion run: theme=dark)",
+  "format": "[performance.now() ms, tag, data-state, computed opacity, computed transform] · per rAF frame for 600ms after mount / data-state change · excerpts copied verbatim from the session output",
+  "open_normal": [
+    [6228, "mount"],
+    [6230, "mount", "open", "0.00", "matrix(1, 0, 0, 1, 0, 12.2156)"],
+    [6260, "mount", "open", "0.20", "matrix(1, 0, 0, 1, 0, 9.77417)"],
+    [6327, "mount", "open", "0.73", "matrix(1, 0, 0, 1, 0, 3.27242)"],
+    [6410, "mount", "open", "0.93", "matrix(1, 0, 0, 1, 0, 0.810494)"],
+    [6493, "mount", "open", "1.00", "matrix(1, 0, 0, 1, 0, 0.0538122)"],
+    [6544, "mount", "open", "1.00", "none"]
+  ],
+  "close_x_no_input": [
+    [19999, "attr", "closing"],
+    [20010, "state:closing", "closing", "1.00", "matrix(1, 0, 0, 1, 0, 0)"],
+    [20060, "state:closing", "closing", "0.59", "matrix(1, 0, 0, 1, 0, 4.96034)"],
+    [20143, "state:closing", "closing", "0.16", "matrix(1, 0, 0, 1, 0, 10.2568)"],
+    [20243, "state:closing", "closing", "0.02", "matrix(1, 0, 0, 1, 0, 11.9833)"],
+    [20310, "state:closing", "closing", "0.00", "matrix(1, 0, 0, 1, 0, 12.2156)"],
+    [20311, "unmount"]
+  ],
+  "reopen_during_closing_at_26ms_file_kept": [
+    [60184, "attr", "closing"],
+    [60192, "state:closing", "closing", "1.00", "matrix(1, 0, 0, 1, 0, 0)"],
+    [60208, "state:closing", "closing", "0.96", "matrix(1, 0, 0, 1, 0, 0.513061)"],
+    [60210, "attr", "open"],
+    [60226, "state:open", "open", "1.00", "none"],
+    "no unmount entry follows; after 800ms: .filecard count 1 · .modal-takeover count 1 · data-state absent · inert absent"
+  ],
+  "reopen_during_closing_at_271ms_file_kept": [
+    [74605, "attr", "closing"],
+    [74657, "state:closing", "closing", "0.59", "matrix(1, 0, 0, 1, 0, 5.70107)"],
+    [74758, "state:closing", "closing", "0.12", "matrix(1, 0, 0, 1, 0, 12.3285)"],
+    [74874, "state:closing", "closing", "0.00", "matrix(1, 0, 0, 1, 0, 13.9838)"],
+    [74876, "attr", "open"],
+    [74892, "state:open", "open", "0.04", "matrix(1, 0, 0, 1, 0, 13.4712)"],
+    [74941, "state:open", "open", "0.56", "matrix(1, 0, 0, 1, 0, 6.23544)"],
+    [75041, "state:open", "open", "0.91", "matrix(1, 0, 0, 1, 0, 1.25839)"],
+    [75175, "state:open", "open", "1.00", "none"],
+    "no unmount entry follows; after 800ms: .filecard count 1 · text 'design-audit.nc 1 KB 파일 종류 본체' · data-state absent"
+  ],
+  "full_close_then_reopen_is_fresh": "after a completed close (unmount), reopening gave `.up-files, .filecard` count 0",
+  "reduced_motion": [
+    "set media dark reduced-motion → .modal.modal-takeover transition-property none · duration 0s",
+    [18017, "unmount"],
+    "no closing frames: `.modal-takeover` count 0 in the command right after the × click",
+    [18604, "mount"],
+    [18615, "mount", "open", "1.00", "none"]
+  ]
+}

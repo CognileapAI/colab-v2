@@ -135,9 +135,9 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     const { viewport } = await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     const before = screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform');
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
-    fireEvent.mouseMove(window, { clientX: 240, clientY: 260 });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(window, { clientX: 240, clientY: 260 });
+    fireEvent.pointerUp(window);
     expect(screen.getByTestId('preview-layers').style.getPropertyValue('--pv-layers-transform')).not.toBe(before);
   });
 });
@@ -183,9 +183,9 @@ describe('§8 확대 조건 ⑶ — 확대 조작 중 새 렌더 작업 생성 0
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     fireEvent.wheel(viewport, { deltaY: -120, clientX: 100, clientY: 100 });
-    fireEvent.mouseDown(viewport, { clientX: 300, clientY: 300 });
-    fireEvent.mouseMove(window, { clientX: 200, clientY: 200 });
-    fireEvent.mouseUp(window);
+    fireEvent.pointerDown(viewport, { clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
+    fireEvent.pointerUp(window);
     fireEvent.click(screen.getByRole('button', { name: '축소' }));
     fireEvent.click(screen.getByRole('button', { name: '기본 배율로' }));
     expect(vi.mocked(source.create).mock.calls.length - started).toBe(0);

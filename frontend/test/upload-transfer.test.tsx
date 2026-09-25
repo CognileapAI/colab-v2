@@ -24,6 +24,7 @@ import type {
 import type { CurrentAccount } from '../src/api/client';
 import uploadCss from '../src/components/upload/upload.css?raw';
 import { clearSession, setSession } from '../src/auth/store';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 
 const T1 = '01JYZ9K7WQ3N8V4M2X6C5B0TR1';
 const EARLY = '01JYZ9K7WQ3N8V4M2X6C5B0EP1';
@@ -284,7 +285,7 @@ describe('첫 파일 임시 미리보기', () => {
     await act(async () => { finish?.({ uploadId: T1, files: [] }); });
     await waitFor(() => expect(screen.getByTestId('up-preview-final')).toHaveTextContent('영역이 바뀌었어요'));
     const notice = screen.getByTestId('up-preview-final').textContent;
-    fireEvent.click(screen.getByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await waitFor(() => expect(screen.getByTestId('up-preview-image')).toHaveAttribute('src', '/final.png'));
     expect(screen.getAllByTestId('up-preview-final')).toHaveLength(1);
     expect(screen.getByTestId('up-preview-final').textContent).toBe(notice);

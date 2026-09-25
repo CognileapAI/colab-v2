@@ -18,9 +18,17 @@
 // 여기 상수로 박힌 것은 사람이 한 번에 얼마나 들어가는가(`STEP`) 하나다.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { baseScaleFor, needsBoundsOutline, snapWidthKm, boundsWidthKm, type GeoBounds } from './scaleLadder';
+import { SETTLE_PX, VELOCITY_WINDOW_MS, capHandoffVelocity, projectedDistance, spring } from './spring';
 
 /** 한 번 누를 때 들어가는 정도. 화면 조작의 단위이지 상한이 아니다. */
 const STEP = 2;
+
+/**
+ * 끌기 시작 임계(px · 확정 값 4 · design-fix 20260924 #3). 누른 자리에서 이만큼을 **넘기 전에는**
+ * 그림이 움직이지 않고, 넘는 순간 누른 자리 기준으로 따라붙어 그 뒤 1:1 이다. 임계 안에서 놓으면
+ * 뒤이은 click(값 조회)은 그대로 살아 있다.
+ */
+const DRAG_THRESHOLD = 10;
 
 export interface ZoomBoundsFraction {
   x0: number;
@@ -97,7 +105,17 @@ export interface ZoomPan {
     target?: EventTarget | null;
     preventDefault?: () => void;
   }) => void;
-  onMouseDown: (e: { clientX: number; clientY: number; button?: number }) => void;
+  /**
+   * 끌기 시작(포인터 · mouse · touch · pen 같은 경로). 캡처는 optional-call 이다 — 캡처가 없는
+   * 환경(jsdom)에서도 이동·놓기는 창(window) 리스너가 받는다.
+   */
+  onPointerDown: (e: {
+    clientX: number;
+    clientY: number;
+    button?: number;
+    pointerId: number;
+    currentTarget?: EventTarget | null;
+  }) => void;
   zoomIn: () => void;
   zoomOut: () => void;
   reset: () => void;
@@ -172,7 +190,33 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   // 화면 크기는 **상태로도 들고 있어야 한다** — 타일 모자이크가 그 값으로 조각을 세우는데
   // ref 를 그때그때 읽으면 크기가 늦게 잡혀도 다시 그려지지 않는다.
   const [boxSize, setBoxSize] = useState<{ width: number; height: number } | undefined>();
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * 누른 포인터 · 누른 자리(`sx`·`sy`) · 마지막 반영 자리(`x`·`y`) · 임계를 넘었는가 ·
+   * 관성을 잡은 누름인가(`caught` — 그 탭 뒤의 click 은 값 조회가 아니다 · F-preview A35).
+   */
+  const drag = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    x: number;
+    y: number;
+    active: boolean;
+    caught: boolean;
+  } | null>(null);
+  /** 끌기가 성립한 뒤 따라오는 click 한 번을 버린다(값 조회가 끌기 끝에서 새지 않게). */
+  const dragged = useRef(false);
+  /** 이동 기록(시각 ms · 자리) — 놓을 때 마지막 100ms 의 평균 속도를 낸다(#5 · 값 6). */
+  const samples = useRef<Array<{ t: number; x: number; y: number }>>([]);
+  /** 놓은 뒤 관성 프레임 번호. 새 누르기 · 휠 · 확대 단추 · 더블클릭이 끊는다. */
+  const inertia = useRef<number | null>(null);
+
+  /** 관성을 **그 프레임 값에서** 멈춘다 — 자리를 다시 쓰지 않으므로 튀지 않는다. */
+  const stopInertia = useCallback(() => {
+    if (inertia.current === null) return;
+    cancelAnimationFrame(inertia.current);
+    inertia.current = null;
+  }, []);
+  useEffect(() => stopInertia, [stopInertia]);
 
   const box = useCallback(() => {
     const node = el.current;
@@ -249,6 +293,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   //   휠 확대가 `atLimit` 를 지어내지 않게 판정 자리를 하나로 둔다.
   const stepIn = useCallback(
     (anchorX?: number, anchorY?: number) => {
+      stopInertia();
       if (!measured || view.scale >= maxScale) {
         // 한계를 모르거나 한계에 닿았다. **없는 값을 만들어 그리지 않는다.**
         if (measured) setBlocked(true);
@@ -256,15 +301,16 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       }
       zoomTo(view.scale * STEP, anchorX, anchorY);
     },
-    [measured, maxScale, view.scale, zoomTo],
+    [measured, maxScale, view.scale, zoomTo, stopInertia],
   );
 
   const stepOut = useCallback(
     (anchorX?: number, anchorY?: number) => {
+      stopInertia();
       setBlocked(false);
       zoomTo(view.scale / STEP, anchorX, anchorY);
     },
-    [view.scale, zoomTo],
+    [view.scale, zoomTo, stopInertia],
   );
 
   // ⚠ 버튼은 **인자 없이** 부른다 — `onClick={zoom.zoomIn}` 이 넘기는 클릭 이벤트가
@@ -274,9 +320,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   const zoomOut = useCallback(() => stepOut(), [stepOut]);
 
   const reset = useCallback(() => {
+    stopInertia();
     setBlocked(false);
     setView({ scale: baseScale, x: 0, y: 0 });
-  }, [baseScale]);
+  }, [baseScale, stopInertia]);
 
   /**
    * **더블클릭 = 데이터에 맞춤**(판정 축자 「더블클릭으로 데이터에 맞춤」).
@@ -284,9 +331,10 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
    * 경계가 없으면(②비지도형) 기본 배율과 같은 자리라 **아무 일도 하지 않는 것과 같다**.
    */
   const fitToData = useCallback(() => {
+    stopInertia();
     setBlocked(false);
     setView({ scale: 1, x: 0, y: 0 });
-  }, []);
+  }, [stopInertia]);
 
   const onWheel = useCallback(
     (e: {
@@ -328,40 +376,178 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     if (!node) return;
     const handle = (e: WheelEvent) => onWheel(e);
     node.addEventListener('wheel', handle, { passive: false });
-    return () => node.removeEventListener('wheel', handle);
+    // 끌기 끝의 click 은 **캡처 단계에서** 멈춘다 — React 의 onClick(값 조회)은 루트 위임이라
+    // 여기서 전파를 끊으면 닿지 않는다. 호출부마다 같은 검사를 흩지 않는다.
+    // 도구 층(확대 줄 등)의 click 은 끌기의 끝이 아니다 — 건드리지 않는다.
+    const swallow = (e: MouseEvent) => {
+      if (!dragged.current) return;
+      if (e.target instanceof Element && e.target.closest('.pv-overlay')) return;
+      dragged.current = false;
+      e.stopPropagation();
+    };
+    node.addEventListener('click', swallow, true);
+    return () => {
+      node.removeEventListener('wheel', handle);
+      node.removeEventListener('click', swallow, true);
+    };
   }, [node, onWheel]);
 
-  const onMouseDown = useCallback(
-    (e: { clientX: number; clientY: number; button?: number }) => {
+  const onPointerDown = useCallback(
+    (e: {
+      clientX: number;
+      clientY: number;
+      button?: number;
+      pointerId: number;
+      currentTarget?: EventTarget | null;
+    }) => {
       if (e.button !== undefined && e.button !== 0) return;
-      drag.current = { x: e.clientX, y: e.clientY };
+      // 끌기 중 다른 포인터(두 번째 손가락)의 누름은 무시한다 — 첫 포인터가 끝날 때까지(A27).
+      if (drag.current && drag.current.id !== e.pointerId) return;
+      // 관성 중의 누름은 관성을 잡는 탭이다 — 놓은 뒤 click 을 값 조회로 넘기지 않는다(A35).
+      const caught = inertia.current !== null;
+      stopInertia();
+      dragged.current = false;
+      drag.current = {
+        id: e.pointerId,
+        sx: e.clientX,
+        sy: e.clientY,
+        x: e.clientX,
+        y: e.clientY,
+        active: false,
+        caught,
+      };
+      samples.current = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
+      // 캡처가 있으면 뷰포트 밖으로 나가도 이동이 이어진다. 없으면(jsdom) 창 리스너가 받는다.
+      // 캡처는 던질 수 있다(이미 끝난 포인터의 NotFoundError 등). 처리기를 끊지 않고, 그 포인터의 끌기를
+      // 지워 남은 `drag.current` 가 뒤이은 포인터를 막지 않게 한다(A27 의 두 번째 포인터 무시와 충돌 방지).
+      try {
+        (e.currentTarget as Element | null | undefined)?.setPointerCapture?.(e.pointerId);
+      } catch {
+        if (drag.current?.id === e.pointerId) drag.current = null;
+        samples.current = [];
+      }
     },
-    [],
+    [stopInertia],
   );
 
   useEffect(() => {
-    function move(e: MouseEvent) {
+    function move(e: PointerEvent) {
       const from = drag.current;
-      if (!from) return;
-      drag.current = { x: e.clientX, y: e.clientY };
-      setView((cur) => clampView({ ...cur, x: cur.x + (e.clientX - from.x), y: cur.y + (e.clientY - from.y) }));
+      if (!from || e.pointerId !== from.id) return;
+      const now = performance.now();
+      samples.current = samples.current.filter((p) => now - p.t <= VELOCITY_WINDOW_MS);
+      samples.current.push({ t: now, x: e.clientX, y: e.clientY });
+      if (!from.active) {
+        // 임계를 **넘기 전에는** 움직이지 않는다. 넘는 순간 누른 자리 기준으로 붙는다
+        // (`from.x`·`from.y` 가 아직 누른 자리이므로 첫 반영이 곧 누른 자리부터의 전량이다).
+        if (Math.hypot(e.clientX - from.sx, e.clientY - from.sy) <= DRAG_THRESHOLD) return;
+        from.active = true;
+      }
+      const dx = e.clientX - from.x;
+      const dy = e.clientY - from.y;
+      from.x = e.clientX;
+      from.y = e.clientY;
+      setView((cur) => clampView({ ...cur, x: cur.x + dx, y: cur.y + dy }));
     }
-    function up() {
+    function up(e: PointerEvent) {
+      const from = drag.current;
+      if (!from || e.pointerId !== from.id) return;
+      dragged.current = from.active || from.caught;
       drag.current = null;
+      if (!from.active) return;
+      // 놓을 때 속도 = 마지막 100ms 이동 기록의 평균(px/s · 확정 값 6). 기록이 한 점뿐이면
+      // (잠시 멈췄다 놓음) 속도 0 — 관성 없이 그 자리에 선다.
+      const now = performance.now();
+      const recent = [...samples.current, { t: now, x: e.clientX, y: e.clientY }].filter(
+        (p) => now - p.t <= VELOCITY_WINDOW_MS,
+      );
+      samples.current = [];
+      const first = recent[0];
+      const last = recent[recent.length - 1];
+      if (!first || !last || last.t <= first.t) return;
+      // 「동작 줄이기」면 관성 없이 놓은 자리에 선다.
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      const vx = ((last.x - first.x) / (last.t - first.t)) * 1000;
+      const vy = ((last.y - first.y) / (last.t - first.t)) * 1000;
+      // 목표 = 투영 자리를 이동 범위로 자른 값. 스프링이 놓은 속도를 이어받아 그리로 간다.
+      // 출발 자리는 **첫 프레임의 갱신 함수가 받은 최신 값(`cur`)** 이다 — 렌더 시점의 값을 쓰면
+      // 아직 커밋되지 않은 마지막 이동이 빠져 한 걸음 뒤에서 출발한다(A24/A28/A34).
+      // 목표가 잘렸으면 인계 속도를 |v0| ≤ ω·|x0| 로 줄여 끝에서 넘쳤다 잘리지 않게 한다(A26).
+      const t0 = now;
+      let launch: {
+        x: number;
+        y: number;
+        goal: { x: number; y: number };
+        vx: number;
+        vy: number;
+      } | null = null;
+      let settled = false;
+      const frame = () => {
+        if (settled) {
+          inertia.current = null;
+          return;
+        }
+        const t = (performance.now() - t0) / 1000;
+        setView((cur) => {
+          // 갱신 함수는 멱등이어야 한다 — StrictMode(DEV)는 몰아 처리하는 갱신을 두 번 부르고
+          // 첫 결과를 버린다. 멈춘 뒤의 호출도 앞 프레임 값이 아니라 목표를 돌려준다(FP-1).
+          // `settled` 는 rAF 루프의 멈춤 판단에만 쓴다.
+          if (settled && launch) return clampView({ ...cur, x: launch.goal.x, y: launch.goal.y });
+          if (!launch) {
+            const goal = clampView({
+              scale: cur.scale,
+              x: cur.x + projectedDistance(vx),
+              y: cur.y + projectedDistance(vy),
+            });
+            launch = {
+              x: cur.x,
+              y: cur.y,
+              goal,
+              vx: capHandoffVelocity(vx, cur.x - goal.x),
+              vy: capHandoffVelocity(vy, cur.y - goal.y),
+            };
+          }
+          const { goal } = launch;
+          const sx = spring(launch.x, goal.x, launch.vx, t).value;
+          const sy = spring(launch.y, goal.y, launch.vy, t).value;
+          const done = Math.abs(sx - goal.x) < SETTLE_PX && Math.abs(sy - goal.y) < SETTLE_PX;
+          if (done) settled = true;
+          return clampView({ ...cur, x: done ? goal.x : sx, y: done ? goal.y : sy });
+        });
+        // 갱신 함수가 렌더까지 미뤄지면 `settled` 는 다음 프레임에 읽힌다 — 빈 프레임 하나가 더 돈다.
+        inertia.current = settled ? null : requestAnimationFrame(frame);
+      };
+      inertia.current = requestAnimationFrame(frame);
     }
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
+    // pointercancel 은 놓기가 아니다 — 관성 없이 끝내고 취소 이벤트의 좌표는 표본에 넣지 않는다
+    // (A23/A25/A33). 취소 뒤에는 click 이 오지 않으므로 버릴 click 도 없다.
+    function cancel(e: PointerEvent) {
+      const from = drag.current;
+      if (!from || e.pointerId !== from.id) return;
+      drag.current = null;
+      samples.current = [];
+      dragged.current = false;
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
     return () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      // 언마운트 때만 돈다 — `clampView`·`stopInertia` 는 안정 참조라 이 효과가 다시 걸리지 않는다.
+      // 화면 크기·한계 배율 변화 때의 관성 정지(A41)는 `remeasure` 가 맡는다.
+      stopInertia();
     };
-  }, [clampView]);
+  }, [clampView, stopInertia]);
 
   // **원본 해상도는 한 번 알면 계속 유효하다** — 결과가 바뀌지 않는 한 다시 묻지 않는다.
   // 화면 크기 쪽은 바뀔 수 있으므로 둘을 갈라 들고, 크기가 바뀌면 한계를 다시 센다.
   const nativeWidth = useRef(0);
 
   const remeasure = useCallback(() => {
+    // 화면 크기·한계 배율이 바뀌면 이동 범위도 바뀐다 — 놓을 때의 목표로 가던 관성을 멈춘다(A41).
+    stopInertia();
     const size = box();
     if (!size || !nativeWidth.current) return;
     setBoxSize((prev) =>
@@ -372,7 +558,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     //   여기를 `baseScale` 로 내리면 「데이터에 맞춤」보다 덜 들어간 곳이 한계가 된다.
     setMaxScale(Math.max(1, nativeWidth.current / size.width));
     setMeasured(true);
-  }, [box]);
+  }, [box, stopInertia]);
 
   const learn = useCallback(
     (natural: number) => {
@@ -392,10 +578,13 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
 
   // **시작 자리는 사다리가 정한다.** 경계가 없으면(`baseScale === 1`) 아무 것도 하지
   // 않는다 — ②비지도형의 거동을 한 글자도 바꾸지 않기 위해서다.
+  // 경계가 바뀌면(기본 배율 변화) 도는 관성을 먼저 멈춘다 — 멈추지 않으면 다음 프레임이
+  // 옛 배율의 목표로 시작 자리를 덮는다(A29).
   useEffect(() => {
+    stopInertia();
     if (baseScale >= 1) return;
     setView((cur) => (cur.scale === baseScale ? cur : { scale: baseScale, x: 0, y: 0 }));
-  }, [baseScale]);
+  }, [baseScale, stopInertia]);
 
   const onImageLoad = useCallback(
     (e: { currentTarget: HTMLImageElement }) => learn(e.currentTarget.naturalWidth),
@@ -456,7 +645,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     onImageLoad,
     onNativeWidth: learn,
     onWheel,
-    onMouseDown,
+    onPointerDown,
     zoomIn,
     zoomOut,
     reset,
