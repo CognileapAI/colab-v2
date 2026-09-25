@@ -1143,7 +1143,11 @@ components:
         searchedCount:
           type: integer
           minimum: 0
-          description: core-api 가 결과와 같은 범위에서 센 값. ai-service 는 되비추기만 한다.
+          description: >-
+            core-api 가 결과와 같은 범위에서 센 값. ai-service 는 되비추기만 한다.
+            없으면 ai-service 는 0 을 되비춘다 — `RequestedScope` 와 같은 기본 경로다
+            (`services/ai-service/src/colab_ai/app/main.py` 검색 처리기가 0 이상의 정수가
+            아니면 0 으로 둔다).
 
     RequestedScope:
       type: object

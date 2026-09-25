@@ -486,10 +486,12 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     lab = d1_identity.find_lab(db)
     lab_name = ("" if lab is None else lab["name"]) or "연구실"
     # ⭑ **⟨`R-LTH-REVIEW-1` Task 2 · spec §6 ㉰⟩ 범위 줄이 실제로 뒤진 범위를 말한다.**
-    # 운영자의 결과는 아래 `read_only_scope(..., operator_read=subject.operator)` 에서 오는데,
-    # 이름과 분모는 요청 트랜잭션(`scoped_db`)에서 왔다 — 검색은 `POST` 라 거기서는 운영자
-    # 확장이 **꺼진다**(`deps._operator_read` 는 `GET`·`HEAD` 만 연다). 그래서 종전에는
-    # 「전 연구실을 뒤지고 자기 연구실 건수를 말하는」 줄이 섰다.
+    # 운영자의 결과는 아래 `read_only_scope(..., operator_read=subject.operator)` 에서 온다.
+    # 종전에는 이름과 분모가 요청 트랜잭션(`scoped_db`)에서 왔고, 그때 `deps._operator_read` 는
+    # `GET`·`HEAD` 에서만 운영자 확장을 열어 `POST` 검색에서는 꺼졌다 — 그래서 「전 연구실을
+    # 뒤지고 자기 연구실 건수를 말하는」 줄이 섰다. 지금 `deps._operator_read` 는 메서드와
+    # 무관하게 `subject.operator` 를 돌려주지만, 이름은 여기서 운영자 표지로 고정하고 분모는
+    # 아래 결과와 같은 인자의 스코프에서 센다 — 요청 트랜잭션의 설정에 기대지 않는다.
     if subject.operator:
         lab_name = OPERATOR_SCOPE_LABEL
     # **뒤진 범위를 먼저 밝힌다** — 세는 것은 D3 이고, 그것이 이쪽 도메인이다.
@@ -639,7 +641,11 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             }
 
         if subject.operator:
-            _attach_lab_names(db, items)
+            # 연구실 이름 조회도 카드 검색(`ro`)과 **같은 인자**의 읽기 전용 스코프에서 돈다 —
+            # 요청 트랜잭션(`db`)의 스코프 설정에 기대지 않는다(조건 검색 갈래와 같은 규칙).
+            with read_only_scope(request.app.state.session_factory, subject,
+                                 operator_read=subject.operator) as names_ro:
+                _attach_lab_names(names_ro, items)
 
     out = {
         "scope": _search_scope(subject, lab_name, searched_count),

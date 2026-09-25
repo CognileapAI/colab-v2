@@ -137,6 +137,17 @@ def test_an_operator_echo_to_a_member_request_is_discarded(p2_client, fake_ai) -
     assert r.status_code == 503, r.text
 
 
+def test_a_mixed_echo_to_a_member_request_is_discarded(p2_client, fake_ai) -> None:  # noqa: F811
+    """연구실 id 는 맞지만 운영자 표식도 함께 실린 되비춤 — 비운영자 요청 쪽에서도 버린다."""
+    body = _ai_body(TERMS, lab_id=LAB_A)
+    body["scope"]["operatorScope"] = True
+    fake_ai["body"] = body
+    r = p2_client(ai_base_url=fake_ai["url"]).post(SEARCH, json={"query": "원자료"},
+                                                   headers=auth(TOKEN_RES))
+    assert r.status_code == 503, r.text
+    assert r.json()["code"] == "SEARCH_UNAVAILABLE"
+
+
 # ════════ ⑷ 운영자 카드에 연구실 이름 ════════
 
 def test_operator_cards_carry_their_own_lab_name(labless_operator, session_factory) -> None:

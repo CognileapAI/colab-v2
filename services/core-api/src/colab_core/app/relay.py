@@ -445,9 +445,12 @@ class HttpDatasetSearchRelay:
             return unreadable_interpretation(f"검색 서비스가 {status} 로 답했다.")
         # **요청의 범위와 다르면 응답을 버린다** (`core-ai.yaml SearchResponse.scope`).
         # 다른 연구실을 보고 온 해석을 이 화면에 세우면 경계가 응답 한 줄로 무너진다.
+        # 양방향으로 대조한다 — 운영자 요청에 연구실 범위가, 비운영자 요청에 운영자 표식이
+        # (연구실 id 가 맞더라도) 섞여 돌아오면 둘 다 버린다.
         scope = body.get("scope")
         if not isinstance(scope, dict) or scope.get("labId") != lab_id or (
-                operator_scope and (scope.get("operatorScope") is not True or "labId" in scope)):
+                operator_scope and (scope.get("operatorScope") is not True or "labId" in scope)) or (
+                not operator_scope and "operatorScope" in scope):
             return unreadable_interpretation("검색 응답의 범위가 요청과 달라 버렸다.")
 
         interpretation = body.get("interpretation")
