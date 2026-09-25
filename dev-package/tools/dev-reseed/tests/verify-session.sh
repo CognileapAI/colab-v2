@@ -161,7 +161,9 @@ BUILD_PLAN_PY="$TMP/build_plan_stub.py"; : > "$BUILD_PLAN_PY"
 COLAB_DEV_SSH='ec2-user@<대역>'
 COLAB_DEV_KEY_FILE="$TMP/no-such-key"
 EXPECT_DATASETS=1; EXPECT_PROJECTS=1; EXPECT_EDGES=0
-COLAB_RESEED_PREVIEW_WAIT_MS=200
+# 정착 대기 상한 — 대역 호출이 프로세스마다 떠 부하 중(게이트 병렬 실행)에는 200ms 안에 40ms 정착을 못 채워
+# 로그인 화면 사례가 「정착 미확인」으로 새는 일이 있었다(2026-09-25 게이트 2회 중 1회). 판정 규칙은 바꾸지 않는다.
+COLAB_RESEED_PREVIEW_WAIT_MS=800
 export FIXTURE_AB_LOG="$TMP/ab.log"
 
 relpath() { printf '%s' "$1"; }
