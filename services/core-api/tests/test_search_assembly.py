@@ -74,6 +74,21 @@ def test_낱말로_맞으면_낱말_일치_항목이_선다() -> None:
         {"kind": "term", "items": ["‘강우’가 이름·주제·요약에 맞았어요"]}]
 
 
+def _term_item(*terms: str) -> str:
+    match = SearchMatch(dataset_id=DS1, rank=0.9, matched_terms=terms, where=("이름",))
+    return dataset_search.rationale_facts(match)[0]["items"][0]
+
+
+def test_낱말_일치_조사는_끝_글자_받침을_본다() -> None:
+    """받침이 있으면 「이」, 없으면 「가」 — 닫는 따옴표 앞 마지막 한글 음절을 본다."""
+    assert _term_item("강우량") == "‘강우량’이 이름에 맞았어요"
+    assert _term_item("강수") == "‘강수’가 이름에 맞았어요"
+    # 여러 낱말이면 마지막 낱말에 붙는다.
+    assert _term_item("강수", "강우량") == "‘강수’, ‘강우량’이 이름에 맞았어요"
+    # 한글로 끝나지 않는 낱말은 종전 모양 그대로다.
+    assert _term_item("NDVI") == "‘NDVI’가 이름에 맞았어요"
+
+
 def test_관련_개념으로만_맞아도_이유가_하나_이상_있다() -> None:
     """`where == ("온톨로지 연결 근거",)` 만으로 맞은 결과 — 이 항목이 없으면 이유가 0개다
     (근거 필수 · `product.md` §3). 내부 기법 이름(온톨로지)은 화면 문구에 쓰지 않는다."""
@@ -185,7 +200,9 @@ def test_그래프가_데려온_말이면_엣지를_이름으로_적는다() -> 
 
 def test_같은_말_엣지도_읽어_준다() -> None:
     items, _ = _compose(GRAPHED, expansions={"Nearest": ("같은 말이다", "최근린보간")})
-    assert "‘최근린보간’와 같은 말인 ‘Nearest’" in items[0]["rationale"]
+    assert "‘최근린보간’과 같은 말인 ‘Nearest’" in items[0]["rationale"]
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("같은 말이다", "강수")})
+    assert "‘강수’와 같은 말인 ‘Nearest’" in items[0]["rationale"]
 
 
 def test_안에_있다_엣지도_읽어_준다() -> None:

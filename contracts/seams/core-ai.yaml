@@ -1047,7 +1047,8 @@ components:
           enum: ["llm", "literal"]
           description: |
             해석이 **어디서 왔는가.** `literal` 은 모델 없이 질문을 낱말로 자른 것이다 —
-            결과는 진짜 결과이지만 놓친 것이 있을 수 있고, **근거 한 줄이 그 사실을 밝힌다**
+            결과는 진짜 결과이지만 놓친 것이 있을 수 있고, **그 사실은 fe-core 응답 `interpretation` 과
+            검색 결과 범위 줄이 밝힌다**(카드 근거 접두가 아니다)
             (`Policy_데이터_찾기 §4 한계 표시`). `Degradable.degraded` 와 짝으로 온다.
         expansions:
           type: array

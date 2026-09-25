@@ -39,11 +39,22 @@ def decode_cursor(cursor: str | None) -> int:
     return int(raw[2:]) if raw.startswith("o:") and raw[2:].isdigit() else 0
 
 
+def _josa(phrase: str, final: str, open_: str) -> str:
+    """닫는 따옴표 앞 마지막 글자가 **받침 있는 한글 음절**이면 `final`, 아니면 `open_`.
+
+    한글로 끝나지 않는 말(‘NDVI’)은 종전 모양(`open_`)을 그대로 쓴다.
+    """
+    last = phrase.rstrip("’")[-1:]
+    if "가" <= last <= "힣" and (ord(last) - 0xAC00) % 28:
+        return final
+    return open_
+
+
 #: 그래프가 데려온 말을 근거에 **어떻게 읽어 주는가.** 관계 3값을 사람 문장으로 옮긴 것이고,
 #: 빈칸 둘은 (부모, 넓힌 말) 순서다. 열쇠는 `d9_concept_edge.relation` CHECK 값 그대로다.
 _EXPANSION_PHRASE = {
     "~의 한 가지다": "‘{parent}’의 한 가지인 ‘{term}’",
-    "같은 말이다": "‘{parent}’와 같은 말인 ‘{term}’",
+    "같은 말이다": "‘{parent}’{wa} 같은 말인 ‘{term}’",
     "안에 있다": "‘{parent}’ 안에 있는 ‘{term}’",
 }
 
@@ -60,7 +71,8 @@ def _matched_phrase(term: str, expansions: dict[str, tuple[str, str]] | None) ->
         return f"‘{term}’"
     relation, parent = hop
     template = _EXPANSION_PHRASE.get(relation)
-    return template.format(parent=parent, term=term) if template else f"‘{term}’"
+    return (template.format(parent=parent, term=term, wa=_josa(parent, "과", "와"))
+            if template else f"‘{term}’")
 
 
 #: 근거 종류 — 화면 「AI」 패널의 상위 항목 순서다(낱말 일치 → 관련 개념 → 연결된 자료 →
@@ -90,7 +102,7 @@ def rationale_facts(match: SearchMatch, *,
              for t in match.matched_terms[:MAX_TERMS_IN_RATIONALE]]
     matched = ", ".join(heads) or "‘질문의 낱말’"
     where = "·".join(match.where) if match.where else "카탈로그"
-    return [{"kind": "term", "items": [f"{matched}가 {where}에 맞았어요"]}]
+    return [{"kind": "term", "items": [f"{matched}{_josa(matched, '이', '가')} {where}에 맞았어요"]}]
 
 
 def ordered_facts(facts: list[dict]) -> list[dict]:
