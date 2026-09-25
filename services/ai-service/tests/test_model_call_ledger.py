@@ -370,7 +370,7 @@ def test_캐시율_칸이_없다() -> None:
 # ── ㈒ 드리프트 — 선언(schema.sql) ↔ 리비전 ↔ 코드 ─────────────────────────
 _REPO = pathlib.Path(__file__).resolve().parents[3]
 _SCHEMA = _REPO / "db" / "ai" / "schema.sql"
-_REVISION = _REPO / "db" / "ai" / "versions" / "0008_d10_model_call_ledger.py"
+_REVISION = _REPO / "db" / "ai" / "versions" / "0011_d10_model_call_ledger.py"
 _TABLE = "d10_model_call"
 
 
@@ -397,7 +397,7 @@ def _checked_values(block: str, column: str) -> tuple[str, ...]:
 
 def test_선언과_리비전의_DDL_이_한_글자도_다르지_않다() -> None:
     """`env.py` 가 autogenerate 를 쓰지 않으므로 **사람이 두 곳에 같은 것을 적는다** —
-    갈리면 `schema-diff`·`0008-drift.sh` 가 red 를 내고, 이 시험이 그보다 먼저 낸다."""
+    갈리면 `schema-diff`·`0011-drift.sh` 가 red 를 내고, 이 시험이 그보다 먼저 낸다."""
     assert _table_block(_SCHEMA.read_text(encoding="utf-8")) == \
         _table_block(_REVISION.read_text(encoding="utf-8"))
 

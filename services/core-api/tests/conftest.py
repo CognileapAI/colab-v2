@@ -29,6 +29,13 @@ LAB_B = "0000000000000000000000000B"
 ACC_A_PROF = "00000000000000000000000AP1"
 ACC_A_RES = "000000000000000000000000A1"
 ACC_B_PROF = "00000000000000000000000BP1"
+#: ⭑ **⟨2026-09-18 develop 동기화⟩ 「A 연구실 안에서 접근 권한이 없는 주체」.**
+#: 종전에는 `ACC_A_PROF` 가 그 자리였다. `0033_admin_body_access` 이후 교수는 자기 연구실의
+#: **관리자**라 다른 구성원의 비공개 자료까지 본다(intent `2026-09-16-admin-full-access` Q7 ·
+#: Ted 승인). 시드의 A 연구실은 관리자(`ACC_A_PROF`)와 소유자(`ACC_A_RES`) 둘뿐이라
+#: 「둘 다 아닌 구성원」이 없다. **등록하지 않은 주체**를 쓴다 — 시드를 늘리면 develop 이
+#: 이슈 #47 로 세운 계정 수 오라클이 흔들리고, 행을 만들면 되돌리기의 행위자 위험이 생긴다.
+ACC_A_OUTSIDER = "0000000000000000000000000X"
 DS_A1 = "0000000000000000000000DSA1"   # 열림 · 파일 2
 DS_A2 = "0000000000000000000000DSA2"   # 잠김 · 파일 1 · DSA1 의 자식
 DS_B1 = "0000000000000000000000DSB1"   # 다른 연구실
@@ -260,9 +267,11 @@ _RESTORE: tuple[str, ...] = (
          ('00000000000000000000000FA1', current_lab_id(), '0000000000000000000000DSA1',
           '본체', 'a1-body.csv', 50, 'k/a1', false, false),
          ('00000000000000000000000FA2', current_lab_id(), '0000000000000000000000DSA1',
-          '기준 격자 파일', 'a1-grid.nc', 50, 'k/a1g', true, true)
-       -- **`DSA2`(잠김)의 파일은 여기서 되돌리지 않는다** — `body_access` RESTRICTIVE 가
-       -- 앱 롤의 INSERT 를 막는다(그게 그 정책의 요점이다). 시험도 그 행을 건드리지 않는다.
+          '기준 격자 파일', 'a1-grid.nc', 50, 'k/a1g', true, true),
+         ('00000000000000000000000FA3', current_lab_id(), '0000000000000000000000DSA2',
+          '본체', 'a2-body.nc', 200, 'k/a2', false, false)
+       -- `0032_private_owner_access` 이후 이 복구 주체(A 교수)는 DSA2 소유자라 잠긴 본체도
+       -- 읽고 쓸 수 있다. 따라서 잠긴 시드 파일도 같은 스냅숏/복구 규율로 되돌린다.
        ON CONFLICT (id) DO UPDATE
          SET file_name = EXCLUDED.file_name, size_bytes = EXCLUDED.size_bytes,
              storage_key = EXCLUDED.storage_key""",
@@ -527,6 +536,27 @@ def sql(session_factory):
     yield run
     for s in opened:
         s.close()
+
+
+@pytest.fixture
+def outsider_account(sql):
+    """`ACC_A_OUTSIDER` 를 **실재하는** A 연구실 연구원으로 세운다.
+
+    읽기만 하는 시험은 상수만 써도 된다(등록되지 않은 주체도 RLS 는 그대로 거절한다).
+    행을 **쓰는** 시험은 FK 때문에 실재 계정이 필요하다 — `d3_knowledge_grant.account_id` 처럼.
+    되돌리기 안전: 이 계정이 행위자로 남는 `d3_knowledge_*` 는 `d3_dataset` 에서
+    `ON DELETE CASCADE` 로 달려 있고 `_CLEANUP` 이 `d3_dataset` 을 `d1_account` **앞에서**
+    지운다. 그래서 계정 DELETE 가 FK 로 막히지 않는다 (이슈 #47 의 경고 자리).
+    """
+    sql("""INSERT INTO d1_account (id, lab_id, name, email)
+             VALUES (:id, current_lab_id(), 'A 다른 연구원', 'outsider@a.example')
+           ON CONFLICT (id) DO NOTHING""",
+        {"id": ACC_A_OUTSIDER}, account_id=ACC_A_PROF, lab_id=LAB_A)
+    sql("""INSERT INTO d2_member_role (account_id, lab_id, role)
+             VALUES (:id, current_lab_id(), '연구원')
+           ON CONFLICT (account_id) DO NOTHING""",
+        {"id": ACC_A_OUTSIDER}, account_id=ACC_A_PROF, lab_id=LAB_A)
+    return ACC_A_OUTSIDER
 
 
 @pytest.fixture(autouse=True)

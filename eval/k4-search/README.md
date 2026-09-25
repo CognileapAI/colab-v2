@@ -67,6 +67,124 @@ python3 eval/k4-search/measure.py <platform-app-url> <ai-app-url>
 유사도 보조 팔이 받는 것 — 「HSR레이더견본」·「레이더견본」 → `D-15`(자리 = `이름(비슷한 말)`).
 **여전히 0건인 것** — 「강수량」·「위성」·「다운스케」. 매칭은 표기를 넘지 못한다.
 
+## 2026-09-18 재측정 — 실무자 사례 어휘 13행 적재 전/후
+
+같은 `measure.py`, 같은 15건 평가셋(`seed-15.sql`), 같은 플랫폼 DB. 바뀐 것은 **AI DB 의 리비전뿐**이다
+(전 = `0008_dataset_knowledge` · 후 = `0009_practitioner_lexicon`). 모델 호출 0회.
+
+| 질의 | 적재 전 | 적재 후 | 무엇이 바뀌었나 |
+|---|---|---|---|
+| 강수량 | **0건** | **3건** `D-08`·`D-07`·`D-15` | 새 동의어 「강수량」이 주제 `강우·강수` 로 가면서 후보집합에 진입한다. 위 2026-08-25 표의 「강수량 0건」이 닫힌 자리다 |
+| 강수 | 3건 | 3건 (그대로) | 접두 질의로 이미 잡히던 자리다 — 동의어가 **순위를 바꾸지 않는다**(`〈72〉-㉮`) |
+| 그 밖 7질의 | — | **전부 동일** | 지명 별칭 4행·동의어 9행은 개념 그래프를 건드리지 않았다 |
+
+**여전히 0건인 것** — 「위성」·「다운스케」. 둘 다 이 회차의 승인 범위 밖이다(관측 기반 축 = 정본 개정 대기).
+
+## 2026-09-18 재측정 — 자료 메타데이터 28건 적재 전/후
+
+같은 `measure.py`, 같은 15건 평가셋(`seed-15.sql`), 같은 AI DB(`0010_practitioner_concept`).
+**9질의 전부 동일하다** — 이 회차가 바꾼 것은 D3 의 검색 근거·`topic`·`source_label` 이고
+`measure.py` 가 재는 것은 AI 그래프 확장이라 겹치는 자리가 없다. 「안 바뀌었다」를 적는 이유는
+이 하네스로 이번 회차를 잰 것처럼 인용하지 않기 위해서다.
+
+바뀐 자리는 `measure_evidence.py` 가 잰다 — DEV 정본 28건을 일회용 DB 에 세우고,
+**같은 DB 안에서** 근거·`topic`·`source_label` 만 비운 상태(before)와 적재된 상태(after)를
+나란히 센 뒤 rollback 한다. 두 DB 를 따로 세우면 시드 차이가 측정에 섞인다.
+
+```bash
+# ① 일회용 DB + 스키마·롤·시드 (service-tests 가 쓰는 것과 같은 재료)
+CONTAINER=<컨테이너> DB=colab_platform bash services/core-api/tests/fixtures/setup-db.sh
+# ② DEV 정본 28건 재현 + 근거 적재 (멱등)
+python3 dev-package/tools/dataset_evidence_backfill.py
+python3 dev-package/tools/dataset_evidence_apply.py --database-url <URL> --reviewer <ULID> --dry-run
+python3 dev-package/tools/dataset_evidence_apply.py --database-url <URL> --reviewer <ULID>
+# ③ 전/후 측정
+services/core-api/.venv/bin/python eval/k4-search/measure_evidence.py <URL>
+```
+
+2026-09-18 실측 (모델 호출 0회):
+
+| 질의·조건 | 적재 전 | 적재 후 |
+|---|---|---|
+| 주제 결합 「강수」 + `topic=강우·강수` | 2건(시드 A 두 건) | **7건** |
+| 주제 결합 「가뭄」 + `topic=가뭄` | **0건** | **2건** |
+| 원천 표기 「기상청」 | 1건 | **7건** |
+| 조건 `platform=ground` | 0건 | **8건** |
+| 조건 `platform=satellite` | 0건 | **14건** |
+| 조건 `cadence=hourly`(결정 2-ⓐ 로 연 값) | 0건 | **1건** |
+| 조건 `cadence=15min` | 0건 | **2건** |
+| 조건 `directObservation=true` | 0건 | **20건** |
+| 조건 `maxResolutionM<=5000` | 0건 | **6건** |
+| 조건 `variable=precipitation` + `coverageYear=2022` | 0건 | **3건** |
+| `d3_search_evidence` 행 | **0행** | **28행** |
+| `topic` 비-NULL | 3행(시드) | 31행(시드 3 ＋ 28) |
+| `source_label` 비-NULL | 2행(시드) | 11행(시드 2 ＋ 9) |
+
+「가뭄」 주제 결합의 **0 → 2건**이 온톨로지 intent 의 미해결 질문 하나를 닫는다 — 2026-09-15
+보고서가 지목한 0건의 원인은 코드가 아니라 **설명 행의 `topic` 이 전부 NULL** 이던 것이다.
+
+`source_label` 은 28건 중 **9건만** 채웠다. 나머지 19건은 정본 문면이 원천 기관을 말하지 않는다
+(`PLAN-SoT §9-㊴-②` — 정본에 없으면 만들지 않는다).
+
+### 실무자 사례 오라클
+
+`practitioner-conditions.json` ＋ `services/core-api/tests/test_practitioner_conditions.py`.
+같은 일회용 DB 에서 적재 전 **11 failed / 4 passed**(실패는 전부 「근거 적재 0건」),
+적재 후 **15 passed**. 집계는 가능 8 · 부분 3 · blocked 3 이고, blocked 3건
+(`#1-5`·`#2-5` 자료 부재 · `#2-6` pressure level)은 green 을 주장하지 않는다.
+
+## 2026-09-21 재측정 — 규칙 추론값을 초안으로 내린 2회차
+
+같은 하네스·같은 일회용 DB 재료. 바뀐 것은 **생성물 payload 와 계약의 cadence 3값**이다.
+Ted 결정 1 축자 — 「다 초안으로 넣는다. 실제로 얼마나 히트했냐를 측정하고 이에 따라 승격 또는
+폐기하는 구조를 가져야한다.」 → `platform`·`representation`·`directObservation`·`interpolated`
+와 규칙으로 이어받은 `nativeResolutionM`·`region` 은 **적재되지 않는다**.
+조건 검색은 `status='reviewed'` 만 읽으므로(`d3_client_search.py:97`) 그 축은 0건이 된다.
+
+돌리는 법은 위 2026-09-18 절의 3단계와 같다. 모델 호출 0회.
+
+| 질의·조건 | 적재 전 | 1회차 적재 후 | **2회차 적재 후** |
+|---|---|---|---|
+| 주제 결합 「강수」 + `topic=강우·강수` | 2건 | 7건 | **7건** |
+| 주제 결합 「가뭄」 + `topic=가뭄` | 0건 | 2건 | **2건** |
+| 원천 표기 「기상청」 | 1건 | 7건 | **7건** |
+| `platform=ground` | 0건 | 8건 | **0건 — 초안** |
+| `platform=satellite` | 0건 | 14건 | **0건 — 초안** |
+| `directObservation=true` | 0건 | 20건 | **0건 — 초안** |
+| `cadence=hourly` | 0건 | 1건 | **1건** |
+| `cadence=15min` | 0건 | 2건 | **2건** |
+| `cadence=5min` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 1 HSR) |
+| `cadence=10min` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 17 GK-2A LST) |
+| `cadence=yearly` (결정 3) | 0건 | — (enum 밖) | **1건** (seq 11 LULC) |
+| `maxResolutionM<=5000` | 0건 | 6건 | **5건** (seq 3 의 해상도는 규칙값 → 초안) |
+| `variable=precipitation` + `coverageYear=2022` | 0건 | 3건 | **3건** |
+| `d3_search_evidence` 행 | 0행 | 28행 | **28행** |
+
+**「시간해상도 1시간 이하」 히트** — 1회차 **3건**(hourly 1 ＋ 15min 2) → 2회차 **5건**
+(＋ 5min 1 ＋ 10min 1). 1회차 후속 6번이 「정본이 말하는데 적지 못했다」고 남긴 자리가 닫혔다.
+`yearly` 1건은 1시간 이하가 아니라 별도다.
+
+**사실 칸의 등급** — 1회차 reviewed 230칸 · draft 0칸 → 2회차 **reviewed 123칸 · draft 110칸**
+(＋ cadence 3칸이 reviewed 로 늘었다). 규칙별 초안 셈은 생성물 옆
+`dev-package/tools/generated/dataset-evidence-payloads-rule-summary.json` 에 있다 —
+platform 26 · representation 28 · directObservation 26 · interpolated 28 ·
+native-resolution-carried 1 · region-from-registration-note 1 · **bbox-korea-peninsula 0**.
+
+적용기 멱등 실측 — 1회 `evidence 28 / unchanged 0`, 2회 `evidence 0 / unchanged 28`,
+두 번 모두 `draft_withheld 110`.
+
+### 실무자 사례 오라클 (2회차)
+
+같은 일회용 DB 에서 **17 passed**. 집계가 1회차 가능 8 · 부분 3 · blocked 3 에서
+**가능 3 · 부분 5 · blocked 3 · blocked_draft 3** 으로 바뀌었다. 줄어든 자리는 규칙 추론값을
+초안으로 내린 만큼이고, 새 등급 `blocked_draft` 의 사유는 「규칙 추론값은 초안 — 사람 확인 후
+승격」이다. `PC-1-2`·`PC-1-6`·`PC-2-2` 가 그 자리이고 `PC-1-3`·`PC-2-3` 은 reviewed 축만
+남겨 partial 로 내렸다. **초안 사실 위에서 green 을 주장하지 않는다.**
+
+지명 축은 여전히 비어 있다 — 정본을 고치지 않고 후보표만 만들었다
+(`dev-package/reports/practitioner-place-candidates-260921.md` · 후보가 선 행 8 / 28,
+보조 bbox 는 28행 전부 미상).
+
 ## 고정 snapshot 조건 결합 실험
 
 `python3 eval/k4-search/structured_probe.py --output <새 JSON 경로>`

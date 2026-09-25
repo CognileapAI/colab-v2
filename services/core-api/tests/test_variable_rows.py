@@ -225,10 +225,15 @@ def test_the_mirror_triggers_are_statement_level(sql) -> None:
         "d3_dataset_variable_mirror_del",
         "d3_dataset_variable_mirror_ins",
         "d3_dataset_variable_mirror_upd",
+        "d3_dataset_variable_search_change",
     ], f"변수 표의 트리거가 {[r['tgname'] for r in defs]!r} 다."
-    for r in defs:
+    for r in defs[:3]:
         assert "FOR EACH STATEMENT" in r["def"], f"{r['tgname']} 가 행 단위다: {r['def']}"
         assert "REFERENCING" in r["def"], f"{r['tgname']} 에 전이 표가 없다: {r['def']}"
+    # Search dirty generations are recorded at commit, independently of the three
+    # bulk mirror operations. Preserve the exact trigger set and verify both contracts.
+    assert "FOR EACH ROW" in defs[3]["def"]
+    assert "DEFERRABLE INITIALLY DEFERRED" in defs[3]["def"]
 
 
 def test_replace_variables_sends_exactly_one_insert_statement() -> None:

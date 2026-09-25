@@ -151,7 +151,9 @@ def test_invalid_shapes_and_client_hash_are_rejected(p2_client) -> None:
         lambda p: p.update(expectedRevision=True),
         lambda p: p.update(facts={}),
         lambda p: p.update(facts={"region": None}),
-        lambda p: p["facts"].update(cadence="yearly"),
+        # ⭑ 2026-09-21 결정 3 으로 yearly 가 enum 안으로 들어왔다 — 「enum 밖 값은 거절」의
+        #   표본을 여전히 밖에 있는 값으로 바꾼다. 검사 뜻은 그대로다.
+        lambda p: p["facts"].update(cadence="decadal"),
         lambda p: p["facts"].update(nativeResolutionM=0),
         lambda p: p["facts"].update(nativeResolutionM="100"),
         lambda p: p["facts"].update(directObservation="true"),

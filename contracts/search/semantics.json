@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "variables": {
+    "land_surface_temperature": ["지표면 온도", "지표 온도", "LST", "land surface temperature"],
+    "air_temperature": ["기온", "air temperature"],
+    "precipitation": ["강수량", "강수", "강우량", "precipitation", "rainfall"],
+    "wind_speed": ["풍속", "wind speed"],
+    "water_quality": ["수질", "water quality"],
+    "particulate_matter": ["미세먼지", "PM10", "PM2.5"]
+  },
+  "regions": {
+    "seoul": ["서울", "서울시", "서울특별시"],
+    "jeju": ["제주", "제주도", "제주특별자치도"],
+    "korean_peninsula": ["한반도"]
+  },
+  "statistics": ["instantaneous", "daily_mean", "daily_max", "daily_min", "monthly_mean", "monthly_mean_daily_max", "monthly_mean_daily_min"],
+  "representations": ["spatial_grid", "point_observations", "table", "array"],
+  "invariants": ["LST is not air temperature", "format does not prove spatial representation", "native resolution is not resampled grid size", "all constraints must hold on one current reviewed file", "unknown is not supported"]
+}

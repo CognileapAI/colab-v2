@@ -27,4 +27,9 @@ markers = [
   #   (`CLAUDE.md §4` — DB 를 못 붙인 것은 통과가 아니다). 표식은 「그 DB 가 있는 실행에서만
   #   고른다」는 선택자일 뿐이고, 고른 뒤에는 skip 없이 판정한다.
   "dictdb: D9 사전 DB 필요 — COLAB_AI_TEST_DICT_DB_URL 이 있어야 한다",
+  # 시드 적재물(`db/ai/seed/*.sql`)과 순수 확장 함수만으로 도는 어휘 오라클에 붙인다.
+  # 이름은 core-api `pyproject.toml` 의 같은 표식과 **일부러 같다** — `run_regression.py:76`
+  # 이 두 묶음을 한 이름으로 부르고, 표식이 갈리면 그 러너가 한쪽을 조용히 빼먹는다.
+  # ⚠ DB·모델·HTTP 를 부르지 않는다. 이 표식은 skip 의 근거가 아니다.
+  "search_golden: 모델 호출 없는 검색 어휘 골든 회귀",
 ]

@@ -62,8 +62,14 @@ def test_an_expired_grant_is_the_same_as_no_grant(session_factory) -> None:
             "유효한 허용 줄인데도 본체가 안 보인다 — 정책이 과하게 닫혔다."
 
         # 허용은 **사람마다** 다르다. 같은 트랜잭션의 다른 주체에게는 여전히 0 이다.
-        db.execute(text("SELECT set_config('app.current_account', :a, true)"), {"a": "00000000000000000000000000"})
+        db.execute(text("SELECT set_config('app.current_account', :a, true)"),
+                   {"a": "00000000000000000000000000"})
         assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 0
+
+        # 소유자는 grant 없이도 본체를 읽는다 (`0032_private_owner_access`).
+        # 업로더인 연구원은 위의 유효 grant가 필요하다.
+        db.execute(text("SELECT set_config('app.current_account', :a, true)"), {"a": ACC_A_PROF})
+        assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 1
 
 
 def test_the_body_layer_holds_at_the_http_layer(live_client) -> None:

@@ -200,6 +200,7 @@ def add_lineage_parent(datasetId: str, body: dict = Body(...),
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_edit(db, subject)
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
@@ -244,8 +245,11 @@ def remove_lineage_parent(datasetId: str, parentDatasetId: str,
     if not Ulid.is_valid(datasetId) or not Ulid.is_valid(parentDatasetId):
         raise errors.bad_request("정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_edit(db, subject)
     if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found()
+    if not d3_catalog.dataset_exists(db,Ulid(parentDatasetId)):
         raise errors.not_found()
     if not d4_lineage.remove_parent(db, child_id=dataset_id, parent_id=Ulid(parentDatasetId)):
         raise errors.not_found("그런 관계가 없다.")
@@ -269,8 +273,11 @@ def update_lineage_parent_method(datasetId: str, parentDatasetId: str, body: dic
     if not Ulid.is_valid(datasetId) or not Ulid.is_valid(parentDatasetId):
         raise errors.bad_request("정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_edit(db, subject)
     if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found()
+    if not d3_catalog.dataset_exists(db,Ulid(parentDatasetId)):
         raise errors.not_found()
 
     unknown = set(body) - {"method"}
@@ -309,6 +316,7 @@ def declare_lineage_unknown(datasetId: str,
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_edit(db, subject)
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
@@ -334,6 +342,7 @@ def confirm_lineage(datasetId: str,
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
+    d4_lineage.lock_lab_for_lineage_write(db)
     _require_edit(db, subject)
     # ⭑ **⟨20차 해제 · PRD-07·09 · WU-B5⟩ 사후 충돌의 최종 방어선.**
     #    연결한 뒤 자기 Lv 를 내리면 **연결은 그대로 남고**(사람이 한 것을 시스템이 되돌리지

@@ -151,4 +151,34 @@ else
   echo "  ✓ ⓛ 요약줄이 수집·실행·skipped·deselected·failed 를 계수로 낸다"
 fi
 
+# AI database preparation is mandatory, including its formerly excluded dictdb tests.
+ai_missing_out="$(COLAB_PG_FORCE_UNAVAILABLE=1 COLAB_SERVICE_TEST_JOBS=1 "$GATE" ai-service 'not e2e' 2>&1)"
+ai_missing_rc=$?
+if [ "$ai_missing_rc" -ne 78 ]; then
+  echo "::error::AI database unavailable must fail readiness (78), got $ai_missing_rc"
+  rc=1
+else
+  echo "  ✓ AI database unavailable → red(준비 · 78)"
+fi
+
+ai_failed_tree="$(mk_tree pass)"
+mkdir -p "$ai_failed_tree/tests/fixtures"
+cp "$FIX/ai-setup-fail.sh" "$ai_failed_tree/tests/fixtures/setup-db.sh"
+expect_case red "AI schema fixture failure" ai-service 'not e2e' "$ai_failed_tree" yes 1
+
+pipeline_missing_out="$(COLAB_PG_FORCE_UNAVAILABLE=1 COLAB_SERVICE_TEST_JOBS=1 "$GATE" pipeline-worker 'not e2e' 2>&1)"
+pipeline_missing_rc=$?
+if [ "$pipeline_missing_rc" -ne 78 ]; then
+  echo "::error::pipeline DB unavailable must fail readiness (78), got $pipeline_missing_rc"
+  rc=1
+else
+  echo "  ✓ pipeline database unavailable → red(준비 · 78)"
+fi
+pipeline_failed_tree="$(mk_tree pass)"
+mkdir -p "$pipeline_failed_tree/tests/fixtures"
+cp "$FIX/ai-setup-fail.sh" "$pipeline_failed_tree/tests/fixtures/setup-db.sh"
+expect_case red-ready "pipeline schema fixture failure" pipeline-worker 'not e2e' "$pipeline_failed_tree" yes 1
+PYTHONPATH="$REPO_ROOT/gates/tools${PYTHONPATH:+:$PYTHONPATH}" \
+  expect_case green "pipeline worker DB isolation and missing URL" fixture 'not e2e' "$(mk_tree worker-db)" yes 1
+
 exit $rc

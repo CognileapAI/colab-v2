@@ -115,6 +115,42 @@ def test_worker_writes_all_stage_events_into_the_w1_ledger(session, tmp_path):
     assert status[0] is True and status[1] is True
 
 
+def test_file_measurement_receipt_is_canonical_and_identity_idempotent(session):
+    from sqlalchemy import text
+
+    upload_id, file_id = _ulid("MR01"), _ulid("MF01")
+    _accept(session, upload_id)
+    session.execute(text("""
+        INSERT INTO d5_upload_file (id, lab_id, upload_id, kind, file_name, storage_key)
+        VALUES (:id, :lab, :uid, '본체', 'original.npy', 'uploads/original.npy')
+    """), {"id": file_id, "lab": _LAB, "uid": upload_id})
+    ledger = SqlLedger(session)
+    measurement = {"parser_version": "file-measurement-v1", "format": "npy",
+                   "digest": "a" * 64, "size_bytes": 128}
+    first = ledger.record_measurement(file_id=file_id, upload_id=upload_id,
+                                      lab_id=_LAB, measurement=measurement)
+    assert first == ledger.record_measurement(file_id=file_id, upload_id=upload_id,
+                                              lab_id=_LAB, measurement=measurement)
+    changed = ledger.record_measurement(file_id=file_id, upload_id=upload_id,
+                                        lab_id=_LAB, measurement={**measurement, "digest": "b" * 64})
+    assert changed != first
+    rows = session.execute(text("""
+        SELECT id, source_digest, measured_format, parser_version, byte_size
+        FROM d5_file_measurement WHERE upload_file_id=:file ORDER BY source_digest
+    """), {"file": file_id}).all()
+    assert rows == [(first, "a" * 64, "npy", "file-measurement-v1", 128),
+                    (changed, "b" * 64, "npy", "file-measurement-v1", 128)]
+    from sqlalchemy.exc import IntegrityError
+    with pytest.raises(IntegrityError) as error, session.begin_nested():
+        session.execute(text("UPDATE d5_file_measurement SET measured_format='tif' WHERE id=:id"),{'id':first})
+    assert error.value.orig.sqlstate=='23514'
+    with session.begin_nested() as scope:
+        session.execute(text("SELECT set_config('app.current_lab','0000000000000000000000000B',true)"))
+        assert session.execute(text('SELECT count(*) FROM d5_file_measurement')).scalar_one()==0
+        assert ledger.record_measurement(file_id=file_id,upload_id=upload_id,lab_id=_LAB,measurement=measurement) is None
+        scope.rollback()
+
+
 def test_accepted_files_unions_post_acceptance_reused_grid_rows(session) -> None:
     """J-1: 접수 뒤 복제된 격자도 다음 worker 바퀴의 입력에 들어간다."""
     from sqlalchemy import text

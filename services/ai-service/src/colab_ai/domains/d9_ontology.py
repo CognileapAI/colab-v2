@@ -148,7 +148,7 @@ class ConceptEdge:
 
 @dataclass(frozen=True)
 class ConceptGraph:
-    """적재된 그래프의 스냅숏. K2b 시드 실측 = 노드 49 · 엣지 19."""
+    """적재된 그래프의 스냅숏. K2b 시드 실측 = 노드 54 · 엣지 20 (2026-09-18 결정 4·5 뒤)."""
     nodes: tuple[ConceptNode, ...]
     edges: tuple[ConceptEdge, ...]
 

@@ -158,8 +158,12 @@ def test_professor_role_revocation_closes_private_download_and_preview(p2_client
     assert made.status_code == 201, made.text
     isolate_created_accounts.append(made.json()["accountId"])
     professor = _normal_token(client, email)
-    dataset_id, files = _dataset(client, token=professor)
-    locked = client.patch(f"/api/v1/datasets/{dataset_id}", headers=auth(professor),
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 자료는 **다른 구성원**이 갖는다.**
+    #   이 시험이 재는 것은 「역할을 잃으면 관리 접근이 닫힌다」다. 새 교수가 자기 자료를 올리면
+    #   강등 뒤에도 **소유자**로 계속 보이므로(`0032_private_owner_access`) 재려던 것이 사라진다.
+    #   그래서 연구원이 올리고 잠그고, 교수는 **관리자 자격으로만** 닿는다.
+    dataset_id, files = _dataset(client, token=TOKEN_RES)
+    locked = client.patch(f"/api/v1/datasets/{dataset_id}", headers=auth(TOKEN_RES),
                            json={"accessState": "잠김"})
     assert locked.status_code == 200, locked.text
     ticket = client.get(f"/api/v1/datasets/{dataset_id}/files/{files['a.csv']['fileId']}/download",

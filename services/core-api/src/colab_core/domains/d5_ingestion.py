@@ -279,6 +279,20 @@ class UploadLedgerAdapter:
             _GRID_PROFILE, {"id": str(upload_id)}).mappings().first()
         return None if row is None else dict(row)
 
+    def measurements(self, upload_id: Ulid):
+        from ..ports.ingestion import FileMeasurementReceipt
+
+        rows = self._session.execute(text('''
+            SELECT DISTINCT ON (m.upload_file_id) m.id AS receipt_id,m.upload_file_id AS file_id,
+              m.upload_id,m.lab_id,m.storage_key,m.issuer,m.parser_version,
+              m.source_digest AS digest,m.byte_size AS size_bytes,m.measured_format AS format
+            FROM d5_file_measurement m JOIN d5_upload_file f ON f.id=m.upload_file_id
+            WHERE m.upload_id=:upload AND f.upload_id=m.upload_id AND f.lab_id=m.lab_id
+              AND f.storage_key=m.storage_key AND f.kind='본체'
+            ORDER BY m.upload_file_id,m.created_at DESC,m.id DESC
+        '''), {'upload':str(upload_id)}).mappings()
+        return {row['file_id']:FileMeasurementReceipt(**row) for row in rows}
+
     def is_early_preview(self, upload_id: Ulid) -> bool:
         return self._session.execute(
             _IS_EARLY_PREVIEW, {"id": str(upload_id)}).first() is not None

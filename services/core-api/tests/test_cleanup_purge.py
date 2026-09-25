@@ -95,6 +95,7 @@ def test_purge_keeps_the_seed_rows_it_did_not_make(session_factory, sql) -> None
         session.close()
 
     assert _count(sql, "SELECT count(*) AS n FROM d3_dataset") == 2
+    # `0032_private_owner_access` 이후 A 교수는 잠긴 DSA2의 소유자라 시드 FA3도 보인다.
     assert _count(sql, "SELECT count(*) AS n FROM d3_file") == 3
     assert _count(sql, "SELECT count(*) AS n FROM d6_project") == 1
     assert _count(sql, "SELECT count(*) AS n FROM d4_lineage_edge") == 1

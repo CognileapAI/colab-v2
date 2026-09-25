@@ -61,6 +61,260 @@ security:
   - serviceToken: []
 
 paths:
+  /internal/knowledge/deletion/issue:
+    servers: [{url: /, description: Core deletion authority listener}]
+    post:
+      tags: [search]
+      operationId: issueKnowledgeDeletion
+      summary: 정확한 삭제 revision에서 본문 없는 폐기 권한을 발급한다
+      description: 고정 lab의 별도 capability만 사용하며 사용자 세션, 원본 본문, ontology를 읽지 않는다. missing/access loss는 삭제가 아니다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §9 다음 삭제 계약·삭제 전용 API capability(고정 lab).
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionIssueRequest}
+      responses:
+        '200':
+          description: Hash-only grant로 결합한 삭제 명령. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/InvalidateCommand}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Exact current deletion proof unavailable}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority unavailable}
+  /internal/knowledge/deletion/validate:
+    servers: [{url: /, description: Core deletion authority listener}]
+    post:
+      tags: [search]
+      operationId: validateKnowledgeDeletion
+      summary: 현재 삭제 revision과 영속 fence를 검증한다
+      description: 별도 폐기 grant와 고정 lab을 검사한다. 사람 계정이나 ontology release는 사용하지 않는다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §9 삭제 source authority(정확 key·deleted=true·expected revision 일치만 삭제 증명) · 삭제 전용 API capability.
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateRequest}
+      responses:
+        '200':
+          description: 본문 없는 삭제 판정. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateResponse}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Lab or source unavailable}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority unavailable}
+  /internal/knowledge/invalidate:
+    servers: [{url: /, description: Separate D9 knowledge listener outside D10}]
+    post:
+      tags: [search]
+      operationId: invalidateDatasetKnowledge
+      summary: 소유 도메인 삭제 증명을 확인하고 본문 없는 tombstone을 저장한다
+      description: 첫 삭제도 fence와 receipt를 만든다. callback과 commit의 분산 원자성은 보장하지 않는다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §4 KnowledgeWriter.invalidate · §9 삭제 source authority(처음 삭제도 D9 fence/invalidated receipt).
+      security: [{knowledgeDeletionToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/DeletionValidateRequest}
+      responses:
+        '200':
+          description: 멱등 invalidated receipt. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/InvalidationReceipt}
+        '401': {description: Deletion capability missing or invalid}
+        '403': {description: Source disposal forbidden}
+        '409': {description: Stale generation or source or conflicting digest}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Deletion authority or storage unavailable}
+  /internal/knowledge/source/read:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: authorizeKnowledgeRead
+      summary: 현재 viewer와 원본 정본 digest에서 조회 권한을 재검증한다
+      description: 발급 grant 없이 tracked session과 자료 RLS를 검사한다. 세대 증가 및 grant 발급은 하지 않는다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §9 다음 reader 계약(고정 callback으로 현재 viewer의 tracked session·자료 RLS 대조, 조회는 세대나 grant를 만들지 않는다).
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceReadRequest}
+      responses:
+        '200':
+          description: 현재 viewer principal과 판정. 본문 없음, Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/read:
+    servers: [{url: /, description: Separate D9 knowledge listener outside D10}]
+    post:
+      tags: [search]
+      operationId: readDatasetKnowledge
+      summary: 현재 viewer에게 허용된 자료별 지식을 조회한다
+      description: 저장 descriptor의 고정 callback 검증과 D9 manifest 및 최종 row 검증 후 grant 없는 본문을 반환한다. callback 이후 원본 변경과의 분산 원자성을 보장하지 않는다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §4 KnowledgeReader.read · §9 다음 reader 계약·D9 manifest와 최종 current receipt 재확인.
+      security: [{knowledgeReaderToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReadRequest}
+      responses:
+        '200':
+          description: 정합성 검사된 payload와 receipt. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/AuthorizedKnowledge}
+        '401': {description: Reader token missing or invalid}
+        '403': {description: Knowledge unavailable to current viewer}
+        '409': {description: Stale source generation or release}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source callback or knowledge reader unavailable}
+  /internal/knowledge/source/issue:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: issueKnowledgeSource
+      summary: 현재 로그인 주체가 읽을 수 있는 근거에서 처리 권한을 발급한다
+      description: 전용 callback bearer와 tracked DB 세션을 모두 검증한다. 요청 principal과 임의 source URL은 받지 않는다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §4 SourceAuthority.authorize · §9 HTTP 연결 구현 기준.
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceIssueRequest}
+      responses:
+        '200':
+          description: 서버 생성 command와 인증된 principal. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceIssueResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '403': {description: Source unavailable to authenticated principal}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/source/validate:
+    servers: [{url: /, description: Core source authority listener}]
+    post:
+      tags: [search]
+      operationId: validateKnowledgeSource
+      summary: 실제 tracked 세션과 현재 원본에서 grant를 재검증한다
+      description: principal은 요청으로 받지 않고 세션에서 생성한다. 읽기 권한이나 분산 commit 원자성을 보장하는 receipt가 아니다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §4 SourceAuthority.validate · §9 HTTP 연결 구현 기준.
+      security: [{knowledgeCallbackToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateRequest}
+      responses:
+        '200':
+          description: 현재 인증 principal과 source 판정. Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/SourceValidateResponse}
+        '401': {description: Service or tracked session authentication failed}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Source authority unavailable}
+  /internal/knowledge/replace:
+    servers: [{url: /, description: Separate D9 knowledge writer listener outside D10}]
+    post:
+      tags: [search]
+      operationId: replaceDatasetKnowledge
+      summary: 고정 source callback으로 권한을 검증한 자료별 지식을 반영한다
+      description: principal은 검증 전 claim이다. callback의 인증 principal과 전체 일치해야 한다. 조회·삭제·공용 ontology 발행 기능은 없다. 근거 — dev-package/prd/specs/knowledge-lifecycle-contract.md §4 KnowledgeWriter.replace · §9 D9 writer 별도 실행과 principal claim 대조.
+      security: [{knowledgeWriterToken: [], trackedKnowledgeSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReplaceRequest}
+      responses:
+        '200':
+          description: 원자 반영 receipt. 재조회 권한이 아니며 Cache-Control no-store.
+          content:
+            application/json:
+              schema: {$ref: ../schemas/knowledge-lifecycle.json#/$defs/KnowledgeReceipt}
+        '401': {description: Writer token missing or invalid}
+        '403': {description: Principal claim or source authorization rejected}
+        '409': {description: Stale source generation release or idempotency conflict}
+        '413': {description: Request exceeds 1 MiB}
+        '422': {description: Invalid request}
+        '503': {description: Authenticated source callback or writer unavailable}
+  /search-concept-proposals:
+    post:
+      tags: [search]
+      operationId: proposeSearchConcepts
+      summary: 출처의 사실과 제한된 온톨로지 후보에서 근거 있는 개념을 고른다
+      description: 서비스 인증을 요구하며 Sonnet 모델의 결과를 실행 없이 검증해 최대 6건 반환한다. 근거 — dev-package/prd/specs/AI-SEARCH-CONTINUOUS.md §목표와 범위(Sonnet은 제공된 개념 후보와 자료 속 인용을 선택, 서버가 형태·허용 후보·출처 인용 검증) · §수용 기준 2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConceptProposalRequest" }
+      responses:
+        "200":
+          description: 출처 인용이 포함된 개념 선택
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConceptProposalResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /ontology-concepts:
+    post:
+      tags: [search]
+      operationId: lookupOntologyConcepts
+      summary: 고정된 온톨로지 버전에서 관련 개념 내용을 제한 조회한다
+      description: 서비스 인증을 요구하며 한 번에 최대 6개 개념과 각 1홉 내용 증명을 반환한다. 근거 — dev-package/prd/specs/AI-SEARCH-CONTINUOUS.md §목표와 범위(개념 조회는 버전 고정·입출력 상한·1홉·내용 해시 검증) · §수용 기준 1.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [query, expected_version]
+              properties:
+                query: {type: string, maxLength: 16000}
+                expected_version: {type: string, pattern: '^[0-9a-f]{64}$'}
+      responses:
+        "200":
+          description: 조회한 개념의 버전과 내용 증명
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OntologyLookup'}
+        "400": {$ref: '#/components/responses/Error'}
+        "401": {$ref: '#/components/responses/Error'}
+        "409": {$ref: '#/components/responses/Error'}
+        "503": {$ref: '#/components/responses/Error'}
+  /ontology-manifest:
+    get:
+      tags: [search]
+      operationId: getOntologyManifest
+      summary: 지속 검색 갱신을 위한 온톨로지 내용 버전을 읽는다
+      description: 내부 갱신 도구용 읽기 전용 표면. 서비스 토큰 필수이며 장애를 빈 지식으로 반환하지 않는다. 근거 — dev-package/prd/specs/AI-SEARCH-TOOLS.md 「core-ai GET /ontology-manifest」 항목 · dev-package/prd/specs/AI-SEARCH-ONTOLOGY-VERSIONS.md §수용 기준(manifest v1).
+      responses:
+        "200":
+          description: 내용 해시와 개념별 의존 해시
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OntologyManifest" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
   /lineage-suggestions:
     post:
       tags: [lineage-suggestion]
@@ -166,6 +420,27 @@ paths:
 components:
 
   securitySchemes:
+    knowledgeDeletionToken:
+      type: http
+      scheme: bearer
+      description: 고정 lab 폐기 전용 capability. 일반 source issue/read/replace, callback, ontology token과 분리한다.
+    knowledgeCallbackToken:
+      type: http
+      scheme: bearer
+      description: Source callback 전용 서비스 자격. 기존 read 및 writer와 구분한다.
+    knowledgeWriterToken:
+      type: http
+      scheme: bearer
+      description: 별도 D9 writer 프로세스 전용 서비스 자격. D10에는 제공하지 않는다.
+    knowledgeReaderToken:
+      type: http
+      scheme: bearer
+      description: Knowledge reader 전용 자격. writer, callback 및 기존 ontology token과 모두 구분한다.
+    trackedKnowledgeSession:
+      type: apiKey
+      in: header
+      name: X-CoLAB-Session
+      description: 실제 tracked DB 로그인 세션. 요청 수명에만 보관하고 DB·로그에 저장하지 않는다.
     serviceToken:
       type: http
       scheme: bearer
@@ -179,6 +454,87 @@ components:
           schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
 
   schemas:
+    ConceptProposalRequest:
+      description: "`proposeSearchConcepts` 요청. 근거 — dev-package/prd/specs/AI-SEARCH-CONTINUOUS.md §목표와 범위(모델 입력은 제공된 개념 후보와 자료 속 인용) · §수용 기준 2."
+      type: object
+      additionalProperties: false
+      required: [source, concepts]
+      properties:
+        source:
+          type: object
+          additionalProperties: false
+          required: [facts]
+          properties:
+            facts:
+              type: array
+              maxItems: 100
+              items: {type: object, additionalProperties: true}
+        concepts:
+          type: array
+          maxItems: 6
+          items: {type: object, additionalProperties: true}
+
+    ConceptProposalResponse:
+      description: "`proposeSearchConcepts` 응답. 근거 — dev-package/prd/specs/AI-SEARCH-CONTINUOUS.md §목표와 범위(모델 출력은 서버에서 형태·허용 후보·출처 인용을 검증) · §수용 기준 2."
+      type: object
+      additionalProperties: false
+      required: [selections]
+      properties:
+        selections:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [concept_id, predicate, quote]
+            patternProperties:
+              '^concept_id$': {type: string, minLength: 1}
+            properties:
+              predicate: {type: string}
+              quote: {type: string}
+
+    OntologyLookup:
+      description: "`lookupOntologyConcepts` 응답. 근거 — dev-package/prd/specs/AI-SEARCH-CONTINUOUS.md §목표와 범위(개념 조회는 버전 고정·입출력 상한·1홉·내용 해시 검증) · §수용 기준 1."
+      type: object
+      additionalProperties: false
+      required: [version, concepts]
+      properties:
+        version: {type: string, pattern: '^[0-9a-f]{64}$'}
+        concepts:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [node, edges, neighbors]
+            properties:
+              node: {type: object, additionalProperties: true}
+              edges: {type: array, maxItems: 64, items: {type: object, additionalProperties: true}}
+              neighbors: {type: array, maxItems: 65, items: {type: object, additionalProperties: true}}
+
+    OntologyManifest:
+      description: "`getOntologyManifest` 응답. 근거 — dev-package/prd/specs/AI-SEARCH-ONTOLOGY-VERSIONS.md §수용 기준(manifest v1은 protocol, entries, version으로 구성)."
+      type: object
+      additionalProperties: false
+      required: [protocol, entries, version]
+      properties:
+        protocol:
+          type: string
+          const: ontology-manifest-v1
+        entries:
+          type: object
+          minProperties: 1
+          maxProperties: 100000
+          required: [discovery]
+          propertyNames:
+            maxLength: 68
+            pattern: '^(discovery|concept:[a-z0-9]+(-[a-z0-9]+)*)$'
+          additionalProperties:
+            type: string
+            pattern: '^[0-9a-f]{64}$'
+        version:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
 
     # ---- 공통 ---------------------------------------------------------------
 

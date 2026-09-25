@@ -1,0 +1,358 @@
+- generic [ref=e1] clickable [onclick]
+  - generic
+    - banner
+      - link "Co-Lab" [ref=e2]
+        - StaticText "Co-Lab"
+      - button "연구실 전환 · A 연구실" [ref=e3]
+        - StaticText "A 연구실"
+      - navigation "주 내비" [ref=e4]
+        - link "연구실" [ref=e17]
+          - StaticText "연구실"
+        - link "프로젝트" [ref=e18]
+          - StaticText "프로젝트"
+        - link "데이터셋" [ref=e19]
+          - StaticText "데이터셋"
+      - button "업로드" [ref=e5]
+        - StaticText "업로드"
+      - combobox "화면 테마" [expanded=false, ref=e6]: 기기 설정
+        - MenuListPopup
+          - option "기기 설정" [selected, ref=e34]
+          - option "밝게" [ref=e35]
+          - option "어둡게" [ref=e36]
+      - generic
+        - button "내 계정 · A 연구원" [ref=e20]
+          - StaticText "A 연구원"
+        - button "로그아웃" [ref=e21]
+    - main
+      - link "← 데이터셋 목록" [ref=e7]
+        - StaticText "←"
+        - StaticText "데이터셋 목록"
+      - heading "A 강우 원자료" [level=1, ref=e8]
+      - StaticText "강우·강수"
+      - StaticText "Lv"
+      - StaticText "0"
+      - StaticText "Verified"
+      - button "수정" [ref=e9]
+      - navigation "구역" [ref=e10]
+        - list
+          - listitem [level=1]
+            - link "계보" [ref=e80]
+          - listitem [level=1]
+            - link "미리보기" [ref=e81]
+          - listitem [level=1]
+            - link "활용/접근" [ref=e82]
+      - button "다운로드" [ref=e11]
+      - button "기준 격자 추가" [ref=e12]
+      - StaticText "분류"
+      - StaticText "미지정"
+      - StaticText "아직 안 골랐어요 — 수정에서 골라 주세요."
+      - StaticText "유형"
+      - StaticText "미지정"
+      - StaticText "아직 안 골랐어요 — 수정에서 골라 주세요."
+      - StaticText "가공 단계"
+      - StaticText "미지정"
+      - StaticText "아직 안 골랐어요 — 수정에서 골라 주세요."
+      - StaticText "좌표계"
+      - StaticText "EPSG:5179"
+      - StaticText "기간"
+      - StaticText "—"
+      - StaticText "관측 간격 미기재"
+      - StaticText "격자"
+      - StaticText "—"
+      - StaticText "포맷"
+      - StaticText "CSV"
+      - StaticText "원천 표기"
+      - StaticText "기상청"
+      - StaticText "Lv0 인데 출처 주소·내려받은 날이 비어 있어요 — 수정에서 채워 주세요"
+      - region "설명" [ref=e13]
+        - StaticText "관측 원자료"
+      - StaticText "구성"
+      - table
+        - rowgroup
+          - row
+            - columnheader "변수" [ref=e83]
+            - columnheader "단위" [ref=e84]
+            - columnheader "값 범위" [ref=e85]
+            - columnheader "결측률" [ref=e86]
+            - columnheader "대표" [ref=e87]
+        - row
+          - cell "강우량" [ref=e37]
+          - cell "mm" [ref=e38]
+          - cell "0~350" [ref=e39]
+          - cell "0.2%" [ref=e40]
+          - cell "대표 1" [ref=e41]
+            - radio "대표 1" [checked=true, disabled, ref=e88]
+        - row
+          - cell "기온" [ref=e42]
+          - cell "℃" [ref=e43]
+          - cell "-30~40" [ref=e44]
+          - cell "—" [ref=e45]
+          - cell "대표 2" [ref=e46]
+            - radio "대표 2" [checked=false, disabled, ref=e89]
+        - row
+          - cell "유출량" [ref=e47]
+          - cell "m3/s" [ref=e48]
+          - cell "—" [ref=e49]
+          - cell "—" [ref=e50]
+          - cell "대표 3" [ref=e51]
+            - radio "대표 3" [checked=false, disabled, ref=e90]
+      - StaticText "소유자"
+      - StaticText "A 교수"
+      - StaticText "올린 사람"
+      - StaticText "A 연구원"
+      - StaticText "파일"
+      - generic
+        - StaticText "100 B"
+        - button "보기" [ref=e22]
+      - StaticText "파일"
+      - button "접기" [expanded=true, ref=e14]
+      - LabelText [ref=e15] clickable [cursor:pointer]
+        - StaticText "파일 추가"
+        - button "파일 추가" [ref=e23]: No file chosen
+      - list
+        - listitem [level=1]
+          - StaticText "a1-body.csv"
+          - StaticText "본체"
+          - StaticText "50 B"
+          - StaticText "2026-09-13"
+          - button "a1-body.csv 다운로드" [ref=e52]
+            - StaticText "다운로드"
+          - button "a1-body.csv 검색 근거" [expanded=true, ref=e53]
+            - StaticText "검색 근거"
+          - LabelText [ref=e54] clickable [cursor:pointer]
+            - StaticText "교체"
+            - button "교체" [ref=e91]: No file chosen
+          - button "삭제" [ref=e55]
+      - StaticText "기준 격자 파일"
+      - list
+        - listitem [level=1]
+          - StaticText "a1-grid.nc"
+          - StaticText "기준 격자 파일"
+          - StaticText "50 B"
+          - StaticText "2026-09-13"
+          - button "a1-grid.nc 다운로드" [ref=e56]
+            - StaticText "다운로드"
+          - button "a1-grid.nc 검색 근거" [expanded=false, disabled, ref=e57]
+            - StaticText "검색 근거"
+          - LabelText [ref=e58] clickable [cursor:pointer]
+            - StaticText "교체"
+            - button "교체" [ref=e92]: No file chosen
+          - button "삭제" [ref=e59]
+      - region "a1-body.csv 검색 근거" [ref=e16]
+        - strong
+          - StaticText "a1-body.csv 검색 근거"
+        - button "닫기" [ref=e24]
+        - form "a1-body.csv 검색 근거"
+          - paragraph
+            - StaticText "저장된 검색 근거가 없습니다."
+          - group "파일 역할 (여러 개 선택 가능)"
+            - Legend
+              - StaticText "파일 역할 (여러 개 선택 가능)"
+            - checkbox "학습 입력" [checked=false, ref=e93]
+            - checkbox "보조 입력" [checked=false, ref=e94]
+            - checkbox "검증" [checked=false, ref=e95]
+            - checkbox "예측" [checked=false, ref=e96]
+            - checkbox "지수" [checked=false, ref=e97]
+            - checkbox "설명서" [checked=false, ref=e98]
+            - checkbox "분석 코드" [checked=false, ref=e99]
+          - LabelText
+            - StaticText "설명서 이름"
+          - textbox "설명서 이름" [required, ref=e60]: 합성 LST 연구 검증 사양
+            - StaticText "합성 LST 연구 검증 사양"
+          - LabelText
+            - StaticText "절 또는 문단"
+          - textbox "절 또는 문단" [required, ref=e61]: 월평균·지역·기간 절
+            - StaticText "월평균·지역·기간 절"
+          - LabelText
+            - StaticText "원문 발췌"
+          - textbox "원문 발췌" [required, ref=e62]: 이 일회용 합성 CSV는 서울의 2025년 월평균 지표면 온도를 공간 좌표와 함께 기록한다.
+            - StaticText "이 일회용 합성 CSV는 서울의 2025년 월평균 지표면 온도를 공간 좌표와 함께 기록한다."
+          - LabelText
+            - StaticText "기간 시작"
+          - Date "기간 시작"
+            - generic
+              - spinbutton "Month Month" [ref=e140]: 0
+                - StaticText "mm"
+              - StaticText "/"
+              - spinbutton "Day Day" [ref=e141]: 0
+                - StaticText "dd"
+              - StaticText "/"
+              - spinbutton "Year Year" [ref=e142]: 0
+                - StaticText "yyyy"
+            - button "Show date picker" [ref=e100]
+          - LabelText
+            - StaticText "기간 끝"
+          - Date "기간 끝"
+            - generic
+              - spinbutton "Month Month" [ref=e143]: 0
+                - StaticText "mm"
+              - StaticText "/"
+              - spinbutton "Day Day" [ref=e144]: 0
+                - StaticText "dd"
+              - StaticText "/"
+              - spinbutton "Year Year" [ref=e145]: 0
+                - StaticText "yyyy"
+            - button "Show date picker" [ref=e101]
+          - LabelText
+            - StaticText "지역"
+          - textbox "지역" [ref=e63]: 서울
+            - StaticText "서울"
+          - LabelText
+            - StaticText "주기"
+          - combobox "주기" [expanded=false, ref=e64]: 미상
+            - MenuListPopup
+              - option "미상" [selected, ref=e110]
+              - option "15분" [ref=e111]
+              - option "매일" [ref=e112]
+              - option "매주" [ref=e113]
+              - option "매월" [ref=e114]
+          - LabelText
+            - StaticText "모델"
+          - textbox "모델" [ref=e65]
+          - LabelText
+            - StaticText "변수"
+          - textbox "변수" [ref=e66]: 지표면 온도
+            - StaticText "지표면 온도"
+          - paragraph
+            - StaticText "지표면 온도와 기온은 다릅니다. 파일 형식만으로 공간자료 여부를 판단하지 말고 출처를 확인해 주세요."
+          - LabelText
+            - StaticText "자료 형태"
+          - combobox "자료 형태" [expanded=false, ref=e67]: 공간 좌표가 있는 점 관측
+            - MenuListPopup
+              - option "미상" [ref=e115]
+              - option "공간 격자" [ref=e116]
+              - option "공간 좌표가 있는 점 관측" [selected, ref=e117]
+              - option "표" [ref=e118]
+              - option "배열" [ref=e119]
+          - LabelText
+            - StaticText "관측 기반"
+          - combobox "관측 기반" [expanded=false, ref=e68]: 미상
+            - MenuListPopup
+              - option "미상" [selected, ref=e120]
+              - option "위성" [ref=e121]
+              - option "지상" [ref=e122]
+              - option "모델" [ref=e123]
+              - option "혼합" [ref=e124]
+          - LabelText
+            - StaticText "파일 형식"
+          - combobox "파일 형식" [expanded=false, ref=e69]: CSV
+            - MenuListPopup
+              - option "미상" [ref=e125]
+              - option "NPY" [ref=e126]
+              - option "CSV" [selected, ref=e127]
+              - option "NetCDF" [ref=e128]
+              - option "TIFF" [ref=e129]
+              - option "HDF5" [ref=e130]
+          - LabelText
+            - StaticText "제공 기관"
+          - textbox "제공 기관" [ref=e70]
+          - LabelText
+            - StaticText "단위"
+          - textbox "단위" [ref=e71]
+          - group "통계 유형"
+            - Legend
+              - StaticText "통계 유형"
+            - checkbox "순간값" [checked=false, ref=e102]
+            - checkbox "일평균" [checked=false, ref=e103]
+            - checkbox "일최고" [checked=false, ref=e104]
+            - checkbox "일최저" [checked=false, ref=e105]
+            - checkbox "월평균" [checked=false, ref=e106]
+            - checkbox "일최고값의 월평균" [checked=false, ref=e107]
+            - checkbox "일최저값의 월평균" [checked=false, ref=e108]
+          - LabelText
+            - StaticText "직접 관측"
+          - combobox "직접 관측" [expanded=false, ref=e72]: 미상
+            - MenuListPopup
+              - option "미상" [selected, ref=e131]
+              - option "예" [ref=e132]
+              - option "아니요" [ref=e133]
+          - LabelText
+            - StaticText "원 관측 해상도 (m)"
+          - spinbutton "원 관측 해상도 (m)" [ref=e73]
+          - LabelText
+            - StaticText "보간"
+          - combobox "보간" [expanded=false, ref=e74]: 미상
+            - MenuListPopup
+              - option "미상" [selected, ref=e134]
+              - option "예" [ref=e135]
+              - option "아니요" [ref=e136]
+          - button "초안 저장" [ref=e75]
+          - button "확인하고 저장" [ref=e76]
+      - generic
+        - heading "계보 · 족보" [level=2, ref=e25]
+        - StaticText "가공 방식은 화살표 라벨 · 데이터 상자를 누르면 그 상세로 가요"
+        - button "계보 수정 · 추가" [ref=e26]
+        - generic
+          - StaticText "원천"
+          - StaticText "기상청"
+        - link "Lv0 이 데이터 A 강우 원자료 ›" [ref=e27]
+          - StaticText "Lv"
+          - StaticText "0"
+          - StaticText "이 데이터"
+          - StaticText "A 강우 원자료"
+          - StaticText "›"
+        - StaticText "역거리가중 격자화"
+        - link "Lv1 이걸로 만든 데이터 A 강우 격자화 ›" [ref=e28]
+          - StaticText "Lv"
+          - StaticText "1"
+          - StaticText "이걸로 만든 데이터"
+          - StaticText "A 강우 격자화"
+          - StaticText "›"
+        - StaticText "원천"
+        - StaticText "기상청"
+        - StaticText "연구실 밖 출처 표기라 열어 볼 상세 화면이 없어요"
+        - StaticText "이 데이터"
+        - StaticText "A 강우 원자료"
+        - StaticText "Lv"
+        - StaticText "0"
+        - StaticText "파생"
+        - link "A 강우 격자화 ›" [ref=e29]
+          - StaticText "A 강우 격자화"
+          - StaticText "›"
+        - StaticText "직접 연결"
+        - generic
+          - StaticText "가공 방식: 역거리가중 격자화 · 확인 A 교수 · 2026-02-03 · 여기서는 못 고쳐요"
+        - StaticText "Lv"
+        - StaticText "1"
+      - generic
+        - region "대표 그림" [ref=e30]
+          - heading "대표 그림" [level=2, ref=e77]
+          - StaticText "사용자 그림이 없으면 아래 자동 미리보기를 사용해요."
+          - LabelText [ref=e78] clickable [cursor:pointer]
+            - StaticText "그림 고르기"
+            - button "그림 고르기" [ref=e109]: No file chosen
+        - region "미리보기" [ref=e31]
+          - heading "미리보기 — A 강우 원자료" [level=2, ref=e79]
+            - StaticText "미리보기 — A 강우 원자료"
+          - generic "그릴 것 고르기"
+            - LabelText
+              - StaticText "파일"
+              - combobox "파일 1" [expanded=false, disabled, ref=e137]: a1-body.csv
+                - MenuListPopup
+                  - option "a1-body.csv" [disabled, ref=e146]
+              - StaticText "1"
+            - LabelText
+              - StaticText "변수"
+              - combobox "변수" [expanded=false, disabled, ref=e138]
+                - MenuListPopup
+            - LabelText
+              - StaticText "시각"
+              - combobox "시각" [expanded=false, disabled, ref=e139]
+                - MenuListPopup
+          - alert
+            - paragraph
+              - StaticText "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다."
+            - paragraph
+              - StaticText "다운로드·계보 확인은 그대로 할 수 있어요."
+      - generic
+        - heading "어떻게 쓰였나 · 가져가기" [level=2, ref=e32]
+        - paragraph
+          - StaticText "이 데이터를 쓴 과제·논문 0건"
+        - paragraph
+          - StaticText "아직 어느 과제·논문에도 담기지 않았어요"
+        - paragraph
+          - StaticText "공개 범위 · 연구실 구성원 전체 — 연구실 안 누구나 뷰·다운로드"
+        - button "다운로드 · 100 B" [ref=e33]
+          - StaticText "다운로드 · 100 B"
+        - paragraph
+          - StaticText "업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요."

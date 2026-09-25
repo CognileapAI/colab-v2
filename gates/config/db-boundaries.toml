@@ -28,10 +28,16 @@ domains = ["d9", "d10"]
 env_patterns = [
   '^COLAB_AI_DB_URL(_FILE)?$',
   '^COLAB_AI_TEST_DICT_DB_URL(_FILE)?$',
+  '^COLAB_AI_TEST_KNOWLEDGE_DB_URL(_FILE)?$',
+  '^COLAB_AI_KNOWLEDGE_WRITER_DB_URL(_FILE)?$',
   '^COLAB_APPLIED_DB_URL_AI$',
 ]
 
 # ── 배포 단위 ───────────────────────────────────────────────────────────────
+[units.knowledge-http-integration-test]
+dir = "tests/integration"
+chains = ["platform", "ai"] # Exact test fixture only; neither production unit gains access.
+
 [units.core-api]
 dir = "services/core-api"
 compose_service = "core-api"

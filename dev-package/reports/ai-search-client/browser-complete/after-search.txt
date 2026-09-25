@@ -1,0 +1,148 @@
+- generic [ref=e1] clickable [onclick]
+  - generic
+    - banner
+      - link "Co-Lab" [ref=e2]
+        - StaticText "Co-Lab"
+      - button "연구실 전환 · A 연구실" [ref=e3]
+        - StaticText "A 연구실"
+      - navigation "주 내비" [ref=e4]
+        - link "연구실" [ref=e11]
+          - StaticText "연구실"
+        - link "프로젝트" [ref=e12]
+          - StaticText "프로젝트"
+        - link "데이터셋" [ref=e13]
+          - StaticText "데이터셋"
+      - button "업로드" [ref=e5]
+        - StaticText "업로드"
+      - combobox "화면 테마" [expanded=false, ref=e6]: 기기 설정
+        - MenuListPopup
+          - option "기기 설정" [selected, ref=e17]
+          - option "밝게" [ref=e18]
+          - option "어둡게" [ref=e19]
+      - generic
+        - button "내 계정 · A 연구원" [ref=e14]
+          - StaticText "A 연구원"
+        - button "로그아웃" [ref=e15]
+    - main
+      - heading "검색 결과" [level=1, ref=e7]
+      - StaticText "‘"
+      - StaticText "지표면 온도 자료 중 현재 내 연구에 가장 적합한 조건을 가진 건 무엇인지?"
+      - StaticText "’"
+      - region "검색 조건과 근거" [ref=e8]
+        - heading "조건과 근거로 찾았어요" [level=2, ref=e16]
+        - paragraph
+          - StaticText "현재 접근 가능한 등록 자료에서 해석된 조건이 확인된 데이터셋은 1건입니다. 데이터셋마다 조건을 충족한 대표 파일을 표시합니다. 조건 근거가 없거나 오래된 자료는 포함하지 않습니다. 명시한 연구 조건을 기준으로 비교했으며, 기록되지 않은 정확도나 연구 적합성은 보장하지 않습니다. 이 조건의 추천 후보는 ‘A 강우 원자료’입니다."
+        - paragraph
+          - StaticText "현재 접근 가능한 플랫폼 등록 자료 · 2026. 9. 14. 기준"
+        - DescriptionList
+          - term "관측 변수"
+          - definition
+            - StaticText "지표면 온도"
+          - term "지역"
+          - definition
+            - StaticText "서울"
+          - term "기간"
+          - definition
+            - StaticText "2025-01-01 ~ 2025-12-31"
+        - group
+          - DisclosureTriangle "연구 조건 입력·변경" [expanded=true]
+            - StaticText "연구 조건 입력·변경"
+          - form
+            - paragraph
+              - StaticText "이번 검색에 직접 지정한 조건을 사용합니다. 기온과 지표면 온도는 다른 변수입니다."
+            - paragraph
+              - LabelText
+                - StaticText "관측 변수 "
+                - combobox "관측 변수 " [expanded=false, ref=e22]: 지표면 온도
+                  - MenuListPopup
+                    - option "선택" [disabled, ref=e34]
+                    - option "지표면 온도" [selected, ref=e35]
+                    - option "기온" [ref=e36]
+                    - option "강수량" [ref=e37]
+                    - option "풍속" [ref=e38]
+                    - option "수질" [ref=e39]
+                    - option "미세먼지" [ref=e40]
+            - paragraph
+              - LabelText
+                - StaticText "지역 "
+                - combobox "지역 " [expanded=false, ref=e23]: 서울
+                  - MenuListPopup
+                    - option "선택" [disabled, ref=e41]
+                    - option "서울" [selected, ref=e42]
+                    - option "제주" [ref=e43]
+                    - option "한반도" [ref=e44]
+            - paragraph
+              - LabelText
+                - StaticText "시작일 "
+                - Date "시작일 ": 2025-01-01
+                  - generic
+                    - spinbutton "Month Month" [ref=e45]: 1
+                      - StaticText "01"
+                    - StaticText "/"
+                    - spinbutton "Day Day" [ref=e46]: 1
+                      - StaticText "01"
+                    - StaticText "/"
+                    - spinbutton "Year Year" [ref=e47]: 2025
+                      - StaticText "2025"
+                  - button "Show date picker" [ref=e32]
+              - LabelText
+                - StaticText "종료일 "
+                - Date "종료일 ": 2025-12-31
+                  - generic
+                    - spinbutton "Month Month" [ref=e48]: 12
+                      - StaticText "12"
+                    - StaticText "/"
+                    - spinbutton "Day Day" [ref=e49]: 31
+                      - StaticText "31"
+                    - StaticText "/"
+                    - spinbutton "Year Year" [ref=e50]: 2025
+                      - StaticText "2025"
+                  - button "Show date picker" [ref=e33]
+            - group "필요한 통계값 (선택)"
+              - Legend
+                - StaticText "필요한 통계값 (선택)"
+              - paragraph
+                - checkbox "순간값" [checked=false, ref=e24]
+              - paragraph
+                - checkbox "일평균" [checked=false, ref=e25]
+              - paragraph
+                - checkbox "일최고" [checked=false, ref=e26]
+              - paragraph
+                - checkbox "일최저" [checked=false, ref=e27]
+              - paragraph
+                - checkbox "월평균" [checked=false, ref=e28]
+              - paragraph
+                - checkbox "일최고값의 월평균" [checked=false, ref=e29]
+              - paragraph
+                - checkbox "일최저값의 월평균" [checked=false, ref=e30]
+            - paragraph
+              - LabelText
+                - StaticText "최대 공간 해상도(m, 선택) "
+                - spinbutton "최대 공간 해상도(m, 선택) " [ref=e31]
+            - button "이 연구 조건으로 다시 찾기" [ref=e21]
+        - group
+          - DisclosureTriangle "A 강우 원자료 — a1-body.csv의 비교 근거" [expanded=false]
+            - StaticText "A 강우 원자료 — a1-body.csv의 비교 근거"
+      - generic
+        - StaticText "1건"
+      - StaticText "을 찾았어요."
+      - button "Verified만 보기" [ref=e9]
+        - StaticText "Verified만 보기"
+      - StaticText "확인된 조건 기준"
+      - list
+        - listitem [level=1]
+          - button "A 강우 원자료" [ref=e20]
+          - paragraph
+            - StaticText "관측 원자료"
+          - paragraph
+            - StaticText "현재 파일의 검토된 근거에서 해석된 조건을 함께 확인했습니다. 기록되지 않은 품질은 미확인입니다."
+          - StaticText "✓ 교수 승인이라 위로 올렸어요"
+          - StaticText "Lv"
+          - StaticText "0"
+          - StaticText "강우·강수"
+          - StaticText "2025-01-01 ~ 2025-12-31"
+          - StaticText "A 연구원"
+          - StaticText "2026-01-02"
+          - StaticText "원천"
+      - StaticText "뭐가 있는지부터 훑고 싶으면 카탈로그가 빨라요."
+      - link "데이터셋으로" [ref=e10]

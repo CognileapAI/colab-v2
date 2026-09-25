@@ -238,14 +238,27 @@ BEGIN
   IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 본체를 봤다 (%행).', n; END IF;
   SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 검색 근거를 봤다 (%행).', n; END IF;
+
+  -- 소유자는 본인 grant 없이도 파일과 검색 근거를 읽는다 (`0032_private_owner_access`).
+  PERFORM set_config('app.current_account', '00000000000000000000000AP1', true);
+  SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 비공개 본체 접근이 막혔다 (%행).', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 검색 근거 접근이 막혔다 (%행).', n; END IF;
 END $$;
 ROLLBACK;
-\echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)'
+\echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행 · 소유자 1행)'
 
 -- 교수는 자기 연구실, 시스템 관리자는 서버가 확정한 대상 연구실에서 본체를 관리한다.
 BEGIN;
 SELECT set_config('app.current_lab', :'LAB_A', true);
 SELECT set_config('app.current_account', :'A_PROF', true);
+-- ⭑ **⟨2026-09-18 develop 동기화⟩ 소유자 갈래를 먼저 치운다.**
+--   시드의 DSA2 소유자는 **A 교수 자신**이라, `0032_private_owner_access` 의 소유자 갈래가
+--   관리자 갈래를 가린다 — 그대로 두면 `is_dataset_manager` 를 없애도 교수가 계속 보여
+--   selftest 의 「교수 예외 제거」 주입이 red 를 못 낸다(게이트가 fail-closed 가 아니게 된다).
+--   이 트랜잭션은 끝에서 ROLLBACK 하므로 소유자를 연구원으로 돌려 **관리자 갈래만** 남긴다.
+UPDATE d3_dataset SET owner_account_id = :'A_RES' WHERE id = '0000000000000000000000DSA2';
 DO $$ BEGIN
   IF (SELECT count(*) FROM d3_file WHERE dataset_id='0000000000000000000000DSA2') <> 1
      OR (SELECT count(*) FROM d3_search_evidence WHERE dataset_id='0000000000000000000000DSA2') <> 1 THEN

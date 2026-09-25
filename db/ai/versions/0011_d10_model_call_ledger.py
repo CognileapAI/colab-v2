@@ -19,23 +19,29 @@
 
 선언 정본은 db/ai/schema.sql 이고 이 리비전은 그 정본을 재현하는 절차다
 (env.py — autogenerate 를 쓰지 않는다). 그래서 DDL 을 schema.sql 과 **한 글자도 다르지 않게**
-적는다. 갈라지면 schema-diff 와 db/ai/tests/0008-drift.sh 가 red 를 낸다.
+적는다. 갈라지면 schema-diff 와 db/ai/tests/0011-drift.sh 가 red 를 낸다.
 
 ⚠ 이 파일의 산문에 기록 체인의 **경로 문자열**을 적지 않는다. ai-no-lineage-write ⑨ 는 그
 경로가 db/ai 안에서 글자로 나타나면 주석이라도 red 를 낸다. 게이트가 맞다 — 정규식이 산문과
 코드를 가르려 들면 진짜 참조를 놓칠 문이 생긴다. **고칠 것은 게이트가 아니라 문장이다.**
 
-Revision ID: 0008_d10_model_call_ledger
-Revises: 0007_merge_vocab_and_category
+Revision ID: 0011_d10_model_call_ledger
+Revises: 0010_practitioner_concept
+
+⭑ ⟨재번호 2026-09-25 · ai-search-integration⟩ 처음 id 는 `0008_d10_model_call_ledger`(부모 0007)였다.
+AI 검색 갈래의 `0008_dataset_knowledge`~`0010_practitioner_concept` 와 합치며 id·부모를 함께
+옮겼다. dev·prod 어느 쪽에도 옛 id 가 적용된 적이 없다(두 쪽 ai head = 0007). 부모만 바꾸고
+id 를 두면 옛 id 가 찍힌 DB 에서 0008~0010 을 적용된 것으로 보고 조용히 건너뛰므로, 그런 DB 가
+「Can't locate revision」으로 즉시 실패하도록 id 까지 바꾼다.
 """
 from __future__ import annotations
 
 from alembic import op
 
 #: ⚠ **32자를 넘기지 않는다** — alembic_version_ai.version_num 이 varchar(32) 다.
-#: `0008_d10_model_call_ledger` = 26자.
-revision = "0008_d10_model_call_ledger"
-down_revision = "0007_merge_vocab_and_category"
+#: `0011_d10_model_call_ledger` = 26자.
+revision = "0011_d10_model_call_ledger"
+down_revision = "0010_practitioner_concept"
 branch_labels = None
 depends_on = None
 

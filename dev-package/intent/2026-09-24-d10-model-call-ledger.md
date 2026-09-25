@@ -108,3 +108,4 @@
 - 근거: `services/ai-service/src/colab_ai/kernel/config.py:1-90`
 - 근거: `services/core-api/src/colab_core/app/relay.py:292-510`
 - 근거: `db/ai/schema.sql`(원장/ledger 테이블 없음, 확인 완료), `db/ai/versions/`(체인 head `0007`)
+- 추기 2026-09-25(ai-search-integration 통합 브랜치): 원장 리비전을 `0008_d10_model_call_ledger`(부모 0007)에서 `0011_d10_model_call_ledger`(부모 `0010_practitioner_concept`)로 재번호했다. AI 검색 갈래의 `0008_dataset_knowledge`~`0010` 과 합치며 db/ai head 가 둘이 된 것을 하나로 잇는다. dev·prod 적용 이력 없음(두 쪽 ai head 0007). 근거 배포 기준은 tag `prod-20260918`·`dev-20260918-1` 과 dev 배포 sha `23cdf03c` 이며 셋 다 원장 도입 커밋 `26320d7f` 를 포함하지 않는다. 커밋 4ce15e78 메시지의 `prod-v1.1.0` 은 origin 에 없는 tag 이므로 이 인용으로 대신한다. 오라클은 `db/ai/tests/0011-drift.sh`·`0011-assertions.sql`. 표·색인·닫힌 어휘 변경 없음.
