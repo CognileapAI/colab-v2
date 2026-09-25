@@ -25,6 +25,9 @@
 #    and `SubagentStart` hooks add plain-text stdout as context that Claude can see and act on
 #    in the session."
 #   ⇒ 이 훅의 출력은 그대로 세션 컨텍스트다. **부트스트랩을 줄이러 온 훅이 스스로 길면 안 된다.**
+#   ⚠ 위 인용의 `SessionStart` 평문 도달은 사실이나 `SubagentStart` 쪽은 실측과 어긋났다(2026-09-26 ·
+#     spec S-HARNESS-IMPROVEMENT-20260925 A7 — 평문 도달 0). SubagentStart hook(`worktree-setup.sh` ·
+#     `researcher-task.sh`)은 `hookSpecificOutput.additionalContext` JSON 1줄이 필요하다. 이 훅은 SessionStart 라 평문 유지.
 set -uo pipefail
 
 payload=""
