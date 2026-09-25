@@ -1,0 +1,89 @@
+# 로컬 검증 증거 — 2026-09-24 (HANDOFF §4-(a)) · dev 무접촉 · 일회용 스택
+
+## A. 국면 단위 재현 (vite build 번들 · run 디렉터리 1)
+
+### A-1 red — login → accounts → 해제 → projects (2차 dev 실행 순서)
+- 사유 = 지목점 project-new-button 해소 실패. 마지막 사유 = ('text', '새 프로젝트') -> Element not found. Verify the selector is correct and the element exists in the DOM.
+- URL = http://127.0.0.1:43931/projects
+  - heading "로그인" [level=1, ref=e3]
+
+### A-2 green — 올림 → login → 해제 → 재로그인 → projects (c4cdd5ea 순서)
+(같은 run 디렉터리 · 로그 `run-phase-level/logs/`)
+
+### A 접근 기록 발췌 (POST 전부 · 401 전부 · 시간순 · 첫 401 2건은 기동 확인 curl)
+GET /api/v1/me-v2 HTTP/1.1 401
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+POST /api/v1/admin/accounts-v2 HTTP/1.1 201
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+
+## B. 실제 `stage_seed` 함수 — `--from seed` 재개 (dev 2차 실행 종료 상태에서 시작)
+
+### B-1 red — HEAD(4b162d54) stages.sh
+[2026-09-24T21:30:31+09:00] === 단계 login 시작 ===
+[2026-09-24T21:30:36+09:00] === 단계 login 종료 ===
+[2026-09-24T21:30:36+09:00] === 단계 accounts 시작 ===
+[2026-09-24T21:31:38+09:00] x 실패: 계정 관리 화면(account-create)이 열리지 않았다 — 관리자 권한 계정으로 로그인했는지 확인한다.
+stage_seed exit=1
+
+### B-2 green — 수정 stages.sh
+2026-09-24T12:31:46Z ① 계획 생성 — 정본 md 4건 → plan-manifest.yaml ＋ upload-plan.json
+2026-09-24T12:31:46Z ② 러너 — 교수 로그인 · 무소속 운영자 4명 · 프로젝트 · 데이터셋 · 확인 · 보고
+2026-09-24T12:31:46Z RUN ssh <dev> bash -s  # seed:operator-grant
+INSERT 0 1
+[2026-09-24T21:31:46+09:00] === 단계 login 시작 ===
+[2026-09-24T21:31:51+09:00] === 단계 login 종료 ===
+[2026-09-24T21:31:51+09:00] === 단계 accounts 시작 ===
+[2026-09-24T21:31:53+09:00] · op0@clv.example 이미 생성됨 — 건너뜀
+[2026-09-24T21:31:53+09:00] === 단계 accounts 종료 ===
+[2026-09-24T21:31:53+09:00] === 단계 accounts 시작 ===
+[2026-09-24T21:31:58+09:00]   + op1@clv.example 추가됨
+[2026-09-24T21:32:00+09:00] === 단계 accounts 종료 ===
+[2026-09-24T21:32:00+09:00] === 단계 accounts 시작 ===
+[2026-09-24T21:32:08+09:00]   + op2@clv.example 추가됨
+[2026-09-24T21:32:10+09:00] === 단계 accounts 종료 ===
+[2026-09-24T21:32:10+09:00] === 단계 accounts 시작 ===
+[2026-09-24T21:32:15+09:00]   + op3@clv.example 추가됨
+[2026-09-24T21:32:17+09:00] === 단계 accounts 종료 ===
+2026-09-24T12:32:17Z ③ 임시 운영자 해제 — 여기서부터 교수 자격 하나로 돈다(대상 연구실 헤더 요구가 사라진다)
+2026-09-24T12:32:17Z RUN ssh <dev> bash -s  # seed:operator-revoke
+DELETE 1
+2026-09-24T12:32:17Z ④ 재로그인 — 자격이 바뀐 세션은 제품이 거절한다(설계대로다)
+[2026-09-24T21:32:17+09:00] === 단계 login 시작 ===
+[2026-09-24T21:32:22+09:00] === 단계 login 종료 ===
+[2026-09-24T21:32:22+09:00] === 단계 projects 시작 ===
+[2026-09-24T21:32:24+09:00] · 프로젝트 생성 precipitation
+[2026-09-24T21:32:29+09:00] · 프로젝트 생성 vegetation
+[2026-09-24T21:32:34+09:00] · 프로젝트 생성 drought
+[2026-09-24T21:32:38+09:00] · 프로젝트 생성 포멧테스트
+[2026-09-24T21:32:43+09:00] === 단계 projects 종료 ===
+SKIP(local exemption) python3 dev-package/tools/dev-seed/runner.py --phase datasets --base-url http://127.0.0.1:43931 --work-dir dev-package/tools/dev-seed/.work/clv/run --session clv-4a --account prof@a.example
+SKIP(local exemption) python3 dev-package/tools/dev-seed/runner.py --phase verify --base-url http://127.0.0.1:43931 --work-dir dev-package/tools/dev-seed/.work/clv/run --session clv-4a --account prof@a.example
+SKIP(local exemption) python3 dev-package/tools/dev-seed/runner.py --phase report --base-url http://127.0.0.1:43931 --work-dir dev-package/tools/dev-seed/.work/clv/run --session clv-4a --account prof@a.example
+stage_seed exit=0
+
+### B 접근 기록 발췌 (POST 전부 · 401 전부 · 시간순 · 첫 401 2건은 기동 확인 curl)
+GET /api/v1/me-v2 HTTP/1.1 401
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+POST /api/v1/admin/accounts-v2 HTTP/1.1 201
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+POST /api/v1/admin/accounts-v2 HTTP/1.1 201
+POST /api/v1/admin/accounts-v2 HTTP/1.1 201
+POST /api/v1/admin/accounts-v2 HTTP/1.1 201
+GET /api/v1/me-v2 HTTP/1.1 401
+POST /api/v1/sessions HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201
+POST /api/v1/projects HTTP/1.1 201

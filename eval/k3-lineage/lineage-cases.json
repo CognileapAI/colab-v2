@@ -1,0 +1,215 @@
+{
+  "kind": "K3 계보 정답 — 사람이 등록한 실제 엣지와 자식별 업로드 Lv. 모델도 합격선도 여기에 없다. 스냅샷 v2 의 parents 에서 생성했다(WU4 · 서명 제안서 dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md §3·§7-8). upload_level 은 스냅샷 v2 의 processing_level 열(dev processing_level_user_set)이다. topic·method 는 dev 에 값이 없어 null 이다. 케이스는 스냅샷 계보(부모 있는 자식 13 · 간선 18)의 부분집합이다. ⟨2026-09-25 사용자 서명 ①ⓑ·②⟩ upload_meta 는 제품이 제안 시점에 가진 보류 자동 메타(eval/k3-lineage/fixtures/held-upload-meta-2026-09-25.json · dev 읽기 전용 1회)를 제품 held_auto_metadata·_uploaded_file_meta 에 통과시킨 값이고(test_k3_candidate_recall.py 가 표식 없이 동치를 지킨다 · 기간 없음 · variables 있음), 종전 ①ⓐ 스냅샷 autometa 사본은 상한 민감도 입력 fixtures/snapshot-autometa-upload-meta-2026-09-25.json 으로만 남는다, K3-LIN-006 DEM 은 부모 0 · 후손 Aspect(적격 Lv1) 케이스라 대조군 ⑵ 를 실제로 시험한다.",
+  "corpus": "eval/k4-search/fixtures/reference/dev-data-snapshot-v2.json",
+  "sample_limits": {
+    "children": 6,
+    "edges": 10,
+    "candidate_population": 28,
+    "visible_datasets_in_dev": 28,
+    "snapshot_children_with_parents": 13,
+    "snapshot_edges": 18
+  },
+  "cases": [
+    {
+      "id": "K3-LIN-001",
+      "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+      "child_name": "hsr_sample",
+      "topic": "강우·강수",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "hsr_sample",
+        "file": {
+          "fileName": "hsr_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "variables": [
+            "hsr_sample"
+          ],
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39T7N812JDX7GW62F8YFZ0V",
+          "parent_name": "HSR 레이더 반사도 원자료",
+          "parent_role": "주입력",
+          "method": null
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-002",
+      "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+      "child_name": "GK2A_NDVI_mean_202305",
+      "topic": "식생·NDVI",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "GK2A_NDVI_mean_202305",
+        "file": {
+          "fileName": "GK2A_NDVI_mean_202305.tif",
+          "kind": "본체",
+          "format": "GeoTIFF",
+          "variables": [
+            "band1"
+          ],
+          "crs": "EPSG:4326",
+          "gridDescription": "1280x1280"
+        },
+        "subject": "식생·NDVI"
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TK0F5P3W4APB91N08KTMY",
+          "parent_name": "GK-2A 일 단위 식생자료",
+          "parent_role": "주입력",
+          "method": null
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-003",
+      "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+      "child_name": "pred_sample",
+      "topic": "강우·강수",
+      "upload_level": 2,
+      "upload_meta": {
+        "datasetNameDraft": "pred_sample",
+        "file": {
+          "fileName": "pred_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "variables": [
+            "pred_sample"
+          ],
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+          "parent_name": "hsr_sample",
+          "parent_role": "주입력",
+          "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+          "parent_name": "rn15_sample",
+          "parent_role": "보조입력",
+          "method": null
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-004",
+      "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+      "child_name": "Prediction (공간상세화)",
+      "topic": "식생·NDVI",
+      "upload_level": 2,
+      "upload_meta": {
+        "datasetNameDraft": "Prediction (공간상세화)",
+        "file": {
+          "fileName": "Prediction_20230501.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "variables": [
+            "Prediction_20230502"
+          ],
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "1280x1280",
+          "partCount": 33
+        },
+        "subject": "식생·NDVI"
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+          "parent_name": "GK2A_NDVI_mean_202305",
+          "parent_role": "주입력",
+          "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TT0S5PSJ0DQNR0XMTHFNW",
+          "parent_name": "HLS_S30_NDVI_mean_202305",
+          "parent_role": "보조입력",
+          "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+          "parent_name": "DEM",
+          "parent_role": "보조입력",
+          "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TVD38600D4EKH13EV55DV",
+          "parent_name": "Aspect",
+          "parent_role": "보조입력",
+          "method": null
+        },
+        {
+          "parent_dataset_id": "01M39TW21793T8631ATHJREHK5",
+          "parent_name": "LULC_2023",
+          "parent_role": "보조입력",
+          "method": null
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-005",
+      "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+      "child_name": "rn15_sample",
+      "topic": "강우·강수",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "rn15_sample",
+        "file": {
+          "fileName": "rn15_sample.npy",
+          "kind": "본체",
+          "format": "NumPy",
+          "variables": [
+            "rn15_sample"
+          ],
+          "crs": "WGS84 (기준 격자 파일)",
+          "gridDescription": "128x128",
+          "partCount": 3
+        },
+        "subject": "강우·강수"
+      },
+      "parents": [
+        {
+          "parent_dataset_id": "01M39T979PMQKRSK3GPCNYWHH3",
+          "parent_name": "rn15 15분 누적강수",
+          "parent_role": "주입력",
+          "method": null
+        }
+      ]
+    },
+    {
+      "id": "K3-LIN-006",
+      "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+      "child_name": "DEM",
+      "topic": "식생·NDVI",
+      "upload_level": 1,
+      "upload_meta": {
+        "datasetNameDraft": "DEM",
+        "file": {
+          "fileName": "DEM.tif",
+          "kind": "본체",
+          "format": "GeoTIFF",
+          "variables": [
+            "band1"
+          ],
+          "crs": "EPSG:4326",
+          "gridDescription": "1280x1280"
+        },
+        "subject": "식생·NDVI"
+      },
+      "parents": []
+    }
+  ]
+}

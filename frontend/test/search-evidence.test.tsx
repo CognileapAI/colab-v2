@@ -96,6 +96,24 @@ async function openEvidence() {
 }
 
 describe('파일별 검색 근거', () => {
+  it('공간 표현과 포맷을 별도로 저장하고 재편집 시 보존한다', async () => {
+    const evidence=evidenceSource();
+    mount(evidence.source);
+    const form=await openEvidence();
+    fireEvent.change(within(form).getByLabelText('설명서 이름'),{target:{value:'공간 CSV 설명서'}});
+    fireEvent.change(within(form).getByLabelText('절 또는 문단'),{target:{value:'좌표 절'}});
+    fireEvent.change(within(form).getByLabelText('원문 발췌'),{target:{value:'서울 강수량 CSV에 공간 좌표가 있습니다.'}});
+    fireEvent.change(within(form).getByLabelText('자료 형태'),{target:{value:'point_observations'}});
+    fireEvent.change(within(form).getByLabelText('파일 형식'),{target:{value:'csv'}});
+    fireEvent.click(within(form).getByLabelText('일최고값의 월평균'));
+    fireEvent.click(within(form).getByRole('button',{name:'확인하고 저장'}));
+    await waitFor(() => expect(evidence.calls.saves).toHaveLength(1));
+    await screen.findByText('상태: 확인됨');
+    fireEvent.change(within(form).getByLabelText('변수'),{target:{value:'강수량'}});
+    fireEvent.click(within(form).getByRole('button',{name:'확인하고 저장'}));
+    await waitFor(() => expect(evidence.calls.saves).toHaveLength(2));
+    expect(evidence.calls.saves[1]?.facts).toEqual({representation:'point_observations',format:'csv',statistics:['monthly_mean_daily_max'],variable:'강수량'});
+  });
   it('파일 목록과 근거는 각각 사람이 열기 전까지 조회하지 않는다', async () => {
     const evidence = evidenceSource();
     mount(evidence.source);

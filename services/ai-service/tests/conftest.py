@@ -45,3 +45,8 @@ def dictionaries(dict_db_url: str):
     from colab_ai.app.dictionaries import SqlDictionaries
     from colab_ai.kernel.db import make_engine
     return SqlDictionaries(make_engine(dict_db_url))
+
+
+@pytest.fixture(scope="session")
+def knowledge_db_url() -> str:
+    return _require("COLAB_AI_TEST_KNOWLEDGE_DB_URL")

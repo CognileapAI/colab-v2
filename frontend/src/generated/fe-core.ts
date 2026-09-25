@@ -3679,6 +3679,7 @@ export interface components {
          *     P-9·P-10). `core-ai.yaml` 의 `SearchRequest.scope` 를 FE 가 채우지 않는 이유가 이것이다.
          */
         SearchQuery: {
+            context?: components["schemas"]["SearchContext"];
             /** @description 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`). */
             query: string;
             /**
@@ -3708,6 +3709,7 @@ export interface components {
          *     **0건이 정상**이다 (`Policy_데이터_찾기 §1.3-7`·§3.3).
          */
         SearchResults: components["schemas"]["ListEnvelope"] & {
+            assessment?: components["schemas"]["SearchAssessment"];
             /** @description 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.** */
             scope: components["schemas"]["AiSearchScope"];
             /**
@@ -3724,6 +3726,62 @@ export interface components {
             /** @description 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다. */
             degradedReason?: string;
             items: components["schemas"]["SearchResultRow"][];
+        };
+        /** @description 사용자가 이번 요청에서 명시한 연구 조건 또는 기준 파일. 개인 이력이나 권한을 대신하지 않는다. [정본 무근거] 가장 가까운 비정본 출처 — dev-package/prd/rounds/R-AI-SEARCH-CLIENT.md 「구조와 인터페이스」(기존 /dataset-searches에 선택적 연구/참조 문맥 추가) · dev-package/sessions/20260914-ai-search-client.md 「구현 구조」 6·7. */
+        SearchContext: {
+            referenceFileId?: components["schemas"]["Ulid"];
+            research?: {
+                /** @enum {string} */
+                variable?: "land_surface_temperature" | "air_temperature" | "precipitation" | "wind_speed" | "water_quality" | "particulate_matter";
+                /** @enum {string} */
+                region?: "seoul" | "jeju" | "korean_peninsula";
+                period?: {
+                    /** Format: date */
+                    start: string;
+                    /** Format: date */
+                    end: string;
+                };
+                statistics?: ("instantaneous" | "daily_mean" | "daily_max" | "daily_min" | "monthly_mean" | "monthly_mean_daily_max" | "monthly_mean_daily_min")[];
+                maxResolutionM?: number;
+                maxMissingRatePercent?: number;
+            };
+        };
+        /** @description 클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다. [정본 무근거] 가장 가까운 비정본 출처 — dev-package/prd/rounds/R-AI-SEARCH-CLIENT.md 「구조와 인터페이스」(조건 판정 응답 추가) · dev-package/sessions/20260914-ai-search-client.md 「구현 구조」 4·8 · 「알려진 범위」. */
+        SearchAssessment: {
+            /** @enum {string} */
+            status: "clarification" | "partial" | "answered";
+            text: string;
+            questions: string[];
+            /** @enum {string} */
+            intent: "discover" | "recommend" | "compare" | "reference_match" | "latest" | "finest";
+            conditions: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            asOf: string;
+            semanticVersion: string;
+            scope: string;
+            candidateLimitReached: boolean;
+            unknownCount: number;
+            comparisons: {
+                datasetId: components["schemas"]["Ulid"];
+                name: string;
+                /** @enum {string} */
+                status: "supported" | "unknown" | "contradicted";
+                checks: {
+                    [key: string]: "supported" | "unknown" | "contradicted";
+                };
+                fileId: components["schemas"]["Ulid"] | null;
+                fileName: string | null;
+                facts: {
+                    [key: string]: unknown;
+                };
+                source: {
+                    label?: string;
+                    locator?: string;
+                    sha256?: string;
+                } | null;
+            }[];
         };
         /**
          * @description 검색 결과 카드 한 장 = **카탈로그 행 그대로 + AI 가 보탠 두 값.**
@@ -4045,6 +4103,15 @@ export interface components {
         };
         /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
         SearchEvidenceFacts: {
+            /** @enum {string} */
+            representation?: "spatial_grid" | "point_observations" | "table" | "array";
+            /** @enum {string} */
+            platform?: "satellite" | "ground" | "model" | "mixed";
+            /** @enum {string} */
+            format?: "npy" | "csv" | "netcdf" | "tif" | "hdf5";
+            provider?: string;
+            unit?: string;
+            statistics?: ("instantaneous" | "daily_mean" | "daily_max" | "daily_min" | "monthly_mean" | "monthly_mean_daily_max" | "monthly_mean_daily_min")[];
             roles?: ("model_input" | "auxiliary_input" | "validation" | "prediction" | "index" | "documentation" | "analysis_code")[];
             period?: {
                 /** Format: date */
@@ -4054,7 +4121,7 @@ export interface components {
             };
             region?: string;
             /** @enum {string} */
-            cadence?: "daily" | "weekly" | "monthly" | "15min";
+            cadence?: "daily" | "weekly" | "monthly" | "15min" | "hourly" | "5min" | "10min" | "yearly";
             model?: string;
             variable?: string;
             directObservation?: boolean;
@@ -4535,9 +4602,26 @@ export interface components {
              * @enum {string}
              */
             kind: "가공 전 데이터" | "가공 방식";
-            /** @description 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.** */
+            /**
+             * @description 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.**
+             *
+             *     ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 값의 산지가 옮겨졌다.**
+             *     이 값은 모델의 선언이 아니라 **core-api 가 검증한 근거 종류 수에서 파생한
+             *     값**이다(≥2 `확실` · 1 `애매`). 「모름」은 나오지 않는다 — 그 자리는 **빈 제안**이다.
+             *     ⚠ 그러므로 ai-service 가 싣는 값은 이 스키마의 `required` 를 채우는
+             *     **잠정값**이고, core-api 가 파생값으로 **덮어쓴다.** 소비자는 core-api 를
+             *     거친 값만 본다. **타입은 그대로 두고 만드는 주체만 바뀌었다** — 빼면
+             *     파괴적 변경이고 화면의 3값도 유지된다.
+             */
             confidence: components["schemas"]["AiConfidence"];
-            /** @description 왜 이 제안인지 한 줄. nullable 이 아니다. */
+            /**
+             * @description 왜 이 제안인지 한 줄. nullable 이 아니다.
+             *
+             *     ⭑ **⟨2026-09-24 · K3 `WU-S0` — Ted 서명⟩ 최종 문장은 core-api 가 쓴다.**
+             *     ai-service 가 싣는 문장은 `required` 를 채우는 **잠정값**이고, core-api 가
+             *     **검증된 근거로 다시 써서** 덮어쓴다 — 검증에서 버려진 인용이 근거 문장에
+             *     남아 있으면 화면이 거짓 근거를 그린다.
+             */
             rationale: components["schemas"]["AiRationale"];
         };
         /**
@@ -4576,6 +4660,43 @@ export interface components {
              *     (`parentDatasetName` 과 같은 자리).
              */
             parentProcessingLevel?: components["schemas"]["ProcessingLevel"];
+            /**
+             * @description ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 모델이 인용한 근거.**
+             *     선택 필드다 — 안 보내던 생산자가 그대로 유효하다.
+             *
+             *     **여기 실린 값은 주장이지 판정이 아니다.** core-api 가 항목마다 업로드
+             *     메타(`LineageSuggestionRequest.file`)와 후보 자동 메타
+             *     (`LineageParentCandidate`)의 실제 값에 대조하고, **틀린 항목이 하나라도
+             *     있으면 그 제안째 버린다.** 검증된 항목이 **0이면 제안이 아니다**
+             *     (`Policy_업로드와_계보_확정 §8` — 억지 제안을 만들지 않는다).
+             *
+             *     `confidence` 는 여기서 **검증된 근거 종류 수**로 파생된다
+             *     (≥2 `확실` · 1 `애매` · 0 이면 제안 없음) — 이 배열의 길이가 아니라
+             *     **살아남은 종류의 수**다.
+             *
+             *     ⚠ 축 이름 5값은 core-api 비교기의 축 이름과 **같은 문자열**이다 —
+             *     두 벌이 되면 「인용한 축」과 「검증하는 축」이 갈린다.
+             */
+            evidence?: {
+                /**
+                 * @description 대조한 축. `period` 는 기간 겹침, `crs`·`grid` 는 표기 동등,
+                 *     `variables` 는 교집합 1개 이상, `fileName` 은 토큰 접두를 뜻한다.
+                 *     **판정 규칙은 core-api 에 한 벌로 있다** — 이쪽은 어느 축을
+                 *     인용했는지만 적는다.
+                 * @enum {string}
+                 */
+                field: "period" | "crs" | "grid" | "variables" | "fileName";
+                /**
+                 * @description 업로드 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                 *     `LineageSuggestionRequest.file` 의 실제 값과 대조한다.
+                 */
+                uploadValue: string;
+                /**
+                 * @description 후보 쪽에서 읽었다고 **주장하는** 값. core-api 가
+                 *     `LineageParentCandidate` 의 실제 값과 대조한다.
+                 */
+                candidateValue: string;
+            }[];
         } & {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6477,6 +6598,21 @@ export interface operations {
                 datasetNameDraft?: string;
                 /** @description 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`). */
                 subject?: string;
+                /**
+                 * @description ⭑ **⟨2026-09-24 · K3 `WU-S0` — 사용자 승인(Ted 서명)⟩ 등록 폼 ① 에서 사람이 고른
+                 *     자기 가공 단계.** 아직 안 골랐으면 생략한다 — 그때는 적격을 가를 기준값이 없어
+                 *     제안 자체가 없는 것이 참이다 (`Policy_업로드와_계보_확정 §8 가공 단계 칸`).
+                 *
+                 *     **「부모 Lv ≤ 자기 Lv」 적격 필터의 기준값**이고, 거르는 것은 core-api 다
+                 *     (`〈72〉-㉮` 분담). core-api 가 `core-ai.yaml LineageSuggestionRequest.processingLevel`
+                 *     로 정수 변환해 넘긴다.
+                 *
+                 *     ⚠ **문자열 그대로 받는다** — 저장값이 문자열이고
+                 *     (`d3_dataset.processing_level_user_set` CHECK 4값 · 마이그레이션 `0015`),
+                 *     문자열→정수 변환은 `d3_catalog.user_set_level` **한 곳에만 둔다.** 계약 층에서
+                 *     정수로 받으면 변환 자리가 둘이 되고 두 벌은 언젠가 갈린다.
+                 */
+                processingLevelUserSet?: "Lv0" | "Lv1" | "Lv2" | "Lv3";
             };
             header?: {
                 /** @description [사용자 승인] dev-package/intent/2026-09-16-admin-full-access.md — 시스템 관리자 전용 대상 연구실. 신규 등록·연구실 설정·미리보기 후속 조회에는 필수이며 기존 자료의 소속과 일치해야 한다. 일반 사용자에게는 허용하지 않는다. */

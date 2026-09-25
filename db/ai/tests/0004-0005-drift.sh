@@ -3,7 +3,7 @@
 # 형태는 db/platform/tests/0005-drift.sh 와 같다 (같은 실패를 두 번 배우지 않는다).
 # 다른 것은 체인(ai)과 오라클(k2b-graph-check.sh)뿐이다.
 #
-#   ㈎ head (0004+0005 적용)      → 오라클 green
+#   ㈎ 체인 head (0004+0005 포함) → 오라클 green   ← 기준 TSV 는 체인 전체의 기준이다
 #   ㈏ 0003 까지만                → 오라클 red     ← 「K1b 가 없으면 red」
 #   ㈐ head → downgrade 0004      → 오라클 red     ← 「K2b 시드를 되돌리면 red」
 #   ㈑ head → downgrade 0003      → 오라클 red + pg_dump 로 0003 형태 복원 확인
@@ -89,9 +89,17 @@ oracle() {   # $1=DB $2=기대(green|red) $3=라벨
   return 0
 }
 
-# ── ㈎ head 적용 ────────────────────────────────────────────────────────────
-mkdb head_db; psql_f head_db "$TMP/head.sql" || red "head 마이그레이션이 적용되지 않았다."
-oracle head_db green "㈎ 0004+0005 적용 후 — 오라클"
+# ── ㈎ 체인 head 적용 ──────────────────────────────────────────────────────
+# ⭑ ⟨2026-09-18 · 결정 4·5 적재⟩ **오라클이 견주는 상대는 체인 head 다.**
+#   `k2b-graph-standard.tsv` 는 `schema.sql` 과 같은 성질의 **체인 전체 기준**이라, 뒤 회차
+#   (`0010_practitioner_concept`)가 노드·엣지를 더하면 `0005` 판과는 **반드시** 갈린다.
+#   종전 문면(「0004+0005 적용 후 green」)은 이 파일이 그래프의 마지막 회차이던 동안에만
+#   맞았다 — 같은 실수를 `0007-drift.sh` ㈑ 가 2026-09-18 에 한 번 겪었다.
+#   ㈏㈐㈑ 의 **되돌리면 red** 는 그대로다: 0005 를 되돌리면 그래프가 통째로 사라지므로
+#   기준이 54 든 49 든 red 다. 이 파일이 재는 것(0004·0005 가 무엇을 했는가)은 바뀌지 않았다.
+render "upgrade head" "$TMP/chain_head.sql"
+mkdb head_db; psql_f head_db "$TMP/chain_head.sql" || red "체인 head 마이그레이션이 적용되지 않았다."
+oracle head_db green "㈎ 체인 head(0004+0005 포함) 적용 후 — 오라클"
 
 # ── ㈏ 0003 까지만 (K1b 없음) ───────────────────────────────────────────────
 mkdb prev_db; psql_f prev_db "$TMP/prev.sql" || red "0003 마이그레이션이 적용되지 않았다."
@@ -124,7 +132,6 @@ fi
 # ⭑ ⟨WU-C7 2026-09-08⟩ 견주는 상대는 **체인 head** 이지 이 회차의 `0005` 가 아니다 —
 #   `schema.sql` 은 **체인 전체의 선언 정본**이라, 뒤 회차(`0006`)가 서면 `0005` 와는 반드시 갈린다.
 #   종전 문면은 이 파일이 체인의 마지막이던 동안에만 맞았다.
-render "upgrade head" "$TMP/chain_head.sql"
 mkdb chain_db; psql_f chain_db "$TMP/chain_head.sql" || red "체인 head 를 적용하지 못했다."
 mkdb decl_db;  psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
 for db in chain_db decl_db; do

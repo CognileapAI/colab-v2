@@ -66,6 +66,8 @@ def planted(sql):
                                        source_label)
                VALUES (:id, current_lab_id(), :owner, :owner, :source)""",
             {"id": dataset_id, "owner": owner, "source": source_label})
+        sql('''INSERT INTO d4_lineage_revision(lab_id,dataset_id,revision,deleted)
+               VALUES (current_lab_id(),:id,1,false)''',{'id':dataset_id})
         sql("""INSERT INTO d3_dataset_description (dataset_id, lab_id, name, topic, summary)
                VALUES (:id, current_lab_id(), :name, :topic, '심은 요약')""",
             {"id": dataset_id, "name": name, "topic": topic})
@@ -528,10 +530,10 @@ def test_a_designated_dataset_is_restored_with_its_grant_intact(p2_client, plant
                                                                 tmp_path):
     """⑪-b ⟨리베이스 2026-09-08 · `0017_rb4_access_state_3`⟩ 3값의 세 번째 — `지정 공개`.
 
-    `잠김` 과 같은 접근 판정 경로(grant 갈래)를 타므로 소유자·교수에게 파일이 안 보이는 것은
-    같고, 「열림」 창을 지난 뒤 **`지정 공개` 그대로 · `updated_at` 그대로 · 허용 줄 유효**
-    셋이 다 돌아와 있어야 한다. 원복이 `잠김` 으로 뭉개면 `set_access_state` 의 만료 갈래처럼
-    허용자가 끊기고, `updated_at` 이 밀리면 사람이 바꾼 이력과 구별되지 않는다.
+    `0032_private_owner_access` 이후 소유자는 `지정 공개` 상태에서도 자기 파일을 볼 수 있다.
+    「열림」 창을 지난 뒤 **`지정 공개` 그대로 · `updated_at` 그대로 · 허용 줄 유효** 셋이 다
+    돌아와야 한다. 원복이 `잠김` 으로 뭉개면 `set_access_state` 의 만료 갈래처럼 허용자가
+    끊기고, `updated_at` 이 밀리면 사람이 바꾼 이력과 구별되지 않는다.
     """
     client = p2_client()
     dataset_id, keys = planted(owner=ACC_A_PROF, files=1, locked=False)
@@ -547,7 +549,8 @@ def test_a_designated_dataset_is_restored_with_its_grant_intact(p2_client, plant
     before = sql("SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :id",
                  {"id": dataset_id})[0]
     assert before["state"] == "지정 공개"
-    # 전제 — 교수 관리자는 허용 줄 없이도 파일 1행을 관리한다 (허용 줄은 연구원 것이다).
+    # 전제 — 소유자(`0032_private_owner_access`)이자 교수 관리자(`0033_admin_body_access`)라
+    #        허용 줄 없이도 파일 1행이 보인다 (허용 줄은 연구원 것이다).
     assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
                {"id": dataset_id}, account_id=ACC_A_PROF)[0]["n"] == 1
 

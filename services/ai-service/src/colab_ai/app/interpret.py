@@ -18,11 +18,22 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 import urllib.error
 import urllib.request
 from typing import Callable
 
-from colab_ai.ports import TOPICS, Interpretation
+from colab_ai.app.ledger import failure_outcome, record_call
+from colab_ai.ports import (
+    CALL_SITE_INTERPRET,
+    PROVIDER_OPENAI,
+    REASON_NO_CREDENTIALS,
+    TOPICS,
+    Interpretation,
+    ModelCallEntry,
+    ModelReply,
+    ModelUsage,
+)
 
 #: **형제 자리** (코드리뷰 20260903-F #3). 이 사유는 `SearchService` 를 지나 `degradedReason`
 #: 으로 **그대로 응답에 실린다** — `d10_ai_services` 만 고치고 여기를 두면 같은 종류의
@@ -142,20 +153,33 @@ class LiteralInterpreter:
 
 
 class LlmQueryInterpreter:
-    """모델로 해석하고, **안 되면 조용히 문자열 해석으로 떨어진다.**"""
+    """모델로 해석하고, **안 되면 조용히 문자열 해석으로 떨어진다.**
+
+    ⭑ **어느 갈래로 끝나도 실행 원장에 행 하나를 남긴다**(intent `2026-09-24-d10-model-call-ledger`
+    판정 기록). 남기는 것은 **세는 값**뿐이다 — 질의 원문도 검색어도 원장에 가지 않는다.
+    원장이 배선되지 않았으면(`ledger=None`) 아무 일도 없다: 이 회차의 기본이 `literal` 이라
+    게이트가 도는 동안 행이 쌓이지 않는 것이 정상이다.
+    """
 
     def __init__(self, *, api_key: str | None, model: str,
                  transport: Callable[[dict], str] | None = None,
                  timeout_seconds: float = 8.0,
-                 base_url: str = "https://api.openai.com/v1/chat/completions") -> None:
+                 base_url: str = "https://api.openai.com/v1/chat/completions",
+                 ledger=None, lab_id: str | None = None) -> None:
         self._api_key = api_key
         self._model = model
         self._timeout = timeout_seconds
         self._base_url = base_url
         self._transport = transport or self._http_transport
+        self._ledger = ledger
+        self._lab_id = lab_id
 
     # ── 전송 ────────────────────────────────────────────────────────────────
-    def _http_transport(self, payload: dict) -> str:
+    def _http_transport(self, payload: dict) -> ModelReply:
+        """⭑ **돌려주는 것은 여전히 문자열이다** — `ModelReply` 는 `str` 의 하위형이고,
+        더해진 것은 응답 `model` 과 `usage` 뿐이다. 이 전송을 감싸는 실측 탐침
+        (`eval/k4-search/llm_interpreter_probe.py`)이 한 글자도 바뀌지 않는 이유다.
+        """
         req = urllib.request.Request(
             self._base_url, method="POST",
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -163,11 +187,27 @@ class LlmQueryInterpreter:
                      "Authorization": f"Bearer {self._api_key}"})
         with urllib.request.urlopen(req, timeout=self._timeout) as res:
             body = json.loads(res.read() or b"{}")
-        return body["choices"][0]["message"]["content"]
+        return ModelReply.from_openai(body)
+
+    # ── 원장 ────────────────────────────────────────────────────────────────
+    def _record(self, *, outcome: str, reason: str | None = None,
+                started: float | None = None, raw: object = None,
+                result_count: int | None = None) -> None:
+        usage = getattr(raw, "usage", None) or ModelUsage()
+        record_call(self._ledger, ModelCallEntry(
+            call_site=CALL_SITE_INTERPRET, provider=PROVIDER_OPENAI,
+            model_requested=self._model, outcome=outcome, not_called_reason=reason,
+            model_returned=getattr(raw, "model", None),
+            latency_ms=None if started is None else int((time.monotonic() - started) * 1000),
+            prompt_tokens=usage.prompt_tokens, completion_tokens=usage.completion_tokens,
+            cached_prompt_tokens=usage.cached_prompt_tokens,
+            # **입력 규모를 세지 않는다** — 이 자리의 입력은 질의 그 자체다.
+            input_count=None, result_count=result_count, lab_id=self._lab_id))
 
     # ── 해석 ────────────────────────────────────────────────────────────────
     def interpret(self, query: str) -> Interpretation:
         if not self._api_key:
+            self._record(outcome="not_called", reason=REASON_NO_CREDENTIALS)
             return LiteralInterpreter(
                 "질의 해석 모델 자격 증명이 없다 — 질문의 낱말 그대로 찾았다.").interpret(query)
         payload = {
@@ -180,6 +220,7 @@ class LlmQueryInterpreter:
             # `gpt-5.6-luna` 가 `temperature: 0` 을 400 `unsupported_value` 로 거부한다(2026-08-26 실측).
             "seed": _SEED,
         }
+        started = time.monotonic()
         try:
             raw = self._transport(payload)
         except (urllib.error.URLError, TimeoutError, OSError, KeyError,
@@ -187,11 +228,18 @@ class LlmQueryInterpreter:
             # **원시 예외는 로그로만 간다** — 응답에는 안정된 문구가 나간다(위 상수 주석).
             _degraded_log.warning("event=search.interpreter.unreachable exc=%s: %s",
                                   type(e).__name__, e)
+            self._record(outcome=failure_outcome(e), started=started)
             return LiteralInterpreter(MODEL_UNREACHABLE_REASON).interpret(query)
         parsed = self._read(raw)
         if parsed is None:
+            self._record(outcome="unreadable", started=started, raw=raw)
             return LiteralInterpreter(
                 "질의 해석 모델의 답을 읽지 못했다 — 질문의 낱말 그대로 찾았다.").interpret(query)
+        # **「읽었는데 빈 답」과 「못 읽었다」를 접지 않는다.** 모델이 「찾을 대상이 없는
+        # 질문이다」라고 말한 회차는 고장이 아니고, 그 구분이 원장에서 사라지면
+        # 「모델이 자주 빈손이다」가 「모델이 자주 깨진다」로 읽힌다.
+        self._record(outcome="ok" if parsed.terms else "empty_by_model",
+                     started=started, raw=raw, result_count=len(parsed.terms))
         return parsed
 
     @staticmethod

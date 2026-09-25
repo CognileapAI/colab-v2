@@ -128,10 +128,27 @@ class HeldAutoMetadata:
             self.crs, self.grid, self.byte_size_total))
 
 
+@dataclasses.dataclass(frozen=True)
+class FileMeasurementReceipt:
+    """Bounded canonical D5 proof, obtained from the ledger, never an HTTP body."""
+    receipt_id: str
+    file_id: str
+    upload_id: str
+    lab_id: str
+    storage_key: str
+    issuer: str
+    parser_version: str
+    digest: str
+    size_bytes: int
+    format: str
+
+
 class UploadLedgerReadPort(Protocol):
     def find(self, upload_id: Ulid) -> UploadRecord | None: ...
 
     def files(self, upload_id: Ulid) -> list[UploadFileRecord]: ...
+
+    def measurements(self, upload_id: Ulid) -> dict[str, FileMeasurementReceipt]: ...
 
     def held_auto_metadata(self, upload_id: Ulid) -> HeldAutoMetadata: ...
 

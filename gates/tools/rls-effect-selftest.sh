@@ -48,6 +48,15 @@ expect red "rls-effect ①: 본체 둘째 층 제거(DROP POLICY body_access)" \
 expect red "rls-effect ①: 검색 근거 본체 층 제거(DROP POLICY body_access)" \
   mut "DROP POLICY body_access ON d3_search_evidence;"
 
+expect red "rls-effect ①: 비공개 자료 소유자 접근 누락" \
+  mut "ALTER POLICY body_access ON d3_file USING (
+         COALESCE((SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),
+                  (SELECT p.default_visibility FROM d1_lab_profile p WHERE p.lab_id = d3_file.lab_id)) = '열림'
+         OR EXISTS (SELECT 1 FROM d2_dataset_access_grant g
+                     WHERE g.dataset_id = d3_file.dataset_id
+                       AND g.grantee_account_id = current_account_id()
+                       AND g.expires_at > now()));"
+
 expect red "rls-effect ①: 만료 검사만 제거(목록 검사로는 안 잡힌다)" \
   mut "ALTER POLICY body_access ON d3_file USING (
          COALESCE((SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),

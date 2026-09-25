@@ -72,6 +72,26 @@ def assess(case, rows, total):
                                 for x in case['required']})
 
 
+def validate_suite(suite, snapshot):
+    """Return {id: name} of the snapshot after checking the suite against it.
+
+    The dataset count is read from the snapshot's own `counts.datasets` (never re-pinned here).
+    """
+    expected = {d['id']: d['name'] for d in snapshot['datasets']}
+    if len(expected) != len(snapshot['datasets']) or len(expected) != snapshot['counts']['datasets']:
+        raise ValueError('snapshot dataset count mismatch')
+    for c in suite['cases']:
+        if not c['scope'] or not set(c['scope']) <= set(expected):
+            raise ValueError('invalid scope')
+        if c['mode'] not in ('retrieval', 'empty', 'manual'):
+            raise ValueError('unknown mode')
+        if not set(c['required']) <= set(c['scope']):
+            raise ValueError('gold outside scope')
+        if c['mode'] == 'retrieval' and not c['required']:
+            raise ValueError('empty retrieval gold')
+    return expected
+
+
 REMOTE = r'''
 import dataclasses,hashlib,inspect,json,os,sys,time
 from datetime import datetime,timezone
@@ -85,13 +105,13 @@ from colab_core.kernel.scope import read_only_scope
 
 p=json.loads(sys.stdin.readline())
 subject=p['subject']
-known=json.loads(Path(os.environ['COLAB_CORE_SUBJECTS_FILE']).read_text())
-assert subject in known.values(), 'subject absent'
 url=Path(os.environ['COLAB_CORE_DATABASE_URL_FILE']).read_text().strip()
 factory=make_session_factory(make_engine(url).execution_options(isolation_level='REPEATABLE READ'))
 out={'captured_at':datetime.now(timezone.utc).isoformat(),'results':[]}
 with read_only_scope(factory,Subject(account_id=Ulid(subject['accountId']),lab_id=Ulid(subject['labId']))) as s:
  out['read_only']=s.execute(text('SHOW transaction_read_only')).scalar()
+ # Subject = one real account row in that lab (DB), not the token table (auth only).
+ assert s.execute(text('SELECT count(*) FROM d1_account WHERE id=:a AND lab_id=:l'),{'a':subject['accountId'],'l':subject['labId']}).scalar()==1, 'subject absent'
  out['corpus']=[dict(r) for r in s.execute(text('SELECT d.id,dd.name,dd.topic,dd.summary,d.source_label,dd.search_vector::text AS description_vector,am.search_vector::text AS autometa_vector,d.search_vector::text AS source_vector FROM d3_dataset d JOIN d3_dataset_description dd ON dd.dataset_id=d.id LEFT JOIN d3_dataset_autometa am ON am.dataset_id=d.id WHERE d.deleted_at IS NULL ORDER BY d.id')).mappings()]
  ids={r['id'] for r in out['corpus']}
  assert set(p['expected_names']) <= ids, 'missing gold dataset'
@@ -130,18 +150,7 @@ def main():
             raise ValueError('unexpected case count')
         snapshot_path = ROOT / suite['snapshot']
         snapshot = json.loads(snapshot_path.read_text())
-        expected = {d['id']: d['name'] for d in snapshot['datasets']}
-        if len(expected) != 9:
-            raise ValueError('expected nine datasets')
-        for c in suite['cases']:
-            if not c['scope'] or not set(c['scope']) <= set(expected):
-                raise ValueError('invalid scope')
-            if c['mode'] not in ('retrieval', 'empty', 'manual'):
-                raise ValueError('unknown mode')
-            if not set(c['required']) <= set(c['scope']):
-                raise ValueError('gold outside scope')
-            if c['mode'] == 'retrieval' and not c['required']:
-                raise ValueError('empty retrieval gold')
+        expected = validate_suite(suite, snapshot)
         sys.path.insert(0, str(ROOT / 'services/ai-service/src'))
         from colab_ai.app.interpret import LiteralInterpreter
         import colab_ai.app.interpret as interpreter_module

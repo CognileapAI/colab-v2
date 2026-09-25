@@ -1,0 +1,36 @@
+{
+  "schema": "colab-reseed-known-defects/1",
+  "description": "verify 대조에서 면제하는 미리보기 판정 — 열린 제품 결함 때문에 예상과 다르게 나오는 행만. seq·이름·관측 판정·비고 머리(notePrefix)·비고 필수 조각(noteContains 전부)이 모두 맞는 행만 면제하고, 그 밖의 불일치는 종전대로 실패한다. 결함이 고쳐져 행이 정상 판정으로 돌아오면 verify 가 「면제 불필요」를 찍는다 — 그때 이 목록에서 뺀다.",
+  "entries": [
+    {
+      "seq": 13,
+      "name": "SPI-4weeks",
+      "issue": "#133",
+      "expectedVerdict": "판정불가",
+      "notePrefix": "미지원 상태 미확인",
+      "noteContains": ["미지원 표시 [0]", "보기 활성 [false]", "preview-unavailable [0]", "로그인 [0]", "상세 [1]", "누름 없음"],
+      "reason": "GeoPackage 상세 미리보기가 미지원 안내 없이 보기 비활성으로 멈춘다(제품 결함 · 미지원 표시 미게시).",
+      "approved": "사용자 확인 2026-09-25 — 실패 3건은 이슈 연결 면제로 넘기고 진행(선택지 「이슈 연결 면제 후 진행」)"
+    },
+    {
+      "seq": 14,
+      "name": "SPEI-4weeks",
+      "issue": "#133",
+      "expectedVerdict": "판정불가",
+      "notePrefix": "미지원 상태 미확인",
+      "noteContains": ["미지원 표시 [0]", "보기 활성 [false]", "preview-unavailable [0]", "로그인 [0]", "상세 [1]", "누름 없음"],
+      "reason": "GeoPackage 상세 미리보기가 미지원 안내 없이 보기 비활성으로 멈춘다(제품 결함 · 미지원 표시 미게시).",
+      "approved": "사용자 확인 2026-09-25 — 실패 3건은 이슈 연결 면제로 넘기고 진행(선택지 「이슈 연결 면제 후 진행」)"
+    },
+    {
+      "seq": 16,
+      "name": "ERA5 변환 결과",
+      "issue": "#134",
+      "expectedVerdict": "미성립",
+      "notePrefix": "누름 ",
+      "noteContains": ["slot [failed]", "preview-unavailable [0]"],
+      "reason": "경도 0–360 격자를 viz-render 가 MAP_BOUNDS_IMPLAUSIBLE 로 거절해 미리보기가 failed 로 끝난다(제품 결함). 거절 코드는 상세 화면 DOM 에 드러나지 않아 순회가 적지 못한다 — 면제 조건은 slot failed · preview-unavailable 0 까지다.",
+      "approved": "사용자 확인 2026-09-25 — 실패 3건은 이슈 연결 면제로 넘기고 진행(선택지 「이슈 연결 면제 후 진행」)"
+    }
+  ]
+}

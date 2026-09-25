@@ -1,0 +1,306 @@
+{
+  "schema": "k3-held-upload-meta/1",
+  "kind": "K3 업로드 쪽 입력의 고정본 — 제품이 제안 시점에 가진 보류 자동 메타(d5_pipeline_event 의 file.format-detected · file.header-parsed 페이로드). 2026-09-25 사용자 서명 ①ⓑ. 페이로드는 제품 held_auto_metadata 가 읽는 열쇠만 옮겼다(format·uniform / crs·grid·period·variables). registration 은 같은 읽기에서 뜬 등록 후 d3_dataset_autometa 기간·갱신 시각과 운영자 감사 시각이다(autometa.period 출처 확정용). 정답 lineage-cases.json 의 upload_meta 는 이 파일을 제품 _uploaded_file_meta 에 통과시킨 값과 같아야 한다(test_k3_candidate_recall.py 표식 없는 동치 시험).",
+  "read": {
+    "date": "2026-09-25",
+    "source": "dev 플랫폼 DB",
+    "method": "읽기 전용 1회 — BYPASSRLS 백업 URL · 일회용 postgres:16-alpine 클라이언트 · begin read only (transaction_read_only = on) … rollback · 쓰기 0",
+    "children_read": 6,
+    "children_without_held_event": 0
+  },
+  "children": [
+    {
+      "id": "K3-LIN-001",
+      "child_dataset_id": "01M39TA6QY5NEAR8ZPZ6AF9KNE",
+      "child_name": "hsr_sample",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:39:50.019+00:00",
+          "payload": {
+            "format": "NumPy",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:39:50.029+00:00",
+          "payload": {
+            "crs": "WGS84 (기준 격자 파일)",
+            "grid": "128x128",
+            "period": null,
+            "variables": [
+              "hsr_sample"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 3,
+        "body_count": 1,
+        "body_head": "hsr_sample.npy",
+        "dev_order_head": "LAT_crop.npy",
+        "dev_order_head_kind": "기준 격자 파일"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:40:08.054941+00:00",
+        "autometa_updated_at": "2026-09-24T13:40:08.054941+00:00",
+        "autometa_period": {
+          "start": "2019-07-28T00:00:00+00:00",
+          "end": "2024-07-09T00:00:00+00:00",
+          "granularity": "일"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:40:08.054941+00:00",
+          "2026-09-24T19:28:46.183311+00:00",
+          "2026-09-24T21:46:30.540361+00:00"
+        ]
+      }
+    },
+    {
+      "id": "K3-LIN-002",
+      "child_dataset_id": "01M39TSEPR820QBZ1DBBFKDJEP",
+      "child_name": "GK2A_NDVI_mean_202305",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:45:10.482+00:00",
+          "payload": {
+            "format": "GeoTIFF",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:45:10.527+00:00",
+          "payload": {
+            "crs": "EPSG:4326",
+            "grid": "1280x1280",
+            "period": null,
+            "variables": [
+              "band1"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 1,
+        "body_count": 1,
+        "body_head": "GK2A_NDVI_mean_202305.tif",
+        "dev_order_head": "GK2A_NDVI_mean_202305.tif",
+        "dev_order_head_kind": "본체"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:48:27.728383+00:00",
+        "autometa_updated_at": "2026-09-24T13:48:27.728383+00:00",
+        "autometa_period": {
+          "start": "2023-05-01T00:00:00+00:00",
+          "end": "2023-05-01T00:00:00+00:00",
+          "granularity": "월"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:48:27.728383+00:00",
+          "2026-09-24T19:28:47.319501+00:00",
+          "2026-09-24T21:46:31.53791+00:00"
+        ]
+      }
+    },
+    {
+      "id": "K3-LIN-003",
+      "child_dataset_id": "01M39TCARM2C2NJ8S9SA4QBSER",
+      "child_name": "pred_sample",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:40:57.347+00:00",
+          "payload": {
+            "format": "NumPy",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:40:57.356+00:00",
+          "payload": {
+            "crs": "WGS84 (기준 격자 파일)",
+            "grid": "128x128",
+            "period": null,
+            "variables": [
+              "pred_sample"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 3,
+        "body_count": 1,
+        "body_head": "pred_sample.npy",
+        "dev_order_head": "LAT_crop.npy",
+        "dev_order_head_kind": "기준 격자 파일"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:41:17.708265+00:00",
+        "autometa_updated_at": "2026-09-24T13:41:17.708265+00:00",
+        "autometa_period": {
+          "start": "2019-07-28T00:00:00+00:00",
+          "end": "2024-07-09T00:00:00+00:00",
+          "granularity": "일"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:41:17.708265+00:00",
+          "2026-09-24T19:28:46.76425+00:00",
+          "2026-09-24T21:46:31.026894+00:00"
+        ]
+      }
+    },
+    {
+      "id": "K3-LIN-004",
+      "child_dataset_id": "01M39TZ0SCEYHHMBWZ991M1QGN",
+      "child_name": "Prediction (공간상세화)",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:50:55.603+00:00",
+          "payload": {
+            "format": "NumPy",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:50:56.883+00:00",
+          "payload": {
+            "crs": "WGS84 (기준 격자 파일)",
+            "grid": "1280x1280",
+            "period": null,
+            "variables": [
+              "Prediction_20230502"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 33,
+        "body_count": 31,
+        "body_head": "Prediction_20230501.npy",
+        "dev_order_head": "LAT_crop.npy",
+        "dev_order_head_kind": "기준 격자 파일"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:51:30.079602+00:00",
+        "autometa_updated_at": "2026-09-24T13:51:30.079602+00:00",
+        "autometa_period": {
+          "start": "2023-05-01T00:00:00+00:00",
+          "end": "2023-05-31T00:00:00+00:00",
+          "granularity": "일"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:51:30.079602+00:00",
+          "2026-09-24T19:28:47.672237+00:00",
+          "2026-09-24T21:46:32.417218+00:00"
+        ]
+      }
+    },
+    {
+      "id": "K3-LIN-005",
+      "child_dataset_id": "01M39TB4NTBCFC8TSTNB93N5YP",
+      "child_name": "rn15_sample",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:40:21.223+00:00",
+          "payload": {
+            "format": "NumPy",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:40:21.232+00:00",
+          "payload": {
+            "crs": "WGS84 (기준 격자 파일)",
+            "grid": "128x128",
+            "period": null,
+            "variables": [
+              "rn15_sample"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 3,
+        "body_count": 1,
+        "body_head": "rn15_sample.npy",
+        "dev_order_head": "LAT_crop.npy",
+        "dev_order_head_kind": "기준 격자 파일"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:40:38.704409+00:00",
+        "autometa_updated_at": "2026-09-24T13:40:38.704409+00:00",
+        "autometa_period": {
+          "start": "2019-07-28T00:00:00+00:00",
+          "end": "2024-07-09T00:00:00+00:00",
+          "granularity": "일"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:40:38.704409+00:00",
+          "2026-09-24T19:28:46.479832+00:00",
+          "2026-09-24T21:46:30.769038+00:00"
+        ]
+      }
+    },
+    {
+      "id": "K3-LIN-006",
+      "child_dataset_id": "01M39TTPB2T87ESQKHCZPBAKD6",
+      "child_name": "DEM",
+      "held_events": [
+        {
+          "event_type": "file.format-detected",
+          "occurred_at": "2026-09-24T13:48:54.289+00:00",
+          "payload": {
+            "format": "GeoTIFF",
+            "uniform": true
+          }
+        },
+        {
+          "event_type": "file.header-parsed",
+          "occurred_at": "2026-09-24T13:48:54.305+00:00",
+          "payload": {
+            "crs": "EPSG:4326",
+            "grid": "1280x1280",
+            "period": null,
+            "variables": [
+              "band1"
+            ]
+          }
+        }
+      ],
+      "ledger_files": {
+        "count": 1,
+        "body_count": 1,
+        "body_head": "DEM.tif",
+        "dev_order_head": "DEM.tif",
+        "dev_order_head_kind": "본체"
+      },
+      "registration": {
+        "dataset_uploaded_at": "2026-09-24T13:49:08.314196+00:00",
+        "autometa_updated_at": "2026-09-24T13:49:08.314196+00:00",
+        "autometa_period": {
+          "start": "2023-05-01T00:00:00+00:00",
+          "end": "2023-05-01T00:00:00+00:00",
+          "granularity": "월"
+        },
+        "autometa_variables": [],
+        "operator_audit_dataset_updated_at": [
+          "2026-09-24T13:49:08.314196+00:00",
+          "2026-09-24T21:46:31.859237+00:00"
+        ]
+      }
+    }
+  ]
+}

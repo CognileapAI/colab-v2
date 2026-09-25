@@ -9,9 +9,9 @@ from test_dataset_registration import make_upload, register
 from colab_core.app.main import API_PREFIX
 
 
-def _get(client, **params):
+def _get(client, *, token=TOKEN_RES, **params):
     return client.get(f"{API_PREFIX}/lineage-candidates", params=params,
-                      headers=auth(TOKEN_RES))
+                      headers=auth(token))
 
 
 def test_candidate_contains_lineage_facts_and_searches_name_or_accessible_file(p2_client, sql) -> None:
@@ -54,13 +54,21 @@ def test_filters_are_anded_and_period_means_overlap_with_open_end(p2_client, sql
 def test_locked_candidate_keeps_public_metadata_but_hides_body_names(p2_client) -> None:
     """잠긴 후보를 없애거나 본체 파일명을 노출하는 두 회귀를 함께 잡는다."""
     client = p2_client()
-    response = _get(client, q="A 강우 격자화")
+    response = _get(client, token=TOKEN_RES, q="A 강우 격자화")
     assert response.status_code == 200, response.text
     item = response.json()["items"][0]
     assert item["datasetId"] == DS_A2 and item["bodyAccessible"] is False
     assert item["fileNames"] == [] and item["fileExtensions"] == []
-    assert _get(client, q="a2-body.nc").json()["items"] == []
+    assert _get(client, token=TOKEN_RES, q="a2-body.nc").json()["items"] == []
     assert all(x["datasetId"] != DS_B1 for x in _get(client).json()["items"])
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 같은 후보를 관리자 눈으로도 한 번 본다.**
+    #   이 파일의 주체를 전부 연구원으로 옮기면서 교수(= 자기 연구실 관리자) 갈래가 이 화면에서
+    #   한 번도 안 걸리게 됐다. `0033_admin_body_access` 의 관리자 갈래가 죽어도 조용하다.
+    #   교수에게는 **같은 후보의 본체가 열리고 파일명이 실린다** — 음성과 양성을 한 자리에 둔다.
+    managed = next(x for x in _get(client, token=TOKEN_PROF, q="A 강우 격자화").json()["items"]
+                   if x["datasetId"] == DS_A2)
+    assert managed["bodyAccessible"] is True
+    assert managed["fileNames"] and managed["fileExtensions"]
 
 
 def test_cursor_is_stable_without_duplicates_and_query_count_is_page_size_independent(

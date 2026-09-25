@@ -36,7 +36,7 @@ import pathlib
 import urllib.parse
 import zipfile
 
-from conftest import ACC_A_RES, DS_A1, DS_A2, LAB_A, TOKEN_B, TOKEN_RES, auth
+from conftest import ACC_A_RES, DS_A1, DS_A2, LAB_A, TOKEN_B, TOKEN_PROF, TOKEN_RES, auth
 from test_upload_transfers import FakeS3
 
 from colab_core.app.main import API_PREFIX
@@ -281,10 +281,15 @@ def test_a_locked_dataset_without_a_grant_is_403_for_both_ticket_ops(p2_client, 
 def test_access_revoked_after_issue_makes_the_bytes_404(p2_client, sql) -> None:
     """⑧ 발급 뒤 잠기면 바이트는 404 — 티켓이 서명은 맞아도 **바이트 시점에 다시 판정**한다.
     RLS `body_access` 가 행을 지우므로 라우트가 잠금을 따로 묻지 않아도 그렇다."""
+    # ⭑ **⟨2026-09-18 develop 동기화⟩ 자리를 바꿔 잡는다 — 자료는 교수 것, 티켓은 연구원 것.**
+    #   잠근 뒤에도 보이는 주체가 둘 생겼다: 소유자(`0032_private_owner_access`)와 자기 연구실
+    #   관리자인 교수(`0033_admin_body_access`). 종전처럼 소유자(연구원)나 교수에게 티켓을 주면
+    #   이 시험은 **영영 404 를 못 본다** — 「발급 뒤 다시 판정한다」를 재는 자리가 사라진다.
+    #   그래서 **교수가 소유**하고 **연구원이 티켓을 받는다**: 연구원은 소유자도 관리자도 아니다.
     client = _client(p2_client)
-    dataset_id, files = _dataset(client)
-    file_url = _ticket(client, dataset_id, files["a.csv"]["fileId"]).json()["url"]
-    bundle_url = _ticket(client, dataset_id).json()["url"]
+    dataset_id, files = _dataset(client, token=TOKEN_PROF)
+    file_url = _ticket(client, dataset_id, files["a.csv"]["fileId"], token=TOKEN_RES).json()["url"]
+    bundle_url = _ticket(client, dataset_id, token=TOKEN_RES).json()["url"]
     assert client.get(file_url).status_code == 200      # 대조 — 잠그기 전에는 산다
     sql("INSERT INTO d2_dataset_access (dataset_id, lab_id, state)"
         " VALUES (:d, current_lab_id(), '잠김')", {"d": dataset_id})

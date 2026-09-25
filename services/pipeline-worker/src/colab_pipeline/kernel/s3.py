@@ -335,15 +335,18 @@ class S3Client:
         lowered = {k.lower(): v for k, v in headers.items()}
         return lowered.get("etag", "")
 
-    def copy_object(self, src_key: str, dst_key: str) -> None:
+    def copy_object(self, src_key: str, dst_key: str, *, expected_etag: str | None = None) -> None:
         """같은 버킷 안 서버사이드 복사 — 바이트가 서버를 오가지 않는다.
 
         CompleteMultipartUpload 처럼 **200 본문에 <Error> 가 올 수 있다** — 루트 태그를
         확인한다 (등록 전환의 이동이 조용히 실패하면 안 된다).
         """
         source = f"/{self.bucket}/{uri_encode(src_key, keep_slash=True)}"
+        extra = {"x-amz-copy-source": source}
+        if expected_etag is not None:
+            extra["x-amz-copy-source-if-match"] = expected_etag
         _h, body = self._call(method="PUT", key=dst_key,
-                              extra_headers={"x-amz-copy-source": source}, timeout=60.0)
+                              extra_headers=extra, timeout=60.0)
         root = _xml(body)
         if root.tag.endswith("Error") or root.findtext("{*}ETag") is None:
             raise _error_from(body, 200)
@@ -352,6 +355,12 @@ class S3Client:
         headers, _body = self._call(method="HEAD", key=key)
         lowered = {k.lower(): v for k, v in headers.items()}
         return int(lowered.get("content-length", "0")), lowered.get("etag", "")
+
+    def delete_object_if_match(self, key: str, etag: str) -> None:
+        """Post-commit cleanup must not delete a replacement object (no unconditional fallback)."""
+        if not etag or etag == '*':
+            raise ValueError('exact source ETag required')
+        self._call(method='DELETE',key=key,extra_headers={'if-match':etag})
 
     def delete_objects(self, keys: list[str]) -> None:
         for start in range(0, len(keys), _DELETE_BATCH):

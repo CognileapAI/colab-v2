@@ -365,7 +365,10 @@ other=tmp/'dry-secret-work'
 assert call('prepare_seed_password',DRY_RUN='1',SEED_WORK_DIR=str(other)).returncode==0
 assert not other.exists()
 # 실제 stage_seed argv가 보호 파일 경로를 전달하는지 본다. 프로세스 대역이며 브라우저 접촉 없음.
-script = '. "$1/stages.sh"; run() { printf "%s\n" "$@"; }; stage_seed'
+# `ssh_script` 도 가린다 — `stage_seed` 는 `accounts` 국면 뒤에 임시 운영자를 내리려고
+# 원격 셸을 한 번 부른다(`stages.sh` `operator_revoke`). 이 픽스처는 **argv 와 보호 파일 경로**만
+# 보는 자리이고 dev 에 나가지 않는다.
+script = '. "$1/stages.sh"; run() { printf "%s\n" "$@"; }; ssh_script() { cat >/dev/null; printf "%s\n" "$1"; }; stage_seed'
 r = subprocess.run(['bash','-c',script,'_',str(base)], env=dict(env, DEV_URL='https://fixture.invalid', RESEED_ACCOUNT_EMAIL='x@example.org', COLAB_RESEED_BROWSER_SESSION='fixture-reseed-session'), capture_output=True, text=True)
 assert r.returncode == 0 and '--accounts-password-file\n'+str(work/'accounts/initial-0.txt') in r.stdout
 assert '--session\nfixture-reseed-session' in r.stdout

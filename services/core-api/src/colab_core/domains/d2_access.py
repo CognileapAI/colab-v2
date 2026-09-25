@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions
+from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions, DatasetOwnershipPort
 from .d2_audit import append_snapshot as append_operator_snapshot
 
 #: 권한 스위치는 정확히 넷이고 다섯 번째를 만들지 않는다 (common.json#/$defs/PermissionSwitch).
@@ -139,8 +139,13 @@ def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict
 class DatasetAccessAdapter:
     """`ports.DatasetAccessPort` 의 D2 쪽 구현. 조립은 app 이 한다."""
 
-    def __init__(self, session: Session, dataset_labs=None) -> None:
+    #: 두 조립 입력은 **선택**이다 — 어느 하나가 없어도 나머지 판정은 그대로 선다.
+    #: `ownership` 은 비공개 소유자 갈래(`0032_private_owner_access`)를,
+    #: `dataset_labs` 는 관리자 갈래(`0033_admin_body_access`)의 대상 연구실을 준다.
+    def __init__(self, session: Session, ownership: DatasetOwnershipPort | None = None,
+                 dataset_labs=None) -> None:
         self._session = session
+        self._ownership = ownership
         self._dataset_labs = dataset_labs
 
     def verification(self, dataset_ids: list[Ulid]) -> dict[str, DatasetVerification]:
@@ -167,6 +172,7 @@ class DatasetAccessAdapter:
         labs = self._dataset_labs(dataset_ids) if self._dataset_labs else {}
         rows = self._session.execute(_ACCESS, {"ids": [str(i) for i in dataset_ids],
                                                "labs": json.dumps(labs)}).mappings()
+        owned = self._ownership.owned_dataset_ids(dataset_ids) if self._ownership else set()
         out: dict[str, DatasetAccess] = {}
         for r in rows:
             open_ = r["state"] == "열림"
@@ -174,7 +180,9 @@ class DatasetAccessAdapter:
                 access_state=r["state"],
                 verified=bool(r["verified"]),
                 # 잠겨 있어도 허용 목록에 있으면 본체에 닿는다 (P-25 만료 포함).
-                body_accessible=bool(open_ or r["granted"] or r["managed"]),
+                # 관리자(교수·시스템)와 비공개 소유자도 같은 자리에서 본체에 닿는다.
+                body_accessible=bool(open_ or r["granted"] or r["managed"]
+                                     or r["dataset_id"] in owned),
             )
         return out
 
@@ -579,6 +587,11 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
                "expires_at": grant["expires_at"].isoformat(), "access_state": state},
     )
     return result
+
+
+def verified_dataset_ids(session: Session) -> list[str]:
+    """Read the current scoped verification set for composition before pagination."""
+    return list(session.execute(text('SELECT dataset_id FROM d2_verified WHERE verified')).scalars())
 
 
 def verified_state(session: Session, dataset_id: Ulid) -> bool | None:

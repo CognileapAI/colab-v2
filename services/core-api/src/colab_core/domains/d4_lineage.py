@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.lineage import LV_CAP, LineageSummary
+from ..ports.lineage import LV_CAP, LineageSummary, LineageRevision
 
 # 주입력 부모의 최대 Lv 를 재귀로 센다 — Lv 는 컬럼이 아니라 계산이다 (PLAN-SoT §9-⑳).
 # 보조입력은 Lv 계산에서 빠진다 (common.json#/$defs/ParentRole).
@@ -166,6 +166,50 @@ def lock_lab_for_lineage_write(session: Session) -> None:
     session.execute(_LOCK_LAB)
 
 
+def initialize_dataset(session: Session, dataset_id: Ulid) -> None:
+    """Assembly calls once after inserting the authorized new D3 dataset."""
+    session.execute(text('''INSERT INTO d4_lineage_revision(lab_id,dataset_id,revision,deleted)
+      VALUES (current_lab_id(),:id,1,false)'''),{'id':str(dataset_id)})
+
+
+def _advance(session: Session, dataset_ids: list[str]) -> None:
+    ids=sorted(set(dataset_ids))
+    rows=session.execute(text('''UPDATE d4_lineage_revision SET revision=revision+1
+      WHERE dataset_id=ANY(:ids) AND NOT deleted RETURNING dataset_id'''),{'ids':ids}).all()
+    if len(rows)!=len(ids):
+        raise ValueError('lineage revision missing or deleted')
+
+
+def mark_dataset_deleted(session: Session, dataset_id: Ulid) -> None:
+    """Called after D3's authorized softdelete in the same lab-locked transaction.
+
+    Keep original edges/unknown/confirmation; only their dependency meaning changes.
+    """
+    changed=session.execute(text('''UPDATE d4_lineage_revision SET revision=revision+1,deleted=true
+      WHERE dataset_id=:id AND NOT deleted RETURNING dataset_id'''),{'id':str(dataset_id)}).first()
+    if changed is None:raise ValueError('lineage revision missing or deleted')
+    neighbors=session.execute(text('''SELECT parent_dataset_id FROM d4_lineage_edge WHERE child_dataset_id=:id
+      UNION SELECT child_dataset_id FROM d4_lineage_edge WHERE parent_dataset_id=:id'''),
+      {'id':str(dataset_id)}).scalars().all()
+    if neighbors:
+        rows=session.execute(text('''UPDATE d4_lineage_revision SET revision=revision+1
+          WHERE dataset_id=ANY(:ids) RETURNING dataset_id'''),{'ids':neighbors}).all()
+        if len(rows)!=len(neighbors):raise ValueError('lineage neighbor revision missing')
+
+
+class LineageRevisionAdapter:
+    """One read snapshot; missing/hidden markers stay missing, never revision one."""
+    def __init__(self, session: Session):
+        self._session=session
+
+    def revisions(self, dataset_ids: list[Ulid]) -> dict[str, LineageRevision]:
+        if not dataset_ids:return {}
+        rows=self._session.execute(text('''SELECT dataset_id,revision,deleted
+          FROM d4_lineage_revision WHERE dataset_id=ANY(:ids)'''),
+          {'ids':[str(value) for value in dataset_ids]}).mappings()
+        return {row['dataset_id']:LineageRevision(**row) for row in rows}
+
+
 def would_create_cycle(session: Session, *, child_id: Ulid, parent_id: Ulid) -> bool:
     """`parent → … → child` 가 이미 있으면, `child ← parent` 를 붙이는 순간 순환이다.
 
@@ -200,13 +244,17 @@ def add_parent(session: Session, *, child_id: Ulid, parent_id: Ulid, parent_role
     }).scalar_one()
     # 관계가 붙으면 `기록 없음` 표시는 사라진다 (DataModel §4.2).
     session.execute(_CLEAR_UNKNOWN, {"dataset_id": str(child_id)})
+    _advance(session,[str(child_id),str(parent_id)])
     return edge_id
 
 
 def remove_parent(session: Session, *, child_id: Ulid, parent_id: Ulid) -> bool:
     """관계 한 쌍만 지운다 — **데이터셋은 지워지지 않는다.**"""
-    return session.execute(_DELETE_EDGE, {
+    lock_lab_for_lineage_write(session)
+    changed=session.execute(_DELETE_EDGE, {
         "child": str(child_id), "parent": str(parent_id)}).first() is not None
+    if changed:_advance(session,[str(child_id),str(parent_id)])
+    return changed
 
 
 def update_parent_method(session: Session, *, child_id: Ulid, parent_id: Ulid,
@@ -214,16 +262,24 @@ def update_parent_method(session: Session, *, child_id: Ulid, parent_id: Ulid,
     """가공 방식 문장 한 칸만 고친다. 없는 관계면 `False` — 라우트가 404 로 낸다.
 
     ⛔ **확인 기록을 밀지 않는다** (`_UPDATE_EDGE_METHOD` 주석). 이 op 은 확인이 아니다.
-    ⚠ 순환 판정도 락도 없다 — **그래프 모양이 바뀌지 않는다.** 없는 위험에 락을 걸면
-      계보 쓰기 전체가 라벨 수정을 기다린다.
+    Incident revision changes serialize under the same lab lock as graph writes.
     """
-    return session.execute(_UPDATE_EDGE_METHOD, {
-        "child": str(child_id), "parent": str(parent_id), "method": method}).first() is not None
+    lock_lab_for_lineage_write(session)
+    row=session.execute(text('''SELECT method FROM d4_lineage_edge
+      WHERE child_dataset_id=:child AND parent_dataset_id=:parent FOR UPDATE'''),
+      {'child':str(child_id),'parent':str(parent_id)}).first()
+    if row is None:return False
+    if row[0]!=method:
+        session.execute(_UPDATE_EDGE_METHOD, {'child':str(child_id),'parent':str(parent_id),'method':method})
+        _advance(session,[str(child_id),str(parent_id)])
+    return True
 
 
 def mark_unknown(session: Session, *, dataset_id: Ulid, actor_id: Ulid) -> None:
     """부모를 모르는 채 등록했다는 표시. **근거 없는 추측을 사실처럼 기록하지 않기 위한 자리.**"""
-    session.execute(_MARK_UNKNOWN, {"dataset_id": str(dataset_id), "actor": str(actor_id)})
+    lock_lab_for_lineage_write(session)
+    if session.execute(_MARK_UNKNOWN, {"dataset_id": str(dataset_id), "actor": str(actor_id)}).rowcount:
+        _advance(session,[str(dataset_id)])
 
 
 def is_unknown(session: Session, dataset_id: Ulid) -> bool:

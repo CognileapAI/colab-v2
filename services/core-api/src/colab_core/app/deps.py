@@ -11,6 +11,60 @@ from ..kernel.auth import Subject, bearer_token
 from ..kernel.scope import apply_scope
 from ..kernel.login_sessions import SessionStoreUnavailable
 
+_REGISTRATION_CLEANUP = 'colab.registration_cleanup'
+
+
+def defer_registration_cleanup(session, prepared):
+    if session.in_nested_transaction() or not session.in_transaction():
+        raise ValueError('registration cleanup requires the active root transaction')
+    if _REGISTRATION_CLEANUP in session.info:
+        raise ValueError('registration cleanup already reserved')
+    session.info[_REGISTRATION_CLEANUP]=(session.get_transaction(),prepared)
+
+
+async def registration_db(request: Request):
+    """Only createDataset: commit before response, cleanup only after that root succeeds.
+
+    ⭑ **⟨2026-09-18 develop 동기화⟩ 스코프 주입은 `scoped_db` 와 **한 벌**이어야 한다.**
+      이 자리는 `scoped_session` 을 썼기 때문에 develop 이 더한 두 가지 —
+      시스템 관리자의 전 연구실 읽기(`operator_read`)와 대상 연구실 선택
+      (`prepare_target_scope` · `X-CoLAB-Target-Lab`) — 을 **조용히 건너뛰었다.**
+      `createDataset` 은 `_CREATIONS` 라서 관리자는 대상 연구실을 반드시 고르는 자리인데,
+      그 선택이 없으면 업로드가 경계 밖으로 보여 「없거나 수명이 다한 업로드다」가 된다.
+      배선이 두 벌이면 한쪽만 늙는다 — 그래서 여기서도 같은 두 줄을 그대로 부른다.
+    """
+    import logging
+
+    from .target_scope import prepare_target_scope
+
+    subject = current_subject(request, request.headers.get('authorization'))
+    session: Session = request.app.state.session_factory()
+    pending = None
+    try:
+        session.begin()
+        apply_scope(session, subject, operator_read=_operator_read(request, subject))
+        await prepare_target_scope(request, session, subject)
+        root = session.get_transaction()
+        yield session
+        pending = session.info.pop(_REGISTRATION_CLEANUP, None)
+        if pending and (pending[0] is not root or session.get_transaction() is not root
+                        or session.in_nested_transaction() or not root.is_active):
+            raise ValueError('registration root transaction changed')
+        session.commit()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.info.pop(_REGISTRATION_CLEANUP, None)
+        session.close()
+    # commit 이 끝난 뒤에만 원본을 치운다 — 실패 경로는 위에서 이미 빠져나갔다.
+    if pending:
+        try:
+            pending[1].cleanup()
+        except Exception:
+            # Commit already succeeded; no credential/path/exception details in the warning.
+            logging.getLogger(__name__).warning('registration_source_cleanup_deferred')
+
 
 def current_subject(request: Request, authorization: str | None = Header(default=None)) -> Subject:
     """계약의 `sessionSubject` bearer 하나만 본다.

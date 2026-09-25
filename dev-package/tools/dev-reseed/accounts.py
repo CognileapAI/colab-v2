@@ -4,12 +4,21 @@ from urllib.request import Request,urlopen
 from urllib.parse import urlsplit
 DEFAULT_PROFILE=pathlib.Path(os.environ.get('COLAB_RESEED_ACCOUNTS_PROFILE',str(pathlib.Path.home()/'.config/colab-platform/dev-reseed-accounts-approved.json'))).expanduser()
 IDENTITY=('email','name','admin','role','lab','account_id','lab_id','initial_password_strategy')
-def validate(entries,expected):
+# ownerManaged = 소유자가 비밀번호를 관리하는 운영자(소유자가 비밀번호를 이미 바꾼 운영자 항목에만 둔다). 없으면 false 다.
+# 최종화·검증은 그 계정의 「초기 자격」 조건(비밀번호 = 이메일 · 변경 요구)만 건너뛰고 비밀번호를 바꾸지 않는다.
+# 교수 계정에는 둘 수 없다 — 교수 최종화는 초기 비밀번호로 되돌리는 절차다.
+def owner_managed(e):
+ value=e.get('ownerManaged',False)
+ if not isinstance(value,bool):raise ValueError('ownerManaged must be boolean')
+ if value and not e.get('admin'):raise ValueError('ownerManaged is for operators only')
+ return value
+def validate(entries,expected,policy=True):
  if not isinstance(entries,list) or len(entries)!=5 or len({e.get('email') for e in entries})!=5:raise ValueError('exact five accounts required')
  want={e['email']:e for e in expected}
  if set(want)!={e['email'] for e in entries}:raise ValueError('approved account set required')
  for e in entries:
   if any(e.get(k)!=want[e['email']].get(k) for k in IDENTITY):raise ValueError('account identity or password policy mismatch')
+  if policy and owner_managed(e)!=owner_managed(want[e['email']]):raise ValueError('ownerManaged differs from approved profile')
   if e.get('password_file') and private(e['password_file']).read_text().strip()!=e['email']:raise ValueError('initial password mismatch')
 def private(path):
  p=pathlib.Path(path)
@@ -53,7 +62,7 @@ def finalize_store(store,entries,verify_password):
   if not e['admin'] and (r.account_id!=e['account_id'] or r.lab_id!=e['lab_id']):raise ValueError('professor identity mismatch')
   cred=store.find(email)
   if cred is None or cred.status!='active':raise ValueError('credential missing/inactive')
-  if e['admin'] and (not cred.must_change_password or not verify_password(email,cred.password)):raise ValueError('operator initial credential changed')
+  if e['admin'] and not owner_managed(e) and (not cred.must_change_password or not verify_password(email,cred.password)):raise ValueError('operator initial credential changed')
  r=rows[p['email']];cred=store.find(p['email'])
  initial=cred.must_change_password and verify_password(p['email'],cred.password)
  if not initial:
@@ -65,8 +74,11 @@ def finalize_store(store,entries,verify_password):
  final={r.email:r for r in store.list_accounts()}
  for email,e in wanted.items():
   cred=store.find(email)
-  if final[email].operator is not e['admin'] or not cred.must_change_password or not verify_password(email,cred.password):raise ValueError('final account policy mismatch')
- return {'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False}
+  if final[email].operator is not e['admin'] or cred is None or cred.status!='active':raise ValueError('final account policy mismatch')
+  if not owner_managed(e) and (not cred.must_change_password or not verify_password(email,cred.password)):raise ValueError('final account policy mismatch')
+ owners=sum(map(owner_managed,entries))
+ # must_change_password = 변경 요구를 확인한 계정 수 — 소유자 관리 운영자는 빼고 센다(그 계정은 변경 요구를 검사하지 않는다).
+ return {'accounts':5,'operators':4,'professors':1,'must_change_password':5-owners,'password_changed_by_check':False,'owner_managed':owners}
 
 def verify_logins(entries,base_url,opener=urlopen):
  def request(method,path,data=None,token=None,status=200):
@@ -76,14 +88,16 @@ def verify_logins(entries,base_url,opener=urlopen):
   with opener(req,timeout=30) as res:
    if res.status!=status:raise ValueError('login verification response mismatch')
    return json.load(res) if status!=204 else None
- for e in entries:
+ # 소유자 관리 운영자는 초기 비밀번호가 없다 — 로그인을 시도하지 않는다(신원·권한은 finalize_store 가 저장소에서 대조했다).
+ for e in [e for e in entries if not owner_managed(e)]:
   token=request('POST','/sessions',{'accountName':e['email'],'password':private(e['password_file']).read_text().strip()},status=201)['token']
   try:
    me=request('GET','/me-v2',token=token)
    if not me.get('accountId') or me.get('labId')!=e.get('lab_id') or (e.get('account_id') and me['accountId']!=e['account_id']):raise ValueError('initial login account boundary mismatch')
    if any(me.get(k)!=v for k,v in {'email':e['email'],'name':e['name'],'mustChangePassword':True,'canManageServiceAccounts':e['admin']}.items()) or (me.get('role') or '')!=e['role'] or (me.get('labName') or '')!=e['lab']:raise ValueError('initial login identity/policy mismatch')
   finally:request('DELETE','/sessions/current',token=token,status=204)
- return {'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False}
+ owners=sum(map(owner_managed,entries))
+ return {'accounts':5,'operators':4,'professors':1,'must_change_password':5-owners,'password_changed_by_check':False,'owner_managed':owners,'initial_logins':5-owners}
 
 def clear_legacy(paths,backup):
  backup=pathlib.Path(backup);backup.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -155,6 +169,7 @@ def remote_main(mode):
   # Never mutates on report/reverification; compare current final policy only.
   for e in payload['entries']:
    cred=store.find(e['email'])
+   if owner_managed(e):continue
    if cred is None or not cred.must_change_password or not verify_password(e['email'],cred.password):raise ValueError('final credential changed')
   store=ReadOnlyStore(store)
  result=finalize_store(store,payload['entries'],verify_password);print(json.dumps(result))
@@ -197,7 +212,9 @@ def main():
  if a.action=='clear-legacy':
   result=remote(a,'remote-clear',{'paths':paths,'backup':str(pathlib.PurePosixPath(a.secrets_dir)/('dev-reseed-legacy-backup-'+fingerprint(str(pathlib.Path(a.work).resolve()))[:16]))},False);save(pathlib.Path(a.work)/'legacy-cleared.json',result);return
  require_binding(a.binding)
- work=pathlib.Path(a.work);prepared=json.loads(private(work/'accounts.json').read_text());validate(prepared,entries)
+ work=pathlib.Path(a.work);prepared=json.loads(private(work/'accounts.json').read_text());validate(prepared,entries,policy=False)
+ # 준비 사본(accounts.json)은 ownerManaged 이전에 만들어졌을 수 있다 — 표시는 승인된 프로필 값을 따른다.
+ prepared=[{**p,'ownerManaged':owner_managed(next(e for e in entries if e['email']==p['email']))} for p in prepared]
  journal=work/'finalization.json';identity={'profile':fingerprint(entries),'binding':a.binding}
  if not (work/'legacy-cleared.json').exists():raise ValueError('legacy cleanup evidence missing')
  if journal.exists():
@@ -211,7 +228,7 @@ def main():
  remote(a,mode,{'entries':entries,'legacy_paths':paths})
  save(journal,{**identity,'state':'complete'})
  result=verify_logins(prepared,a.base_url);save(work/'verification.json',{**identity,**result})
- print('accounts verified: 5; operators: 4; professor: 1; initial-password change required')
+ print('accounts verified: 5; operators: 4; professor: 1; owner-managed operators: %d; initial-password change required for the rest'%result['owner_managed'])
 if __name__=='__main__':
  try:main()
  except Exception:raise SystemExit('account operation failed; inspect protected execution state, do not repeat reset')

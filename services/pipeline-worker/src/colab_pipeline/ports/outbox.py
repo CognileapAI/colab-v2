@@ -36,6 +36,11 @@ class EventLedgerPort(Protocol):
 class UploadLedgerPort(Protocol):
     def load_upload(self, upload_id: str) -> dict | None: ...
 
+    def record_measurement(self, *, file_id: str, upload_id: str,
+                           lab_id: str, measurement: dict) -> str | None:
+        """Store canonical bounded per-file proof; identical identity returns the same receipt."""
+        ...
+
     def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
                              file_name: str, storage_key: str,
                              carries_lat: bool, carries_lon: bool) -> None:

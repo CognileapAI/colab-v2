@@ -43,6 +43,14 @@ export function apiLineageSource(targetLabId?: string): LineageSource {
           query: {
             ...(q.datasetNameDraft ? { datasetNameDraft: q.datasetNameDraft } : {}),
             ...(q.subject ? { subject: q.subject } : {}),
+            // ⭑ ⟨2026-09-24 · K3 `WU-S4`⟩ 사람이 ① 에서 고른 가공 단계. 적격 필터
+            // (「부모 Lv ≤ 자기 Lv」)의 기준값이고 **거르는 것은 core-api** 다.
+            // ⛔ 안 골랐으면 **열쇠 자체를 빼고** 보낸다 — 그때 서버가 「가공 단계를 고르면
+            // 제안이 가능합니다」로 답하는 것이 참이다. `Lv0` 은 고른 값이므로 거짓값
+            // 판정(`? :`)이 아니라 `undefined` 만 본다.
+            ...(q.processingLevelUserSet !== undefined
+              ? { processingLevelUserSet: q.processingLevelUserSet }
+              : {}),
           },
         },
       });

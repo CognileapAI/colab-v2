@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import pathlib
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 #: D9 사전 DB 의 접속 URL. **값 대신 경로로 받을 수 있다** — `COLAB_AI_DB_URL_FILE`
 #: (`PLAN-SoT §9 〈121〉-㉯`). `docker inspect` 의 환경변수 목록에 접속 문자열이 통째로
@@ -68,7 +68,12 @@ def resolve_env_or_file(env: Mapping[str, str], name: str) -> str | None:
 
 @dataclass(frozen=True)
 class Settings:
-    #: D9 사전 3종(`db/ai` 체인) URL. **이 단위가 붙는 유일한 저장소다.**
+    #: `db/ai` 체인 URL. **이 단위가 붙는 유일한 저장소다** — 이름은 사전 3종에서 왔지만
+    #: 같은 체인에 개념 그래프 두 표와 **D10 모델 호출 실행 원장**(`d10_model_call`)이 함께
+    #: 산다(⟨개정 2026-09-24⟩ intent `2026-09-24-d10-model-call-ledger`). **이름을 바꾸지
+    #: 않는다** — `COLAB_AI_DB_URL` 은 이미 배선돼 있고(`infra/`·compose·`_FILE` 갈래),
+    #: 읽는 쪽 이름을 고치면 배선은 있는데 아무도 안 읽는 상태가 되며 그것은 에러를 내지 않는다.
+    #: 주소가 없으면 사전 조회도 원장 적재도 **조용히 없는 것**이 되고 프로세스는 그대로 뜬다.
     dict_db_url: str | None = None
     openai_api_key: str | None = None
     model: str = "gpt-5.6-luna"
@@ -84,15 +89,38 @@ class Settings:
     #: ③ **「키를 못 넣은 것」과 「안 쓰기로 한 것」이 같은 상태로 보인다.**
     #: `〈136〉-㉲` 가 요구한 것은 그 반대다 — **켜는 시점을 값으로 정할 수 있어야 한다.**
     query_interpretation: str = "literal"
+    #: 계보 제안 방식 — `"off"`(AI 가 매기지 않는다) | `"llm"`(모델이 매긴다). **기본은 `off`.**
+    #:
+    #: `〈136〉` 이 질의 해석에 적용한 규율과 **같은 자리**다 — 켜는 시점을 값으로 정할 수
+    #: 있어야 한다. 「키를 못 넣은 것」과 「안 쓰기로 한 것」을 같은 상태로 보이게 하지 않는다.
+    #: 기본이 `off` 인 근거는 게이트 ① 판정 2 — E-04 가 아직 제안을 부르지 않는 상태에서
+    #: 계약·생산자를 먼저 세우는 회차이기 때문이다(`R-K3-RESUME` 판정 기록 2·6).
+    #:
+    #: ⚠ **파이썬 쪽 이름이 환경변수와 다른 이유.** 게이트 `ai-no-lineage-write` 의 red
+    #: 조건 ⑥ 은 ai-service 코드에서 **D4 테이블 접두사**를 찾는다
+    #: (`gates/config/boundaries.toml:47` · `_tbl_re` 는 앞 글자가 단어 문자일 때만 뺀다).
+    #: 그 목록의 소문자 접두사와 **같은 모양으로 시작하는 파이썬 식별자**는 읽기여도 red 다.
+    #: 환경변수는 대문자라 걸리지 않으므로 **배선 이름은 그대로 두고** 파이썬 쪽 이름만
+    #: 오퍼레이션 이름(`suggestLineage`)을 따른다.
+    suggest_lineage_mode: str = "off"
+    service_token: str | None = field(default=None, repr=False)
+    anthropic_api_key: str | None = field(default=None, repr=False)
+    concept_model: str = "claude-sonnet-4-5"
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         e = os.environ if env is None else env
         # 모르는 값은 **끈 쪽으로** 떨어뜨린다 — 오타가 검색을 몰래 켜지 않는다.
         mode = (e.get("COLAB_AI_QUERY_INTERPRETATION") or "").strip().lower()
+        # 같은 규율. 오타(`LLM_`)는 `off` 로 떨어지고, 모델 호출이 몰래 켜지지 않는다.
+        suggest = (e.get("COLAB_AI_LINEAGE_SUGGESTION") or "").strip().lower()
         return cls(
+            service_token=resolve_env_or_file(e, "COLAB_AI_SERVICE_TOKEN"),
+            anthropic_api_key=resolve_env_or_file(e, "ANTHROPIC_API_KEY"),
+            concept_model=e.get("COLAB_AI_CONCEPT_MODEL") or "claude-sonnet-4-5",
             dict_db_url=resolve_env_or_file(e, ENV_DB_URL),
             openai_api_key=e.get("OPENAI_API_KEY") or None,
             model=e.get("COLAB_MODEL_HELPER") or "gpt-5.6-luna",
             query_interpretation="llm" if mode == "llm" else "literal",
+            suggest_lineage_mode="llm" if suggest == "llm" else "off",
         )
