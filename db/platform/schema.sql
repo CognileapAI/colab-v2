@@ -1706,6 +1706,8 @@ CREATE POLICY operator_read ON d6_project                      FOR SELECT USING 
 CREATE POLICY operator_read ON d6_project_dataset              FOR SELECT USING (is_operator_read());
 CREATE POLICY operator_read ON d8_activity                     FOR SELECT USING (is_operator_read());
 CREATE POLICY operator_read ON d8_download                     FOR SELECT USING (is_operator_read());
+-- 0044 — 검토된 검색 근거도 운영자 전 연구실 읽기에 든다(intent 2026-09-25-operator-search-scope.md Q7).
+CREATE POLICY operator_read ON d3_search_evidence              FOR SELECT USING (is_operator_read());
 
 -- Transactional, coalescing source pointers. No source FK: tombstones must survive deletion.
 CREATE TABLE d3_search_change (
