@@ -1201,7 +1201,7 @@ unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablishe
 # (판정불가는 위 「미리보기 판정불가」로 따로 낸다).
 established = [r[0] for r in rows if r[3] == "성립"]
 missing_unestablished = sorted(set(expected_unestablished) & set(established), key=int)
-# ── 알려진 제품 결함 면제(`known-defects.json` · 면제 수용은 사용자 확인 대기 — approved 칸) ──────────────────────
+# ── 알려진 제품 결함 면제(`known-defects.json` · 면제 수용 = 사용자 확인 — approved 칸) ──────────────────────
 # 면제 = seq·이름·관측 판정·비고 머리(notePrefix)·비고 필수 조각(noteContains **전부**)이 모두 목록 항목과 맞는 행.
 #   비고 조각이 결함의 모양을 못 박는다 — 13·14(#133)는 로그인 [0]·상세 [1]·보기 활성 [false]·미지원 표시 [0]·누름 없음,
 #   16(#134)은 slot [failed]·preview-unavailable [0]. 로그아웃·빈 화면·다른 원인의 실패는 같은 판정이어도 면제하지 않는다.

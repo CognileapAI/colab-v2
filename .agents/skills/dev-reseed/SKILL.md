@@ -207,8 +207,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3 --run-dir <reset 을 돈 �
   목록은 레포 파일 하나다 — `KNOWN_DEFECTS_FILE` 은 픽스처 표지(`COLAB_RESEED_FIXTURE=1`) 없이는 실패. 목록 부재·깨짐·칸 오류·
   등재표와 다른 이름도 실패(빈 목록으로 접지 않는다). 면제 건수·「seq · 이름 · 이슈」·목록 경로·sha256·승인 상태는 단계 로그와
   `result.json` `counts.knownDefects` 에 남는다. 결함이 고쳐져 행이 정상이면 「면제 불필요 — known-defects.json 에서 뺄 것」.
-- ⚠ 면제 항목의 `approved` 는 「확인 대기」다. 13·14·16 을 결함으로 면제하는 것은 **dev 실행·PR 전에 사용자 확인**을 받고
-  그 문구를 확인 사실로 바꾼다.
+- 면제 항목의 `approved` 는 사용자 확인 사실을 적는다(13·14·16 = 2026-09-25 사용자 확인). 새 항목은 확인 전에 넣지 않는다.
 - 로컬 시험 — `bash gates/tools/dev-reseed-selftest.sh` 는 PyYAML 이 필요하다. `tests/test_accounts.py` 는 게이트가 돌리지 않으므로
   pytest·pyyaml 을 넣은 venv 에서 손으로 돌린다(`python -m pytest dev-package/tools/dev-reseed/tests/test_accounts.py`).
   `dev-package/tools/dev-seed/tests` 도 pyyaml 없이는 수집 단계에서 멈춘다(pytest INTERNALERROR · 종료 3).
