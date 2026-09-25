@@ -340,7 +340,7 @@ L2(`frontend/test/design-fix-followups-20260925-L2.test.tsx`)
 | 9 | `frontend-visual` 최종 ＋ 캡처 대조 | 부록 E | 부록 E 기준 |
 
 ## 부록 E 게이트
-- 실행 = 저장소 루트에서 `COLAB_GATE_REPORT_DIR=dev-package/reports/design-fix-followups-20260925/<단계> bash gates/run.sh <게이트>` 를 하나씩. 3계수(green · red 판정 · red 준비 78)를 보고한다.
+- 실행 = lifecycle task 를 연 단계는 `COLAB_TASK_ID=<task> bash gates/run.sh task` 한 번(선언 게이트 전부) — 이때 `COLAB_GATE_REPORT_DIR` 를 주지 않는다(주면 `gates/run.sh:46`–`49` 가 78 로 막는다 · L1 실측). 요약은 task 런타임의 gate-summary.json 이다. task 없이 도는 보충 측정만 `COLAB_GATE_REPORT_DIR=dev-package/reports/design-fix-followups-20260925/<단계>` 를 준다. 3계수(green · red 판정 · red 준비 78)를 보고한다.
 
 | 게이트 | B0 | L1 | L2 | E |
 |---|---|---|---|---|
