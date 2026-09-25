@@ -1,7 +1,7 @@
 # 검색 사용자가 결과 카드에서 자료 설명과 「검색된 이유」를 한눈에 구분한다
 
 Plan-Ref: dev-package/intent/2026-09-25-search-rationale-separation.md
-Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
+Head-SHA: 48585a6da0ae64bbadc31b2f1878fdc2eaf5b222
 검증 상태: 부분 검증
 
 <!-- Head-SHA 는 증거 커밋이다. 이 요약 파일 커밋이 그 위에 1개 더 있다 — 게시 직전 PR head 로 갱신한다. -->
@@ -15,7 +15,8 @@ Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
 - 계약(비파괴): `contracts/seams/fe-core.yaml`
   - `SearchResultRow.rationaleFacts`(선택 · `kind` = term/concept/linked/evidence · `items` = `AiRationale` 한 줄 배열)
   - `SearchResults.topic`(선택)
-  - `rationale`·검색 오퍼레이션·`degraded` 설명 개정
+  - `SearchResults.interpretation`(선택 · `llm`|`literal` · 해석 출처)
+  - `rationale`·검색 오퍼레이션 설명 개정 · `degraded` 설명에 `〈148〉` 문장 추가(뜻은 종전 그대로)
   - 생성물 `frontend/src/generated/fe-core.ts` 재생성
 - core-api
   - `dataset_search.py`: `rationale()` → `rationale_facts` · `ordered_facts` · `rationale_line`, `compose` 인자에서 연구실·건수·주제·해석 여부 제거
@@ -24,11 +25,12 @@ Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
     - 조건 검색 경로: 고정 문장을 「파일 근거」 1항목(해요체)으로 바꾸고 「미확인입니다」 삭제
   - `search_evidence_conditions.explain` → `supported_facts`(확인 항목만)
   - `search_conditions.explain_unverified_conditions` 삭제
-  - `relay.py`: `degraded` 를 합집합으로 계산
+  - `relay.py`: `degraded` 는 ai-service 값 그대로(합집합은 `48585a6d` 에서 되돌림)
+  - `routes/catalog.py`: 해석 `source` 가 `llm`·`literal` 이면 응답 `interpretation` 을 싣는다
 - frontend
   - `SearchHitCard.tsx`: `RationalePanel` 추가
   - `search.css`: 패널 규칙 추가, 「코랄」 주석을 보라(accent · 판정 48)로 정정
-  - `SearchResultsPage.tsx`: `ScopeLine` 뒤에 주제 문장 추가
+  - `SearchResultsPage.tsx`: `ScopeLine` 뒤에 주제 문장 추가 · `interpretation == "literal"` 이고 `degraded == false` 면 끝에 「질문의 낱말 그대로 찾았어요.」
 - 제외(intent 범위 밖): 관련도 막대 · Verified 배지 · 연구실 칩 · `DetailHeader` · 상세 검색 근거 편집 · 조건 검색 판단 패널 · 정본(기획 원본) 파일 · dev 재시드·배포 · `common.json` `AiRationale`(이유 항목도 한 줄이라 무수정)
 
 ## 계획
@@ -37,7 +39,9 @@ Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
   2. `c97e5e23` core-api
   3. `86ed3c17` frontend
   4. `f4cba295` 브라우저 증거
-  5. 이 요약
+  5. `3d63a686` 이 요약
+  6. `48585a6d` 정정: `degraded` 합집합 되돌림 · `interpretation` 필드 · 범위 줄 문장 · intent 추기
+  7. 정정 증거 캡처 + 이 요약 갱신
 - 남은 단계
   - advisor ② 수용 검토
   - 사용자 PR 게시 → develop 병합
@@ -53,28 +57,32 @@ Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
     - 개념 주석 일치가 있으면 「자료에 적힌 개념 ‘X’에 연결돼요」로 적는다.
     - 없고 `where == ("온톨로지 연결 근거",)` 뿐이면 「자료에 적힌 개념이 질문과 연결돼요」로 적는다. 이것으로 근거 필수를 지킨다.
   - 「연결된 자료」: 「‘파일명’ 파일이 속한 자료의 바로 앞 단계 자료예요」로 적고 「계보·부모」 말은 쓰지 않는다.
-  - `degraded` 합집합을 `relay.py` 해석 결과 지점에서 계산한다. 대조 필드는 ai-service 본문 `degraded` 와 `interpretation.source` 다.
-    - 로컬 ai-service 실측 값: `degraded:false` · `source:"literal"` · `degradedReason` 있음(`probe-literal.json` 캡처 시 stub 로그).
-    - 이 경우 응답은 `degraded:true` 이고 헤더 안내가 선다.
+  - ~~`degraded` 합집합을 `relay.py` 해석 결과 지점에서 계산한다.~~ → 정정(`48585a6d` · intent ⑤ 「추기 2026-09-26」 · 오케스트레이터 결정 교체 · Ted 판정 아님)
+    - 합집합은 설정으로 고른 낱말 그대로 해석에도 경고 상자를 세워 `PLAN-SoT §9-〈148〉` 과 어긋났다.
+    - `degraded` = ai-service 값 그대로. 해석 출처는 응답 `interpretation` 이 싣는다.
+    - 로컬 ai-service 실측 값: `degraded:false` · `source:"literal"` · `degradedReason` 있음(loopback 전달 로그).
+    - 이 경우 응답은 `degraded:false` · `interpretation:"literal"` 이고, 경고 상자 없이 범위 줄 끝에 「질문의 낱말 그대로 찾았어요.」가 선다.
 
 ## 검증
-- 게이트(task `dadf133f898543d48424f0b693e8f3ad` · `gates/run.sh task` 1회 · 계 **green 8 / red(판정) 0 / red(준비) 0**)
+- 게이트(정정 뒤 · task `f68a22d3f91b4775a81334b6535e1bfe` · run `a9a2692f67414aedb67e72347a3adeb0` · `gates/run.sh task` 1회 · 계 **green 8 / red(판정) 0 / red(준비) 0**)
+  - 정정 전 실행: task `dadf133f898543d48424f0b693e8f3ad` · 계 green 8 / 0 / 0(아래 표로 대체)
 
 | 게이트 | 종료코드 | 요지 |
 |---|---|---|
 | contract-lint | 0 | seam 3건 · 룰 위반 0 |
-| contract-breaking | 0 | 계약 커밋 전(작업트리 vs HEAD `e040ad59`) 실행: 파괴적 변경 없음 · task 실행분도 green |
+| contract-breaking | 0 | task 실행분(기준 HEAD) green · 보충 실행 `COLAB_BREAKING_BASE_REF=3d63a686`(정정 전 head) 대비 파괴적 변경 없음 |
 | generated-up-to-date | 0 | 등기부 20건 재생성 일치 |
 | frontend-typecheck | 0 | tsc 오류 0 |
-| frontend-test | 0 | vitest 1899 통과 · 실패 0 |
+| frontend-test | 0 | vitest 1902 통과 · 실패 0 |
 | frontend-design-lint | 0 | 색 리터럴 0 · 미정의 var 0 · 인라인은 변수 대입 7건뿐 · 프리미티브 맨 정의 0 |
-| service-tests-core-api | 0 | 1903 통과 · skipped 0 · deselected 9 |
-| intent-ref | 0 | 트레일러 확인 |
+| service-tests-core-api | 0 | 1904 통과 · skipped 0 · deselected 9 |
+| intent-ref | 0 | 트레일러 확인 · 승인 intent 줄 추가만 |
 
 - RED 선확인
   - core-api 43 failed(예: `compose() missing … 'lab_name'`, `KeyError: 'rationaleFacts'`, `assert '확인하지 못' not in …`)
   - frontend 6 failed(`search-rationale-panel` 없음)
   - 구현 뒤 green
+  - 정정(`48585a6d`) RED: core-api `test_search_relay.py` 4 failed(`assert (True is False)` · `KeyError: 'interpretation'`) · frontend 1 failed(범위 줄에 「질문의 낱말 그대로 찾았어요.」 없음) → 구현 뒤 relay·assembly 55 passed · vitest search 28 passed
 
 | 원한 결과 (intent) | 실제 | 근거 | 가치 상태 |
 |---|---|---|---|
@@ -84,12 +92,13 @@ Head-SHA: f4cba29528921bae8062f900be21b95c4953bdc7
 | 잠긴·Verified 카드도 같은 패널 | 두 카드 모두 패널이 선다 | 캡처 `search-rationale-llm-light-1280.png` · vitest | 확인됨 |
 | 한계·부정 문장 제거 · 이유만 | 서버 단언: 부정 문구 7종 부재 · 파일 근거는 확인 항목만. `test_search_reference_evidence` 골든 011·012 에서 「미확인」「불일치」 부재 | `test_search_assembly.py` · `test_search_evidence_conditions.py` · `test_search_reference_evidence.py` · `test_search_numeric_quality.py` | 확인됨 |
 | 관련 개념만으로 맞아도 이유 ≥1 · 「온톨로지」 미노출 | concept 항목 1개가 남는다. 실제 개념 선택 경로에서도 concept 에 ‘강수’가 있다 | `test_관련_개념으로만_맞아도_이유가_하나_이상_있다` · `test_search_concept_integration.py` | 확인됨 |
-| 공통부를 결과 머리에 한 번(범위 · 주제 · 해석 없이) | 범위 줄 「… 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.」가 서고 카드에는 없다. literal 해석이면 degraded 안내가 선다 | `probe-llm.json` `scope` · `probe-literal.json` `degradedNotice:true` · relay 시험 topic 유무·합집합 | 확인됨 |
+| 공통부를 결과 머리에 한 번(범위 · 주제) | 범위 줄 「… 2건을 뒤졌어요. 주제 ‘강우·강수’로 좁혀 뒤졌어요.」가 서고 카드에는 없다 | `probe-llm.json` `scope` · relay 시험 topic 유무 | 확인됨 |
+| 「해석 없이 찾았다」를 결과 머리에 한 번 · 설정으로 고른 낱말 그대로 해석은 `degraded` 아님(`〈148〉`) | 로컬 ai-service(`degraded:false` · `source:literal`) 경유 응답 `degraded:false` · `interpretation:"literal"`. 범위 줄 「A 연구실 데이터 2건을 뒤졌어요. 질문의 낱말 그대로 찾았어요.」 한 줄(글자색 `rgb(86, 92, 99)` = `--color-text-muted`) · 경고 상자 없음. `degraded:true` 면 경고 상자만 서고 범위 줄 문장은 없다 | `probe-literal-scope.json` · `search-rationale-literal-scope-light-1280.png` · `test_search_relay.py` `test_an_intentional_literal_interpretation_is_not_degraded`·`test_a_broken_literal_interpretation_stays_degraded`·`test_an_unknown_interpretation_source_is_not_said`·`test_a_model_interpretation_is_not_degraded` · vitest 「낱말 그대로 해석이고 degraded 가 아니면…」·「degraded 면 경고 상자가 말하고…」·「모델 해석이면…」 | 확인됨(로컬 · dev 아님) |
 | `rationaleFacts` 없으면 `rationale` 한 줄로 그림(구 응답 호환) | 같은 패널 안 `search-rationale` 에 원문 그대로 그린다 | vitest 「rationaleFacts 가 없으면…」 | 확인됨 |
 | agent-browser 캡처(라이트·다크 · 폰 폭) | 격리 fixture + 이 브랜치 서버로 5장을 찍었다. 가로 넘침 없음 | 아래 「볼 곳」 | 부분 확인(dev 아님 · LLM 실호출 아님) |
 | 가치 가설(Ted 가 dev 에서 구분·이유만 판정) | 미실행 | dev 배포 전 | 미검증 |
 
-Evidence-Ref: 로컬 task runtime gate-summary(task `dadf133f898543d48424f0b693e8f3ad` · run `0d0ec1bd7b114c0ab0fc72efc45c3759`) — CI 증거 아님
+Evidence-Ref: 로컬 task runtime gate-summary(task `f68a22d3f91b4775a81334b6535e1bfe` · run `a9a2692f67414aedb67e72347a3adeb0` · 정정 전 task `dadf133f898543d48424f0b693e8f3ad`) — CI 증거 아님
 Evidence-SHA256: 미생성(CI 증거 번들 없음)
 CI-Ref: 미게시(PR 게시 뒤 CI)
 
@@ -99,8 +108,9 @@ CI-Ref: 미게시(PR 게시 뒤 CI)
   - `search-rationale-llm-dark-1280.png`
   - `search-rationale-llm-light-390.png`
   - `search-rationale-llm-dark-390.png`
-  - `search-rationale-literal-light-1280.png`(해석 없이 → 헤더 안내)
-  - `probe-llm.json` · `probe-literal.json`
+  - `search-rationale-literal-light-1280.png`(정정 전 · 합집합 때 경고 상자가 선 모습 · 대체됨)
+  - `search-rationale-literal-scope-light-1280.png`(정정 후 · 범위 줄 끝 「질문의 낱말 그대로 찾았어요.」 · 경고 상자 없음)
+  - `probe-llm.json` · `probe-literal.json`(정정 전) · `probe-literal-scope.json`(정정 후)
 - 실행 방법
   - `scripts/e2e-login.py --journey`(격리 fixture DB · 실제 로그인 · 새로고침 지속 · 로그아웃 포함 PASS)
   - agent-browser 0.27 · `set media light|dark` · `set viewport 1280×900 | 390×844`
@@ -111,9 +121,9 @@ CI-Ref: 미게시(PR 게시 뒤 CI)
   - 「llm」 캡처는 `source:"llm"` 응답 모양을 내는 loopback 스텁(커밋 안 함)을 경유했다.
   - 해제 조건: dev 배포 뒤 교수·운영자 계정으로 캡처(intent 가치 가설).
 - 캡처 fixture 는 「낱말 일치」 종류만 만든다. 관련 개념·연결된 자료·파일 근거의 화면 모양은 vitest 로만 확인했다.
-- ⚠ `〈148〉`(PLAN-SoT: 의도적 literal 은 `degraded` 가 아니다)과 긴장이 있다.
-  - 합집합(intent ⑤·⒞ Ted 수용)으로 의도적 literal 환경에서도 헤더에 「질의 해석이 지금 동작하지 않아…」가 선다.
-  - 문구 조정 여부는 Ted 판정이 필요하다.
+- ~~⚠ `〈148〉` 과 긴장~~ → 해소(`48585a6d`). `degraded` 는 ai-service 값 그대로이고, 낱말 그대로 해석은 범위 줄 문장으로 밝힌다.
+  - 이 정정은 오케스트레이터 결정 교체다. Ted 판정은 아니며 게시 전 Ted 확인 대상이다.
+- `core-ai.yaml` 해석 `source` 설명 「근거 한 줄이 그 사실을 밝힌다」가 낡았다(지금은 fe-core 응답 `interpretation` 과 범위 줄이 밝힌다). 이 PR 은 core-ai 계약을 고치지 않았다. 어느 게이트에도 걸리지 않는다.
 - 정본·계약 개정 항목 ①~⑤(한계 병기 · 한 줄 · 코랄 · 「왜 이 결과?」 · degraded)
   - 계약 설명은 이 PR 에서 고쳤다.
   - 기획 원본 개정은 별도 절차다.
