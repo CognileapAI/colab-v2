@@ -174,6 +174,7 @@ Ted 가 확정한 값의 귀결이다. 판정 항목이 아니며, 다시 보려
 - Q8 (c) 구현 후속의 담당 자리
   - (c)-1 `routes/**` #21 집행 → 기존 판정 그대로 — 다음 design-review 회차의 `routes/**` 레인 · 입력 자리 = `.agents/skills/design-review/SKILL.md` §0 「이월·판정 대기」(Ted 기판정 ⓐ · `dev-package/sessions/design-review-20260924.md` §7 #21). 이번에 묻지 않았다. (c)-3 은 Q6(별건 intent).
   - Q8a (c)-2 업로드 미리보기 팔레트 조회 실패 뒤 재조회 경로 없음 → A 이 intent 의 레인에서 오류 문장 옆 작은 단추 「다시 시도」(기존 문구 `frontend/src/components/detail/SearchEvidenceEditor.tsx:209` 재사용 · 새 문구 0) · 누르면 팔레트 목록을 다시 조회 (권장안 수용). 기각: 별건 intent(재시도 UX) · 현행 유지.
+  - Q8a 추가(spec 우려 4 · 2026-09-25 · 줄 추가): 팔레트가 0개로 와도 「다시 시도」 단추를 둔다 — 같은 `UNAVAILABLE` 문장 옆에 같은 방법. Ted 원문 "권고대로"
   - Q8b (c)-4 `frontend/src/components/lineage/lineage.css:266` `.lin-unknown-why`(쓰는 곳 0) 삭제 · 시험 제목 「16ms 마다 1px 씩」을 실제 이동(11·1·1px)에 맞게 고침(단언은 그대로) → A 이 intent 의 레인 (권장안 수용). 기각: 다음 회차.
   - Q8c (c)-5 `frontend/test/dataset-preview-source-grid.test.tsx` 부하 시 대기 초과(원인 미진단) → A 하네스 intent `2026-09-25-harness-design-round-residuals.md` 에 H15 로 추가(따질 것 · 모을 증거 = 부하 재현 측정) · 이 레인은 재현되면 로그만 남긴다 (권장안 수용). 이유 = 게이트 판정이 flake 와 결함을 가르지 못하는 문제. 기각: 이 레인에서 진단 · 별건 제품 intent.
   - Q8d (c)-6 포인터 끌기 경계(수용된 작은 손실 5개) → A dev 실제 터치 끌기 확인((b)-2 · Q7b Ted 몫) 결과 뒤 판정 — 결함이면 별건, 아니면 「수용된 손실」로 닫는다 (권장안 수용). 기각: 이 레인에서 가드 보강.
