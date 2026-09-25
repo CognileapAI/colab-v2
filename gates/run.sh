@@ -307,7 +307,7 @@ ALL_GATES=(
 case "$GATE" in
   agent-bridge)
     # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
-    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py scripts/tests/test_git_guard.py
     ;;
   harness-contract)
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
