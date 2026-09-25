@@ -196,3 +196,27 @@
 - 선행 회차 intent: `dev-package/intent/2026-09-18-practitioner-cases-ontology.md`, `dev-package/intent/2026-09-18-dataset-metadata-backfill.md`
 - 라운드 파일: `dev-package/prd/rounds/R-KNOWLEDGE-LIFECYCLE.md`, `dev-package/prd/rounds/R-AI-SEARCH-FACTS.md`
 - 결정: 〈N〉 (병합 시 기입)
+
+## 판정 결과 — 1회차(2026-09-26)
+
+**오라클 복원 판정(2026-09-26, Ted, 원문 그대로):**
+> 전부 권고대로
+
+- 권고 = 2회차(d533d374)가 거두거나 바꾼 1회차 probe 11건을 `eval/k4-search/practitioner-conditions.json` 의 사례별 `measureOnlyProbes`(`"mode": "measure_only"` · 「초안 값 측정 전용 · 정답 주장 아님」)로 되살린다. 조건 검색 pytest 는 이것을 green 으로 세지 않고, 측정기는 이것을 공식 오라클로 쓴다. heldout 은 계속 판정에서 뺀다.
+- PC-1-4 「5 km 이하」는 1회차 기대(seq 3 포함)를 `supersedes` 로 되살렸다. 2회차가 seq 3 을 forbidSeq 로 옮긴 것은 seq 3 의 해상도(native-resolution-carried)를 초안으로 내린 결과이지, seq 3 이 5 km 를 넘는다는 정본 주장이 아니다. 측정에서는 1회차 기대가 그 probe 를 대신한다. 그래서 첫 측정의 역전 1건(PC-1-4#p5)은 **probe 산물**이었고, 대체 뒤 역전은 0 이다.
+
+**측정:** `dev-package/reports/evidence-promotion/round-1-2026-09-26/` — payload sha256 `27c6ed87c178a8b6bcd686b7c55ad86391c659668e1888f1dbc789c7ff9192ca`(dev 적재본 · 근거 543 · topic 3 · source_label 9 · draft_withheld 110) · 일회용 DB · 평가 118회 · 모델 호출 0 · 측정 전후 지문 543행 동일. 경로 1 28케이스 green: 초안 포함 28 / 제외 17. 경로 2 10케이스: 9 / 9.
+
+| 규칙 | 초안 | 경로 1 기여 / 역전 | 경로 2 기여 / 역전 | 제안 |
+|---|---:|---|---|---|
+| platform-from-instrument | 26 | 8 / 0 (PC-1-2 m1–m3 · PC-1-3 m1–m2 · PC-2-2 m1–m2 · PC-2-3 m1) | 0 / 0 · 미측정(술어 없음) | **승격 제안** — 규칙 단위 fast-track(결정 5: 두 경로 역전 0 · 기여 ≥1) |
+| direct-observation-from-level | 26 | 2 / 0 (PC-1-6 m1–m2) | 0 / 0 · 미측정(케이스 0) | **승격 제안** — 규칙 단위 fast-track(결정 5) |
+| representation-from-shape | 28 | 0 / 0 · 미측정(케이스 0) | 0 / 0 · 미측정(술어 없음) | 미측정 · 보류 |
+| interpolated-from-lineage | 28 | 0 / 0 · 미측정(술어 없음) | 0 / 0 · 미측정(케이스 0) | 보류 — 결정 5 고정(heldout N23 사후 확인 기여 1, 판정에 안 씀) |
+| bbox-korea-peninsula | 0 | 초안 0건 | 초안 0건 | 초안 0건 |
+| (결정 5 목록 밖) native-resolution-carried | 1 | 2 / 0 (PC-1-4 m1 · PC-2-2 m2) | 0 / 0 | 기계 제안은 승격 — 이 회차 판정 목록 밖이라 별도 판정 대기 |
+| (결정 5 목록 밖) region-from-registration-note | 1 | 0 / 0 · 미측정(케이스 0) | 0 / 0 · 측정(4) | 보류 — 기여 0 |
+
+**승격 적용 계획:** `dev-package/reports/evidence-promotion/round-1-2026-09-26/promotion-plan/apply-plan.md`. 두 규칙 52칸을 `facts` 로 옮긴 승격 payload(sha256 `724dcbd6ad56ff0330df1e550dbb54d203bd5705bc3181cd68ddd858708c1941`)를 기존 적재기(`dataset_evidence_apply.py`, `--reviewer <ULID>`)로 싣는다. 순서 = 되돌림 스냅숏 → dry-run → 적용 → 멱등 재확인. 되돌림은 원본 payload 재적재. 일회용 DB 리허설: PUT 본문 541건 계약 검증 · reviewed 사실 누락 0 · 적재 dry-run evidence 541 / unchanged 2 · 재실행 0 / 543.
+
+**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다.
