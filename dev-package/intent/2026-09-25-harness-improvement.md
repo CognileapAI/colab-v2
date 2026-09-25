@@ -565,4 +565,26 @@
   - L8 · T5: L8 스모크는 A7 병합 뒤 1회(출력 전달 O/X · Start/Stop agent_id 일치 O/X/미관측 2축 기록). T5 Claude = 재신뢰 불요(이 PC · 이 경로 · hook 등록 무변경 조건 · 발화 관측 task 45fad2b0 · e4797bd0). T5 Codex 는 유지.
   - spec 세부: git-guard 시험용 교체 경로 env 는 제품 hook 에 두지 않는다(첫 줄만 내는 가짜 해석기가 규칙을 비울 수 있음) · 결함 주입은 hook 폴더 임시 복사본 · run.sh 알려진 gate = `ALL_GATES` + 「모든 case 라벨이 KNOWN 통과」 시험.
   - spec gate ①(GO-WITH-CHANGES) 반영 확정: 미종결 heredoc 은 본문 EOF 까지로 보고 폴백하지 않음(폴백 입력 = `bash -n` 도 거부하는 입력만) · 해석기 레코드는 JSON lines · 시험 fixture 모순 수정 · A6 준비 실패는 결정 번호 후보를 담은 편집에만.
+- 2026-09-26 4라운드(그룹 C · T) — Fable advisor 4명 반박 재검토 + 교차 점검(원문 `~/.claude/reports/harness-state-20260925/fable-recheck-r4/`) → Ted 원문 "모두 권고대로 괜찮아". 결론:
+  - C1: measurement-lane 역할 본문 · Codex toml 의 전제 문장 교체(serial = 호스트 뮤텍스 · parallel 은 뮤텍스 밖 · postgres 슬롯 호스트 전역) · 근거 ADR-0005 · PR 3 · C7 커밋에 합침.
+  - C2 ⓐ: README hook 표 삭제 · 정본 링크(`.agents/harness.yaml` hook 목록 · `dual-agent.md`) · COLAB_HOOKS 절에 H6/H7 예외 1줄 · PR 1 이 표에 싣는 사실은 삭제 전 정본으로 옮김 · A3 blockquote 유지 · `README.md:74` migration-guard 행은 PR 3 · PR 3.
+  - C3: `ci.yml` 낡은 주석은 PR 2 B4 커밋 · `gates/README.md` CI 표는 PR 2 병합 뒤 최종 잡 집합 기준으로 PR 3 · 잡 이름 집합 대조(ⓑ)는 B4 뒤 재판정.
+  - C4 ⓐ: `AGENTS.md:18` 포인터를 `harness-transition-handoff.md` 머리 새 「이후 이력」 절(#130 · #131 · #140 · PR 1–3 번호 · SHA)로 교체(줄 수 불변) · `R-HARNESS-PR-CENTRIC.md:4` 아래 1줄 · 옛 본문 무변경 + 「당시 기록」 표지 · PR 3 마지막 커밋.
+  - C5: `docs/development/github-ruleset.json` 은 T1 적용 뒤 실제 상태 기록(ruleset 형식 1개) · `release-evidence.md:43` · `:45` 정정 · T1 미적용이면 제안 형식 retarget 폴백 · PR 3.
+  - C6 ⓐ+ⓒ: adapter 4종 `disable-model-invocation` 승계 · `agent-bridge check` 양방향 · 플래그 일치 · VENDORED.md 정정 · PR 3(C6 → C7 순).
+  - C7 ⓐ: `.agents/harness.yaml` 에 역할별 기대값(스칼라 키) 선언 · Claude frontmatter = `check.py` · Codex toml = `agent-bridge check` 기존 로더 · 값 확정 = L7 · T10 뒤 · PR 3 마지막.
+  - C8: PR 3 은 `dual-agent.md` 만(개수 수치 → 정본 참조 · 재신뢰 대상 Codex 3 정의 · Claude 재신뢰 불요 기록) · `lifecycle-evidence.md` measurement-lane 절은 PR 2.
+  - C9: 문장 교정 PR 3 · `lane-worker.md:27` 이유 문장은 PR 2 L3 커밋 · `advisor.md:39` 문안은 T10 판 · 완료 grep 은 한국어 문자열.
+  - C10: `migration-guard.sh` 머리말 + 주석 `origin/main` 5곳 → `origin/develop` · 완료 기준 = 「판정을 못 하면 통과가 기본값」 0건 · `worktree-setup.sh` 잔여는 A7 병합 diff 뒤 재판정 · PR 3.
+  - C11 ⓑ+ⓒ: bootstrap-diet mtime 후보 줄 삭제 · 위치 안내 덧붙임 · 종속 시험 2곳 · `agent-bridge.py` Codex 문장 · PR 3.
+  - T1 적용 방식 = ruleset(product 와 같은 방식 · 우회자 없음 · JSON 내보내기로 C5 기록) · PR 1 병합 뒤 · PR 2 open 전 · Ted 가 GitHub 에서 적용.
+  - T3: 32 = PR 3 병합 뒤 develop 갱신(그 전 32 에서 게이트 실행 금지) · 33 = `_worktree-archive-*` 이동 — 사용 여부를 Ted 가 확인하기 전까지 실행 보류(2026-09-26 관측: `a2_pg_32` · `ai_pg_32` 컨테이너 12일째 가동).
+  - T4 실행 완료 2026-09-26: `git cherry` 로 포함 확인 뒤 태그 `archive/f3846f32-handoff-evidence-key` · 로컬 `worktree-agent-a06b599e…` · `worktree-agent-a20a6e57…` · `worktree-agent-abe5bbb8…` 삭제 · 원격 `worktree-ponytail-systemic` 삭제.
+  - T5: Codex 재신뢰 = 32 갱신 직후 1회 · 기록 = 이 intent 확인 절.
+  - T6: 그룹 T 에서 제외 → PR 3 measurement 항목(세 PR 동안의 spawn 기록 표본 · 역할별 n 공개).
+  - T8: 첫 `lifecycle prune --apply` = PR 2 병합 뒤 메인 세션 · Ted 지시 · PR 2 L1 spec 에 「checkout 경로 부재 = 닫힘 상당(기록 남김)」 1줄.
+  - T9: 2026-09-26 확인 — gate 임시 postgres 없음(상시 컨테이너만) · `/tmp/service-tests-*` 341개 · 115 MB · 이틀 넘은 것 210개(09-13–09-21) · 삭제는 Ted 승인 대기.
+  - T10: Claude advisor Bash 유지 · C9ⓑ 흡수 · 재판정 = L7 뒤.
+  - PR 2 반입 5건(phase 2 상세화 때 반드시 포함): C3 ①(`ci.yml` 주석 → B4) · C8 ③(`lifecycle-evidence.md` measurement-lane 절) · C9 ①(`lane-worker.md:27` → L3) · T8(L1 spec 1줄) · T10(L7 입력).
+  - spec 정정(레인 병합 뒤 반영): V14 의 README 검사 = decision-number-guard 행만(`README.md:74` migration-guard 행은 PR 3 · 레인 통지 2026-09-26).
 
