@@ -15,7 +15,7 @@
 #      1회용 challenge(nonce · 만료)가 원격에 선다.
 #   ⓑ 지난 challenge 의 토큰 · nonce 없는 sha256(계수) · 꼴 틀린 토큰은 거부한다 — 파괴 호출 0
 #   ⓒ GO 근거(COLAB_RESEED_ACK_BASIS)가 없으면 거부한다
-#   ⓓ 이번 challenge 토큰 ＋ 근거면 진행한다 — 순서 계수>정지>DROP · reset-ack.json 에 근거·nonce ·
+#   ⓓ 이번 challenge 토큰 ＋ 근거면 진행한다 — 순서 계수>정지>DROP · reset-ack.json 에 근거·nonce sha256 ·
 #      challenge 소진 · 같은 토큰 재사용 거부 · 만료 거부 · 도구에 재계수 sha256 ack 를 넘긴다
 #   ⓔ 빈 DB 는 토큰 없이 진행한다 · DB 0 이어도 uploads/ 객체·멀티파트가 있으면 멈추고 고아 건수를 찍는다
 #   ⓕ 계수 파일을 못 받으면 · 옛 모양(경계 경로 · 표 넷 · 지문 없음)이면 판정 불가로 멈춘다
@@ -25,6 +25,9 @@
 #   ⓙ `--from s3` 가 같은 실행 자리의 reset 판정 없이 s3-plan 을 부르지 않는다(지난 회차 파일 · 내보낸 토큰)
 #   ⓚ s3-plan 은 이번 reset 의 DROP 직전 계수와 그 sha256 · 계수 URL 을 받고, 환경의 토큰을 쓰지 않는다
 #   ⓛ stdout 이 터미널(pty)이면 이번 challenge 토큰이 그 터미널에 보이고, 단계 로그 파일에는 남지 않는다
+#   ⓐⁿ·ⓓⁿ·ⓛ⁗ challenge nonce 는 원격에만 있다 — 거부·소진·터미널 회차 모두 실행 자리 전체와 잡은
+#      stdout·stderr 에 nonce·challenge base64 0 건 · 원격 argv 무적재 · 사본 무잔존 · 감사는 sha256 만
+#      (2026-09-25 dev 검증 — 거부 회차가 RUN 로그·stderr·reset-ack.json 에 nonce 를 남겨 토큰을 로컬에서 다시 셀 수 있었다)
 #
 # 실물 무접촉 = `ssh`·`docker`·`sudo` 를 PATH 대역으로 가린다. 원격 자리는 임시 폴더다 — argv 명령
 # (읽기·지우기·challenge 쓰기)은 그 폴더 위에서 로컬로 돌고, `bash -s` 본문은 적기만 한다
@@ -105,6 +108,14 @@ print(hashlib.sha256(raw + b"\n" + nonce.encode("ascii")).hexdigest())
 PY
 }
 
+# 원격 challenge 의 nonce 와 그 파일의 base64 — 실행 자리·출력에 한 조각이라도 남으면 토큰을 로컬에서 다시 센다.
+nonce_now() { python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["nonce"])' "$CHALLENGE"; }
+# $1=nonce $2=challenge 파일 base64 $3…=함께 볼 파일(잡은 stdout·stderr) → nonce·base64 가 든 파일 목록
+nonce_leaks() {
+  local n="$1" b="$2"; shift 2
+  grep -rlF -e "$n" ${b:+-e "$b"} "$RUN_DIR" "$@" 2>/dev/null || true
+}
+
 reset_case() {
   : > "$FIXTURE_SSH_LOG"; : > "$STAGE_LOG"
   rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/recovery.jsonl" "$RUN_DIR/reset-ack.json" \
@@ -141,6 +152,22 @@ printf '%s' "$out" | grep -qE 'COLAB_RESEED_ACK_NONEMPTY=|reseed\.sh --from rese
   && note "ⓐ⁗′ 거부 메시지가 붙여 넣을 완성 명령을 찍었다 — 에이전트가 그대로 복사해 넘기는 자리다"
 grep -q '"name": *"reset"' "$RUN_DIR/blocked.jsonl" 2>/dev/null || note "ⓐ⁗″ blocked.jsonl 에 reset 차단 기록이 없다"
 grep -q '"decision": *"refused"' "$RUN_DIR/reset-ack.json" 2>/dev/null || note "ⓐ⁗‴ reset-ack.json 에 refused 판정이 없다"
+# 거부 회차의 nonce 는 원격에만 있다 — 실행 자리 전체(logs · stages · blocked.jsonl · reset-ack.json · 사본)와
+#   잡은 stdout·stderr 에 nonce 도 challenge base64 도 0 건. 원격 argv(ps)에도 challenge 를 싣지 않는다.
+if [ -s "$CHALLENGE" ]; then
+  NONCE1="$(nonce_now)"; CHAL_B64="$(base64 -w0 < "$CHALLENGE")"
+  printf '%s' "$out" > "$TMP/out-a.txt"
+  hits="$(nonce_leaks "$NONCE1" "$CHAL_B64" "$TMP/out-a.txt")"
+  [ -z "$hits" ] || note "ⓐⁿ 거부 회차의 challenge nonce 가 실행 자리·출력에 남았다: $(printf '%s' "$hits" | sed "s#$TMP/##g" | tr '\n' ' ')"
+  grep -qF -- "$CHAL_B64" "$FIXTURE_SSH_LOG" \
+    && note "ⓐⁿ′ challenge 를 원격 argv 에 실었다 — 원격 ps·RUN 로그에 남는다"
+  ls "$RUN_DIR"/challenge-* >/dev/null 2>&1 && note "ⓐⁿ″ 실행 자리에 challenge 사본이 남았다: $(ls "$RUN_DIR"/challenge-* | sed "s#$TMP/##g" | tr '\n' ' ')"
+  python3 - "$RUN_DIR/reset-ack.json" "$NONCE1" <<'PY' || note "ⓐⁿ‴ reset-ack.json 의 challenge 감사 기록이 nonce sha256 이 아니다"
+import hashlib, json, sys
+c = json.load(open(sys.argv[1])).get("challenge") or {}
+sys.exit(0 if "nonce" not in c and c.get("nonceSha256") == hashlib.sha256(sys.argv[2].encode()).hexdigest() else 1)
+PY
+fi
 
 # ── ⓑ 지난 challenge 토큰 · nonce 없는 토큰 · 꼴 틀린 토큰 ────────────────
 export COLAB_RESEED_ACK_BASIS="fixture — 사용자 GO(시험)"
@@ -169,18 +196,25 @@ n="$(destructive_calls)"; [ "$n" = 0 ] || note "ⓒ′ 근거 없는 토큰인�
 reset_case
 TOKEN="$(token_for "$NONEMPTY")"
 export COLAB_RESEED_ACK_NONEMPTY="$TOKEN" COLAB_RESEED_ACK_BASIS="fixture — 사용자 GO(시험)"
-stage_reset >/dev/null 2>&1; rc=$?
+NONCE_D="$(nonce_now)"; CHAL_B64_D="$(base64 -w0 < "$CHALLENGE")"
+stage_reset > "$TMP/out-d.txt" 2> "$TMP/err-d.txt"; rc=$?
 [ "$rc" = 0 ] || note "ⓓ 이번 challenge 토큰을 줬는데 stage_reset 이 비영($rc)이다: $(tail -2 "$STAGE_LOG" | tr '\n' ' ')"
 order="$(grep -oE 'phase count|stop core-api|phase schema' "$FIXTURE_SSH_LOG" | tr '\n' '>')"
 [ "$order" = 'phase count>stop core-api>phase schema>' ] || note "ⓓ′ 걸음 순서가 [$order] 다(기대 계수>정지>DROP)"
-python3 - "$RUN_DIR/reset-ack.json" "$TOKEN" "$CONTENT_SHA" <<'PY' || note "ⓓ″ reset-ack.json 의 ack 기록이 모자라다"
-import json, sys
+python3 - "$RUN_DIR/reset-ack.json" "$TOKEN" "$CONTENT_SHA" "$NONCE_D" <<'PY' || note "ⓓ″ reset-ack.json 의 ack 기록이 모자라다(토큰·nonce 는 sha256 으로만)"
+import hashlib, json, sys
 b = json.load(open(sys.argv[1]))
-ok = (b.get("decision") == "acknowledged" and b.get("ackToken") == sys.argv[2]
+h = lambda s: hashlib.sha256(s.encode()).hexdigest()
+c = b.get("challenge") or {}
+ok = (b.get("decision") == "acknowledged" and "ackToken" not in b and b.get("ackTokenSha256") == h(sys.argv[2])
       and b.get("toolAckSha256") == sys.argv[3] and b.get("ackBasis")
-      and (b.get("challenge") or {}).get("nonce"))
+      and "nonce" not in c and c.get("nonceSha256") == h(sys.argv[4]))
 sys.exit(0 if ok else 1)
 PY
+hits="$(nonce_leaks "$NONCE_D" "$CHAL_B64_D" "$TMP/out-d.txt" "$TMP/err-d.txt")"
+[ -z "$hits" ] || note "ⓓⁿ 소진한 challenge 의 nonce 가 실행 자리·출력에 남았다: $(printf '%s' "$hits" | sed "s#$TMP/##g" | tr '\n' ' ')"
+grep -rlF -e "$TOKEN" "$RUN_DIR" >/dev/null 2>&1 && note "ⓓⁿ′ 넘긴 토큰 값이 실행 자리에 남았다(sha256 만 남긴다)"
+ls "$RUN_DIR"/challenge-* >/dev/null 2>&1 && note "ⓓⁿ″ 실행 자리에 challenge 사본이 남았다"
 [ -e "$CHALLENGE" ] && note "ⓓ‴ 쓴 challenge 가 소진되지 않았다 — 같은 토큰이 다시 통한다"
 schema_body="$(grep -m1 'phase schema' "$FIXTURE_SSH_LOG" || true)"
 printf '%s' "$schema_body" | grep -q -- "--ack-sha256 $CONTENT_SHA" \
@@ -404,12 +438,15 @@ if [ -s "$CHALLENGE" ]; then
   TOKEN3="$(token_for "$NONEMPTY")"
   printf '%s' "$tty_out" | grep -qF -- "$TOKEN3" || note "ⓛ″ stdout 이 터미널인데 이번 challenge 토큰이 보이지 않는다"
   grep -qF -- "$TOKEN3" "$STAGE_LOG" && note "ⓛ‴ 터미널 실행의 토큰이 단계 로그 파일에 남았다"
+  printf '%s' "$tty_out" > "$TMP/out-l.txt"
+  hits="$(nonce_leaks "$(nonce_now)" "$(base64 -w0 < "$CHALLENGE")" "$TMP/out-l.txt")"
+  [ -z "$hits" ] || note "ⓛ⁗ 터미널 실행에서 challenge nonce 가 실행 자리·터미널 출력에 남았다: $(printf '%s' "$hits" | sed "s#$TMP/##g" | tr '\n' ' ')"
 else
   note "ⓛ″ 터미널 실행이 원격에 1회용 challenge 를 남기지 않았다"
 fi
 
 if [ "$fail" -eq 0 ]; then
-  echo "reset-gate — green (비어 있음 정지 · 기준선 초과 첫 줄 · 완성 명령 무출력 · 토큰은 터미널 stdout 에만 · 1회용 challenge · 지난·옛 꼴 토큰 거부 · 근거 필수 · 소진·만료 · 빈 DB 무토큰 · 고아 객체 정지 · 판정 불가 정지 · BYPASSRLS 두 체인 · 옛 원격 파일 삭제 · 도구 계수 ↔ 게이트 · --from s3 무판정 거부 · s3 계획 이번 reset 묶임)"
+  echo "reset-gate — green (비어 있음 정지 · 기준선 초과 첫 줄 · 완성 명령 무출력 · 토큰은 터미널 stdout 에만 · nonce 무기록 · 1회용 challenge · 지난·옛 꼴 토큰 거부 · 근거 필수 · 소진·만료 · 빈 DB 무토큰 · 고아 객체 정지 · 판정 불가 정지 · BYPASSRLS 두 체인 · 옛 원격 파일 삭제 · 도구 계수 ↔ 게이트 · --from s3 무판정 거부 · s3 계획 이번 reset 묶임)"
   exit 0
 fi
 echo "reset-gate — red" >&2
