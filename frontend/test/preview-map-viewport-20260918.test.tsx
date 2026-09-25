@@ -22,6 +22,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import { UnregisteredPreviewPage } from '../src/routes/UnregisteredPreviewPage';
 import { PREVIEW_ROUTE_PATH, previewPath } from '../src/components/preview/handoff';
 import { centeredPanFor } from '../src/components/preview/useZoomPan';
@@ -109,9 +110,8 @@ function uploadSource(): UploadSource {
 async function mountUpload() {
   const source = uploadSource();
   render(<PreviewPanel source={source} uploadId={UPLOAD_ID} hasReferenceGrid />);
-  const draw = await screen.findByTestId('up-preview-draw');
   await waitFor(() => expect(screen.getByTestId('up-style-palette')).toBeTruthy(), WAIT);
-  fireEvent.click(draw);
+  await clickPreviewDrawWhenReady();
   return screen.findByTestId('up-preview-viewport');
 }
 

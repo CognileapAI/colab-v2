@@ -10,6 +10,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource } from '../src/components/upload/types';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
@@ -136,12 +137,6 @@ function drawnSource(): PreviewSource {
   } as unknown as PreviewSource;
 }
 
-/**
- * `drawn()` 은 안에서 최대 5초를 기다린다 — 테스트 기본 제한(5초)과 같아서 CI 부하만으로
- * 시간 초과가 났다(2026-09-17 #104·#106, 로컬은 0.2초). 그리는 두 시험만 제한을 넉넉히 둔다.
- */
-const DRAWN_TIMEOUT_MS = 20_000;
-
 /** 그리기까지 밟아 자동 축소본이 실린 완료 화면을 세운다. */
 async function drawn(file: File | null) {
   render(
@@ -152,7 +147,7 @@ async function drawn(file: File | null) {
       representativeFile={file}
     />,
   );
-  fireEvent.click(await screen.findByTestId('up-preview-draw'));
+  await clickPreviewDrawWhenReady();
   await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), {
     timeout: 5000,
   });
@@ -164,7 +159,7 @@ describe('㈄ 축소본 — 접히는 설정 자리 ＋ 중복 방지 규칙', (
     const bl = screen.getByTestId('up-thumb-block');
     expect(bl.querySelectorAll('img').length).toBe(1);
     expect(screen.getByTestId('up-thumb-img').getAttribute('src')).toBe(AUTO_THUMB);
-  }, DRAWN_TIMEOUT_MS);
+  });
 
   it('고른 그림이 있으면 자동 축소본이 그 옆에 대조용으로 선다', async () => {
     vi.stubGlobal('URL', {
@@ -181,5 +176,5 @@ describe('㈄ 축소본 — 접히는 설정 자리 ＋ 중복 방지 규칙', (
     expect(bl.contains(auto)).toBe(true);
     expect(auto.getAttribute('src')).toBe(AUTO_THUMB);
     vi.unstubAllGlobals();
-  }, DRAWN_TIMEOUT_MS);
+  });
 });

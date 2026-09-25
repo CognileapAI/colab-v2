@@ -11,6 +11,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
@@ -146,7 +147,7 @@ describe('예외는 업로드 인라인 한 자리뿐이다 — 나머지 두 �
 
   it('확장보기 오버레이는 단일 변수·단일 시각에서도 세 고르개를 유지한다', async () => {
     await mountUpload(SINGLE);
-    fireEvent.click(await screen.findByTestId('up-preview-draw', undefined, WAIT));
+    await clickPreviewDrawWhenReady({ wait: WAIT });
     await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
     fireEvent.click(screen.getByTestId('pv-expand'));
     await screen.findByTestId('pv-expand-body', undefined, WAIT);

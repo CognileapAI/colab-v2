@@ -15,6 +15,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import { SPRING_RESPONSE, spring } from '../src/components/preview/spring';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 import type { RenderJob } from '../src/components/preview/types';
@@ -81,9 +82,8 @@ function uploadSource(): UploadSource {
 
 async function mountUpload() {
   render(<PreviewPanel source={uploadSource()} uploadId={UPLOAD_ID} hasReferenceGrid />);
-  const draw = await screen.findByTestId('up-preview-draw');
   await waitFor(() => expect(screen.getByTestId('up-style-palette')).toBeTruthy(), WAIT);
-  fireEvent.click(draw);
+  await clickPreviewDrawWhenReady();
   const viewport = await screen.findByTestId('up-preview-viewport');
   return { viewport, layers: screen.getByTestId('up-preview-layers') };
 }

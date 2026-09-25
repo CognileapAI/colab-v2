@@ -5,6 +5,7 @@ import { SessionProvider } from '../src/permission/session';
 import type { CurrentAccount } from '../src/api/client';
 import { UploadModal } from '../src/components/upload/UploadModal';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderResult, UploadSources } from '../src/components/upload/types';
 import { UploadGone } from '../src/components/upload/types';
 
@@ -40,7 +41,7 @@ describe('진행 상태 조회 실패 복구', () => {
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
     await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     expect(screen.getByTestId('up-preview-stage')).toHaveTextContent('미리보기 요청 중');
   });
 
@@ -53,7 +54,7 @@ describe('진행 상태 조회 실패 복구', () => {
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
     await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     const img = await screen.findByTestId('up-preview-image');
     expect(screen.getByTestId('up-preview-image-loading')).toBeInTheDocument();
     fireEvent.load(img);
@@ -78,7 +79,7 @@ describe('진행 상태 조회 실패 복구', () => {
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
     await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
-    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await screen.findByTestId('up-preview-error');
     expect(screen.queryByTestId('up-preview-stage')).toBeNull();
     expect(screen.getByTestId('up-preview-draw')).toBeEnabled();

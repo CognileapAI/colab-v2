@@ -13,6 +13,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
+import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { GRID_COPY, gridState } from '../src/components/upload/gridFlow';
 
@@ -97,7 +98,7 @@ async function draw(over: Partial<Parameters<typeof PreviewPanel>[0]> = {}, jobs
       grid={over.grid}
     />,
   );
-  fireEvent.click(await screen.findByTestId('up-preview-draw'));
+  await clickPreviewDrawWhenReady();
   await act(async () => {});
 }
 
@@ -162,7 +163,7 @@ describe('§D.4 잠정 색 범위 — 조용히 바꾸지 않는다', () => {
     await draw({}, [DONE_VALUES, CONFIRMED]);
     await screen.findByTestId('up-preview-image', undefined, { timeout: 4000 });
     // 다시 그리면 확정 범위가 온다 — 그때 **한 번** 말한다
-    fireEvent.click(screen.getByTestId('up-preview-draw'));
+    await clickPreviewDrawWhenReady();
     await waitFor(
       () => expect(screen.getByTestId('up-preview-colorstage')).toHaveTextContent('확정'),
       { timeout: 4000 },
