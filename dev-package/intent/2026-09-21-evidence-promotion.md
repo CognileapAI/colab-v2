@@ -219,10 +219,24 @@
 
 **승격 적용 계획:** `dev-package/reports/evidence-promotion/round-1-2026-09-26/promotion-plan/apply-plan.md`. 두 규칙 52칸을 `facts` 로 옮긴 승격 payload(sha256 `724dcbd6ad56ff0330df1e550dbb54d203bd5705bc3181cd68ddd858708c1941`)를 기존 적재기(`dataset_evidence_apply.py`, `--reviewer <ULID>`)로 싣는다. 순서 = 되돌림 스냅숏 → dry-run → 적용 → 멱등 재확인. 되돌림은 원본 payload 재적재. 일회용 DB 리허설: PUT 본문 541건 계약 검증 · reviewed 사실 누락 0 · 적재 dry-run evidence 541 / unchanged 2 · 재실행 0 / 543.
 
-~~**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다.~~ → 아래 「승격 판정(2026-09-26)」으로 GO.
+**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다.
 
 **승격 판정(2026-09-26, Ted, 원문 그대로):**
 > 전부 권고대로
 
 - ① dev 반영 GO ② 결정 5 목록 밖이던 native-resolution-carried 도 승격 — **승격 규칙 3개**(platform-from-instrument · direct-observation-from-level · native-resolution-carried) ③ 공용 AI 게이트 DB(`colab_ai_applied_30`) 재구성 승인 — 별도 레인 몫(이 회차는 손대지 않는다).
 - 세 규칙 승격 payload sha256 `41f488a42ffb07c1c64d4460ea86a6b98c72b63494ec45291f72f5c73561c6fc`(53칸 이동 · 두 규칙판 `724dcbd6…` 대체). 일회용 DB 리허설: PUT 본문 541건 계약 검증 · reviewed 사실 2071 → 2071 · 승격 추가 1083 · 충돌·누락 0 · 적재 dry-run evidence 541 / unchanged 2 · 적용 뒤 재실행 0 / 543. 계획 = `promotion-plan/apply-plan.md`.
+
+**dev 반영 완료 2026-09-25T23:52Z(KST 2026-09-26 08:52) · 검토자 `01M398TXPKDM2GJP7T6GWHNDXX`(판정자 Ted 의 dev 계정 · 운영자) · 543행 · 승격 사실 53칸(파일 541행에 facts 키 1083개 추가).**
+- dev = `592ff4b7693d`(변경 없음). 실행 = dev 호스트에서 배포 이미지 `colab-v2/core-api:dev-592ff4b7693d` · 소유자 롤 URL 파일 · `PGOPTIONS=-c app.current_lab=00000000000000000000HYMETS` 로 기존 적재기(sha256 `b7d4f327…`) · 승격 payload `41f488a4…`. dev.env 변경·서비스 재시작·reset·재시드 없음.
+- 순서·결과: 되돌림 스냅숏(`colab_backup` · 543행 · sha256 `30849bf2…` · dev 호스트와 로컬 사본 일치) → dry-run datasets 28 · missing 0 · evidence 541 · unchanged 2 · files 543(일회용 리허설과 같음) → 적용(한 트랜잭션, 같은 셈) → 재 dry-run evidence 0 · unchanged 543(멱등).
+- 전후(`colab_backup` 계수): 행 543 → 543 · 전부 reviewed · facts 키 합 2083 → 3166 · platform 보유 0 → 541행 · directObservation 0 → 541행 · nativeResolutionM 44 → 45행 · 검토자 HYMETSP1 543 → Ted 541 + HYMETSP1 2(변경 없는 seq 9·10).
+- 경로 1 조건 검색(dev core-api 컨테이너 안에서 `d3_client_search.candidates` · 앱 롤 · HYMETS 연구실 범위 · 읽기 전용 트랜잭션):
+
+| probe | 전 | 후 |
+|---|---:|---|
+| PC-1-2#m1 platform=ground | 0건 | 8건 — HSR 레이더 반사도 원자료 · HSR 레이더합성 원자료 · HSR 레이더합성 변환 결과 · hsr_sample · rn15 15분 누적강수 · rn15_sample · SPI-4weeks · SPEI-4weeks |
+| PC-1-6#m1 directObservation=true | 0건 | 20건 (일회용 DB 기대와 같음) |
+| PC-1-4#m1 maxResolutionM=5000 | 5건(hsr_sample 없음) | 6건 — hsr_sample 추가 |
+
+- 되돌림 = 원본 payload(`27c6ed87…`)를 같은 적재기·같은 접속으로 검토자 `000000000000000000HYMETSP1` 로 다시 싣는다(facts·검토자 복원 · 리비전 +1 · reviewed_at 은 새 시각). 스냅숏 TSV 로 facts 를 대조한다. 명령은 PR 본문에 있다.
