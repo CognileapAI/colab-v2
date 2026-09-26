@@ -3,8 +3,10 @@ import contextlib
 import copy
 import importlib.util
 import io
+import os
 from pathlib import Path
 import tempfile
+from unittest import mock
 import unittest
 
 import yaml
@@ -47,8 +49,37 @@ class EvalPolicyTests(unittest.TestCase):
             step["with"]["filters"] for step in self.workflow["jobs"]["changes"]["steps"]
             if step.get("id") == "filter"
         )
-        for path in ("AGENTS.md", ".agents/**", ".codex/**", "scripts/harness/**"):
+        # + E0: the whole config-hash set (`.claude/**` covers settings.json · rules) · judge · eval runner.
+        for path in ("AGENTS.md", ".agents/**", ".codex/**", "scripts/harness/**",
+                     ".claude/**", "gates/**", "eval/harness/**", "scripts/harness/hooks/**"):
             self.assertIn("- '" + path + "'", filters)
+
+    def filters_of(self, workflow):
+        step = next(s for s in workflow["jobs"]["changes"]["steps"] if s.get("id") == "filter")
+        return step, yaml.safe_load(step["with"]["filters"])
+
+    def test_filter_must_cover_the_config_hash_set(self):
+        # filter-drop-settings: without the pattern covering `.claude/settings.json` a settings-only
+        # change alters the eval config hash but never wakes the harness-eval job.
+        data = copy.deepcopy(self.workflow)
+        step, filters = self.filters_of(data)
+        filters["harness"] = [p for p in filters["harness"] if p != ".claude/**"]
+        step["with"]["filters"] = yaml.safe_dump(filters)
+        self.assertEqual(self.check(data), 1)
+
+    def test_new_config_path_without_filter_update_is_red(self):
+        # paths-file-extra: the canonical list grows, the CI filter does not.
+        canonical = (ROOT / "eval/harness/config-paths.txt").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temp:
+            extra = Path(temp) / "config-paths.txt"
+            extra.write_text(canonical + "docs/extra/**\n", encoding="utf-8")
+            with mock.patch.dict(os.environ, {"COLAB_EVAL_CONFIG_PATHS": str(extra)}):
+                self.assertEqual(self.check(self.workflow), 1)
+            missing = Path(temp) / "absent.txt"
+            with mock.patch.dict(os.environ, {"COLAB_EVAL_CONFIG_PATHS": str(missing)}):
+                with self.assertRaises(SystemExit) as raised:
+                    self.check(self.workflow)
+                self.assertEqual(raised.exception.code, 78)
 
     def test_required_gates_aggregator_is_not_skippable(self):
         job = self.workflow["jobs"]["required-gates"]

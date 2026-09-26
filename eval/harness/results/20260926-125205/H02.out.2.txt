@@ -1,0 +1,22 @@
+계측기는 주석 안의 값을 코드로 세지 않습니다. 표본을 줄 단위로 대조했을 때 계측기 출력과 일치했습니다.
+
+**계측기 출력:** `<13px` 칸은 1이고, Detail 목록에는 `sample.css:4` font-size 11.0px 한 줄만 있습니다.
+
+**표본 대조 (`sample.css`):**
+
+| 줄 | 위치 | 값 | 13px 미만 | 계측기가 셌는가 |
+|---|---|---|---|---|
+| 2 | 주석 | font-size: 9px | 예 | 안 셈 |
+| 4 | 코드 `.a` | font-size: 11px | 예 | 셈 (Detail 에 있음) |
+| 6 | 주석 | font-size: 10px | 예 | 안 셈 |
+| 7 | 코드 `.b` | font-size: 14px | 아니오 | 해당 없음 |
+| 10 | 코드 `.c` | font-size: 13px | 아니오 (13 이상) | 해당 없음 |
+
+- 코드 안의 13px 미만 값은 4번 줄의 11px 하나라서 계측기 값 1과 같습니다.
+- 주석 안의 9px(2번 줄)와 10px(6번 줄)는 세지 않았습니다. 셌다면 `<13px` 칸이 3이어야 합니다.
+- 색 값도 같습니다. 주석 안의 `#848c94` on `#ffffff`(2번·9번 줄)는 대비가 3.41:1로 기준 미달이지만, `contrast <4.5` 칸은 0입니다. 코드에 쓰인 조합은 모두 4.5:1 이상입니다. 예를 들어 `.a`의 `#697077` on `#ffffff`는 직접 계산하면 약 5.0:1입니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a1db59e6b1fb2d971/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a1db59e6b1fb2d971/eval/harness/H02-comment-false-positive/fixture"`

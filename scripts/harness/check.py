@@ -2,6 +2,7 @@
 """Validate the shared harness contract and its repository surface."""
 
 import argparse
+import datetime as dt
 import os
 from pathlib import Path
 import re
@@ -75,6 +76,44 @@ def check_gate_parallelism(root: Path) -> tuple[list[str], str | None, int]:
     return errors, None, len(listed)
 
 
+# Eval freshness (spec S-HARNESS-E0-EVAL-GATE-20260926 §4.5). The runner does not pin a model, so
+# the model/CLI under test changes without any repository diff (`eval/harness/README.md`). A time-based
+# signal asks for a re-measurement. 30 days ≈ one ≈32 USD run a month; a warning, never an exit change.
+EVAL_MAX_DAYS = 30
+EVAL_RUN_ID_RE = re.compile(r"^\d{8}-\d{6}$")
+
+
+def newest_eval_result(root: Path) -> tuple[str, "dt.datetime"] | None:
+    """Newest `eval/harness/results/<YYYYMMDD-HHMMSS>/` directory, or None when there is none."""
+    results = root / "eval/harness/results"
+    if not results.is_dir():
+        return None
+    newest = None
+    for entry in results.iterdir():
+        if not entry.is_dir() or not EVAL_RUN_ID_RE.match(entry.name):
+            continue
+        try:
+            stamp = dt.datetime.strptime(entry.name, "%Y%m%d-%H%M%S")
+        except ValueError:
+            continue
+        if newest is None or stamp > newest[1]:
+            newest = (entry.name, stamp)
+    return newest
+
+
+def check_eval_freshness(root: Path, now: "dt.datetime | None" = None,
+                         max_days: int = EVAL_MAX_DAYS) -> tuple[str | None, str | None]:
+    """Return (warning, readiness). No parseable result id = readiness (the target was not read)."""
+    newest = newest_eval_result(root)
+    if newest is None:
+        return None, "no eval/harness/results/<YYYYMMDD-HHMMSS>/ result directory to judge freshness"
+    run_id, stamp = newest
+    age = (now or dt.datetime.now()) - stamp
+    if age > dt.timedelta(days=max_days):
+        return f"warning: harness-eval newest result {run_id} is {age.days} days old (>{max_days})", None
+    return None, None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -96,7 +135,8 @@ def main(argv: list[str] | None = None) -> int:
     # Judged parallel-safety errors are printed even when another check could not read
     # its target (advisor review 2026-09-25): a readiness exit must not hide judgements.
     errors += parallelism_errors
-    readiness = readiness or home_readiness
+    freshness_warning, freshness_readiness = check_eval_freshness(root)
+    readiness = readiness or home_readiness or freshness_readiness
     if readiness is not None:
         # We could not read the judgement target. Everything we *did* judge is still
         # printed, but the exit code says 준비, not 판정 (ADR-0004).
@@ -108,6 +148,9 @@ def main(argv: list[str] | None = None) -> int:
         for error in errors:
             print(f"red(판정): {error}", file=sys.stderr)
         return 1
+    if freshness_warning:
+        print(freshness_warning)
+    newest_id, newest_stamp = newest_eval_result(root)
     print(
         "green: shared harness contract; "
         f"required gates {len(value['gates']['required'])}, "
@@ -116,7 +159,8 @@ def main(argv: list[str] | None = None) -> int:
         f"always-on line budget {value['hygiene']['always_on_max_lines']}, "
         f"home-path roots {len(value['hygiene']['home_path_roots'])} "
         f"(scanned {home_stats.get('scanned', 0)}, skipped {home_stats.get('skipped', 0)} binary/non-UTF-8/symlink), "
-        f"parallel-safety declarations {judged_gates}"
+        f"parallel-safety declarations {judged_gates}, "
+        f"harness-eval newest {newest_id} ({(dt.datetime.now() - newest_stamp).days}d)"
     )
     return 0
 

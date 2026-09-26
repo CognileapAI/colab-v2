@@ -189,7 +189,7 @@ Windows 프로젝트 설정은 로그인 셸을 끄고 unelevated 샌드박스 �
 게이트는 지원되는 도구에서 **그 명령만** 샌드박스 밖 실행 승인을 요청한다. 전역 우회는 하지 않는다.
 승인이 불가능한 세션에서는 해당 명령을 실행할 수 있는 호스트에서 실행하고 증거를 구분한다.
 
-`eval/harness/run.sh`는 기존 Claude 평가 러너다. 그대로 유지하며 Astra 통과 근거로 쓰지 않는다.
+`eval/harness/run.sh`는 기존 Claude 평가 러너다(+ 설정 해시 결합 · 정본 `eval/harness/README.md`). 그대로 유지하며 Astra 통과 근거로 쓰지 않는다.
 Codex 연결 확인은 `scripts/agent-bridge.py check`와 별도의 로컬 Codex 읽기 전용 smoke로 수행한다.
 smoke는 등록·원본 탐색 확인일 뿐 기존 20과제의 Astra 행동 평가나 제품 E2E 통과가 아니다.
 CI의 기존 Claude eval 정책은 이번 변경에서 바꾸지 않는다. 별도 API 키 발급은 필요하지 않다.

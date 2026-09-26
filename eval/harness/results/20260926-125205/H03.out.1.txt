@@ -1,0 +1,20 @@
+Line 13 is a truly empty line: `cat -A` shows only `$`, with no spaces or tabs. It sits inside the table under `## 출처` and cuts the table in two.
+
+| Lines | Content | Rendered as |
+|---|---|---|
+| 9 | Header row (`출처 \| URL \| 라이선스 \| 판본 \| 내려받은 날`) | Table |
+| 10 | Separator row `\|---\|…` | Table |
+| 11 | `superpowers` | Table (data row 1) |
+| 12 | `mattpocock/skills` | Table (data row 2), where the table ends |
+| **13** | **Empty line** | Ends the table |
+| 14 | `emilkowalski/skills` | Paragraph text |
+| 15 | `vercel-labs/agent-browser` | Paragraph text (last line of the file) |
+
+- Lines 14–15 have no header row or separator row of their own, so they don't form a second table either. They render as a single paragraph with the pipe characters shown literally.
+- Only 2 of the 4 source rows appear in the table. The rows for `emilkowalski/skills` and `vercel-labs/agent-browser` fall outside it.
+- The check command below counts the unbroken `|` lines starting from the header. It returns **4** now; once line 13 is removed it should return **6** (header, separator and 4 data rows). I ran it and got 4.
+
+- 판정: 있음
+- 빈 줄: 13
+- 표 밖으로 떨어진 행: 2건
+- 확인 명령: `awk '/^\| 출처 \|/{t=1} t&&/^\|/{n++} t&&!/^\|/{exit} END{print n}' VENDORED-excerpt.md`  (6 after the fix; 4 now)

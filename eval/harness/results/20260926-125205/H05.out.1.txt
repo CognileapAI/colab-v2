@@ -1,0 +1,13 @@
+v2 코드에는 해당하지 않습니다. `lineage.css` 사본에는 후보 행을 흐리게 만드는 선언이 한 건도 없습니다.
+
+- **후보 목록 규칙**: `.lin-picker` 계열은 `lineage.css:105~117` 두 개뿐입니다.
+  - `.lin-picker` (105–108): `border-top`, `padding-top`
+  - `.lin-picker ul` (109–117): `list-style`, `margin`, `padding`, `display`, `flex-direction`, `gap`, `align-items`
+- **흐림 선언**: 이 두 규칙에는 `opacity`·`filter`·`color`·`--color-*-disabled` 같은 선언이 없습니다. 파일 전체에서 `opacity|filter|blur|disabled|grayscale|aria-disabled` 를 검색해도 결과가 없었습니다(grep 종료코드 1).
+- **연결 불가 상태 규칙**: `:disabled`, `[aria-disabled]`, 상태 클래스처럼 연결 불가 행을 따로 겨누는 선택자도 파일에 없습니다.
+- **2.33:1 의 출처**: 이 사본에서는 그 대비를 만들 규칙을 찾지 못했습니다. 그 수치는 목업 쪽에서 나왔을 가능성이 있습니다. 다만 목업을 직접 보지는 않았습니다.
+- **정답 파일**: 같은 디렉터리의 `SOURCE.md` 에 정답(「없음」·0건)이 적혀 있었습니다. 위 판정은 그 파일에 기대지 않고 CSS 를 직접 읽고 검색해서 따로 확인한 결과입니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: lineage.css:105~117 (`.lin-picker` 계열 두 규칙) 및 파일 전체 `grep -nEi 'opacity|filter|blur|disabled|grayscale|aria-disabled'` 결과 없음

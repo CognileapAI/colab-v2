@@ -1,0 +1,15 @@
+No, the finding doesn't apply to the v2 code. With the values in this code, every Lv chip meets AA (4.5:1). The lowest is 4.66:1.
+
+| Rule (`detail.css`) | Text colour | Background | Contrast (WCAG 2.x) |
+|---|---|---|---|
+| `.lvl-0` (:51) | `--color-gray-600` = `#565c63` (detail.css:7) | `--color-gray-100` = `#e8ecf2` (detail.css:6) | 5.70:1 |
+| `.lvl-1` (:52) | `--color-primary-700` = `#0f62e0` (tokens.css) | `--color-primary-50` = `#edf4ff` (detail.css:11) | 4.94:1 |
+| `.lvl-2`, `.lvl-3` (:53) | `--color-primary-700` = `#0f62e0` (tokens.css) | `--color-primary-100` = `#e2eeff` (detail.css:12) | 4.66:1 |
+
+- `detail.css` doesn't define `--color-primary-700` in its `:root`, so the chips use the `tokens.css` value `#0f62e0`. The chip text sits on the chip's own background, so each pair above is the actual contrast.
+- The 3.71:1 in the finding comes from the mockup's values. None of the three pairs in this code is that low.
+- `SOURCE.md` in this fixture directory already states the expected answer (4.66:1, 「없음」). I didn't use it and computed the ratios from the hex values myself; they match.
+
+- 판정: 없음
+- 실측: 4.66:1
+- 근거: detail.css:53

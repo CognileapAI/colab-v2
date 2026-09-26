@@ -113,17 +113,20 @@ jobs:
               - 'gates/**'
               - 'scripts/tests/test_planning_gate.py'
               - '.github/workflows/ci.yml'
-            # 하네스 자체(지침·스킬·훅·에이전트). 이 4경로가 바뀔 때만 실과제를 돈다 —
-            # 실제 모델을 부르므로 비용·시간이 붙고, 제품 경로가 이 잡을 깨우면 안 된다
-            # (intent `2026-09-08-harness-evals.md` Q2). 대조부 = gates/tools/ci-filter-check.py.
+            # 하네스 자체(지침·스킬·훅·에이전트·게이트·eval 러너). 설정 해시 정본
+            # `eval/harness/config-paths.txt` 의 포함 패턴 전부 ＋ 해시 밖 필터 전용 3줄(아래 끝 3줄) —
+            # 정본 ⊆ 이 필터(대조부 = gates/tools/ci-filter-check.py ㈏·㈖). 제품 경로가 이 잡을 깨우면 안 된다
+            # (intent `2026-09-08-harness-evals.md` Q2).
             harness:
               - 'AGENTS.md'
               - 'CLAUDE.md'
+              - '.claude/**'
               - '.agents/**'
+              - 'gates/**'
+              - 'scripts/harness/hooks/**'
+              - 'eval/harness/**'
+              - 'eval/harness/config-paths.txt'
               - '.codex/**'
-              - '.claude/skills/**'
-              - '.claude/hooks/**'
-              - '.claude/agents/**'
               - 'scripts/harness/**'
               - 'scripts/agent-bridge.py'
             search-golden:
@@ -634,20 +637,6 @@ jobs:
         run: python scripts/harness/verify_evidence.py record --producer "repo-hygiene" --check "exec-bit-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh exec-bit-selftest
       - name: .sh 실행비트가 인덱스에 있는가
         run: python scripts/harness/verify_evidence.py record --producer "repo-hygiene" --check "exec-bit" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh exec-bit
-
-  # ─────────────────────────────────────────────────────────────
-  # 하네스 eval — 지침·스킬·훅·에이전트가 바뀐 PR 에서만 깨어난다(필터 `harness`).
-  #
-  # ⚠ **지금은 면제 모드로 돈다.** 승격 조건 = 과제 20건이 로컬에서 **3회 연속 2/2 green**
-  #   (intent `2026-09-08-harness-evals.md` Q10). 그 전에 실행 모드로 두면 CI 가 아직
-  #   불안정한 과제로 red 를 내고, 그 red 는 대상이 아니라 과제 설계가 낸 것이다.
-  #   면제라도 **과제 건수가 출력에 찍힌다** — 잡이 조용히 아무것도 안 하는 상태를 만들지 않는다.
-  #   ⭑ `COLAB_HARNESS_EVAL_EXEMPT=1` → `COLAB_HARNESS_EVAL=1` 로 바꾸는 것은 **별건 변경**이고
-  #     Q10 충족(3회 연속 기록 = `eval/harness/results/`)이 그 근거다.
-  #
-  # 모델 평가는 로컬 러너에서 실행한다(2026-09-08 사용자 요청).
-  # 이 잡은 명시 면제와 판정부 회귀만 검사하므로 모델 API 키가 필요 없다.
-  # 실제 모델 미실행은 게이트 출력에 과제 건수와 함께 드러난다.
       - name: 검사별 실행 증거 보관
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -678,6 +667,11 @@ jobs:
           COLAB_INTENT_REF_HEAD: ${{ github.event.pull_request.head.sha }}
         run: ./gates/run.sh intent-ref
 
+  # ─────────────────────────────────────────────────────────────
+  # 하네스 eval — 필터 `harness`(설정 해시 정본 ⊆ 필터) 경로가 바뀐 PR 에서 깨어난다 · 모델 호출 없음 · API 키 불요.
+  # 면제 = 현재 설정 해시(머지 커밋 트리)와 일치하는 전수 결과가 eval/harness/results/ 에 있고 회귀가 없다는 선언 —
+  #   없으면 78 · 회귀 1 → required-gates → ci-required 실패(정본 eval/harness/README.md 「설정 해시 · 면제 조건」).
+  # 실행 모드(COLAB_HARNESS_EVAL=1) CI 전환은 여전히 Q10(3회 연속 2/2 green) 별건이다.
   harness-eval:
     needs: changes
     if: needs.changes.outputs.harness == 'true'
@@ -693,7 +687,7 @@ jobs:
         run: |
           python scripts/harness/verify_evidence.py record --producer "harness-eval" --check "harness-runner-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash eval/harness/tests/run-selftest.sh
           python scripts/harness/verify_evidence.py record --producer "harness-eval" --check "harness-judge-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/tools/harness-eval-selftest.sh
-      # 승격 전이라 면제 모드다. 게이트가 과제 건수를 출력에 찍는다(조용한 건너뛰기 금지).
+      # 승격 전이라 면제 모드다. 게이트가 과제 건수 · 일치 run id · 두 해시를 출력에 찍는다(조용한 건너뛰기 금지).
       - name: 하네스 eval 게이트 (승격 전 — 면제 모드 · 과제 건수 노출)
         env:
           COLAB_HARNESS_EVAL_EXEMPT: '1'

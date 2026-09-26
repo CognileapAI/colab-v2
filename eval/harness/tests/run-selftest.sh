@@ -4,7 +4,7 @@
 # ⚠ **실제 모델 호출 0회.** `claude` 를 임시 디렉터리의 스텁으로 갈아끼우고 `PATH` 앞에 둔다.
 #   러너가 절대경로로 `claude` 를 부르면 이 시험은 성립하지 않는다 — 그것도 이 시험이 잡는다.
 #
-# 케이스 15 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 17 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 과제 0건                                  → exit 1  (red(판정) · green-by-skip 금지)
 #   ⓑ `expect.sh` 부재                          → exit 78 (red(준비) · 판정 재료 부재)
 #   ⓒ 상한 변수 미선언                          → exit 78 (red(준비) · 관대한 기본값 금지)
@@ -16,6 +16,8 @@
 #   ⓙ 판정기 exit 1                            → exit 1 (판정 실패 유지)
 #   ⓚ 1회차 green · 2회차 판정기 exit 78      → exit 78 (불안정으로 오분류 금지)
 #   추가 4건: 같은 과제 1→78/42, 과제 간 1/78·78/1 혼재 → exit 1
+#   ⓛ 2/2 green 회차에 `config-hash.json`(hash 64hex · selected=all) ＋ summary 「설정 해시」 줄
+#   ⓜ `COLAB_EVAL_ONLY=H01` 회차는 selected=H01 (spec S-HARNESS-E0-EVAL-GATE-20260926 §4.2)
 #
 # ⓐ·ⓑ·ⓒ·ⓕ·ⓖ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 다섯이 존재 이유다.
 # ⓖ 는 advisor ② 가 재현한 구멍이다 — `rc 0` ＋ `result` 본문이 기대와 맞으면 오류 결과도 2/2 green 이 됐다.
@@ -40,6 +42,7 @@ mkdir -p "$STUB_BIN"
 cat > "$STUB_BIN/claude" <<'STUB'
 #!/usr/bin/env bash
 # 스텁 — task.md 를 stdin 으로 받아 버리고, STUB_MODE 에 따라 정해진 JSON 을 낸다.
+if [ "${1:-}" = --version ]; then echo "stub-claude 0.0.0"; exit 0; fi
 cat >/dev/null
 case "${STUB_MODE:-green}" in
   slow)
@@ -133,6 +136,42 @@ $(printf '%s\n' "$OUT" | sed 's/^/     /')"
     printf '%s' "$SUM" | grep -q '과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0' \
       || red "ⓔ — 요약줄 계수가 실측과 다르다: $SUM"
   fi
+fi
+
+# ── ⓛ·ⓜ 설정 해시 기록 — 어느 설정에서 잰 결과인지 회차마다 남는가 ────────────
+check_config_hash() { # $1=이름 $2=기대 selected — 직전 run_case 의 결과 디렉터리를 본다
+  local dirs json
+  dirs=("$RESULTS"/*/)
+  json="${dirs[0]}config-hash.json"
+  if [ "${#dirs[@]}" -ne 1 ] || [ ! -f "$json" ]; then
+    red "$1 — 결과 디렉터리에 config-hash.json 이 없다(해시 없는 결과):
+$(printf '%s\n' "$OUT" | sed 's/^/     /')"; return
+  fi
+  if ! python3 - "$json" "$2" <<'PY'
+import json, re, sys
+d = json.load(open(sys.argv[1], encoding='utf-8'))
+hexes = all(re.fullmatch(r'[0-9a-f]{64}', str(d.get(k, ''))) for k in ('hash', 'patterns_sha256'))
+ok = (hexes and d.get('selected') == sys.argv[2] and isinstance(d.get('files'), int) and d['files'] > 0
+      and 'head' in d and isinstance(d.get('dirty'), list) and 'claude_version' in d)
+sys.exit(0 if ok else 1)
+PY
+  then
+    red "$1 — config-hash.json 필드가 기대(hash 64hex · selected=$2 · files · head · dirty)와 다르다: $(cat "$json")"; return
+  fi
+  if ! grep -Eq "^- 설정 해시 — [0-9a-f]{64} · 파일 [0-9]+ · HEAD [^ ]+ · dirty [0-9]+ · 선택 $2\$" "${dirs[0]}summary.md"; then
+    red "$1 — summary.md 에 「설정 해시」 줄이 없다"; return
+  fi
+  echo "  ✓ $1"
+  PASSED=$((PASSED + 1))
+}
+check_config_hash "ⓛ 2/2 green 회차의 config-hash.json(selected=all)" all
+
+run_case "$T_OK" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 COLAB_EVAL_ONLY=H01
+if [ "$RC" -eq 0 ]; then
+  check_config_hash "ⓜ COLAB_EVAL_ONLY=H01 회차의 selected=H01" H01
+else
+  red "ⓜ — COLAB_EVAL_ONLY=H01 회차가 exit 0 이 아니다(rc=$RC):
+$(printf '%s\n' "$OUT" | sed 's/^/     /')"
 fi
 
 # ── ⓕ 상한 초과(스텁 sleep) → red(준비 · 78) ────────────────────────────────
@@ -266,7 +305,7 @@ else
 fi
 
 if [ "$FAILED" -ne 0 ]; then
-  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/15)."
+  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/17)."
   exit 1
 fi
-echo "run-selftest green — 검사 15건 전건 기대대로 (green 1 · red(판정) 7 · red(준비) 7 · 모델 호출 0회)."
+echo "run-selftest green — 검사 17건 전건 기대대로 (green 3 · red(판정) 7 · red(준비) 7 · 모델 호출 0회)."

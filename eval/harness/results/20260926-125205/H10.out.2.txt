@@ -1,0 +1,15 @@
+두 파일을 다 확인했습니다. 음수 margin 선언은 두 건이고 둘 다 코드 안에 있습니다. 주석을 빼고 grep으로 다시 세어도 같은 결과였습니다.
+
+| 위치 | 선언 | 모양 |
+|---|---|---|
+| `detail.css:93` | `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` | 음수 상쇄: 위쪽 `-12px`로 바로 앞 요소에 붙이고, 같은 규칙의 `border-top: none`으로 두 상자를 하나처럼 이어 보이게 함 |
+| `shell.css:58` | `.detail-page .backlink, .project-detail .backlink { margin-left: -7px; }` | 음수 상쇄: `padding-left: 7px`만큼 왼쪽으로 당겨 글자 위치를 기준선에 맞춤 |
+
+제외한 것:
+- `shell.css:188`의 `bottom: -11px`: 위치 지정(offset) 속성이라 margin이 아닙니다.
+- `detail.css:93` 바로 위 주석(85–87행): 주석이 93행 전에 닫히므로 93행은 코드입니다.
+- `var(--space-5)`처럼 이름에 `-숫자`가 들어간 토큰: 음수 값이 아닙니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

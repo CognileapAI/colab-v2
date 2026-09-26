@@ -5,16 +5,18 @@
 #   러너는 사람이 손으로 부를 때만 돌았다. 손으로 부르는 검사는 아무도 그 명령을 다시 칠 때까지
 #   회귀를 못 본다(`frontend-fixture-reach` 가 닫은 것과 같은 계열). 여기서 게이트 이름을 준다.
 #
-# ⚠ **아직 승격 전이다.** 승격 조건 = 과제 20건이 **3회 연속 로컬 2/2 green**(intent Q10).
-#   그때까지 로컬 `all` 과 CI 잡은 **면제 모드**로 돌고, 실행 모드로 바꾸는 것은 **별건**이다.
-#   면제라도 **건수는 출력에 찍힌다** — 조용한 건너뛰기를 만들지 않는다.
+# 면제 = 「현재 설정 해시와 일치하는 전수 결과가 results/ 에 있고 회귀가 없다」는 선언이다 — 정본
+#   `eval/harness/README.md` 「설정 해시 · 면제 조건」 · spec `S-HARNESS-E0-EVAL-GATE-20260926` §4.3.
 #
 # ── 입력의 세 상태 (선례 `gates/tools/frontend-visual.sh`) ───────────────────
 #   COLAB_HARNESS_EVAL=1         과제를 **실제로 돈다.** `eval/harness/run.sh` 의 종료코드를
 #                                그대로 전달한다(0 green · 1 red(판정) · 78 red(준비)).
 #                                ⚠ 이 모드는 **실제 모델을 부른다**(비용·시간 발생).
-#   COLAB_HARNESS_EVAL_EXEMPT=1  이번 회차에 돌리지 않음을 **명시 선언**한다. 과제 N건을
-#                                출력에 찍고 green. **N=0 이면 red(판정)** — 대상 0건은 통과가 아니다.
+#   COLAB_HARNESS_EVAL_EXEMPT=1  이번 회차에 돌리지 않음을 **명시 선언**한다. **N=0 이면 red(판정)** —
+#                                대상 0건은 통과가 아니다. 설정 해시 일치 전수 결과(선택 실행 아님 · 준비 0 ·
+#                                과제 N) 없음·입력 손상 = red(준비 78 · missing=eval-result:<hash>) ·
+#                                직전 결과보다 green 축소 = red(판정 1) · 일치 ＋ 무회귀 = green(과제 N건 ·
+#                                run id · hash(head)=hash(회차) 출력). 판정 = eval/harness/config_hash.py verify.
 #   둘 다 없음                    → red(준비 · 입력미선언 · 78). 침묵은 통과가 아니다(`CLAUDE.md §4`).
 #   둘 다 =1                      → **실행이 이긴다.** 면제를 무시했다는 사실을 출력에 적는다 —
 #                                 면제는 「이번 회차에 재지 않았다」는 선언이라 실측보다 약하다.
@@ -26,7 +28,8 @@
 # 건수 = `H??-*/` 디렉터리 실계수. `_template/` 은 그 모양이 아니라 세어지지 않는다.
 set -uo pipefail
 
-REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+GATE_CHECKOUT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$GATE_CHECKOUT}"
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
 
@@ -89,7 +92,19 @@ if [ "$DECL_EXEMPT" = "1" ]; then
   if [ "$N" -eq 0 ]; then
     red "면제 선언(COLAB_HARNESS_EVAL_EXEMPT=1)인데 **과제 0건**이다 (뿌리 $TASKS_DIR). 「대상이 없어 통과」를 만들지 않는다 — 과제 형식은 eval/harness/H??-<이름>/{task.md,fixture/,expect.sh} 다."
   fi
-  echo "harness-eval green — 면제 선언 · 과제 ${N}건(미실행)"
+  # 면제 = 「현재 설정 해시와 일치하는 전수 결과가 results/ 에 있고 직전 결과보다 green 이 줄지 않았다」는
+  # 선언이다(spec S-HARNESS-E0-EVAL-GATE-20260926 §4.3). 계산기는 게이트 자기 체크아웃의 것으로 고정한다 —
+  # REPO_ROOT seam 은 판정 대상(설정·결과)만 바꾸고 판정부를 바꾸지 못한다.
+  VERIFY="$(python3 "$GATE_CHECKOUT/eval/harness/config_hash.py" verify --root "$REPO_ROOT" \
+    --results "${COLAB_EVAL_RESULTS_ROOT:-$REPO_ROOT/eval/harness/results}" --tasks "$N")"
+  vrc=$?
+  cur_hash="${VERIFY%%$'\t'*}"; detail="${VERIFY#*$'\t'}"
+  case "$vrc" in
+    0) ;;
+    1) red "면제 선언인데 설정 해시 일치 결과가 직전 결과보다 green 이 줄었다 — $detail" ;;
+    *) ready_red "eval-result:${cur_hash:-unknown}" "$detail (verify rc=$vrc) · 이 설정 해시로 잰 전수 결과가 results/ 에 없다 · 실행 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval → results/<run>/ 커밋" ;;
+  esac
+  echo "harness-eval green — 면제 선언 · 과제 ${N}건(미실행) · $detail"
   echo "   ⚠ 면제는 「문제 없음」이 아니라 「이번 회차에 과제를 돌리지 않았다」는 선언이다."
   echo "   실제로 재려면 COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (모델을 부른다)."
   exit 0
