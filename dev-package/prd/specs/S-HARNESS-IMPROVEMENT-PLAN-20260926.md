@@ -1,7 +1,7 @@
 # Spec: 하네스 개선 총괄 계획 — PR 1 이후 전 단계(E0 · S-red · PR 2 · Ted · effort · PR 3 · PR 4 · E1 · X · M · S)
 출처 intent: `dev-package/intent/2026-09-25-harness-improvement.md`
 출처 절: 「판정 기록」 1–7라운드 · 7라운드 Ted 원문 "전부 권고대로 엄격하게 다시짜" · 설계 원칙 2026-09-26(「동작과 제약은 시스템으로」).
-근거(저장소 밖): `~/.claude/reports/harness-state-20260925/`{system-first-recut/recut.md · playbook-gap-20260926/direction.md · opus55-prompt-audit/cross.md · findings-verified.md · master-plan-20260926/verify-master.md(gate-1 판정 · 차단급 4 · 개선 10 반영)}. 줄 번호 기준 = 브랜치 `claude/harness-improvement` HEAD `27f7fb6c`(develop `67a03a05` + intent/spec + PR 1 병합 `d97141fb`) · 2026-09-26 재열람.
+근거(저장소 밖 → PR B 로 반입 · 정본 = `dev-package/reports/harness/20260925-harness-state/` · 홈 경로는 `<home>`/`<repo>` 치환): `~/.claude/reports/harness-state-20260925/`{system-first-recut/recut.md · playbook-gap-20260926/direction.md · opus55-prompt-audit/cross.md · findings-verified.md · master-plan-20260926/verify-master.md(gate-1 판정 · 차단급 4 · 개선 10 반영)}. 줄 번호 기준 = 브랜치 `claude/harness-improvement` HEAD `27f7fb6c`(develop `67a03a05` + intent/spec + PR 1 병합 `d97141fb`) · 2026-09-26 재열람.
 관계: phase 1 spec `dev-package/prd/specs/S-HARNESS-IMPROVEMENT-20260925.md`(PR 1 완료)의 phase 2/3 stub 을 이 문서가 대체한다. E0 · S-red 는 spec 상세가 있다(`S-HARNESS-E0-EVAL-GATE-20260926.md` · `S-HARNESS-SRED-REDRUN-20260926.md` — 단위 ID · 결정은 그 spec 이 정본 · 이 문서 §2 는 요약). PR 2 이후는 착수 전 이 문서의 해당 절을 spec 상세(V-id · 시험 · 레인 지시)로 확장한다. 커밋 트레일러 `Intent-Ref: dev-package/intent/2026-09-25-harness-improvement.md`(게이트 `intent-ref`). T 번호는 이 문서 Ted 행동표가 정본(두 spec 도 같은 번호).
 
 ## 0. 출처 · 원칙

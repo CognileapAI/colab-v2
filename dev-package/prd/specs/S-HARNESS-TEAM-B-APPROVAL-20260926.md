@@ -13,7 +13,7 @@
 ## 1. 문제 진술
 - 승인 판정이 문자열 하나다: `scripts/harness/intent_ref.py:41-49` `classify` = 첫 `메타` 줄에 「미승인」 없음 ∧ 「승인」 있음 → approved. 승인자 신원 · 날짜 · 원문이 형식에 없다. 팀원 · 에이전트 누가 「승인」을 써도 같은 효력 · 같은 append-only 잠금(D2).
 - 실명 열거: `dev-package/intent/TEMPLATE.md:2` 「발의자: <이태헌 | 조성진 | Ted | agent(전수 red 로그)>」 · `:13` 「예(Ted 서명 필요)」 · `:26` 「Ted 확인 문장(원문 그대로)」 · `dev-package/intent/README.md:1-2` 「Ted 가 교정 · 승인 = 커밋(별도 승인 표기 없음)」 — 두 번째 팀원이 발의 · 승인하는 경로가 문자 그대로 없다(D2 · D7 (b)).
-- 근거가 저장소 밖: 9라운드까지의 Fable 판정 원문 · T1 ruleset 스냅샷 · 팀 공용 감사 3 + 종합 1 이 `~/.claude/reports/harness-state-20260925/`(88 파일 · 1.6 MB)에 있고 intent `:2,539,550,563,576,601,609,620,627` · S-auth intent `:2,162,168-169` · 총괄 `:4` · E0/S-red spec 이 그것을 「근거」로 지목한다. 다른 기계의 리뷰어는 재검할 수 없다(D4).
+- 근거가 저장소 밖: 9라운드까지의 Fable 판정 원문 · T1 ruleset 스냅샷 · 팀 공용 감사 3 + 종합 1 이 `~/.claude/reports/harness-state-20260925/`(초안 시점 88 파일 · 1.6 MB → 반입 시점 100 파일 · 약 1.7 MB · round10-drafts/ · grill-AB/ 추가분)에 있고 intent `:2,539,550,563,576,601,609,620,627` · S-auth intent `:2,162,168-169` · 총괄 `:4` · E0/S-red spec 이 그것을 「근거」로 지목한다. 다른 기계의 리뷰어는 재검할 수 없다(D4).
 - 전환 제약: 현재 승인 intent 63건(`5bb3d6fe` · 84 파일 = approved 63 · unapproved 15 · no-meta 6 · 새 형식 0건)은 전부 legacy 표기이고 append-only 라 `메타` 줄을 고칠 수 없다. 「새 꼴만 승인」을 그대로 적용하면 63건이 한꺼번에 비보호가 된다(ADR-0007 `:30` 재검토 조건 「메타 형식이 바뀌어 승인 판별식이 틀리기 시작할 때」에 해당).
 - 정답표 `gates/fixtures/intent-ref/intent-meta-classification.json`(`:2` 기준 `0a3b9923` · `:4` 62건 · 44/13/5)은 `gates/**` 안 = 해시 집합(`config-paths.txt:13`) → 이 파일을 고치면 회차가 필요해진다. B 는 「회차 불요」가 조건이다.
 
