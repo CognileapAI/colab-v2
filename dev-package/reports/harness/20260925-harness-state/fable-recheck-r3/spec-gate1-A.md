@@ -1,0 +1,16 @@
+VERDICT: GO-WITH-CHANGES
+
+- 차단급 — 닫히지 않은 heredoc 폴백이 공백 `-C` 우회를 다시 연다(spec §4.1 결정 3 `:64`). bash 는 `git -C "<공백>" push -f origin develop <<EOF`(종결자 없음)를 경고만 내고 실행하는데, 파서는 `fallback` → 현행 `:167` 규칙 → rc=0. 수정: 미종결 heredoc = 본문 EOF 까지 · `parsed` 유지. 공통 원칙으로 고정: 「파서가 fallback 을 내는 입력은 `bash -n` 도 거부하는 입력뿐」— ⑸ 시험에 fallback fixture 마다 `bash -n` rc≠0 단언 추가(짝 없는 인용·`$(` 미종결은 통과, heredoc 은 위반이 드러남).
+- 차단급 — 레코드 프로토콜 `<branch>\t<dir>\t<argv…>` 1행/세그먼트(`:55`)가 개행·탭 비안전. 인용 안 개행은 토큰 문자(`:61`)이므로 `git commit -m "제목\n\nCo-Authored-By: …"`(이 저장소 관행) 토큰이 레코드를 2행으로 쪼갬 → 오판·미판정. JSON lines 또는 NUL 구분(`mapfile -d ''`)+이스케이프로 바꾸고 다중행 `-m` 시험 추가.
+- 차단급 — fixture 모순(`:79` · `:81-82`): `git worktree add "<…>/dev co" develop` 은 메인 repo 가 develop 위면 실패(already checked out). ⑴ 「cwd=repo(develop)」와 ⑵ 「dev co=develop」 동시 불가 → 메인 repo 는 `feature`, `dev co` 가 develop, ⑴ cwd 는 `dev co` 로 고친다. 지금대로면 RED 가 판정 실패가 아니라 준비 실패로 나온다.
+- 개선 — 폴백에 raw CMD 공급 경로 없음(`:48` 「read_fields 대체」 · `:56`). 파서 파일 없음/exit≠0/출력 없음이면 bash 는 tool_name·cwd·agent_id·CMD 를 얻을 곳이 없어 ⑸(a) 시험이 설계상 통과 불가. `read_fields()` 는 폴백 전용으로 유지(3번째 python 호출은 폴백 경로에서만).
+- 개선 — `parsed` 이후 절단 미방어(`:85` (c) 는 「1행만」이라 marker 부재로 폴백됨). 종료 marker(`end` 행 또는 레코드 수) 추가 · 부재 시 폴백. fault-injection (d) `parsed`+레코드 1개 뒤 exit 3 (e) 필드 수 틀린 레코드 → deny·crash 없음.
+- 개선 — 브랜치 해석은 bash 쪽 지연 평가로(`:66`). 파서는 dir 만 내고, `push|merge|pull|branch` case 진입 시에만 `git -C dir rev-parse`(assoc 캐시). `git status/diff/log` 다수 호출과 gh 세그먼트에서 rev-parse 0회, 파서의 subprocess 실패면 제거. 지연: python 2회(WSL 약 40–80 ms/회)는 현행 동일, rev-parse dir 당 5–10 ms 라 어느 쪽도 수용 가능.
+- 개선 — 전 Bash exit 2 경로는 `:82-83`(불변) 외 발견 없음. 대신 `set -u`(`:77`) 아래 새 루프의 unbound 변수 = exit 1 = 매 호출 fail-open+stderr 노출이며 `bash -n` 이 못 잡는다. ⑴ 허용형 unit 시험에 `stderr == ''` 단언(V6c 는 수동뿐) + 실사용 형태 corpus(`git status` · `git log --oneline -5` · heredoc commit · `gh pr view`) rc 0·stderr 빈 줄 시험 1개.
+- 개선 — V7 grep(`:141`) 자기모순: `grep -n 'main|master'` 는 새 문구 `main|master|develop|product` 에도 맞는다. 옛 문구 정확 검색(`-D main|master\``)으로 교체. `:227`·`:231`·`:235`·`:239`·`:243` 도 「main/master」라 같은 편집에서 정리할지 C10 이관인지 명기.
+- 개선 — `gh api` 판정(`:69`) 「`pulls/<n>/merge` 로 끝남」은 `?query`·후행 `/` 를 놓침 → `pulls/[0-9]+/merge/?(\?|$)`. `gh api graphql` mergePullRequest mutation 은 미포함 → 머리말 잔여 우회 목록에 기재(완료 기준 밖).
+- 개선 — `HEAD`/`@` 치환(`:70`)은 `+` 제거 뒤 · src 위치에도 적용 명시(`push origin +HEAD` develop 위 = force+targets_main). `--git-dir`/`--work-tree` · `pushd` · `( cd x && git merge y )` 는 hook 수준 시험 0건 → ⑵ 에 각 1건.
+- 개선 — adapter 전제 미검증(`:51` 「`.py` 보조 모듈 adapter 불요」). `.claude/hooks/git-guard.sh` 는 191 B wrapper 이고 `.claude/hooks/lifecycle_contract.py` shim(275 B)이 존재 → `${BASH_SOURCE[0]}` 가 `.claude/hooks` 로 풀리면 파서 부재 = 상시 폴백 = 운영에서 A1 무효. lane 1순위 확인 항목으로 올리고, 시험은 `:340` 꼴로 `.claude/hooks/git-guard.sh` 를 부르게 고정(⑴ 공백 `-C` 가 판별). 폴백 시 `echo 'git-guard: parser fallback: <사유>' >&2`(exit 0 stderr 는 debug log 전용) 로 관측 가능하게.
+- 개선 — 불투명 토큰 `$(`…`)`/백틱(`:60`)은 인용 인식 중첩 괄호 계수 필요(`$(echo ")")`), `$((1<<2))` 산술의 `<<`, `cat<<EOF` 공백 없음 형태 — 실패하면 bash 는 실행하는데 파서는 폴백하는 1번과 같은 부류. 파서 unit 시험(`:86`)에 3건 추가.
+
+참조 경로: "<repo>/.claude/worktrees/harness-improvement/dev-package/prd/specs/S-HARNESS-IMPROVEMENT-20260925.md" · ".../scripts/harness/hooks/git-guard.sh" · ".../scripts/harness/hooks/lifecycle_contract.py:503-523" · ".../scripts/tests/test_harness_lifecycle_contract.py:319-349" · ".../.claude/hooks/"
