@@ -1,0 +1,22 @@
+# 폭·입력 조건 면제(게이트 frontend-design-lint 조건 i) — `파일 · 조건 · 개수 · 사유`.
+# 파일 = frontend 기준 경로 · 조건 = `@media`/`@container` 머리(정규화해 비교 — `@media(max-width:720px)` 와 `@media (max-width: 720px)` 는 같은 조건)
+# · 개수 = 그 파일에서 그 조건을 가진 머리 수(찾은 수와 같아야 한다) · 사유 = 옮길 자리(다음 intent) 또는 영구 예외 근거.
+# 줄 번호는 적지 않는다. 형식 오류 · 빈 사유 · 개수 어긋남 · 맞는 것 없음 · 같은 조건 두 줄은 red 이고 아무것도 면제하지 않는다.
+# hover 하위 조건(`(hover: hover)` 밖 `:hover`)은 이 목록으로 면제하지 않는다.
+# 출처 = spec `dev-package/prd/specs/S-DEVICE-WIDTH-INPUT-20260926.md` 부록 H(16줄 · 24건 = 이동 예정 23 ＋ 영구 예외 1).
+src/auth/login.css · @media (min-width: 1024px) · 1 · 계정 표 작업 열 고정 — 다음 intent(배치 정리)에서 901 로 옮기거나 내용 기준 예외로 판정
+src/auth/login.css · @media (min-width: 1536px) · 1 · 내용 기준 영구 예외 — 계정 표 열 예산 도출값
+src/components/approval/approval.css · @media (min-width: 861px) · 1 · 상세 머리 메뉴 오른쪽 붙임 — 다음 intent(배치 정리)에서 901 로
+src/components/detail/detail.css · @media (max-width: 860px) · 3 · 상세 머리 · 편집 줄 — 다음 intent(배치 정리)에서 900 으로
+src/components/detail/detail.css · @media (max-width: 720px) · 1 · 정보 격자 3→2열 — 다음 intent(배치 정리)에서 640 으로
+src/components/lineage/lineageGraph.css · @media (max-width: 520px) · 1 · 계보 줄 배치 — 다음 intent(배치 정리)에서 640 으로
+src/components/upload/upload.css · @media (max-width: 1023px) · 2 · 업로드 나눔 1열 · 미리보기 고정 해제 — 다음 intent(배치 정리)에서 900 으로
+src/components/upload/upload.css · @media (max-width: 720px) · 6 · 등록 단계 · 양식 · 안내 숨김(정보 숨김 1 · 모순 2 판단 포함) — 다음 intent(배치 정리)에서 640 으로
+src/components/upload/upload.css · @media (max-width: 1100px) · 1 · 3열 양식 2열 — 다음 intent(배치 정리)에서 1180 으로
+src/components/upload/upload.css · @media (max-width: 760px) · 1 · 기간 달력 1개 — 다음 intent(배치 정리)에서 640 으로
+src/components/upload/upload.css · @media (max-width: 600px) · 1 · 빈 업로드 여백 — 다음 intent(배치 정리)에서 640 으로
+src/shell/primitives.css · @media (max-width: 1100px) · 1 · 표 안내 보임 — 다음 intent(넓은 표)에서 표 칸 폭(실제 넘침) 기준으로
+src/shell/shell.css · @media (max-width: 1000px) · 1 · 연구실 · 이름 말줄임 폭 — 다음 intent(배치 정리)에서 1180 으로
+src/shell/shell.css · @media (max-width: 880px) · 1 · 로고 글자 · 이름 숨김 — 다음 intent(배치 정리)에서 900 으로
+src/shell/shell.css · @media (max-width: 740px) · 1 · 연구실 전환 아이콘만 — 다음 intent(배치 정리)에서 640 으로
+src/shell/shell.css · @media (max-width: 560px) · 1 · 메뉴 가로 스크롤 — 다음 intent(배치 정리)에서 640 으로

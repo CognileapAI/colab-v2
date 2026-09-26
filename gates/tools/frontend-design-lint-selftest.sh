@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # frontend-design-lint 가 red fixture 로 **fail-closed** 임을 증명한다.
 #
-# 픽스처 원본 = `gates/fixtures/frontend-design-lint/` 트리 여섯. 판정부는 읽기만 하므로 사본 없이
+# 픽스처 원본 = `gates/fixtures/frontend-design-lint/` 트리 22개. 판정부는 읽기만 하므로 사본 없이
 # 각 트리를 그대로 `COLAB_FRONTEND_DIR` 로 가리키고, 면제 목록은 트리 안의 `same-in-dark.txt` 를,
 # 프리미티브 목록·면제는 트리 안의 `primitives.txt`·`primitives-exempt.txt` 를 준다(P2b · 없는 트리는 빈 파일).
+# 폭·입력 조건 면제(i)는 트리 안의 `media-exempt.txt` 를 준다(spec S-DEVICE-WIDTH-INPUT-20260926 · i 를 보지 않는 트리는 빈 파일).
 # 판정부는 픽스처 트리에 사본을 두지 않는다 — 게이트가 저장소의 `frontend/scripts/design-lint.mjs`
 # 하나를 부르므로 게이트가 보는 판정부와 selftest 가 보는 판정부가 갈리지 않는다.
 #
-# 케이스 — green 6 · red 14 · red(준비) 6 = 26.
+# 케이스 — green 7 · red 16 · red(준비) 7 = 30.
 #   ⓐ green/       정본 라이트·다크 짝 · 화면 루트 범위 토큰 · 면제 1건(사유 있음) → green
 #   ⓑ red-a/       화면 CSS `:root` 정의 + 화면 범위의 정본 계열 이름            → red
 #   ⓒ red-b/       어디에도 없는 var() 참조(폴백 있음)                          → red
@@ -34,6 +35,13 @@
 #   ⓧ 문서 표 갈림 — 저장소 문서 사본의 생성 블록 안 한 줄을 고쳐 COLAB_DESIGN_LINT_DOC 로(P5 · h) → red
 #   ⓨ 문서 부재 — COLAB_DESIGN_LINT_DOC 를 없는 경로로(P5 · h)                         → red(준비 · 78)
 #   ⓩ 블록 밖만 고친 문서 사본 — 손글 변경은 h 에 걸리지 않는다(P5 · h)                → green
+#   ⓘ1 green-i/   허용 폭 띠 · 1180 · 640 또는 터치 · (hover: hover) 안 :hover · prefers-* · 면제 줄 2(720 두 표기 개수 2 ·
+#                 선언된 @container) → green · 면제 적중 3(i · spec S-DEVICE-WIDTH-INPUT-20260926 V13)
+#   ⓘ2 red-i/     선언 없는 768 · 높이 · orientation · 범위 문법 · em · (pointer: fine) · (hover: none) · any-pointer ·
+#                 not · only · 선언 없는 @container · 면제 구멍 셋(개수 어긋남 1 선언에 2 발견 · 맞는 것 없음 · 빈 사유) → red
+#   ⓘ3 red-i-hover/ 조건 밖 :hover 1 · 쉼표 OR 목록 `(hover: hover), (max-width: 640px)` 안 :hover 1 → red(i_hover=2 · V10)
+#   ⓘ4 폭·입력 조건 면제 목록 부재(COLAB_DESIGN_LINT_MEDIA_EXEMPT 를 없는 경로로)          → red(준비 · 78)
+#   (ⓖ 빈 트리도 media-exempt.txt 를 가지므로 78 사유는 목록 부재가 아니라 대상 CSS 0건이다 — 출력으로 확인)
 #   h 는 저장소 문서의 신선도와 떼어 판정한다(advisor ②): 시작할 때 표지 두 쌍만 있는 뼈대 문서를
 #   `$TMPD/base.md` 로 만들어 `design-docs.mjs --doc` 로 채우고, **모든 케이스**가 이 문서를
 #   `COLAB_DESIGN_LINT_DOC` 기본값으로 쓴다. ⓧ·ⓩ 사본도 base.md 에서 만든다. 저장소 문서
@@ -67,7 +75,7 @@ expect() { # $1=기대(green|red|ready) $2=이름 $3=픽스처 디렉터리 [$4.
   shift 3
   out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
     COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" \
-    COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"; rc=$?
+    COLAB_DESIGN_LINT_MEDIA_EXEMPT="$dir/media-exempt.txt" COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"; rc=$?
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
     return
   fi
@@ -92,7 +100,7 @@ expect_line() { # $1=이름 $2=픽스처 $3=출력에 있어야 할 문자열 [$
   shift 3
   out="$(env COLAB_FRONTEND_DIR="$dir" COLAB_DESIGN_LINT_SAME_IN_DARK="$dir/same-in-dark.txt" \
     COLAB_DESIGN_LINT_PRIMITIVES="$dir/primitives.txt" COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT="$dir/primitives-exempt.txt" \
-    COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"
+    COLAB_DESIGN_LINT_MEDIA_EXEMPT="$dir/media-exempt.txt" COLAB_DESIGN_LINT_DOC="$BASE_DOC" "$@" "$GATE" 2>&1)"
   if ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
     red "$label — 출력에 「$needle」이 없다(다른 이유로 red 일 수 있다):
 $(printf '%s\n' "$out" | sed 's/^/     /')"
@@ -131,11 +139,12 @@ expect red "ⓕ 면제 사유 없음 · 낡은 항목 · 다크에 이미 있음
 expect_line "ⓕ 구멍 셋 전부" "$FIX/red-exempt" "c_holes=3"
 # ⓖ 대상 CSS 0건 — 못 돌았음을 통과로 세지 않는다.
 expect ready "ⓖ 대상 CSS 0건" "$FIX/empty"
+expect_line "ⓖ 78 사유 = 대상 CSS 0건(목록 부재가 아니다)" "$FIX/empty" "대상 CSS 가 0건이다"
 # ⓗ node 부재.
 expect ready "ⓗ node 부재" "$FIX/green" COLAB_NODE_BIN=/nonexistent/node
 # ⓛ 대상 목록의 파일이 디스크에 없다(추적 중 삭제) — 조용히 건너뛰지 않는다. 게이트는 Git 목록을 주므로
 #    판정부를 직접 불러 없는 경로를 섞는다.
-MISSING_OUT="$(cd "$FIX/green" && node "${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}" --root . --same-in-dark same-in-dark.txt --primitives primitives.txt --primitives-exempt primitives-exempt.txt -- src/shell/tokens.css src/components/x/x.css src/shell/gone.css 2>&1)"; MISSING_RC=$?
+MISSING_OUT="$(cd "$FIX/green" && node "${COLAB_DESIGN_LINT_SCRIPT:-$REPO_ROOT/frontend/scripts/design-lint.mjs}" --root . --same-in-dark same-in-dark.txt --primitives primitives.txt --primitives-exempt primitives-exempt.txt --media-exempt media-exempt.txt -- src/shell/tokens.css src/components/x/x.css src/shell/gone.css 2>&1)"; MISSING_RC=$?
 if [ "$MISSING_RC" -eq 78 ] && printf '%s\n' "$MISSING_OUT" | grep -qF "src/shell/gone.css"; then
   echo "  ✓ ⓛ 디스크에 없는 대상 파일 (ready)"
 else
@@ -193,9 +202,27 @@ expect_line "ⓧ 갈린 블록 이름" "$FIX/green" "h tokens 갈림" COLAB_DESI
 expect ready "ⓨ h 문서 부재" "$FIX/green" COLAB_DESIGN_LINT_DOC=/nonexistent/design-system.md
 expect green "ⓩ h 블록 밖만 고친 문서" "$FIX/green" COLAB_DESIGN_LINT_DOC="$TMPD/outside.md"
 
+# ⓘ1 i 대조군 — 이것이 green 이 아니면 아래 i red 는 아무 말도 하지 않는다(면제가 실제 머리에 걸려야 한다).
+expect green "ⓘ1 허용 폭 띠 · 입력 조건 · prefers-* · 면제 720 두 표기 · 선언된 @container" "$FIX/green-i"
+expect_line "ⓘ1 요약줄 i 노출" "$FIX/green-i" "폭·입력 조건 밖 0(면제 2)"
+expect_line "ⓘ1 면제가 실제 머리 3개에 걸렸다" "$FIX/green-i" "i=0 i_media=0 i_container=0 i_form=0 i_hover=0 i_holes=0 i_exempt=2 i_exempted_hits=3 media_rules=8 container_rules=1 hover_rules=1"
+# ⓘ2 i — 폭 값 · 형식 · @container · 면제 구멍 셋(구멍 줄은 아무것도 면제하지 않는다).
+expect red "ⓘ2 선언 없는 폭 값 · 형식 밖 조건 · 선언 없는 @container · 면제 구멍" "$FIX/red-i"
+expect_line "ⓘ2 i 계수" "$FIX/red-i" "i=17 i_media=4 i_container=1 i_form=9 i_hover=0 i_holes=3 i_exempt=3 i_exempted_hits=0 media_rules=14 container_rules=1 hover_rules=0"
+expect_line "ⓘ2 개수 어긋남(1 선언 · 2 발견)" "$FIX/red-i" "@media (max-width: 1000px) — 선언 1 · 찾은 2"
+expect_line "ⓘ2 맞는 것 없는 줄" "$FIX/red-i" "@media (max-width: 1100px) — 맞는 머리가 없다"
+expect_line "ⓘ2 빈 사유" "$FIX/red-i" "@media (max-width: 560px) — 사유 칸이 비었다"
+expect_line "ⓘ2 형식 밖 입력 조건(우려 11ⓐ)" "$FIX/red-i" "src/components/x/x.css:12 @media (pointer: fine)"
+# ⓘ3 hover 하위 조건 — 조건 밖 · 쉼표 OR 한 갈래에만 (hover: hover).
+expect red "ⓘ3 (hover: hover) 밖 :hover · 쉼표 OR 목록" "$FIX/red-i-hover"
+expect_line "ⓘ3 i_hover 계수" "$FIX/red-i-hover" "i=2 i_media=0 i_container=0 i_form=0 i_hover=2 i_holes=0"
+expect_line "ⓘ3 쉼표 OR 갈래를 읽었다" "$FIX/red-i-hover" "src/components/x/x.css:4 .x-page .x-row:hover"
+# ⓘ4 폭·입력 조건 면제 목록 부재 — 선언이 없으면 i 의 면제를 셀 수 없다.
+expect ready "ⓘ4 폭·입력 조건 면제 목록 부재" "$FIX/green-i" COLAB_DESIGN_LINT_MEDIA_EXEMPT=/nonexistent/media-exempt.txt
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::frontend-design-lint-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 expect_readiness_verdict frontend-design-lint-selftest
-echo "frontend-design-lint-selftest green — 검사 26건 전건 기대대로 (green 6 · red 14 · red(준비) 6)."
+echo "frontend-design-lint-selftest green — 검사 30건 전건 기대대로 (green 7 · red 16 · red(준비) 7)."

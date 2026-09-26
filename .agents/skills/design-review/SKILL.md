@@ -13,7 +13,7 @@ description: 현재 프론트 디자인을 정본(토큰·패턴·apple-design �
 
 | 축 | 정본 | 비고 |
 |---|---|---|
-| 토큰 | `frontend/src/shell/tokens.css`(유일 `:root`) · 프리미티브 `frontend/src/shell/primitives.css` · 게이트 `frontend-design-lint` a~h · 설명 `docs/design-system.md` | v2 의 유일한 토큰 정본. 층 · 토큰 표 · 프리미티브 표 · 새 화면 점검표 · 판정 대기 목록은 `docs/design-system.md`(표는 실물에서 생성 · 게이트 h). `01 CoLAB-Plan/planning-base/design-tokens/tokens.md` 는 Figma 미동기화 빈 템플릿이라 정본이 아니다 |
+| 토큰 | `frontend/src/shell/tokens.css`(유일 `:root`) · 프리미티브 `frontend/src/shell/primitives.css` · 게이트 `frontend-design-lint` a~i · 설명 `docs/design-system.md` | v2 의 유일한 토큰 정본. 층 · 토큰 표 · 프리미티브 표 · 새 화면 점검표 · 판정 대기 목록은 `docs/design-system.md`(표는 실물에서 생성 · 게이트 h). `01 CoLAB-Plan/planning-base/design-tokens/tokens.md` 는 Figma 미동기화 빈 템플릿이라 정본이 아니다 |
 | 정적 합격선 | `dev-package/sessions/p3-design-audit-20260905.md` 판정 11항목 ＋ 접근성 = 대비 **4.5:1**(AA · 예외 — 누르는 동안(`:active`)만의 순간 상태는 제외하고 평상시·hover·초점은 그대로 · design-fix 20260924 값 20 · 비활성(`:disabled`) 컨트롤은 합격선 밖 — WCAG 1.4.3 · 1.4.11 비활성 예외 · design-fix 후속 20260925 Q1f) · 글자 **13px 이상**(장식 글리프 `::before`/`::after` 는 제외 — #15) · 미정의 토큰 0 · 음수 여백 0 · 카드 그림자 0(팝오버 · 상단 고정바 `.gnb` · 전체화면 모달 `.modal-takeover` 허용 — design-review 20260924 #13) · 보더 2층 토큰 분리 · 여백은 컨테이너 소유 ＋ 게이트 `frontend-design-lint`(a~h)·`frontend-design-lint-selftest` green | 측정 방식은 그 문서와 동일(WCAG 상대휘도 · `path:line` · 실측값) |
 | 실화면 계측 도구 | `.agents/skills/agent-browser/SKILL.md` ＋ `scripts/live_audit.sh` | Playwright 대신 `agent-browser`(§2-5) |
 | 인터랙션·모션 | `.agents/skills/apple-design/SKILL.md` | 응답(pointer-down 피드백) · 1:1 추적 · 중단 가능 전환 · 스프링/속도 계승 · 재질·깊이 · 타이포(tracking·leading) · **reduced-motion** · 절제 |

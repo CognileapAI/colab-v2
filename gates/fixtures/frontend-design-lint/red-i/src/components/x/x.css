@@ -1,0 +1,17 @@
+/* 폭·입력 조건 red 픽스처(i) — 선언 없는 폭 값 · 형식 밖 조건 · 선언 없는 @container · 면제 목록 구멍 셋 */
+@layer screens {
+@media (max-width: 768px) { .x-page { padding: 0; } }
+@media (max-height: 500px) { .x-page .x-bar { display: none; } }
+@media (orientation: landscape) { .x-page .x-bar { padding: 0; } }
+@media (width <= 640px) { .x-page .x-row { padding: 0; } }
+@media (max-width: 40em) { .x-page .x-card { padding: 0; } }
+@container (max-width: 400px) { .x-page .x-cell { padding: 0; } }
+@media (max-width: 1000px) { .x-page .x-a { padding: 0; } }
+@media (max-width: 1000px) { .x-page .x-b { padding: 0; } }
+@media (max-width: 560px) { .x-page .x-c { padding: 0; } }
+@media (pointer: fine) { .x-page .x-d { padding: 0; } }
+@media (hover: none) { .x-page .x-e { padding: 0; } }
+@media (any-pointer: coarse) { .x-page .x-f { padding: 0; } }
+@media not all and (max-width: 640px) { .x-page .x-g { padding: 0; } }
+@media only screen and (max-width: 640px) { .x-page .x-h { padding: 0; } }
+}

@@ -1,0 +1,11 @@
+/* 폭·입력 조건 픽스처(i) — 허용 폭 값 · 입력 조건 · prefers-* · 면제된 720 두 표기 · 선언된 @container 는 green */
+@layer screens {
+@media (min-width: 641px) and (max-width: 900px) { .x-page { padding: var(--space-2); } }
+@media (max-width: 1180px) { .x-page .x-row { padding: 0; } }
+@media (max-width: 640px), (pointer: coarse) { .x-page .x-go { min-height: var(--space-2); } }
+@media (hover: hover) { .x-page .x-go:hover { color: var(--color-link); } }
+@media (prefers-reduced-motion: reduce) { .x-page .x-go { transition: none; } }
+@media (max-width: 720px) { .x-page .x-card { padding: 0; } }
+@media(max-width:720px){ .x-page .x-side { display: none; } }
+@container x-panel (max-width: 400px) { .x-page .x-cell { padding: 0; } }
+}

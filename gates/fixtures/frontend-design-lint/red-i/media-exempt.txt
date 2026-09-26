@@ -1,0 +1,4 @@
+# 파일 · 조건 · 개수 · 사유
+src/components/x/x.css · @media (max-width: 1000px) · 1 · 픽스처 — 선언 1 · 발견 2(개수가 어긋나 면제하지 않는다)
+src/components/x/x.css · @media (max-width: 1100px) · 1 · 픽스처 — 맞는 것이 없는 줄(낡음)
+src/components/x/x.css · @media (max-width: 560px) · 1 ·
