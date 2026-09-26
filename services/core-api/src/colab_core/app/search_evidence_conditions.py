@@ -5,6 +5,9 @@ import calendar
 import datetime as dt
 import re
 
+from ..kernel.region_scope import place_label, region_match
+from ..kernel.search_semantics import SEMANTICS
+
 
 def _compact(value):
     return re.sub(r'[\s·_-]+', '', str(value)).lower()
@@ -41,6 +44,9 @@ def parse(query: str) -> dict:
     cadence=next((value for pattern,value in [('월평균|한달평균','monthly'),('일별|매일','daily'),('주간|매주','weekly'),('시간별|매시간|시간단위','hourly'),(r'(?<!\d)5\s*분','5min'),(r'(?<!\d)10\s*분','10min'),('연평균|연단위|연 단위|매년|해마다','yearly')] if re.search(pattern,q)),None)
     if cadence: criteria['cadence']=cadence
     region=next((r for r in ['제주','한반도','서울','강원','전라','경상'] if r in q),None)
+    # 「남한」은 표기 일치로만 맞춘다(의미 식별자가 아니라 넓히지 않는다 — 상향 금지).
+    # 강·산 이름(남한강·남한산성)은 지역 조건이 아니다.
+    if region is None and re.search(r'남한(?!강|산)',q): region='남한'
     if '경기' in q and '충청' in q: region='경기남부충청'
     elif '시군구' in q: region='대한민국시군구'
     elif '충청' in q: region='충청'
@@ -59,6 +65,18 @@ def parse(query: str) -> dict:
         criteria['period']=None
     if re.search(r'wgs84|잘라|15분누적',q): criteria['processingUnknown']=True
     return criteria
+
+
+def _region_id(name: str) -> str | None:
+    """파싱한 지역 이름 → 포함 관계 표(`regionWithin`)에 실린 의미 식별자. 아니면 None.
+
+    표에 없는 지역은 종전대로 표기 일치만 본다 — 이 변경은 포함 관계 한 단계만 연다.
+    """
+    key=_compact(name)
+    for rid in SEMANTICS.get('regionWithin',{}):
+        if key in {_compact(rid),*(_compact(a) for a in SEMANTICS['regions'].get(rid,()))}:
+            return rid
+    return None
 
 
 def assess(criteria: dict, facts: dict) -> dict:
@@ -87,7 +105,17 @@ def assess(criteria: dict, facts: dict) -> dict:
         checks['파일 역할']=('unknown' if actual is None else 'supported' if set(actual)&set(criteria['roles']) else 'contradicted', ', '.join(role_names.get(r,r) for r in actual or []) or '근거 없음')
     if 'region' in criteria:
         actual=facts.get('region')
-        checks['지역']=('supported' if actual and _compact(actual)==_compact(criteria['region']) else 'unknown',actual or '근거 없음')
+        wanted=_region_id(criteria['region'])
+        if wanted is None:
+            match,via=bool(actual) and _compact(actual)==_compact(criteria['region']),None
+        else:
+            # 의미 식별자면 직계 하위 한 단계까지 맞춘다(`kernel/region_scope.py` — 경로 1 과 같은 표).
+            match,via=region_match(wanted,actual)
+        display=actual or '근거 없음'
+        if via is not None:
+            display=f'{actual} — {place_label(wanted)} 안의 지역'
+        # 모르는 지역을 지리적으로 배타라고 선언하지 않는다 — 불일치는 contradicted 가 아니라 unknown.
+        checks['지역']=('supported' if match else 'unknown',display)
     if 'period' in criteria:
         wanted=criteria['period']; actual=facts.get('period')
         status='unknown'
@@ -142,7 +170,10 @@ def supported_facts(criteria: dict, records: list[dict]) -> list[str]:
     assessed.sort(key=lambda pair: (-sum(v[0]=='supported' for v in pair[1].values()),pair[0]['file_id']))
     facts=[]
     for row,checks in assessed[:4]:
-        names=[key+(f'({value[1]})' if key in ('기간','파일 역할') else '')
+        # 지역은 포함 관계로 맞았을 때만 세부를 붙인다(「지역(남한 — 한반도 안의 지역)」 · intent
+        # `2026-09-26-region-containment-expansion.md` 결정 2). 표기가 같으면 종전대로 「지역」만.
+        names=[key+(f'({value[1]})' if key in ('기간','파일 역할')
+                    or (key=='지역' and value[1].endswith(' 안의 지역')) else '')
                for key,value in checks.items() if value[0]=='supported']
         if not names: continue
         # 출처(설명서 이름·절)는 싣지 않는다 — 상세 「검색 근거」가 보인다

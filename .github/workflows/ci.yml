@@ -70,6 +70,9 @@ jobs:
             contracts:
               - 'contracts/**'
               - 'gates/**'
+              # region-within-drift 의 그래프 입력 — 그래프만 바꾼 PR 도 계약 표 대조를 깨운다.
+              - 'db/ai/seed/k2b-graph-standard.tsv'
+              - 'db/ai/seed/*.sql'
             core-api:
               - 'services/core-api/**'
               - 'tests/integration/**'
@@ -267,6 +270,12 @@ jobs:
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "seam-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh seam-consistency
       - name: 생성물 최신성
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "generated-up-to-date" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh generated-up-to-date
+      # 검색 계약 지역 포함 표 ↔ D9 그래프(intent 2026-09-26-region-containment-expansion 결정 1 ㈎).
+      # 증명(selftest)과 판정을 같은 잡에 둔다 — 그래프만 바꾼 PR 도 깨우도록 `contracts` 필터에 시드 경로를 더했다.
+      - name: 지역 포함 표 드리프트가 red 를 낼 수 있는가 (fail-closed 증명)
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "region-within-drift-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh region-within-drift-selftest
+      - name: 지역 포함 표 ↔ D9 그래프 드리프트
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "region-within-drift" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh region-within-drift
 
   # ─────────────────────────────────────────────────────────────
   # 프런트 게이트. **`contracts` 필터 잡에서 떼어낸다** (2026-09-03 코드리뷰 #6).

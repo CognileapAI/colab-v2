@@ -274,6 +274,17 @@
 #   읽기 전용이다. DB·도커·포트·pg 슬롯 0.
 "seed-plan-drift-selftest"  = "parallel"
 
+# `region-within-drift` — 실측 근거: **커밋된 파일 셋을 읽기만 한다.**
+#   `gates/tools/region_within_drift.py` 는 `contracts/search/semantics.json` · `db/ai/seed/k2b-graph-standard.tsv` ·
+#   `db/ai/seed/*.sql` 을 `read_text` 로만 연다 — 쓰기(`write_text`·`open(..., "w")`)·`mktemp`·`docker`·
+#   `_pg.sh`·`_lock.sh`·네트워크 히트 0건.
+"region-within-drift"       = "parallel"
+
+# `region-within-drift-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   `gates/tools/region-within-drift-selftest.sh` 가 `WORK="$(mktemp -d -t region-within-drift-selftest-XXXXXX)"`
+#   안에 입력 사본을 두고 `COLAB_REGION_*` 로 판정부에 물린다. 레포 원본은 읽기 전용(`cmp` 로 확인). DB·도커·포트 0.
+"region-within-drift-selftest" = "parallel"
+
 # `harness-eval-selftest` — **`serial` 이다. 벽시계가 판정에 들어간다.**
 #   `gates/tools/harness-eval-selftest.sh:79-81` 이 `COLAB_EVAL_TIMEOUT=1 STUB_SLEEP=4` 로 상한 초과를,
 #   `:83-85` 가 `COLAB_EVAL_TIMEOUT=5 STUB_SLEEP=0` 으로 **green 을 기대**한다. 5초 상한 아래의

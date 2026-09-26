@@ -1,0 +1,501 @@
+{
+ "schema": "colab-region-probe-states/2",
+ "payload": "dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json",
+ "payloadSha256": "73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409",
+ "counterfactual": null,
+ "note": "반사실 패치 없음 — 제품 코드(kernel/region_scope.py)로 잰다. 경로 2 green = 파일 근거 후보 (search_evidence_conditions.candidates 포함 집합); B_search = 전체 검색 결과 기준 참고 열. 경로 2 해석 = interpret-fixture.json 규칙 기반 녹화(모델 호출 0 · 실모델 녹화 별도 승인 대기).",
+ "regionProbes": [
+  {
+   "id": "PC-1-3#m3",
+   "name": "한반도 + 레이더 기간 전체를 덮는 자료",
+   "mode": "measure_only",
+   "conditions": {
+    "region": "korean_peninsula",
+    "period": {
+     "start": "2019-07-28",
+     "end": "2024-07-09"
+    }
+   },
+   "expectSeq": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "forbidSeq": [
+    15,
+    16
+   ],
+   "pathB": "2019년 7월 28일부터 2024년 7월 9일까지 한반도 레이더 강우 자료 찾아줘",
+   "reviewed": {
+    "A": false,
+    "A_seqs": [
+     1,
+     2
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "all_drafts": {
+    "A": true,
+    "A_seqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "region_drafts": {
+    "A": true,
+    "A_seqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   }
+  },
+  {
+   "id": "PC-1-4#p7",
+   "name": "한반도 + 5분 주기",
+   "mode": "probe",
+   "conditions": {
+    "region": "korean_peninsula",
+    "cadence": "5min"
+   },
+   "expectSeq": [
+    1
+   ],
+   "forbidSeq": [
+    16,
+    17
+   ],
+   "pathB": "한반도 5분 주기 레이더 강우 자료 찾아줘",
+   "reviewed": {
+    "A": true,
+    "A_seqs": [
+     1
+    ],
+    "B": true,
+    "B_evidenceSeqs": [
+     1
+    ],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "cadence": "5min",
+     "region": "한반도"
+    }
+   },
+   "all_drafts": {
+    "A": true,
+    "A_seqs": [
+     1
+    ],
+    "B": true,
+    "B_evidenceSeqs": [
+     1
+    ],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "cadence": "5min",
+     "region": "한반도"
+    }
+   },
+   "region_drafts": {
+    "A": true,
+    "A_seqs": [
+     1
+    ],
+    "B": true,
+    "B_evidenceSeqs": [
+     1
+    ],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "cadence": "5min",
+     "region": "한반도"
+    }
+   }
+  },
+  {
+   "id": "PC-2-3#m2",
+   "name": "2022년 한반도 자료",
+   "mode": "measure_only",
+   "conditions": {
+    "region": "korean_peninsula",
+    "coverageYear": 2022
+   },
+   "expectSeq": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "forbidSeq": [
+    15,
+    16
+   ],
+   "pathB": "2022년 한반도 강우 자료 찾아줘",
+   "reviewed": {
+    "A": false,
+    "A_seqs": [
+     1,
+     2
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "all_drafts": {
+    "A": true,
+    "A_seqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "region_drafts": {
+    "A": true,
+    "A_seqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": true,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   }
+  },
+  {
+   "id": "PC-2-4#m1",
+   "name": "한반도 강수 + 15분 주기",
+   "mode": "measure_only",
+   "conditions": {
+    "region": "korean_peninsula",
+    "variable": "precipitation",
+    "cadence": "15min"
+   },
+   "expectSeq": [
+    2,
+    4
+   ],
+   "forbidSeq": [
+    5,
+    6
+   ],
+   "pathB": "한반도 15분 주기 강수 자료 찾아줘",
+   "reviewed": {
+    "A": false,
+    "A_seqs": [
+     2
+    ],
+    "B": false,
+    "B_evidenceSeqs": [
+     1,
+     2
+    ],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도"
+    }
+   },
+   "all_drafts": {
+    "A": true,
+    "A_seqs": [
+     2,
+     4
+    ],
+    "B": false,
+    "B_evidenceSeqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도"
+    }
+   },
+   "region_drafts": {
+    "A": true,
+    "A_seqs": [
+     2,
+     4
+    ],
+    "B": false,
+    "B_evidenceSeqs": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도"
+    }
+   }
+  },
+  {
+   "id": "PC-2-7#m1",
+   "name": "한반도 강수 + 2021년 포함",
+   "mode": "measure_only",
+   "conditions": {
+    "region": "korean_peninsula",
+    "variable": "precipitation",
+    "coverageYear": 2021
+   },
+   "expectSeq": [
+    2,
+    4,
+    5
+   ],
+   "forbidSeq": [
+    6,
+    7
+   ],
+   "pathB": "2021년이 포함된 한반도 강수 자료 찾아줘",
+   "reviewed": {
+    "A": false,
+    "A_seqs": [
+     2
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "all_drafts": {
+    "A": true,
+    "A_seqs": [
+     2,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   },
+   "region_drafts": {
+    "A": true,
+    "A_seqs": [
+     2,
+     4,
+     5
+    ],
+    "B": false,
+    "B_evidenceSeqs": [],
+    "B_search": false,
+    "B_criteria": {
+     "topic": "강우·강수",
+     "region": "한반도",
+     "period": null
+    }
+   }
+  }
+ ],
+ "greenCounts": {
+  "reviewed": {
+   "A": 1,
+   "B": 1
+  },
+  "all_drafts": {
+   "A": 5,
+   "B": 1
+  },
+  "region_drafts": {
+   "A": 5,
+   "B": 1
+  }
+ },
+ "upwardLeak": {
+  "probes": [
+   {
+    "id": "LEAK-A-1",
+    "name": "남한 조건 — 한반도 자료를 부르지 않는다",
+    "conditions": {
+     "region": "남한"
+    },
+    "expectSeq": [
+     1,
+     2,
+     19,
+     20
+    ],
+    "forbidSeq": [
+     6,
+     21,
+     22,
+     23,
+     24
+    ]
+   },
+   {
+    "id": "LEAK-B-1",
+    "name": "남한 식생 — 한반도 식생 자료(seq 6)를 파일 근거 후보로 올리지 않는다",
+    "conditions": {
+     "region": "남한"
+    },
+    "expectSeq": [],
+    "forbidSeq": [
+     6
+    ],
+    "pathB": {
+     "id": "PB-LEAK-1",
+     "query": "남한 식생 자료 찾아줘"
+    }
+   }
+  ],
+  "states": {
+   "reviewed": {
+    "A": {
+     "seqs": [
+      1,
+      2,
+      19,
+      20
+     ],
+     "leaked": [],
+     "green": true
+    },
+    "B": {
+     "seqs": [],
+     "leaked": [],
+     "green": true,
+     "criteria": {
+      "topic": "식생·NDVI",
+      "region": "남한"
+     }
+    }
+   },
+   "all_drafts": {
+    "A": {
+     "seqs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      19,
+      20
+     ],
+     "leaked": [],
+     "green": true
+    },
+    "B": {
+     "seqs": [],
+     "leaked": [],
+     "green": true,
+     "criteria": {
+      "topic": "식생·NDVI",
+      "region": "남한"
+     }
+    }
+   },
+   "region_drafts": {
+    "A": {
+     "seqs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      19,
+      20
+     ],
+     "leaked": [],
+     "green": true
+    },
+    "B": {
+     "seqs": [],
+     "leaked": [],
+     "green": true,
+     "criteria": {
+      "topic": "식생·NDVI",
+      "region": "남한"
+     }
+    }
+   }
+  },
+  "total": 0
+ },
+ "goldenGreen": {
+  "reviewed": {
+   "A": 29,
+   "B": 9
+  },
+  "all_drafts": {
+   "A": 33,
+   "B": 9
+  },
+  "region_drafts": {
+   "A": 33,
+   "B": 9
+  }
+ }
+}

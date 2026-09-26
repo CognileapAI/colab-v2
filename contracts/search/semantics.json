@@ -13,6 +13,16 @@
     "jeju": ["제주", "제주도", "제주특별자치도"],
     "korean_peninsula": ["한반도"]
   },
+  "regionWithin": {
+    "korean_peninsula": {
+      "place": "한반도",
+      "placeAliases": ["Korea"],
+      "within": {
+        "남한": ["대한민국"],
+        "충청권": ["southern Gyeonggi and Chungcheong regions"]
+      }
+    }
+  },
   "statistics": ["instantaneous", "daily_mean", "daily_max", "daily_min", "monthly_mean", "monthly_mean_daily_max", "monthly_mean_daily_min"],
   "representations": ["spatial_grid", "point_observations", "table", "array"],
   "invariants": ["LST is not air temperature", "format does not prove spatial representation", "native resolution is not resampled grid size", "all constraints must hold on one current reviewed file", "unknown is not supported"]
