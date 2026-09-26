@@ -36,6 +36,8 @@
 #   `d3_search_evidence` 에 운영자 전 연구실 읽기 정책(`operator_read` · FOR SELECT)이 서고
 #   쓰기는 `lab_boundary` 그대로인지 재는 자리다(intent 2026-09-25-operator-search-scope.md Q7).
 #   ai 체인 무변(6).
+# 2026-09-26 자료 지역 확정 — db/ai +1벌(`0012-drift.sh` · 남한 노드·남한⊂한반도 엣지·별칭 2) → **7**.
+#   Ted 판정 2026-09-26 「자료 지역 확정」 1. platform 무변(29).
 
 [[chain]]
 dir = "db/platform/tests"
@@ -43,4 +45,4 @@ min = 29
 
 [[chain]]
 dir = "db/ai/tests"
-min = 6
+min = 7

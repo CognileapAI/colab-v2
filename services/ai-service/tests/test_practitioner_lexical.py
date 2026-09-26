@@ -252,11 +252,12 @@ def test_적재물을_실제로_읽었다() -> None:
     """파서가 조용히 빈 사전을 만들면 blocked 행이 **전부 공짜로 통과**한다 — fail-closed."""
     assert len(SEED.get("d9_method_term", ())) >= 13
     assert len(SEED.get("d9_topic_synonym", ())) >= 18
-    assert len(SEED.get("d9_place_alias", ())) >= 4
+    assert len(SEED.get("d9_place_alias", ())) >= 10
     # ⭑ 2회차 — 원천표기 3(`s-era5`·`s-ecmwf`·`s-ecmwf-ko`) + 주제 2(`t-drought`·`t-fileformat`)
     #   로 49 → 54, 엣지는 E1-12 하나로 19 → 20 이다. 하한을 올리지 않으면 시드가 빠져도 green 이다.
-    assert len(SEED.get("d9_concept", ())) >= 54
-    assert len(SEED.get("d9_concept_edge", ())) >= 20
+    # ⭑ 2026-09-26 자료 지역 확정 1 — 남한 노드 + 「남한 안에 있다 한반도」 + 별칭 2 → 55 · 21 · 10.
+    assert len(SEED.get("d9_concept", ())) >= 55
+    assert len(SEED.get("d9_concept_edge", ())) >= 21
 
 
 @pytest.mark.search_golden
