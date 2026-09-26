@@ -502,5 +502,8 @@ body {
   .detail-page .backlink,
   .project-detail .backlink { min-height: var(--control-height); min-width: var(--control-height); }
   .notfound a { display: inline-flex; align-items: center; }
+  /* 아바타 · 로그아웃은 한 줄에 두고 로그아웃 글자도 접지 않는다 — 1024 터치에서 두 줄로 접힌 묶음(36 ＋ 44 = 80)이
+     메뉴 막대 64 를 넘쳤다(레인 L2a 측정). 한 줄이면 묶음 높이 = 로그아웃 44 · 막대 64 안. */
+  .gnb .avatar-wrap { display: flex; align-items: center; white-space: nowrap; }
 }
 }

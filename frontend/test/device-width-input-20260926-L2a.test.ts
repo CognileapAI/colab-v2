@@ -242,6 +242,14 @@ describe('V7 · 터치 44(부록 B 레인 L2a · 셸 CSS 끝 `(pointer: coarse)`
     const mid = shellRules.filter((r) => r.media === '@media (max-width: 900px)').flatMap((r) => r.selectors);
     expect(mid).toContain('.gnb .mainnav a');
   });
+  it('아바타 · 로그아웃 묶음은 터치에서 한 줄(1024 터치 막대 넘침 수정 · flex · 줄바꿈 없음)', () => {
+    const wrap = coarse.filter((r) => r.selectors.includes('.gnb .avatar-wrap'));
+    expect(wrap.length).toBe(1);
+    expect(decls(wrap[0]?.body ?? '')).toEqual(['display: flex', 'align-items: center', 'white-space: nowrap']);
+    // 마우스 쪽은 그대로 — 터치 블록 밖에서 묶음의 display 를 바꾸는 규칙 0(1440 마우스 픽셀 불변).
+    const outside = shellRules.filter((r) => r.media !== COARSE && r.selectors.some((s) => s.includes('.avatar-wrap')));
+    expect(outside.flatMap((r) => decls(r.body)).filter((d) => d.startsWith('display') || d.startsWith('white-space'))).toEqual([]);
+  });
   it('터치 블록에 글자 크기 선언 0', () => {
     expect(coarse.flatMap((r) => decls(r.body)).filter((d) => d.startsWith('font'))).toEqual([]);
   });
