@@ -58,8 +58,8 @@
         "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -102,8 +102,8 @@
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -140,7 +140,8 @@
           "model_input"
         ],
         "platform": "ground",
-        "directObservation": true
+        "directObservation": true,
+        "nativeResolutionM": 500.0
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/3 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
@@ -148,19 +149,18 @@
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
         "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "nativeResolutionM": "승격 · 규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
         "representation": "spatial_grid",
-        "interpolated": true,
-        "nativeResolutionM": 500.0
+        "interpolated": true
       },
       "draftProvenance": {
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
-        "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3"
       },
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 3 hsr_sample",
@@ -198,8 +198,8 @@
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -244,8 +244,8 @@
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
         "model": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
         "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -290,8 +290,8 @@
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -344,8 +344,8 @@
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -394,8 +394,8 @@
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -528,8 +528,8 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -576,8 +576,8 @@
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "model": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -622,8 +622,8 @@
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -668,8 +668,8 @@
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -704,8 +704,8 @@
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -744,8 +744,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
         "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -788,8 +788,8 @@
         "format": "정본전재 · plan-manifest.yaml seq 17 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
         "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -828,8 +828,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -868,8 +868,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
         "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -910,8 +910,8 @@
         "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
         "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -950,8 +950,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
         "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -990,8 +990,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
         "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1030,8 +1030,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1070,8 +1070,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1110,8 +1110,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1150,8 +1150,8 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1192,8 +1192,8 @@
         "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1234,8 +1234,8 @@
         "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
         "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)",
-        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1257,9 +1257,10 @@
   "promotion": {
     "rules": [
       "direct-observation-from-level",
+      "native-resolution-carried",
       "platform-from-instrument"
     ],
-    "movedFacts": 52,
-    "note": "dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5)"
+    "movedFacts": 53,
+    "note": "dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · 규칙 단위 fast-track(결정 5) · native-resolution-carried 포함(Ted 2026-09-26 「전부 권고대로」)"
   }
 }
