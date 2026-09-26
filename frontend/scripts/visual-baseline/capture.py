@@ -156,9 +156,24 @@ def write_wrappers(folder: pathlib.Path, chrome: pathlib.Path, base_args: list[s
     return wrappers
 
 
+def reveal_script(selector: str) -> str:
+    """Page script run before `click`: scroll the target into the window only when its box is not fully inside it.
+
+    Orchestrator decision for spec S-DEVICE-WIDTH-INPUT-20260926 L0a (spec gap: a click target outside the window is
+    first brought inside). agent-browser 0.27.0 `click` does not scroll: at 844x390 the upload open button sat at
+    y=411.7 and the click did not land. A target already fully inside the window is not scrolled at all.
+    Returns 'scrolled' | 'inside' | 'absent'; a missing target is left to the click itself to report."""
+    return (f"(() => {{ const el = document.querySelector({json.dumps(selector)}); if (!el) return 'absent'; "
+            "const r = el.getBoundingClientRect(); "
+            "if (r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth) return 'inside'; "
+            "el.scrollIntoView({block: 'nearest', inline: 'nearest'}); return 'scrolled'; })()")
+
+
 def run_action(session: str, action: dict) -> None:
     (kind, value), = action.items()
     if kind == 'click':
+        if js(session, reveal_script(value)) == 'scrolled':
+            print(f'  click {value}: scrolled into view', flush=True)
         ab(session, 'click', value)
     elif kind == 'wait':
         ab(session, 'wait', str(int(value)))

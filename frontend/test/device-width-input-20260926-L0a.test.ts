@@ -6,6 +6,9 @@
  * ⑴ 장면 목록 스키마(`scripts/visual-baseline/scenes.json`) — 뷰포트 목록 · 입력 방식 · 장면의 뷰포트 참조.
  * ⑵ 비교 스크립트(`scripts/visual-baseline/diff.mjs`) 뷰포트 id 거르기 — PNG 픽스처를 시험 안에서 만들어
  *    실제 CLI 를 돌린다(선례 `visual-diff.test.ts` · 바이너리 커밋 없음 · 실제 브라우저 없음).
+ * ⑶ 캡처 동작 `click` — 대상 상자가 창 밖이면 먼저 창 안으로 스크롤한 뒤 누르고, 창 안이면 스크롤하지 않는다
+ *    (오케스트레이터 결정 · spec 빈칸 「클릭 대상이 창 밖이면 먼저 창 안으로」). `capture.py` 의 `run_action` 을
+ *    python 으로 불러 브라우저 호출을 기록하고, 기록된 페이지 스크립트를 가짜 문서 위에서 돌린다(실제 브라우저 없음).
  * 입력 래퍼의 실제 포인터 · hover 상태는 캡처 실행의 상태 확인(어긋나면 78)이 확인한다 — 이 시험 밖이다.
  */
 // @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다 · 선례 design-fix-followups-20260925-L2).
@@ -18,6 +21,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 // @ts-expect-error — 같은 이유.
 import { join, resolve } from 'node:path';
+// @ts-expect-error — 같은 이유.
+import { runInNewContext } from 'node:vm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { encodePng } from '../scripts/visual-baseline/compare.mjs';
 
@@ -184,5 +189,78 @@ describe('L0a ⑵ 비교 스크립트 뷰포트 id 거르기(`--viewport`) — �
   it('⑥ 값 없는 `--viewport` → 준비 실패 78', () => {
     const r = spawnSync(process.execPath, [DIFF, '--viewport'], { encoding: 'utf8' });
     expect(r.status).toBe(78);
+  });
+});
+
+// ---- ⑶ click 동작 — 창 밖 대상은 먼저 창 안으로 ------------------------------------------------
+
+const CAPTURE = resolve(process.cwd(), 'scripts/visual-baseline/capture.py');
+
+/** `run_action(session, {click: selector})` 를 실제 capture.py 로 부르고 브라우저 호출(ab · js)을 순서대로 기록한다. */
+function recordClick(selector: string): { kind: 'ab' | 'js'; args: string[] }[] {
+  const harness = [
+    'import importlib.util, json, sys',
+    'spec = importlib.util.spec_from_file_location("capture", sys.argv[1])',
+    'm = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)',
+    'calls = []',
+    'm.ab = lambda session, *args, **kw: calls.append({"kind": "ab", "args": list(args)}) or ""',
+    'm.js = lambda session, source: calls.append({"kind": "js", "args": [source]}) or "inside"',
+    'm.run_action("s", {"click": sys.argv[2]})',
+    'print(json.dumps(calls))',
+  ].join('\n');
+  const r = spawnSync('python3', ['-c', harness, CAPTURE, selector], { encoding: 'utf8' });
+  expect(r.status, r.stderr).toBe(0);
+  return JSON.parse(r.stdout) as { kind: 'ab' | 'js'; args: string[] }[];
+}
+
+interface Box { top: number; bottom: number; left: number; right: number }
+
+/** 기록된 페이지 스크립트를 창 `win` · 대상 상자 `box`(null = 대상 없음) 인 가짜 문서에서 돌린다. */
+function runPageScript(source: string, win: { width: number; height: number }, box: Box | null) {
+  const scrolls: unknown[] = [];
+  const el = box && {
+    getBoundingClientRect: () => ({ ...box, x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top }),
+    scrollIntoView: (opts: unknown) => { scrolls.push(opts); },
+  };
+  const result = runInNewContext(source, {
+    innerWidth: win.width, innerHeight: win.height,
+    document: { querySelector: () => el, documentElement: { clientWidth: win.width, clientHeight: win.height } },
+  }) as unknown;
+  return { scrolls, result };
+}
+
+describe('L0a ⑶ 캡처 동작 `click` — 대상이 창 밖일 때만 먼저 창 안으로(오케스트레이터 결정)', () => {
+  const SEL = '[data-testid=reg-open]';
+  const WIN = { width: 844, height: 390 };
+
+  it('click 은 페이지 스크립트(대상 확인 · 필요 시 스크롤)를 먼저 돌리고 그다음 같은 선택자를 누른다', () => {
+    const calls = recordClick(SEL);
+    expect(calls.map((c) => c.kind)).toEqual(['js', 'ab']);
+    expect(calls[1]?.args).toEqual(['click', SEL]);
+    expect(calls[0]?.args[0]).toContain(JSON.stringify(SEL));
+  });
+
+  it('창 밖 대상(844x390 · 업로드 단추 y=411.7 높이 44 실측) → scrollIntoView({block: nearest, inline: nearest}) 한 번', () => {
+    const [probe] = recordClick(SEL);
+    const r = runPageScript(probe?.args[0] ?? '', WIN, { top: 411.7, bottom: 455.7, left: 600, right: 800 });
+    expect(r.scrolls).toEqual([{ block: 'nearest', inline: 'nearest' }]);
+  });
+
+  it('가로로 창 밖인 대상도 스크롤한다', () => {
+    const [probe] = recordClick(SEL);
+    const r = runPageScript(probe?.args[0] ?? '', WIN, { top: 100, bottom: 144, left: 900, right: 1000 });
+    expect(r.scrolls).toEqual([{ block: 'nearest', inline: 'nearest' }]);
+  });
+
+  it('창 안 대상 → 스크롤하지 않는다(기존 장면 영향 없음)', () => {
+    const [probe] = recordClick(SEL);
+    const r = runPageScript(probe?.args[0] ?? '', WIN, { top: 300, bottom: 344, left: 600, right: 800 });
+    expect(r.scrolls).toEqual([]);
+  });
+
+  it('대상이 없으면 스크롤하지 않고 스크립트도 실패하지 않는다(없음 판정은 누르기 단계가 그대로 낸다)', () => {
+    const [probe] = recordClick(SEL);
+    const r = runPageScript(probe?.args[0] ?? '', WIN, null);
+    expect(r.scrolls).toEqual([]);
   });
 });
