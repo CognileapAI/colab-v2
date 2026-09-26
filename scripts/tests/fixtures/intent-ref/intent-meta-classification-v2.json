@@ -1,0 +1,530 @@
+{
+ "source": "dev-package/intent/*.md at 2ed59e9ae7ef7f9f892a01d37f8d0b262507366a",
+ "rule": "meta line (first line starting with 메타) matching 승인: @<handle> <YYYY-MM-DD> \"<원문>\" -> approved (rule form); else name in scripts/harness/intent_legacy_approved.txt and meta has 승인 and not 미승인 -> approved (rule legacy); else unapproved (rule none); no meta line -> no-meta (rule none). TEMPLATE.md and README.md are excluded by name from protection and from the snapshot",
+ "total": 85,
+ "counts": {
+  "approved": 64,
+  "unapproved": 15,
+  "no-meta": 6
+ },
+ "excluded_by_name": [
+  "README.md",
+  "TEMPLATE.md"
+ ],
+ "intended_unprotected": {
+  "2026-09-08-harness-evals.md": "실제 승인(grill-me 완료 · 전부권고대로)이지만 메타 줄에 미승인 표기가 남아 규칙상 비보호다 — v1 과 같이 의도된 비보호로 둔다(스냅샷은 규칙의 기계 출력 · 예외 손 편집 없음)",
+  "2026-09-18-missing-rate-predicate-recon.md": "실제 승인(메타 둘째 줄 「승인 **사용자 2026-09-25**」)이지만 메타가 두 줄로 나뉘어 첫 메타 줄에 승인 표기가 없다 — 규칙상 비보호 · 의도된 비보호로 둔다"
+ },
+ "files": [
+  {
+   "name": "2026-09-06-r-a2.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-06 · 승인 <커밋이 승인>",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-07-r-b.md",
+   "meta": "메타 — 발의자: agent(R-B 준비 · `dev-package/prd/rounds/R-B.md` §6 쪼개기) · 작성 2026-09-07 · 승인 **미승인**",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-08-dual-agent-development.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-08-harness-evals.md",
+   "meta": "메타 — 발의자: agent(플레이북 대조) · 작성 2026-09-08 · 승인 **미승인**(커밋이 승인) · **grill-me 2026-09-08 완료(프론티어 공집합) · Ted 「전부권고대로」** · 상위 intent `dev-package/intent/2026-09-08-r-d.md` 축 ②",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-08-preview-slot.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-08-r-c.md",
+   "meta": "메타 — 발의자: Ted(축 ① 구두 발의 5건) ＋ agent(축 ② R-B 후속 묶음) · 작성 2026-09-08 · 승인 **미승인**",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-08-r-d.md",
+   "meta": "메타 — 발의자: Ted(축 ① 「브랜치 전략이 없네? 어떻게 하는게 좋을까?」 → 권고안에 「좋아 intent에 얹어」 · 축 ② 「이게 검증결과로 나왔는데, 개선준비해보자」) ＋ agent(초안) · 작성 2026-09-08 · 승인 **미승인**",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-09-upload-layout-preview.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-09 · 승인 2026-09-09(사용자 \"엉 그렇게해\"로 범위 확인, 초안 제시 후 \"자 다음\"으로 후속 진행 지시)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-10-preview-all-formats.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-ai-search.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-12 · 승인 2026-09-12 (직전 사용자 검토용 제안의 목적·첫 범위 채택; 세부 사양·구현·배포 승인 아님)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-12-design-consistency.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-12 · 승인 2026-09-12 (대화의 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-12-issue-preview-controls.md",
+   "meta": "메타 — 발의자: Ted(GitHub 이슈 작성 sungwooHa 회수) · 작성 2026-09-12 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-issue-register-hints-parent-picker.md",
+   "meta": "메타 — 발의자: Ted(GitHub 이슈 작성 sungwooHa 회수) · 작성 2026-09-12 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-issue-upload-analysis-notice.md",
+   "meta": "메타 — 발의자: Ted(GitHub 이슈 작성 sungwooHa 회수) · 작성 2026-09-12 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-issue-upload-resume-discard.md",
+   "meta": "메타 — 발의자: Ted(GitHub 이슈 작성 sungwooHa 회수) · 작성 2026-09-12 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-login-backoffice-closeout.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-12 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-12-operator-designation.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-12 · 승인 2026-09-12(대화 확인 · 이 커밋)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-12-operator-slack-notifications.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-12 · 승인 2026-09-12",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-dev-reset-reference-scenario.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-13 · 승인 Ted 판정 2026-09-13(항목별 아래 표기)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-environment-branches.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-13-lth-a11y-empty-states.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-lth-account-members.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-lth-processing-level-mismatch.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-lth-search-scope.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-lth-shell-header.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-lth-verified-chip.md",
+   "meta": "메타 — 발의자: 이태헌 · 작성 2026-09-13 · 승인 2026-09-13",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-13-upload-form-rev2.md",
+   "meta": "메타 — 발의자: 기획자 구두 피드백(2026-09-13) ＋ 오케스트레이터 확정(2026-09-14, 구현 커밋 사후 확인) · 작성 2026-09-13 · 개정 2026-09-14(수용 검토 지적 반영) · 개정 2026-09-14(레인 C1·A4 수용 검토 반영 — 건 ㉮ 상태 갱신, 건 ㉵ 신설) · 개정 2026-09-14(레인 A5 수용 검토 반영 — 건 ㉴ 철회 · 건 ㉳ 재확인(무변경) · 연결 카드 변경 사실 추가) · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-14-data-canon-and-reseed.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-14 · 승인 2026-09-14",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-14-dev-reseed-workflow.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-14 · 승인 미승인",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-15-develop-product-deployment.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-15 · 승인 2026-09-15",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-15-knowledge-lifecycle.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-15 · 승인 2026-09-15(의도와 문서 작성 범위; 구현·배포 승인 아님)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-admin-full-access.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-16 · 승인 2026-09-16(사용자 「고고」)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-dev-reseed-profile-validation.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-73-upload-preview.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-76-preserve-period-precision.md",
+   "meta": "메타 — 발의자: samtae0610 · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-78-upload-input-guidance.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 범위 결정: Ted · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-79-remove-preview-only-choice.md",
+   "meta": "메타 — 발의자: samtae0610 · 방향 결정: Ted · 작성 2026-09-16 · 승인 2026-09-16(초안 제시 후 기존 묶음 PR 머지와 후속 진행 지시)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-80-preserve-selected-level.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-issue-82-lineage-help.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 작성 2026-09-16 · 승인 2026-09-16",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-16-selected-preview-timing.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-16 · 승인 2026-09-16 (대화의 목표·권고안 수락)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-frontend-test-wall-clock-budget-convention.md",
+   "meta": "메타 — 발의자: Ted · 방향 결정: Ted · 작성 2026-09-17 · 승인: 미승인 — Ted 승인 대기(미결 5건)",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-17-gate-host-mutex-enforcement.md",
+   "meta": "메타 — 발의자: Ted · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-18(미결 2건 잔존)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-gate-input-env-vars-block-merge-gate.md",
+   "meta": "메타 — 발의자: Claude(전수 게이트 관측) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-18(미결 1건 잔존)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-harness-enforces-facts-it-holds.md",
+   "meta": "메타 — 발의자: Ted · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-18",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-47-service-tests-db-isolation.md",
+   "meta": "메타 — 발의자: sungwooHa · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(advisor 검토 결과 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-55-frontend-test-failure-naming.md",
+   "meta": "메타 — 발의자: sungwooHa · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(advisor 검토 결과 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-56-parallel-safety-and-measurement-lane.md",
+   "meta": "메타 — 발의자: sungwooHa(이슈 #56) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(advisor 검토 결과 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-84-account-create-form.md",
+   "meta": "메타 — 발의자: sungwooHa (#84, #54) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(초안 4건 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-92-map-options-renderable.md",
+   "meta": "메타 — 발의자: samtae0610 · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(초안 4건 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-93-preview-viz-controls-position.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(초안 4건 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-issue-97-lv0-source-visibility.md",
+   "meta": "메타 — 발의자: joddanddan-commits · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-17(초안 4건 제시 후 Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-measurement-lane-subagent-stop-hook.md",
+   "meta": "메타 — 발의자: Claude(하네스 공백 관측) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-18",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-17-spec-artifacts-outside-lifecycle-watch.md",
+   "meta": "메타 — 발의자: Claude(researcher 인계 실패 관측) · 방향 결정: Ted · 작성 2026-09-17 · 승인 2026-09-18",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-18-dataset-metadata-backfill.md",
+   "meta": "메타 — 발의자: 2026-09-15 DEV 검토 보고서 후속 2번 · 정리: Claude(lane-worker) · 작성 2026-09-18 · 승인 **승인 2026-09-18 (Ted, 「다 권고대로」)**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-18-issue-120-preview-map-viewport.md",
+   "meta": "메타 — 발의자: sungwooHa · 방향 결정: Ted · 작성 2026-09-18 · 승인 2026-09-18(초안 제시 후 판단 셋 중 터치 제외를 질의·확정, Ted 명시 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-18-issue-121-account-admin-gap-table.md",
+   "meta": "메타 — 발의자: [미확인] (이슈 #121 작성자 확인 안 함) · 방향 결정: Ted · 작성 2026-09-18 · 승인: Ted 지시 \"121 번 이슈처리하자\"(2026-09-18) · 개별 판단의 명시 승인 없음 — `## 확인` 참조",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-18-missing-rate-predicate-recon.md",
+   "meta": "메타 — 발의자: `2026-09-18-dataset-metadata-backfill.md` 「후속 — 별도 결정으로 분리한 항목」 2번(Ted 결정 2-ⓒ) ·",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-18-practitioner-cases-ontology.md",
+   "meta": "메타 — 발의자: 사례 제공자 #1·#2(실무자 사례) · 정리: Claude(researcher, 대조 조사) · 작성 2026-09-18 · 승인 **승인 2026-09-18 (Ted, 「다 권고대로」)**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-18-rollback-purge-as-superuser.md",
+   "meta": "메타 — 발의자: agent(fable 어드바이저 대조검증) · 방향 결정: Ted · 작성 2026-09-18 · 승인 2026-09-18",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-21-evidence-promotion.md",
+   "meta": "메타 — 발의자: Ted · 정리: Claude(researcher, 읽기 전용 대조) · 작성 2026-09-21 · 승인 **승인 2026-09-25 (Ted, 「다 권고대로」)**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-22-k4-luna-interpreter-probe.md",
+   "meta": "메타 — 발의자: Ted(「haiku를 기준으로 검색을 검토」 → 「gpt로 하자」, 세션 model-change(haiku)) · 정리: Claude · 작성 2026-09-22 · 승인 **승인 2026-09-24 (Ted, 「intent 승인. ㊷ 추기하고 develop 에 병합해」)**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-agent-model-tiering.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-24 · 승인: **Ted 2026-09-24 — 「판정」 절 참조**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-corpus-expansion-dev-reseed.md",
+   "meta": "메타 — 발의자: Ted(「권고대로 해」 · 2026-09-24) · 정리 Claude(researcher) · 작성 2026-09-24 · 승인 **사용자 서명 2026-09-25 — ① 옛→새 대응 9행 + 이름→ID 28행 · ② 12문항 scope·required**(`dev-package/reports/corpus-expansion/wu4-golden-proposal-2026-09-25.md` §1·§2 서명 줄). 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」). 아래 「제약」의 dev 상시 승인은 2026-09-25 개정된 `.agents/rules/deploy.md` 11번이 대신한다 — 비어 있지 않은 dev 의 reset 은 회차별 명시 GO 와 사용자 터미널 토큰이 필요하다.",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-d10-model-call-ledger.md",
+   "meta": "메타 — 발의자: Ted(게이트 ① 결정 ⑤) · 정리: Claude(researcher) · 작성 2026-09-24 · 승인 **승인 2026-09-24 (Ted) — 아래 「판정 기록」 절의 수정 조건부**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-design-system-structure.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-24 · 승인: **2026-09-24 Ted 원문 \"권장안대로 하자.\"**(Q1~Q8 권장안 전부 수용 · advisor ① approve-with-changes 반영판을 그대로 승인)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-harness-lane-hygiene.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-24 · 상태: **승인 2026-09-24 — Ted 원문 \"전부 권고대로 할게\"** · spec v2 `dev-package/prd/specs/S-HARNESS-LANE-HYGIENE-20260924.md`",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-k3-abstention-by-structure.md",
+   "meta": "메타 — 발의자: Ted(「근본적인 해결을 위해서 이건 어떻게 개선해야 하는가」 2026-09-24) · 정리: Claude(오케스트레이터) · 작성 2026-09-24 · 승인 **Q1~Q6 권고안 전부 승인 2026-09-24 (Ted, 「아까 인텐트 결정 6가지 권고대로 하고 진행해보자」)**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-24-k3-lineage-suggestion-resume.md",
+   "meta": "메타 — 발의자: Ted(2026-09-24 「권고대로 하자」) · 정리: Claude(researcher) · 작성 2026-09-24 · 승인 **㈎-1·㈏ 「권고대로 하자」(2026-09-24 Ted) · 게이트 ① 결정 5건 「좋아 권고대로」(2026-09-24 Ted) — 아래 「판정 기록」 절**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-design-fix-20260924.md",
+   "meta": "메타 — 발의자: Ted(판정 21건 · 2026-09-24) · 작성 2026-09-25 · 승인 Ted(판정 21건 2026-09-24 · 값 17건 2026-09-25)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-design-fix-followups.md",
+   "meta": "메타 — 발의자: agent(PR #141 병합 뒤 잔여 수집 · 초안) · 작성 2026-09-25 · 승인 2026-09-25(Ted · grill-me 판정 28건)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-external-harness-gap.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-25 · 승인: **Ted 2026-09-25 \"권고댜로\"(= 권고대로) — 미해결 질문 1~8 전부 ⓐ**",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-harness-design-round-residuals.md",
+   "meta": "메타 — 발의자: agent(PR #141 병합 뒤 잔여 수집 · 초안) · 작성 2026-09-25 · 승인 미승인(초안)",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "2026-09-25-harness-improvement.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-25 (agent 초안 · 하네스 분석 원자료 ~/.claude/reports/harness-state-20260925/ 는 저장소 밖) · 승인: 그룹 A — Ted 2026-09-25 원문 \"전부 권고대로\"(A1–A5 권장안) · 그룹 B · L · C · T 판정은 끝의 「판정 기록」 절에 줄로 추가한다",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-k3-upload-axes-remeasure.md",
+   "meta": "메타 — 발의자: agent(WU5 K3 측정 결과) · 정리: Claude(lane-worker) · 작성 2026-09-25 · 승인 **사용자 서명 2026-09-25 — ①ⓐ(정답 파일 + 동치 시험 · 점검 뒤 ①ⓑ 보류 값으로 변경 — 「서명 변경 기록」) · ① 측정 전 점검 = dev 읽기 1회(§0 가정 아님) · ② DEM · ③ 사전 등록에 추가 · ④ 범위 밖 유지.** 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」). 2026-09-25 Fable 어드바이저 검토 반영(사실 주장은 스냅샷 v2 로 재대조).",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-operator-search-scope.md",
+   "meta": "메타 — 발의자: agent(이슈 #158 조사) · 작성 2026-09-25 · 승인 **사용자 2026-09-25**(확인 문장 원문 「좋아이대로ㅠㄱㄱ」 — 설계트리 Q1~Q7 그대로). 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」).",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-reset-nonempty-gate.md",
+   "meta": "메타 — 발의자: 사용자 · 작성 2026-09-25 · 승인 2026-09-25(Claude Code 세션 https://claude.ai/code/session_01Ft79rxkNTe5AYcQ6wukTax)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-25-search-rationale-separation.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-25 · 개정 2026-09-26(트랙 A 시각 분리 + 트랙 B 근거 재구성 병합) · 승인 **Ted 2026-09-26**(확인 문장 원문 「좋아결정다하고 한참을 자리비우고 개발시킬거야」 — 설계트리 Q0~Q8 그대로 · 앞선 답 「좋아 그렇게 가보자 좋아」(시안 A) · 「권고대로 좋아」(상위 이름)). 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」).",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-26-cadence-range-predicate.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-26 · 승인 2026-09-26 (Ted, 진행 순서 권고안 채택 · 원문 「권고안대로핡」) · 선행 intent `dev-package/intent/2026-09-26-region-containment-expansion.md` 「완료 정의 ⑥」(「「1시간 이하」 범위 술어가 없다(cadence는 등호 비교만 한다)」) · 조사 기준 트리 develop `677b60ef`(PR #175 병합본 — 아래 줄번호는 이 트리 기준)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-26-device-width-input-rules.md",
+   "meta": "메타 — 발의자: Ted(휴대폰 미리보기 지도 겹침 제보 → 전 화면 대응으로 확대 · 초안 agent) · 작성 2026-09-26 · 승인 2026-09-26(Ted · PR #162 병합 뒤 「권고대로」)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-26-human-authorization-for-destructive-ops.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-26 · 승인: Ted 2026-09-26 원문 \"e0 pr개시 전부 권고대로하자\"(9라운드 · Fable blind 판정자 4 + 교차 점검 1 + 재검 1 → 권고대로 · 원문 판정 ~/.claude/reports/harness-state-20260925/sauth-grill-20260926/)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-26-rationale-facts-wording.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-26 · 승인 **Ted 2026-09-26**(확인 문장 원문 「좋아 진행」 — 설계트리 Q1~Q2c 권장안 그대로 · 미해결 질문은 아래 「해소」의 오케스트레이터 결정). 이 서명을 적은 커밋이 승인이다(`README.md` 「승인 = 커밋」) · 선행 intent `dev-package/intent/2026-09-25-search-rationale-separation.md`(승인 Ted 2026-09-26 · 패널·근거 종류·사실 규칙의 정의처)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "2026-09-26-region-containment-expansion.md",
+   "meta": "메타 — 발의자: Ted · 작성 2026-09-26 · 승인 2026-09-26 (Ted, 「권고대로 하자」) — 방향 승인 · 승인 2026-09-26 (Ted, 결정 1~4 권고안 채택 · 원문 「권고안대로핡」) · 선행 intent `dev-package/intent/2026-09-21-evidence-promotion.md` 「판정 결과 — 2회차 지역(2026-09-26)」 · 조사 기준 트리 `feat/region-round2`(develop `501ef439` + PR #174, HEAD `1b8c75a8`) · path:line 재확인 기준 develop `e4bd039a`(PR #174 병합본 — 아래 줄번호는 이 트리 기준)",
+   "class": "approved",
+   "rule": "legacy"
+  },
+  {
+   "name": "README.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  },
+  {
+   "name": "TEMPLATE.md",
+   "meta": "메타 — 발의자: <이태헌 | 조성진 | Ted | agent(전수 red 로그)> · 작성 2026-MM-DD · 승인 <날짜 | 미승인>",
+   "class": "unapproved",
+   "rule": "none"
+  },
+  {
+   "name": "stage3-login-hardening.md",
+   "meta": null,
+   "class": "no-meta",
+   "rule": "none"
+  }
+ ]
+}

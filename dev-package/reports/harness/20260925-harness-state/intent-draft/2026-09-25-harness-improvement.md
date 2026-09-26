@@ -1,5 +1,5 @@
 # Intent: 하네스 개선 — 막는 장치 · 판정·증거 · 문서 drift (잔여 H1–H15 흡수)
-메타 — 발의자: Ted · 작성 2026-09-25 (agent 초안 · 하네스 분석 원자료 ~/.claude/reports/harness-state-20260925/ 는 저장소 밖) · 승인: 그룹 A — Ted 2026-09-25 원문 "전부 권고대로"(A1–A5 권장안) · 그룹 B · L · C · T 판정은 끝의 「판정 기록」 절에 줄로 추가한다
+메타 — 발의자: Ted · 작성 2026-09-25 (agent 초안 · 하네스 분석 원자료 <home>/.claude/reports/harness-state-20260925/ 는 저장소 밖) · 승인 미승인(그룹별 /grill-me 판정 예정)
 - 대체 — dev-package/intent/2026-09-25-harness-design-round-residuals.md(미승인 초안)의 H1–H15 를 흡수한다(H11·H12·H13·H15 는 제외 절).
 - 구성 결정(Ted 2026-09-25 원문 "좋아 그렇게해보자"): umbrella intent 1 · spec 1(3 phase) · PR 3 순차 · 그룹 단위 /grill-me · H11·H12·H13·H15 제외 · GitHub 설정 등은 Ted 몫(그룹 T).
 - 표기: 줄 번호 기준 develop `67a03a05` · 2026-09-25. 「메인 재현 2026-09-25」 = 오케스트레이터 재현. 「probe 재현」 = 격리 clone · payload-only 재현. 「문서 근거」 · 「관측 1회」 · 「미검증」 은 실측이 아님. 출처 칸의 R<n>-… = 저장소 밖 findings-verified.md 항목 ID, 「초안 H<n>」 = 흡수 초안 항목. 본문의 H6/H7 = lifecycle 인계 검사 hook.
@@ -46,7 +46,7 @@
 
 ## 구현 형태
 - spec 1개(3 phase) → PR 1(그룹 A) → PR 2(그룹 B + L) → PR 3(그룹 C), 엄격 순차. PR 마다 격리 worktree lane 1개가 구현하고, 다음 PR 은 앞 PR 병합 뒤 develop 기준으로 착수한다(`gates/run.sh` · `lifecycle_contract.py` · `README.md` · SKILL 문서를 PR 사이에 공유). PR 2 는 B → L 순서로 한 lane 이 구현한다(`lifecycle_contract.py` · `test_task_runtime.py` 공유).
-- PR 1 크기: A1 ⓐ(argv 형태 편입 포함 · Ted 판정 2026-09-25). A2 는 분할(Ted 판정)이라 PR 1 에는 문장 정리(ⓒ)만 들어가고 편집 시점 차단(ⓐ)은 PR 2(L1 ⓐ 뒤)로 간다.
+- PR 1 크기: A1 ⓐ(argv 형태 편입 포함) 또는 ⓑ(tokenizer · 대상 해석만) 중 Ted 판정으로 정해진다. A2 는 권장안이 분할이라 PR 1 에는 문장 정리(ⓒ)만 들어가고 편집 시점 차단(ⓐ)은 PR 2(L1 ⓐ 뒤)로 간다.
 - 판정 순서: /grill-me 를 그룹 단위로 A → B → L → C → T. 그룹 A 가 승인되면 spec phase 1 · PR 1 lane 이 바로 착수하고, 나머지 그룹 판정은 PR 1 진행 중에 한다. 그룹 T 는 Ted 행동이라 PR 과 독립이며 T1 적용은 PR 2 병합 뒤, T5 는 PR 3 병합 뒤.
 
 ### 흡수 대응 (초안 H → 이 intent)
@@ -84,7 +84,6 @@
   - 복구 경로: Edit/Write 는 git-guard matcher 밖(`.claude/settings.json:68-84`) → Edit 로 되돌림 가능. `COLAB_HOOKS=0` 은 세션 재시작 필요(`README.md:79-98`).
   - lane 자기 검증 한계(문서 근거 — `scripts/harness/hooks/worktree-setup.sh:31-38` 의 hooks 문서 인용): hook 는 `${CLAUDE_PROJECT_DIR}` 쪽 스크립트를 실행 → lane worktree 의 수정본은 lane 자신의 Bash 호출에 적용되지 않음. 검증은 worktree 스크립트 직접 호출로 함.
   - `.claude/settings.json` · `.codex/hooks.json` 훅 정의 무변경이 전제. wrapper 내부 변경의 코드 snapshot 비교(`docs/development/dual-agent.md:86`)는 그룹 T 확인 항목.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (Ted 판정과 일치) + 보강 2건 — ① tokenizer 예외 시 현행 `sed` 분리(`:149`)로 폴백하고 exit 2 로 올리지 않는다 ② `pull` 규칙은 명시 플래그(`--no-ff` · `--no-rebase` · `--rebase=false` · `--ff=false`)만 잡고 플래그 없는 `git pull` 은 통과시킨다 · 확신 높음
 - 완료 기준: 새 unittest(agent-bridge gate 가 실행하는 파일 · `gates/run.sh:308-310`)가 다음을 모두 보이면 끝.
   - ⑴ 공백 경로 `-C "<…>"` · `-C '<…>'` 로 ⑴–⑸ · product 규칙 각각 rc=2, 허용형(기능 브랜치 push · 기능 브랜치 위 `merge --ff-only` · `pull --rebase` · `worktree` · 기능 브랜치 원격 삭제) rc=0.
   - ⑵ 기능 브랜치 cwd 에서 `-C <develop checkout>` 또는 `cd <develop checkout>` 뒤 non-ff merge · subagent 의 refspec 없는 push → rc=2.
@@ -107,7 +106,6 @@
   - ⓒ hook 는 Codex 전용(env)으로 두고 `SKILL.md:101` · `:106` · `dual-agent.md:60` 을 `--scope` 절차(인계 시점 차단)로 고침(초안 H3 ⓑ).
 - 권장: 분할 — PR 1 = ⓒ(문장 정리 · H14 분리 포함, 초안 H3 ⓒ), PR 2 = ⓐ(L1 ⓐ 종료 기록 위). ⓐ 의 「열린 task」는 종료 기록이 있어야 정확히 정의된다(L1 ⓐ 는 PR 2). PR 1 에서 ⓐ 를 하려면 「같은 checkout 의 가장 최근 scoped lane-worker task」로 정의해야 하고, 인계가 끝난 옛 task 가 뒤의 subagent 편집을 막는 오차단이 남는다(메인 스레드 편집은 payload 에 `agent_id` 가 없어 대상 밖). ⓐ 자체의 이점(단계 구분이 task 경계로 표현됨 `lifecycle-evidence.md:87-98` · 새 hook 정의 불필요 · 실패 면은 Edit/Write 한정)은 PR 2 에서 그대로 얻는다.
   - 전제·미검증: lane-worker task 에 `agent_id` 가 기록되지 않음(`lane-worker.md:35-38` begin 에 `--agent-id` 없음 · 기록 자리 `scripts/harness/hooks/lifecycle_contract.py:245`) → task 는 checkout 키로 찾음. lane 이 부모 checkout 에서 돈 관측 1회(R2-2) · 같은 checkout 에 이전 미인계 task 가 남은 경우 오차단 가능 → 「열린 task」 = L1 ⓐ 종료 기록 없는 scoped lane-worker task(PR 2). Workflow `agent()` 로 스폰한 lane 에서 PreToolUse hook 실행 여부 미검증.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓒ(PR 1) → ⓐ(PR 2, L1 ⓐ 뒤) 조합(Ted 분할과 일치) + 새 선택지 ⓒ′: ⓒ 문서 수정에 「fix 레인은 task 2개(시험 작성 task = scope 에 시험 경로 포함 → handoff / 구현 task = scope 에서 `frontend/test/**`·`services/*/tests/**`·`gates/**`·`contracts/**` 제외 → handoff)」 절차를 적어 코드 없이 단계 구분을 만든다 · 확신 높음
 - 완료 기준(PR 1 · ⓒ): `SKILL.md:101` 두 문장 분리 · `:101` · `:106` · `dual-agent.md:60` 이 Claude lane 의 실제 동작(env 없음 → 편집 시점 차단 없음 · `--scope` 인계 시점 차단)을 기술 · `grep -n 'COLAB_FIX_LANE=1' .agents/skills/design-review/SKILL.md` 결과가 Codex/env 조건과 함께만 나옴.
 - 완료 기준(PR 2 · ⓐ):
   - unittest ⑴ `COLAB_FIX_LANE` 없이 scope `frontend/src/**` 인 lane-worker task + `agent_id` 있는 Edit payload → `frontend/test/…` · `gates/…` · `contracts/…` rc=2, `frontend/src/…` rc=0 ⑵ scope 에 `frontend/test/**` 가 든 task → 시험 경로 rc=0 ⑶ `agent_id` 없는 payload · scope 미선언 task → rc=0 ⑷ 기존 env 시험(`test_agent_bridge.py:509-512` · `:537-540` · `test_harness_lifecycle_contract.py:394`) green.
@@ -120,7 +118,6 @@
 - 문제: migration-guard · decision-number-guard · test-file-guard 는 `Edit|Write` matcher 에만 등록(`.claude/settings.json:68-84`). git-guard 는 git/gh 만 판정(`git-guard.sh:181` · `:188`). `sed -i` · redirect · python 쓰기는 세 guard 를 거치지 않음. `README.md:116` 은 「마찰 장치이지 보안 경계가 아니다」를 `bash -c` 감싸기 예로만 적고 Bash 쓰기 경로는 적지 않음. 사용자 메모리(저장소 밖)는 Edit 차단 시 Bash 로 쓰도록 안내.
 - 선택지: ⓐ 경계 표기 — README hook 절 · test-file-guard 머리말(PR 1 파일)에 「Edit/Write 도구만 대상 · Bash 쓰기는 대상 아님 · 사후 검사 수단」 명시. migration-guard · decision-number-guard 머리말의 같은 문장은 C10(PR 3 · 파일 소유) ⓑ PreToolUse(Bash)에서 쓰기 형태(`sed -i` · `>` · `tee` · `python -c`) × 보호 경로 대조 — 형태 열거 불완전 · 오탐 면 증가 · fail-closed 면이 git-guard 와 같음 ⓒ PostToolUse(Bash)에서 보호 경로 변경 감지 — 실행 후라 차단 불가, 안내만.
 - 권장: ⓐ — scope 선언 task 의 handoff/H7 대조는 begin 시점 파일 전체 내용 hash 기준이라 Bash 쓰기도 드러남(`lifecycle-evidence.md:92` 문서 근거). ⓑ 는 A1 의 fail-closed 면을 키움. migration · 결정 번호의 Bash 편집에 대한 사후 검사 수단 유무는 이 초안에서 미확인 → 표기 전에 확인해 「있음/없음」으로 적음.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ + 보강 — 「사후 검사 수단」을 추상어로 두지 않고 `begin --scope` handoff/H7(baseline = 전 파일 내용 hash, `lifecycle-evidence.md:91`) 을 지명한다. 이 검사는 Edit/Write/Bash 무관하게 변경을 잡으므로 Bash 쓰기의 실제 경계다. ⓑ·ⓒ 기각. · 확신 높음
 - 완료 기준: `README.md` hook 절과 test-file-guard 머리말에 대상 도구 · 비대상 경로 · 사후 검사 수단(없으면 「없음」)이 적히고 harness-contract gate green. 코드 변경 0. 나머지 두 guard 머리말은 C10 완료 기준.
 - 판정 질문: 권장안 수용?
 
@@ -131,7 +128,6 @@
   - 저장소 안 호출부 중 gate 이름을 둘 이상 넘기는 곳 0건(R5-6 정정 · git grep) → 노출은 에이전트 · 사람의 수동 실행.
 - 선택지: ⓐ 인자 검사를 mutex · task 결합 앞에 둠 — 단독 gate = 인자 1개, `all` = 없음 또는 `-j <양의 정수>`, `task` = 추가 인자 없음. 위반 · 빈 인자 · 알 수 없는 gate → 버린 토큰/이름을 stderr 에 적고 78 ⓑ 여러 gate 순차 실행 허용 + 집계 exit code(초안 H7 선택지) — 집계 우선순위(R3-9 나머지, PR 2)와 얽힘 ⓒ ⓐ 와 같되 알 수 없는 gate 는 1(판정 실패).
 - 권장: ⓐ — 「환경·입력 부재로 판정할 수 없는 준비 실패 = 78」(AGENTS.md)과 일치. 새 집계 규칙 불필요. 다중 인자 호출부 0건이라 호환 부담 없음.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (알 수 없는 gate 도 78). ⓒ 기각 · ⓑ 기각. · 확신 높음
 - 완료 기준: 시험이 ⑴ `run.sh a b` · `run.sh all -j4` · `run.sh all -j 4 x` · `run.sh task x` → 78 + stderr 에 버린 토큰 ⑵ `run.sh no-such-gate` · 인자 없음 → 78, host mutex 획득 기록 0 ⑶ 단독 gate · `all -j N` · `task` 기존 동작 무변경을 보임. exit 2 에 기대는 기존 시험 · 도구 0건 확인(`scripts/tests` 3파일 grep 0건 — 전수 아님, `gates/tools/*selftest*` 는 spec 단계에서 확인).
 - 판정 질문: 권장안 수용? (알 수 없는 gate 를 78 로 볼지 1 로 볼지)
 
@@ -139,7 +135,6 @@
 - 문제: `scripts/harness/hooks/git-guard.sh:71` · `scripts/harness/hooks/test-file-guard.sh:27` 머리말 「exit 1 은 통과다 · 판정을 못 하면 통과가 기본값」. 실제는 envelope 이상 · python3 부재 시 exit 2(`git-guard.sh:81-83` · `test-file-guard.sh:38`)이고, 뒤의 `command -v python3 … || exit 0`(`git-guard.sh:90` · `test-file-guard.sh:42`)은 도달 불가(조립 시 재열람 2026-09-25).
 - 선택지: ⓐ 머리말을 현행 fail-closed(envelope · python3 부재 = exit 2) 기준으로 교정 + 도달 불가 줄 삭제 ⓑ 머리말만 교정
 - 권장: ⓐ — A1 · A2 가 두 파일을 고치므로 같은 커밋에 얹는다. A1 의 「파싱 실패 = 현행 분리 규칙 폴백」도 git-guard 머리말에 적는다. `migration-guard.sh` · `worktree-setup.sh` 쪽은 C10(PR 3).
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ · 확신 높음
 - 완료 기준: `grep -n 'exit 1 은 통과' scripts/harness/hooks/git-guard.sh scripts/harness/hooks/test-file-guard.sh` 0건 · 도달 불가 줄 삭제 뒤 A1 · A2 시험과 기존 시험(`test_agent_bridge.py` · `test_harness_lifecycle_contract.py`) green.
 - 판정 질문: 권장안 수용?
 
@@ -163,7 +158,6 @@
 - 선택지: ⓐ 해소 절차를 `colab-v2-work` PR 절차에 문서화(코드 무변경 · red 는 계속 난다) ⓑ 부모 불일치를 `EvidenceReadinessError`(78)로 재분류(분류만 바뀌고 병합 차단·수동 병합은 그대로) ⓒ 대조 기준 변경 — 둘째 부모 == 이벤트 head(현행 유지) · 첫째 부모 = 이벤트 base 의 자손이면서 `base_ref` 이력 안의 커밋
 - 검토 후 제외: ⓓ `required-gates` 재실행 — 재실행은 원래 이벤트 payload(`base.sha`)를 그대로 쓰고, base 브랜치 이동은 `pull_request` 이벤트를 만들지 않는다(`synchronize` 는 head 갱신 때만 · GitHub 문서 근거 · 미실측).
 - 권장: ⓒ — 수동 develop 병합 단계 자체를 없앤다. 둘째 부모 정확 대조가 남아 head 트리 결속은 유지된다. `required-gates` checkout(`.github/workflows/ci.yml:812`)은 fetch-depth 기본 1 이라 조상 대조용 base 이력 fetch 가 추가로 필요하다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓒ(정의를 좁힌 형태) + ⓐ(잔여 사례 문서화) · 확신 중간
 - 완료 기준: `test_harness_evidence.py` 에 「첫째 부모가 이벤트 base 의 자손」 사례 green 추가 · 기존 부정 사례(부모 순서 뒤바뀜 · head 불일치 · 단일 부모 · tree 불일치) EvidenceError 유지 · `base_ref` 이력 밖 첫째 부모 사례 EvidenceError 신설 · PR 을 연 뒤 develop 이 앞선 실 PR 1건이 develop 병합 커밋 없이 `required-gates` green(관측 1회).
 - 판정 질문: `414f51e7` 의 결속 기준(첫째 부모 정확 일치)을 「이벤트 base 의 자손 · base_ref 이력 안」으로 푸는 ⓒ 수용?
 
@@ -172,7 +166,6 @@
   - 도입 `9adaf4db`(2026-09-18). 이후 ai 계열 병합(#151 · #154 · #160)은 모두 core-api 경로도 건드려 발현 0건(R3 기록).
 - 선택지: ⓐ 등록부 filters 에 `ai-service` · `pipeline-worker` 추가(RUN 식과 일치) ⓑ RUN 식에서 core-api 추가 절 제거 ⓒ ⓐ + RUN 식과 등록부 filters 를 대조하는 시험 추가
 - 권장: ⓐ — `9adaf4db` 본문 「게이트는 AI DB 를 기본 판정 범위에 넣는다」의 의도를 유지하고 등록부만 맞춘다. ⓑ 는 그 의도와 충돌한다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 새 선택지 ⓓ — ⓐ 를 포함하되 적용 판정을 등록부에서 **한 번만** 계산: `changes` 잡에 `verify_evidence.py applicable`(가칭) 단계를 두어 생산자별 `run-service-tests-<svc>` 출력을 내고, `RUN` 은 `needs.changes.outputs[format('run-service-tests-{0}', matrix.service)]` 를 읽는다. 폴백(예산 부족 시) = ⓐ 단독. · 확신 중간
 - 완료 기준: `test_harness_evidence.py` 에 filters {ai-service: true, 나머지 false} + core-api 증거 존재 사례 green · 같은 조건 증거 부재는 red(준비) 유지 · harness-contract green.
 - 판정 질문: 권장안 수용? (ⓒ 대조 시험까지 넣을지 함께)
 
@@ -182,7 +175,6 @@
   - ADR-0004 는 세 상태와 「두 red 모두 병합 차단」만 정하고 집계 우선순위는 정하지 않았다. lifecycle 경로는 이번 분석에서 실측 없음(unit test 근거). `stop` · `validate-input` 의 exit 2 는 hook 차단 코드라 대상 밖. 알 수 없는 게이트 exit 2(`run.sh:971`–`977`)는 PR 1(A4)에서 정한 값을 따른다.
 - 선택지: ⓐ 판정 우선(1 > 78 > 0)으로 전 집계기 통일 + 분류 뒤바뀜 교정 + 규칙을 새 ADR 로 기록 ⓑ 준비 우선(78 > 1 > 0)으로 통일 ⓒ 현행 유지 + 집계기별 규칙 문서화
 - 권장: ⓐ — exit 1 은 끝난 판정이라 다른 게이트의 준비 실패와 무관하게 결함이 있다는 뜻이다. 준비 우선은 결함을 환경 실패로 표시한다. 현행 4곳 중 2곳(`verdict` · selftest)이 이미 판정 우선이다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ — 판정 우선(1 > 78 > 0) 통일 + 분류 교정 + 새 ADR. 단 lifecycle CLI 교정은 판정성 raise 지점에만 `JudgementError(ValueError)` 를 도입하는 부분 적용. · 확신 높음(우선순위) · 중간(lifecycle 분류 범위)
 - 완료 기준: 입력 조합 {1만 · 78만 · 1+78 · 111 · 표식만} 표를 unit test 로 고정 — `run_gates` · `run.sh all` · selftest · `verdict` 가 같은 값 · `record` 명령 불일치 → 1 · `ci` JSON 해독 실패 → 78 · scope 위반 handoff → 1(`test_task_runtime.py:380` 갱신) · 78 을 해석하는 호출부(스킬 · 역할 · hook) grep 대조 결과를 PR 에 첨부 · adr-records green.
 - 판정 질문: 판정 우선 규칙 수용? 기록 자리는 새 ADR(0010)인지 `gates/README.md` 정본 절인지.
 
@@ -191,7 +183,6 @@
   - develop 은 required status check 가 없다(메인 재현 2026-09-25) → CI red 가 develop 병합을 막지 않는다.
 - 선택지: ⓐ 두 게이트를 ci-producers 생산자로 등록 · `ci.yml` 에서 `verify_evidence.py record` 로 실행 + harness-contract 가 「gates.required ⊆ 등록부 gate 집합」 대조 ⓑ 'required' 표현 제거(키 이름 변경 · green 줄 개수 삭제) ⓒ 대조만 추가하고 두 게이트는 required 에서 뺌
 - 권장: ⓐ — 이름이 약속하는 것을 기계가 확인하게 한다. 추가 등록분은 2개다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ — 두 게이트를 ci-producers 생산자로 등록해 `ci.yml` 새 잡에서 `record` 로 실행 + `check.py` 에 「`gates.required` ⊆ 등록부 `checks[*].gates` 합집합」 대조. 부수: `agent-bridge.yml` 은 폐지(또는 `workflow_dispatch` 만). · 확신 중간~높음
 - 완료 기준: harness-contract 가 생산자 없는 required 게이트를 red(판정)로 내는 fixture test · 두 게이트 증거가 `required-gates` 대조에 포함된 PR 1건 green · 대상 경로 밖 PR 에서 두 생산자 N/A 처리.
 - 판정 질문: 권장안 수용? — 병합 차단 효과는 T1 「develop required check 지정」 판정에 달린다(지정 없으면 red 가 develop 병합을 막지 않는다).
 
@@ -200,7 +191,6 @@
   - 다른 job 은 모두 등록부 job 이라 `required-gates` 가 path filter 로 skip 사유를 대조한다(`verify_evidence.py:207`–`214`). 사유 대조가 없는 skip 은 intent-ref 1건이다. 현재 `if` 식으로는 develop 대상 PR 에서 skipped 가 나지 않는다 — 노출은 `if` 식이 바뀔 때 조용히 통과하는 경로다.
 - 선택지: ⓐ intent-ref 를 생산자로 등록 + record 로 감쌈(적용 판정이 path filter 만 보므로 등록부에 이벤트 조건 필드 신설 필요) ⓑ `ci-required` 가 intent-ref 의 `skipped` 를 `event != pull_request` 또는 `base_ref == product` 일 때만 허용 ⓒ 현행 유지
 - 권장: ⓑ — 사유 대조가 없는 유일한 skip 을 닫고 등록부 스키마는 건드리지 않는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ (보강: 허용 조건을 `event_name != 'pull_request' || base_ref == 'product'` 로 job `if` 와 거울상으로 두고, `workflow_dispatch` 도 같은 식에 포함) · 확신 높음
 - 완료 기준: `ci-required` 인라인 판정을 `scripts/harness/` 스크립트로 옮기고 unit test — pull_request(develop 대상) + intent-ref skipped → 1 · push + skipped → 0 · product 대상 PR + skipped → 0.
 - 판정 질문: 권장안 수용?
 
@@ -211,7 +201,6 @@
   - placeholder 교정(ⓐ · ⓑ 공통): 줄 전체 또는 표 칸 전체가 `<…>` 일 때만 placeholder. `.github/pull_request_template.md:1`–`34` 의 자리표시는 모두 이 형태다.
 - 권장: ⓐ + placeholder 교정(B 초안) — 교정 없이 ⓐ 를 켜면 정상 본문이 red 다. `ci.yml:6` 은 types 미지정(기본 opened · synchronize · reopened)이라 edited 를 넣으면 본문 수정마다 전체 CI 가 돌므로 별도 workflow 로 둔다.
   - 반론(CT 초안 T2 · ⓑ 권장): PR 게시는 Ted 몫(AGENTS.md) → CI 가 게시된 본문을 red 로 내면 게시 뒤 본문 수정 루프가 생긴다. 새 workflow 는 required 지정(T1)이 없으면 병합을 막지 않는 표시로만 남는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ + ⓑ 조합 + 새 선택지 보강: CI 실행은 `--mode draft` 이되 Head-SHA 불일치를 구조 실패와 분리 보고(`--stale-head warn` 류 플래그 → `::warning::` + step summary, 종료 0) · 구조·placeholder 실패만 exit 1 · 확신 중간
 - 완료 기준: `test_pr_contract.py` 에 인라인 `<task_id>` · `Array<string>` 본문 통과 사례 · 템플릿 원문 본문 실패 사례 추가(ⓐ · ⓑ 공통). ⓐ 면 게시된 PR 1건에서 새 workflow green(관측 1회), ⓑ 면 `colab-v2-work` 에 실행 1줄(grep 1건).
 - 판정 질문: CI workflow(ⓐ)와 로컬 절차(ⓑ) 중 무엇? placeholder 교정은 공통으로 수용?
 
@@ -224,7 +213,6 @@
   - 공통 교정(이름 선택과 무관): 페이지 수 == 선언 URL 수 대조(불일치 red(판정)) · probe 가 전체 배열을 내거나 게이트가 `counts` 와 배열 길이 대조 · 게이트 시작 때 `$OUT` 비움
   - 선택지(H2 열): ⓓ `cssRules` 를 가진 규칙(`@layer` · `@media` · `@supports`) 재귀 순회 ⓔ 게이트가 쓰지 않는 열 삭제
 - 권장: ⓐ + 공통 교정 + ⓓ — 파일 이름 길이가 URL 길이와 무관해지고, 선언 URL 수 대조가 덮어쓰기 · 잔존 증거를 함께 잡는다. ⓓ 는 초안 H2 의 `:active` 계측 용도를 복구한다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (slug 앞 40자 + `-` + sha256 12자) + 공통 교정 3건 + ⓓ · 확신 높음
 - 완료 기준: `gates/tools/frontend-visual-selftest.sh`(실브라우저 없음)에 사례 추가 — 앞 60자가 같은 URL 2개 → probe 2개 · 페이지 수 == URL 수 · 81번째 비허용 위반 → red · 이전 run probe 잔존 → 세지 않음. `@layer` 재귀는 agent-browser 1회 실측으로 `frontend/src` 화면의 `activeRules` > 0 확인.
 - 판정 질문: 권장안 수용?
 
@@ -233,7 +221,6 @@
   - `gates/tools/operator-notifications.sh:7` trap 도 `:10` `pg_start` 로 대체된다. `:8` · `:9` · `:11` · `:12` · `:14` 는 `::gate-readiness-failure::` 표식 없는 `exit 78` 이라 요약에 원인이 남지 않는다. CI runner 는 일회용이라 누수는 로컬 호스트 한정.
 - 선택지: ⓐ `pg_start` 가 기존 EXIT trap(`trap -p EXIT`)을 읽어 `pg_cleanup` 과 이어 붙임 ⓑ `pg_start` 는 trap 을 걸지 않고 호출자 전원이 `pg_cleanup` 을 부름 ⓒ `_pg.sh` 에 정리 함수 등록 목록을 두고 trap 1개가 목록 실행
 - 권장: ⓐ — 호출자 무수정 · 기존 trap 보존. ⓑ 는 호출자 하나라도 빠뜨리면 컨테이너가 남는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓒ (보강: 등록 함수 `pg_on_cleanup` 자체가 `trap pg_cleanup EXIT INT TERM` 을 멱등 설치 · `pg_cleanup` 은 등록 목록을 역순 실행 뒤 컨테이너·슬롯 정리) + operator-notifications 5개 exit 에 `_readiness.sh` 표식 · 확신 높음
 - 완료 기준: `_pg.sh` 대상 selftest(docker stub)에서 호출자 trap 과 `pg_cleanup` 이 둘 다 실행 · `operator-notifications.sh` 의 78 경로 전부 표식 출력(grep 으로 표식 없는 `exit 78` 0건) · service-tests 로컬 1회 실행 뒤 `/tmp/service-tests-*` 수 불변. 기존 329개 정리는 범위 밖(호스트 정리 — Ted 판정).
 - 판정 질문: 권장안 수용?
 
@@ -246,7 +233,6 @@
 - 문제(측정): `.git/colab-harness` 153 MB · task.json 204 · checkout key 42(메인 재현 2026-09-25 · 본 초안 재계측 동일). 사라진 checkout 의 task 74건 · 보고서 없는 gate 역할 task 12건(R4 census · 검증 confirmed). task 당 약 700 KB 는 baseline 이 저장소 전 파일 hash 를 담기 때문이다(`lifecycle_contract.py:137`–`158`, `:244`–`247`) — 저장 형식 축소는 이 항목 범위 밖.
 - 선택지: ⓐ `stop()` 통과 시점(CLI handoff · SubagentStop 훅 각각)에 task.json 에 종료 기록(mode · run_id · 판정 H6/H7 · 시각)을 남기고 열린/닫힌 task 조회 명령을 둔다 ⓑ `lifecycle prune` — 기본 dry-run · `git worktree list` 에 없는 checkout 의 task 와 종료 뒤 N일 지난 task 를 대상으로 출력 · `--apply` 로만 삭제 ⓒ 문서만 — lifecycle-evidence.md 에 보존 규칙·수동 삭제 절차
 - 권장: ⓐ+ⓑ — ⓐ 없이는 ⓑ 가 인계된 task 와 버려진 task 를 가르지 못한다. ⓐ 는 L2 ⓑ · L3 ⓑ · A2 ⓐ(분할 시 PR 2)의 전제다. 현재 store 에 대한 `--apply` 실행은 Ted 승인 뒤(되돌릴 수 없는 삭제).
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ + ⓑ (ⓒ 는 두 선택지의 부속 문서로 흡수) · 추가: ⓐ 의 종료 기록에 Stop payload `agent_id` 를, `researcher-task.sh` 자동 begin 에 spawn `agent_id` 를 **정보 필드**(대조 없음)로 남긴다 · 확신 높음
 - 완료 기준: `test_task_runtime.py` 에 ① handoff 성공 뒤 task.json 종료 기록 존재 ② `stop()` 실패 시 종료 기록 없음 ③ prune dry-run 이 사라진 checkout 의 task 를 나열하고 파일을 지우지 않음 ④ `--apply` 뒤 대상 디렉터리 부재 — 시험이 추가되고 `agent-bridge` gate green. 현재 store 에 대한 dry-run 대상 건수를 PR 요약에 기록.
 - 판정 질문: 권장안 수용? 수용 시 보존 기간 N 을 며칠로 할지 · prune `--apply` 를 누가 실행할지.
 
@@ -263,7 +249,6 @@
   - 기존 task 처리: 현재 store 의 task 204건은 종료 기록 스키마가 없다. ⓑ 는 종료 기록 스키마(L1 ⓐ)를 가진 task 만 「종료 기록 없는 task」로 센다 → PR 2 병합 전 task 는 대상 밖. 이 규칙 없이 켜면 병합 직후 거의 모든 researcher begin(SubagentStart 자동 begin 포함)이 거부된다.
   - 산출물 순서: `runtime:artifacts/<파일>` 은 git-common-dir 아래라 checkout snapshot(`lifecycle_contract.py:137`–`143` `git ls-files`) 밖이다 → artifact task begin 전에 쓴 산출물도 「baseline 대비 변경」에 들어가지 않는다. checkout 안 경로(`dev-package/**` 등)에 먼저 쓴 경우는 거부된다(의도).
   - 오차단 면: 「baseline 대비 변경」에는 같은 checkout 의 다른 writer(메인 · 형제 레인) 변경도 들어간다(L4 와 같은 전제). 인계 실패로 남은 task 가 이후 researcher begin 을 계속 막을 수 있다 → 거부 메시지에 출구(L1 종료 · prune 명령)를 적고, 적용 대상(SubagentStart 자동 begin 포함 여부)은 spec 에서 정한다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ(L1 ⓐ 뒤) + ⓒ(문장 정정은 병행) · ⓐ 는 L8 측정 결과가 나올 때까지 보류 · 확신 중간
 - 완료 기준: `test_task_runtime.py` 에 ① 「제품 파일 변경 → 새 researcher begin → read-only handoff」 시나리오가 begin 단계에서 거부 ② 같은 시나리오의 `--agent-id` 변형도 거부 ③ 변경 없는 상태의 artifact task 추가 begin(`lifecycle-evidence.md:43` 절차) 통과 ④ 거부 메시지에 출구 명령 포함 ⑤ 종료 기록 스키마 없는 옛 task 만 있는 checkout 에서 researcher begin 통과 ⑥ `runtime:artifacts` 에 먼저 쓴 뒤 artifact task begin 통과 — green · probe 절차 ①–⑤ 를 격리 clone 에서 재실행해 ③ 단계 거부 · `lifecycle-evidence.md:36` 문장이 기계 강제 지점(file:line)을 가리킴.
 - 판정 질문: ⓑ(begin 연쇄 차단) 수용? SubagentStart 자동 begin 에도 적용할지? 옛 task(종료 기록 스키마 없음) 제외 규칙 수용?
 
@@ -273,7 +258,6 @@
 - 문제(H9): 지시문의 공용 브랜치 이름 `fixlane-work` 로 다른 레인의 `checkout -B` 가 이 레인의 ref 를 되돌렸다(`dev-package/sessions/design-fix-20260924-F-preview.md:114`–`117` · 커밋 손실 0). `.agents` · `.claude` · `docs` 에 이 이름 0건 — 지시문 쪽 문제. 발생 조건은 미재현.
 - 선택지: ⓐ lane-worker 첫 줄 검사 — 지시문이 준 부모 checkout 경로와 `git rev-parse --show-toplevel` 이 같거나, 현재 브랜치를 다른 worktree 도 체크아웃하고 있으면(`git worktree list --porcelain`) 구현하지 않고 정지 · `colab-v2-work` 지시문 체크리스트에 「부모 경로 전달 · 레인별 고유 브랜치 이름」 추가 ⓑ 기계 검사 — `lifecycle begin --role lane-worker` 가 같은 checkout_id 에 종료 기록 없는 lane-worker task 가 있으면 거부(전제: L1 ⓐ) ⓒ 문서만 — 「(자동)」 3곳을 「스폰 시 isolation 명시(Workflow `agent()` 포함)」로 고치고 E.md:5 관측을 근거로 적음
 - 권장: ⓐ+ⓒ — 관측된 형태(부모 worktree 에서 실행)를 스폰 직후 구현 전에 잡는다. `--git-dir` 대 `--git-common-dir` 비교는 부모가 linked worktree(통합 worktree)인 E.md:5 경우를 잡지 못해 선택지에서 뺐다. ⓑ 는 L1 ⓐ 채택 시 같은 PR 에 넣을지 따로 판정.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 새 선택지 ⓓ + ⓐ + ⓒ · ⓑ 는 L1 ⓐ 뒤 추가 — ⓓ = `worktree-setup.sh`(SubagentStart:lane-worker · 스크립트 본문만 수정) 가 payload `cwd` 의 toplevel 과 `$CLAUDE_PROJECT_DIR` 의 toplevel 이 같으면 「격리 아님 · 구현하지 말고 정지」 한 줄을 레인 맥락 첫머리에 싣고 venv 구성을 건너뛴다 · 확신 중간
 - 완료 기준: `executing-plans` · `writing-plans` · `VENDORED.md` 에서 lane-worker 「(자동)」 문구 grep 0건 · `lane-worker.md` 에 검사 명령 · 재현 기록 — 부모 경로를 준 lane-worker 를 isolation 없이 스폰하면 구현 전 정지를 보고하고, isolation 명시 스폰은 통과(Workflow `agent()` 1회 · Agent 도구 1회)가 PR 요약에 있다.
 - 판정 질문: 권장안(ⓐ+ⓒ) 수용? ⓑ 를 같은 PR 에 넣을지.
 
@@ -283,7 +267,6 @@
 - 문제(H5 문서 불일치): `.agents/roles/researcher.md:27` 은 쓰기 자리를 `dev-package/sessions/` · `reports/` · `intent/` 로, `design-review/SKILL.md:63`(§2-2 항목 5)은 `dev-package/sessions/design-review-<YYYYMMDD>-L<n>.md` 쓰기를, `:65`(항목 7)은 같은 worktree 에서 레인 n개 구성을 지시한다. 새 task 는 산출물을 `runtime:artifacts/<파일>` 로만 받는다(`scripts/harness/task_state.py:66`–`68`).
 - 선택지(H4 틀 재사용): ⓐ `design-review` §2-2 · `researcher.md` 를 「`runtime:artifacts` 로 쓰고 메인이 hash 대조로 반입」으로 바꾼다(문서) ⓑ 레인마다 `isolation: worktree`(문서 · L3 과 결합) ⓒ 감시 범위를 task 선언 산출물·scope 로 좁힌다(코드)
 - 권장: ⓐ(researcher) + ⓑ(lane · L3 ⓐ 로 확인) — 코드 변경 없이 다른 writer 를 checkout 에서 뺀다. ⓒ 는 선언 밖 제품 파일 편집 탐지를 빼므로 H6 의 목적과 충돌한다. 현행 우회(researcher 병렬 산출 → runtime:artifacts)는 사용자 메모리에만 있어 저장소 문서로 올린다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ + ⓑ(조건부 규칙 · L3 과 결합) · ⓒ 반대 · 확신 높음
 - 완료 기준: `design-review/SKILL.md` §2-2 에 `dev-package/sessions/design-review-<YYYYMMDD>-L<n>.md` 쓰기 지시 grep 0건 · `researcher.md` 쓰기 범위에 runtime:artifacts 절차 · 재현 기록 1회 — 같은 checkout 에서 researcher 2건이 runtime:artifacts 로 쓰고 각각 `handoff --mode artifacts` 로 H6 통과.
 - 판정 질문: 권장안(ⓐ+ⓑ · ⓒ 기각) 수용?
 
@@ -292,7 +275,6 @@
 - 문제: scope 판정은 begin 시점 커밋..HEAD 전체 diff 를 센다(`:410`–`419`). scoped lane 이 task 중 develop 을 병합하면 병합으로 들어온 파일이 전부 범위 밖이 된다. `test_task_runtime.py:319`–`343` 의 merge 는 begin 이전 충돌 생성용 — begin 뒤 병합 커밋 시험 0. B1 ⓒ 채택 시 PR 브랜치에 develop 을 병합하는 절차가 없어져 이 경우의 한 원인이 빠진다(B1 연동).
 - 선택지: ⓐ begin 에서 glob 의 첫 와일드카드 앞 디렉터리 접두가 없으면 거절(기존 디렉터리 아래 새 파일은 통과) · lifecycle-evidence.md 범위 절에 「scoped task 중 병합하면 병합 파일이 범위 밖 — 병합 뒤 새 task」 문장 · 현재 병합 동작을 고정하는 시험 ⓑ ⓐ + `stop()` 이 begin 뒤 병합 커밋의 병합 부모와 HEAD 내용이 같은 파일을 레인 변경에서 뺌(코드) ⓒ 현행 유지 · 문서만
 - 권장: ⓐ — 두 경우 모두 fail-closed 라 거짓 green 은 없다. ⓑ 는 병합 충돌 해소 편집을 레인 변경에서 빼는 경로를 새로 만든다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (접두 검사의 판정 기준을 「첫 와일드카드 앞 구간의 dirname 이 작업 트리에 존재」로 고정 · 거부 메시지에 출구 2개 명기) · 확신 높음
 - 완료 기준: `test_task_runtime.py` 에 ① 없는 접두 glob begin 거절 ② 기존 디렉터리 아래 새 파일 glob 통과 ③ begin 뒤 병합 커밋 → 병합 파일이 범위 밖 목록에 포함(현재 동작 고정) — green · lifecycle-evidence.md 범위 절에 병합 문장 1건.
 - 판정 질문: 권장안 수용?
 
@@ -301,7 +283,6 @@
 - 문제: `check_gate_parallelism`(`scripts/harness/check.py:25`–`75`) 직접 시험 0 — `scripts/tests/test_harness_config.py:240` 이 lambda 로 대체한다. 미선언 gate 통과 · `ALL_GATES` 정규식 파손 회귀는 live 저장소 대상 gate 실행으로만 드러난다.
 - 선택지: ⓐ selftest 에 두 lifecycle 시험 파일 추가 + `check_gate_parallelism` fixture 시험(미선언 gate · `ALL_GATES` 부재 · 없는 gate 선언 · serial/parallel 외 값) ⓑ fixture 시험만 추가하고 문서에 「lifecycle 파일 변경 lane 은 `agent-bridge` gate 선언」 ⓒ 문서만
 - 권장: ⓐ — run.sh 한 줄과 시험 추가로 끝난다. `all` 에서 60 시험이 두 번 도는 추가 시간은 측정해 PR 요약에 적는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (두 lifecycle 시험 파일을 `harness-contract-selftest` 에 추가 · `agent-bridge` 에서는 빼지 않음 · `check_gate_parallelism` fixture 시험 4종) + ⓑ 의 문서 문장을 `.agents/roles/lane-worker.md`·`colab-v2-work` 에 1줄 · 확신 높음
 - 완료 기준: `gates/run.sh harness-contract-selftest` 로그에 두 lifecycle 시험 모듈 실행 · 새 fixture 시험이 결함 fixture 에서 errors 비어 있지 않고 정상 fixture 에서 0 — green · 시험 수 증가분 기록.
 - 판정 질문: 권장안 수용?
 
@@ -309,7 +290,6 @@
 - 문제: 저장소 기록 0 — `StructuredOutput` 은 `.agents` · `.claude` · `docs` 에 0건, 흡수 대상 초안 intent 에만 있다. 사용자 메모리(저장소 밖)에 「`agentType: 'advisor'` · `'measurement-lane'` 에 `schema` → 'completed without calling StructuredOutput' 로 워크플로 정지(3회)」. 원인(maxTurns · measurement-lane 종료 형식 · 플랫폼 동작)은 미검증. 당시 advisor maxTurns 12 → 현재 16(`.claude/agents/advisor.md:7` · 커밋 `0e33ce02`) · measurement-lane 60(`.claude/agents/measurement-lane.md:7`).
 - 선택지: ⓐ 문서 — Workflow 판정·측정 단계는 schema 없이 첫 줄 `VERDICT:` 텍스트로 받는 현행 우회를 `colab-v2-work` 절차로 올림 ⓑ 재현 먼저 — 현재 정의에서 schema 를 건 advisor · measurement-lane 각 1회 실행 → 재현되면 ⓐ, 아니면 결과만 기록 ⓒ measurement-lane 종료 형식을 StructuredOutput 호출과 양립하게 변경 — 원인 확인 전 보류
 - 권장: ⓑ → ⓐ — 한도 변경(#131) 뒤 재현 여부가 없다. 재현 2회는 작은 비용이고 결과로 문서 문장이 정해진다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ → ⓐ (재현 2회를 먼저 · 재현 설계는 원인 판별형 · 결과와 무관하게 현행 텍스트 `VERDICT:` 우회를 colab-v2-work 에 「현행 관행」으로 1줄 기록) · 확신 중간
 - 완료 기준: 재현 2회의 결과(StructuredOutput 호출 여부 · 도구 호출 수 · 종료 사유)가 기록되고, 재현 시 `colab-v2-work` 에 규칙 1줄(grep 1건).
 - 판정 질문: 권장안(재현 뒤 문서화) 수용? 이 항목을 PR 3(문서 drift)으로 옮길지.
 
@@ -318,7 +298,6 @@
 - 분담: `/hooks` 재신뢰는 Ted 행동(T5). 이 항목은 재신뢰 뒤 agent 가 실행하는 스모크와 기록이다.
 - 선택지: ⓐ T5 뒤 agent 가 researcher 1건 스모크 — 훅 출력 agent_id 로 `begin --role researcher --agent-id <id> --artifact runtime:artifacts/<파일>` task 를 열고(`lifecycle-evidence.md:43`) 그 task 로 인계. `stop()` 은 task agent_id 와 SubagentStop payload agent_id 를 대조하므로(`lifecycle_contract.py:377`) H6 통과 = 일치 ⓑ 스모크 생략 · 문서 유지
 - 권장: ⓐ — L2 ⓐ(spawn 결속) 추가 여부가 이 결과에 달린다. 실행 시점 = T5 직후(T5 권장 ⓑ 면 PR 3 병합 뒤) · PR 2 diff 에 들어가지 않는 관측 항목. L2 변형이 보인 대로 agent_id 일치만으로는 task 교체를 막지 못한다 → 이 스모크는 L2 ⓑ 를 대체하지 않는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 새 선택지: ⓐ 를 T5 뒤가 아니라 **지금 먼저** 실행 — 스모크 자체가 재신뢰 여부의 관측이다. 훅 출력이 있으면 일치 판정 기록 · 없으면 「이 PC 훅 비활성」 기록 후 T5 → 재실행 · 확신 높음
 - 완료 기준: 스모크 1회의 훅 출력 agent_id · 인계 task_id · H6 결과(통과/「task role or agent identity differs」)가 기록되고, 통과면 `lifecycle-evidence.md:42` 문장 갱신 · 거부면 L2 ⓐ 제외 기록.
 - 판정 질문: 권장안 수용? 기록 위치(이 intent 확인 절 · `lifecycle-evidence.md`) 중 어디.
 
@@ -331,7 +310,6 @@
 - 유지되는 것: `parallel` 게이트는 뮤텍스 밖이고 postgres 슬롯은 호스트 전역이다 → 「게이트 도는 레인은 한 번에 하나」 규율 자체는 유지. ADR-0002 는 superseded(→ ADR-0005) 이력 문서라 고치지 않는다.
 - 선택지: ⓐ 전제 문장만 사실(serial = 호스트 뮤텍스 · parallel 제외 · postgres 슬롯 호스트 전역)로 교체, 규율 유지, ADR-0002 인용 옆에 superseded 표기 ⓑ 규율까지 완화(측정 레인 동시 실행 허용) ⓒ 현행 유지
 - 권장: ⓐ — 규율의 근거(슬롯 호스트 전역)는 남아 있고 틀린 것은 전제 문장이다. ⓑ 는 동시 실행 시 슬롯 고갈 78 재발 여부 실측이 없다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (＋ 근거 ADR 을 ADR-0005·spec `2026-09-18-gate-host-mutex.md` 로 바꾸고 ADR-0002 는 「superseded · 이력」으로만 인용) · 확신 높음
 - 완료 기준: `grep -rnE '뮤텍스가 없다|no cross-process mutex' .agents/roles .codex/agents` 0건 · `python3 scripts/agent-bridge.py check` · `gates/run.sh harness-contract` green · `docs/decisions/0002-*.md` diff 0.
 - 판정 질문: 권장안 수용?
 
@@ -340,7 +318,6 @@
 - `README.md:105` 「모든 훅 스크립트의 첫 줄이 이 값(COLAB_HOOKS=0)을 보고 즉시 통과」 — `uncommitted-artifacts.sh`·`lane-gate-summary.sh`·`lifecycle_contract.py` 의 COLAB_HOOKS 참조 0건. `docs/development/dual-agent.md:56` 「H6 자체를 끄거나 성공으로 위장하지 않는다」 → 동작은 의도, README 쪽 drift(결함 아님).
 - 선택지: ⓐ 훅 표를 현재 등록(`.claude/settings.json`·`.agents/harness.yaml`) 기준으로 다시 쓰고 COLAB_HOOKS 예외(H6/H7) 1줄 추가 ⓑ 훅 표를 지우고 정본 링크(`.agents/harness.yaml` 훅 목록 · `docs/development/dual-agent.md`) + COLAB_HOOKS 절(H6/H7 예외 포함)만 남김 ⓒ 표 유지 · 수치·ref 이름만 교정
 - 권장: ⓑ — 같은 목록을 두 곳에 두어 생긴 drift 다. 정본을 한 곳으로 줄이면 다음 훅 추가 때 README 를 고칠 일이 없다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ (표 삭제 · 정본 링크 ＋ `COLAB_HOOKS` 절 교정) — 단 `:75` decision-number-guard `origin/main` 은 **현재 코드와 일치**하므로 C5 ⓐ 와 같은 PR 에서만 바꾼다 · 확신 중간
 - 완료 기준: `grep -nE '훅 7개|origin/main|최신 .R-\*\.md' README.md` 0건 · COLAB_HOOKS 절에 H6/H7 예외 문장 1건 · `gates/run.sh harness-contract` green.
 - PR 1 연동: A1 완료 기준 ⑺ 이 `README.md:73` git-guard 행을, A3 이 README hook 절 경계 문장을 고친다. ⓑ 를 고르면 표는 지우되 A3 경계 문장은 COLAB_HOOKS 절과 함께 남긴다.
 - 판정 질문: 표 삭제(ⓑ)와 표 갱신(ⓐ) 중 무엇?
@@ -350,7 +327,6 @@
 - `ci.yml:167-171` 「WU-D3에서 실제 검사를 채운다 · 지금은 골격」 주석 잔존 · `:641` harness-eval 면제 설명이 `repo-hygiene` 잡(`:629`) 구간에 위치.
 - 선택지: ⓐ 표를 ci.yml 기준으로 갱신 + 주석 삭제·이동 ⓑ ⓐ + 표의 잡 이름 집합과 ci.yml 잡 이름 집합 대조를 harness-contract 에 추가 ⓒ 표 삭제 · 「정본 = ci.yml」 한 줄
 - 권장: ⓐ — 조건·게이트 매핑은 ci.yml 만으로 읽기 어려워 표를 둔다. 대조 검사(ⓑ)는 코드 추가라 Ted 판정.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (＋ 잘못 놓인 주석은 3곳) · 확신 높음
 - 완료 기준: 표 잡 이름 집합 = ci.yml 잡 이름 집합 − `changes`(대조 결과 PR 본문 기재) · `grep -n '골격' .github/workflows/ci.yml` 0건 · ci.yml diff 가 주석 줄뿐(`git diff -U0` 확인).
 - 판정 질문: 권장안 수용? 잡 이름 대조 검사(ⓑ) 추가 여부?
 
@@ -359,7 +335,6 @@
 - 범위 기록: 각 하네스 PR 은 Ted 승인 intent 에 근거한다 → 빠진 것은 계획 포인터 갱신이다. 이 intent 는 09-15 「추가 고도화 보류」 범위를 다시 연다 → 그 사실을 계획 문서에 적는다.
 - 선택지: ⓐ `R-HARNESS-PR-CENTRIC.md` `:4` 아래에 「2026-09-24~ 재개: #130 · #131 · #140 · 이 intent」 절 추가 + handoff 문서 머리에 이후 이력 포인터 + `:162`·`:175` 정정 ⓑ `AGENTS.md:18` 을 하네스 intent 목록으로 바꾸고 두 문서를 이력으로 동결 표기 ⓒ 현행 유지
 - 권장: ⓐ — `AGENTS.md` 는 always-on 120줄 상한 문서라 변경을 두지 않는다. 계획 문서 한 절 추가로 포인터가 닿는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 새 선택지: ⓑ 의 포인터 이동 ＋ ⓐ 의 append 포인터 — `AGENTS.md:18` 은 `harness-transition-handoff.md` 머리의 신설 「이후 이력」 절(#130 · #131 · #140 · 이 intent · PR 1-3)을 가리키고, `R-HARNESS-PR-CENTRIC.md:4` 아래엔 그 절로 가는 1줄만 · `:162`·`:175` 본문은 고치지 않고 그 위 「당시 기록」 표지에 날짜·해소 범위를 덧붙인다 · 확신 중간
 - 완료 기준: `grep -cE '#130|#131|#140' dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md docs/development/harness-transition-handoff.md` 각 ≥1 · 이 intent 경로 인용 1건 · `AGENTS.md` diff 0 · `gates/run.sh harness-contract` green.
 - 판정 질문: 권장안 수용?
 
@@ -367,7 +342,6 @@
 - 문제: `docs/development/github-ruleset.json:6` 대상 `refs/heads/main` — 원격 main 없음 · 적용 규칙셋은 product 하나(메인 재현 2026-09-25). `docs/development/release-evidence.md:43`·`:45` main PR 제안 문구. `scripts/harness/hooks/decision-number-guard.sh:63-73` 기준선 `origin/main` — 로컬 ref 부재(2026-09-25 `git rev-parse --verify origin/main` 실패) → 매번 워킹트리 `max-decision.sh` 로 물러서고, 그것도 못 읽으면 `:73` exit 0(통과). migration-guard 는 `origin/develop` 부재 시 준비 실패로 막는다(`migration-guard.sh:72-74`) → 두 ref 기반 guard 의 실패 방향이 반대. `migration-guard.sh:5`·`:10-11`·`:55`·`:70` 주석은 여전히 `origin/main`. PLAN-SoT 는 legacy 읽기 호환 자료(AGENTS.md) → low.
 - 선택지: ⓐ ruleset JSON 을 T1 결론대로 `refs/heads/develop` 대상으로 다시 쓰고 release-evidence 문구 동기화 · decision-number-guard 기준을 `origin/develop` 로, 기준 부재 시 migration-guard 와 같은 준비 실패(차단) · migration-guard 주석 교정 ⓑ ruleset JSON 에 「폐기 · 원격 설정은 T1」 표기 · guard 는 주석만 교정 ⓒ 현행 유지
 - 권장: ⓐ(ruleset 부분은 T1 판정 뒤) — 없는 ref 를 기준으로 삼는 상태를 끝내고, 「선언하면 검사」 원칙과 어긋나는 exit 0 경로를 없앤다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (ruleset JSON 의 required check 이름은 T1·B1 결론에 맞춰 PR 3 시점에 확정 · guard 기준 `origin/develop` ＋ 기준 부재 = 준비 실패) · 확신 중간
 - 완료 기준: `grep -nE 'refs/heads/main|origin/main' docs/development/github-ruleset.json docs/development/release-evidence.md scripts/harness/hooks/decision-number-guard.sh scripts/harness/hooks/migration-guard.sh` 0건 · decision-number-guard 「기준 ref 부재 → exit 2」 시험 1건 red→green · `gates/run.sh agent-bridge` green · T1 이 「적용 안 함」이면 JSON 에 폐기 표기.
 - 판정 질문: decision-number-guard 기준 부재 시 차단(ⓐ) 수용? 이 guard 수정을 PR 1(막는 장치)로 옮길지?
 
@@ -377,7 +351,6 @@
 - `.agents/skills/VENDORED.md:5` 「전 8종 명시 호출 전용」(본문 기준으로도 사실 아님) · `:98` 재대조 diff 대상이 9줄 adapter(`.claude/skills/<name>/SKILL.md`) → 본문 경로(`.agents/skills/<name>/SKILL.md`)여야 한다.
 - 선택지: ⓐ adapter 에 본문의 `disable-model-invocation` 값을 싣고 agent-bridge check 가 두 값 일치 + adapter → 본문 역방향 존재를 검사 · description 은 현행 ⓑ ⓐ + adapter description 에 본문 트리거 문구 복사(검사 포함) ⓒ VENDORED.md 만 정정
 - 권장: ⓐ + VENDORED.md `:5`·`:98` 정정 — 명시 호출 정책을 Codex(`agents/openai.yaml` `allow_implicit_invocation: false`)와 맞춘다. 트리거 복사(ⓑ)는 자동 호출 범위를 넓혀 ⓐ 와 방향이 반대라 따로 판정.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ ＋ ⓒ (adapter 에 `disable-model-invocation` 값 승계 · agent-bridge 양방향 검사 · VENDORED.md `:5`·`:98` 정정) · description 복사(ⓑ)는 하지 않음 · 확신 높음
 - 완료 기준: agent-bridge 부정 fixture 시험 2건(플래그 불일치 · 본문 없는 adapter) red→green · `python3 scripts/agent-bridge.py check` green · 새 Claude 세션 스킬 목록에서 4종 제외 여부 1회 관측 기록.
 - 판정 질문: ⓐ 수용? 트리거 문구 복사(ⓑ)는 하지 않는 것으로 확정?
 
@@ -385,7 +358,6 @@
 - 문제: `scripts/harness/config.py:160-165` 는 `.claude/agents/*.md` 의 frontmatter 를 떼고 본문(2줄 포인터)만 비교한다. `scripts/agent-bridge.py:82-92` 는 Codex toml 만 검사하고, Codex model/effort 는 `scripts/tests/test_agent_bridge.py:35` 가 단언한다. Claude 쪽 기대값 검사는 수동 grep(`dev-package/prd/specs/S-AGENT-MODEL-TIERING-20260924.md:62`) → model·effort·maxTurns·isolation·disallowedTools 를 바꿔도 모든 gate 통과.
 - 선택지: ⓐ `.agents/harness.yaml` 에 역할별 기대값 선언 + check 가 Claude frontmatter · Codex toml 양쪽 대조 ⓑ 단위 시험에 Claude frontmatter 기대값 단언 추가(Codex 방식과 같은 형태) ⓒ 현행 유지
 - 권장: ⓑ — Codex 쪽과 대칭을 맞추는 최소 변경(시험 파일 1개). ⓐ 는 선언 구조 신설이라 범위가 늘어난다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (범위 한정형) — `.agents/harness.yaml` 에 역할별 기대값을 두 도구 몫으로 선언하고 `check_contract` 가 Claude frontmatter · Codex toml 양쪽을 대조. 기존 `test_agent_bridge.py:35-59` 의 Codex 기대 dict 는 하드코딩 대신 harness.yaml 을 읽어 단언(선택 가능 모델 집합 단언은 시험에 유지). · 확신 중간
 - 완료 기준: frontmatter 값 1개(예: advisor maxTurns)를 바꾼 사본에서 시험 red, 원복 후 green(`gates/run.sh agent-bridge`).
 - 판정 질문: 권장안 수용?
 
@@ -395,7 +367,6 @@
 - `docs/development/lifecycle-evidence.md` measurement-lane 언급 0건 · `:10` 역할을 researcher·lane-worker 로만 적음 ↔ `scripts/harness/hooks/lifecycle_contract.py:55` `MEASURING_ROLES = ('measurement-lane',)` · `:254`.
 - 선택지: ⓐ 수치·역할 사실 교정 ⓑ 개수 수치를 문서에서 빼고 「정본 = `.codex/hooks.json`」 참조 + 재신뢰 대상에 09-12 · 09-18 · 09-24 정의 명시 + measurement-lane 절 추가 ⓒ 현행 유지
 - 권장: ⓑ — 개수는 정의 추가마다 다시 어긋난다. 재신뢰 대상 목록은 T5 결과를 적을 자리가 된다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ (현재형 문장만) — 개수 수치는 현재형 문장에서 제거하고 「정본 = `.codex/hooks.json`」 참조 · 재신뢰 대상에 `012df481`(09-12 Stop) · `4c07f1ea`(09-18 SubagentStop 대상 확대) · `faff6734`(09-24 SubagentStart researcher) 명시 · lane-worker 스킬 수 교정 · lifecycle-evidence 에 measurement-lane 절 추가. 2026-09-09 날짜가 붙은 관측 기록(`:82-83`)은 이력이므로 그대로 둔다. · 확신 높음
 - 완료 기준: `grep -nE '[0-9]+개 (이벤트|등록 항목)|스킬 [0-9]+개' docs/development/dual-agent.md` 0건 · `grep -c measurement-lane docs/development/lifecycle-evidence.md` ≥1 · 재신뢰 대상 3개 정의 명시.
 - 판정 질문: 권장안 수용?
 
@@ -408,7 +379,6 @@
   - `.agents/roles/advisor.md:39` 「쓰기 도구가 없으므로」 — Claude advisor 는 `disallowedTools: Edit, Write, NotebookEdit`(`.claude/agents/advisor.md:6`)라 Bash 가 남는다. Codex 는 `sandbox_mode = "read-only"`.
 - 선택지: ⓐ 문장별 사실 교정(§1-3 은 역할 등급 spec 참조로 대체 · advisor 는 「파일을 수정하지 않는다 — Claude 에서는 Bash 가 남아 있어 규율이다」) ⓑ ⓐ + Claude advisor frontmatter 에서 Bash 제거(전제를 도구 제한으로 참으로 만듦) ⓒ 현행 유지
 - 권장: ⓐ — advisor 는 판정 근거 확인에 Bash 읽기 명령을 쓴다. ⓑ 는 advisor 동작 범위를 바꾸는 별도 판정이다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ — 문장별 사실 교정. ⓑ(Claude advisor 에서 Bash 제거)는 그룹 T 질문으로 넘긴다(Ted 판정 항목). · 확신 중간
 - 완료 기준: 인용 문자열 5종(`loaded at launch` 주장 · `Fable 로 재시도` · `강제 예정` · `기본 기준은 \`origin/<default>\`` · `쓰기 도구가 없으므로`) grep 0건 · `python3 scripts/agent-bridge.py check` · `gates/run.sh harness-contract` green.
 - 판정 질문: 권장안 수용?
 
@@ -418,7 +388,6 @@
 - `scripts/harness/hooks/worktree-setup.sh:247-259` 「`baseRef: fresh` … origin/main · P-E 브랜치」 안내 + `~/.colab-v2-test.env` 만 확인 ↔ `.claude/settings.json:4` `baseRef: "head"` · `gates/run.sh:264` `COLAB_TEST_ENV_FILE` 우선.
 - 선택지: ⓐ 주석·안내 교정 + 도달 불가 줄 삭제 + worktree-setup 이 `COLAB_TEST_ENV_FILE` 을 run.sh 와 같은 규칙으로 확인 ⓑ 주석만 교정
 - 권장: ⓐ — `git-guard.sh`·`test-file-guard.sh` 는 PR 1 이 고치는 파일이므로 두 파일 머리말은 A5(PR 1)로 옮겼고, 이 항목(PR 3)은 `migration-guard.sh` · `decision-number-guard.sh` · `worktree-setup.sh`. decision-number-guard 는 C5 와 같은 파일 → 한 커밋.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (문장 정정형) — 「exit 1 은 통과」 자체는 Claude Code 사실이라 남기고, 「판정 못 하면 통과가 기본값」을 2단 규칙으로 교체: 준비 실패(python3 부재 · envelope 이상) = exit 2 차단(2026-09-09 계약), envelope 통과 뒤 판정 불가(tokenizer 실패 등 · A1) = 통과. 도달 불가 `|| exit 0` 4줄 삭제. A3 이관 문장(Edit/Write 전용 · Bash 쓰기 비대상 · 사후 검사) 추가. worktree-setup 은 `${COLAB_TEST_ENV_FILE:-$HOME/.colab-v2-test.env}` 로 run.sh 와 같은 규칙 · P-E/origin/main 문단 삭제. · 확신 높음
 - 완료 기준: `grep -n 'exit 1 은 통과' scripts/harness/hooks/*.sh` 0건(A5 가 PR 1 에서 두 파일을 먼저 고친 뒤) · migration-guard · decision-number-guard 머리말에 A3 경계 문장 · `grep -nE 'fresh|P-E' scripts/harness/hooks/worktree-setup.sh` 0건 · `COLAB_TEST_ENV_FILE` 만 있는 환경에서 worktree-setup 이 「있음」을 출력하는 시험 1건 · `gates/run.sh agent-bridge` green.
 - 판정 질문: 권장안 수용? (git-guard · test-file-guard 머리말은 A5 에서 판정)
 
@@ -426,7 +395,6 @@
 - 문제: `scripts/harness/hooks/bootstrap-diet.sh:70-71` 이 `dev-package/prd/rounds/R-*.md` 를 mtime 순으로 골라 `:84` 「legacy 참고 후보(mtime) … 신규 task 선택 근거 아님」을 지정 라운드가 없는 매 세션 시작에 출력한다. AGENTS.md 「mtime으로 다음 작업을 결정하지 않는다」.
 - 선택지: ⓐ 라벨 유지(현행) ⓑ 지정 라운드(`SELECTED`)가 없으면 후보 줄을 출력하지 않음 ⓒ 후보 파일 대신 「legacy 라운드 위치 = `dev-package/prd/rounds/`」 한 줄
 - 권장: ⓑ — 출력과 AGENTS.md 원칙이 어긋나고, 후보 줄이 없어도 `:75-76` 신규 작업 안내는 남는다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ + ⓒ 결합 — mtime `find` 삭제, SELECTED 없으면 후보 줄 없음, 기존 `:80` 「legacy 대장·라운드는 읽기 호환 자료」 줄 끝에 위치(`dev-package/prd/rounds/` · 지정은 `COLAB_ROUND`/payload `round`)만 덧붙임(새 줄 추가 없음). · 확신 높음
 - 완료 기준: SELECTED 없는 SessionStart 출력에 `mtime` 문자열 0건 — bootstrap-diet 시험 갱신 후 `gates/run.sh agent-bridge` green.
 - 판정 질문: ⓑ(출력 삭제)와 ⓐ(라벨 유지) 중 무엇?
 
@@ -434,7 +402,6 @@
 - 문제: `scripts/harness/hooks/css-edit-audit.sh:21` 머리말 「PostToolUse 의 stdout 은 맥락으로 실려 들어간다」, `:74` `echo "$OUT"` 평문 출력. 저장소가 인용한 Claude hook 문서(`bootstrap-diet.sh:24-26`)는 평문 stdout 이 모델 맥락에 들어가는 이벤트를 SessionStart·SubagentStart 로 든다 → Claude 에서 감사 행이 모델에 닿지 않을 가능성(문서 근거 · 미측정). `ponytail-inject.sh:76` 은 `hookSpecificOutput.additionalContext` JSON 을 쓴다. Codex 는 bridge 가 평문을 감싼다(판독).
 - 선택지: ⓐ 관측 1회(`frontend/src` CSS 파일 1건 Edit → 모델 맥락에 감사 행이 보이는지) 후 결과로 ⓑ 여부 판정 ⓑ 출력을 additionalContext JSON 으로 변경(ponytail-inject 방식) ⓒ 현행 유지
 - 권장: ⓐ → 닿지 않으면 ⓑ. 관측 없이 바꾸면 전후 차이를 확인할 수단이 없다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ — 출력을 `hookSpecificOutput.additionalContext` JSON 으로(ponytail-inject 방식 · JSON 인코딩은 이미 기동하는 python3 `json.dumps` 로), 머리말 `:21` 교정. ⓐ 관측은 판정 선행 조건이 아니라 PR 검증 단계(병합 뒤 메인 세션에서 `frontend/src` CSS Edit 1회)로 둔다. · 확신 높음
 - 완료 기준: 관측 기록 1건(날짜 · Claude Code 버전 · 결과). ⓑ 채택 시 css-edit-audit JSON 출력 시험 + Codex bridge 시험(`scripts/tests/test_agent_bridge.py`) green.
 - 판정 질문: 관측을 PR 3 lane 에 맡길지(권장안 수용?)
 
@@ -446,7 +413,6 @@
 - 연결: `ci-required` 는 `required-gates` 를 needs 에 포함한다(`ci.yml:848`). PR 2 가 병합 부모 거짓 red(B1 · 초안 H6 · R3-1)를 고치기 전에 필수로 걸면 develop 이 움직일 때마다 병합이 막힌다 → 적용 시점은 PR 2 병합 뒤. harness-contract 는 path-filtered `agent-bridge.yml` 에서만 돌아 `ci-required` 밖이다.
 - 선택지: ⓐ develop 필수 check = `ci-required` 1개 + PR 필수(승인 0) ⓑ `ci-required` + `required-gates` 2개 ⓒ 현행 유지(미적용 공개 상태)
 - 권장: ⓐ — `ci-required` 가 `required-gates` 결과를 이미 포함한다. PR 필수는 git-guard 우회(PR 1 대상) 같은 로컬 사고의 원격 방어선이 된다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓐ (+ `strict_required_status_checks_policy: true` · 관리자 우회 없음). 시점은 PR 2 병합 뒤 유지 가능하나, strict 를 켜면 PR 2 전 적용도 무해 · 확신 높음(ⓐ > ⓑ) · 중간(시점)
 - 완료 기준: Ted 적용 후 `gh api repos/CognileapAI/colab-v2/branches/develop/protection` 의 required_status_checks 에 선택한 이름이 보이고, C5 의 ruleset JSON 이 같은 내용을 기록.
 - 판정 질문: 어느 check 를 필수로(ⓐ/ⓑ/ⓒ)? 적용 시점 = PR 2 병합 뒤로 확정?
 
@@ -457,7 +423,6 @@
 - 문제(2026-09-25 재확인): 30 · 31 · 32 · 33 이 호스트 잠금 경로 `${TMPDIR:-/tmp}/colab-v2-gate-host-mutex/host` 를 공유한다(`gates/tools/_lock.sh:78`). `32 CoLAB-v2` HEAD `02d251d8` — `gate_mutex_spawn` 0건 → frontend-visual 데몬이 잠금 fd 를 물려받는 이전 코드. `33 CoLAB-v2` HEAD `cb30d344` — `gate_host_mutex` 0건 → 게이트가 호스트 잠금을 잡지 않고 postgres 슬롯은 공유. 33 사용 여부 미검증. `30 CoLAB-v2` 는 `67a03a05` · 수정 포함.
 - 선택지: ⓐ 32·33 을 develop 로 갱신 ⓑ 은퇴(삭제·보관) ⓒ 유지 + 그 체크아웃에서 게이트 실행 금지
 - 권장: 사용 중이면 ⓐ, 아니면 ⓑ — 사용 여부는 Ted 만 안다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 조합 — 32 는 ⓐ(develop ff-only 갱신, 열린 task 없는 시점) · 33 은 ⓑ(은퇴) · 확신 높음(33) · 중간(32)
 - 완료 기준: 결정 기록 1줄 · ⓐ 면 두 체크아웃 `gates/tools/_lock.sh` 에 `gate_mutex_spawn` 존재 확인.
 - 판정 질문: 32·33 을 지금 쓰는가?
 
@@ -465,7 +430,6 @@
 - 문제(2026-09-25 재확인: 존재): 로컬 `worktree-agent-a06b599e…` · `worktree-agent-a20a6e57…`(git cherry 기준 고유 커밋 0 — 판독 · 재현 안 함) · `worktree-agent-abe5bbb8…`(`f3846f32` 포함 — #130 이 뺀 handoff JSON 계약 변경) · 원격 `origin/worktree-ponytail-systemic`(#130 본문이 삭제 요청 — 판독).
 - 선택지: ⓐ 네 브랜치 삭제 ⓑ `f3846f32` 만 태그로 보관 후 삭제 ⓒ 유지
 - 권장: ⓐ — 둘은 develop 에 이미 반영, 하나는 #130 이 채택하지 않은 작업, 원격 하나는 삭제 요청분. 삭제는 비가역이라 Ted 가 실행.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓑ (`f3846f32` 를 로컬 네임스페이스 태그로 보관 후 네 브랜치 삭제) · 확신 높음
 - 완료 기준: `git branch -a --list '*worktree-agent*' '*worktree-ponytail*'` 출력이 결정과 일치.
 - 판정 질문: 권장안 수용? `f3846f32` 보관(ⓑ) 필요?
 
@@ -473,7 +437,6 @@
 - 문제: #130 병합 뒤 할 일(이 PC `/hooks` 재신뢰)의 저장소 기록 0건. 재신뢰 여부는 저장소로 판정할 수 없다 → 「안 했다」가 아니라 「기록 없음」. 정의별 재신뢰 필요는 문서 근거(`dual-agent.md:87-89`). Codex 는 09-09 신뢰 기록 뒤 정의 변경 3회(C8 · `git log -- .codex/hooks.json`). researcher 라이브 스모크(Start/Stop agent_id 일치)는 재신뢰 뒤 agent 가 실행한다 → L8.
 - 선택지: ⓐ 지금 재신뢰 ⓑ PR 3 병합 뒤 한 번에(A 권장안은 훅 정의 무변경 전제지만, A2 ⓑ 처럼 정의가 바뀌는 선택지를 고르면 재신뢰 대상이 늘어남) ⓒ 기록 없이 진행
 - 권장: ⓑ — 정의 변경을 모아 한 번에 신뢰한다. 결과는 C8 이 만든 자리(`dual-agent.md` 재신뢰 대상 목록)에 기록하고, 직후 L8 스모크.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): 새 선택지: ⓐ 를 지금 하되 기록을 남기고, 정의를 바꾸는 PR 이 있으면(A2 ⓑ 경로 등) 그 PR 병합 뒤 1회 더. ⓑ(PR 3 뒤 일괄)는 채택 불가 · 확신 중간
 - 완료 기준: 기록 1건 — 날짜 · PC · 도구(Claude/Codex) · 신뢰한 정의 목록. 스모크 agent_id 두 값은 L8 완료 기준.
 - 판정 질문: 권장안 수용?
 
@@ -481,7 +444,6 @@
 - 문제: `dev-package/intent/2026-09-24-agent-model-tiering.md:38` 「병합 뒤 재측정 … 기록을 남긴다(후속 · 병합 조건 아님)」. 저장소에는 병합 전 기준(`dev-package/reports/harness/20260924-agent-model-tiering/M1-role-usage.md` · 09-24)과 후속 표기(`PR-BODY.md:39`)만 있고 재측정 기록 없음(2026-09-25 `git grep 도달률`).
 - 선택지: ⓐ 유지 — 별도 측정 회차 ⓑ 폐기(원한 결과 8 삭제 사유 기록) ⓒ 이 intent 의 세 PR 동안 생기는 advisor·researcher·measurement-lane 스폰을 표본으로 M1 방식 집계
 - 권장: ⓒ — 별도 회차 없이 표본이 생긴다.
-- Fable 판정(권고를 가린 독립 판정 · 2026-09-26): ⓒ (창 고정 · n 공개 · 병합 조건 아님) — L7 재현을 같은 표본에서 처리 · 확신 중간
 - 완료 기준: 역할별 스폰 수 · 한도 도달 수 표 1개가 PR 3 본문 또는 reports 에 기록.
 - 판정 질문: 권장안 수용, 또는 폐기(ⓑ)?
 
@@ -492,11 +454,11 @@
 - 판정 질문: 없음(보고만).
 
 ## 설계트리 (grill-me 결과)
-- QA 그룹 A(PR 1) — A1–A5 권장안 · 각 판정 질문(A1 argv 편입 범위 · 파싱 실패 폴백, A2 분할(ⓒ PR 1 · ⓐ PR 2), A4 78/1) → A 전부 권고대로(Ted 2026-09-25) — A1 ⓐ(argv 형태 편입) · 파싱 실패 = 현행 규칙 폴백 · A2 분할(PR 1 = ⓒ · PR 2 = ⓐ) · A3 ⓐ · A4 ⓐ(알 수 없는 gate = 78) · A5 ⓐ
-- QB 그룹 B(PR 2 전반) — B1–B8 권장안 · 각 판정 질문(B1 결속 기준 완화, B3 판정 우선 · ADR 자리, B6 CI/로컬) → 판정은 「판정 기록」 절
-- QL 그룹 L(PR 2 후반) — L1–L8 권장안 · 각 판정 질문(L1 보존 기간 · prune 실행 주체, L2 ⓑ 적용 대상 · 옛 task 제외, L7 PR 3 이관) → 판정은 「판정 기록」 절
-- QC 그룹 C(PR 3) — C1–C12 권장안 · 각 판정 질문(C2 표 삭제/갱신, C5 PR 1 이관, C11 출력 삭제/유지) → 판정은 「판정 기록」 절
-- QT 그룹 T(Ted) — T1 필수 check · T3 형제 체크아웃 · T4 브랜치 · T5 재신뢰 시점 · T6 재측정 → 판정은 「판정 기록」 절
+- QA 그룹 A(PR 1) — A1–A5 권장안 · 각 판정 질문(A1 argv 편입 범위 · 파싱 실패 폴백, A2 분할(ⓒ PR 1 · ⓐ PR 2), A4 78/1) → A (판정 대기)
+- QB 그룹 B(PR 2 전반) — B1–B8 권장안 · 각 판정 질문(B1 결속 기준 완화, B3 판정 우선 · ADR 자리, B6 CI/로컬) → A (판정 대기)
+- QL 그룹 L(PR 2 후반) — L1–L8 권장안 · 각 판정 질문(L1 보존 기간 · prune 실행 주체, L2 ⓑ 적용 대상 · 옛 task 제외, L7 PR 3 이관) → A (판정 대기)
+- QC 그룹 C(PR 3) — C1–C12 권장안 · 각 판정 질문(C2 표 삭제/갱신, C5 PR 1 이관, C11 출력 삭제/유지) → A (판정 대기)
+- QT 그룹 T(Ted) — T1 필수 check · T3 형제 체크아웃 · T4 브랜치 · T5 재신뢰 시점 · T6 재측정 → A (판정 대기)
 
 ## 미해결 질문
 - L2 probe 한계: 실제 SubagentStop payload 형태(`last_assistant_message` · `agent_id` · `cwd`) · 실제 researcher 사용 사례 · H7(lane) 같은 기제 — 미검증.
@@ -520,113 +482,18 @@
 - design-review 스크립트 수정(B7)은 `frontend/scripts/visual-baseline/` 을 건드리지 않는다.
 
 ## 확인
-- 그룹 판정: A 승인(Ted 2026-09-25 "전부 권고대로") · B · L · C · T 는 「판정 기록」 절
+- 그룹 판정: A 〈판정 대기〉 · B 〈판정 대기〉 · L 〈판정 대기〉 · C 〈판정 대기〉 · T 〈판정 대기〉
 - 프론티어 공집합 확인: 〈판정 대기〉
-- Ted 확인 문장(원문 그대로): 구성 결정 2026-09-25 "좋아 그렇게해보자" · 그룹 A 판정 2026-09-25 "전부 권고대로" · 그룹 B · L · C · T 는 「판정 기록」 절
+- Ted 확인 문장(원문 그대로): 구성 결정 2026-09-25 "좋아 그렇게해보자" · 항목 판정 〈판정 대기〉
 - 재개봉 금지: 〈판정 대기〉
-- E0 실측(2026-09-26 · 레인 · 중첩 `claude -p` 실행됨 · `claude` 2.1.283): 전수 run `20260926-125205` — 과제 20 · 실행 40 · green 17 · 불안정 3 · 준비 0 · 초 p50 25.9/p95 45.5 · USD 합 7.9981 · `config-hash.json.hash` = `f25ce639237542e9f6a2759ec7a6af0c5d43437b44e46af4b4d95bdd614c4a99`(파일 577 · HEAD `e2c93bce7e41` · dirty 0) · 스모크 `20260926-125045`(H01 · green 1/1 · 0.5317 USD · 같은 해시) · 면제 게이트 78(커밋 ⑥ 전) → 0(`일치 결과 20260926-125205 · green 17/20 · 직전 20260912-211809` · 회귀 0)
-- E0 실패 4건 공통 사실(expect 판독 2026-09-26): 2026-09-12 회차 4건 모두 모델이 「준비 실패 = exit 1」로 적었고(H14 `out.1:19`·`out.2:30` · H15 `out.1:16`·`out.2:22` · H16 `out.1:25`·`out.2:24` · H18 `out.1:24`·`out.2:19`) expect 는 78 을 요구한다(H14 `expect.sh:15` · H18 `:15` · H15 `:15` 둘째 갈래 · H16 `:16` 「실패|red|78」). 과제 프롬프트는 종료코드 규약을 적지 않고, 당시 적재 `CLAUDE.md`(`cbaceec0`)에 78 규약 0건 · 현재는 `AGENTS.md:45` 가 `CLAUDE.md @AGENTS.md` 로 매 호출 적재된다
-- E0 분류 H14-silent-skip: 하네스(문안) 결함 — 재실측 green 2/2(`out.1:45` 「red(준비) · exit 78」) → 「하네스 결함 · #130(`AGENTS.md:45`)으로 해소」 확정
-- E0 분류 H18-three-states: 재실측 불안정 1/2(1회차 상태3 `exit 2` · 2회차 `exit 78` 통과) → 하네스 결함은 부분 해소 · 남은 red 는 「과제 기대문 결함(픽스처가 게이트가 아닌 단독 스크립트라 규약 적용 근거가 프롬프트에 없음) → task.md 규약 1줄」 후보로 재분류 · 수정은 T17 판정 뒤 별건
-- E0 분류 H15-zero-targets: 겹침 유지 · 재실측 실패 0/2 — 두 회차 모두 `::error:: … 0건 … exit 1`(`out.1:38` · `out.2:23`)을 내고 `expect.sh:15` 첫 갈래(`(0건|대상).*(red|실패)`)·둘째 갈래(`exit 78`)가 모두 거절 · 러너 자신은 대상 0건을 exit 1 로 낸다(`run.sh:71-73`) → expect 갈래에 `::error:: … exit 1` 수용 여부 = T17
-- E0 분류 H16-lenient-default: 겹침 유지 · 재실측 실패 0/2 — 상태3 을 `::error:: … exit 1`(`out.1:45` · `out.2:29`)로 적어 `expect.sh:16` `(실패|red|78)` 이 거절(H15 주석과 비대칭) + 무언을 78 이 아닌 1 로 적음(규약 적용 미흡) → expect 갈래 교정 여부 = T17
-- E0 확정: 재실측 결과로 H14 = 하네스 결함 해소 확정 · H15·H16 = expect 결함 비중(두 회차 모두 `::error:: … exit 1`) · H18 = 불안정(기대문 결함 후보) · expect/task 수정은 E0 범위 밖(측정 도구 변경은 판정 뒤 별건 · T17)
-- `ci.yml` 의 잘못 놓인 harness-eval 주석(옛 `:641-650` · repo-hygiene 잡 구간)은 E0 소유로 이관해 harness-eval 잡 위 4줄로 교체했다 · C3(PR 3)는 `gates/README.md:245` CI 표 행만 맡는다
 
 ## 참조
 - 기획 원본: 없음(개발 하네스)
 - spec: 작성 예정(3 phase · 그룹 A 승인 뒤 phase 1 부터)
-- 분석 원자료(저장소 밖): `~/.claude/reports/harness-state-20260925/`(findings-verified.md · R1-hooks.md · R2-roles-codex.md · R3-gates-ci.md · R4-judges-evidence.md · R5-governance.md · advisor2.md)
+- 분석 원자료(저장소 밖): `<home>/.claude/reports/harness-state-20260925/`(findings-verified.md · R1-hooks.md · R2-roles-codex.md · R3-gates-ci.md · R4-judges-evidence.md · R5-governance.md · advisor2.md)
 - 흡수 대상 초안: `dev-package/intent/2026-09-25-harness-design-round-residuals.md`(미승인 · 대체 표기 · 삭제 안 함)
 - 관련 intent: `dev-package/intent/2026-09-24-harness-lane-hygiene.md` · `dev-package/intent/2026-09-25-external-harness-gap.md` · `dev-package/intent/2026-09-24-agent-model-tiering.md`
 - 관련 PR: #130 · #131 · #140 · #144
 - 제외 이관 근거: `dev-package/reports/design-system/20260924/architecture.md` §7
 - 라운드 파일: `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`(C4 가 재개 절 추가)
 - 결정: 〈N〉 (병합 시 기입) · B3 새 ADR 후보(판정 대기)
-
-## 판정 기록
-- 승인 뒤 이 절은 줄 추가만 한다(intent_ref ⑵). 그룹마다 날짜 · Ted 원문 · 항목별 결론을 적는다.
-- 2026-09-25 그룹 A(PR 1) — Ted 원문 "전부 권고대로". A1 ⓐ — quote-aware tokenizer · 대상 checkout 해석 · 누락 argv 형태(gh -R · gh api PUT merge · 묶은 -fu · HEAD · 보호 브랜치 위 pull --no-ff/--no-rebase) 편입. A1 파싱 실패 = 현행 분리 규칙 폴백. A2 분할 — PR 1 = ⓒ 문장 정리(H14 포함) · PR 2 = ⓐ 편집 시점 차단(L1 ⓐ 종료 기록 위). A3 ⓐ 경계 표기(코드 0). A4 ⓐ 인자 검사를 mutex 앞에 · 여분 인자 · 빈 인자 · 잘못된 -j · 알 수 없는 gate = 78. A5 ⓐ 머리말 교정 + 도달 불가 줄 삭제.
-- 2026-09-26 Fable 재판정(Ted 원문 "권고안들은 어드바이저가 동작해야 최상 아닌가? 페이블로 조사해야될거같은제 하네스가") — 권장안 39건을 Fable 8명이 권고를 가린 채 다시 판정하고 Fable 1명이 교차 점검했다(원문 `~/.claude/reports/harness-state-20260925/fable-judges/`). 각 항목의 「Fable 판정」 줄이 결과다. 같은 결론 29 · 다른 권고 10(B2 · B6 · B8 · L3 · L8 · C4 · C7 · C12 · T4 · T5). 그룹 A 5건은 모두 Ted 판정과 같은 결론.
-- 2026-09-26 그룹 A 보강(Fable 판정 · 교차 점검 · 메인 코드 확인) — A1: `pull` 규칙은 명시 플래그(`--no-ff` · `--no-rebase` · `--rebase=false` · `--ff=false`)만 잡고 플래그 없는 `git pull` 은 통과 · `-C` · cwd 불일치 시험은 bridge `guard()`(cwd 고정 `agent-bridge.py:170`)가 아니라 hook 직접 호출로 작성 · 차단 문구 `git-guard.sh:271` 「main|master」 를 보호 집합 전체로 교정 · tokenizer 예외 = 현행 분리 규칙 폴백을 fault-injection 시험으로 고정. A2: Fable 제안 ⓒ′(시험 작성 task 를 따로 인계)는 기각 — `lifecycle_contract.py:312`–`315` 가 선언 gate 없음 · red 잔존 인계를 거절하고 red 허용은 measurement-lane 뿐(`:335`, 메인 확인). A2 ⓐ(PR 2)의 선결에 L8 스모크(PreToolUse `agent_id` 와 task `agent_id` 일치)를 더한다. A3: 「사후 검사 수단」 = `begin --scope` handoff/H7 로 지명. A4: 인자 검사는 `run.sh:9` 직후(`:42` gate-start 증거 기록보다 앞) · 비정수 `-j` 도 78. A5: git-guard 머리말은 C10 의 2단 문장(준비 실패 = exit 2 · envelope 통과 뒤 판정 불가 = 통과)으로 쓴다.
-- 2026-09-26 2라운드(그룹 A 범위 1 · T1 · 그룹 B 7) — Ted 원문 "페이블 권고대로 젖부"(= 전부). 모두 Fable 권고로 확정.
-  - A6 신설(PR 1): decision-number-guard 기준 `origin/main` → `origin/develop` · 기준 부재 = 준비 실패(exit 2) · 머리말 2단 문장 · 도달 불가 줄(`:38`) 삭제. C5 의 guard 부분과 C10 의 decision-number-guard 부분은 PR 1 로 이관(PR 3 에는 ruleset JSON · release-evidence 문구 · README 만 남음).
-  - T1: develop 필수 status check `ci-required` + PR 필수(승인 0) + strict(병합 전 최신 develop 반영 필수) + 관리자 우회 없음. 적용 = Ted · 시점 = PR 1 병합 뒤. C5 ruleset JSON 의 required check 이름은 `ci-required`.
-  - B2 ⓓ: 서비스 시험 적용 판정을 등록부 한 곳에서 계산(`changes` 잡이 등록부를 읽어 생산자별 출력 · 서비스 시험 잡 `RUN` · `if:` 가 그 출력을 읽음). PR 2 범위 압박 시 ⓐ(등록부 filters 2줄)로 축소.
-  - B3 ⓐ: 판정 우선(1 > 78 > 0) 통일 · 분류 기준 「입력을 못 읽음 = 78 · 읽었는데 규율 위반 = 1」 · lifecycle 은 판정성 raise 지점에만 판정 예외 클래스 · 새 ADR. B3 는 B1 · L 그룹보다 먼저 구현.
-  - B4 ⓐ: `harness-contract` · `agent-bridge` 를 ci-producers 생산자로 등록 · `ci.yml` 에서 record 로 실행 · harness-contract 가 「gates.required ⊆ 등록부 gates 합집합」 대조 · `.github/workflows/agent-bridge.yml` 폐지(또는 workflow_dispatch 전용).
-  - B5 ⓑ: `ci-required` 가 intent-ref 의 skipped 를 push · workflow_dispatch · product 대상 PR 일 때만 허용 · job `if` 와 허용식의 일치를 harness-contract 가 대조.
-  - B6(Fable 조합): 별도 PR workflow 에서 `pr_contract --mode draft` — 필수 절 · Plan-Ref · placeholder 실패 = red · Head-SHA 불일치 = 경고(종료 0) · 로컬 게시 전 검사 1줄 · placeholder 오탐 교정(줄 · 표 칸 전체 `<…>` 만). Claude 세션 PR 본문 틀을 이 형식에 맞춘다(저장소 밖 · 메인 세션).
-  - B7 ⓐ: probe 파일 이름 = slug 앞 40자 + sha256 12자 · 선언 URL(중복 제거) 수 ≠ 페이지 수 → red(판정) · probe 전체 배열 + counts 대조 · 시작 때 이전 probe/png/index 만 삭제 · ⓓ `@layer` 등 grouping rule 재귀.
-  - B8 ⓒ: `_pg.sh` 에 정리 함수 등록 목록(`pg_on_cleanup`)과 멱등 trap 1개 · 깨진 호출자 2곳 치환 · operator-notifications 의 표식 없는 `exit 78` 5곳에 readiness 표식.
-  - B1 은 T1 strict 에 종속 → 3라운드.
-- 2026-09-26 3라운드(B1 · 그룹 L · 새 항목 A7 · spec 세부) — Ted 가 3라운드 재검토 요청(원문 "페이블 어드바이저로 재검코") → Fable advisor 5명 반박 재검토 + spec gate ① 2명 + 교차 점검(원문 `~/.claude/reports/harness-state-20260925/fable-recheck-r3/`) → Ted 원문 "구ㅜㄴ규대로 하자"(= 권고대로). 결론:
-  - B1 ⓐ: 코드 로직 유지 · `verify_evidence.py:58` 오류 문구에 「Update branch(develop 병합 push)가 새 이벤트 run 을 만든다 · 기존 run Re-run 은 계속 red」 · PR 절차 문서 1줄 · 완료 = 실 PR 1건에서 Update branch 1회 뒤 green 관측. B1 ⓒ(조상 대조)는 구현하지 않는다.
-  - A7 신설(PR 1 · 새 사실 2026-09-26: SubagentStart hook 은 2/2 발화했으나 평문 stdout 이 서브에이전트에 0회 도달 · Claude Code 문서상 평문 stdout 이 모델에 가는 이벤트는 UserPromptSubmit · UserPromptExpansion · SessionStart · PostModelSwitch 뿐): `scripts/harness/hooks/researcher-task.sh` · `worktree-setup.sh` 출력을 `hookSpecificOutput.additionalContext` JSON 1줄로 · 출력 단언 시험 갱신 · `scripts/harness/hooks/bootstrap-diet.sh` · `worktree-setup.sh` 의 「SubagentStart 평문」 주석 · `dual-agent.md` · `README.md` 해당 문장 정정 · worktree-setup 에 「격리 아님」 권고 문구(차단 아님). css-edit-audit(C12 ⓑ)는 PR 1 의 별도 커밋. 완료 = 병합 · pull 뒤 researcher 1회 스폰 → 첫 턴에 task id 노출 관측. 「열린 자동 task 조회 · 재사용」과 자동 begin 존폐는 PR 2(L 그룹)에서 한 번에 정한다. 수정 병합 전까지 오케스트레이터는 researcher 지시문에 직접 begin 을 싣는다.
-  - L3: lane-worker 자기검사를 `.agents/roles/lane-worker.md` 첫 동작(`git merge --ff-only`) 앞에 둔다 · 판정 = 지시문이 준 부모 checkout 경로 == `git rev-parse --show-toplevel` 이면 정지(Fable 재검토의 `--git-dir` = `--git-common-dir` 판정식은 부모가 linked worktree 인 관측 사례 `design-fix-followups-20260925-E.md:5` 를 못 잡아 메인이 기각) · 「같은 브랜치」 조건 삭제 · 스킬 문서 「(자동)」 3곳 교정 + 「Workflow agent() 스폰은 isolation 명시」 규칙 · PR 2.
-  - L1: 종료 기록 2단 — 「인계됨」(CLI handoff 통과) · 「닫힘」(SubagentStop/bridge stop 판정 통과 또는 메인 `lifecycle close`) · prune 은 「닫힘」만 · 보관 14일 · 실제 삭제는 Ted 가 대화에서 명시 지시할 때만 · 삭제 기록 · 현재 store 첫 정리는 별도 판정 · 서브에이전트의 `lifecycle close` · `stop` · `prune --apply` 는 git-guard 규칙으로 차단(PR 2).
-  - L2: 명시 begin 거부 조건의 「닫히지 않은」 = 「닫힘」 기록 없음(인계 뒤 편집 → 새 begin 우회 차단) · SubagentStart 자동 begin 은 막지 않고 같은 checkout 의 가장 오래된 열린 researcher task baseline 을 이어받아 연다(거부 메시지 출구 = 메인 `lifecycle close <옛 task>`) · 옛 스키마 task 제외.
-  - L4: ⓐ + ⓑ + `design-review/SKILL.md` 항목 7(메인 순차 커밋) → 「모든 레인 인계 뒤 반입 · 커밋」 · 산출물 task 는 hook 출력 비의존 직접 begin(`--agent-id` 없이) · 격리 스폰 때 기준 브랜치 확인 1줄.
-  - L5 ⓐ: glob 접두 검사 · 문서 순서 「scoped task 열린 동안 병합 금지 → Update branch 는 인계 뒤 PR 브랜치에서 → 불가피하면 병합 뒤 새 task」.
-  - L6 ⓐ: selftest 편입 없음 · `check_gate_parallelism` fixture 시험 4종 · 역할 문서 1줄 · 조건: B4 로 옮기는 `agent-bridge` gate 가 `scripts/harness/**` · `scripts/tests/**` 변경에도 반드시 실행. 정정: 이 intent 「원한 결과」 그룹 L 의 「`harness-contract-selftest` 가 lifecycle 시험을 돈다」 문장은 이 판정으로 대체된다. 메인 확인 — lifecycle 시험은 현재도 `.github/workflows/agent-bridge.yml` 의 `unittest discover -s scripts/tests` 로 CI 에서 돈다(경로 필터 · 필수 아님).
-  - L7: 재현 3회(사소 과제) — ① advisor+schema ② measurement-lane+schema ③ measurement-lane+schema · 도구 허용목록 변경 정의 — 결과로 문서 또는 frontmatter · 현행 우회(`VERDICT:` 텍스트)는 지금 `colab-v2-work` 1줄.
-  - L8 · T5: L8 스모크는 A7 병합 뒤 1회(출력 전달 O/X · Start/Stop agent_id 일치 O/X/미관측 2축 기록). T5 Claude = 재신뢰 불요(이 PC · 이 경로 · hook 등록 무변경 조건 · 발화 관측 task 45fad2b0 · e4797bd0). T5 Codex 는 유지.
-  - spec 세부: git-guard 시험용 교체 경로 env 는 제품 hook 에 두지 않는다(첫 줄만 내는 가짜 해석기가 규칙을 비울 수 있음) · 결함 주입은 hook 폴더 임시 복사본 · run.sh 알려진 gate = `ALL_GATES` + 「모든 case 라벨이 KNOWN 통과」 시험.
-  - spec gate ①(GO-WITH-CHANGES) 반영 확정: 미종결 heredoc 은 본문 EOF 까지로 보고 폴백하지 않음(폴백 입력 = `bash -n` 도 거부하는 입력만) · 해석기 레코드는 JSON lines · 시험 fixture 모순 수정 · A6 준비 실패는 결정 번호 후보를 담은 편집에만.
-- 2026-09-26 4라운드(그룹 C · T) — Fable advisor 4명 반박 재검토 + 교차 점검(원문 `~/.claude/reports/harness-state-20260925/fable-recheck-r4/`) → Ted 원문 "모두 권고대로 괜찮아". 결론:
-  - C1: measurement-lane 역할 본문 · Codex toml 의 전제 문장 교체(serial = 호스트 뮤텍스 · parallel 은 뮤텍스 밖 · postgres 슬롯 호스트 전역) · 근거 ADR-0005 · PR 3 · C7 커밋에 합침.
-  - C2 ⓐ: README hook 표 삭제 · 정본 링크(`.agents/harness.yaml` hook 목록 · `dual-agent.md`) · COLAB_HOOKS 절에 H6/H7 예외 1줄 · PR 1 이 표에 싣는 사실은 삭제 전 정본으로 옮김 · A3 blockquote 유지 · `README.md:74` migration-guard 행은 PR 3 · PR 3.
-  - C3: `ci.yml` 낡은 주석은 PR 2 B4 커밋 · `gates/README.md` CI 표는 PR 2 병합 뒤 최종 잡 집합 기준으로 PR 3 · 잡 이름 집합 대조(ⓑ)는 B4 뒤 재판정.
-  - C4 ⓐ: `AGENTS.md:18` 포인터를 `harness-transition-handoff.md` 머리 새 「이후 이력」 절(#130 · #131 · #140 · PR 1–3 번호 · SHA)로 교체(줄 수 불변) · `R-HARNESS-PR-CENTRIC.md:4` 아래 1줄 · 옛 본문 무변경 + 「당시 기록」 표지 · PR 3 마지막 커밋.
-  - C5: `docs/development/github-ruleset.json` 은 T1 적용 뒤 실제 상태 기록(ruleset 형식 1개) · `release-evidence.md:43` · `:45` 정정 · T1 미적용이면 제안 형식 retarget 폴백 · PR 3.
-  - C6 ⓐ+ⓒ: adapter 4종 `disable-model-invocation` 승계 · `agent-bridge check` 양방향 · 플래그 일치 · VENDORED.md 정정 · PR 3(C6 → C7 순).
-  - C7 ⓐ: `.agents/harness.yaml` 에 역할별 기대값(스칼라 키) 선언 · Claude frontmatter = `check.py` · Codex toml = `agent-bridge check` 기존 로더 · 값 확정 = L7 · T10 뒤 · PR 3 마지막.
-  - C8: PR 3 은 `dual-agent.md` 만(개수 수치 → 정본 참조 · 재신뢰 대상 Codex 3 정의 · Claude 재신뢰 불요 기록) · `lifecycle-evidence.md` measurement-lane 절은 PR 2.
-  - C9: 문장 교정 PR 3 · `lane-worker.md:27` 이유 문장은 PR 2 L3 커밋 · `advisor.md:39` 문안은 T10 판 · 완료 grep 은 한국어 문자열.
-  - C10: `migration-guard.sh` 머리말 + 주석 `origin/main` 5곳 → `origin/develop` · 완료 기준 = 「판정을 못 하면 통과가 기본값」 0건 · `worktree-setup.sh` 잔여는 A7 병합 diff 뒤 재판정 · PR 3.
-  - C11 ⓑ+ⓒ: bootstrap-diet mtime 후보 줄 삭제 · 위치 안내 덧붙임 · 종속 시험 2곳 · `agent-bridge.py` Codex 문장 · PR 3.
-  - T1 적용 방식 = ruleset(product 와 같은 방식 · 우회자 없음 · JSON 내보내기로 C5 기록) · PR 1 병합 뒤 · PR 2 open 전 · Ted 가 GitHub 에서 적용.
-  - T3: 32 = PR 3 병합 뒤 develop 갱신(그 전 32 에서 게이트 실행 금지) · 33 = `_worktree-archive-*` 이동 — 사용 여부를 Ted 가 확인하기 전까지 실행 보류(2026-09-26 관측: `a2_pg_32` · `ai_pg_32` 컨테이너 12일째 가동).
-  - T4 실행 완료 2026-09-26: `git cherry` 로 포함 확인 뒤 태그 `archive/f3846f32-handoff-evidence-key` · 로컬 `worktree-agent-a06b599e…` · `worktree-agent-a20a6e57…` · `worktree-agent-abe5bbb8…` 삭제 · 원격 `worktree-ponytail-systemic` 삭제.
-  - T5: Codex 재신뢰 = 32 갱신 직후 1회 · 기록 = 이 intent 확인 절.
-  - T6: 그룹 T 에서 제외 → PR 3 measurement 항목(세 PR 동안의 spawn 기록 표본 · 역할별 n 공개).
-  - T8: 첫 `lifecycle prune --apply` = PR 2 병합 뒤 메인 세션 · Ted 지시 · PR 2 L1 spec 에 「checkout 경로 부재 = 닫힘 상당(기록 남김)」 1줄.
-  - T9: 2026-09-26 확인 — gate 임시 postgres 없음(상시 컨테이너만) · `/tmp/service-tests-*` 341개 · 115 MB · 이틀 넘은 것 210개(09-13–09-21) · 삭제는 Ted 승인 대기.
-  - T10: Claude advisor Bash 유지 · C9ⓑ 흡수 · 재판정 = L7 뒤.
-  - PR 2 반입 5건(phase 2 상세화 때 반드시 포함): C3 ①(`ci.yml` 주석 → B4) · C8 ③(`lifecycle-evidence.md` measurement-lane 절) · C9 ①(`lane-worker.md:27` → L3) · T8(L1 spec 1줄) · T10(L7 입력).
-  - spec 정정(레인 병합 뒤 반영): V14 의 README 검사 = decision-number-guard 행만(`README.md:74` migration-guard 행은 PR 3 · 레인 통지 2026-09-26).
-- 2026-09-26 T9 실행 — Ted 원문 "엉 삭제승인항게" · 이틀 넘은 `/tmp/service-tests-*` 210개 삭제(남은 131개는 최근 이틀 · gate 임시 postgres 없음 확인 뒤).
-- 2026-09-26 T3 33 실행 — Ted 원문 "33체크아웃이 뭔지모르겠다" · 관측: `33 CoLAB-v2` 는 2026-09-18 01:04 GitHub clone(HEAD 기록 = clone 1줄 · 이후 전환 · 커밋 0 · 전용 DB 컨테이너 없음) → 권고대로 `_worktree-archive-20260926/33 CoLAB-v2` 로 이동(삭제 아님 · 되돌릴 수 있음). 32 는 PR 3 병합 뒤 갱신 그대로.
-- 2026-09-26 T3 정정 — Ted 원문 "30 31 32 33 프로젝트 클론된게 동시작업을 위해있는건데 음". 30 · 31 · 32 · 33 은 동시 작업용으로 일부러 둔 clone 이다. 33 이동을 즉시 되돌렸다(`33 CoLAB-v2` 원위치 · 보관 폴더 삭제). T3 결론을 바꾼다: 어떤 clone 도 옮기거나 은퇴시키지 않는다 · 문제는 뒤처진 코드(33 = `cb30d344` · 호스트 뮤텍스 없음, 32 = `02d251d8` · `gate_mutex_spawn` 없음)이므로 각 clone 에서 작업을 시작하기 전에 develop 으로 `git pull --ff-only` 한다(갱신 시점은 Ted 확인) · T5 Codex 재신뢰는 그 갱신 직후.
-- 2026-09-26 5라운드(Opus 5.5 프롬프트 재기준 · 새 그룹 P) — Ted 요청(원문 「opus 5.5가 생겼잖아 이걸 바탕으로 개선할수있을까 과거 프롬프트 중에 opus쓰는케이스들은 다 개선되어야해」) → Fable 감사 4 + Fable advisor 검증 4 + 교차 점검(원문 `~/.claude/reports/harness-state-20260925/opus55-prompt-audit/` · 46건) → Ted 원문 「모두 권고대로 하고 최종결정인 병합은 사람이 한다」.
-  - Q1 ⓐ: 파일 기준 배정 — 역할 본문 · design-review §2-2 → PR 2 · 규칙 · product · dual-agent → PR 3 · 나머지 스킬 · hook 문구 → 새 PR 4 「Opus 5.5 프롬프트 재기준」.
-  - Q2: 조기 종료 4패턴의 정본 = `AGENTS.md`(PR 2 에서 역할 본문과 함께) · 역할 본문은 허용되는 정지만.
-  - Q3 ⓐ: 자기 브랜치 커밋 자유 · push · 병합 · 원장 등재는 승인 범위 · 에이전트 커밋 ≠ 승인.
-  - Q4 ⓐ: design-review 에서 계측한 쪽이 근거를 붙여 판정(있음 · 없음 · 미상)한다 · 최종 결정(처리 · 병합)은 사람.
-  - Q5 ⓐ: colab-rules §1-2 「전부 위임」은 수천 행 legacy 문서군에 한정.
-  - Q6 승인: effort(lane-worker high vs medium · researcher medium vs low)와 조건부 개선 3건의 실측 — 결과는 `dev-package/reports/harness/` · 메인 세션 effort 는 레인 결과 뒤.
-- 2026-09-26 설계 원칙(Ted 원문 「기본적으로 동작과 제약은 시스템으로 한다 에이전트 지침서는 너무 나약하고 얕고 불확실하니까」) — 이 intent 의 모든 그룹에 적용한다: 규칙(must/never)은 hook · gate · 설정 권한 · agent frontmatter · lifecycle · CI · ruleset 으로 강제하고, 강제할 수 없는 규칙은 지우거나 이유를 담은 맥락으로만 남긴다. 최종 결정인 병합은 사람이 하며 그 경계도 git-guard · ruleset 으로 받친다. 이 원칙으로 PR 2 · PR 3 · PR 4 항목을 다시 나눈다(6라운드).
-- 2026-09-26 6라운드 후보(playbook 대조 · 판정 대기) — Ted 질문 「AI-native SDLC playbook 기반으로 시스템 전체 방향이 가야 하는데 충분히 고려했는가」. 답: 원 설계(2026-09-06 · `dev-package/reports/harness/2026-09-06/05-playbook-gap.md` 갭 G1–G8)는 playbook 기반이었고 G1·G2·G3·G4·G7 은 그 뒤 닫혔다(intent/spec 분리 · intent-ref · ADR · grill-me · spec 정책 대조). 이번 개선 계획(PR 2–4)은 결함 위주로 진행돼 playbook 틀을 다시 대지 않았다. Fable 대조 3 + 검증 3 + 방향 종합(원문 `~/.claude/reports/harness-state-20260925/playbook-gap-20260926/`): 대조 36행 = 있음 5 · 부분 24 · 없음 7. 종합 판정 「방향은 맞고 순서와 경계가 빠졌다」. 격차 top 7 — ① continuous evals 가 CLAUDE.md·skills·hooks 변경을 gate 해야 하는데 harness-eval 은 CI 면제 · 마지막 실행 2026-09-12 · PR 1 이 hook 4종을 바꾸고도 실행 0 → PR 2–4 순서 위반 ② RED 시험 고정(수정 레인의 시험 편집 차단 · Claude 는 미적용) ③ intent→spec→plan→diff 사슬이 기계 판독 불가(Plan-Ref 존재 · diff ⊆ scope · advisor ① 증거) ④ hook 판정 감사 로그 0 · `COLAB_HOOKS=0` 킬스위치 ⑤ skill trigger 가 Claude adapter 에 미도달 ⑥ REVIEW.md 없음 · advisor ② 판정문 미보존 · 양방향 리뷰는 기각(사람 게시 원칙) ⑦ 측정 0 · Maintain 루프 0(1인 체제라 tier/cron 기각 · 수집 스크립트만). 새 그룹 후보 E(eval gate: E0 PR 2 전 · E1 PR 4 뒤) · S(소형 PR 3: red-run · TTY+토큰 인가 · dependency-audit) · X(측정 2지표 먼저) · M(수집 스크립트).
-  - 09-12 eval 실패 4건 = H14 silent-skip · H15 zero-targets · H16 lenient-default · H18 three-states(각 0/2 · 재현 일관) — 모두 gate 판정 의미 과제로, 이번 분석의 B3(집계 우선순위) · B4(required 미강제) · B7(frontend-visual 파일 수 계수) 와 같은 부류로 보인다(추정 · 과제 기대문 미대조).
-  - 트레일러 결함 발견: 오케스트레이터 커밋 11개의 Intent-Ref 가 별도 문단이라 gate 가 못 읽음(범위에 레인 커밋이 있어 green) → push 전 `filter-branch --msg-filter` 로 마지막 문단으로 옮김 · 재발 방지는 PR 2 2-9 ⑾ commit-msg 검사.
-  - 검증자 공통 지적(이번 판정 밖): PostToolUse formatter/linter hook · 롤백·canary 증거 · 배포 토큰 ≠ 사용자 토큰 분리 · 시험 병렬성(postgres 슬롯 4).
-- 2026-09-26 7라운드 판정 — Ted 원문 "전부 권고대로 엄격하게 다시짜". 확정:
-  - A: PR 1(head 이후 갱신) push · PR 생성 진행. 병합은 Ted.
-  - B(playbook 방향): Q-A ⓐ eval 을 PR 2 전 1회(E0) · PR 4 뒤 1회(E1) 실행하고, 지침 변경(`.claude/**` · `.agents/**` · `gates/**` · hook 스크립트) PR 은 설정 해시와 일치하는 eval 결과가 없으면 red(2026-09-25 R2-12 「재실행 제외」 판정 번복 · 회차 ≈32 USD) · Q-B ⓐ red-run 소형 PR(선언한 실패 시험 blob digest 고정)을 PR 2 앞에 · Q-C ⓐ `settings.json` ask 후보 7종은 deny 로, 사람 인가는 TTY + 1회용 토큰 + `authorized_at` 기록 · Q-D ⓐ 메인 세션 포함 보호 브랜치 push 전면 차단(git-guard ⑴ 전원) + deny + ruleset 우회자 0 + 에이전트 전용 PAT(`contents:write` · `workflows:write` · `pull_requests:read`) · Q-E ⓐ TTY+토큰 인가를 `infra/dev/ship.sh`(반입)까지(`tag-release.sh` 제외) · Q-F ⓐ `COLAB_HOOKS=0` 킬스위치는 `audit.jsonl` 오탐 계수 확보 뒤 PR 3 에서 제거.
-  - C(시스템 우선 잔여): Q1 ⓐ 에이전트 `gh pr create` deny(PR 게시 = Ted) · Q4 ⓐ 변경 경로→필수 gate 대조는 첫 회차 경고 모드(`COLAB_HANDOFF.missing`) · Q5 ⓐ `handoff --mode blocked` 는 scope 안 미커밋 변경 허용 + dirty 목록 · hash 기록.
-  - 재구성 지시: playbook 의존 순서(evals → 지침 변경, approval gates → CI 자동화)와 시스템 강제 원칙에 맞춰 전체 계획을 다시 짠다 — 순서 = PR 1 병합 → Ted(T1 ruleset · T11 PAT 분리) → E0(eval gate 기제 + 실측 1회 + 실패 4건 분류) + S-red(red-run) → PR 2(B · L · P-roles · 2-1~2-11 + G1 · G2 · G6 · P2 · P7 · VERDICT 경로+sha256 · handoff `at`) → Q6 effort 실측 → PR 3(C · P-rules · permissions 3-1~3-7 + G3 · P8 · P6 · ruleset 스냅샷 · bypass deny 시험) → PR 4(skills 산문 · G7 · advisor 보안 pass · ADR 2줄 · effort 값 반영) → E1 · X(측정 2지표) · M(수집 스크립트) · S(TTY 인가 · dependency-audit 소형 PR). 총괄 계획 문서 = `dev-package/prd/specs/S-HARNESS-IMPROVEMENT-PLAN-20260926.md`(작성 예정 · Fable · advisor ① 대조).
-- 2026-09-26 8라운드 판정 — 총괄 계획 `dev-package/prd/specs/S-HARNESS-IMPROVEMENT-PLAN-20260926.md` §6 의 12건을 Ted 원문 "권고대로" 로 확정: ① eval 회차 5~6회(≈160–192 USD) 승인 · `harness.yaml eval.hash_exclude` 명시 목록 허용 ② 순서 E0 → S-red 유지 ③ 해시 정본에 `eval/harness/**`(results 제외) 포함 ④ `AGENTS.md` · `CLAUDE.md` 포함 ⑤ 회귀 규칙(일치 회차 green 집합 축소 = 1) · CI 해시 = 병합 커밋 트리 ⑥ `permissions.deny` bypass 적용 · 중간 와일드카드는 T14 실측 ⑦ 킬스위치 제거 대상에 `migration-guard.sh` 포함 · 오탐 계수 미달 시 3-8 만 후속 소형 PR ⑧ L8 스모크는 PR 1 병합 뒤 메인 세션 ⑨ `pr-contract.yml` 은 필수 check 아님 · `GITHUB_TOKEN` rulesets 읽기 권한은 PR 3 lane 실측 ⑩ S-auth(`services/core-api/ops/*.py` · `infra/dev/ship.sh` TTY+토큰 인가)는 이 intent 범위 밖 → 별도 intent 발행 ⑪ ADR 2줄은 새 ADR-0011 ⑫ S-red 잠금 = checkout 결속(`file_path` 기준 · 부모 세션 편집도 차단) · 버려진 fix task 출구 = worktree 제거 · RED = rc 1 만.
-- 2026-09-26 PR 1 병합 — https://github.com/CognileapAI/colab-v2/pull/173 · 병합 커밋 `86bbaeea` · CI 전부 green(required-gates B1 재발 1회는 develop 병합으로 해소). 다음 = Ted T1 · T11 → L8 스모크(메인 세션) → E0 레인.
-- 2026-09-26 12:30 T1 적용 — Ted 가 명령을 보내고(원문 `gh api -X POST repos/CognileapAI/colab-v2/rulesets --input …/T1-develop-ruleset.json`) 메인 세션이 실행. 결과 = ruleset `develop-protection-policy`(id 24031394 · active · refs/heads/develop · deletion · non_fast_forward · pull_request(승인 0 · 스레드 해결 필수 · merge 만) · required_status_checks `ci-required` strict · bypass_actors 없음). 스냅샷 `~/.claude/reports/harness-state-20260925/T1-rulesets-after.json`(PR 3 C5 기록용). 메인 checkout 은 Ted 요청 ⓑ(worktree 이탈)로 `e4bd039a` 까지 ff pull — 이후 메인 세션의 Bash 는 PR 1 의 새 git-guard 로 판정된다(첫 호출 `git status` 통과 확인). T11 PAT 는 대기.
-- 2026-09-26 T11 보류 — Ted 원문 "에이전트용 깃헙 토큰은 나중에 만들자 intent로만 갖고있고 의도나목적까지". 의도·목적 = 「PR 게시·병합·설정 변경은 사람」을 GitHub 서버 쪽에서 강제한다(로컬 git-guard 는 마찰 장치 · `bash -c` · Codex · bypass 세션은 hook 밖). 형태 = fine-grained PAT(저장소 `CognileapAI/colab-v2` 한정 · Contents R/W · Workflows R/W · Pull requests Read · Actions Read · Administration Read · 만료 90일) · 적용 권고 = `~/.claude/settings.json` `env.GH_TOKEN`(Claude 세션만 · Ted 터미널 무영향 · ⓑ) · 확인 = `gh pr merge <병합된 PR> --merge` 가 403. 그 전까지의 경계 = git-guard(PR 1 · 서브에이전트 push·`gh pr merge`·`gh api PUT merge` 차단) + develop ruleset(T1 · PR 필수 · 우회자 없음). 재판정 시점 = PR 3 착수 전(3-1 `gh pr create` deny 와 짝) · 총괄 계획 T11 행은 「보류 · Ted 결정」으로 읽는다.
-- 2026-09-26 L8 스모크(메인 checkout `e4bd039a` · PR 1 hook) — researcher 가 첫 턴에 `researcher-task` 안내(checkout · task_id `81df1e90` · run_id · agent_id `ad54b4a943a51b69d`)를 보았다 → A7 additionalContext 전달 O. 그 agent_id 로 artifact task `1b470def` 를 열어 `handoff --mode artifacts` → H6 차단 0 → SubagentStart/SubagentStop agent_id 일치 O(관측 1회). lane-worker 도 E0 레인 첫 턴에 `worktree-setup (H2)` 요약을 보았다(전달 O). 부수 관측: 서브에이전트의 저장소 밖 Write 는 validate-input 이 차단(산출물은 `lifecycle write-artifact`) · 자동 task 는 열린 채 남는다(L1/L2 대상) · `handoff --mode complete` 처럼 공백이 든 인자를 worktree 가드가 거부해 `--mode=complete` 로 써야 했다(PR 2 레인 지시에 반영). 결론: PR 2 2-5(자동 begin 승계) · 2-8(`agent_type` 분기) 전제 충족 · L2 ⓐ(spawn 결속)는 PR 2 spec 상세화 때 재판정.
-- 2026-09-26 E0 레인 인계 — 6커밋(`44df833e` `70d7ffa5` `11509633` `6c8ee071` `e2c93bce` `764e6892`) · task gate 6종 green · 시험 red→green(harness-contract-selftest 71→91 · 러너 셀프테스트 17/17 · harness-eval-selftest 18/18 · test_ci_eval_policy 7/7 · 신선도 96/96). 실측은 레인 안에서 중첩 `claude -p` 로 완료(T12 불요): 회차 `20260926-125205` 과제 20 · green 17 · 불안정 3 · 준비 0 · **7.998 USD**(추정 32 의 1/4 → 회차 비용 재기준: 5회 ≈40 USD) · 설정 해시 `f25ce639…` · 면제 게이트 78 → 0 · 회귀 0. 분류(레인 · 확인 절 별도 줄): H14 = 하네스 결함 · PR 1 로 해결(green) · H18 = 과제 기대문 결함 후보(1/2) · H15 · H16 = expect 분기 교정 필요 → T17(Ted). spec 과의 편차 4건(CI 필터 = 정본 축자 11패턴 · 시험 ⑶ 예시 교체 · 계산기 호출 위치 · README:245 는 C3)은 advisor ② 판정 대기. E0 브랜치 병합 `e7161673`.
-- 2026-09-26 E0 advisor ② — ACCEPT-WITH-CHANGES(차단 0). ① 메인 checkout 의 비추적·비무시 파일(`.claude/settings.local.json` · `.claude/.headroom_wrap_settings.lock`)이 `.claude/**` 해시에 들어가 메인의 면제 게이트가 늘 78 이 될 위험 → `.gitignore` 에 두 파일 추가(해시 집합 밖 · 재실측 불요) · 두 파일을 둔 worktree 에서 해시 `f25ce639` 유지 실측. ② 실측 결과 `H02.out.*.txt` 에 홈 절대경로 유입 — 증거 파일이라 손수정하지 않고 수용, 후속 = 러너가 `$REPO_TOP` 을 `<repo>` 로 치환하는 후처리(S-red 레인에 얹음 · 해시 집합 파일이라 그 회차와 함께). 개선(비차단 · S-red 레인 동반): 회귀 규칙의 「직전」 선정에 `len(rows)==tasks` 조건 · 정본의 중복 패턴 주석 1줄 · `harness-eval.sh` 안내문 값을 README 권장값으로. 편차 4건 전부 수용. 남은 규율: 병합 전 develop 이 해시 집합 파일을 건드리면 병합 커밋 트리 해시가 갈려 78 → 순서대로 병합.
-- 2026-09-26 9라운드 판정 — Ted 원문 "e0 pr개시 전부 권고대로하자". 확정: ① E0 PR 게시 진행(develop 대상 · 게시는 메인 세션 `gh pr create` · 병합은 Ted) ② T17 = 하겠다 — H15 · H16 expect 갈래 교정(`::error:: … exit 1` 수용 · H16 무언 → 78 비대칭 정리) + H18 `task.md` 규약 1줄은 별건 소형 PR · 초안 · 판정은 S-red 뒤 ③ PR 2 spec `dev-package/prd/specs/S-HARNESS-PR2-LIFECYCLE-CI-20260926.md` §10 8건 전부 ⓐ — #1 ADR 번호 이동(`0010` 기존 존재 → B3 집계 = ADR-0011 · 2줄 ADR(PR 4) = ADR-0012 · 총괄 §1 행 8 · §2 4-4 · §3 · §6 #11 표기 갱신 · 8라운드 ⑪ 의 「0011」은 이 번호로 읽는다) #2 git-guard ⑴ 전원(메인 세션 develop ff push 도 hook 차단 · 출구 PR) #3 L2 ⓐ spawn 결속 대조 = PR 3(PR 2 는 `spawn_agent_id` · `stop_agent_id` 축적) #4 2-7 필터 PyYAML 부재 = 경고 모드 `missing: null` + reason #5 `--spec` 자기 적용은 PR 2 병합 뒤 레인부터 #6 파일 소유 = 총괄 §3(PR 2 는 지목만) #7 `test_ci_required.py` 는 `harness-eval-selftest.sh` 안 #8 researcher 쓰기 범위 = WATCH 4경로 · `runtime:artifacts` 밖 전부 exit 2 ④ S-auth intent(`2026-09-26-human-authorization-for-destructive-ops.md`) `/grill-me` 착수 — Fable blind 판정 → 권고대로 · 결과는 그 intent 「설계트리」 · 「확인」 절 ⑤ E0 브랜치에 develop `#175`(region-expansion · `gates/run.sh` · `gates/tools/region-within-drift*`) 병합 → 설정 해시 `f25ce639` → `5b84d899`(파일 577 → 580) · 면제 게이트 78 → 회차 재실측 1회(≈8 USD · 8라운드 ① 승인 회차 안) · #175 는 E0 가 develop 에 없는 사이 eval 없이 `gates/**` 를 바꿨다(E0 가 막을 유형의 첫 실례 · 이후에는 red).
-- 2026-09-26 E0 회차 2 · 3(메인 세션 · E0 워크트리 · develop `#175` 병합으로 갈린 해시 `5b84d899…` 재실측 · 9라운드 ⑤) — 회차 2 `20260926-140939`: 과제 20 · 실행 39 · green 17 · 불안정 2 · 준비 1 · 초 p50 28.4/p95 44.4 · USD 합 7.4808 · 판정실패 관측 과제 2 · 상한 `COLAB_EVAL_TIMEOUT=93` · `COLAB_EVAL_BUDGET=2.01` · 과제당 2회 · H18 1회차가 93s 상한 초과(rc 124)로 준비 1 → 면제 기준 불가(증거로만 커밋 · H15 가 0/2 → 1/2 로 갈린 관측은 T17 입력). 회차 3 `20260926-143218`: 과제 20 · 실행 40 · green 18 · 불안정 2 · 준비 0 · 초 p50 29.0/p95 58.5 · USD 합 8.1084 · 판정실패 관측 과제 2 · 상한 `COLAB_EVAL_TIMEOUT=150` · `COLAB_EVAL_BUDGET=2.01` · 과제당 2회(H18 실측 60–95s 라 시간 상한만 150s 로 선언 · 기대문 · 과제 무변 · README 권장 93s 는 T17 에서 재조정) · 설정 해시 `5b84d899…`(파일 580 · HEAD `5a7160f9` · dirty 0) · 판정 red = H16-lenient-default, H18-three-states · 회차 1 `20260926-125205` 대비 회귀 0 · 신규 green H15-zero-targets · 비용 7.4808 + 8.1084 USD(E0 누계 3회 ≈ 23.6 USD · 8라운드 ① 승인 회차 안) · 면제 게이트 = 회차 3 으로 78 → 0.
-- 2026-09-26 10라운드 판정(팀 공용 하네스) — Ted 원문 "하네스는 팀 공용 하네스인데 내 전용으로 써도되나" · "팀 공용 하네스임을 고려해야함" → Fable 감사 3(장치·설정 / 절차·문서 / 비용·동시성) + 종합 1(원문 `~/.claude/reports/harness-state-20260925/team-shared-20260926/report.md` · 소형 PR B 로 저장소 반입 예정). 판정 원칙(이후 모든 그룹에 적용): 하네스 결정마다 「다른 팀원이 다른 머신에서 같은 절차를 밟아도 같은 판정 · 같은 보호 · 같은 비용인가」. 감사가 「팀 기준으로 틀림」으로 지목한 2곳 = ⑴ eval 러너가 `--model` 없이 `claude -p` 를 불러 각자의 기본 모델로 잰다(회차 `5b84d899` 실측 모델 `claude-opus-5-5` · README:108 은 `claude-fable-5-1` · 메인 세션 재확인) ⑵ develop ruleset 승인 0 + CODEOWNERS 단일 핸들. Ted 원문 판정 "pr은 사람이 승인하기만 하면된다 꼭 / 팀에 맥이나 비 wsl호스트가 있음 다른사람일필욘없다 / 나머진 전브 권고로". 확정: Q1 = ruleset 승인 수 0 유지(다른 사람일 필요 없음 · GitHub 는 작성자 자기 승인을 허용하지 않으므로 승인 1 요구는 곧 「다른 사람」이 된다) · 「사람 승인」 = 사람이 병합하는 행위 · 서버 쪽 강제 = 에이전트 토큰이 병합 불가(T11 을 「구성원별 에이전트 PAT · Pull requests Read」로 재정의 · 재판정 = 소형 PR A·B 뒤 PR 2 전) · Q2 예 = 해시 집합에서 `gates/**` 제외 → `gates/tools/harness-eval.sh` · `harness-eval-selftest.sh` · `_readiness.sh` 만 재등재(8라운드 ① `hash_exclude` 범위) · Q3 예 = CI `harness-eval-run` 잡(org 시크릿 · `workflow_dispatch`/label · 고정 CLI 버전 · artifact 업로드 · 커밋은 사람) = 별도 intent · PR 2 병합 전 결정 · Q4 예 = intent 승인 형식 `승인: @<GitHub handle> <YYYY-MM-DD> "<원문>"` · `intent_ref.py classify` 는 그 꼴만 승인 · 승인 권한 = develop 리뷰 권한자 · Q5 예(팀에 macOS · 비WSL 호스트 있음) = `gates/tools/_lock.sh` · `_pg.sh` 의 flock 을 python `fcntl.flock` 로(판정 규약 무변경) intent 지금 발행. 권고 2–12 전부 수용 — **소형 PR A**(해시 집합 파일 · S-red 병합 뒤 · PR 2 회차 앞 · 회차 1회로 끝냄): 모델 정본 `eval/harness/model.txt` + 러너 `--model` + `config_hash.py compute` 에 `model`(정본 + 실측 `modelUsage`) + `verify` 모델 대조(불일치 78 `model-mismatch`) + 요약줄 모델 표기 · 해시 집합 축소(Q2) · run id UTC(`date -u` · 접미사 없음 · 정규식 불변) + `check.py` 나이 UTC 계산 + README 「id = UTC」 1줄 · `verify` 78 상세에 dirty(비추적 포함) 상위 5건 · `.agents/harness.yaml hygiene.home_path_roots` 에 `eval/harness/results` · `dev-package/intent` · `dev-package/prd` — **소형 PR B**(해시 집합 밖 · 회차 불요 · A 와 동시 open 가능): 승인 형식 + `intent_ref.py classify` + fixture 갱신 + `TEMPLATE.md` 실명 열거 삭제 + 저장소 밖 보고서 반입(`dev-package/reports/harness/20260925-harness-state/` · 홈 경로 `<repo>` 치환) — **PR 2 추가**: 「직전」= `config-hash.json.head` 가 현재 HEAD 의 조상인 최신 전수 회차 · advisor ② 판정문 + `COLAB_HANDOFF` JSON 을 `dev-package/reports/<회차>/verdict/` 로 복사(PR 본문 Advisor-Ref = 경로 + sha256) · `hook_audit.py` 줄에 `user` · 2-4 `--apply` = 해당 checkout 소유자 · `harness-contract` 용량 `warning:` · 총괄 §0 팀 규칙 2줄(해시 집합 PR 은 저장소 전체 동시 1건 open · 집합 밖 파일만 바뀐 develop 병합은 회차 유지) · §6 비용표 N명×동시 PR · T12 「회차 ≈8 USD(09-26 실측)」 — **PR 3 추가**: `docs/development/onboarding.md`(기계 1대당 절차) + `agent-bridge.py doctor` 의 claude CLI 존재·버전·모델 조회(불가 = 78) — **PR 4 추가**: `colab-rules.md §0` 역할 어휘(승인자 = develop 리뷰 권한자 · 병합자 = 사람 · 운영자 = dev SSH 자격 보유자) + skills/rules/TEMPLATE/deploy.md 의 역할성 「Ted」 치환(결정 이력 원문 유지) + `RESTART.md` 「두 번째 기계」 절 + T7 = 저장소 runbook 갱신 · T3 = 개인 runbook — **별도 intent 3**: ⓐ CI 회차 ⓑ fcntl 잠금 ⓒ S-auth 기록 `authorized_by` = gh login(승인 intent 라 줄 추가로). S-red 레인 중단 불요 · 리뷰 때 S-6a 치환 대상에 `$HOME` 추가 확인. 소형 PR A 뒤 첫 회차가 새 기준선. 변경 불요 확정: task runtime checkout 결속 · ruleset PR 필수·strict·우회자 0 · 훅 wrapper 레포 안 · 호스트 뮤텍스(계정 분리 공유 서버가 없는 한) · `results/**` 추적 범위.
-- 2026-09-26 S-red 레인 인계(부분) · 10라운드 초안 게이트 — 레인 7커밋(`a99d3644` ① · `955fa42e` ② · `d747a599` ③ · `2184be1b` ④ · `b6d8540f` ④′ S-6 · `eec298a1` ⑤ 회차 `20260926-174808` · `894b1b74` ④″ `<home>` 치환 · 감사 C-9)을 S-red 브랜치에 병합(`8befee02`). 회차 174808(해시 `3fbda467` · b6d8540f 트리): 과제 20 · 실행 40 · green 17 · 불안정 3(H15 1/2 · H16 1/2 · H18 1/2) · 준비 0 · 8.2121 USD — 회차 3(143218) 대비 H15 2/2 → 1/2 가 회귀 규칙(직전 green → red)에 걸려 exempt 1 · handoff 78. H15 두 답은 같은 결론(`::error:: … 0건 … exit 1`)이고 한쪽에 「실패」 낱말이 없어 `expect.sh:15` 정규식에 걸린 문구 운(T17 입력). 메인 세션 지시 = ④″ 뒤 재실측 1회 → 중첩 `claude -p` 가 주간 사용 한도(HTTP 429 · 리셋 10-02 03:00 KST)로 중단 · 레인 인계 미완(handoff 증거 없음 · V-S6 미수신). 병합본 게이트(메인 세션 · 순차): exec-bit · intent-ref · harness-contract · harness-contract-selftest · harness-eval-selftest(19) · agent-bridge green · 러너 셀프테스트 19/19 · V-S11 grep 0 · 0 · harness-eval 면제 = 78(현재 해시 `5444c6d2` 의 회차 없음 — ④″ 가 집합 파일을 바꿈). 회차 확보 선택지(Ted 판정): ⓐ 리셋 뒤 이 계정 ⓑ 다른 팀원 머신에서 S-red 브랜치로 회차 → 커밋(팀 공용 절차 · 트리 기준 해시) ⓒ 회차 없이 게시 · 병합은 회차 뒤. 10라운드 초안 게이트: spec A = advisor ① **Opus 대체**(Fable 주간 한도) ACCEPT-WITH-CHANGES(필수 4: agent-bridge.yml paths 3줄 · 러너 record-usage 실패 = 준비 계수 · 정본 모델 접근 불가 시 T12 대기 조건 · 트레일러 모델 문자열 제거) · spec B = Fable ACCEPT-WITH-CHANGES(필수 3: 스냅샷 불변 규칙 · harness-contract-selftest 는 agent-bridge.yml compatibility 에서만 · 선행 커밋 조건) · intent ⓐ ⓑ · 총괄 §10 = Fable 정합 검토 CHANGES(A5 · B5 · C4) — 정정 반영은 Opus(같은 사유) · 원문 `~/.claude/reports/harness-state-20260925/team-shared-20260926/round10-drafts/`.
-- 2026-09-26 S-red 게시 · 회차 방법 · PR B 선행 판정 — Ted 원문 "1 a / 2 pr게시 / 3 권고댜로". ① S-red 회차 = ⓐ 주간 한도 리셋(10-02 03:00 KST) 뒤 이 계정에서 1회(≈8 USD · head 트리 · `COLAB_EVAL_TIMEOUT=150`) ② S-red PR 게시 = https://github.com/CognileapAI/colab-v2/pull/178 (head `e28cb01f` · harness-eval 은 회차 전까지 78 · 병합은 회차 뒤 · 병합자 = 사람) ③ 소형 PR B 선행(회차 불요): 브랜치 `claude/harness-team-b` = develop `5bb3d6fe` + 10라운드 문서 커밋 4(12ad099b 원본 + 3 cherry-pick · 전부 `dev-package/**`) · spec A·B 우려 항목 판정은 blind 판정자로 진행하되 Fable 주간 한도 동안은 **Opus 대체**(판정자 모델을 기록에 남긴다) · spec A 레인은 회차 가능 시점(리셋 뒤)까지 대기 · S-red 와 PR B 가 같은 문서 커밋을 공유하므로 먼저 병합되는 쪽 뒤에 다른 쪽은 Update branch(동일 hunk · 충돌 없음 기대).
-- 2026-09-26 11라운드 판정(소형 PR A · B spec 우려 항목 · Ted 「권고대로」 상시 원칙 · 판정자 = **Opus blind**(Fable 주간 한도 · 판정자 모델을 여기 남긴다) · 교차 점검 1 · 원문 `~/.claude/reports/harness-state-20260925/team-shared-20260926/grill-AB/`) — **A**: #1 ⓑ `model.txt` = `claude-opus-5-5`(초안 권고 ⓐ fable 과 다름 · 이유 = 팀 구성원 접근성·주간 한도·회차 비용 4배 · 최근 4회차 전부 opus-5-5 · 뒤집힐 조건 = Ted 가 eval 목적을 「Fable advisor 판정 품질 측정」으로 명시하거나 전 구성원의 Fable 접근·여유가 실측될 때) · #1a ⓐ(정본 모델 접근 불가 = 러너 78 · 대체 모델 금지 · 정본 교체 = 별도 PR) · #2 새 선택지(A·B 병합 순서 조건 삭제 — B 는 해시 집합 diff 0 · 실제 순서 = B 선행) · #3 ⓐ(`:(exclude).agents/ci-producers.json`) · #4 확정 3 + `dev-package/reports/harness/20260925-harness-state` 1(교차 점검 해소 · `dev-package/reports` 전체는 홈 경로 약 180건이라 별도 정리 뒤) · #5 ⓐ(요약줄 ` · 모델 <정본>`) · #6 새 선택지(러너가 정본 ∉ model_usage 를 준비 +1 로 세고 요약 완주 뒤 78 · verify 의 model-mismatch 는 이중 방어) · #7 ⓐ(results 6줄 12건 · prd 4줄 치환 · 커밋 본문에 명령·red 로그). **B**: #1 새 선택지(형식 OR (legacy ∧ 동결 스냅샷) 골격 유지 · 불변 검사는 스냅샷이 fork..head 변경에 있고 base 에 존재할 때만 base 블롭과 바이트 대조 · base·head 모두 부재 = 준비 78 · 「대조 대상 = head sha · 실행 코드 = 머지 ref」) · #2 ⓐ(handle 은 형식 검사만 · ADR-0003) · #3 ⓐ · #4 ⓐ · #5 새 선택지(B 는 1회 검사 · A 가 `home_path_roots` 소유 · 추가 토큰 = 정확한 반입 디렉터리 · B 의 검사 = `config.py HOME_PATH` + `home_path_allow` 와 같은 규약 · V-B9 = 「check_home_paths 식 0건」) · #6 ⓐ. 교차 점검 3건 전부 해소안대로 반영. 현재 approved intent 63(HEAD 4f84c433 · 86 파일 중). 다음 = spec 반영 커밋 → PR B 레인(lane-worker · Opus) 착수 · A 레인은 리셋 뒤.
-
-- 2026-09-26 소형 PR B — 위 라운드들의 저장소 밖 원문(~/.claude/reports/harness-state-20260925/ · :2,539,550,563,576,601,609,620,627,628,630 이 가리키는 것 전부)을 dev-package/reports/harness/20260925-harness-state/ 로 반입했다(100 파일 + README 색인 · 홈 경로 <repo>·<home> 치환 · 내용 무수정). 승인 형식 Q4 의 판별기 = scripts/harness/intent_ref.py(승인: @<handle> <YYYY-MM-DD> "<원문>" · 형식 검사만) · legacy 동결 = scripts/harness/intent_legacy_approved.txt(lane begin 시점 develop 2ed59e9a · 64건 = 5bb3d6fe 의 63 + #177 cadence-range-predicate) · 의도된 비보호 = 2026-09-08-harness-evals.md · 2026-09-18-missing-rate-predicate-recon.md(메타 두 줄 분리).

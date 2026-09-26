@@ -1,0 +1,98 @@
+{
+ "environment": "flock: present at /usr/bin/flock. python3: 3.12.3. PyYAML: importable, version 6.0.1. Host gate mutex file /tmp/colab-v2-gate-host-mutex/host exists (0 bytes, mtime 21:43) but `fuser` on it returned exit 1 with no output, i.e. not held by any process at check time.",
+ "worktree": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt (created via `git worktree add --detach ... HEAD`, exit 0; removed with --force and pruned at the end, exit 0 each)",
+ "runs": [
+  {
+   "command": "command -v flock",
+   "cwd": "<repo>",
+   "exit_code": 0,
+   "summary": "/usr/bin/flock — present",
+   "log_path": "(inline, not logged to file)"
+  },
+  {
+   "command": "python3 --version",
+   "cwd": "<repo>",
+   "exit_code": 0,
+   "summary": "Python 3.12.3",
+   "log_path": "(inline)"
+  },
+  {
+   "command": "python3 -c \"import yaml; print(yaml.__version__)\"",
+   "cwd": "<repo>",
+   "exit_code": 0,
+   "summary": "PyYAML 6.0.1 importable",
+   "log_path": "(inline)"
+  },
+  {
+   "command": "fuser /tmp/colab-v2-gate-host-mutex/host",
+   "cwd": "<repo>",
+   "exit_code": 1,
+   "summary": "no output, exit 1 → mutex file exists but is not currently held by any process",
+   "log_path": "(inline)"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID python3 scripts/harness/check.py",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 0,
+   "summary": "green: shared harness contract; required gates 12, adapters 5, hook registrations 11, always-on line budget 120, home-path roots 6 (scanned 133, skipped 12 binary/non-UTF-8/symlink), parallel-safety declarations 76",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4a-check.log"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID python3 scripts/agent-bridge.py check",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 0,
+   "summary": "green: 5 role mappings, 18 source skills / 17 Claude adapters, 11 hook mappings / 6 events",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4b-agent-bridge.log"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID bash gates/run.sh harness",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 2,
+   "summary": "Not a valid gate name (no plain 'harness' target exists in ALL_GATES/case dispatch). Output: '  ── 호스트 뮤텍스 : 잠금 1건 · 면제(parallel 선언) 0건 · 대기 누계 0s' then '::error::알 수 없는 게이트 'harness''. Unknown-gate names fall through to the catch-all `*)` branch (echo + exit 2), and since 'harness' has no parallelism.toml declaration, run.sh took the host mutex once (the 'safe side = solo' default for undeclared gates) before failing.",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4c-gate-harness.log"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID bash gates/run.sh harness-contract",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 0,
+   "summary": "green: shared harness contract; required gates 12, adapters 5, hook registrations 11, always-on line budget 120, home-path roots 6 (scanned 133, skipped 12 binary/non-UTF-8/symlink), parallel-safety declarations 76. Mutex line: 잠금 0건 · 면제(parallel 선언) 1건 (declared parallel in parallelism.toml, so exempted from the host mutex). No gate-summary JSON emitted (COLAB_GATE_REPORT_DIR/COLAB_GATE_OUTDIR unset).",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4d-harness-contract.log"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID bash gates/run.sh adr-records",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 0,
+   "summary": "PASS: 9 ADR records (structure, links, accepted history vs HEAD); this is not approval. Mutex: parallel-declared, exempted. No gate-summary JSON emitted.",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4d-adr-records.log"
+  },
+  {
+   "command": "env -u COLAB_TASK_ID bash gates/run.sh agent-bridge",
+   "cwd": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/wt",
+   "exit_code": 0,
+   "summary": "unittest across test_agent_bridge/test_slack_completion/test_deploy_release/test_harness_lifecycle_contract/test_harness_source_layout/test_task_runtime: Ran 156 tests in 25.035s, OK (skipped=10). Mutex: 잠금 1건 (agent-bridge is declared 'serial' in parallelism.toml for wall-clock reasons, so it took and released the host mutex). No gate-summary JSON emitted to disk (COLAB_GATE_REPORT_DIR/COLAB_GATE_OUTDIR unset) — the 'gate-summary.json' paths and green/red tallies seen in the log are the test suite's own fixture output (tests exercising the summary-emission logic in temp dirs like /tmp/tmp0_im2of3/...), not this run's real summary.",
+   "log_path": "<home>/.claude/jobs/aa678208/tmp/harness-analysis/logs/4d-agent-bridge-gate.log"
+  }
+ ],
+ "observations": [
+  "gates/run.sh usage (line 972): 'usage: gates/run.sh <gate> | gates/run.sh all [-j N]'. A single gate name is passed positionally as $1; there is no multi-gate argument form — 'all' with an optional -j N is the only way to run several gates in one invocation. So the three light gates were run one at a time.",
+  "There is no plain 'harness' gate target anywhere in gates/run.sh's ALL_GATES array or its case dispatch (checked at lines 283-311 for ALL_GATES, and grepped the whole case block). The closest real names are 'harness-contract' (scripts/harness/check.py) and 'harness-eval' (gates/tools/harness-eval.sh), plus their -selftest variants. 'harness' as typed hits the catch-all '*)' branch: `echo \"::error::알 수 없는 게이트 '$GATE'\"; exit 2`.",
+  "gates/run.sh COLAB_TASK_ID branch (lines ~9-46): if GATE == 'task', it hard-requires COLAB_TASK_ID (else red-준비 exit 78) and execs scripts/harness/hooks/lifecycle_contract.py run-gates. Separately, for ANY gate name, if COLAB_TASK_ID is set and COLAB_GATE_SUMMARY_CHILD is NOT set, run.sh calls lifecycle_contract.py gate-start to bind task evidence (writing into the main checkout's .git common dir per the harness's own comments) and then execs run-bound-gate instead of the normal case dispatch. With COLAB_TASK_ID unset (as enforced by `env -u COLAB_TASK_ID` throughout this session), none of that lifecycle/evidence-binding code path ever ran; gate execution went straight to the plain case-statement dispatch. This matches the HARD RULE's stated reason for never setting COLAB_TASK_ID.",
+  "gates/tools/_lock.sh: gate_host_mutex_* implements a single host-wide flock-based mutex keyed only on TMPDIR (not on repo path), used by gates declared 'serial' in parallelism.toml. If flock is missing it returns red(readiness)=78, never silently proceeds — confirmed present on this host, so that failure mode did not trigger. fuser confirmed no process was holding the mutex before this run started, and each 'serial' gate run in this session (the invalid 'harness' name, and 'agent-bridge') acquired then released it (each run's own mutex line showed 잠금 1건, and the next command in sequence was never blocked waiting on it, and no leftover flock process was checked afterward since git worktree cleanup succeeded without contention).",
+  "gates/config/parallelism.toml declarations for the three named light gates: harness-contract = \"parallel\", adr-records = \"parallel\", agent-bridge = \"serial\" (agent-bridge's comment explains it is serial for wall-clock reasons — two of its six unittest modules assert child-process startup under a hard wall-clock deadline, e.g. test_deploy_release.py's `deadline=time.monotonic()+5` and test_agent_bridge.py's `deadline = time.monotonic() + 10` — not because of resource/isolation conflicts.)",
+  "No gate in this session emitted a real gate-summary JSON to disk, because COLAB_GATE_REPORT_DIR and COLAB_GATE_OUTDIR were both left unset; run.sh's single-gate summary/JSON-emission block (around lines 200-246) is gated on `[ -n \"${COLAB_GATE_REPORT_DIR:-}${COLAB_GATE_OUTDIR:-}\" ]` and is skipped entirely otherwise ('이 자리를 그냥 지나간다' per the script's own comment). A `find` over the worktree for gate-summary.json turned up only pre-existing, already-committed report files from past lanes (paths like dev-package/reports/stage3-account/*/gate-summary.json) — none newly written by this session's commands.",
+  "The one apparent gate-summary JSON path and green/red tallies visible in the agent-bridge gate's log output (/tmp/tmp0_im2of3/dev-package/reports/producer/lane/gate-summary.json, and the 'green 2/red 0/red 0' etc. lines) are internal fixture output produced by the unittest suite itself (it is testing the summary-emission code path in an isolated temp dir), not an actual summary of this gate invocation — this run's own summary/JSON emission was skipped per the point above.",
+  "Both scripts/harness/check.py and scripts/agent-bridge.py check ran cleanly standalone (exit 0, green) independent of gates/run.sh, confirming they are plain read-only Python entry points with no DB/network dependency, consistent with the parallel/light classification implied by the task."
+ ],
+ "not_run": [
+  "gates/run.sh all [-j N] (full/parallel gate suite) — out of scope per HARD RULES (light set only)",
+  "Any DB-backed gate (db-selftest, rls-coverage, rls-effect, schema-diff, migration-drift, autometa-loss, preview-tile-slot, etc.) — explicitly excluded (needs postgres)",
+  "service-tests-core-api / service-tests-ai-service / service-tests-viz-render / service-tests-pipeline-worker — explicitly excluded (service pytest bundles, needs venvs/DB)",
+  "frontend-typecheck, frontend-test, frontend-fixture-reach, frontend-design-lint, frontend-visual and their selftests — explicitly excluded (needs npm/frontend deps, and frontend-visual needs a real browser)",
+  "e2e-format-coverage, render-latency, backup-cron-streak, ops-observability, harness-eval and their selftests — excluded as heavier/timed/model-calling gates outside the light set named in the task",
+  "gates/run.sh harness-contract-selftest / adr-records-selftest (no such adr-records-selftest target was named in ALL_GATES) and agent-bridge has no separate -selftest target either — not requested, so not run",
+  "Any retry of the (correctly) failing 'gates/run.sh harness' invocation — recorded as-is per the 'do not retry more than once' rule; it was run exactly once",
+  "Reading git log / diff beyond `git status --porcelain` and `git worktree list` for verification — not needed since both confirmed a clean, single-checkout state",
+  "Setting or inspecting COLAB_TASK_ID's actual lifecycle-mode behavior end-to-end (e.g. via 'task' gate) — deliberately never set, per HARD RULES; only its documented code path was read, not exercised"
+ ],
+ "main_checkout_clean_after": true
+}
