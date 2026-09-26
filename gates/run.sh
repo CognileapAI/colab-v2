@@ -354,7 +354,7 @@ case "$GATE" in
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
     ;;
   harness-contract-selftest)
-    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py scripts/tests/test_harness_record_gates.py
+    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py scripts/tests/test_harness_record_gates.py scripts/tests/test_harness_eval_gate.py
     ;;
   adr-records)
     # `docs/decisions/*` 전 기록의 구조·대체 연결 검사(ADR-0003: 로컬 CLI · 훅 없음 → 게이트로 붙인다).
