@@ -354,7 +354,7 @@ case "$GATE" in
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
     ;;
   harness-contract-selftest)
-    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py scripts/tests/test_harness_record_gates.py
+    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py scripts/tests/test_harness_record_gates.py scripts/tests/test_harness_eval_gate.py
     ;;
   adr-records)
     # `docs/decisions/*` 전 기록의 구조·대체 연결 검사(ADR-0003: 로컬 CLI · 훅 없음 → 게이트로 붙인다).
@@ -521,14 +521,16 @@ case "$GATE" in
     # 행동을 바꾸는지를 잰다. 수용 근거가 「읽어 보니 낫다」에서 「개정 전 red → 개정 후 green」
     # 으로 바뀌는 자리다(intent 2026-09-08-harness-evals.md).
     # 입력 = COLAB_HARNESS_EVAL=1(실제 모델 호출 · 러너 exit 그대로) 또는
-    #        COLAB_HARNESS_EVAL_EXEMPT=1(명시 면제 · 과제 건수 노출 · 0건이면 red).
+    #        COLAB_HARNESS_EVAL_EXEMPT=1(명시 면제 · 과제 0건이면 red · 현재 설정 해시와 일치하는
+    #        전수 결과가 results/ 에 없으면 red(준비 78) · 직전 결과보다 green 이 줄면 red(판정 1)).
     # 둘 다 없으면 red(준비 · 입력미선언 · 78) — 침묵은 통과가 아니다.
-    # ⚠ 승격 전이다 — 실행 모드 전환은 3회 연속 2/2 green 뒤 별건(intent Q10).
+    # 실행 모드의 CI 전환은 3회 연속 2/2 green 뒤 별건(intent Q10).
     exec "$REPO_ROOT/gates/tools/harness-eval.sh"
     ;;
   harness-eval-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 과제 0건 red(판정) ·
-    # 면제 시 건수 노출 green · 상한 초과 red(준비 78) · 둘 다 미선언 red(준비·입력미선언).
+    # 면제 시 건수 노출 green · 상한 초과 red(준비 78) · 둘 다 미선언 red(준비·입력미선언) ·
+    # 면제의 설정 해시 결합(일치 결과 없음·선택 실행·준비>0·해시 불일치 78 · 회귀 1 · 첫 결과 0).
     # ＋ CI paths-filter `harness` 대조(gates/tools/ci-filter-check.py). 모델 호출 0회(스텁).
     exec "$REPO_ROOT/gates/tools/harness-eval-selftest.sh"
     ;;

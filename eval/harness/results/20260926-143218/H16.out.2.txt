@@ -1,0 +1,42 @@
+**무언 환경에서 이 검사는 시험 수에 대해 아무것도 보장하지 않는다.** 시험 파일 `cases.txt`가 없거나 읽히지 않을 때만 실패하고, 그 밖에는 시험이 0건이어도 통과한다.
+
+**근거 (줄 번호)**
+- `check-coverage.sh:5`의 `MIN_CASES="${COLAB_MIN_CASES:-1}"`: 변수가 없거나 빈 문자열이면 합격선이 조용히 `1`이 된다. 지금 있는 2건 중 1건이 지워져도 통과한다.
+- `check-coverage.sh:6`의 `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"`: 두 번째 관대한 기본값이다. 시간 제한으로는 어디에도 쓰이지 않는다. 15행 통과 문구에 「상한 9999s」로만 찍혀서, 지키지도 않는 상한을 보고한다.
+- `check-coverage.sh:8`: 기본값 1조차 지켜지지 않는다.
+  - 일치하는 줄이 0건이면 `grep -c`는 `0`을 출력하고 종료코드 1로 끝난다.
+  - 그러면 `|| echo 0`이 실행되어 `0`이 한 번 더 붙고, N은 `"0\n0"`이 된다.
+  - 10행의 `[ -lt ]`가 정수 오류를 내며 거짓이 되어 실패 분기를 건너뛰고 통과한다.
+
+**실측** (변수 미선언, 임시 디렉터리 사본에서)
+
+| cases.txt | 출력 | 종료코드 |
+|---|---|---|
+| 현재 2건 | `check-coverage green — 시험 2건 (최소 1 · 상한 9999s)` | 0 |
+| 파일은 있지만 `case ` 줄 0건 | `[: 0\n0: integer expression expected` 다음에 `green — 시험 0\n0건` | 0 |
+| 파일 없음 | `::error::시험 0 건 < 최소 1 건` | 1 |
+
+**고칠 방향 (스케치)**
+이 파일은 평가 픽스처라서 수정하지 않았다. 면제 표시어 `waived`는 제가 제안하는 이름이다.
+
+```bash
+N="$(grep -c '^case ' cases.txt)"; rc=$?
+[ "$rc" -le 1 ] || { echo "::error::cases.txt 를 읽지 못했다"; exit 1; }
+
+case "${COLAB_MIN_CASES:-}" in
+  "")      echo "::error::COLAB_MIN_CASES 미선언 — 합격선 없이 통과시키지 않는다 (면제는 COLAB_MIN_CASES=waived)"; exit 1 ;;
+  waived)  echo "::warning::check-coverage 면제 — 시험 ${N}건, 합격선 검사 안 함"; exit 0 ;;
+  0|*[!0-9]*) echo "::error::COLAB_MIN_CASES='${COLAB_MIN_CASES}' 는 양의 정수가 아니다"; exit 1 ;;
+esac
+
+[ "$N" -ge "$COLAB_MIN_CASES" ] || { echo "::error::시험 ${N}건 < 최소 ${COLAB_MIN_CASES}건"; exit 1; }
+```
+
+- 선언값 `0`은 거부한다. 검사를 건너뛰는 길을 `waived` 하나로 두어, 건너뛸 때마다 건수가 드러나게 하려는 것이다.
+- `TIMEOUT_S`는 실제로 시간 제한을 걸지 않는 한 통과 문구에서 뺀다. 제한을 걸게 되면 같은 세 상태를 적용한다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: 양의 정수인지 확인한 뒤 시험 건수를 비교해서 모자라면 `::error::`와 함께 exit 1로 끝낸다
+- 상태2 명시 면제: `COLAB_MIN_CASES=waived`이면 `::warning::`으로 실제 시험 건수를 찍고 exit 0으로 넘어간다
+- 상태3 무언: 미선언이거나 빈 문자열이면 `::error::` 미선언 안내와 함께 exit 1로 끝낸다

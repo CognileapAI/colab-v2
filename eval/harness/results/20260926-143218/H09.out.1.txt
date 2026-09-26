@@ -1,0 +1,15 @@
+상세 화면 정보 격자는 바깥 선과 칸 구분선이 같은 토큰 `--color-border`를 쓰고 있습니다. 그래서 두 층으로 갈리지 않고, 디자인 요구사항을 위반합니다.
+
+| 층 | 선택자 | 선언 | 토큰 |
+|---|---|---|---|
+| 컨테이너 선 | `.detail-page .infogrid` | `detail.css:59` `border: 1px solid var(--color-border)` | `--color-border` (`#e8ecf2`) |
+| 칸 구분선 | `.detail-page .infogrid .ig` | `detail.css:62` `border-right` / `border-bottom: 1px solid var(--color-border)` | `--color-border` (`#e8ecf2`) |
+
+- `detail.css`에서 `infogrid`를 다루는 선택자 중 다른 토큰으로 선을 덮어쓰는 규칙은 없습니다.
+- 좁은 화면(`max-width: 720px`)에서 칸 오른쪽 선을 다시 켜는 `detail.css:69`도 같은 `--color-border`를 씁니다.
+- `tokens.css`에 한 단 진한 `--color-border-strong`(`#dfe3e8`)이 정의되어 있습니다. `catalog.css`는 표 머리 밑줄에 이 토큰을(`:41`·`:45`), 행 구분선에 `--color-border`를(`:46`) 써서 두 층을 나눕니다. 상세 화면 격자에는 이 구분이 빠져 있습니다.
+- 바깥 선은 `catalog.css:30`의 카드 테두리와 같은 `--color-border`입니다. 그래서 층을 나눌 때는 칸 구분선 쪽의 토큰을 바꾸는 것이 기존 짝과 맞을 수 있습니다. 어느 쪽을 바꿀지는 이 사본만으로 정할 수 없습니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

@@ -1,0 +1,16 @@
+34곳이 13px 미만입니다. 세 파일의 `font-size` 선언 69개를 전수 확인했습니다. 주석은 줄바꿈만 남기고 지워 원본 행 번호를 그대로 유지했고, 파일은 수정하지 않았습니다.
+
+- **전체 선언:** 69개
+- **13px 미만 리터럴:** 34곳 (detail.css 7, upload.css 14, lineageGraph.css 13)
+- **13px 이상 리터럴:** 13곳
+- **판정하지 않은 값:** 22곳. 모두 `var(--text-*)` 값이라 합격인지 불합격인지 추정하지 않았습니다. `rem`과 `calc(...)`는 이 범위에 없었습니다.
+- **소수 값:** lineageGraph.css:44의 `10.5px`와 :45의 `12.5px`도 목록에 넣었습니다.
+- **공유 선언:** upload.css:82 `.dropzone .muted, .muted` 12px는 선택자가 둘이지만 한 곳으로 셌습니다.
+- **무접촉 항목:** 오류 본문 규칙 가운데 이미 13px이고 선택자를 공유하는 것은 upload.css:138–145 `.vizerr, .warn` 하나입니다. `font-size`는 144행에 있습니다.
+- **다른 13px 규칙:** `.vizpartial`, `.reggate .rg-s`, `.btn-sm`, `.gridblock .gb-b`, `.vizstage`, `.modal-takeover .mh-lab`도 13px이지만, 선택자 하나짜리 규칙이거나 오류 본문 규칙이 아니어서 무접촉 항목에 넣지 않았습니다.
+
+이 결과는 CSS 리터럴만 본 정적 검사입니다. 계산된 스타일이나 배포 화면의 접근성을 인증하지 않습니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

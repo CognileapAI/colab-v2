@@ -1,0 +1,30 @@
+찾았습니다. 한 규칙 안에서 `display` 가 두 번 선언된 곳은 한 군데이고, 두 `:root` 어디에도 없는 토큰을 참조하는 선언은 11건입니다.
+
+**덮인 선언**
+- `.detail-page .lin-way` 규칙(28–35행) 안에서 29행이 `display: inline-flex` 를, 33행이 `display: inline-block` 을 선언합니다.
+- 뒤에 온 33행이 앞의 29행을 무효로 만듭니다. 그래서 29행과 함께 쓴 `align-items: center` 도 효과가 없습니다.
+- 다른 규칙에는 `display` 가 두 번 나오는 곳이 없습니다.
+
+**미정의 토큰 참조 (11건)**
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50` · `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200` · `--color-primary-800` |
+| 83 | `--color-accent-700` · `--color-accent-50` |
+| 84 | `--color-ai` |
+
+- 11건 모두 폴백이 없습니다. `lineageGraph.css` 안에서 사용자 정의 속성을 따로 정의하는 곳도 없습니다.
+- 49행의 `--color-gray-100` 은 `detail.css:6` 에 정의되어 있어 11건에 넣지 않았습니다.
+
+**`SOURCE.md` 와 다른 점**
+- 픽스처의 `SOURCE.md` 에는 토큰 가짓수가 8 이라고 적혀 있지만, 실제로 세면 7가지입니다. 11건이라는 참조 수는 제 결과와 같습니다.
+- `SOURCE.md` 가 채점 기준이라면 가짓수 8 은 고쳐야 합니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 지우고, `tokens.css`·`detail.css` 의 `:root` 에 정의된 토큰을 모은 뒤 `lineageGraph.css` 의 폴백 없는 `var(--…)` 를 행마다 대조해 세고, 규칙 본문마다 `display` 선언 수를 셌다(python 정규식)

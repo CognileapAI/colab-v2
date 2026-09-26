@@ -1,0 +1,31 @@
+`font-size` 선언은 총 62개입니다. 이 중 34개가 13px 미만의 px 리터럴입니다. 주석은 행 번호를 유지한 채 공백으로 바꾼 뒤 스크립트로 추출했고, 파일은 수정하지 않았습니다.
+
+**13px 미만 대상 (34곳)**
+
+| 파일 | 행 · 값 |
+|---|---|
+| `detail.css` (7) | 47·11px · 50·11px · 65·10px · 89·11px · 97·10px · 101·11px · 136·10px |
+| `upload.css` (14) | 82·12px · 92·12px · 106·12px · 107·12px · 123·12px · 124·12px · 128·12px · 167·12px · 168·12px · 175·12px · 176·10px · 179·12px · 182·12px · 187·11px |
+| `lineageGraph.css` (13) | 10·11px · 14·11px · 31·10px · 44·10.5px · 45·12.5px · 58·11px · 72·10px · 76·12px · 81·11px · 82·10px · 83·10px · 85·10px · 95·11px |
+
+- `upload.css:82`의 `.dropzone .muted, .muted`는 두 선택자가 한 선언을 공유하므로 1곳으로 셌습니다.
+- 소수 값인 `lineageGraph.css:44`(10.5px)와 `:45`(12.5px)도 포함했습니다.
+
+**판정하지 않은 값 (20곳)**
+- `var(...)` 값이 `detail.css`에 17곳, `lineageGraph.css`에 3곳 있습니다. 예: `var(--text-body-sm)`, `var(--text-h2)`.
+- 세 파일 어디에서도 `--text-body`와 `--text-body-sm`을 정의하지 않습니다. 그래서 이 20곳은 합격도 불합격도 추정하지 않았습니다.
+- `font: inherit` 축약형은 `font-size` 선언이 아니므로 대상에서 뺐습니다.
+
+**13px 이상 (8곳)**
+- 13px: `upload.css:49, 144, 146, 154, 207, 224, 229`
+- 그보다 큰 값: `detail.css:33`(31px), `upload.css:48, 50, 81`, `lineageGraph.css:26`
+
+**무접촉 항목**
+- 오류 본문 규칙 중 이미 13px인 공유 규칙은 `upload.css:138`의 `.vizerr, .warn` 하나입니다. `font-size`는 144행에서 시작합니다.
+- `.vizpartial`(146행)과 `.gridblock .gb-b`(224행)도 13px입니다. 하지만 둘 다 선택자를 하나만 쓰는 규칙이라 이 항목에 넣지 않았습니다.
+
+이 결과는 제공된 CSS의 정적 리터럴만 본 것입니다. 계산된 스타일이나 배포 화면의 접근성 인증은 아닙니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

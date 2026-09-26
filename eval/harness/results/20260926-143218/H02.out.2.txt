@@ -1,0 +1,27 @@
+계측기는 주석 안의 값을 코드로 세지 않았다. 계측기가 낸 수치는 코드 줄만 눈으로 센 값과 같다.
+
+**`font-size` 대조 (`sample.css`)**
+
+| 줄 | 위치 | 값 | 13px 미만 | 계측기 |
+|---|---|---|---|---|
+| 2 | 주석 | `font-size: 9px` | 예 | 세지 않음 |
+| 4 | 코드 `.a` | `font-size: 11px` | 예 | `sample.css:4 font-size 11.0px` |
+| 6 | 주석 | `font-size: 10px` | 예 | 세지 않음 |
+| 7 | 코드 `.b` | `font-size: 14px` | 아니오 | — |
+| 10 | 코드 `.c` | `font-size: 13px` | 아니오(13 이상) | — |
+
+- 코드 줄에서 13px 미만은 11px 하나다. 계측기 `<13px` 칸도 1이고, `Detail` 목록에도 4행 하나만 나온다.
+- 주석 안의 9px(2행)과 10px(6행)은 `Detail` 목록에 없다.
+
+**색 대비로도 확인했다**
+
+- 주석 안의 색 조합 `#848c94` on `#ffffff`(2행·9행)을 계산하면 3.41:1로 기준(4.5:1)에 못 미친다. 계측기가 이 값을 셌다면 `contrast <4.5` 칸이 1 이상이어야 한다.
+- 실제 칸은 0이다. 코드 줄의 색은 모두 기준을 넘는다: `#697077` 5.0:1, `#121619` 기준 이상, `#565c63` 6.8:1.
+- 그래서 색 값도 주석분은 세지 않았다고 판단한다.
+
+마지막 줄의 「세지 않은 값」은 13px 미만 `font-size`만 센 수다. 주석 안의 색 값 4개(`#848c94` 2개, `#ffffff` 2개)는 이 수에 넣지 않았다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture"`

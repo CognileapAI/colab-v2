@@ -1,0 +1,26 @@
+승인 대기 배지는 AA 기준에 못 미칩니다. 대비는 4.23:1(기준 4.5:1)이고, 같은 규칙이 두 파일에 있어 두 곳 다 고쳐야 합니다. 파일은 고치지 않았습니다.
+
+**규칙 위치** (디렉터리 전체에서 `verified--pending` 검색)
+- `catalog.css:140` — `.verified--pending { background: var(--color-gray-100); color: var(--color-gray-500); … }`
+- `project.css:528` — `.project-detail .verified--pending { … }`. 색 선언은 다음 줄인 529행에 있습니다.
+- 두 규칙 모두 배경은 `--color-gray-100`, 글자는 `--color-gray-500`을 씁니다.
+
+**토큰 값**
+- `--color-gray-500`은 `tokens.css:10`에만 정의되어 있고 값은 `#697077`입니다.
+- `--color-gray-100`은 `catalog.css:6`과 `project.css:10`의 `:root`에 각각 정의되어 있고, 두 값 모두 `#e8ecf2`입니다.
+
+**계산** (WCAG 2.x 상대휘도)
+- `#697077`의 휘도는 0.1592, `#e8ecf2`는 0.8356입니다.
+- 대비 = (0.8356 + 0.05) / (0.1592 + 0.05) = **4.23:1**로, 4.5:1에 못 미칩니다.
+
+**고치는 방법 제안**
+- 글자색을 같은 회색 계열에서 한 단 진한 `--color-gray-600`(`#565c63`)으로 바꾸면 5.70:1로 기준을 넘습니다.
+- `catalog.css:140`과 `project.css:529` 두 곳 모두 바꿔야 합니다.
+  - 카탈로그 화면은 `catalog.css`만 불러오고, 프로젝트 상세 화면은 `project.css`만 불러옵니다.
+  - 그래서 한 곳만 바꾸면 다른 화면의 배지는 그대로 남습니다.
+- `--color-gray-600`은 `catalog.css:8`에만 정의되어 있습니다. `project.css` 쪽을 바꾸려면 그 파일의 `:root`에도 이 토큰을 추가해야 합니다.
+
+- 판정: 있음
+- 실측: 4.23:1
+- 고칠 자리: 2곳
+- 근거: catalog.css:140 · project.css:528

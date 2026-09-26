@@ -1,0 +1,30 @@
+계측기는 주석 안의 값을 코드로 세지 않습니다. 계측기가 잡은 13px 미만 값은 코드 1건이고, 주석 안의 13px 미만 2건은 빠졌습니다.
+
+**계측기 출력**
+- `<13px` 칸은 1건입니다.
+- `Detail` 목록에는 `sample.css:4` font-size 11.0px 한 줄만 있습니다.
+- `contrast <4.5` 칸은 0건입니다.
+
+**`sample.css` 실물 대조**
+
+| 줄 | 위치 | 값 | 13px 미만 | 계측기 |
+|---|---|---|---|---|
+| 2 | 주석 | `font-size: 9px` | 예 | 세지 않음 |
+| 4 | 코드 `.a` | `font-size: 11px` | 예 | 셈 (line 4) |
+| 6 | 주석 | `font-size: 10px` | 예 | 세지 않음 |
+| 7 | 코드 `.b` | `font-size: 14px` | 아니오 | 해당 없음 |
+| 10 | 코드 `.c` | `font-size: 13px` | 아니오 (13 미만 아님) | 해당 없음 |
+
+- 눈으로 센 코드 안의 13px 미만은 1건이고, 계측기 값 1건과 맞습니다.
+- 주석 안의 13px 미만은 9px와 10px 2건이며, 계측기는 둘 다 세지 않았습니다.
+- 주석 안의 색 값도 세지 않았습니다. 2줄의 `#848c94` / `#ffffff`와 9줄의 `#848c94 on #ffffff`(3.41:1, AA 미달)가 해당하며, 대비 칸이 0건인 것으로 확인됩니다.
+
+**세지 않는 이유**
+- `css_audit.py:82`의 `audit_file()`가 파일을 읽은 직후 `strip_comments()`를 부릅니다.
+- `strip_comments()`(`css_audit.py:76-78`)는 `/* … */` 안의 글자를 줄바꿈만 남기고 공백으로 바꿉니다. 그래서 주석은 빠지고 줄 번호는 그대로 남습니다.
+- 토큰 수집(`css_audit.py:60`)도 같은 방식으로 주석을 걷어냅니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture"`

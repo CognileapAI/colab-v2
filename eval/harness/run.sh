@@ -75,7 +75,23 @@ fi
 # 초 단위 — 같은 분에 두 번 돌려도 앞 회차를 덮지 않는다(advisor ② 권고).
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 OUT="$RESULTS_ROOT/$RUN_ID"
+
+# 설정 해시 — 이 회차가 **어느 설정에서 잰 결과인지**를 남긴다(spec S-HARNESS-E0-EVAL-GATE-20260926 §4.2).
+# 게이트 면제 분기는 이 해시가 현재 설정과 일치하는 전수 결과만 인정한다. 해시 없는 결과를 만들지 않는다 —
+# 계산 실패는 결과 디렉터리를 만들기 전에 red(준비)다. 뿌리 = 러너 자신의 저장소(시험의 임시 과제 뿌리가 아니다).
+REPO_TOP="$(git -C "$HARNESS_DIR" rev-parse --show-toplevel 2>/dev/null)" || ready_red "config-hash" \
+  "러너 자리($HARNESS_DIR)가 git 저장소가 아니다 — 설정 해시를 계산할 수 없다."
+CLAUDE_VERSION="$(timeout 10 claude --version </dev/null 2>/dev/null | head -1)"
+CONFIG_HASH_JSON="$(python3 "$HARNESS_DIR/config_hash.py" compute --root "$REPO_TOP" \
+  --selected "${COLAB_EVAL_ONLY:-all}" --claude-version "$CLAUDE_VERSION")" || ready_red "config-hash" \
+  "설정 해시 계산 실패 — eval/harness/config_hash.py compute (정본 eval/harness/config-paths.txt)."
+HASH_LINE="$(printf '%s' "$CONFIG_HASH_JSON" | python3 -c 'import json, sys
+d = json.load(sys.stdin)
+print("%s · 파일 %d · HEAD %s · dirty %d · 선택 %s" % (d["hash"], d["files"], (d["head"] or "-")[:12], len(d["dirty"]), d["selected"]))')" \
+  || ready_red "config-hash" "config_hash.py compute 출력을 읽지 못했다."
+
 mkdir -p "$OUT" || ready_red "$OUT" "결과 자리를 만들지 못했다."
+printf '%s\n' "$CONFIG_HASH_JSON" > "$OUT/config-hash.json" || ready_red "$OUT/config-hash.json" "설정 해시를 쓰지 못했다."
 
 # ── ⑶ 실행 ──────────────────────────────────────────────────────────────────
 N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0
@@ -261,6 +277,7 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
   echo
   echo "- 요약 — $SUMMARY"
   echo "- 상한 — \`COLAB_EVAL_TIMEOUT=$COLAB_EVAL_TIMEOUT\` · \`COLAB_EVAL_BUDGET=$COLAB_EVAL_BUDGET\` · 과제당 ${RUNS_PER_TASK}회"
+  echo "- 설정 해시 — $HASH_LINE"
   echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비)"
   [ "$COST_UNKNOWN" -eq 1 ] && echo "- ⚠ USD \`[미상]\` — \`claude -p --output-format json\` 출력에서 비용 필드를 찾지 못한 회차가 있다. 지어내지 않는다."
   echo
@@ -274,7 +291,7 @@ rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE"
 # 허용 도구 정본 경로를 요약과 함께 낸다 — 정본이 바꿔치기되면 출력에서 보인다(advisor ② 권고).
 echo "허용 도구 정본: $ALLOWED_FILE"
 echo "$SUMMARY"
-echo "근거: ${OUT#"$HARNESS_DIR/"} (summary.md · H??.out.{1,2}.txt)"
+echo "근거: ${OUT#"$HARNESS_DIR/"} (summary.md · config-hash.json · H??.out.{1,2}.txt)"
 
 if [ "$N_JUDGMENT" -ne 0 ]; then
   echo "::error::harness-eval red(판정) — 판정 실패를 관측한 과제가 ${N_JUDGMENT}건이다. 기대를 넓혀 green 을 만들지 않는다(판정 뒤에만 · 라운드 §3 ㉴)."
