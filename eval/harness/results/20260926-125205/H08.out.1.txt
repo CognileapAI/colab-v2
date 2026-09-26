@@ -1,0 +1,31 @@
+세 파일에서 `font-size` 선언은 모두 65곳이고 (detail 24 · upload 24 · lineageGraph 17), 그중 13px 미만 px 리터럴은 34곳입니다. 주석을 줄바꿈만 남기고 지운 뒤 스크립트로 추출했고, 원문에서 `font-size` 문자열 개수를 따로 세어 맞춰 봤습니다. 주석 안에 든 `font-size`는 없었습니다. 파일은 수정하지 않았습니다.
+
+**13px 미만 선언 (34곳)**
+
+| 파일 | 행 · 값 | 곳 |
+|---|---|---|
+| detail.css | 47 (11px) · 50 (11px) · 65 (10px) · 89 (11px) · 97 (10px) · 101 (11px) · 136 (10px) | 7 |
+| upload.css | 82 · 92 · 106 · 107 · 123 · 124 · 128 · 167 · 168 · 175 · 179 · 182 (모두 12px) · 176 (10px) · 187 (11px) | 14 |
+| lineageGraph.css | 10 (11px) · 14 (11px) · 31 (10px) · 44 (10.5px) · 45 (12.5px) · 58 (11px) · 72 (10px) · 76 (12px) · 81 (11px) · 82 (10px) · 83 (10px) · 85 (10px) · 95 (11px) | 13 |
+
+- 여러 줄에 걸친 규칙(detail.css:89, lineageGraph.css:31 · 58)은 선택자가 있는 행이 아니라 `font-size`가 시작하는 행을 적었습니다.
+- 소수 값 두 개(lineageGraph.css:44 `10.5px`, :45 `12.5px`)도 포함했습니다.
+- 공유 선택자 `.dropzone .muted, .muted`(upload.css:82)는 한 곳으로 셌습니다.
+
+**이 검사로 판정하지 않은 값 (19곳)**
+- detail.css의 `var(--text-body-sm)` · `var(--text-body)` · `var(--text-h2)` 17곳과 lineageGraph.css의 `var(--text-h2)` · `var(--text-h3)` · `var(--text-body-sm)` 3곳 중, 행 번호로 겹치지 않는 것만 세면 detail.css 17 · lineageGraph.css 3입니다.
+- `--text-body` · `--text-body-sm`은 이 세 파일 안에 정의가 없어서 실제 크기를 알 수 없습니다.
+- `rem` · `calc(...)` · 잘못된 px 값은 없었습니다.
+
+**13px 이상 (12곳)**
+- 정확히 13px: upload.css 144 · 146 · 49 · 154 · 207 · 224 · 229 (7곳)
+- 13px 초과: detail.css:33 (31px), upload.css 48 · 50 · 81, lineageGraph.css:26 (4곳)
+
+**이미 13px인 오류 본문 공유 규칙**
+- upload.css:138–145의 `.vizerr, .warn { … font-size: 13px; }`입니다. 경고색 배경을 쓰는 오류 본문 규칙이고, 선택자 두 개가 선언 하나를 공유합니다. 행 144는 13px이라 위 목록에서 뺐습니다.
+
+이 결과는 제공된 CSS의 정적 리터럴만 본 것입니다. 계산된 스타일이나 배포 화면의 접근성 인증이 아닙니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

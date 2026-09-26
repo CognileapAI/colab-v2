@@ -1,0 +1,18 @@
+음수 margin 선언은 두 파일에 한 건씩, 모두 2건입니다. 주석 안에는 음수 값이 없습니다.
+
+| 위치 | 선언 | 하는 일 |
+|---|---|---|
+| `detail.css:93` | `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` | 파일 목록을 위로 12px 끌어올려 바로 앞의 `.infogrid` 에 붙입니다. `border-top: none` 과 아래 두 모서리만 둥글린 `border-radius` 가 한 세트입니다. `.infogrid` 의 `margin-bottom: var(--space-6)`(24px) 일부를 자식이 음수로 되갚는 모양이라, 이 정본이 금지하는 모양 ⑴ 그대로입니다. |
+| `shell.css:58` | `.detail-page .backlink, .project-detail .backlink { margin-left: -7px; … }` | 되돌아가기 링크의 왼쪽 padding 7px(`padding: 3px 9px 3px 7px`)만큼 도로 당겨 글자를 본문 왼쪽 선에 맞춥니다. 방향은 가로이고 앞 요소에 붙이는 용도는 아니지만, 음수로 제 여백을 상쇄하는 선언입니다. |
+
+음수로 보이지만 margin 이 아니어서 뺀 것:
+- `detail.css:33`, `shell.css:115` 의 `letter-spacing` 음수 값
+- `shell.css:188` 의 `bottom: -11px` (활성 내비 밑줄의 위치 지정)
+
+이 디렉터리의 `SOURCE.md` 도 읽었습니다. 여기에 이 두 곳이 심어 둔 결함으로 적혀 있는데, grep 결과와 일치합니다.
+
+두 번째 모양인 「자식이 `margin-top` 으로 제 여백을 지기」는 이번 질문 범위가 아니라서 세지 않았습니다. `detail.css` 에 `margin-top` 이 여러 곳 있습니다(예: 36·37·43·96·151행). 필요하면 따로 전수로 보겠습니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

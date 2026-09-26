@@ -1,0 +1,20 @@
+The table is broken. Line 13 is a truly empty line, with no spaces or other invisible characters (`cat -A` shows only `$` there), and it cuts the table after the second data row.
+
+| Line | Content | How it renders |
+|---|---|---|
+| 9 | Header row | Table |
+| 10 | Separator row `\|---\|…` | Table |
+| 11 | superpowers | Table, data row 1 |
+| 12 | mattpocock/skills | Table, data row 2 |
+| **13** | **(empty)** | **Table ends here** |
+| 14 | emilkowalski/skills | Body paragraph |
+| 15 | vercel-labs/agent-browser | Body paragraph (same paragraph as line 14) |
+
+- Lines 14 and 15 have no header or separator row after the empty line, so they don't start a new table. They join into one ordinary paragraph that shows the raw `|` characters.
+- Of the four data rows, two render in the table and two (lines 14 and 15) fall outside it.
+- I counted the table lines from the header down to the first empty line: the result is **4** (header, separator and two data rows). Once line 13 is deleted, the same command should print **6**.
+
+- 판정: 있음
+- 빈 줄: 13
+- 표 밖으로 떨어진 행: 2건
+- 확인 명령: `sed -n '9,/^$/p' VENDORED-excerpt.md | grep -c '^|'` (4 now; 6 after the fix means all rows are back in the table)
