@@ -6,6 +6,7 @@
 
 ## 0. 출처 · 원칙
 - 순서(7라운드 확정): PR 1 병합 → Ted(T1 ruleset · T11 PAT) → E0 → S-red → PR 2 → effort 실측(Q6) → PR 3 → PR 4 → E1 · X · M · S. 대안 「S-red → E0」 는 §6 Q2(Ted).
+  → §10 10라운드 개정 참조(소형 PR A ∥ B · T11 재판정 · intent ⓐ 결정이 S-red 와 PR 2 사이에 들어간다 · 해시 집합은 Q2 축소).
 - playbook 의존 순서: ⑴ evals 가 CLAUDE.md/skills/hooks 변경을 gate 한다 → E0 가 PR 2 보다 앞 ⑵ approval gate(사람 병합 · ruleset)가 CI 자동화보다 앞 → T1 이 PR 2 open 보다 앞.
 - 시스템 우선: 규칙(must/never)은 hook · gate · `permissions` · frontmatter · lifecycle · CI · ruleset 으로 강제한다. 강제 불가 규칙은 지우거나 「이유 1줄 + 장치 위치」 포인터로만 남긴다. 병합 · 배포 · 삭제는 사람이 하고 git-guard · ruleset · PAT · TTY 토큰이 받친다.
 - 단위 규칙: 모든 단위는 ① 강제 장치(파일 · 이벤트/검사 · FC=fail-closed/FO=fail-open · Claude/Codex 적용) 또는 「산문 · 맥락만」 ② 증명 시험(파일 + 사례)과 실행 게이트 ③ 병합 조건(PR 블록에 1회) ④ 지우는 산문 ⑤ 소유 PR ⑥ 출처 를 갖는다. 장치 없는 단위는 강제 장치 열에 「산문 · 맥락만」 을 적는다. Ted 행동은 T-번호 · 명령/UI 단계 · 증거 기록 자리를 갖는다.
@@ -24,6 +25,7 @@
 | 7 | PR 3(C · P-rules · permissions · G3 P8 P6 · ruleset 스냅샷 · X 측정) | Q6 결과(audit.jsonl ≥1주 계수는 3-8 만의 조건) | §2 PR 3 블록 병합 조건 | T12 · T16 · T13 · T14(bypass-deny 실측) · T3 · T5 | 1차 CI 통과율 · eval 추이 표 |
 | 8 | PR 4(skills 산문 · G7 · advisor 보안 pass · ADR-0012(9라운드 번호 이동 · 종전 0011) · effort 값) | PR 3 병합 · Q6 값 | §2 PR 4 블록 병합 조건 · 회차 = PR 4 병합 전 1회 | T12 · T16 · T13 | PR 4 head 회차 |
 | 9 | E1 · X · M · S(S-auth · S-dep) | PR 4 병합 | E1 = E0 대비표 · 실패 4건 해소 판정만(회차는 행 8) · 나머지 각 블록 조건 | T16 · T13 | metrics.py 첫 산출 |
+→ §10 10라운드 개정 참조(행 4 와 행 5 사이에 소형 PR A ∥ B · T11 재판정 · intent ⓐ 결정 · 행 5·7·8 에 10라운드 추가분 · T11/T12/T13 재정의).
 
 ## 2. 단위표
 열 = ID · 내용 · 강제 장치(파일 · 이벤트/검사 · FC/FO · Claude/Codex) · 시험 · 게이트 · 지우는 산문 · 출처.
@@ -203,3 +205,58 @@
 10. 2-9 ⑼ 「role 결합」은 bridge `--worker` 가 서브에이전트 전용인지 확인 뒤(`agent-bridge.py` 실측 · PR 2 lane) · ⑾ 트레일러 검사의 대상 경로 판정을 hook 안에서 어떻게 얻는지(스테이징 목록 `git diff --cached --name-only`) · S-auth 가 손대는 `services/core-api/ops/*.py` · `infra/dev/ship.sh` 는 intent 「영향 범위 · 제품 코드 0」 밖 — 범위 확장 줄을 intent 판정 기록에 추가할지 별도 intent 로 뺄지 Ted · recut §3 「F7·F8·F9 조정문」은 cross.md 에 항목이 없어 미반영.
 11. ADR 2줄을 ADR-0003 편집이 아니라 새 ADR-0011 로 두는 것(ADR 이력 무수정 제약) 수용 여부. — 9라운드 재판정(PR 2 spec §10 #1 ⓐ): `0010` 기존 존재 → B3 = ADR-0011 · 2줄 ADR = ADR-0012.
 12. S-red 잠금 = checkout 결속(`file_path` 기준 · 신원·env·cwd 무관 · 부모 세션의 lane worktree 편집도 차단) · 버려진 fix task 의 출구를 PR 2 `handoff --mode blocked` 까지 「worktree 제거」로만 두는 것 · RED 조건 rc == 1 만 — 수용?(S-red spec 우려 #1–#3)
+
+## 10. 10라운드 개정 (팀 공용 · 2026-09-26)
+출처: intent `dev-package/intent/2026-09-25-harness-improvement.md:627`(10라운드 판정 · Ted 원문 "pr은 사람이 승인하기만 하면된다 꼭 / 팀에 맥이나 비 wsl호스트가 있음 다른사람일필욘없다 / 나머진 전브 권고로") · 감사 종합 `~/.claude/reports/harness-state-20260925/team-shared-20260926/report.md`(판정 · 권고 1–12 · 유지 · 충돌·미확인 · 질문 1–5) · 감사 원문 `audit-mechanisms.md`(E-1~E-11) · `audit-process-docs.md`(D1~D12) · `audit-cost-concurrency.md`(C-1~C-11). 소형 PR B 가 이 4파일을 `dev-package/reports/harness/20260925-harness-state/team-shared-20260926/` 로 반입한다(홈 절대경로 `<repo>` 치환) · 반입 뒤 이 절의 포인터는 저장소 경로로 읽는다(포인터 갱신은 PR B 커밋에 동반 · 산문 1줄).
+
+### 10.1 팀 원칙(이후 모든 단위 · T 행동에 적용)
+- 하네스 결정마다 「다른 팀원이 다른 머신(다른 OS · 시간대 · 홈 디렉터리 · clone)에서 같은 절차를 밟아도 같은 판정 · 같은 보호 · 같은 비용인가」 를 묻는다. 셋 중 하나라도 사람 · 기계에 따라 갈리면 그 단위는 장치(서버 ruleset · 저장소 파일 · CI · CLI 판정) 로 옮기거나 개인 runbook 으로 내린다.
+- 불변: 시스템 우선(§0) · 병합은 사람 · 승인 intent append-only · ADR 이력 무수정 · 훅 정의 무변경 · ADR 번호 PR 2 = 0011 · PR 4 = 0012.
+- Ted 판정으로 확정된 질문 5건: Q1 ruleset 승인 수 0 유지(「사람 승인」 = 사람이 병합하는 행위 · 다른 사람일 필요 없음 · GitHub 는 작성자 자기 승인을 허용하지 않으므로 승인 1 은 곧 「다른 사람」이 된다 · 서버 강제 = 에이전트 토큰 병합 불가 = T11) · Q2 예(해시 집합 축소) · Q3 예(CI 회차 = 별도 intent ⓐ) · Q4 예(승인 형식 + 승인 권한 = develop 리뷰 권한자) · Q5 예(macOS · 비WSL 호스트 있음 → fcntl intent ⓑ 지금 발행). 권고 1 은 Q1 판정으로 「승인 1 + last-push 승인」 부분만 기각 · 나머지(T11 을 병합 조건 의존에서 분리 · 병합 조건 문구의 개인 이름 제거)는 수용. 권고 2–12 전부 수용.
+
+### 10.2 개정 순서표(§1 행 4 이후를 대체 · 행 1–3 완료)
+| # | 단계 | 선행 조건 | 병합/완료 조건 | 회차 | 담당 |
+|---|---|---|---|---|---|
+| 1 | PR 1 ✓ | — | 병합됨 | — | — |
+| 2 | T1 ruleset ✓ · T11 PAT(1인 판) ✓ | — | 적용됨(승인 0 · strict · 우회자 0 · `T1-develop-ruleset.json`) | — | — |
+| 3 | E0 ✓ | — | #176 병합 · 확정 회차 `5b84d899`(`results/20260926-143218` · 실측 모델 `claude-opus-5-5` · README:108 표기와 상이 = 권고 2 근거) | ✓ | — |
+| 4 | S-red | E0 ✓ | §2 S-red 블록 조건 그대로 · 레인 중단 불요 · 리뷰 때 S-6a 치환 대상에 `$HOME` 추가 확인(C-9) | 1(S-red head) | 레인(진행 중) · T12 · T13 |
+| 5a | 소형 PR A(spec `dev-package/prd/specs/S-HARNESS-TEAM-A-EVAL-20260926.md` · 해시 집합 파일) | S-red 병합 | 모델 정본 `eval/harness/model.txt` + `run.sh --model` + `config_hash.py compute` `model`(정본 + 실측 `modelUsage`) + `verify` 모델 대조(불일치 78 `model-mismatch`) + 요약줄 모델 표기(권고 2) · 해시 집합 축소 = `config-paths.txt` 에서 `gates/**` · `.agents/ci-producers.json` 제외 후 `gates/tools/harness-eval.sh` · `harness-eval-selftest.sh` · `_readiness.sh` 만 재등재(권고 3 · Q2) · run id `date -u`(접미사 없음 · `RUN_ID_RE` 불변) + `check.py` 나이 UTC + README 「id = UTC」 1줄(권고 4) · `verify` 78 상세에 dirty(비추적 포함) 상위 5건 + `harness.yaml hygiene.home_path_roots` 에 `eval/harness/results` · `dev-package/intent` · `dev-package/prd`(권고 5) · `harness-eval` MATCH green(PR A head 회차 = 새 기준선) | 1(PR A head · 이후 첫 기준선) | 레인 1 · T12 · T16 · T13 |
+| 5b | 소형 PR B(spec `dev-package/prd/specs/S-HARNESS-TEAM-B-APPROVAL-20260926.md` · 해시 집합 밖 · A 와 동시 open 가능) | S-red 병합 | 승인 형식 `승인: @<GitHub handle> <YYYY-MM-DD> "<원문>"` + `scripts/harness/intent_ref.py classify` 가 그 꼴만 approved + fixture 갱신 + `dev-package/intent/TEMPLATE.md` 실명 열거 삭제(권고 6 · Q4) · 감사 보고서 4파일 반입 `dev-package/reports/harness/20260925-harness-state/team-shared-20260926/`(홈 경로 `<repo>` 치환 · D4) · `intent-ref` · `harness-contract-selftest` green · `harness-eval` 회차 불요(집합 무변경 = 해시 불변) | 0 | 레인 1 · T16 · T13 |
+| 6 | T11 재판정(구성원별 에이전트 PAT) | PR A · B 병합 | 각 구성원이 자기 에이전트 셸에만 fine-grained PAT(`contents:write` · `workflows:write` · `pull_requests:read`) 주입 · 그 셸에서 `gh pr merge <n>` 403 실측 1줄 = 「사람 병합」의 서버 강제 · 개인 터미널은 개인 토큰 유지 · 절차 정본 = PR 3 `onboarding.md`(기계 1대당 항목) | 0 | 각 구성원(T11) · Ted = 첫 사례 |
+| 7 | intent ⓐ CI 회차 결정 | PR 2 병합 전(권고 12 ⓐ · C-3) | 별도 intent 발행 · 판정만: CI 잡 `harness-eval-run`(`workflow_dispatch`/label · org 시크릿 · 고정 CLI 버전 · `results/<run>/` artifact 업로드 · 커밋은 사람) 채택 여부 · 비용 주체 = org 1곳 여부 · 미결정이면 PR 2·3·4 회차는 개인 기계(T12)로 간다 | — | Ted 판정 · 구현은 별도 spec |
+| 8 | PR 2(§2 PR 2 블록 + 10라운드 추가분) | S-red · PR A · PR B 병합 · 행 7 결정 | 기존 조건 + 추가분: 「직전」 = `config-hash.json.head` 가 현재 HEAD 의 조상인 최신 전수 회차(`git merge-base --is-ancestor` · 없으면 「직전 없음」 · 권고 7) · advisor ② 판정문 + `COLAB_HANDOFF` JSON 을 `dev-package/reports/<회차>/verdict/` 로 복사(PR 본문 Advisor-Ref = 저장소 경로 + sha256 · 권고 8 · D6) · `hook_audit.py` 줄에 `user` 필드(C-8) · 2-4 `--apply` = 해당 checkout 소유자가 dry-run 뒤 실행(C-7) · `harness-contract` 가 `colab-harness` 용량 · 닫힌 task 수 `warning:` 1줄(C-7) · 이 문서 §10 반입 확인(권고 9 = 본 절) · ADR-0011(B3 집계) | 1(PR 2 head) | 레인 1 · T12 · T16 · T13 |
+| 9 | Q6 effort 실측 | PR 2 병합 | §2 Q6 표 그대로 | 0 | T15 |
+| 10 | PR 3(§2 PR 3 블록 + onboarding · doctor) | Q6 | 기존 조건 + `docs/development/onboarding.md`(기계 1대당: `/hooks` 재신뢰 · `claude --version` 로그인 · `codex` 모델 목록 실측 · agent-browser · 자격 파일 3분류 참조 · TZ · T11 PAT 절차) + `scripts/agent-bridge.py doctor` 에 `claude` CLI 존재 · 버전 · 설정 모델 조회 가능 여부(불가 = 78 사유 · 권고 10 · D5 · D12) · `dual-agent.md` 「이 PC」 · 모델 등급표 문장 → onboarding 포인터(3-7 에 합침) · T14 · 3-5 ruleset 스냅샷 = 현행(승인 0) JSON | 1(PR 3 head) | 레인 1 + measurement-lane 1 · T12 · T14 · T16 · T13 |
+| 11 | PR 4(§2 PR 4 블록 + 역할 어휘 · Ted 치환 · RESTART) | PR 3 · Q6 값 | 기존 조건 + `.agents/rules/colab-rules.md §0` 역할 어휘 3개(승인자 = develop 리뷰 권한자 · 병합자 = 사람 · 운영자 = dev SSH 자격 보유자 · 권고 11 · D7) · skills/rules/TEMPLATE/deploy.md 의 역할성 「Ted」(D7 (b) 목록) 치환 · 결정 이력 원문(D7 (a)) 유지 · `dev-package/RESTART.md` 「두 번째 기계」 절(키 3분류 · E-5) · `colab-rules §3-1` · ADR 인용문 「한 시점에 하나」 → 「호스트당 하나」(D9) · T7 = 저장소 runbook 갱신(D8) · ADR-0012 | 1(PR 4 head = E1) | 레인 1 · T12 · T16 · T13 |
+| 12 | E1 · X · M · S-auth · S-dep · intent ⓑ fcntl(소형 PR) | PR 4 | E1 · X · M · S = §2 그대로(M 입력은 「PR 본문 VERDICT 행 + CI artifact」 로 구성원 무관 · E-10) · S-auth intent 에 `authorized_by` = gh login 줄 추가(승인 intent 라 append · 권고 12 ⓒ · D10) · intent ⓑ = `gates/tools/_lock.sh` · `_pg.sh` 의 util-linux `flock` → python `fcntl.flock`(판정 규약 78 · 대기 표식 · fd 유지 무변경 · E-3 · Q5) 지금 발행 · 구현은 소형 PR 1건 · S-dep 는 `.agents/ci-producers.json` 이 PR A 로 집합 밖이라 회차 0 | E1 = 행 11 회차 · S-dep 0 · ⓑ 0(§10.3) | 각 단독 lane · T16 · T13 |
+
+### 10.3 팀 규칙 2줄 + 비용표(§0 · §5 · §6 Q1 의 회차 비용을 이 표가 대체)
+- 규칙 1: 해시 집합(PR A 뒤 정본 = `eval/harness/config-paths.txt`)을 건드리는 PR 은 저장소 전체에서 동시 1건만 open · 다음 해시 집합 PR 의 회차는 앞 PR 병합 뒤 develop 기준으로 잰다(E-4 · C-1). 장치 없음(산문 · PR 본문 「해시 집합 변경 여부」 1행은 `pr_contract.py` 검사 후보 · §6 Q13).
+- 규칙 2: 집합 밖 파일만 바뀐 develop 병합은 회차 유지(해시 불변 · Update branch 뒤 `hash(head)=hash(회차)` 그대로 · C-5). 집합 파일이 바뀐 병합만 재실측.
+- 회차 단가: ≈8 USD(2026-09-26 실측 3회 7.48 / 8.00 / 8.11 · `results/20260926-{125205,140939,143218}/summary.md:3`) · 32 는 09-12 값(`results/20260912-211809/summary.md:3` 31.55 · 모델 · CLI 기본값 상이) · PR A 모델 고정 뒤 첫 회차가 새 단가 기준.
+
+| N 명 | 동시 open 해시 집합 PR | 집합 밖 PR | 회차 수 | 비용 · 대기 |
+|---|---|---|---|---|
+| 1 | 1 | 임의 | 계획 잔여 5(S-red · A · PR 2 · PR 3 · PR 4=E1) | ≈40 USD · 1인 기계 직렬(행 7 미결정 시) |
+| N | 1(규칙 1) | N | 동일 5(+ 각자 해시 집합 PR 당 1) | 회차당 ≈8 USD · 비용 주체 = 실행자 개인(행 7 채택 시 org 1곳) · 대기 = 앞 해시 집합 PR 병합까지 · 집합 밖 PR 은 병렬 · 대기 0 |
+| N | k > 1(규칙 1 위반) | — | ≈k × 병합 수(서로 무효화 · E-4 O(N²)) | 회차당 ≈8 USD × k × 병합 · 재실측마다 35분 점유 |
+| N · 제품 PR 병합 | — | 제품 PR(집합 밖 · PR A 뒤 `gates/**` 제외) | 0 추가(C-1 · 09-24~26 실측: 제품 병합 ≈8건이 집합을 건드렸으나 PR A 뒤 0) | 0 |
+- 회차 실행 주체 · 환경: 행 7 결정 전 = 각 실행자 기계의 `claude` 구독 CLI(`run.sh` 요구 · 중첩 `claude -p` 불가 시 사람 실행 = T12) · 결정 후 = CI 잡(커밋은 사람). Codex 전용 구성원은 행 7 채택 전에는 회차를 만들 수 없다(E-4) → 그 구성원의 해시 집합 PR 회차는 다른 구성원이 대신 실행하고 결과 커밋을 PR 에 push(회차 = 트리 해시 · 실행자 무관 = PR A 모델 고정이 전제).
+
+### 10.4 T 표 변경(§2 Ted 행동표 위에 덧씀 · 번호 불변)
+| ID | 종전 | 개정 | 근거 |
+|---|---|---|---|
+| T13 | 각 PR 병합 = Ted · GitHub UI Merge | 사람 병합(승인 수 0 유지 · 작성자 본인 병합 가능 · 다른 사람일 필요 없음) · 병합 조건 문구 「Ted 병합」 = 「사람 병합(T13)」 로 읽는다 · 서버 강제 = ruleset(PR 필수 · strict `ci-required` · 우회자 0) + T11(에이전트 토큰 병합 불가) | Q1 · E-2 · D1 |
+| T11 | Ted 1인 · `~/.claude/settings.json env.GH_TOKEN` | 구성원별 에이전트 PAT(fine-grained · `contents:write` · `workflows:write` · `pull_requests:read`) · 각자 에이전트 셸에만 주입 · 개인 터미널은 개인 토큰 · 증거 = 구성원별 `gh pr merge <n>` 403 실측 1줄(onboarding 항목) · 재판정 시점 = PR A · B 뒤 PR 2 전(행 6) | 10라운드 확정 · E-2 |
+| T12 | 회차 ≈32 USD · Ted 실행 | 회차 ≈8 USD(2026-09-26 실측 · 32 는 09-12 값 · 모델 고정 뒤 재측) · 실행자 = 해당 PR 의 실행 가능 구성원(행 7 채택 시 CI) · 회차 목록 = S-red · PR A · PR 2 · PR 3 · PR 4(=E1) | C-10 · C-3 |
+| T7 | 사용자 메모리 3파일 갱신(PR 4 병합 뒤 · 저장소 밖) | 저장소 runbook 갱신 = 세 메모리(stale base 해소 · handoff 충돌 · advisor schema)의 내용을 `docs/development/dual-agent.md` 또는 `lifecycle-evidence.md` 해당 절에 1줄씩 = PR 4 병합 조건 · 개인 메모리는 부수 | D8 |
+| T3 | clone 30·32·33 `git pull --ff-only`(spec 의 T 행동) | 개인 runbook(onboarding 「운영자 노트」 · Ted 호스트 한정) · 총괄 T 표에서 제외 · 불변식은 「게이트를 돌리는 모든 checkout 이 `gate_host_mutex` 를 가진 develop 이상」 1줄만 남김 | D9 |
+| T1 | — | 변경 불요(승인 0 · strict · 우회자 0 유지) · PR 3 3-5 스냅샷 = 현행 JSON | Q1 · 유지 |
+| T16 | PR 게시 = Ted | 게시 = 사람(PR 작성 구성원 · 에이전트 셸은 T11 뒤 `gh pr create` 403) | D7 (b) |
+
+### 10.5 포인터 · 파일 소유(§3 추가분)
+- 새 spec: `dev-package/prd/specs/S-HARNESS-TEAM-A-EVAL-20260926.md`(행 5a · 소유 = `eval/harness/{run.sh,config_hash.py,config-paths.txt,model.txt,README.md}` · `scripts/harness/check.py` · `.agents/harness.yaml hygiene.home_path_roots` · 순서 = E0 → S-red → PR A → PR 2) · `dev-package/prd/specs/S-HARNESS-TEAM-B-APPROVAL-20260926.md`(행 5b · 소유 = `scripts/harness/intent_ref.py` · `gates/fixtures/intent-ref/**` · `dev-package/intent/TEMPLATE.md` · `dev-package/reports/harness/20260925-harness-state/**` · PR A 와 파일 겹침 0).
+- 새 intent(발행 예정 · 파일명은 발행 시 확정): ⓐ CI 회차 `harness-eval-run`(행 7 · PR 2 병합 전 결정) · ⓑ fcntl 잠금(행 12 · 지금 발행 · 소유 = `gates/tools/_lock.sh` · `_pg.sh` · `gate-host-mutex-selftest.sh` · PR A 뒤 집합 밖) · ⓒ = 기존 `dev-package/intent/2026-09-26-human-authorization-for-destructive-ops.md` 에 `authorized_by` 줄 추가(append-only).
+- 감사 보고서: 현재 `~/.claude/reports/harness-state-20260925/team-shared-20260926/{report.md,audit-mechanisms.md,audit-process-docs.md,audit-cost-concurrency.md}` → PR B 반입 뒤 `dev-package/reports/harness/20260925-harness-state/team-shared-20260926/` · 이 문서 §0 「근거(저장소 밖)」 4행의 다른 보고서도 같은 PR B 로 반입(D4 권고 범위 = `harness-state-20260925/` 전체).
+- §6 추가 질문: Q13 규칙 1(해시 집합 PR 동시 1건)을 `pr_contract.py` 가 검사할지(집합 변경 PR 이 open 중 = `gh api` 조회 필요 · CI 토큰 권한 = §6 Q9 와 같은 실측) — PR 2 spec 상세 때 Ted.
