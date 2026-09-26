@@ -1,5 +1,5 @@
 # Intent: eval 회차를 CI 잡 `harness-eval-run` 으로 — org 시크릿 · 고정 CLI · artifact · 커밋은 사람(10라운드 ⓐ CI 회차)
-메타 — 발의자: Ted · 작성 2026-09-26 · 승인 미승인(초안 · 12라운드 판정 기록 · Ted 확인 문구 · GitHub handle 대기)
+메타 — 발의자: Ted · 작성 2026-09-26 · 승인: @sungwooHa 2026-09-26 "전부 권고대로 하고"(12라운드 · Opus blind 판정 → 권고대로 · handle = 이 머신 gh 로그인 = CODEOWNERS)
 - 판정 기록 포인터: 출처 · Ted 원문 · 팀 원칙 · 고정 사항 = 부모 intent `dev-package/intent/2026-09-25-harness-improvement.md` 판정 기록 10라운드(`:627` · 질문 3 「예」 = 별도 intent · **PR 2 병합 전 결정**) · 감사 = `report.md` 권고 12ⓐ · 질문 3 · C-3(권고 원문) 외 「참조」 절 · 표기 = 각 Q 「→ 판정 …(12라운드 · Opus blind)」(초안 권고와 다르면 「초안 권고 ⓧ → 판정 …」) · 12라운드 판정자 = Opus(Fable 주간 한도로 대리 · blind 판정 1 + 교차 점검 1) · 줄 번호 기준 = develop `5bb3d6fe`(총괄 계획 인용은 이 intent 와 같은 커밋의 개정본) · 2026-09-26 재열람.
 
 ## 문제
@@ -97,7 +97,7 @@
 
 ## 확인
 - 프론티어 공집합 확인: 2026-09-26 12라운드 — Opus blind 판정자 1(11문 + 미해결) + 교차 점검 1(8건 반영) → 미해결 0건
-- Ted 확인 문장(원문 그대로): 〈판정 대기〉
+- Ted 확인 문장(원문 그대로): "전부 권고대로 하고"
 - 재개봉 금지: 판정 11건 · 해소 5건은 다시 열지 않는다 — 변경은 줄 추가 또는 새 intent
 - 첫 CI 회차 기록(run id · `hash(head)=hash(회차)` · USD 합 · 소요 · 실행자): 〈병합 전 기입〉
 - 로컬 compute 해시 대조 1줄 · `harness-eval` PR 게이트 0 출력: 〈병합 전 기입〉
