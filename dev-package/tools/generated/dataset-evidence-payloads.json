@@ -22,7 +22,8 @@
     "region-from-registration-note": "정본 note 가 공간 범위를 말하면 그대로 적는다 — seq 16 축자「전지구 격자라 한반도 경계 밖」.",
     "bbox-korea-peninsula": "보조 규칙(2026-09-21 Ted 결정 2 「가를 넣고, 보조하는 용도로 나를」) — 정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) 안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다.",
     "region-from-lineage-parent": "정본 지역이 없는 자료는 계보(plan-manifest.yaml parents)를 거슬러 올라가 정본 지역(reviewed)을 가진 **가장 가까운 대**의 조상 지명을 잇는다 — 그 대의 지명이 모두 같을 때만. Ted 판정 2026-09-26 「자료 지역 확정」 2 「연구대상지는 부모 범위(남한)를 초안으로 이음」 · 4 「파생 자료 9건은 계보로 잇되 초안(측정 후 승격)」.",
-    "region-from-lineage-sibling": "조상에 정본 지역이 없는 자료가 어떤 자식의 공동 입력이고, 그 자식이 정본 지역을 가진 다른 입력과 **같은 기준 격자 파일**(grid_files)에 산출되면 그 입력의 지명을 잇는다 — 자식이 입력들의 공통 격자 위에 있다는 계보 추론. Ted 판정 2026-09-26 「자료 지역 확정」 4."
+    "region-from-lineage-sibling": "조상에 정본 지역이 없는 자료가 어떤 자식의 공동 입력이고, 그 자식이 정본 지역을 가진 다른 입력과 **같은 기준 격자 파일**(grid_files)에 산출되면 그 입력의 지명을 잇는다 — 자식이 입력들의 공통 격자 위에 있다는 계보 추론. Ted 판정 2026-09-26 「자료 지역 확정」 4.",
+    "cadence-from-lineage-parent": "좌표변환·crop 만 한 산출물은 부모(계보 parents 하나)의 정본 주기(reviewed cadence)를 잇는다 — 자기 정본 문장이 주기를 말하지 않을 때만. Ted 판정 2026-09-26 「전부 권고대로」(intent 2026-09-26-cadence-range-predicate 질문 2·4)."
   },
   "ruleSummary": {
     "platform-from-instrument": 26,
@@ -33,7 +34,8 @@
     "region-from-registration-note": 1,
     "bbox-korea-peninsula": 4,
     "region-from-lineage-parent": 4,
-    "region-from-lineage-sibling": 4
+    "region-from-lineage-sibling": 4,
+    "cadence-from-lineage-parent": 2
   },
   "regionTrace": {
     "1": {
@@ -400,7 +402,7 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 2 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
-        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」 · 판정 2026-09-26 Ted 「전부 권고대로」 — 누적 기간 15분을 산출 간격 15분으로 읽는다",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
       },
@@ -458,6 +460,7 @@
         "directObservation": true,
         "interpolated": true,
         "nativeResolutionM": 500.0,
+        "cadence": "5min",
         "region": "남한"
       },
       "draftProvenance": {
@@ -466,6 +469,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+        "cadence": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 1(5min)",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
       },
       "draftConflictsWithReviewed": [],
@@ -490,7 +494,6 @@
         },
         "format": "npy",
         "variable": "강수량",
-        "cadence": "15min",
         "provider": "기상청",
         "roles": [
           "validation"
@@ -500,7 +503,6 @@
         "period": "정본전재 · canonical-metadata.json#/datasets/4 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 4 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
-        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」"
       },
@@ -510,6 +512,7 @@
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": true,
+        "cadence": "15min",
         "region": "남한"
       },
       "draftProvenance": {
@@ -517,6 +520,7 @@
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+        "cadence": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 2(15min)",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
       },
       "draftConflictsWithReviewed": [],
@@ -1076,7 +1080,7 @@
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
-        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」"
+        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」 · 판정 2026-09-26 Ted 「전부 권고대로」 — 「각 24시각」을 산출 간격 매시로 읽는다"
       },
       "draftStatus": "draft",
       "draftFacts": {

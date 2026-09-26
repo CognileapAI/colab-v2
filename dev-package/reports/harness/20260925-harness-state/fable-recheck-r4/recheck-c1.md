@@ -1,0 +1,23 @@
+### C1
+VERDICT: KEEP
+- 최종 권고: ⓐ 유지 — `measurement-lane.md:16-18` · `.codex/agents/measurement-lane.toml:12` 전제 문장을 「serial = 호스트 뮤텍스(`gates/tools/_lock.sh` · 같은 `TMPDIR` 기준) · parallel 은 뮤텍스 밖 · postgres 슬롯 호스트 전역」으로 교체, 근거를 ADR-0005 + `2026-09-18-gate-host-mutex.md` 로, ADR-0002 는 superseded 이력 인용 · PR 3
+- 반박 시도: `measurement-lane.md:13`(ADR-0002 표제) · `:18`「프로세스 간 뮤텍스가 없다」 · `.codex/agents/measurement-lane.toml:12` "has no cross-process mutex" · `lane-worker.md:52`「게이트 대기는 호스트 뮤텍스가 한다」 · `R-HARNESS-PR-CENTRIC.md:88`(serial = 호스트 전역 flock · selftest 6케이스 green) 재확인 — 문서가 틀리고 코드가 맞다는 사실 흔들리지 않음. 더 싼 선택지 없음(ⓒ 유지는 drift 존속 · ⓑ 완화는 실측 없음). PR 1 scope(spec §8 begin `--scope` 목록)에 두 파일 없음 → 충돌 없음. A/B 흡수 없음. 단 PR 2 L6 「역할 문서 1줄」이 `measurement-lane.md` 를 건드리면 같은 파일 2회 편집 → L6 spec 작성 때 C1 문장을 L6 커밋에 합칠지 확인
+- 위험: `.codex/agents/*.toml` 이 `agent-bridge.py` 생성물이면 toml 직접 편집이 `agent-bridge check` 에서 뒤집힘(생성 경로로 고쳐야 함 · C7 연동) · 「호스트 = 같은 TMPDIR」 조건을 빼면 Codex 샌드박스에서 또 틀린 전제가 됨(judge-g6 위험란)
+
+### C2
+VERDICT: REVISE
+- 최종 권고: ⓑ(표 삭제 · 정본 링크 `.agents/harness.yaml` 훅 절 + `dual-agent.md` 앵커 · `COLAB_HOOKS` 절에 H6/H7 예외 1줄) 유지하되 조건 2개 갱신 — ① Fable 단서 「`:75` 는 C5 와 같은 PR 에서만」은 A6 가 PR 1 에서 `README.md:75` 를 `origin/develop` 로 고치므로(spec `:124` · V14 · 커밋 ④) **흡수·소멸** ② PR 1 이 README 표 행 3개(`:72` A7 · `:73` A1 ⑺ · `:75` A6)와 blockquote(`:115-117` A3)에 새 사실을 싣는다 → PR 3 에서 표를 지울 때 그 문장(A1 허용 argv 형태 · A7 additionalContext · 격리 아님 권고)을 `dual-agent.md` 또는 hook 머리말로 먼저 옮긴 뒤 삭제 · A3 blockquote 는 유지(intent 「PR 1 연동」 문장과 같음) · PR 3
+- 반박 시도: `README.md:64`「훅 7개」 · `:74` migration-guard `origin/main`(코드 `migration-guard.sh:72` = `origin/develop`) · `:75` decision-number-guard `origin/main` · `:79-114` COLAB_HOOKS 절 재확인. ⓒ(수치만 교정)가 더 싸지만 `scripts/harness/check.py` 가 README 를 읽지 않아(judge-g6) 검사 없는 표는 재발 — 반박 실패. PR 1 spec `:191`·`:209` 가 「README 훅 표 재작성·researcher-task 행 = C2 · PR 3」로 명시해 경계 일치. 완료 기준 `grep -nE 'origin/main' README.md` 0건은 A6(`:75`) + C2(`:74`) 합산으로 성립
+- 위험: PR 1 V7(`grep -c '보호 브랜치(main · master · develop · product)' ≥ 6` · README+git-guard.sh 합산)이 PR 3 표 삭제 뒤 재실행되면 수가 줄 수 있음 → PR 3 검증 표에 「V7 은 PR 1 시점 검증 · PR 3 는 git-guard.sh 단독 계수」로 적어야 함
+
+### C3
+VERDICT: REVISE
+- 최종 권고: ⓐ 를 둘로 가르고 ⓑ 는 B4 뒤 재판정 — ① ci.yml 주석 3곳(`:168-169` WU-D3 골격 · `:641-649` harness-eval 설명이 `repo-hygiene:629` 구간 · `:702-703` gate-selftest 머리말이 harness-eval 안) 이동·삭제는 **PR 2 B4 커밋**(같은 파일을 B2·B4·B5 가 크게 고치므로 PR 3 에서 두 번째 ci.yml diff 를 만들지 않음 · intent 완료 기준 「ci.yml diff 가 주석 줄뿐」은 PR 3 기준으로는 폐기) ② `gates/README.md:233-245` 표 갱신은 **PR 3**(PR 2 병합 뒤 최종 잡 집합 기준 · 행 추가 = `product-safety` · `search-golden` · `required-gates` · `ci-required` + B4 신설 생산자 `harness-contract` · `agent-bridge` · `:236` `frontend-fixture-reach` · `:244` 「시크릿 참조 · 부재 78」 삭제 · `agent-bridge.yml` 폐지 표기 · 표 머리에 「행 = ci.yml `jobs` 키 1:1」) ③ ⓑ(잡 이름 집합 대조)는 B4 가 harness-contract 를 required 경로 생산자로 올린 뒤 성립 — Ted 판정 항목으로 남기되 PR 3 코드 추가 여부만 결정
+- 반박 시도: `agent-bridge.yml:33` `'.github/workflows/ci.yml'` path filter 포함 **확인**(cross.md 는 `:32` 로 적었으나 실제 `:33`) → Fable ⓑ 기각 이유(「ci.yml 만 바꾼 PR 에서 harness-contract 안 돈다」)는 현재도 거짓 · B4 ⓐ 확정 뒤엔 judge-g6 자신의 「뒤집힐 조건」(harness-contract 가 required 집합으로 돌면 ⓑ 승격)이 발동. ci.yml `jobs` 키 16개(`:17`–`:843`) · 표 11행 · `:168-169`·`:641`·`:649` 위치 재확인. ⓒ(표 삭제)는 조건·게이트 매핑 손실이라 기각 유지
+- 위험: 표를 PR 2 병합 전 쓰면 B2(`if:` 등록부 출력) · B4(생산자 잡) · B5(ci-required 허용식) 반영 전 값으로 즉시 낡음 → PR 3 착수 시점 고정 필수 · ⓑ 를 markdown 표 파싱으로 구현하면 검사 자체가 취약(대안 = `ci-producers.json` 대조는 B4 가 이미 함)
+
+### C4
+VERDICT: REVISE
+- 최종 권고: Fable 조합안 유지(`AGENTS.md:18` → `harness-transition-handoff.md` 머리 신설 「이후 이력」 절(#130 · #131 · #140 · 이 intent · PR 1–3 번호·병합 SHA) · `R-HARNESS-PR-CENTRIC.md:4` 아래 그 절로 가는 1줄 · `:162`·`:175` 본문 무변경 + `:25` 「당시 기록」 표지에 날짜·해소 범위 추가) — 단 intent 완료 기준 **`AGENTS.md diff 0` 을 `AGENTS.md diff = :18 한 줄(줄 수 불변)` 로 정정**(현재 Fable 판정 줄과 완료 기준이 모순) · 색인은 PR 3 마지막 커밋(PR 1·2 SHA 확보 뒤) · PR 3
+- 반박 시도: `AGENTS.md:18` → `R-HARNESS-PR-CENTRIC.md` · 그 파일 `:4` 「추가 고도화는 보류」 · handoff `:28` 같은 문장 · `:162`·`:175` 「native hook 미확인」 · 세 문서 #130/#131/#140 언급 0건 재확인. intent ⓐ 근거(「AGENTS.md 는 120줄 상한이라 변경 두지 않음」)는 포인터 대상 교체가 줄 수를 늘리지 않으므로 반박 근거로 약함. 더 싼 대안 검토: `AGENTS.md:18` → `dual-agent.md`(AGENTS.md `:12` 가 이미 첫 읽기 대상 · C8 이 PR 3 에서 편집)로 색인을 합치면 문서 한 벌 감소 — 그러나 dual-agent.md 는 동작 설명 문서라 이력 색인 성격이 아님 → Fable 안 유지. judge-g6 정정(handoff `:25` 가 `:155-180` 을 이미 이력으로 표지 · `:51-66` 실측은 Codex 루트 사본만)에 따라 intent 문제란 「어긋난다」는 과장 → 「표지가 멀다」로 낮춤. A/B 흡수 없음 · PR 1 scope 에 세 파일 없음
+- 위험: 색인이 「이 intent」를 가리키면 완료 뒤 낡음 → 항목마다 PR 번호·SHA 로 적고 PR 3 자신은 번호만(병합 SHA 는 확보 불가) · `R-*.md` 1줄 append 는 bootstrap-diet mtime 기준 「최신 legacy 라운드」 노출을 바꿈(C11 과 연동 · 무해)

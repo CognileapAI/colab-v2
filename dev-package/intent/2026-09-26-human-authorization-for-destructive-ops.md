@@ -171,3 +171,4 @@
 ## 추가 기록 (승인 뒤 줄 추가만)
 - 2026-09-26 10라운드(팀 공용 · 부모 intent 판정 기록 참조): 인가 기록 스키마 `colab-ops-authorization/1` 에 `authorized_by`(GitHub login · `gh api user` 또는 `git config user.name` 이 아닌 인증된 핸들) 필드를 더하고 `operator` 는 같은 값으로 채운다 — 운영자 = dev SSH 자격을 가진 사람 누구든 · 이름 고정 없음. spec 은 이 줄을 V-id 로 편입한다(감사 D10 · 종합 권고 12ⓒ).
 
+- 2026-09-26 소형 PR B — :2 · :162 · :168-169 의 ~/.claude/reports/harness-state-20260925/ 원문은 dev-package/reports/harness/20260925-harness-state/(sauth-grill-20260926 · system-first-recut · playbook-gap-20260926) 에 있다.

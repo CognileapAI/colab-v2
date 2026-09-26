@@ -15,6 +15,10 @@
   "practitionerPathB": {
    "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 실무자 「한반도」 region probe 5건의 경로 2 자연어 판(PB-REGION-*)과 상향 누수 대조 질의(PB-LEAK-*). 실모델 녹화는 별도 승인 대기(intent 2026-09-26-region-containment-expansion 결정 3)",
    "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
+  },
+  "practitionerCadence": {
+   "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 실무자 「1시간 이하」 주기 범위 probe 의 경로 2 자연어 판(PB-CADENCE-*). 실모델 녹화는 별도 승인 대기(intent 2026-09-26-cadence-range-predicate)",
+   "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
   }
  },
  "entries": [
@@ -470,6 +474,54 @@
    "terms": [
     "남한",
     "식생",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-1",
+   "query": "시간해상도 1시간 이하 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "시간해상도",
+    "1시간",
+    "이하",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-2",
+   "query": "시간해상도 1시간 이하 한반도 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "시간해상도",
+    "1시간",
+    "이하",
+    "한반도",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-3",
+   "query": "30분 이내 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "30분",
+    "이내",
+    "강우",
     "자료",
     "찾아줘"
    ],

@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from ..kernel import errors
 from ..kernel.ids import Ulid
 
+from ..kernel.cadence_scope import cadence_within, parse_max_cadence_seconds
 from ..kernel.region_scope import region_match
 from ..kernel.search_semantics import SEMANTICS, SEMANTIC_VERSION
 
@@ -136,6 +137,11 @@ def plan_query(query, *, now=None, context=None):
     resolution = re.search(r'(\d+(?:\.\d+)?)\s*(km|m)\s*(?:이하|이내)',query,re.I)
     if resolution:
         c['maxResolutionM'] = float(resolution[1]) * (1000 if resolution[2].lower()=='km' else 1)
+    # 주기 상한(「1시간 이하」 = 산출 간격 ≤ 1시간 · Ted 2026-09-26). 등호 주기와 따로 선다. 이것 하나로는
+    # recognized 를 세우지 않는다 — 제품 갈림(경로 1 ↔ 경로 2)을 바꾸지 않는다.
+    cadence_limit = parse_max_cadence_seconds(query)
+    if cadence_limit:
+        c['maxCadenceSeconds'] = cadence_limit
     if '설명' in q and ('둘다' in q or '모두' in q):
         words = re.findall(r"['\"‘’“”]([^'\"‘’“”]+)['\"‘’“”]", query)
         if len(words) >= 2:
@@ -228,6 +234,9 @@ def _predicate(key, wanted, facts, metadata, row, *, expand_region=True):
     if key == 'maxResolutionM':
         value = facts.get('nativeResolutionM')
         return None if value is None else value <= wanted
+    if key == 'maxCadenceSeconds':
+        # 선언 주기의 순서 비교(`kernel/cadence_scope.py`). 주기가 없거나 표 밖 값이면 None → unknown.
+        return cadence_within(facts.get('cadence'), wanted)
     if key == 'maxMissingRatePercent':
         # 데이터셋 단위 술어라 파일 사실이 아니라 후보 줄에서 읽는다 (`uploadedMonth` 와 같은 자리).
         # 자유 입력이 수치로 파싱되지 않은 자료는 근거가 없는 것이지 반증된 것이 아니다 → unknown.

@@ -23,12 +23,19 @@ FIXTURES = ROOT / "gates/fixtures"
 INTENT = "dev-package/intent/2026-01-01-approved.md"
 TRAILER = "Intent-Ref: " + INTENT
 APPROVED = ("# Intent: fixture approved\n"
-            "메타 — 발의자: Ted · 작성 2026-01-01 · 승인: **Ted 2026-01-01**\n"
+            "메타 — 발의자: @fixture-author · 작성 2026-01-01 · 승인: @fixture-approver 2026-01-01 \"approve\"\n"
             "\n## 문제\n- first line\n- second line\n")
 DRAFT = ("# Intent: fixture draft\n"
          "메타 — 발의자: agent · 작성 2026-01-02 · 승인 **미승인**\n"
          "\n## 문제\n- draft line\n")
 TEMPLATE = "# Intent: <제목>\n메타 — 발의자: <누구> · 작성 2026-MM-DD · 승인 <날짜 | 미승인>\n"
+# Legacy notation (승인 without the @handle form): approved only while its name is in the frozen snapshot.
+LEGACY = "dev-package/intent/2026-01-03-legacy.md"
+LEGACY_TEXT = ("# Intent: fixture legacy\n"
+               "메타 — 발의자: agent · 작성 2026-01-03 · 승인 2026-01-03 (legacy 표기)\n"
+               "\n## 문제\n- legacy line\n")
+SNAPSHOT = "scripts/harness/intent_legacy_approved.txt"
+SNAPSHOT_TEXT = "# fixture snapshot\n2026-01-03-legacy.md\n"
 
 
 def load(name, path):
@@ -151,13 +158,16 @@ class IntentRefGateTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = load("intent_ref", ROOT / "scripts/harness/intent_ref.py")
 
-    def repo(self):
+    def repo(self, snapshot=SNAPSHOT_TEXT):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         root = Path(temp.name)
         git(root, "init", "-q")
         self.write(root, {INTENT: APPROVED, "dev-package/intent/2026-01-02-draft.md": DRAFT,
+                          LEGACY: LEGACY_TEXT,
                           "dev-package/intent/TEMPLATE.md": TEMPLATE, "README.md": "fixture\n"})
+        if snapshot is not None:
+            self.write(root, {SNAPSHOT: snapshot})
         git(root, "add", "-A")
         git(root, "commit", "-q", "-m", "base")
         return root, git(root, "rev-parse", "HEAD")
@@ -242,7 +252,7 @@ class IntentRefGateTests(unittest.TestCase):
         self.commit(root, "rewrite draft\n\n" + TRAILER,
                     {draft: DRAFT.replace("- draft line", "- draft line REWRITTEN")})
         git(root, "checkout", "-q", "main")
-        self.commit(root, "approve draft", {draft: DRAFT.replace("승인 **미승인**", "승인 2026-01-03 Ted")})
+        self.commit(root, "approve draft", {draft: DRAFT.replace("승인 **미승인**", '승인: @fixture-approver 2026-01-03 "ok"')})
         result = self.run_gate(root, base=git(root, "rev-parse", "main"), head=git(root, "rev-parse", "feature"))
         self.assertExit(result, 1)
         self.assertIn(draft, result.stdout)
@@ -251,7 +261,7 @@ class IntentRefGateTests(unittest.TestCase):
         root, base = self.repo()
         draft = "dev-package/intent/2026-01-02-draft.md"
         self.commit(root, "approve and edit\n\n" + TRAILER,
-                    {draft: DRAFT.replace("승인 **미승인**", "승인 2026-01-03 Ted").replace("draft line", "final line")})
+                    {draft: DRAFT.replace("승인 **미승인**", '승인: @fixture-approver 2026-01-03 "ok"').replace("draft line", "final line")})
         self.assertExit(self.run_gate(root, base), 0)
 
     def test_pure_insertion_between_existing_lines_is_green(self):
@@ -362,7 +372,12 @@ class IntentRefGateTests(unittest.TestCase):
         self.assertExit(self.run_gate(root, base, linked), 0)
         self.assertExit(self.run_gate(root, linked, "HEAD"), 1)
 
+    def real_snapshot(self):
+        return self.module.parse_legacy((ROOT / SNAPSHOT).read_text(encoding="utf-8"))
+
     def test_classification_matches_the_frozen_62_intent_answer_table(self):
+        # v1 table is byte-frozen (hash set); its 44 legacy approvals now hold through the snapshot.
+        legacy = self.real_snapshot()
         table = json.loads((FIXTURES / "intent-ref/intent-meta-classification.json").read_text(encoding="utf-8"))
         self.assertEqual(table["total"], 62)
         self.assertEqual(len(table["files"]), 62)
@@ -370,17 +385,160 @@ class IntentRefGateTests(unittest.TestCase):
         for row in table["files"]:
             text = "# Intent\n" + (row["meta"] + "\n" if row["meta"] is not None else "") + "\n## 문제\n"
             with self.subTest(name=row["name"]):
-                self.assertEqual(self.module.classify(text), row["class"])
-                self.assertEqual(self.module.is_protected(row["name"], text), row["class"] == "approved"
+                self.assertEqual(self.module.classify(text, row["name"], legacy=legacy), row["class"])
+                self.assertEqual(self.module.is_protected(row["name"], text, legacy), row["class"] == "approved"
                                  and row["name"] not in table["excluded_by_name"])
         protected = [row for row in table["files"]
-                     if self.module.is_protected(row["name"], "# I\n" + (row["meta"] or "") + "\n")]
+                     if self.module.is_protected(row["name"], "# I\n" + (row["meta"] or "") + "\n", legacy)]
         self.assertEqual(len(protected), 44)
         # Known misjudgment kept on purpose: really approved, but the meta line still says 미승인.
         evals = next(row for row in table["files"] if row["name"] == "2026-09-08-harness-evals.md")
         self.assertEqual(evals["class"], "unapproved")
         self.assertIn(evals["name"], table["intended_unprotected"])
-        self.assertFalse(self.module.is_protected("TEMPLATE.md", "# T\n메타 — 승인: Ted 2026-01-01\n"))
+        self.assertFalse(self.module.is_protected(
+            "TEMPLATE.md", '# T\n메타 — 승인: @fixture-approver 2026-01-01 "ok"\n', legacy))
+
+    def test_classification_matches_the_v2_answer_table_with_rules(self):
+        legacy = self.real_snapshot()
+        table = json.loads((ROOT / "scripts/tests/fixtures/intent-ref/intent-meta-classification-v2.json")
+                           .read_text(encoding="utf-8"))
+        self.assertEqual(table["total"], len(table["files"]))
+        self.assertEqual(table["total"], 85)
+        self.assertEqual(table["counts"], {"approved": 64, "unapproved": 15, "no-meta": 6})
+        counts = {"approved": 0, "unapproved": 0, "no-meta": 0}
+        for row in table["files"]:
+            text = "# Intent\n" + (row["meta"] + "\n" if row["meta"] is not None else "") + "\n## 문제\n"
+            with self.subTest(name=row["name"]):
+                self.assertEqual(self.module.classify(text, row["name"], legacy=legacy), row["class"])
+                self.assertEqual(self.module.approval_rule(text, row["name"], legacy) or "none", row["rule"])
+            counts[row["class"]] += 1
+        self.assertEqual(counts, table["counts"])
+        # The snapshot is the machine output of the legacy rule at the table's source commit.
+        self.assertEqual(legacy, {row["name"] for row in table["files"] if row["rule"] == "legacy"})
+        header = (ROOT / SNAPSHOT).read_text(encoding="utf-8").splitlines()[0]
+        self.assertIn(table["source"].rsplit(" ", 1)[1], header)
+        for name in ("2026-09-08-harness-evals.md", "2026-09-18-missing-rate-predicate-recon.md"):
+            row = next(r for r in table["files"] if r["name"] == name)
+            self.assertEqual(row["class"], "unapproved")
+            self.assertIn(name, table["intended_unprotected"])
+
+    # ① V-B1 new form approves and locks the intent
+    def test_new_form_is_approved_and_its_lines_are_locked(self):
+        self.assertEqual(self.module.classify(APPROVED), "approved")
+        self.assertEqual(self.module.approval_rule(APPROVED, "2026-01-01-approved.md"), "form")
+        root, base = self.repo()
+        self.commit(root, "edit\n\n" + TRAILER, {INTENT: APPROVED.replace("- second line", "- second line edited")})
+        result = self.run_gate(root, base)
+        self.assertExit(result, 1)
+        self.assertIn(INTENT, result.stdout)
+
+    # ② V-B2 legacy notation outside the snapshot is not protected
+    def test_legacy_notation_outside_the_snapshot_is_unprotected(self):
+        self.assertEqual(self.module.classify(LEGACY_TEXT), "unapproved")
+        self.assertEqual(self.module.classify(LEGACY_TEXT, "2026-01-03-legacy.md",
+                                              legacy=frozenset({"2026-01-03-legacy.md"})), "approved")
+        root, base = self.repo(snapshot="# fixture snapshot\n")
+        self.commit(root, "rewrite legacy", {LEGACY: LEGACY_TEXT.replace("- legacy line", "- rewritten")})
+        self.assertExit(self.run_gate(root, base), 0)
+
+    # ③ V-B2·B3 legacy notation inside the snapshot is protected
+    def test_legacy_notation_inside_the_snapshot_is_locked(self):
+        root, base = self.repo()
+        self.commit(root, "rewrite legacy", {LEGACY: LEGACY_TEXT.replace("- legacy line", "- rewritten")})
+        result = self.run_gate(root, base)
+        self.assertExit(result, 1)
+        self.assertIn(LEGACY, result.stdout)
+        root, base = self.repo()
+        self.commit(root, "append legacy", {LEGACY: LEGACY_TEXT + "- appended\n"})
+        self.assertExit(self.run_gate(root, base), 0)
+
+    # ② V-B5 the snapshot is immutable once the base has it
+    def test_changing_the_snapshot_after_introduction_is_red(self):
+        extra = "dev-package/intent/2026-01-04-sneaky.md"
+        for label, files, delete in (
+                ("remove a name", {SNAPSHOT: "# fixture snapshot\n"}, ()),
+                ("add a name", {SNAPSHOT: SNAPSHOT_TEXT + "2026-01-04-sneaky.md\n",
+                                extra: LEGACY_TEXT.replace("legacy line", "sneaky line")}, ()),
+                ("edit the comment", {SNAPSHOT: SNAPSHOT_TEXT.replace("fixture", "fixturE")}, ()),
+                ("delete the file", {}, (SNAPSHOT,))):
+            with self.subTest(change=label):
+                root, base = self.repo()
+                self.commit(root, label + "\n\n" + TRAILER, files, delete)
+                result = self.run_gate(root, base)
+                self.assertExit(result, 1)
+                self.assertIn("legacy 승인 스냅샷이 바뀌었다", result.stdout)
+
+    def test_introducing_the_snapshot_skips_the_immutability_check(self):
+        root, base = self.repo(snapshot=None)
+        self.commit(root, "introduce\n\n" + TRAILER, {SNAPSHOT: SNAPSHOT_TEXT})
+        result = self.run_gate(root, base)
+        self.assertExit(result, 0)
+        self.assertNotIn("스냅샷이 바뀌었다", result.stdout)
+
+    def test_branch_forked_before_the_snapshot_is_judged_by_the_base_snapshot(self):
+        # Open PR forked before B: head lacks the snapshot, CI runs B's code against base.sha.
+        root, _ = self.repo(snapshot=None)
+        git(root, "branch", "-M", "main")
+        git(root, "checkout", "-q", "-b", "feature")
+        self.commit(root, "append legacy", {LEGACY: LEGACY_TEXT + "- appended\n"})
+        appended = git(root, "rev-parse", "HEAD")
+        self.commit(root, "rewrite legacy", {LEGACY: LEGACY_TEXT.replace("- legacy line", "- rewritten")})
+        git(root, "checkout", "-q", "main")
+        self.commit(root, "introduce\n\n" + TRAILER, {SNAPSHOT: SNAPSHOT_TEXT})
+        base = git(root, "rev-parse", "main")
+        green = self.run_gate(root, base, appended)
+        self.assertExit(green, 0)
+        self.assertNotIn("스냅샷이 바뀌었다", green.stdout)
+        self.assertIn("legacy 스냅샷 1", green.stdout)
+        self.assertExit(self.run_gate(root, base, git(root, "rev-parse", "feature")), 1)
+
+    # ④ V-B6 malformed approval lines stay unapproved
+    def test_malformed_approval_forms_are_unapproved(self):
+        for meta in ('승인: @-ted 2026-01-01 "ok"', '승인: @te--d 2026-01-01 "ok"',
+                     '승인: @' + "a" * 40 + ' 2026-01-01 "ok"', '승인: @ ted 2026-01-01 "ok"',
+                     '승인: @ted 2026-1-1 "ok"', '승인: @ted 2026-01-01 ok'):
+            with self.subTest(meta=meta):
+                self.assertEqual(self.module.classify("# I\n메타 — " + meta + "\n", "2026-01-09-x.md"), "unapproved")
+        for meta in ('승인: @ted 2026-01-01 "권고대로"', '승인:@a1-b2 2026-01-01 "x"', '승인: @' + "a" * 39 + ' 2026-01-01 "x"'):
+            with self.subTest(meta=meta):
+                self.assertEqual(self.module.classify("# I\n메타 — " + meta + "\n", "2026-01-09-x.md"), "approved")
+
+    # ⑤ V-B1 the explicit form wins over a 미승인 substring on the same line
+    def test_new_form_with_a_mijeongin_substring_is_approved(self):
+        text = '# I\n메타 — 승인: @ted 2026-01-01 "권고대로" · 미승인 3건 잔존\n'
+        self.assertEqual(self.module.classify(text, "2026-01-09-x.md"), "approved")
+        self.assertEqual(self.module.approval_rule(text, "2026-01-09-x.md"), "form")
+
+    # ⑥ V-B3 --freeze-legacy is the reproducible generator
+    def test_freeze_legacy_lists_legacy_approvals_byte_identically(self):
+        root, _ = self.repo()
+        sha = git(root, "rev-parse", "HEAD")
+        runs = [subprocess.run([sys.executable, str(ROOT / "scripts/harness/intent_ref.py"), "--repo-root", str(root),
+                                "--freeze-legacy", "HEAD"], capture_output=True) for _ in range(2)]
+        for run in runs:
+            self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(runs[0].stdout, runs[1].stdout)
+        expected = (f"# intent_ref legacy-approved snapshot · commit {sha} · rule: meta has 승인 and not 미승인 · "
+                    "frozen once · names only\n2026-01-01-approved.md\n2026-01-03-legacy.md\n").encode("utf-8")
+        self.assertEqual(runs[0].stdout, expected)
+        self.assertNotIn(b"\r", runs[0].stdout)
+
+    # ⑦ V-B4 the output names which rule matched
+    def test_output_counts_form_and_legacy_approvals(self):
+        root, base = self.repo()
+        self.commit(root, "docs", {"docs/x.md": "x\n"})
+        result = self.run_gate(root, base)
+        self.assertExit(result, 0)
+        self.assertIn("⑵ 기준·분기 시점 승인 intent 2건 대조(형식 1 · legacy 스냅샷 1)", result.stdout)
+
+    # ⑧ V-B5 no snapshot at base or head is a readiness failure, not a silent fallback
+    def test_snapshot_absent_at_base_and_head_is_readiness(self):
+        root, base = self.repo(snapshot=None)
+        self.commit(root, "docs", {"docs/x.md": "x\n"})
+        result = self.run_gate(root, base)
+        self.assertExit(result, 78)
+        self.assertIn("red(준비)", result.stdout)
+        self.assertIn("::gate-readiness-failure::", result.stderr)
 
 
 if __name__ == "__main__":

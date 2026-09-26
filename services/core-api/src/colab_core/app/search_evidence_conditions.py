@@ -5,6 +5,7 @@ import calendar
 import datetime as dt
 import re
 
+from ..kernel import cadence_scope
 from ..kernel.region_scope import place_label, region_match
 from ..kernel.search_semantics import SEMANTICS
 
@@ -41,7 +42,13 @@ def parse(query: str) -> dict:
         resolution=re.search(r'(\d+(?:\.\d+)?)(km|m)',q)
         if resolution: criteria['nativeResolutionM']=float(resolution[1])*(1000 if resolution[2]=='km' else 1)
     if '보간' in q and re.search(r'하지않|안한|없는',q): criteria['interpolated']=False
-    cadence=next((value for pattern,value in [('월평균|한달평균','monthly'),('일별|매일','daily'),('주간|매주','weekly'),('시간별|매시간|시간단위','hourly'),(r'(?<!\d)5\s*분','5min'),(r'(?<!\d)10\s*분','10min'),('연평균|연단위|연 단위|매년|해마다','yearly')] if re.search(pattern,q)),None)
+    # 주기 상한(「1시간 이하」 = 산출 간격 ≤ 1시간 · Ted 2026-09-26) — 경로 1 과 같은 커널 파서로 원문에서 읽는다.
+    # 범위 문구를 뗀 글에서 등호 주기를 찾는다(「10분 이내」의 「10분」은 등호가 아니다). 「15분 누적」은 누적
+    # 기간이지 산출 간격이 아니라 주기로 읽지 않는다.
+    limit=cadence_scope.parse_max_cadence_seconds(query)
+    if limit: criteria['maxCadenceSeconds']=limit
+    q_cadence=_compact(cadence_scope.strip_range(query))
+    cadence=next((value for pattern,value in [('월평균|한달평균','monthly'),('일별|매일','daily'),('주간|매주','weekly'),('시간별|매시간|시간단위','hourly'),(r'(?<!\d)5\s*분','5min'),(r'(?<!\d)10\s*분','10min'),(r'(?<!\d)15분(?!누적)','15min'),('연평균|연단위|연 단위|매년|해마다','yearly')] if re.search(pattern,q_cadence)),None)
     if cadence: criteria['cadence']=cadence
     region=next((r for r in ['제주','한반도','서울','강원','전라','경상'] if r in q),None)
     # 「남한」은 표기 일치로만 맞춘다(의미 식별자가 아니라 넓히지 않는다 — 상향 금지).
@@ -96,8 +103,19 @@ def assess(criteria: dict, facts: dict) -> dict:
         elif key == 'nativeResolutionM' and actual is not None:
             display = f'{actual:g}m'
         elif key == 'cadence' and actual is not None:
-            display = {'daily':'일별','weekly':'주간','monthly':'월평균','15min':'15분','hourly':'매시','5min':'5분','10min':'10분','yearly':'연 단위'}.get(actual,actual)
+            display = cadence_scope.LABELS.get(actual,actual)
         checks[label]=('unknown' if actual is None else 'supported' if match else 'contradicted',display)
+    if 'maxCadenceSeconds' in criteria:
+        # 같은 커널 도우미로 판정한다(경로 1 `_predicate` 와 같은 표). 선언값 비교이며 연속 관측 보증이 아니다.
+        actual=facts.get('cadence')
+        within=cadence_scope.cadence_within(actual,criteria['maxCadenceSeconds'])
+        limit=cadence_scope.limit_label(criteria['maxCadenceSeconds'])
+        name=cadence_scope.LABELS.get(actual,actual)
+        if actual is None: display='근거 없음'
+        elif within is None: display=f'{actual} — 순서를 모르는 주기'
+        elif within: display=f'{name} — {limit} 이하 · 등록 설명의 선언값, 파일 시간축 실측 아님'
+        else: display=f'{name} — {limit} 초과 · 등록 설명의 선언값'
+        checks['주기 범위']=('unknown' if within is None else 'supported' if within else 'contradicted',display)
     if criteria.get('roles'):
         actual=facts.get('roles')
         role_names={'model_input':'모델 입력','auxiliary_input':'보조 입력','validation':'검증 자료',
@@ -172,7 +190,7 @@ def supported_facts(criteria: dict, records: list[dict]) -> list[str]:
     for row,checks in assessed[:4]:
         # 지역은 포함 관계로 맞았을 때만 세부를 붙인다(「지역(남한 — 한반도 안의 지역)」 · intent
         # `2026-09-26-region-containment-expansion.md` 결정 2). 표기가 같으면 종전대로 「지역」만.
-        names=[key+(f'({value[1]})' if key in ('기간','파일 역할')
+        names=[key+(f'({value[1]})' if key in ('기간','파일 역할','주기 범위')
                     or (key=='지역' and value[1].endswith(' 안의 지역')) else '')
                for key,value in checks.items() if value[0]=='supported']
         if not names: continue

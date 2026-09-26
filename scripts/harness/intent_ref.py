@@ -5,8 +5,12 @@
    `Intent-Ref: dev-package/intent/<file>.md` trailer naming a file that exists at head.
    An empty commit carrying only the trailer counts (retroactive path for old branches).
    A range that touches no subject path is out of scope: printed with counts, green.
-⑵ An intent that is approved at the base OR at the fork point (its meta line says 승인 and not
-   미승인) may only gain lines in the range. Deleting, renaming or editing any existing line is red.
+⑵ An intent that is approved at the base OR at the fork point may only gain lines in the range.
+   Deleting, renaming or editing any existing line is red. Approved = its first meta line carries
+   `승인: @<handle> <YYYY-MM-DD> "<원문>"` (form), or its name is in the frozen legacy snapshot
+   (`scripts/harness/intent_legacy_approved.txt`, base copy first, else head) and the line says 승인
+   and not 미승인 (legacy). The snapshot is immutable once the base has it: a range that changes it
+   must leave its bytes equal to the base's, else red. Absent at base and head = 78.
    Both points count: a PR that forked before develop approved an intent must not rewrite it.
    Additions-only = every existing line (raw bytes, from `git cat-file blob`) still appears in
    order in the new content (ordered subsequence). No diff text is parsed, so `---` lines, a
@@ -32,25 +36,54 @@ SUBJECT_PREFIXES = ("services/", "frontend/src/", "contracts/", "db/", "scripts/
                     ".agents/", ".claude/", ".codex/")
 META = re.compile(r"^메타.*$", re.M)
 REF = re.compile(r"^dev-package/intent/[^/\s]+\.md$")
+# Approval record (intent 2026-09-25-harness-improvement 10라운드 Q4): 승인: @<GitHub login> <YYYY-MM-DD> "<원문>".
+# Form only — no account lookup, no token (ADR-0003: the machine checks form, a person's merge approves).
+LEGACY_SNAPSHOT = "scripts/harness/intent_legacy_approved.txt"
+HANDLE = r"[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}"
+APPROVAL_FORM = re.compile(r'승인:\s*@(' + HANDLE + r')\s+(\d{4}-\d{2}-\d{2})\s+"([^"\n]+)"')
+SNAPSHOT_HEADER = ("# intent_ref legacy-approved snapshot · commit {sha} · rule: meta has 승인 and not 미승인 · "
+                   "frozen once · names only")
 
 
 class Readiness(Exception):
     """The judgement target could not be read."""
 
 
-def classify(text: str) -> str:
-    """approved | unapproved | no-meta, from the first line starting with 메타."""
+def legacy_approved(line: str) -> bool:
+    """The pre-form rule: the meta line says 승인 and not 미승인."""
+    return "승인" in line and "미승인" not in line
+
+
+def approval_rule(text: str, name: str | None = None, legacy: frozenset = frozenset()) -> str | None:
+    """form | legacy | None — which rule approves this intent (None = not approved)."""
     match = META.search(text)
     if match is None:
-        return "no-meta"
+        return None
     line = match.group(0)
-    if "미승인" in line:
-        return "unapproved"
-    return "approved" if "승인" in line else "unapproved"
+    if APPROVAL_FORM.search(line):
+        return "form"
+    if name in legacy and legacy_approved(line):
+        return "legacy"
+    return None
 
 
-def is_protected(name: str, text: str) -> bool:
-    return name not in EXCLUDED and classify(text) == "approved"
+def classify(text: str, name: str | None = None, legacy: frozenset = frozenset()) -> str:
+    """approved | unapproved | no-meta, from the first line starting with 메타.
+
+    The explicit form approves anywhere; the legacy notation approves only names in the frozen snapshot.
+    """
+    if META.search(text) is None:
+        return "no-meta"
+    return "approved" if approval_rule(text, name, legacy) else "unapproved"
+
+
+def is_protected(name: str, text: str, legacy: frozenset = frozenset()) -> bool:
+    return name not in EXCLUDED and classify(text, name, legacy) == "approved"
+
+
+def parse_legacy(text: str) -> frozenset:
+    """Snapshot names: every non-empty line that is not a # comment."""
+    return frozenset(line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#"))
 
 
 def git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -146,18 +179,21 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
                    "`git commit --allow-empty -m \"…\" -m \"Intent-Ref: dev-package/intent/<파일>.md\"` 1개.")
 
     # ⑵ approved intents (at the base OR at the fork point) stay append-only in fork..head
-    def intent_names(commit: str) -> set[str]:
-        return {n for n in git(root, "ls-tree", "-z", "--name-only", commit, INTENT_ROOT + "/")
-                .stdout.decode("utf-8", "surrogateescape").split("\0") if n.endswith(".md")}
-
-    protected = 0
-    for path in sorted(intent_names(base) | intent_names(fork)):
+    legacy = legacy_names(root, base, head)
+    if LEGACY_SNAPSHOT in changed and (before := blob(root, base, LEGACY_SNAPSHOT)) is not None \
+            and blob(root, head, LEGACY_SNAPSHOT) != before:
+        red.append("⑵ legacy 승인 스냅샷이 바뀌었다 — 도입 뒤 불변 · 추가 · 삭제 · 주석 모두 금지 · "
+                   "새 intent 는 승인: @handle 형식")
+    protected, rules = 0, {"form": 0, "legacy": 0}
+    for path in sorted(intent_names(root, base) | intent_names(root, fork)):
         name = PurePosixPath(path).name
-        approved_at = [c for c in dict.fromkeys((base, fork))
-                       if (text := show(root, c, path)) is not None and is_protected(name, text)]
+        approved_at = [rule for c in dict.fromkeys((base, fork))
+                       if (text := show(root, c, path)) is not None and is_protected(name, text, legacy)
+                       and (rule := approval_rule(text, name, legacy))]
         if not approved_at:
             continue
         protected += 1
+        rules[approved_at[0]] += 1
         if path not in changed:
             continue
         after = blob(root, head, path)
@@ -172,14 +208,59 @@ def judge(root: Path, base_ref: str | None, head_ref: str) -> tuple[list[str], l
             shown = missing.decode("utf-8", "replace")[:60]
             red.append(f"⑵ 승인 intent 의 기존 줄이 변경·삭제됐다: {printable(path)} `{shown}` "
                        "— 줄 추가만 허용한다 · 필요하면 새 intent")
-    info.append(f"⑵ 기준·분기 시점 승인 intent {protected}건 대조")
+    info.append(f"⑵ 기준·분기 시점 승인 intent {protected}건 대조"
+                f"(형식 {rules['form']} · legacy 스냅샷 {rules['legacy']})")
     return info, red
+
+
+def intent_names(root: Path, commit: str) -> set[str]:
+    return {n for n in git(root, "ls-tree", "-z", "--name-only", commit, INTENT_ROOT + "/")
+            .stdout.decode("utf-8", "surrogateescape").split("\0") if n.endswith(".md")}
+
+
+def legacy_names(root: Path, base: str, head: str) -> frozenset:
+    """The frozen legacy snapshot: the base's copy first (no union), else the head's (the introducing PR).
+
+    Absent at both = readiness failure: neither form-only (63 legacy approvals unprotected) nor the
+    legacy rule for every name (wider than 「그 꼴만 승인」).
+    """
+    for commit in (base, head):
+        text = show(root, commit, LEGACY_SNAPSHOT)
+        if text is not None:
+            return parse_legacy(text)
+    raise Readiness(f"legacy 승인 스냅샷이 base · head 모두에 없다 — {LEGACY_SNAPSHOT}")
+
+
+def freeze_legacy(root: Path, ref: str) -> bytes:
+    """Snapshot bytes for `ref`: legacy-rule approved intents (EXCLUDED dropped), sorted, UTF-8, LF."""
+    commit = resolve(root, ref, "--freeze-legacy")
+    names = []
+    for path in intent_names(root, commit):
+        name = PurePosixPath(path).name
+        if name in EXCLUDED or (text := show(root, commit, path)) is None:
+            continue
+        match = META.search(text)
+        if match is not None and legacy_approved(match.group(0)):
+            names.append(name)
+    lines = [SNAPSHOT_HEADER.format(sha=commit), *sorted(names)]
+    return ("\n".join(lines) + "\n").encode("utf-8", "surrogateescape")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    parser.add_argument("--freeze-legacy", metavar="COMMIT",
+                        help=f"print the legacy snapshot for COMMIT (redirect into {LEGACY_SNAPSHOT}); no judgement")
     args = parser.parse_args(argv)
+    if args.freeze_legacy:
+        try:
+            data = freeze_legacy(args.repo_root.resolve(), args.freeze_legacy)
+        except (Readiness, OSError) as exc:
+            print(f"intent-ref --freeze-legacy red(준비) — {exc}", file=sys.stderr)
+            return 78
+        sys.stdout.buffer.write(data)  # bytes: a text stdout would write CRLF on Windows
+        sys.stdout.buffer.flush()
+        return 0
     base = os.environ.get("COLAB_INTENT_REF_BASE") or None
     head = os.environ.get("COLAB_INTENT_REF_HEAD") or "HEAD"
     try:
