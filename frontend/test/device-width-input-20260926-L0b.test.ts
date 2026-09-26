@@ -8,6 +8,7 @@
  * ⑵ 장면 목록(`scenes.json`) — 새 장면 3 · 동작 어휘 · 전제조건 · 색인 450 · 모든 행의 `query`.
  * ⑶ 판정 스크립트(`scripts/visual-baseline/judge.mjs`) — 순수 함수 픽스처 · 레인 거르기 · 면제 목록 · CLI 종료코드.
  * ⑷ 캡처 실행기(`capture.py`) — 새 동작 어휘 · 전제조건 · 수치 전용 뷰포트 · 클릭 전 스크롤 영역 잘림 확인.
+ * ⑸ 캡처 가림(`mask`) — 오케스트레이터 결정(spec 빈칸 「실행마다 바뀌는 경과 시간 글자는 캡처에서 자리를 유지한 채 가린다」).
  * 실제 브라우저 수치는 캡처 실행(레인 보고의 두 번 찍기 · 장면 연결 · red 시연)이 확인한다 — 이 시험 밖이다.
  * 환경 의존: ⑷ 는 `python3` 를 부른다. 없으면 호출 종료코드 단언이 red 로 드러난다(건너뛰지 않는다).
  */
@@ -37,7 +38,7 @@ const EXEMPT_TEXT = readFileSync(join(VB, 'judge-exempt.txt'), 'utf8') as string
 
 interface Scene {
   name: string; entry: string; query: Record<string, string>; themes: string[]; viewports?: string[];
-  fullPage: boolean; actions: Record<string, unknown>[]; require?: Record<string, string>[];
+  fullPage: boolean; actions: Record<string, unknown>[]; require?: Record<string, string>[]; mask?: string[];
 }
 const MANIFEST = JSON.parse(readFileSync(join(VB, 'scenes.json'), 'utf8')) as { viewports: { id: string }[]; scenes: Scene[] };
 const NEW_SCENES = ['detail-preview-map', 'detail-preview-map-value', 'upload-preview-expand'];
@@ -643,5 +644,143 @@ describe('L0b ⑷ click 전 스크롤 — 창 안이어도 스크롤 영역에 �
 
   it('스크롤 영역 안에 다 보임 → 스크롤 0', () => {
     expect(run({ top: 200, bottom: 244, left: 10, right: 100 }, { top: 100, bottom: 400, left: 0, right: 390 }).scrolls).toEqual([]);
+  });
+});
+
+// ---- ⑸ 캡처 가림(mask) ------------------------------------------------------------------------------
+
+describe('L0b ⑸ 캡처 가림 — 실행마다 바뀌는 경과 시간 글자를 자리 유지한 채 가린다(오케스트레이터 결정)', () => {
+  const TOTAL = '[data-testid=dt-preview-total]';
+  type Call = { kind: string; args: string[] };
+
+  it('`mask` 를 선언한 장면 = 상세 지도 두 장면뿐 · 선택자 = 경과 시간 글자 하나', () => {
+    const declared = MANIFEST.scenes.filter((s) => s.mask !== undefined);
+    expect(declared.map((s) => s.name)).toEqual(['detail-preview-map', 'detail-preview-map-value']);
+    for (const s of declared) expect(s.mask, s.name).toEqual([TOTAL]);
+  });
+
+  it('가림 선택자가 가리키는 제품 글자가 실제로 있다(`DatasetPreviewSection` 의 `dt-preview-total`)', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/components/datasetpreview/DatasetPreviewSection.tsx'), 'utf8') as string;
+    expect(src).toContain('data-testid="dt-preview-total"');
+  });
+
+  it('장면 `mask` 형식 — 없으면 [] · 빈 목록 · 빈 문자열 · 문자열 하나 · 문자열 아님 · 중복은 목록 오류(78)', () => {
+    const first = (out: string) => JSON.parse(out.trim().split('\n')[0] ?? 'null') as unknown;
+    const none = py(['print(json.dumps(m.scene_mask({"name": "x"})))']);
+    expect(none.code, none.err).toBe(0);
+    expect(first(none.out)).toEqual([]);
+    const ok = py([`print(json.dumps(m.scene_mask({"name": "x", "mask": ["${TOTAL}"]})))`]);
+    expect(ok.code, ok.err).toBe(0);
+    expect(first(ok.out)).toEqual([TOTAL]);
+    for (const bad of ['[]', '[""]', '"a"', '[1]', '["a", "a"]']) {
+      expect(py([`m.scene_mask({"name": "x", "mask": json.loads('${bad}')})`]).code, bad).toBe(78);
+    }
+  });
+
+  /** capture.py 의 페이지 스크립트 생성 함수 하나를 불러 소스를 받는다. */
+  function script(fn: string, arg: string): string {
+    const r = spawnSync('python3', ['-c', [
+      'import importlib.util, json, sys',
+      'spec = importlib.util.spec_from_file_location("capture", sys.argv[1])',
+      'm = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)',
+      `print(m.${fn}(json.loads(sys.argv[2])))`,
+    ].join('\n'), CAPTURE, arg], { encoding: 'utf8' });
+    expect(r.status, r.stderr).toBe(0);
+    return r.stdout as string;
+  }
+
+  it('주입 스크립트 — 선택자마다 `visibility: hidden !important` 규칙 하나(자리 유지 · display 없음) · 표식 `mask` 스타일', () => {
+    const appended: { dataset: Record<string, string>; textContent: string }[] = [];
+    const result = runInNewContext(script('mask_inject_script', JSON.stringify([TOTAL, '.b'])), {
+      document: {
+        createElement: () => ({ dataset: {}, textContent: '' }),
+        head: { appendChild: (e: { dataset: Record<string, string>; textContent: string }) => { appended.push(e); } },
+      },
+    }) as unknown;
+    expect(result).toBe(true);
+    expect(appended.length).toBe(1);
+    expect(appended[0]?.dataset.visualBaseline).toBe('mask');
+    expect(appended[0]?.textContent).toBe(`${TOTAL} { visibility: hidden !important; }\n.b { visibility: hidden !important; }`);
+    expect(appended[0]?.textContent).not.toContain('display');
+  });
+
+  it('확인 스크립트 — 선택자마다 맞는 요소 수 · 계산된 visibility hidden 수 · 잘못된 선택자는 error', () => {
+    const els = [{ v: 'hidden' }, { v: 'visible' }];
+    const result = runInNewContext(script('mask_check_script', JSON.stringify(['.two', '.none', '::bad'])), {
+      document: {
+        querySelectorAll: (sel: string) => {
+          if (sel === '::bad') throw new Error('bad selector');
+          return sel === '.two' ? els : [];
+        },
+      },
+      getComputedStyle: (e: { v: string }) => ({ visibility: e.v }),
+    }) as unknown;
+    expect(JSON.parse(JSON.stringify(result))).toEqual([{ n: 2, hidden: 1 }, { n: 0, hidden: 0 }, { error: 'Error: bad selector' }]);
+  });
+
+  it('check_mask — 모두 맞고 가려지면 통과 · 맞는 요소 0(이름이 바뀐 test id) · 가려지지 않음 · 잘못된 선택자 · 응답 없음은 78', () => {
+    const run = (answer: unknown) => py([`m.check_mask("s", "scene-x", ["${TOTAL}"])`], [answer]);
+    expect(run([{ n: 1, hidden: 1 }]).code).toBe(0);
+    const none = run([{ n: 0, hidden: 0 }]);
+    expect(none.code).toBe(78);
+    expect(none.err).toContain('matched nothing');
+    expect(none.err).toContain(TOTAL);
+    expect(run([{ n: 2, hidden: 1 }]).code).toBe(78);
+    expect(run([{ error: 'SyntaxError' }]).code).toBe(78);
+    expect(run(null).code).toBe(78);
+    expect(py(['m.check_mask("s", "scene-x", [])'], []).calls.length).toBe(0);
+  });
+
+  /** capture_session 한 장(390 · 라이트 · 수치 전용)을 가짜 브라우저로 돌린다. measure 는 호출만 기록한다. */
+  function session(mask: string[] | null, answers: unknown[]) {
+    const scene = {
+      name: 'scene-x', entry: 'audit-design.html', query: {}, themes: ['light'], viewports: ['390'], fullPage: true,
+      actions: [{ wait: 5 }], settleMs: 10, account: { upload: true, labSettings: true, operator: false },
+      ...(mask ? { mask } : {}),
+    };
+    return py([
+      'import pathlib, tempfile',
+      'm.measure = lambda *a: calls.append({"kind": "measure", "args": []}) or {"overflow": {"roots": []}}',
+      `rows = m.capture_session("light", "touch", [json.loads(${JSON.stringify(JSON.stringify(scene))})], {"390": {"id": "390", "width": 390, "height": 844, "input": "touch"}}, 1, pathlib.Path(tempfile.mkdtemp()), "s", 3, "blank.svg", {}, False)`,
+      'calls.append({"kind": "row", "args": [json.dumps(rows[0])]})',
+    ], answers);
+  }
+  const STATE = { theme: 'light', width: 390, height: 844, dpr: 3, coarse: true, hover: false };
+  const isMaskInject = (c: Call) => c.kind === 'js' && (c.args[0] ?? '').includes("visualBaseline = 'mask'");
+  const isMaskCheck = (c: Call) => c.kind === 'js' && (c.args[0] ?? '').includes('querySelectorAll');
+
+  it('순서 — 글꼴 준비 → 멈춤 CSS → 가림 주입 → 동작 → 상태 확인 → 가림 확인 → 수치(가림은 수치보다 먼저 · 행에 가림 기록)', () => {
+    const r = session([TOTAL], [true, true, true, STATE, [{ n: 1, hidden: 1 }]]);
+    expect(r.code, r.err).toBe(0);
+    const at = (pred: (c: Call) => boolean) => r.calls.findIndex(pred);
+    const order = [
+      at((c) => c.kind === 'js' && (c.args[0] ?? '').includes('fonts.ready')),
+      at((c) => c.kind === 'js' && (c.args[0] ?? '').includes("visualBaseline = 'freeze'")),
+      at(isMaskInject),
+      at((c) => c.kind === 'ab' && c.args[0] === 'wait' && c.args[1] === '5'),
+      at((c) => c.kind === 'js' && (c.args[0] ?? '').includes('devicePixelRatio')),
+      at(isMaskCheck),
+      at((c) => c.kind === 'measure'),
+    ];
+    expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    const row = JSON.parse(r.calls[r.calls.length - 1]?.args[0] ?? '{}') as { mask?: string[] };
+    expect(row.mask).toEqual([TOTAL]);
+  });
+
+  it('가림이 아무것도 가리지 못하면 수치 · 스크린샷 전에 78', () => {
+    const r = session([TOTAL], [true, true, true, STATE, [{ n: 0, hidden: 0 }]]);
+    expect(r.code).toBe(78);
+    expect(r.err).toContain('matched nothing');
+    expect(r.calls.some((c) => c.kind === 'measure')).toBe(false);
+  });
+
+  it('`mask` 없는 장면(기존 장면)은 가림 주입 · 확인 호출 0 · 행에 mask 키 없음', () => {
+    const r = session(null, [true, true, STATE]);
+    expect(r.code, r.err).toBe(0);
+    expect(r.calls.some(isMaskInject)).toBe(false);
+    expect(r.calls.some(isMaskCheck)).toBe(false);
+    const row = JSON.parse(r.calls[r.calls.length - 1]?.args[0] ?? '{}') as Record<string, unknown>;
+    expect('mask' in row).toBe(false);
   });
 });

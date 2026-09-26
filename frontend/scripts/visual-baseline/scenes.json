@@ -72,6 +72,7 @@
     "upload-register-ok (spec S-DESIGN-FIX-FOLLOWUPS-20260925 Q4) is audit-upload.html?register=ok: register/attach succeed locally and the modal is opened by the real parents UploadEntry and GridAttachEntry (useUploadModalPresence). Without the query audit-upload.html is unchanged.",
     "viewports (spec S-DEVICE-WIDTH-INPUT-20260926 L0a · schema 2): a scene lists viewport ids in `viewports`; without it the scene uses all 6. Capture file = <scene>-<theme>-<viewport id>.png.",
     "require (spec S-DEVICE-WIDTH-INPUT-20260926 L0b): preconditions checked after settling, before metrics and screenshot — {imageLoaded|box|exists: selector}. A false precondition stops the run with 78.",
+    "mask (L0b · orchestrator decision, spec gap): selectors hidden with visibility: hidden (box kept) in every capture of the scene — injected with the freeze CSS before actions, checked after settling (each selector must match and hide ≥ 1 element, else 78). Only detail-preview-map · detail-preview-map-value declare it: [data-testid=dt-preview-total] (the measured elapsed time 「총 0.0초」 / 「총 0.1초」 changes from run to run). Not a 부록 B target; metrics are unchanged.",
     "detail-preview-map · detail-preview-map-value · upload-preview-expand (L0b): the real dataset detail page with the fixture preview source (src/components/datasetpreview/fixture.ts) and the upload preview panel alone (src/components/upload/fixture.ts); image = frontend/audit-map.png. upload-preview-expand enters by audit-design.html, so the upload scene lock (audit-upload.html · 4 names · empty query) does not see it. The value scene clicks the map viewport centre with a real pointer (a covering tool receives it) and waits for the value panel to settle; before the layout fix the panel keeps the guide sentence (V4)."
   ],
   "scenes": [
@@ -943,6 +944,9 @@
           "exists": ".pv-shot button"
         }
       ],
+      "mask": [
+        "[data-testid=dt-preview-total]"
+      ],
       "settleMs": 1000,
       "account": {
         "upload": true,
@@ -995,6 +999,9 @@
         {
           "exists": ".pv-shot button"
         }
+      ],
+      "mask": [
+        "[data-testid=dt-preview-total]"
       ],
       "settleMs": 1000,
       "account": {

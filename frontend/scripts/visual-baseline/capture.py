@@ -22,6 +22,9 @@ folder is never a pixel-comparison input. judge.mjs judges the files.
 Action vocabulary adds waitImage(selector) (complete and naturalWidth > 0) and stable(selector) (the element box, the
 zoom scale attribute and the document height unchanged for 150 ms x 3). A scene's `require` list
 ({imageLoaded|box|exists: selector}) is checked after settling; a false precondition is 78.
+A scene's `mask` list (selectors) is hidden with `visibility: hidden` (box kept) by a style injected with FREEZE_CSS,
+before actions; after settling every mask selector must match and hide at least one element, else 78 (orchestrator
+decision for L0b: run-to-run text such as the elapsed time line is hidden while keeping its place). The index row lists it.
 
 Output: <out>/<scene>-<theme>-<viewport id>.png + <out>/index.json. Default out: frontend/.visual/<label>/.
 Exit codes: 0 = all captures written; 78 = could not capture (build, server, browser, manifest, missing file,
@@ -235,6 +238,53 @@ def check_require(session: str, name: str, reqs: list[dict] | None) -> None:
         raise CaptureError(f'{name}: precondition failed: {", ".join(failed) or got}')
 
 
+def scene_mask(scene: dict) -> list[str]:
+    """A scene's `mask`: selectors hidden with visibility (box kept) in every capture of that scene.
+
+    Orchestrator decision for spec S-DEVICE-WIDTH-INPUT-20260926 L0b (spec gap: text that changes from run to run, such as
+    the elapsed time line, is hidden in the capture while keeping its place). Absent = []. A present key must be a
+    non-empty list of distinct non-empty strings, else the manifest is rejected (78)."""
+    if 'mask' not in scene:
+        return []
+    sels = scene['mask']
+    if (not isinstance(sels, list) or not sels or not all(isinstance(s, str) and s.strip() for s in sels)
+            or len(set(sels)) != len(sels)):
+        raise CaptureError(f'scene {scene.get("name")}: mask must be a non-empty list of distinct selectors, got {sels!r}')
+    return sels
+
+
+def mask_inject_script(selectors: list[str]) -> str:
+    """Page script run with FREEZE_CSS (before actions): one `visibility: hidden` rule per selector. The style applies
+    to elements drawn later too; visibility keeps layout, so boxes, overflow and occlusion metrics are unchanged."""
+    css = '\n'.join(f'{s} {{ visibility: hidden !important; }}' for s in selectors)
+    return (f"(() => {{ const s = document.createElement('style'); s.dataset.visualBaseline = 'mask'; "
+            f"s.textContent = {json.dumps(css)}; document.head.appendChild(s); return true; }})()")
+
+
+def mask_check_script(selectors: list[str]) -> str:
+    """Per selector: matched element count and how many compute to visibility hidden; a selector that throws -> error."""
+    return (f"{json.dumps(selectors)}.map((sel) => {{ try {{ const els = [...document.querySelectorAll(sel)]; "
+            "return {n: els.length, hidden: els.filter((e) => getComputedStyle(e).visibility === 'hidden').length}; } "
+            "catch (e) { return {error: String(e)}; } })")
+
+
+def check_mask(session: str, name: str, selectors: list[str]) -> None:
+    """After settling, before metrics and screenshot: every declared mask selector matches at least one element and all
+    matches are hidden. A mask that matches nothing is 78 (a renamed test id must not silently stop masking)."""
+    if not selectors:
+        return
+    got = js(session, mask_check_script(selectors))
+    if not isinstance(got, list) or len(got) != len(selectors):
+        raise CaptureError(f'{name}: mask check returned {got!r}')
+    for sel, res in zip(selectors, got):
+        if not isinstance(res, dict) or 'error' in res:
+            raise CaptureError(f'{name}: mask selector {sel} invalid: {res!r}')
+        if res.get('n', 0) == 0:
+            raise CaptureError(f'{name}: mask {sel} matched nothing')
+        if res.get('hidden') != res['n']:
+            raise CaptureError(f'{name}: mask {sel} hid {res.get("hidden")} of {res["n"]} matches')
+
+
 def parse_viewport(spec: str, viewports: dict[str, dict]) -> dict:
     """--viewport for --metrics-only: a manifest id, or WxH[:touch|mouse] (default touch) for a size outside the list."""
     if spec in viewports:
@@ -360,6 +410,9 @@ def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: 
             ab(session, 'wait', '--load', 'networkidle')
             js(session, 'document.fonts.ready.then(() => true)')
             js(session, f"(() => {{ const s = document.createElement('style'); s.dataset.visualBaseline = 'freeze'; s.textContent = {json.dumps(FREEZE_CSS)}; document.head.appendChild(s); return true; }})()")
+            mask = scene_mask(scene)
+            if mask:
+                js(session, mask_inject_script(mask))
             for action in scene['actions']:
                 run_action(session, action)
             ab(session, 'wait', str(int(scene['settleMs'])))
@@ -370,8 +423,9 @@ def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: 
             if state != want:
                 raise CaptureError(f'{name}: page state {state} does not match viewport {vp_id} {want}')
             check_require(session, name, scene.get('require'))
+            check_mask(session, name, mask)
             row = {'name': name, 'scene': scene['name'], 'theme': theme, 'viewport': vp_id, 'width': width,
-                   'height': height, 'input': vp['input']}
+                   'height': height, 'input': vp['input'], **({'mask': mask} if mask else {})}
             if metrics is not None:
                 # Before the screenshot: measure.js only reads boxes, styles and media state (no scroll, no DOM change).
                 m = measure(session, name, scene, theme, vp_id, vp, metrics)
@@ -465,6 +519,10 @@ def main() -> int:
         unknown_vp = [i for i in s['viewports'] if i not in viewports]
         if 'widths' in s or not s['viewports'] or unknown_vp or len(set(s['viewports'])) != len(s['viewports']):
             problems.append(f'scene {s["name"]}: viewports {s["viewports"]} (unknown {unknown_vp}) or legacy widths')
+        try:
+            scene_mask(s)
+        except CaptureError as e:
+            problems.append(str(e))
     if problems:
         print('::visual-capture:: manifest: ' + '; '.join(problems), file=sys.stderr)
         return READINESS
