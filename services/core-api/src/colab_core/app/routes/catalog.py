@@ -697,7 +697,8 @@ def _client_search(request, subject, db, plan, context, lab_name, searched_count
                 plan['conditions']['region'] = region
                 plan['conditions']['exactPeriod'] = facts['period']
         candidates, truncated = ([],False) if plan['questions'] else d3_client_search.candidates(
-            ro,plan['conditions'],verified_ids=d2_access.verified_dataset_ids(ro) if verified_only else None)
+            ro,plan['conditions'],verified_ids=d2_access.verified_dataset_ids(ro) if verified_only else None,
+            expand_region=plan['intent'] != 'reference_match')
         matches = []
         unknown_count = 0
         for candidate in candidates:

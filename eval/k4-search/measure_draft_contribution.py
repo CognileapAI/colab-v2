@@ -121,8 +121,11 @@ def load_pure(name: str, path: pathlib.Path):
 
 
 def conditions_module():
-    return load_pure("k4_search_evidence_conditions",
-                     CORE_SRC / "colab_core" / "app" / "search_evidence_conditions.py")
+    """경로 2 순수 함수. 지역 포함 관계 도우미(`colab_core.kernel.region_scope`)를 상대 import 하므로
+    파일 경로 적재(`load_pure`)가 아니라 패키지로 싣는다 — 2026-09-26 지역 포함 관계 intent."""
+    if str(CORE_SRC) not in sys.path:
+        sys.path.insert(0, str(CORE_SRC))
+    return importlib.import_module("colab_core.app.search_evidence_conditions")
 
 
 def terms_module():
