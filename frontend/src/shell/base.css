@@ -2,7 +2,8 @@
 /* 원소 기본(P2b · spec S-DESIGN-STRUCTURE-P2B-20260924 0단계) — `shell.css` 에서 옮긴 원소·`:where()`·전체 선택자 규칙.
    층 순서 tokens < base < primitives < patterns < screens 라 여기 규칙은 프리미티브(`.btn`·`.inp` …)와 화면 규칙에
    특이도와 무관하게 진다 — 오늘 특이도로 지던 자리가 그대로 진다. `!important` 는 쓰지 않는다(게이트 e).
-   `!important` 2건(640px 입력 글자 바닥 · 동작 줄이기)은 screens 층(`shell.css`)에 남는다. */
+   `!important` 2건(입력 글자 16px 바닥 · 동작 줄이기)은 screens 층(`shell.css`)에 남는다. 입력 글자 바닥은 기본 층에 두지 않는다
+   (강제 우선 금지 · spec S-DEVICE-WIDTH-INPUT-20260926 우려 3ⓐ · 「640px 이하 또는 터치 기기」 셸 블록 한 곳). */
 
 * { box-sizing: border-box; }
 
@@ -12,10 +13,5 @@ button { font-size: var(--text-body-sm); }
 :where(button, a, input, select, textarea):focus-visible {
   outline: 2px solid var(--color-primary-600);
   outline-offset: 3px;
-}
-
-@media (max-width: 640px) {
-  /* iOS 가 포커스에서 자동 확대하지 않게 입력 글자를 16px 아래로 두지 않는다 */
-  input, select, textarea { font-size: 16px; }
 }
 }

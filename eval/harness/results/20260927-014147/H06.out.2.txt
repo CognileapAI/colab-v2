@@ -1,0 +1,15 @@
+카드 규칙에 그림자 선언이 남아 있습니다. 파일은 고치지 않았습니다.
+
+**고쳐야 할 곳: `catalog.css:31`**
+
+- 카드 규칙 `.catalog-page .card`(29–32행)의 31행에 `box-shadow: var(--shadow-sm);` 가 있습니다.
+- 이 선언을 지우면 됩니다. 테두리(`border: 1px solid var(--color-border)`)가 이미 면을 구분하고 있습니다.
+
+**그대로 둘 곳**
+
+- **`.colmenu` 80행** `box-shadow: var(--shadow-lg);`: 팝오버라서 예외입니다. `--shadow-lg`(21행)는 이 규칙만 쓰므로 토큰도 그대로 둡니다.
+- **`.tbl tr.clk` 50·52행**: 행에 마우스를 올렸을 때 왼쪽에 2px 막대를 긋는 `inset` 표식이고, `transition` 에 적힌 것도 이 표식입니다. 카드 그림자가 아니라서 지목 대상이 아닙니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

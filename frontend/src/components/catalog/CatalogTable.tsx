@@ -7,6 +7,8 @@ import { ColumnMenu } from './ColumnMenu';
 import type { CatalogColumn, DatasetRow, FacetValue, SortOrder } from './types';
 import type { CatalogState } from './useCatalog';
 import { displayLevel } from '../common/processingLevel';
+import { TouchOrMouse } from '../common/TouchNote';
+import { useInputMode } from '../common/useInputMode';
 
 /** 수정일 칸은 날짜만 적는다 (목업 `2026-08-11`). */
 function day(ts: string): string {
@@ -42,6 +44,9 @@ const DL = (
  */
 // Ted 문면 확정 대기 · R-LTH-REVIEW-1
 const VERIFIED_PENDING_LABEL = '승인 전';
+/** 마우스 올림 설명(원문 그대로) · 터치에서 누르면 보이는 설명(「새 문구안」 11행 확정 · 화면 말투). */
+const VERIFIED_PENDING_TITLE = '승인 처리가 아직 도착하지 않았다';
+const VERIFIED_PENDING_NOTE = '승인 처리가 아직 도착하지 않았어요';
 
 /**
  * 가공 단계가 계보 계산값과 갈린 행의 표식. **알림이지 차단이 아니다** —
@@ -67,6 +72,8 @@ export function CatalogTable(props: {
   onDownload: (datasetId: string) => void;
 }) {
   const { state } = props;
+  // 휴대폰·패드 대응 20260926 L3a(V9) — 터치에서는 `title` 대신 누르면 보이는 설명. 마우스는 원래 요소 그대로.
+  const mouse = useInputMode() === 'mouse';
   const [openColumn, setOpenColumn] = useState<CatalogColumn | null>(null);
   // 내려받기가 실패하면 조용히 넘어가지 않는다 — 눌렀는데 아무 일도 안 일어나는 것이 제일 나쁘다.
 
@@ -189,28 +196,34 @@ export function CatalogTable(props: {
                     표식을 단다. 값(`lvl`)은 그대로 서고 표식이 옆에 붙을 뿐이다 —
                     ⛔ 여기서 Lv 를 바꾸거나 행을 감추지 않는다(경고이지 차단이 아니다). */}
                 {row.processingLevelMismatch ? (
-                  <span
-                    className="lvl-mismatch"
-                    data-testid="lvl-mismatch"
-                    aria-label={LEVEL_MISMATCH_A11Y}
-                    title={LEVEL_MISMATCH_A11Y}
-                  >
-                    {LEVEL_MISMATCH_LABEL}
-                  </span>
+                  <TouchOrMouse mouse={mouse} note={LEVEL_MISMATCH_A11Y}>
+                    <span
+                      className="lvl-mismatch"
+                      data-testid="lvl-mismatch"
+                      aria-label={LEVEL_MISMATCH_A11Y}
+                      title={mouse ? LEVEL_MISMATCH_A11Y : undefined}
+                    >
+                      {LEVEL_MISMATCH_LABEL}
+                    </span>
+                  </TouchOrMouse>
                 ) : null}
               </td>
-              <td className="muted" title={row.projects.names.join(' · ')}>
+              <td className="muted" title={mouse ? row.projects.names.join(' · ') : undefined}>
                 {row.projects.representative?.name ?? ''}{' '}
                 {row.projects.moreCount > 0 && (
-                  <span className="chip chip--neutral">외 {row.projects.moreCount}</span>
+                  <TouchOrMouse mouse={mouse} note={row.projects.names.join(' · ')}>
+                    <span className="chip chip--neutral">외 {row.projects.moreCount}</span>
+                  </TouchOrMouse>
                 )}
               </td>
               <td className="who">{row.uploader.name}</td>
               <td className="mono">{day(row.lastModifiedAt)}</td>
-              <td title={lineageTitle(row)}>
-                <span className={`lin lin--${row.lineageState === '확정' ? 'done' : row.lineageState === '확인 필요' ? 'wait' : 'none'}`}>
-                  {row.lineageState}
-                </span>
+              <td title={mouse ? lineageTitle(row) : undefined}>
+                <TouchOrMouse mouse={mouse} note={lineageTitle(row)}>
+                  <span className={`lin lin--${row.lineageState === '확정' ? 'done' : row.lineageState === '확인 필요' ? 'wait' : 'none'}`}>
+                    {row.lineageState}
+                  </span>
+                </TouchOrMouse>
               </td>
               <td>
                 {row.verified ? (
@@ -223,14 +236,16 @@ export function CatalogTable(props: {
                   /* 승인 처리가 아직 도착하지 않은 행 — 글자를 취소선·회색·꺼진 조작 모양으로
                      둔다 (Ted 판정 2026-09-02). 비워 두면 「값이 없다」와 「아직 안 왔다」가
                      화면에서 갈리지 않는다. 취소선 규칙은 `catalog.css` `.verified--pending`. */
-                  <span
-                    className="verified verified--pending"
-                    data-testid="verified-pending"
-                    aria-disabled="true"
-                    title="승인 처리가 아직 도착하지 않았다"
-                  >
-                    {VERIFIED_PENDING_LABEL}
-                  </span>
+                  <TouchOrMouse mouse={mouse} note={VERIFIED_PENDING_NOTE}>
+                    <span
+                      className="verified verified--pending"
+                      data-testid="verified-pending"
+                      aria-disabled="true"
+                      title={mouse ? VERIFIED_PENDING_TITLE : undefined}
+                    >
+                      {VERIFIED_PENDING_LABEL}
+                    </span>
+                  </TouchOrMouse>
                 )}
                 {!row.bodyAccessible && <span className="chip chip--warning">잠김</span>}
               </td>

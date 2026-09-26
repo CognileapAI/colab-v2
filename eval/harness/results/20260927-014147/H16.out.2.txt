@@ -1,0 +1,31 @@
+**결론: 아무도 합격선을 선언하지 않은 환경에서 이 검사는 사실상 "`cases.txt` 가 읽힌다"는 것 하나만 보장합니다.** 합격선은 소리 없이 1이 되고, 파일이 비어 있으면 0건인데도 통과합니다.
+
+**읽은 내용 (`check-coverage.sh`)**
+- 5행 `MIN_CASES="${COLAB_MIN_CASES:-1}"`: 변수가 없거나 빈 값이면 1이 들어갑니다. 합격선을 적은 사람이 없는데 "1건 이상"이라는 기준이 생깁니다.
+- 6행 `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"`: 똑같은 관대한 기본값입니다. 다만 15행에서 출력에만 쓰이고 검사에는 쓰이지 않습니다. 그래서 green 줄의 `상한 9999s` 는 실제로 확인된 값이 아닙니다.
+- 8행 `grep -c ... || echo 0`: 파일은 있는데 일치하는 줄이 0건이면 `grep -c` 가 `0` 을 출력하고 종료코드 1을 냅니다. 그러면 `echo 0` 이 한 번 더 실행되어 `N="0\n0"` 이 됩니다. 10행의 `[` 는 이 값을 숫자로 읽지 못해 status 2를 내고, `if` 는 이것을 거짓으로 처리해 15행 green 으로 넘어갑니다.
+
+**실측 (임시 디렉터리에서 실행)**
+
+| 환경 | cases.txt | 결과 |
+|---|---|---|
+| 무언 | 2건 | green, exit 0 (`최소 1`) |
+| 무언 | 빈 파일(0건) | green, exit 0 (`[: integer expression expected`) |
+| 무언 | 파일 없음 | red, exit 1 (무언 상태에서 red 가 나는 유일한 경우) |
+| `COLAB_MIN_CASES=50` | 2건 | red, exit 1 |
+| `COLAB_MIN_CASES=50` | 빈 파일(0건) | green, exit 0 (합격선을 선언해도 8행 결함으로 통과) |
+| `COLAB_MIN_CASES=` (빈 값) | 1건 | green, exit 0 (`:-` 라서 빈 값도 1로 대체) |
+
+현재 fixture 의 2건은 합격선이 없든 1이든 green 이 나옵니다. 그래서 이 green 은 회귀 시험 건수가 충분하다는 증거가 되지 못합니다.
+
+**고칠 방향 (스케치, 파일은 수정하지 않았습니다)**
+- 기본값을 두지 않고, 변수가 선언됐는지는 `${COLAB_MIN_CASES+x}` 로 구분합니다.
+- 면제는 `COLAB_MIN_CASES=waived` 같은 명시 값으로만 받습니다.
+- 8행은 `N=$(grep -c '^case ' cases.txt); rc=$?` 로 바꿉니다. `rc≥2` 는 읽기 실패로 red 처리하고, `rc=1` 은 `N=0` 을 그대로 씁니다.
+- 6행의 상한은 실제로 적용하든지, 적용하지 않을 거면 변수와 출력에서 빼야 합니다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: 값이 숫자인지 확인한 뒤 `N < COLAB_MIN_CASES` 이면 `::error::` 와 exit 1, 아니면 green 과 exit 0
+- 상태2 명시 면제: `COLAB_MIN_CASES=waived` 이면 `waived — 시험 N건 (합격선 면제)` 를 출력하고 exit 0
+- 상태3 무언: `COLAB_MIN_CASES` 가 선언되지 않았으면 `::error::합격선 미선언 — 숫자 또는 waived 로 선언` 을 출력하고 exit 1

@@ -1,0 +1,10 @@
+상세 화면 정보 격자의 바깥 선과 칸 구분선이 같은 토큰을 쓰므로, 두 층이 갈리지 않아 요구사항 위반입니다.
+
+- **컨테이너 선** — `detail.css:59` `.detail-page .infogrid { border: 1px solid var(--color-border); … }`
+- **칸 구분선** — `detail.css:62` `.detail-page .infogrid .ig { … border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }`
+- 둘 다 `--color-border`(`tokens.css:20`, `#e8ecf2`)를 참조합니다. 720px 이하에서 칸 구분선을 다시 켜는 `detail.css:69` 도 같은 토큰입니다.
+- `tokens.css` 에는 `--color-border-strong`(`:21`)과 `--color-border-shell`(`:23`)도 정의돼 있습니다. 비교로, `catalog.css` 표는 머리 줄에 `--color-border-strong`(`:41`)을, 행 구분에 `--color-border`(`:46`)를 써서 두 층을 나눕니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

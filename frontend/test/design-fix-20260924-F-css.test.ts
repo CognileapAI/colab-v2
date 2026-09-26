@@ -197,30 +197,30 @@ describe('A3 · A10 · A8 · 값 19 소비처 — hover 가 surface-hover 인 �
 });
 
 describe('누름 ≠ hover(두 테마) — 회색 계열 누름 자리 전부', () => {
-  // [파일 이름, CSS, 누름 선택자, 비교 대상 선택자(hover · hover 가 없으면 평상시), 비교 대상 속성]
-  const pairs: [string, string, string, string][] = [
-    ['primitives', PRIM, '.btn:where(:not(.btn-primary)):active', '.btn:where(:not(.btn-primary, :disabled)):hover'],
+  // [파일 이름, CSS, 누름 선택자, 비교 대상 선택자(hover · hover 가 없으면 평상시), 비교 대상 매체 자리(생략 = 조건 없음)]
+  const pairs: [string, string, string, string, string?][] = [
+    ['primitives', PRIM, '.btn:where(:not(.btn-primary)):active', '.btn:where(:not(.btn-primary, :disabled)):hover', '@media (hover: hover)'],
     ['shell', SHELL, '.loadfail-retry:active', '.loadfail-retry'],
-    ['shell', SHELL, '.detail-page .backlink:active', '.detail-page .backlink:hover'],
-    ['shell', SHELL, '.mainnav a:active', '.mainnav a:hover'],
+    ['shell', SHELL, '.detail-page .backlink:active', '.detail-page .backlink:hover', '@media (hover: hover)'],
+    ['shell', SHELL, '.mainnav a:active', '.mainnav a:hover', '@media (hover: hover)'],
     ['shell', SHELL, '.mainnav a.is-active:active', '.mainnav a.is-active'],
-    ['shell', SHELL, '.gnb-settings:active', '.gnb-settings:hover'],
-    ['shell', SHELL, '.gnb-more:active', '.gnb-more:hover'],
-    ['shell', SHELL, '.gnb-more-item:active', '.gnb-more-item:hover'],
+    ['shell', SHELL, '.gnb-settings:active', '.gnb-settings:hover', '@media (hover: hover)'],
+    ['shell', SHELL, '.gnb-more:active', '.gnb-more:hover', '@media (hover: hover)'],
+    ['shell', SHELL, '.gnb-more-item:active', '.gnb-more-item:hover', '@media (hover: hover)'],
     ['shell', SHELL, '.gnb-logout:active', '.gnb-logout'],
     ['shell', SHELL, '.theme-switcher:active', '.theme-switcher'],
     ['shell', SHELL, ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active', ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x'],
-    ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td'],
-    ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover'],
+    ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td', '@media (hover: hover)'],
+    ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover', '@media (hover: hover)'],
     // F-final 1 · A21 — 업로드 달력 누름(값 19).
-    ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover'],
-    ['upload', UPLOAD, '.dr-useg button:active', '.dr-useg button:hover'],
+    ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover', '@media (hover: hover)'],
+    ['upload', UPLOAD, '.dr-useg button:active', '.dr-useg button:hover', '@media (hover: hover)'],
   ];
-  for (const [file, css, active, other] of pairs) {
+  for (const [file, css, active, other, otherMedia = ''] of pairs) {
     for (const theme of THEMES) {
       it(`${file} ${active} ≠ ${other}(${theme})`, () => {
         const a = prop(body(css, active), 'background');
-        const b = prop(body(css, other), 'background') ?? 'transparent';
+        const b = prop(body(css, other, otherMedia), 'background') ?? 'transparent';
         expect(a, `${active} background`).toBeDefined();
         expect(hexOf(paint(a ?? '', theme))).not.toBe(hexOf(paint(b, theme)));
       });
@@ -230,10 +230,10 @@ describe('누름 ≠ hover(두 테마) — 회색 계열 누름 자리 전부', 
 
 describe('A2 · A5 · A13 · 비활성 단추 hover 제외', () => {
   it('plain · ghost · secondary hover 선택자 = `.btn:where(:not(.btn-primary, :disabled)):hover` · gray-50', () => {
-    expect(prop(body(PRIM, '.btn:where(:not(.btn-primary, :disabled)):hover'), 'background')).toBe('var(--color-gray-50)');
+    expect(prop(body(PRIM, '.btn:where(:not(.btn-primary, :disabled)):hover', '@media (hover: hover)'), 'background')).toBe('var(--color-gray-50)');
   });
   it('primary hover 선택자 = `.btn-primary:where(:not(:disabled)):hover` · primary-700', () => {
-    expect(prop(body(PRIM, '.btn-primary:where(:not(:disabled)):hover'), 'background')).toBe('var(--color-primary-700)');
+    expect(prop(body(PRIM, '.btn-primary:where(:not(:disabled)):hover', '@media (hover: hover)'), 'background')).toBe('var(--color-primary-700)');
   });
   it('primitives.css 의 `.btn` 계열 `:hover` 선택자는 모두 `:disabled` 를 `:where()` 안에서 뺀다(특이도 무변 → 누름이 이긴다)', () => {
     const hovers = rules(PRIM)

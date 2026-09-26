@@ -1,0 +1,18 @@
+인계 문서의 「다음 = …」 줄은 낡았습니다. 그 줄에 적힌 다음 단계는 이미 지나갔습니다.
+
+**인계 문서가 가리키는 시점**
+- 그 줄은 2026-09-08 R-B 마감 문단입니다. 다음 단계로 ⑴ Ted 질의 판정, ⑵ 배포 창, ⑶ R-C intent, ⑷ `w9-dev-deploy-rebased` 처리를 적었습니다.
+- `SOURCE.md` 에 따르면 이 발췌는 `7a97259`(`integration/r-d` tip)에서 떴습니다. 그러니 R-C·R-D 는 그 뒤에 이미 진행됐습니다.
+
+**이력이 보여 주는 지금**
+- 최신 커밋은 `de8b76e3`(2026-09-27 01:17)입니다. 현재 브랜치 `claude/device-width-input-impl` 에 origin/develop 을 병합한 커밋입니다.
+- R-C 흔적도 이력에 있습니다. 예: `f98d09de R-C-2 …` 등.
+- 지금 진행 중인 일은 휴대폰·패드 대응(intent `2026-09-26-device-width-input-rules.md`)입니다.
+  - E 최종 측정은 끝났습니다(`30b6b3ca`, 판정 red 0).
+  - 1024 터치 로고 표식 눌림은 고쳐졌습니다(`a6fca14b`). 수정 보고와 spec 확정도 들어갔습니다(`f9a3bf0a` · `cd139231`).
+- 이 브랜치의 PR #181 은 **OPEN** 상태입니다. develop 에 아직 없는 커밋이 여러 개 남아 있습니다.
+- spec 과 intent 는 다음 일을 「다음 intent(배치 정리)」로 넘겨 두었습니다. 들어가는 일은 폭 값 23개 정리, 낮은 높이 규칙 적용, 넓은 표 카드 설계입니다. 1024 터치 설정 링크 넘침과 「연구실」 세 줄 넘침도 여기에 들어갑니다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -15` · `git log origin/develop..HEAD` · `gh pr list --head claude/device-width-input-impl` · de8b76e
+- 다음 단계: Ted 가 PR #181(휴대폰·패드 대응 폭·입력 방식 규칙)을 검토·병합하면, 다음 intent(배치 정리: 폭 값 정리 · 낮은 높이 · 표 카드)를 시작한다

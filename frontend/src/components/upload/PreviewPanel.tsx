@@ -649,6 +649,7 @@ export function PreviewPanel(props: {
               /* 더블클릭 = 데이터 경계에 맞춤(여백 0). 상세와 같은 규칙이다. */
               onDoubleClick={zoom.fitToData}
               data-zoomable="true"
+              data-drag-axis={zoom.dragAxis}
             >
               <div
                 className="pv-layers"
@@ -809,6 +810,7 @@ export function PreviewPanel(props: {
                 onPointerDown={expandZoom.onPointerDown}
                 onDoubleClick={expandZoom.fitToData}
                 data-zoomable="true"
+                data-drag-axis={expandZoom.dragAxis}
               >
                 <div
                   className="pv-layers"

@@ -1,0 +1,20 @@
+v2 사본 `lineage.css`에는 후보 목록을 흐리게 만드는 선언이 없습니다. 그래서 목업 검수의 2.33:1 지적은 이 파일 기준으로 v2 코드에 해당하지 않습니다.
+
+**후보 목록 규칙 (`.lin-picker` 계열)**
+- `lineage.css:105-108` `.lin-picker`: `border-top`(점선), `padding-top`만 있습니다.
+- `lineage.css:109-117` `.lin-picker ul`: `list-style`, `margin`, `padding`, `display: flex`, `flex-direction`, `gap`, `align-items`만 있습니다. 모두 레이아웃 선언입니다.
+- 후보 행(`li`)이나 연결 불가 상태(`:disabled`, `[aria-disabled]`, `.is-disabled` 류)를 가리키는 선택자는 파일 전체에 하나도 없습니다.
+
+**흐림 선언 검색 (파일 전체 138행)**
+- `opacity`, `filter`, `blur`, `grayscale`, `disabled`는 모두 0건입니다.
+- `muted`는 3건 나왔지만 모두 `.lin-picker` 밖에 있고, 흐림 처리도 아닙니다.
+  - `:13`은 `.lin-scope`, `:79`는 `.lin-why`/`.lin-mparent`입니다. 둘 다 글자색 `#5b6472`이고 흰 바탕에서 약 6:1이라 2.33:1과 맞지 않습니다.
+  - `:136`은 `.lin-ask .muted`이며 `margin: 0`만 있습니다.
+
+**이 파일만으로 확인할 수 없는 부분**
+- 파일 머리 주석(`:1`)에 따르면 버튼과 색 값은 `upload.css`의 것을 그대로 씁니다.
+- 연결 불가 후보가 `disabled` 버튼으로 그려진다면 흐림은 `upload.css`나 브라우저 기본 disabled 스타일에서 올 수 있습니다. 두 가지 모두 이 사본에는 없어서 확인하지 않았습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nEi 'opacity|filter|blur|disabled|grayscale|muted|lin-picker' lineage.css` → `.lin-picker` 규칙(lineage.css:105-117)에 흐림 선언 0건, 파일 전체 opacity·filter·blur·disabled 0건

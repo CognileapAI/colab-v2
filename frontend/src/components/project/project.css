@@ -577,7 +577,6 @@
 @media (max-width: 640px) {
   .pj-modal-back { padding: 16px; }
   .pj-modal { max-height: calc(100dvh - 32px); }
-  .pj-inp, .pj-tarea { font-size: 16px; }
   .pj-cards { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -607,7 +606,17 @@ body:has(.pj-modal-back) { overflow: hidden; }
 @media (max-width: 640px) {
   .pj-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
   .pj-ctl { min-width: 0; }
-  .pj-ctl select { width: 100%; font-size: 16px; }
+  .pj-ctl select { width: 100%; }
   .pj-count { grid-column: 1 / -1; margin-left: 0; }
+}
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 31–34) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   31 보기 전환은 이미 세로 44 라 가로만 둔다. 33 연결 주소는 글자 크기를 그대로 두고 누름 상자만 키운다.
+   34 는 640px 규칙과 같은 선택자라 뒤 순서가 이긴다(640px 규칙은 그대로 둔다). */
+@media (pointer: coarse) {
+  .pj-views button { min-width: var(--control-height); }
+  .pd-sect .quiet, td.right .quiet { min-height: var(--control-height); min-width: var(--control-height); }
+  .pd-linkurl { display: inline-flex; align-items: center; min-height: var(--control-height); min-width: var(--control-height); }
+  .pj-seg button { min-height: var(--control-height); min-width: var(--control-height); }
 }
 }

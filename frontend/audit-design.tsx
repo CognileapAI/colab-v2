@@ -1,5 +1,7 @@
 import './src/shell/styles';
 import auditTileUrl from './audit-tile.svg?url';
+// L0b(spec S-DEVICE-WIDTH-INPUT-20260926 「새 장면」) — 지도 미리보기 장면 3개의 결과 그림 1장(점검에서 390 가림 100% 를 잰 크기와 비율).
+import auditMapUrl from './audit-map.png?url';
 // Local visual fixtures. No production API request or persistent write is allowed.
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -33,6 +35,9 @@ import { AccessRequestPanel } from './src/components/approval/AccessRequestPanel
 import { VerificationAction } from './src/components/approval/VerificationAction';
 import type { ApprovalSource } from './src/components/approval/types';
 import { AccountAdminPage } from './src/routes/AccountAdminPage';
+import { fixtureDatasetPreviewSource, FIXTURE_PREVIEW_DATASET_NAME, FIXTURE_PREVIEW_FILE_PATH } from './src/components/datasetpreview/fixture';
+import { fixtureUploadPreviewSource, FIXTURE_UPLOAD_ID } from './src/components/upload/fixture';
+import { PreviewPanel } from './src/components/upload/PreviewPanel';
 import { PasswordChangePage } from './src/auth/PasswordChangePage';
 import type { Schemas } from './src/api/client';
 
@@ -231,6 +236,11 @@ function PrimitivesGallery() {
 }
 // design-fix 후속 20260925 Q7c · 우려 3 ⓐ — `?mismatch=1` 일 때만 첫 행에 처리 수준 불일치 표식(「불일치」)을 단다.
 // 1회 계측용 최소 자료다. 질의가 없으면 `undefined` → 기본 `FIXTURE_ROWS` 그대로(캡처 장면 불변).
+// L0b 새 장면 — `detail-preview-map` · `detail-preview-map-value` 는 실제 상세 화면에 픽스처 미리보기 원천을 붙인다
+// (데이터셋 이름 80자 · 파일 경로 72자). `upload-preview-expand` 는 업로드 미리보기 부품을 단독으로 그린다.
+const MAP_DETAIL_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1';
+const mapDetails = {...FIXTURE_DETAILS, [MAP_DETAIL_ID]: {...FIXTURE_DETAILS[MAP_DETAIL_ID]!, name: FIXTURE_PREVIEW_DATASET_NAME, fileName: FIXTURE_PREVIEW_FILE_PATH}};
+const detailMap = scene === 'detail-preview-map' || scene === 'detail-preview-map-value';
 const mismatchRows = previewParams.get('mismatch') === '1'
   ? FIXTURE_ROWS.map((row, i) => (i === 0 ? {...row, processingLevelMismatch: true} : row))
   : undefined;
@@ -254,6 +264,8 @@ function Scene() {
   if (scene === 'project-dialog' || scene === 'project-close') return <><ProjectsPage source={fixtureProjectSource()} />{open && (scene === 'project-close' ? <ProjectCloseModal detail={FIXTURE_PROJECTS[0]!} onConfirm={blocked} onClose={close} /> : <ProjectFormModal mode={{kind:'새 프로젝트'}} onSubmit={blocked} onClose={close} />)}</>;
   if (scene === 'access' || scene === 'pending') return <main className="detail-page" data-screen="S-05"><h1>잠긴 데이터셋</h1><AccessRequestPanel datasetId="fixture" canRequestAccess accessRequestPending={scene === 'pending'} source={approval} /></main>;
   if (scene === 'approval' || scene === 'approval-dialog') return <main className="detail-page" data-screen="S-05"><h1>승인된 데이터셋</h1><VerificationAction detail={{...Object.values(FIXTURE_DETAILS)[0]!, actions: {...Object.values(FIXTURE_DETAILS)[0]!.actions, canRequestVerification:false, canApproveVerification:false, canCancelVerification:true}}} source={approval} /></main>;
+  if (detailMap) return <Routes><Route path="/datasets/:datasetId" element={<DatasetDetailPage source={fixtureDetailSource(mapDetails)} lineageSource={fixtureLineageSource()} previewSource={fixtureDatasetPreviewSource(auditMapUrl, MAP_DETAIL_ID)} />} /></Routes>;
+  if (scene === 'upload-preview-expand') return <main className="appmain" data-screen="upload-preview-expand"><PreviewPanel source={fixtureUploadPreviewSource(auditMapUrl)} uploadId={FIXTURE_UPLOAD_ID} hasReferenceGrid /></main>;
   if (scene === 'detail') return <Routes><Route path="/datasets/:datasetId" element={<DatasetDetailPage source={fixtureDetailSource()} lineageSource={fixtureLineageSource()} />} /></Routes>;
   return <Routes><Route path="/datasets" element={<DatasetsPage source={fixtureCatalogSource(mismatchRows)} />} /><Route path="/datasets/:datasetId" element={<main data-screen="fixture-detail"><h1>데이터셋 상세 진입 확인</h1></main>} /></Routes>;
 }
@@ -262,6 +274,7 @@ function Scene() {
 const flag = (key: string, fallback: boolean) => previewParams.has(key) ? previewParams.get(key) === '1' : fallback;
 const sessionAccount = {...account({'연구실 설정': flag('labSettings', true), '프로젝트 생성': true, '업로드·편집': flag('upload', full || scene === 'detail')}), ...(flag('operator', scene === 'account-admin') ? {canManageServiceAccounts: true} : {})};
 // 제품에서 GNB 없이 단독 렌더되는 화면(`AuthGate`) · 프리미티브 갤러리(P5 · 제품 화면이 아니다).
-const STANDALONE = ['login', 'password-change', 'primitives'];
-const entry = scene === 'detail' ? '/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1' : scene === 'project-detail' ? `/projects/${FIXTURE_PROJECTS[0]!.projectId}` : scene.startsWith('search') ? '/datasets/search?q=강수' : scene.startsWith('preview') ? '/datasets/preview/upload?render=render' : scene.startsWith('project') ? '/projects' : scene === 'lab' || scene === 'empty' || scene === 'gnb-more' ? '/lab' : scene === 'account-admin' ? '/account-admin' : '/datasets';
+// 업로드 미리보기 확장보기(L0b)는 기존 업로드 장면처럼 맨 위 메뉴 없이 그린다.
+const STANDALONE = ['login', 'password-change', 'primitives', 'upload-preview-expand'];
+const entry = detailMap ? {pathname: `/datasets/${MAP_DETAIL_ID}`, state: {backLabel: FIXTURE_PREVIEW_DATASET_NAME}} : scene === 'detail' ? '/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1' : scene === 'project-detail' ? `/projects/${FIXTURE_PROJECTS[0]!.projectId}` : scene.startsWith('search') ? '/datasets/search?q=강수' : scene.startsWith('preview') ? '/datasets/preview/upload?render=render' : scene.startsWith('project') ? '/projects' : scene === 'lab' || scene === 'empty' || scene === 'gnb-more' ? '/lab' : scene === 'account-admin' ? '/account-admin' : '/datasets';
 createRoot(document.getElementById('root')!).render(<MemoryRouter initialEntries={[scene.startsWith('preview') ? {pathname:'/datasets/preview/upload',search:'?render=render',state:{preview:{uploadId:'upload',renderId:'render',withoutReferenceGrid:true,basicInfo:{byteSize:148000000,variable:'rain'},files:[{fileId:'file',fileName:'rain.nc',kind:'본체',byteSize:148000000}]}}} : entry]}><SessionProvider account={sessionAccount}>{full && !STANDALONE.includes(scene) && <Gnb />}<Scene /></SessionProvider></MemoryRouter>);

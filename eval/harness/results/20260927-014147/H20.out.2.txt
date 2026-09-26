@@ -1,0 +1,19 @@
+**판정: 대장(`work-items.yaml`)을 먼저 고치고, `03-HANDOFF.md`는 그다음에 고칩니다.** 파일만 읽고 판정했으며, 아무 파일도 수정하지 않았습니다.
+
+**두 곳이 시사하는 순서**
+- **번호 목록(`CLAUDE-6.md:9`)**: 1번이 "`03-HANDOFF.md §1` 해당 WU 상태 갱신"이라서 HANDOFF를 먼저 고치는 것처럼 보입니다.
+- **⭑ 문단(`CLAUDE-6.md:3-5`)**: "상태 변경은 **대장을 먼저** 고친다"라고 순서를 직접 적어 두었습니다.
+
+**규칙은 ⭑ 문단입니다**
+- **순서를 직접 말하는 곳은 ⭑ 문단뿐입니다.** 번호 목록은 세션을 끝내기 전에 할 일을 적은 체크리스트이고, `work-items.yaml`은 아예 나오지 않습니다. 그래서 대장과 HANDOFF 사이의 순서는 정하지 않습니다. 1번에서 HANDOFF가 처음 나오는 것은 체크리스트 항목의 순서일 뿐입니다.
+- **⭑ 문단은 근거와 판정 주체까지 적어 둡니다.** 근거는 "순서를 뒤집으면 산문이 다시 갈라진다"(`:4`)이고, 판정은 사람 기억이 아니라 게이트 `work-item-consistency`가 한다고 적혀 있습니다(`:5`).
+- **HANDOFF 스스로도 같은 말을 합니다.** `03-HANDOFF-excerpt.md:3`에 "상태의 원본은 `work-items.yaml`"이라고 되어 있고, 게이트가 읽는 것은 `WU`·`상태` 두 열이라고 적혀 있습니다.
+
+**원본과 반영본**
+- **원본**: `dev-package/work-items.yaml`입니다(발췌본은 `work-items-excerpt.yaml`). WU-D6 항목의 `status: open`을 `status: done`으로 바꿉니다.
+- **반영본**: `dev-package/03-HANDOFF.md §1`입니다(발췌본은 `03-HANDOFF-excerpt.md`). 해당 WU 행의 상태 열을 ✅로 바꿉니다. `WORK-UNITS §10~§11`도 반영본이라서 원본을 따라 갱신합니다(`CLAUDE-6.md:4`).
+
+- 먼저 고치는 파일: work-items.yaml
+- 두 번째: 03-HANDOFF.md
+- 원본/반영본: work-items.yaml / 03-HANDOFF.md
+- 근거: CLAUDE-6.md:3

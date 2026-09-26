@@ -194,13 +194,18 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
                   // 여기에 P-12(숨김)를 적용하지 않는 이유가 그것이다.
                   return (
                     <td key={sw} className={`pc${changed ? ' is-chg' : ''}`} data-sw={sw}>
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        disabled={!editing || !isEditable(m, sw)}
-                        aria-label={`${m.name} · ${sw}`}
-                        onChange={() => toggle(m, sw)}
-                      />
+                      {/* 칸 전체가 누름 칸이다(spec S-DEVICE-WIDTH-INPUT-20260926 우려 2ⓐ · 부록 B 36) —
+                          label 은 글자 없이 체크 칸 하나만 감싸고, 이름은 체크 칸의 `aria-label` 이 진다.
+                          채우는 모양 · 터치 44 는 `members.css`(마우스 모양은 그대로). */}
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          disabled={!editing || !isEditable(m, sw)}
+                          aria-label={`${m.name} · ${sw}`}
+                          onChange={() => toggle(m, sw)}
+                        />
+                      </label>
                     </td>
                   );
                 })}

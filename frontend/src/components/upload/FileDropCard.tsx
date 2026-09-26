@@ -5,6 +5,7 @@
 // **축(위도·경도)을 사람에게 묻지 않는다** — 서버가 파일에서 판별한다 (`〈63〉-㉰`).
 import { useRef, useState } from 'react';
 import { Toast } from '../common/Toast';
+import { useInputMode } from '../common/useInputMode';
 import { MIXED_EXTENSION_NOTICE } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
 import type { FileKind, PickedFile } from './types';
@@ -42,6 +43,17 @@ export const UPLOAD_ANY_FORMAT_NOTICE =
 export const PREVIEWABLE_EXTENSIONS_NOTICE =
   '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy *.grib *.grib2 *.grb *.grb2 · 파일 구조와 좌표에 따라 달라요';
 export const NOT_PREVIEWABLE_NOTICE = '이 확장자는 지도로 못 그려요';
+
+/**
+ * 드롭 영역 제목 · 보조 줄 — 마우스 원문(변경 없음) 바로 다음 줄이 터치 문구다
+ * (spec S-DEVICE-WIDTH-INPUT-20260926 「새 문구안」 3 · 4 확정 원문 · 구현 결정 「문구」).
+ * 터치 기기에는 끌어다 놓을 파일 창이 없고 폴더를 고를 방법도 없다(우려 9ⓐ) — 기존 「파일 고르기」 경로를 말한다.
+ * 판별할 수 없으면 마우스 문구다(입력 방식 훅).
+ */
+export const DROP_TITLE = '파일을 끌어다 놓으세요';
+export const DROP_TITLE_TOUCH = '눌러서 파일을 고르세요';
+export const DROP_SUB = '여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요';
+export const DROP_SUB_TOUCH = '여러 개를 한 번에 고를 수 있어요';
 
 /** 지도 미리보기가 되는 확장자 — 위 안내 문면과 **같은 목록**이다. 두 곳에 적지 않는다. */
 export const PREVIEWABLE_EXTENSIONS = [
@@ -141,6 +153,7 @@ export function FileDropCard(props: {
 }) {
   const [slicesOpen, setSlicesOpen] = useState(false);
   const [mixedNotice, setMixedNotice] = useState(false);
+  const touch = useInputMode() === 'touch';
   /**
    * design-review 20260924 #4 — 끌어 오는 동안 놓을 자리가 반응한다(`is-dragover`).
    * 자식(글자·아이콘·단추)을 지날 때마다 enter/leave 짝이 오므로 **깊이를 센다** — 불리언 하나로
@@ -204,11 +217,12 @@ export function FileDropCard(props: {
           }}
         >
           <span className="up-drop-icon" aria-hidden="true">↑</span>
-          <span className="big">파일을 끌어다 놓으세요</span>
+          <span className="big">{touch ? DROP_TITLE_TOUCH : DROP_TITLE}</span>
           {/* **폴더는 끌어다 놓아야 한다** — 눌러서 여는 파일 선택창으로는 폴더를 고를 수 없다
               (인풋에 `webkitdirectory` 를 붙이면 낱개 파일 선택이 죽는다). 화면이 그 말을
-              안 하면, 폴더를 올리려는 사람은 유일하게 눌러 보이는 것을 누르고 막힌다. */}
-          <span className="muted">여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요</span>
+              안 하면, 폴더를 올리려는 사람은 유일하게 눌러 보이는 것을 누르고 막힌다.
+              터치 기기는 폴더를 끌어다 놓을 수도 고를 수도 없어 폴더 말을 뺀다(우려 9ⓐ). */}
+          <span className="muted">{touch ? DROP_SUB_TOUCH : DROP_SUB}</span>
           <span className="btn btn-secondary up-file-choose">파일 고르기</span>
           <input
             type="file"

@@ -75,12 +75,14 @@ function rules(css: string): Rule[] {
 
 const UPLOAD_RULES = rules(UPLOAD);
 
-type Where = 'plain' | 'starting-style' | 'max640';
+// 'hover' = `@media (hover: hover)` 안 하나(spec S-DEVICE-WIDTH-INPUT-20260926 V10 · 2단계 Q3ⓑ 승인 매체 자리 변경 · 기대 값 불변).
+type Where = 'plain' | 'starting-style' | 'max640' | 'hover';
 
 function inWhere(r: Rule, where: Where): boolean {
   const starting = r.parents.some((p) => p.startsWith('@starting-style'));
   const media = r.parents.filter((p) => p.startsWith('@media'));
   if (where === 'starting-style') return starting;
+  if (where === 'hover') return !starting && media.length === 1 && media[0] === '@media (hover: hover)';
   if (where === 'max640') return !starting && media.some((p) => /max-width:\s*640px/.test(p));
   return !starting && media.length === 0;
 }
@@ -211,7 +213,7 @@ describe('#4 CSS `.dropzone.is-dragover`', () => {
 describe('#10 `.btn-strong:hover`', () => {
   it('배경 var(--color-primary-700)', () => {
     // design-fix 20260924 F-final 3 — 비활성 제외는 `:where()` 안(특이도 무변 · A2 선례).
-    expect(hasDecl(bodyOf('.btn-strong:where(:not(:disabled)):hover'), 'background', 'var(--color-primary-700)')).toBe(true);
+    expect(hasDecl(bodyOf('.btn-strong:where(:not(:disabled)):hover', 'hover'), 'background', 'var(--color-primary-700)')).toBe(true);
   });
   it('--color-on-primary 대 primary-700 대비 두 테마 ≥ 4.5', () => {
     for (const block of [LIGHT, DARK]) {

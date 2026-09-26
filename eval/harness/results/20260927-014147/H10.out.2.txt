@@ -1,0 +1,16 @@
+두 파일의 코드에는 음수 margin 선언이 2건 있습니다. 주석 안에는 음수 margin 값이 없습니다.
+
+**찾은 음수 margin 선언**
+- `detail.css:93` — `.detail-page .filelist { margin: -12px 0 var(--space-6); … }`
+  - 위쪽 -12px로 파일 목록을 바로 앞의 `.infogrid` 아래에 붙입니다. `.infogrid`의 `margin-bottom: var(--space-6)`(`detail.css:60`)를 되돌리고, `border-top: none`과 함께 두 상자를 이어 붙이는 구조입니다. 요구사항이 예로 든 ⑴ 음수 상쇄에 그대로 해당합니다.
+- `shell.css:58` — `.detail-page .backlink, .project-detail .backlink { … margin-left: -7px; }`
+  - 같은 규칙의 왼쪽 padding 7px(`shell.css:57`)만큼 링크를 왼쪽으로 당깁니다. 링크 글자가 페이지 왼쪽 가장자리와 줄을 맞추게 됩니다. 앞 요소에 붙이는 용도는 아니지만 음수 margin 선언이므로 1건으로 셉니다.
+
+**셈에서 뺀 것**
+- `shell.css:188`의 `bottom: -11px`는 position offset입니다. margin이 아닙니다.
+- `detail.css:33`과 `shell.css:115`의 음수 값은 `letter-spacing`입니다. margin이 아닙니다.
+- `shell.css:327`의 `::-webkit-scrollbar`는 선택자 이름에 들어간 `-`입니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

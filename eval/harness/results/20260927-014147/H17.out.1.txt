@@ -1,0 +1,18 @@
+요약줄만 읽으면 검사하지 않고 넘어간 파일이 몇 개인지 알 수 없습니다. 그래서 「전건 통과」가 사실은 「셋 중 둘만 통과, 하나는 검사 안 함」이라는 점도 보이지 않습니다.
+
+**스크립트에서 확인한 것**
+- 세 계수는 `check-schemas.sh:5-7` 에서 선언됩니다.
+- `SKIPPED` 는 `check-schemas.sh:11` 에서 빈 파일을 만날 때마다 올라가기만 합니다. 어떤 `echo` 에도 들어가지 않습니다.
+- `BAD` 는 red 일 때 `check-schemas.sh:23` 에서 출력됩니다. green 이면 0이므로 빠져 있어도 가려지는 것이 없습니다.
+- 요약줄(`check-schemas.sh:27`)에 나오는 것은 `OK` 뿐입니다. 게다가 「전건 통과」라는 말은 검사한 파일이 전체라고 읽힙니다.
+- red 경로(`check-schemas.sh:23`)에도 `SKIPPED` 는 나오지 않습니다.
+
+**실행 결과**
+- `schemas/` 에는 파일이 3개 있습니다: `dataset.json`, `lineage.json`(0바이트), `project.json`.
+- 출력은 `check-schemas green — 검사 2건 전건 통과`, 종료코드는 0입니다.
+- 요약줄을 읽는 사람은 스키마가 2개뿐이고 모두 통과했다고 믿게 됩니다. 실제로는 `lineage.json` 이 아직 작성되지 않아 검사되지 않았습니다. 「못 돌았음」이 「통과」에 섞여 들어간 경우입니다.
+
+- 판정: 결함 있음
+- 숨은 계수: SKIPPED
+- 근거: check-schemas.sh:27
+- 고친 요약줄: echo "check-schemas green — 통과 ${OK}건 · 건너뜀 ${SKIPPED}건(빈 파일, 검사 안 함)"

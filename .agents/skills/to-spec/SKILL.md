@@ -61,7 +61,7 @@ Check with the user that these seams match their expectations.
 
 ### 디자인 제약 확인 (`frontend/` 를 건드리는 spec 은 필수)
 바꾸는 **화면마다** 아래 표를 채운다. 정본 = `frontend/src/shell/tokens.css`(유일 `:root`) · `frontend/src/shell/primitives.css`
-· 설명과 점검표 `docs/design-system.md` · 집행 = 게이트 `frontend-design-lint` 조건 a~h
+· 설명과 점검표 `docs/design-system.md` · 집행 = 게이트 `frontend-design-lint` 조건 a~i
 (판정 기준 `.agents/skills/design-review/SKILL.md §0` · 인터랙션 `.agents/skills/apple-design/SKILL.md`).
 
 | 확인 | 게이트 | 이 화면 |
@@ -74,6 +74,7 @@ Check with the user that these seams match their expectations.
 | 색 리터럴 없음(직접 · `var()` 폴백 · 색 이름) — 새 색은 토큰(이름은 판정) | f | |
 | TSX 인라인 `style` 은 CSS 변수 대입만 | g | |
 | 토큰·프리미티브·게이트 목록을 바꾸면 `docs/design-system.md` 표를 `design-docs.mjs` 로 다시 씀 | h | |
+| 폭 조건은 허용 값만(`max-width` 640·900·1180px · `min-width` 641·901·1181px · `(pointer: coarse)` · `prefers-*`) · `:hover` 는 `(hover: hover)` 안 · 새 비허용 값 · `@container` 는 `media-exempt.txt` 에 사유 · 개수(`docs/design-system.md` ⑨) | i | |
 | 캡처 장면 유무 — `frontend/scripts/visual-baseline/scenes.json` 에 이 화면·상태의 장면이 있는가(없으면 추가 또는 사각으로 명시) | 게이트 밖(`visual:capture` · `visual:diff`) | |
 
 - 글자 **13px 이상** · 대비 **4.5:1 이상**

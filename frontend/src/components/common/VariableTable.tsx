@@ -154,15 +154,20 @@ export function VariableTable(props: {
                 </td>
               ))}
               <td>
-                <input
-                  type="radio"
-                  name="vt-representative"
-                  aria-label={`대표 ${i + 1}`}
-                  data-testid={`vt-rep-${i}`}
-                  checked={row.representative}
-                  disabled={readOnly}
-                  onChange={() => pick(i)}
-                />
+                {/* 칸 전체가 누름 칸이다(spec S-DEVICE-WIDTH-INPUT-20260926 우려 2ⓐ · 부록 B 45) —
+                    label 은 글자 없이 라디오 하나만 감싸고, 이름은 라디오의 `aria-label` 이 진다.
+                    채우는 모양 · 터치 44 는 `variableTable.css`(마우스 모양은 그대로). */}
+                <label>
+                  <input
+                    type="radio"
+                    name="vt-representative"
+                    aria-label={`대표 ${i + 1}`}
+                    data-testid={`vt-rep-${i}`}
+                    checked={row.representative}
+                    disabled={readOnly}
+                    onChange={() => pick(i)}
+                  />
+                </label>
               </td>
               {readOnly ? null : (
                 <td>

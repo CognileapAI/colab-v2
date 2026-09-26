@@ -35,17 +35,29 @@
 #      블록 밖 손글은 보지 않는다). h 는 **저장소의 문서 ↔ 저장소의 실물**만 본다 — `COLAB_FRONTEND_DIR`·목록 env 로
 #      픽스처를 가리켜도 h 의 입력은 바뀌지 않는다(문서가 설명하는 것은 저장소다). 문서 경로만
 #      env `COLAB_DESIGN_LINT_DOC`(기본 `docs/design-system.md`)로 바꿀 수 있다(selftest 가 갈림·부재를 만든다).
-# 요약줄 끝 = `색 리터럴 f(면제 m) · 인라인 g(변수 대입 v) · 프리미티브 맨 정의 밖 e(면제 m) · 문서 표 갈림 h`.
+#   i. (spec `S-DEVICE-WIDTH-INPUT-20260926` V10 · V13) 폭·입력 조건 — `@media`·`@container` 머리 1개가 1건. 머리를 정규화해
+#      쉼표(OR)와 `and` 로 나눈 조건마다 판정한다. 허용 = `max-width` 640·900·1180px · `min-width` 641·901·1181px ·
+#      `(pointer: coarse)` · `(hover: hover)`(값은 공용 상수 `frontend/scripts/design-families.mjs`) · `prefers-*` 는 세기만.
+#      red = 허용 밖 px 폭 값(i_media) · 형식 밖 조건(i_form — 높이 · 범위 문법 · em·rem · orientation · aspect-ratio ·
+#      any-pointer·any-hover · (pointer: fine)·(hover: none) · not·only · 매체 종류 · 그 밖의 기능 · 우려 11ⓐ) ·
+#      선언 없는 `@container`(i_container) · 면제 목록 구멍(i_holes — 형식 오류 · 빈 사유 · 개수 어긋남 · 맞는 것 없음 ·
+#      같은 조건 두 줄 · 구멍 줄은 아무것도 면제하지 않는다). 면제 = `media-exempt.txt`(`파일 · 조건 · 개수 · 사유`).
+#      하위 조건 hover(i_hover · 면제 없음 · 끄는 스위치 없음) = `:hover` 가 든 규칙을 둘러싼 `@media` 가 없거나, 둘러싼
+#      모든 `@media` 의 모든 쉼표 갈래에 `(hover: hover)` 가 `and` 로 들어 있지 않음(`(hover: hover), (max-width: 640px)` 도 red).
+#      계수 줄에 `media_rules` · `container_rules` · `hover_rules` 를 낸다(대상 0건을 드러낸다).
+# 요약줄 끝 = `… · 프리미티브 맨 정의 밖 e(면제 m) · 폭·입력 조건 밖 i(면제 m) · 문서 표 갈림 h`(판정부 요약 끝 = i · 셸이 h 를 붙인다).
 # fail-closed (green-by-skip 금지 · red(준비) · exit 78):
 #   · node 실행 파일 부재 · 판정부 스크립트 부재 · 대상 CSS 0건 · 면제 목록(same-in-dark.txt) 부재 ·
 #     프리미티브 목록(primitives.txt) 부재 · 프리미티브 면제 목록(primitives-exempt.txt) 부재(P2b) ·
+#     폭·입력 조건 면제 목록(media-exempt.txt) 부재(i) ·
 #     대상 목록(Git)에 있으나 디스크에 없는 CSS(추적 중 삭제 · P2a) · `typescript` 를 불러오지 못함(P3 · g) ·
 #     (P5 · h) 문서 표 판정부(`design-docs.mjs`) 부재 · 문서 부재 · 표지 짝 부재·중복 · h 입력 파일 부재
 #
 # 입력: COLAB_FRONTEND_DIR(기본 frontend) · COLAB_DESIGN_LINT_SAME_IN_DARK(기본
 #   gates/fixtures/frontend-design-lint/same-in-dark.txt) · COLAB_DESIGN_LINT_PRIMITIVES(기본
 #   gates/fixtures/frontend-design-lint/primitives.txt) · COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT(기본
-#   gates/fixtures/frontend-design-lint/primitives-exempt.txt) · COLAB_NODE_BIN(기본 node · selftest 용) ·
+#   gates/fixtures/frontend-design-lint/primitives-exempt.txt) · COLAB_DESIGN_LINT_MEDIA_EXEMPT(기본
+#   gates/fixtures/frontend-design-lint/media-exempt.txt · i) · COLAB_NODE_BIN(기본 node · selftest 용) ·
 #   COLAB_DESIGN_LINT_DOC(기본 docs/design-system.md · h 의 문서 경로 · design-docs.mjs 가 직접 읽는다).
 set -uo pipefail
 
@@ -54,6 +66,7 @@ FE="${COLAB_FRONTEND_DIR:-$REPO_ROOT/frontend}"
 SAME_IN_DARK="${COLAB_DESIGN_LINT_SAME_IN_DARK:-$REPO_ROOT/gates/fixtures/frontend-design-lint/same-in-dark.txt}"
 PRIMITIVES="${COLAB_DESIGN_LINT_PRIMITIVES:-$REPO_ROOT/gates/fixtures/frontend-design-lint/primitives.txt}"
 PRIMITIVES_EXEMPT="${COLAB_DESIGN_LINT_PRIMITIVES_EXEMPT:-$REPO_ROOT/gates/fixtures/frontend-design-lint/primitives-exempt.txt}"
+MEDIA_EXEMPT="${COLAB_DESIGN_LINT_MEDIA_EXEMPT:-$REPO_ROOT/gates/fixtures/frontend-design-lint/media-exempt.txt}"
 NODE_BIN="${COLAB_NODE_BIN:-node}"
 READINESS_EXIT=78
 
@@ -77,12 +90,13 @@ DOCS="${COLAB_DESIGN_DOCS_SCRIPT:-$REPO_ROOT/frontend/scripts/design-docs.mjs}"
 [ -f "$SAME_IN_DARK" ] || ready_red "$SAME_IN_DARK" "다크 동일 면제 목록이 없다 — 선언이 없으면 c 를 판정할 수 없다."
 [ -f "$PRIMITIVES" ] || ready_red "$PRIMITIVES" "프리미티브 목록 부재 — 목록이 없으면 e 를 판정할 수 없다."
 [ -f "$PRIMITIVES_EXEMPT" ] || ready_red "$PRIMITIVES_EXEMPT" "프리미티브 면제 목록 부재 — 선언이 없으면 e 의 면제를 셀 수 없다."
+[ -f "$MEDIA_EXEMPT" ] || ready_red "$MEDIA_EXEMPT" "폭·입력 조건 면제 목록 부재 — 선언이 없으면 i 의 면제를 셀 수 없다."
 
 # 대상 = Git 이 아는 CSS(추적 + 추적 전 · .gitignore 제외). 아직 add 하지 않은 새 화면 CSS 도 본다.
 mapfile -t FILES < <(cd "$FE" && git ls-files --cached --others --exclude-standard -- ':(glob)src/**/*.css' | sort -u)
 [ "${#FILES[@]}" -gt 0 ] || ready_red "$FE/src/**/*.css" "대상 CSS 가 0건이다 — 아무것도 검사하지 않은 것을 통과로 세지 않는다."
 
-OUT="$(cd "$FE" && "$NODE_BIN" "$SCRIPT" --root . --same-in-dark "$SAME_IN_DARK" --primitives "$PRIMITIVES" --primitives-exempt "$PRIMITIVES_EXEMPT" -- "${FILES[@]}" 2>&1)"; rc=$?
+OUT="$(cd "$FE" && "$NODE_BIN" "$SCRIPT" --root . --same-in-dark "$SAME_IN_DARK" --primitives "$PRIMITIVES" --primitives-exempt "$PRIMITIVES_EXEMPT" --media-exempt "$MEDIA_EXEMPT" -- "${FILES[@]}" 2>&1)"; rc=$?
 printf '%s\n' "$OUT"
 # h — 문서 표(P5). a~g 와 따로 돌려 둘 다 출력한 뒤 합친다(한쪽 red 가 다른 쪽 판정을 가리지 않게).
 DOUT="$("$NODE_BIN" "$DOCS" --check 2>&1)"; drc=$?

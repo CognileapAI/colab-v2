@@ -195,12 +195,29 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface-alt);
-  /* 끌어 옮기는 자리다 — 그림을 드래그해 가져가는 기본 동작을 끈다 */
-  touch-action: none;
+  /* ⭑ ⟨휴대폰·패드 대응 20260926 · V5⟩ 기본은 페이지 스크롤이다. 지도가 가져갈 축은 끌기 축
+     속성(`data-drag-axis` · `useZoomPan`)이 아래 블록들에서 정한다. 미등록(속성 없음)은 늘 이 값이다. */
+  touch-action: pan-x pan-y;
   user-select: none;
   /* ⭑ ⟨#120⟩ **도구 층이 겹칠 기준 상자.** 이것이 없으면 뷰포트 안에 절대 배치로
      얹을 자리가 없어 도구가 문서 흐름에 쌓인다(3층 구조의 1층). */
   position: relative;
+}
+
+/* ⭑ ⟨휴대폰·패드 대응 20260926 · V5⟩ 끌기 축 → `touch-action`. 브라우저에 맡긴 축은 페이지가
+   스크롤하고(포인터 취소 → 기존 취소 경로), 맡기지 않은 축은 지도가 한 손가락 끌기로 옮긴다.
+   확대 상태 · 두 축 끌 범위 = 둘 다(지도). 기본 블록 뒤에 둔다 — 시험이 `.pv-viewport {` 첫 블록을 읽는다. */
+.pv-viewport[data-drag-axis='none'] {
+  touch-action: pan-x pan-y;
+}
+.pv-viewport[data-drag-axis='y'] {
+  touch-action: pan-x;
+}
+.pv-viewport[data-drag-axis='x'] {
+  touch-action: pan-y;
+}
+.pv-viewport[data-drag-axis='both'] {
+  touch-action: none;
 }
 
 /* ── 도구 층 (`#120` intent · `PreviewOverlay.tsx`) ───────────────────────────
@@ -591,9 +608,92 @@
 .pv-control select { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
 :is(.pv-zoom, .pv-shot) button:where(:not(.btn)) { color: var(--color-text); }
 @media (max-width: 640px) {
-  .pv-control select { font-size: 16px; }
   .pv-basic-grid { grid-template-columns: minmax(0, 1fr); }
   .pv-basic-row dd { min-width: 0; overflow-wrap: anywhere; }
   :is(.pv-zoom, .pv-shot, .lin) button { min-height: 44px; }
+}
+
+/* ── 휴대폰·패드 대응 20260926 (L1a) ───────────────────────────────────────────
+   새 규칙은 모두 **기존 고정 블록 뒤**에 둔다 — 시험이 선택자의 첫 일치를 잘라 읽는다.
+   ⚠ 16px 입력 하한(종전 640px 블록의 `.pv-control select`)은 여기서 지웠다 — 하한은 셸 CSS
+     한 곳이 갖는다(spec 부록 G · 우려 3 ⓐ). */
+
+/* 「데이터에 맞춤」 감싸개 — 터치 기기에서만 확대 묶음과 같은 모서리에 선다(`PreviewZoomControls`).
+   도구 층 누름 받기와 확대 묶음과 같은 면 · 테두리 · 모서리 토큰 · 그림자 0. */
+.pv-overlay .pv-fit {
+  pointer-events: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  box-shadow: none;
+}
+
+.pv-fit button {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 아래 자리(`PreviewSlot`) — 비어 있으면 그리지 않는다. 틀 묶음 gap 8px 이 생기지 않는다. */
+.pv-frame-below:empty {
+  display: none;
+}
+
+/* 아래 블록(`PreviewOverlay.PreviewBelow`) — 지도 칸 810 미만에서 좌표 · 값 조회 · 범례 · 스크린샷이
+   지도 바로 아래 세로 묶음으로 선다. 간격은 블록이 여백 토큰으로 갖고 자식 바깥 여백은 0 이다.
+   도구 층 전용 범례 최대 높이(`.pv-overlay .pv-legend`)는 여기 걸리지 않는다. */
+.pv-below {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pv-below > * {
+  margin: 0;
+  max-width: 100%;
+}
+
+/* 미등록 미리보기 — 틀 묶음 gap 이 없는 자리라 지도 구역과의 사이를 블록이 여백 토큰 한 칸으로 갖는다. */
+.pv-map + .pv-below {
+  margin-top: var(--space-2);
+}
+
+.pv-below :is(.pv-hud, .pv-value, .pv-legend, .pv-shot) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  box-shadow: none;
+}
+
+/* 긴 이름(범례 제목 · 값 결과 변수 이름)은 아래 블록 안에서만 줄바꿈한다. 지도 위 범례는 그대로다. */
+.pv-below :is(.pv-legend-row dd, .pv-value-body dd) {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* 새 지도 장면 넘침 — 상세 미리보기 머리의 긴 파일 경로 · 원천 격자 줄이 창 밖으로 흐르지 않는다. */
+.dt-preview > .pv-muted {
+  overflow-wrap: anywhere;
+}
+
+/* 터치 기기 누름 칸 44(spec 부록 B 레인 L1 · 23 · 29 · 30 ＋ 맞춤 단추). 640px 규칙과 명시도가 같고 뒤에 있다. */
+@media (pointer: coarse) {
+  .preview-page .backlink,
+  .pv-pick-values summary,
+  .pv-zoom button,
+  .pv-shot button,
+  .pv-fit button {
+    min-height: var(--control-height);
+    min-width: var(--control-height);
+  }
 }
 }

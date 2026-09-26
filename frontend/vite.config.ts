@@ -66,6 +66,16 @@ export default defineConfig({
         // WU-A4 · PRD-28 — 등록 화면 2:3 과 짧은 값 3칸은 **선언**으로만 잴 수 있다
         // (jsdom 에 레이아웃 엔진이 없다). 규칙 원문을 `?raw` 로 읽는다.
         /upload\.css\?raw$/,
+        // S-DEVICE-WIDTH-INPUT-20260926 — 입력 방식 · 너비 규칙 시험(L1 · L2a · L2b · L3a · L3b)이 규칙 원문을 `?raw` 로 잰다.
+        // `?raw` 만 허용한다(계산값 적재는 늘리지 않는다 · 다른 시험의 jsdom 계산값 불변).
+        /preview\.css\?raw$/,
+        /lineage\.css\?raw$/,
+        /lineageGraph\.css\?raw$/,
+        /approval\.css\?raw$/,
+        /members\.css\?raw$/,
+        /variableTable\.css\?raw$/,
+        /login\.css\?raw$/,
+        /touchNote\.css\?raw$/,
       ],
     },
   },

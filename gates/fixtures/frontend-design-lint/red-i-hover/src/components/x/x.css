@@ -1,0 +1,6 @@
+/* hover 하위 조건 red 픽스처(i) — 조건 밖 :hover 1 · 쉼표 OR 한 갈래에만 (hover: hover) 가 있는 :hover 1 · 대조(안) 1 */
+@layer screens {
+.x-page .x-go:hover { color: var(--color-link); }
+@media (hover: hover), (max-width: 640px) { .x-page .x-row:hover { color: var(--color-link); } }
+@media (hover: hover) { .x-page .x-card:hover { color: var(--color-link); } }
+}

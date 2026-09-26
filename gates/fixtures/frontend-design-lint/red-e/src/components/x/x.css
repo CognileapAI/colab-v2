@@ -1,6 +1,6 @@
 @layer screens {
 .btn { padding: 0; }
-.btn-primary:hover { color: var(--color-text); }
+@media (hover: hover) { .btn-primary:hover { color: var(--color-text); } }
 :is(.x-go, .chip) { color: var(--color-link); }
 .chip--warning { color: var(--color-link); }
 .x-page .btn { padding: 0; }

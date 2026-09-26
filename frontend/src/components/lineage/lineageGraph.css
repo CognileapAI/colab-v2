@@ -46,7 +46,7 @@
   border: 1.4px solid var(--color-border-strong); border-radius: 10px;
   background: var(--color-surface); padding: 11px 13px; text-decoration: none; color: inherit;
 }
-.detail-page a.ln:hover { border-color: var(--color-primary-600); }
+@media (hover: hover) { .detail-page a.ln:hover { border-color: var(--color-primary-600); } }
 .detail-page .ln .n-head { display: flex; align-items: center; gap: 8px; }
 .detail-page .ln .n-role { font-size: 13px; color: var(--color-text-muted); }
 .detail-page .ln .n-name { font-family: var(--font-data); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
@@ -83,7 +83,7 @@
 .detail-page .lrow .ln-name { font-family: var(--font-data); font-size: 13px; font-weight: 700; color: var(--color-text); overflow-wrap: anywhere; }
 .detail-page .lrow .ln-name.plain { font-family: var(--font-sans); }
 .detail-page .lrow .ln-go { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
-.detail-page .lrow .ln-go:hover .ln-name { color: var(--color-primary-600); text-decoration: underline; text-underline-offset: 2px; }
+@media (hover: hover) { .detail-page .lrow .ln-go:hover .ln-name { color: var(--color-primary-600); text-decoration: underline; text-underline-offset: 2px; } }
 .detail-page .lrow .ln-go .arw { margin-left: 3px; }
 .detail-page .lrow .ln-sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
 .detail-page .hist { font-size: 13px; color: var(--color-text-muted); }
@@ -105,4 +105,22 @@
 
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
 .detail-page :is(.ln, .ln-go) .arw { color: var(--color-text-muted); opacity: 1; }
+
+/* 휴대폰·패드 대응 20260926 (L3a · V9 · 부록 C 7 · 9) — 터치에서만 TSX 가 다는 표지 규칙이다(입력 방식 훅).
+   마우스 화면에는 맞는 요소가 없어 그대로다. 파일 끝 터치 블록(L2b) 앞에 둔다(「레인 확정」 파일 끝 규칙).
+   9 방법 라벨: 150px 말줄임 대신 줄바꿈으로 전문을 보인다(최대 폭 · 모양 그대로 · 한 줄이면 높이 23 그대로 ·
+   여러 줄이면 줄 수만큼 21px 씩 늘어난다). */
+.detail-page .lin-way.lin-way--wrap {
+  white-space: normal; overflow-wrap: anywhere; text-overflow: clip;
+  height: auto; min-height: 23px; line-height: 21px;
+}
+/* 7 누르는 원천 · 묘비 노드: 펼침 글은 선 칸의 최소 폭(178px) 안에서 줄바꿈한다 · 누르는 순간 테두리(링크 노드 hover 색). */
+.detail-page .lin-col > .touch-note-text { max-width: 178px; margin-top: 0; }
+.detail-page .ln[role="button"]:active { border-color: var(--color-primary-600); }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 26 · 27) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다. */
+@media (pointer: coarse) {
+  .detail-page .lrow .ln-go { min-height: var(--control-height); min-width: var(--control-height); }
+  .detail-page .lin-use { min-height: var(--control-height); min-width: var(--control-height); }
+}
 }

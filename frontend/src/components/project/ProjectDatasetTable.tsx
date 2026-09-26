@@ -9,6 +9,8 @@
 // 그 문장을 읽는 자리는 데이터셋 상세의 `활용 프로젝트` 다 (E-03).
 import { LockIndicatorSlot } from '../../placeholders/LockIndicatorSlot';
 import { displayLevel } from '../common/processingLevel';
+import { TouchOrMouse } from '../common/TouchNote';
+import { useInputMode } from '../common/useInputMode';
 import { dataPeriod } from './format';
 import type { ProjectDatasetRow } from './types';
 
@@ -19,6 +21,9 @@ import type { ProjectDatasetRow } from './types';
  */
 // Ted 문면 확정 대기 · R-LTH-REVIEW-1
 const VERIFIED_PENDING_LABEL = '승인 전';
+/** 마우스 올림 설명(원문 그대로) · 터치에서 누르면 보이는 설명(「새 문구안」 12행 확정 · 목록과 같은 문장). */
+const VERIFIED_PENDING_TITLE = '승인 처리가 아직 도착하지 않았다';
+const VERIFIED_PENDING_NOTE = '승인 처리가 아직 도착하지 않았어요';
 
 export function ProjectDatasetTable(props: {
   rows: ProjectDatasetRow[];
@@ -30,6 +35,8 @@ export function ProjectDatasetTable(props: {
   // ⭑ ⟨R-LTH-REVIEW-1 · `I-6`⟩ 0행에서는 밀 것이 없다 — 좌우 이동 안내도, 초점만 받는
   //    빈 스크롤 영역도 세우지 않는다. 표 자체는 남기고 빈 상태를 표 **안**에서 말한다.
   const hasRows = props.rows.length > 0;
+  // 휴대폰·패드 대응 20260926 L3a(V9) — 터치에서는 `title` 대신 누르면 보이는 설명. 마우스는 원래 요소 그대로.
+  const mouse = useInputMode() === 'mouse';
 
   return (
     <>
@@ -102,14 +109,16 @@ export function ProjectDatasetTable(props: {
               {row.verified ? (
                 '승인됨'
               ) : (
-                <span
-                  className="verified verified--pending"
-                  data-testid="verified-pending"
-                  aria-disabled="true"
-                  title="승인 처리가 아직 도착하지 않았다"
-                >
-                  {VERIFIED_PENDING_LABEL}
-                </span>
+                <TouchOrMouse mouse={mouse} note={VERIFIED_PENDING_NOTE}>
+                  <span
+                    className="verified verified--pending"
+                    data-testid="verified-pending"
+                    aria-disabled="true"
+                    title={mouse ? VERIFIED_PENDING_TITLE : undefined}
+                  >
+                    {VERIFIED_PENDING_LABEL}
+                  </span>
+                </TouchOrMouse>
               )}
             </td>
             <td className="right">

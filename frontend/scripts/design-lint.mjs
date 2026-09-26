@@ -37,14 +37,29 @@
 //      are allowed. Also red: `!important` inside src/shell/primitives.css or src/shell/base.css.
 //      Exemptions live in their own list (`--primitives-exempt`, `<file> · <selector> · <reason>`): an empty
 //      reason → red and exempts nothing · an entry matching nothing (stale) → red · count shown as 「(면제 m)」.
+//   i  (spec S-DEVICE-WIDTH-INPUT-20260926 V10 · V13) width/input conditions. Every `@media` / `@container` prelude is one
+//      header. A `@media` header is normalised (`@media(max-width:720px)` = `@media (max-width: 720px)`), split at
+//      top-level commas (OR branches) and `and`, and each condition judged against design-families.mjs:
+//        width   `(max-width: <n>px)` n in WIDTH_MAX · `(min-width: <n>px)` n in WIDTH_MIN — another px value is `i_media`;
+//        input   `(pointer: coarse)` · `(hover: hover)` (INPUT_ALLOWED · 우려 11ⓐ);
+//        counted only  `prefers-*` (`media_prefers`);
+//        form (`i_form`)  anything else — height · range syntax · em/rem · orientation · aspect-ratio · any-pointer ·
+//                         any-hover · (pointer: fine) · (hover: none) · not · only · media types · other features.
+//      Every `@container` header is `i_container` unless declared. Declarations live in their own list
+//      (`--media-exempt`, `file · header · count · reason`): an entry exempts the headers of that file whose normalised
+//      header equals its own only when the count equals the number found — a malformed line, an empty reason, a count
+//      mismatch, an entry matching nothing or a second entry for the same header is a hole (red, exempts nothing).
+//      Sub-condition hover (`i_hover`, never exemptable): a rule whose selector holds `:hover` must sit inside at least
+//      one `@media`, and every enclosing `@media` must have `(hover: hover)` as an `and` condition in every OR branch
+//      (`@media (hover: hover), (max-width: 640px)` is red).
 // `@layer` blocks are transparent: rules inside `@layer x { … }` are judged like unlayered ones.
 // Exit: 0 green · 1 red · 78 readiness failure (no files, a missing list (same-in-dark · primitives ·
-//   primitives-exempt), a listed file missing on disk,
+//   primitives-exempt · media-exempt), a listed file missing on disk,
 //   `typescript` not resolvable).
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, relative, sep } from 'node:path';
-import { CANON_PREFIX, COLOR_FAMILY } from './design-families.mjs';
+import { CANON_PREFIX, COLOR_FAMILY, INPUT_ALLOWED, WIDTH_MAX, WIDTH_MIN } from './design-families.mjs';
 
 const READINESS = 78;
 const TOKENS = 'src/shell/tokens.css';
@@ -74,12 +89,13 @@ const DARK_SEL = /\[data-theme=["']?dark["']?\]/;
 
 function args() {
   const argv = process.argv.slice(2);
-  const out = { root: '.', sameInDark: null, primitives: null, primitivesExempt: null, files: [] };
+  const out = { root: '.', sameInDark: null, primitives: null, primitivesExempt: null, mediaExempt: null, files: [] };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--root') out.root = argv[++i];
     else if (argv[i] === '--same-in-dark') out.sameInDark = argv[++i];
     else if (argv[i] === '--primitives') out.primitives = argv[++i];
     else if (argv[i] === '--primitives-exempt') out.primitivesExempt = argv[++i];
+    else if (argv[i] === '--media-exempt') out.mediaExempt = argv[++i];
     else if (argv[i] === '--') { out.files = argv.slice(i + 1); break; }
   }
   return out;
@@ -352,6 +368,93 @@ function barePrimitive(arg, prim) {
   }
   return null;
 }
+// i — width/input conditions. Tokens of one prelude body: balanced `( … )` groups and bare words.
+function mediaTokens(body) {
+  const out = []; let i = 0;
+  while (i < body.length) {
+    const ch = body[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (ch === '(') {
+      let d = 0; const st = i;
+      for (; i < body.length; i++) { if (body[i] === '(') d++; else if (body[i] === ')' && --d === 0) { i++; break; } }
+      out.push(body.slice(st, i)); continue;
+    }
+    const st = i;
+    while (i < body.length && !/[\s(]/.test(body[i])) i++;
+    out.push(body.slice(st, i).toLowerCase());
+  }
+  return out;
+}
+// `( name : value )` → `(name: value)` (lowercase · single spaces); anything without a plain colon keeps its text.
+function normFeature(t) {
+  const inner = t.slice(1, -1).replace(/\s+/g, ' ').trim().toLowerCase();
+  const m = /^([a-z-]+) ?: ?(.+)$/.exec(inner);
+  return m ? `(${m[1]}: ${m[2].trim()})` : `(${inner})`;
+}
+const normTokens = body => mediaTokens(body).map(t => (t.startsWith('(') ? normFeature(t) : t));
+const AT_KIND = /^@(media|container)\b/i;
+// Normalised header text: `@media (max-width: 720px), (pointer: coarse)` · `@container name (max-width: 400px)`.
+function normHeader(prelude) {
+  const m = AT_KIND.exec(prelude.trim());
+  if (!m) return norm(prelude);
+  const body = prelude.trim().slice(m[0].length);
+  return `@${m[1].toLowerCase()} ${splitList(body).map(b => normTokens(b).join(' ')).join(', ')}`.trim();
+}
+// One condition → problems ([] = allowed · 'prefers' = counted only).
+function judgeFeature(f) {
+  const m = /^\(([a-z-]+): (.+)\)$/.exec(f);
+  if (!m) return [{ kind: 'form', why: `${f} 범위 문법·이름 없는 조건` }];
+  const [, name, value] = m;
+  if (name === 'max-width' || name === 'min-width') {
+    const px = /^(\d+)px$/.exec(value);
+    if (!px) return [{ kind: 'form', why: `${f} 폭 값은 px 정수로만(em · rem · calc 는 형식 밖)` }];
+    const allowed = name === 'max-width' ? WIDTH_MAX : WIDTH_MIN;
+    return allowed.includes(Number(px[1])) ? [] : [{ kind: 'width', why: `${f} 허용 값 밖(${name} ${allowed.join(' · ')}px)` }];
+  }
+  if (INPUT_ALLOWED.includes(f)) return [];
+  if (name.startsWith('prefers-')) return [{ kind: 'prefers' }];
+  return [{ kind: 'form', why: `${f} 형식 밖(허용 = 폭 px · ${INPUT_ALLOWED.join(' · ')} · prefers-*)` }];
+}
+// One OR branch: `feature (and feature)*` — media types · not · only · or · a missing condition are form problems.
+function judgeBranch(all) {
+  if (!all.length) return [{ kind: 'form', why: '빈 조건' }];
+  const out = [];
+  let tokens = all;
+  if (tokens[0] === 'not' || tokens[0] === 'only') { out.push({ kind: 'form', why: `「${tokens[0]}」 형식 밖` }); tokens = tokens.slice(1); }
+  if (tokens.length && !tokens[0].startsWith('(')) {
+    out.push({ kind: 'form', why: `매체 종류 「${tokens[0]}」 형식 밖` });
+    tokens = tokens.slice(tokens[1] === 'and' ? 2 : 1);
+    if (!tokens.length) return out;
+  }
+  tokens.forEach((t, k) => {
+    if (k % 2 === 1) { if (t !== 'and') out.push({ kind: 'form', why: `「${t}」 조건은 and 로만 잇는다` }); return; }
+    if (!t.startsWith('(')) { out.push({ kind: 'form', why: `「${t}」 형식 밖(조건은 괄호 하나씩)` }); return; }
+    out.push(...judgeFeature(t));
+  });
+  if (tokens.length % 2 === 0) out.push({ kind: 'form', why: '마지막 and 뒤에 조건이 없다' });
+  return out;
+}
+// Does every OR branch of this @media prelude carry `(hover: hover)` as an `and` condition?
+function hoverGuarded(prelude) {
+  const m = AT_KIND.exec(prelude.trim());
+  return splitList(prelude.trim().slice(m[0].length)).every(b => {
+    const t = normTokens(b);
+    return t[0] !== 'not' && t.some((x, k) => k % 2 === 0 && x === '(hover: hover)');
+  });
+}
+function parseMediaExempt(path) {
+  const out = [];
+  readFileSync(path, 'utf8').split(/\r?\n/).forEach((raw, idx) => {
+    const t = raw.trim();
+    if (!t || t.startsWith('#')) return;
+    const parts = t.split('·').map(x => x.trim());
+    if (parts.length < 4 || !/^[1-9]\d*$/.test(parts[2]) || !AT_KIND.test(parts[1])) { out.push({ line: idx + 1, malformed: true, text: t }); return; }
+    const [file, header, count, ...reason] = parts;
+    out.push({ line: idx + 1, file, header: normHeader(header), count: Number(count), reason: reason.join(' · ').trim() });
+  });
+  return out;
+}
+
 const PRIMITIVES_CSS = 'src/shell/primitives.css';
 const NO_IMPORTANT = new Set([PRIMITIVES_CSS, 'src/shell/base.css']);
 
@@ -362,6 +465,7 @@ if (files.length === 0) readiness('대상 CSS 0건 — 검사한 것이 없다')
 if (!opt.sameInDark || !existsSync(opt.sameInDark)) readiness(`same-in-dark 목록이 없다: ${opt.sameInDark ?? '(미지정)'}`);
 if (!opt.primitives || !existsSync(opt.primitives)) readiness(`프리미티브 목록이 없다: ${opt.primitives ?? '(미지정)'} — 목록이 없으면 e 를 판정할 수 없다`);
 if (!opt.primitivesExempt || !existsSync(opt.primitivesExempt)) readiness(`프리미티브 면제 목록이 없다: ${opt.primitivesExempt ?? '(미지정)'}`);
+if (!opt.mediaExempt || !existsSync(opt.mediaExempt)) readiness(`폭·입력 조건 면제 목록이 없다: ${opt.mediaExempt ?? '(미지정)'} — 선언이 없으면 i 의 면제를 셀 수 없다`);
 const prim = parsePrimitives(opt.primitives);
 const eHits = [];      // {file,line,sel,expanded} — bare primitive definitions outside primitives.css
 const eImportant = []; // {file,line,sel,prop} — !important inside primitives.css / base.css
@@ -374,6 +478,9 @@ const defined = new Set();
 const light = new Map(); // name -> value (tokens.css, non-dark)
 const dark = new Map();
 const scopedColor = []; // screen-scope defs whose value holds a colour literal
+const iHeads = [];      // {file,line,header,kind:'width'|'form'|'container',why} — i violations before exemptions
+const iHover = [];      // {file,line,sel,media} — :hover rules outside (hover: hover)
+let mediaRules = 0, containerRules = 0, hoverRules = 0, mediaPrefers = 0;
 const fHits = [];       // {file,line,sel,prop,kind,literal} — colour literals outside tokens.css
 let tokensSeen = false;
 
@@ -399,6 +506,24 @@ for (const file of files) {
         const hit = barePrimitive(arg, prim);
         if (hit) eHits.push({ file, line: r.line, sel: norm(arg), expanded: norm(hit) });
       }
+    }
+  }
+  for (const r of rules) {
+    const at = AT_KIND.exec(r.prelude);
+    if (at && at[1].toLowerCase() === 'container') {
+      containerRules++;
+      iHeads.push({ file, line: r.line, header: normHeader(r.prelude), kind: 'container', why: '부품 칸 폭 조건은 면제 목록 선언이 있어야 한다' });
+    } else if (at) {
+      mediaRules++;
+      const branches = splitList(r.prelude.trim().slice(at[0].length));
+      const probs = branches.length ? branches.flatMap(b => judgeBranch(normTokens(b))) : [{ kind: 'form', why: '조건 없는 @media' }];
+      if (probs.some(p => p.kind === 'prefers')) mediaPrefers++;
+      const bad = probs.filter(p => p.kind === 'form' || p.kind === 'width');
+      if (bad.length) iHeads.push({ file, line: r.line, header: normHeader(r.prelude), kind: bad.some(p => p.kind === 'form') ? 'form' : 'width', why: bad.map(p => p.why).join(' · ') });
+    } else if (!r.prelude.startsWith('@') && /:hover(?![\w-])/.test(r.prelude) && !r.chain.some(c => /^@(-webkit-)?keyframes/i.test(c))) {
+      hoverRules++;
+      const media = r.chain.filter(c => /^@media\b/i.test(c));
+      if (!media.length || !media.every(hoverGuarded)) iHover.push({ file, line: r.line, sel: norm(r.prelude), media: media.map(normHeader).join(' 안 ') || '조건 없음' });
     }
   }
   if (NO_IMPORTANT.has(file)) {
@@ -568,6 +693,27 @@ for (const x of eEntries) {
   else if (!x.reason) eHoles.push(`primitives-exempt.txt:${x.line} ${x.file} ${x.selector} — 사유 칸이 비었다(면제하지 않는다)`);
   else if (!x.used) eHoles.push(`primitives-exempt.txt:${x.line} ${x.file} ${x.selector} — 걸리는 맨 정의가 없다(낡은 항목)`);
 }
+// i — match declarations (file · normalised header · count), then count what is left.
+const iEntries = parseMediaExempt(opt.mediaExempt);
+const iHoles = [];
+const iExempted = [];
+const seenKey = new Set();
+for (const x of iEntries) {
+  if (x.malformed) { iHoles.push(`media-exempt.txt:${x.line} 형식 오류 「${x.text}」(파일 · 조건 · 개수 · 사유)`); continue; }
+  const key = `${x.file} ${x.header}`;
+  const hits = iHeads.filter(h => h.file === x.file && h.header === x.header);
+  const where = `media-exempt.txt:${x.line} ${x.file} ${x.header}`;
+  if (seenKey.has(key)) iHoles.push(`${where} — 같은 조건의 두 번째 줄(면제하지 않는다)`);
+  else if (!x.reason) iHoles.push(`${where} — 사유 칸이 비었다(면제하지 않는다)`);
+  else if (!hits.length) iHoles.push(`${where} — 맞는 머리가 없다(낡은 줄)`);
+  else if (hits.length !== x.count) iHoles.push(`${where} — 선언 ${x.count} · 찾은 ${hits.length}(개수가 어긋나 면제하지 않는다)`);
+  else iExempted.push(...hits);
+  seenKey.add(key);
+}
+const iLive = iHeads.filter(h => !iExempted.includes(h));
+const iKind = k => iLive.filter(h => h.kind === k);
+const i = iLive.length + iHover.length + iHoles.length;
+const im = iEntries.length;
 const e = eLive.length + eImportant.length + eHoles.length;
 const em = eEntries.length;
 const f = fLive.length + fHoles.length;
@@ -594,11 +740,17 @@ show('g 인라인 style 의 비변수 키', gHits, x => `${x.file}:${x.line} ${x
 show('e 프리미티브 맨 정의(primitives.css 밖)', eLive, x => `${x.file}:${x.line} ${x.sel}${x.expanded !== x.sel ? ` (펼침 ${x.expanded})` : ''}`);
 show('e primitives.css·base.css 의 !important', eImportant, x => `${x.file}:${x.line} ${x.sel} { ${x.prop} }`);
 show('e 목록·면제 구멍', eHoles, x => x);
+show('i 폭 조건(허용 값 밖)', iKind('width'), x => `${x.file}:${x.line} ${x.header} — ${x.why}`);
+show('i 형식 밖 조건', iKind('form'), x => `${x.file}:${x.line} ${x.header} — ${x.why}`);
+show('i 선언 없는 @container', iKind('container'), x => `${x.file}:${x.line} ${x.header} — ${x.why}`);
+show('i (hover: hover) 밖 :hover', iHover, x => `${x.file}:${x.line} ${x.sel} (둘러싼 @media: ${x.media})`);
+show('i 면제 목록 구멍', iHoles, x => x);
 if (em) console.log(`면제(e) ${em}: ${eEntries.map(x => x.malformed ? `형식 오류(${x.line}행)` : `${x.file} ${x.selector}(${x.reason || '사유 없음'})`).join(' · ')}`);
 if (fm) console.log(`면제(f) ${fm}: ${fEntries.map(e => e.malformed ? `형식 오류(${e.line}행)` : `${e.file} ${e.selector} ${e.property} ${e.literal}(${e.reason || '사유 없음'})`).join(' · ')}`);
+if (im) console.log(`면제(i) ${im}줄 · 적중 ${iExempted.length}: ${iEntries.map(x => x.malformed ? `형식 오류(${x.line}행)` : `${x.file} ${x.header} ×${x.count}(${x.reason || '사유 없음'})`).join(' · ')}`);
 if (m) console.log(`면제(same-in-dark) ${m}: ${entries.map(e => `${e.name}(${e.reason || '사유 없음'})`).join(' · ')}`);
 
-const redAll = a + b + c + d + e + f + g + (tokensSeen ? 0 : 1);
-console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사) · 색 리터럴 ${f}(면제 ${fm}) · 인라인 ${g}(변수 대입 ${gVars}) · 프리미티브 맨 정의 밖 ${e}(면제 ${em})`);
-console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} f=${f} f_direct=${fCount('direct')} f_fallback=${fCount('fallback')} f_name=${fCount('name')} f_holes=${fHoles.length} f_exempt=${fm} f_exempted_hits=${fExempted.length} g=${g} g_vars=${gVars} g_spread=${gSpread.length} tsx=${tsxCount} e=${e} e_bare=${eLive.length} e_important=${eImportant.length} e_holes=${eHoles.length} e_exempt=${em} e_exempted_hits=${eExempted.length} primitives=${prim.size} tokens=${tokensSeen ? 1 : 0}`);
+const redAll = a + b + c + d + e + f + g + i + (tokensSeen ? 0 : 1);
+console.log(`파일 ${files.length} · :root 정의 밖 ${a} · 미정의 참조 ${b} · 다크 누락 ${c}(면제 ${m}) · :root/@import ${d} · 범위 색 토큰 ${scopedColor.length}(다크 미검사) · 색 리터럴 ${f}(면제 ${fm}) · 인라인 ${g}(변수 대입 ${gVars}) · 프리미티브 맨 정의 밖 ${e}(면제 ${em}) · 폭·입력 조건 밖 ${i}(면제 ${im})`);
+console.log(`design-lint-counts files=${files.length} a=${a} a_root=${aRoot.length} a_scoped=${aScoped.length} b=${b} c=${c} c_missing=${cMissing.length} c_dark_only=${cDarkOnly.length} c_holes=${cHoles.length} exempt=${m} d=${d} scoped_color=${scopedColor.length} f=${f} f_direct=${fCount('direct')} f_fallback=${fCount('fallback')} f_name=${fCount('name')} f_holes=${fHoles.length} f_exempt=${fm} f_exempted_hits=${fExempted.length} g=${g} g_vars=${gVars} g_spread=${gSpread.length} tsx=${tsxCount} e=${e} e_bare=${eLive.length} e_important=${eImportant.length} e_holes=${eHoles.length} e_exempt=${em} e_exempted_hits=${eExempted.length} primitives=${prim.size} tokens=${tokensSeen ? 1 : 0} i=${i} i_media=${iKind('width').length} i_container=${iKind('container').length} i_form=${iKind('form').length} i_hover=${iHover.length} i_holes=${iHoles.length} i_exempt=${im} i_exempted_hits=${iExempted.length} media_rules=${mediaRules} container_rules=${containerRules} hover_rules=${hoverRules} media_prefers=${mediaPrefers}`);
 process.exit(redAll > 0 ? 1 : 0);

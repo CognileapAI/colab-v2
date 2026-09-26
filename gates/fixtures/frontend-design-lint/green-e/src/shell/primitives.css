@@ -1,5 +1,5 @@
 @layer primitives {
 .btn { padding: var(--space-2); }
-.btn:hover { color: var(--color-text); }
+@media (hover: hover) { .btn:hover { color: var(--color-text); } }
 :is(.chip, .chip--warning) { color: var(--color-link); }
 }

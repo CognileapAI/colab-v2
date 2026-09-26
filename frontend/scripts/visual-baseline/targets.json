@@ -1,0 +1,697 @@
+{
+  "schema": "colab-touch-targets/1",
+  "spec": "dev-package/prd/specs/S-DEVICE-WIDTH-INPUT-20260926.md 부록 B(52항목 = 고정 px 48 ＋ 토큰 부품 회귀 감시 4) · 부록 I 레인 장면",
+  "minPx": 44,
+  "notes": [
+    "20번(문장 속 링크 `.notice--down a`)은 우려 1 ⓐ 예외라 목록에 없다.",
+    "captureBlind = 캡처 장면이 없는 7항목(15–17 · 28 · 47–49). 장면 불일치 78 과 레인 대상 미측정 78 에서 빼고 개수만 출력한다.",
+    "widthHidden = 900 이하에서 숨는 3 · 4 번. 390 · 844x390 · 820 에서는 「재지 않음」이 정상이고 1024 · 1180 에서 잰다.",
+    "heightOnly = 회귀 감시 50–53 번. 세로만 판정한다. 한 요소가 1–49 번에도 맞으면 1–49 번으로만 판정한다.",
+    "measure row = 13번 「목록 열기」는 행(tr) 상자로 잰다. label 안의 입력은 대상과 무관하게 label 상자를 잰다(36 · 45 번).",
+    "scenes = 390 수치 전용 실행에서 그 대상이 상자를 가진 장면(장면 연결 · judge.mjs --links 가 찍는 drawnIn). 3 · 4 번은 catalog 1024 수치 전용 실행에서 잰 장면이다.",
+    "laneScenes = 부록 I 자기 게이트의 frontend-visual 장면 ＋ 레인 칸에 더 적은 수치 전용 장면. 레인 「—」(50–53)는 어느 레인 장면이든 된다."
+  ],
+  "laneScenes": {
+    "L1": [
+      "detail",
+      "preview",
+      "preview-done",
+      "detail-preview-map",
+      "detail-preview-map-value",
+      "upload-preview-expand"
+    ],
+    "L2a": [
+      "primitives",
+      "catalog",
+      "detail",
+      "gnb-more",
+      "login",
+      "not-found"
+    ],
+    "L2b": [
+      "catalog",
+      "search",
+      "search-down",
+      "detail",
+      "lab",
+      "projects",
+      "project-detail",
+      "project-dialog",
+      "settings",
+      "members",
+      "account-admin",
+      "login",
+      "lineage-picker",
+      "upload",
+      "upload-classify",
+      "upload-metadata",
+      "upload-link"
+    ],
+    "L3a": [
+      "catalog",
+      "detail",
+      "project-detail",
+      "account-admin"
+    ],
+    "L3b": [
+      "members",
+      "detail",
+      "upload"
+    ]
+  },
+  "targets": [
+    {
+      "n": 1,
+      "screen": "맨 위 메뉴",
+      "selector": "a.brand",
+      "lane": "L2a",
+      "scenes": [
+        "catalog",
+        "lab",
+        "projects",
+        "project-detail",
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "search",
+        "search-down",
+        "preview",
+        "preview-done",
+        "lineage-picker",
+        "not-found",
+        "account-admin",
+        "gnb-more",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 2,
+      "screen": "맨 위 메뉴",
+      "selector": ".mainnav a",
+      "lane": "L2a",
+      "scenes": [
+        "catalog",
+        "lab",
+        "projects",
+        "project-detail",
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "search",
+        "search-down",
+        "preview",
+        "preview-done",
+        "lineage-picker",
+        "not-found",
+        "account-admin",
+        "gnb-more",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 3,
+      "screen": "맨 위 메뉴(폭 숨김)",
+      "selector": ".gnb-settings",
+      "lane": "L2a",
+      "widthHidden": true,
+      "scenes": [
+        "catalog"
+      ]
+    },
+    {
+      "n": 4,
+      "screen": "맨 위 메뉴(폭 숨김)",
+      "selector": ".gnb .gnb-upload",
+      "lane": "L2a",
+      "widthHidden": true,
+      "scenes": [
+        "catalog"
+      ]
+    },
+    {
+      "n": 5,
+      "screen": "맨 위 메뉴",
+      "selector": ".gnb-more",
+      "lane": "L2a",
+      "scenes": [
+        "catalog",
+        "lab",
+        "projects",
+        "project-detail",
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "search",
+        "search-down",
+        "preview",
+        "preview-done",
+        "lineage-picker",
+        "not-found",
+        "account-admin",
+        "gnb-more",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 6,
+      "screen": "맨 위 메뉴",
+      "selector": ".gnb-logout",
+      "lane": "L2a",
+      "scenes": [
+        "catalog",
+        "lab",
+        "projects",
+        "project-detail",
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "search",
+        "search-down",
+        "preview",
+        "preview-done",
+        "lineage-picker",
+        "not-found",
+        "account-admin",
+        "gnb-more",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 7,
+      "screen": "맨 위 메뉴 · 로그인",
+      "selector": "select.theme-switcher",
+      "lane": "L2a",
+      "scenes": [
+        "catalog",
+        "lab",
+        "projects",
+        "project-detail",
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "search",
+        "search-down",
+        "preview",
+        "preview-done",
+        "lineage-picker",
+        "login",
+        "not-found",
+        "account-admin",
+        "gnb-more",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 8,
+      "screen": "연구실",
+      "selector": ".dash-section-label",
+      "lane": "L2b",
+      "scenes": [
+        "lab",
+        "gnb-more"
+      ]
+    },
+    {
+      "n": 9,
+      "screen": "연구실",
+      "selector": ".dash-quiet",
+      "lane": "L2b",
+      "scenes": [
+        "lab",
+        "gnb-more"
+      ]
+    },
+    {
+      "n": 10,
+      "screen": "연구실",
+      "selector": ".dash-bar",
+      "lane": "L2b",
+      "scenes": [
+        "lab",
+        "gnb-more"
+      ]
+    },
+    {
+      "n": 11,
+      "screen": "연구실",
+      "selector": ".titem button",
+      "lane": "L2b",
+      "scenes": [
+        "lab",
+        "gnb-more"
+      ]
+    },
+    {
+      "n": 12,
+      "screen": "연구실",
+      "selector": ".todo-more, .todo-all",
+      "lane": "L2b",
+      "scenes": [
+        "lab",
+        "gnb-more"
+      ]
+    },
+    {
+      "n": 13,
+      "screen": "데이터셋 목록",
+      "selector": ".tbl .catalog-open",
+      "lane": "L2b",
+      "measure": "row",
+      "scenes": [
+        "catalog"
+      ]
+    },
+    {
+      "n": 14,
+      "screen": "데이터셋 목록",
+      "selector": ".tbl .rowact .rab",
+      "lane": "L2b",
+      "scenes": [
+        "catalog"
+      ]
+    },
+    {
+      "n": 15,
+      "screen": "데이터셋 목록(캡처 사각)",
+      "selector": ".colmenu button",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 16,
+      "screen": "데이터셋 목록(캡처 사각)",
+      "selector": ".fchips .fc button",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 17,
+      "screen": "데이터셋 목록(캡처 사각)",
+      "selector": ".fchips .fall",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 18,
+      "screen": "검색",
+      "selector": ".hit-name",
+      "lane": "L2b",
+      "scenes": [
+        "search"
+      ]
+    },
+    {
+      "n": 19,
+      "screen": "검색 · 데이터셋 목록",
+      "selector": ".crosslink a",
+      "lane": "L2b",
+      "scenes": [
+        "search",
+        "search-down"
+      ]
+    },
+    {
+      "n": 21,
+      "screen": "없는 페이지",
+      "selector": ".notfound a",
+      "lane": "L2a",
+      "scenes": [
+        "not-found"
+      ]
+    },
+    {
+      "n": 22,
+      "screen": "상세 · 프로젝트 상세",
+      "selector": ".backlink",
+      "lane": "L2a",
+      "scenes": [
+        "project-detail",
+        "detail",
+        "preview",
+        "preview-done",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 23,
+      "screen": "미리보기 화면",
+      "selector": ".preview-page .backlink",
+      "lane": "L1",
+      "scenes": [
+        "preview",
+        "preview-done"
+      ]
+    },
+    {
+      "n": 24,
+      "screen": "상세",
+      "selector": ".dsec-menu-i",
+      "lane": "L2b",
+      "scenes": [
+        "detail",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 25,
+      "screen": "상세",
+      "selector": ".ig-more",
+      "lane": "L2b",
+      "scenes": [
+        "detail",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 26,
+      "screen": "상세 계보",
+      "selector": ".lrow .ln-go",
+      "lane": "L2b",
+      "scenes": [
+        "detail",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 27,
+      "screen": "상세 계보",
+      "selector": ".lin-use",
+      "lane": "L2b",
+      "scenes": [
+        "detail",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 28,
+      "screen": "상세 인라인 편집(캡처 사각)",
+      "selector": ".dt-edit.de-inline input, .dt-edit.de-inline select",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 29,
+      "screen": "상세 · 업로드 미리보기",
+      "selector": ".pv-pick-values summary",
+      "lane": "L1",
+      "scenes": [
+        "detail",
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "detail-preview-map",
+        "detail-preview-map-value",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 30,
+      "screen": "지도 미리보기",
+      "selector": ".pv-zoom button, .pv-shot button",
+      "lane": "L1",
+      "scenes": [
+        "detail-preview-map",
+        "detail-preview-map-value",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 31,
+      "screen": "프로젝트",
+      "selector": ".pj-views button",
+      "lane": "L2b",
+      "scenes": [
+        "projects",
+        "project-dialog"
+      ]
+    },
+    {
+      "n": 32,
+      "screen": "프로젝트 상세",
+      "selector": ".pd-sect .quiet, td.right .quiet",
+      "lane": "L2b",
+      "scenes": [
+        "project-detail"
+      ]
+    },
+    {
+      "n": 33,
+      "screen": "프로젝트 상세",
+      "selector": ".pd-linkurl",
+      "lane": "L2b",
+      "scenes": [
+        "project-detail"
+      ]
+    },
+    {
+      "n": 34,
+      "screen": "프로젝트 대화상자",
+      "selector": ".pj-seg button",
+      "lane": "L2b",
+      "scenes": [
+        "project-dialog"
+      ]
+    },
+    {
+      "n": 35,
+      "screen": "설정 · 계정 관리",
+      "selector": ".settabs .st",
+      "lane": "L2b",
+      "scenes": [
+        "settings",
+        "account-admin"
+      ]
+    },
+    {
+      "n": 36,
+      "screen": "구성원(권한 체크 칸 · label 상자로 잼)",
+      "selector": "td.pc input[type=checkbox]",
+      "lane": "L3b",
+      "scenes": [
+        "members"
+      ]
+    },
+    {
+      "n": 37,
+      "screen": "로그인 · 비밀번호 · 계정 관리",
+      "selector": ".login-input",
+      "lane": "L2b",
+      "scenes": [
+        "login",
+        "account-admin"
+      ]
+    },
+    {
+      "n": 38,
+      "screen": "로그인 · 비밀번호 · 계정 관리",
+      "selector": ".login-submit",
+      "lane": "L2b",
+      "scenes": [
+        "login"
+      ]
+    },
+    {
+      "n": 39,
+      "screen": "업로드 등록",
+      "selector": ".regsteps .rs-x",
+      "lane": "L2b",
+      "scenes": [
+        "upload-classify",
+        "upload-metadata",
+        "upload-link"
+      ]
+    },
+    {
+      "n": 40,
+      "screen": "업로드",
+      "selector": ".up-preview-options > summary",
+      "lane": "L2b",
+      "scenes": [
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 41,
+      "screen": "업로드",
+      "selector": ".up-file-management > summary",
+      "lane": "L2b",
+      "scenes": [
+        "upload-classify",
+        "upload-metadata",
+        "upload-link"
+      ]
+    },
+    {
+      "n": 42,
+      "screen": "업로드",
+      "selector": ".mapbar .btn-ghost",
+      "lane": "L2b",
+      "scenes": [
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 43,
+      "screen": "업로드 메타데이터",
+      "selector": ".vt-del",
+      "lane": "L2b",
+      "scenes": [
+        "upload-metadata"
+      ]
+    },
+    {
+      "n": 44,
+      "screen": "업로드 메타데이터",
+      "selector": ".vt-add",
+      "lane": "L2b",
+      "scenes": [
+        "upload-metadata"
+      ]
+    },
+    {
+      "n": 45,
+      "screen": "업로드 메타데이터 · 상세(대표 라디오 · label 상자로 잼)",
+      "selector": "input[type=radio][name=vt-representative]",
+      "lane": "L3b",
+      "scenes": [
+        "detail",
+        "upload-metadata",
+        "detail-preview-map",
+        "detail-preview-map-value"
+      ]
+    },
+    {
+      "n": 46,
+      "screen": "업로드 연결",
+      "selector": ".lin-link",
+      "lane": "L2b",
+      "scenes": [
+        "upload-link"
+      ]
+    },
+    {
+      "n": 47,
+      "screen": "업로드 기간(캡처 사각)",
+      "selector": ".dr-nav button",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 48,
+      "screen": "업로드 기간(캡처 사각)",
+      "selector": ".dr-useg button",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 49,
+      "screen": "업로드 기간(캡처 사각)",
+      "selector": ".dr-cal-d",
+      "lane": "L2b",
+      "captureBlind": true,
+      "scenes": []
+    },
+    {
+      "n": 50,
+      "screen": "전 화면(회귀 감시)",
+      "selector": ".btn",
+      "lane": "—",
+      "heightOnly": true,
+      "scenes": [
+        "project-dialog",
+        "detail",
+        "settings",
+        "members",
+        "lineage-picker",
+        "upload",
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "account-admin",
+        "primitives",
+        "detail-preview-map",
+        "detail-preview-map-value",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 51,
+      "screen": "전 화면(회귀 감시)",
+      "selector": ".btn-sm",
+      "lane": "—",
+      "heightOnly": true,
+      "scenes": [
+        "detail",
+        "settings",
+        "members",
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "primitives",
+        "detail-preview-map",
+        "detail-preview-map-value",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 52,
+      "screen": "전 화면(회귀 감시)",
+      "selector": ".inp",
+      "lane": "—",
+      "heightOnly": true,
+      "scenes": [
+        "lineage-picker",
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "primitives",
+        "upload-preview-expand"
+      ]
+    },
+    {
+      "n": 53,
+      "screen": "전 화면(회귀 감시)",
+      "selector": ".sel",
+      "lane": "—",
+      "heightOnly": true,
+      "scenes": [
+        "detail",
+        "lineage-picker",
+        "upload-classify",
+        "upload-metadata",
+        "upload-link",
+        "primitives",
+        "detail-preview-map",
+        "detail-preview-map-value",
+        "upload-preview-expand"
+      ]
+    }
+  ]
+}

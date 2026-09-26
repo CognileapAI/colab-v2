@@ -1,0 +1,25 @@
+`lineageGraph.css` has 13 `font-size` declarations below 13px. The smallest is 10px. I counted after removing the comments. Every comment line in this file mentions no `font-size`, so they would not have changed the count anyway.
+
+| Line | Selector | Value |
+|---|---|---|
+| :10 | `.dsec-h .hint` | 11px |
+| :14 | `.lin-stale .d` | 11px |
+| :31 | `.lin-way` | 10px |
+| :44 | `.ln .n-role` | 10.5px |
+| :45 | `.ln .n-name` | 12.5px |
+| :58 | `.lin-use` | 11px |
+| :72 | `.lrow .stg` | 10px |
+| :76 | `.lrow .ln-name` | 12px |
+| :81 | `.lrow .ln-sub` | 11px |
+| :82 | `.hist` | 10px |
+| :83 | `.aiflag` | 10px |
+| :85 | `.manflag` | 10px |
+| :95 | `.lin-empty .muted` | 11px |
+
+- The only other fixed px value, at `:26` (`.lin-arw`), is 15px, so it passes.
+- By value: 10px ×5, 11px ×5, 10.5px, 12.5px and 12px once each. Counting whole-number values only would give 11, so the two decimal values matter.
+- Five declarations use size variables instead of numbers (`var(--text-h2)`, `var(--text-h3)`, `var(--text-body-sm)` and the like). Those variables are defined in a different file, so I didn't count them.
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

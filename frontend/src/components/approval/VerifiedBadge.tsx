@@ -10,13 +10,24 @@
 //
 // ⚠ **미승인에 회색 배지를 두지 않는다.** 배지는 1종이고(§4 용어 정의) 없으면 없는 것이다 —
 // 「미승인 배지」를 만들면 배지가 2종이 된다.
+//
+// ⭑ 휴대폰·패드 대응 20260926 L3a(V9 · 부록 C 6) — 터치 기기에서만 배지가 **뜻을 펼치는 설명 단추**다.
+// 승인 동작으로 가는 자리가 아니다(누르면 아래 문장만 보인다). 마우스는 표시 전용 배지와 `title` 그대로다.
 import './approval.css';
+import { TouchOrMouse } from '../common/TouchNote';
+import { useInputMode } from '../common/useInputMode';
+
+/** 마우스 올림 설명과 터치에서 누르면 보이는 설명이 같은 문장이다(「새 문구안」 14행 확정). */
+const VERIFIED_MEANING = '교수가 품질을 보증했어요';
 
 export function VerifiedBadge(props: { verified: boolean }) {
+  const mouse = useInputMode() === 'mouse';
   if (!props.verified) return null;
   return (
-    <span className="chip chip--verified" data-slot="verified-badge" title="교수가 품질을 보증했어요">
-      Verified
-    </span>
+    <TouchOrMouse mouse={mouse} note={VERIFIED_MEANING}>
+      <span className="chip chip--verified" data-slot="verified-badge" title={mouse ? VERIFIED_MEANING : undefined}>
+        Verified
+      </span>
+    </TouchOrMouse>
   );
 }
