@@ -169,6 +169,7 @@ eval/harness/H<번호>-<이름>/
 
 ```bash
 bash eval/harness/tests/run-selftest.sh    # 18/18 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
+bash eval/harness/tests/expect-replay.sh   # H12·H15·H16·H18 expect 를 기록 5회차 응답·오답 모형으로 재생 · 모델 호출 0회
 ```
 
 ## 자리
