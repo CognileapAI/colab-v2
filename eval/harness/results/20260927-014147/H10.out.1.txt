@@ -1,0 +1,15 @@
+음수 margin 선언은 두 파일에 한 건씩, 모두 2건입니다. 두 파일 전체를 읽었고, 주석을 뺀 코드에서 margin 값에 음수가 들어간 곳을 grep으로 다시 확인했습니다.
+
+| 위치 | 선언 | 성격 |
+|---|---|---|
+| `detail.css:93` | `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` | 위에 있는 `.infogrid`(`margin-bottom: var(--space-6)`)에 12px 끌어올려 붙입니다. `border-top: none`과 아래쪽만 둥근 모서리로 이어 보이게 합니다. 정본이 금지하는 "음수로 앞 요소에 붙이기" 모양 그대로입니다. |
+| `shell.css:58` | `.detail-page .backlink, .project-detail .backlink { margin-left: -7px; }` | 자기 `padding-left: 7px`를 가로로 되돌려 글자를 단 가장자리에 맞춥니다. 앞 요소에 붙이는 용도는 아니지만, 여백을 컨테이너가 아닌 자식이 음수로 조정한다는 점에서 같은 결함입니다. |
+
+**제외한 것:**
+- margin이 아닌 음수값은 넣지 않았습니다: `detail.css:33` `letter-spacing: -0.03em`, `shell.css:115` `letter-spacing: -0.02em`, `shell.css:188` `bottom: -11px`(위치 지정).
+- `margin-bottom: var(--space-5)`처럼 토큰 이름의 `-5`, `-6`에 걸린 grep 결과는 음수값이 아닙니다.
+- 주석 안에는 음수 margin 값이 없었습니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

@@ -1,0 +1,15 @@
+34곳을 찾았습니다. 세 파일의 `font-size` 선언은 모두 65개입니다. 주석을 빼고 행 번호를 그대로 둔 채 파싱했고, 파일은 수정하지 않았습니다.
+
+- **행 번호:** 주석 안에 `font-size`가 없어서 주석 때문에 빠지거나 밀린 행은 없습니다.
+- **여러 줄 규칙:** `upload.css:92`, `upload.css:144`, `detail.css:89`, `lineageGraph.css:31`, `lineageGraph.css:58`은 여러 줄에 걸친 규칙 안의 선언입니다. 선택자 행이 아니라 `font-size`가 시작하는 행을 적었습니다.
+- **리터럴 px로 읽은 값:** 47개이고, 이 중 13px 미만이 34개, 13px 이상이 13개입니다. 소수 값 `10.5px`(`lineageGraph.css:44`)와 `12.5px`(`lineageGraph.css:45`)는 13px 미만에 넣었습니다.
+- **판정하지 않은 값:** `var(--text-*)` 18개(detail 16, lineageGraph 2)는 이 범위에서 값을 알 수 없어 합격·불합격을 추정하지 않았습니다. 잘못된 값이나 `!important`가 붙은 값은 없었습니다.
+- **`font` 축약형:** `font: inherit` 3곳은 `font-size` 선언이 아니라서 세지 않았습니다.
+- **파일별 지목 수:** `detail.css` 7 · `upload.css` 14 · `lineageGraph.css` 13
+- **이미 13px인 오류 규칙:** `upload.css:138`의 `.vizerr, .warn` 공유 규칙입니다. 값은 `upload.css:144`에서 13px입니다. 같은 경고 색을 쓰는 `.up-toast`(`upload.css:92`)는 12px라서 지목 목록에 넣었습니다.
+
+CSS 리터럴만 본 정적 검사이고, 계산된 스타일이나 배포 화면을 확인한 것은 아닙니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

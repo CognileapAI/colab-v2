@@ -1,0 +1,22 @@
+`display` 중복은 한 곳, 미정의 토큰 참조는 11건입니다. 두 값 모두 직접 스크립트로 세었고, `SOURCE.md` 에 적힌 답과 같습니다.
+
+- **덮인 선언**: 규칙 `.detail-page .lin-way` 에서 29행이 `display: inline-flex` 를 선언하고 33행이 `display: inline-block` 을 다시 선언합니다. 뒤 선언이 이기므로 29행이 무효가 되고, 같은 줄의 `align-items: center` 도 효과가 없어집니다.
+- **미정의 토큰 참조**: 11건이고 폴백이 있는 참조는 없습니다.
+
+  | 행 | 토큰 |
+  |---|---|
+  | 30 | `--color-accent-50`, `--color-accent-200` |
+  | 31 | `--color-accent-700` |
+  | 48 | `--color-gray-300` |
+  | 49 | `--color-gray-300` |
+  | 51 | `--color-primary-800` |
+  | 57 | `--color-primary-200`, `--color-primary-800` |
+  | 83 | `--color-accent-700`, `--color-accent-50` |
+  | 84 | `--color-ai` |
+
+  - 서로 다른 토큰은 7종입니다. `SOURCE.md` 는 가짓수를 8이라고 적었는데, 셈해 보면 7입니다. 답으로 적는 참조 건수 11에는 영향이 없습니다.
+  - 이 7개 이름은 `tokens.css` 와 `detail.css` 어디에도 나오지 않습니다. `:root` 밖에서도, 주석 안에서도 없습니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 를 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일의 주석을 지운 뒤 두 `:root` 블록에서 정의된 토큰 45개를 모으고, `lineageGraph.css` 의 `var(--…)` 중 이 목록에 없고 폴백도 없는 참조를 행별로 셌으며, 같은 규칙 안의 `display` 선언이 둘 이상인 곳을 찾았다.

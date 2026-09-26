@@ -1,0 +1,13 @@
+디자인 요구사항 위반입니다. 정보 격자의 바깥 컨테이너 선과 안쪽 칸 구분선이 같은 토큰 `--color-border`를 써서, 두 선의 층이 나뉘지 않습니다.
+
+- **컨테이너 선** (`detail.css:59`): `.detail-page .infogrid` → `border: 1px solid var(--color-border)`
+- **칸 구분선** (`detail.css:62`): `.detail-page .infogrid .ig` → `border-right`와 `border-bottom` 모두 `1px solid var(--color-border)`
+- **토큰 값** (`tokens.css:20`): `--color-border: #e8ecf2`. 이 토큰을 다른 값으로 다시 정의하는 파일은 없습니다.
+- **720px 이하 화면** (`detail.css:69`): 칸 구분선을 되살리는 규칙도 같은 `--color-border`를 씁니다.
+- **다른 화면과 비교**: `catalog.css` 표는 헤더 선 `:41`·`:45`와 행 구분선 `:46`에 `--color-border-strong`과 `--color-border`를 나눠 씁니다. 상세 화면 격자에는 이런 구분이 없습니다.
+
+`SOURCE.md`도 같은 두 행을 결함 위치로 적고 있습니다. 위 판정은 그 파일에 기대지 않고 CSS 선언을 직접 확인한 결과입니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

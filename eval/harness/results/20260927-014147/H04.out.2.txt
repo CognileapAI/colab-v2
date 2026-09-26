@@ -1,0 +1,21 @@
+detail.css 51–53행의 Lv 칩 색 조합과 tokens.css의 토큰 hex:
+
+| 클래스 | 배경 | 글자색 | hex 배경 | hex 글자 |
+|---|---|---|---|---|
+| `.lvl-0` | `--color-gray-100` | `--color-gray-600` | #e8ecf2 | #565c63 |
+| `.lvl-1` | `--color-primary-50` | `--color-primary-700` | #edf4ff | #0f62e0 |
+| `.lvl-2`/`.lvl-3` | `--color-primary-100` | `--color-primary-700` | #e2eeff | #0f62e0 |
+
+WCAG 2.x 상대휘도 계산 결과:
+
+- **lvl-0** (#565c63 on #e8ecf2): L_fg≈0.105, L_bg≈0.836 → **5.70:1** ✓
+- **lvl-1** (#0f62e0 on #edf4ff): L_fg≈0.142, L_bg≈0.900 → **4.94:1** ✓
+- **lvl-2/3** (#0f62e0 on #e2eeff): L_fg≈0.142, L_bg≈0.846 → **4.66:1** ✓
+
+세 조합 모두 AA 기준(4.5:1) 이상이다. 목업에서 지적한 3.71:1은 v2 코드의 토큰 값과 다르다.
+
+---
+
+- 판정: 없음
+- 실측: 4.66:1
+- 근거: detail.css:53
