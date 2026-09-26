@@ -1,0 +1,21 @@
+인계 문서의 「다음 = …」 줄은 낡았습니다. 저장소 이력과 맞지 않습니다.
+
+**인계 문서가 적은 다음 단계** (2026-09-08, R-B 마감 문단)
+- ⑵ 배포 창 · ⑶ R-C intent · ⑷ `w9-dev-deploy-rebased` 처리
+- `SOURCE.md` 도 이 발췌가 `integration/r-d` tip 에서 떴다고 밝힙니다. 그러니 R-C·R-D 는 이미 지나간 단계입니다.
+
+**이력에서 확인한 현재 상태** (2026-09-26~27, 하네스 S-red 작업 · PR #178)
+- `b2412f49`: rate 과제 문서, PR `Rate-Tasks` 필드, `check.py` 경고, Codex 러너의 mode 를 맞췄습니다.
+- `a36b218d`: H18 을 `mode=rate` 로 바꾸고 회귀 집합에서 기계적으로 뺐습니다. 시험은 GREEN 입니다.
+- 그 앞 `616b400b` 에서 S-7(T17 expect 교정)을 병합했습니다.
+- 마지막 두 커밋이 설정 해시 집합에 드는 파일을 바꿨습니다. 바뀐 파일은 `eval/harness/**`, `run.sh`, `config_hash.py`, `gates/tools/harness-eval.sh`, `.agents/harness.yaml` 입니다.
+  - README 181행 규칙에 따르면 이러면 `harness-eval` 면제 게이트가 78 로 돌아갑니다.
+  - 따라서 새 head 에서 회차를 다시 돌려야 합니다.
+- intent 634행에 남은 순서가 적혀 있습니다: 「#178 회차·병합 → PR A 레인 → T11 재판정 → PR 2 → PR 3 → PR 4 → 잠금 intent 소형 PR」.
+- 이 중 「#178 회차·병합」이 첫 단계입니다.
+
+한계: 15라운드 판정은 README 에만 기록돼 있고 intent 에는 아직 줄이 없습니다. 위 다음 단계는 커밋 내용과 README·intent 의 규칙에서 추론한 것입니다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -n 15` · b2412f4
+- 다음 단계: head `b2412f4` 에서 S-red 회차를 1회 돌려(`COLAB_EVAL_TIMEOUT=150`) `harness-eval` 면제 게이트를 78 에서 풀고, #178 을 병합한 뒤 PR A 레인으로 넘어간다

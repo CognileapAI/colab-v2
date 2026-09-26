@@ -1,0 +1,25 @@
+파이썬으로 세 파일의 주석을 걷어 낸 뒤 셌습니다. `tokens.css` 와 `detail.css` 의 `:root` 에 정의된 토큰을 모았고, `lineageGraph.css` 에 나오는 `var(--…)` 참조를 그 목록과 행마다 대조했습니다. `display` 는 규칙 블록마다 몇 번 선언됐는지 셌습니다.
+
+**⑴ 덮인 선언**
+- `.detail-page .lin-way` 규칙 하나뿐입니다. 29행이 `display: inline-flex`, 33행이 `display: inline-block` 입니다.
+- 뒤 선언이 이기므로 29행의 `inline-flex` 는 효과가 없습니다. 같은 행의 `align-items: center` 도 함께 무의미해집니다.
+
+**⑵ 미정의 토큰 참조** — 11건, 모두 폴백이 없습니다.
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50`, `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200`, `--color-primary-800` |
+| 83 | `--color-accent-700`, `--color-accent-50` |
+| 84 | `--color-ai` |
+
+- 미정의 토큰의 가짓수는 7개입니다: accent-50·200·700, gray-300, primary-200·800, color-ai.
+- 픽스처의 `SOURCE.md` 에는 가짓수가 8로 적혀 있습니다. 참조 11건은 제 결과와 같지만 가짓수는 실측과 다릅니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일의 주석을 걷어 내고 두 `:root` 의 토큰을 모은 뒤 `lineageGraph.css` 의 `var(--…)` 참조를 행마다 대조했고, 규칙 블록마다 `display` 선언 수를 셌다

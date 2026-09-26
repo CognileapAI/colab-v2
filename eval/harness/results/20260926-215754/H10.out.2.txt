@@ -1,0 +1,15 @@
+두 파일의 음수 margin 선언은 2건입니다. 둘 다 주석이 아닌 실제 코드입니다.
+
+| 위치 | 선언 | 성격 |
+|---|---|---|
+| `detail.css:93` | `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` | 위쪽 음수 margin입니다. `border-top: none`, 아래 모서리만 둥근 `radius`와 함께 파일 목록을 바로 위 `.infogrid`에 붙입니다. ⑴ 「음수로 앞 요소에 붙이기」에 그대로 해당합니다. |
+| `shell.css:58` | `.detail-page .backlink, .project-detail .backlink { margin-left: -7px; }` | 왼쪽 음수 margin입니다. 자기 `padding-left: 7px`(57행)를 되돌려 글자를 페이지 왼쪽 끝선에 맞춥니다. 앞 요소에 붙이는 용도는 아니지만, 요소가 컨테이너의 콘텐츠 영역 밖으로 나가는 음수 margin 선언이라 셌습니다. |
+
+**뺀 것:**
+- `shell.css:188` `bottom: -11px`: 위치 offset이고 margin이 아닙니다.
+- `detail.css:64` `:nth-last-child(-n + 3)`: 선택자 식입니다.
+- 주석 안에는 음수 margin 값이 없었습니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

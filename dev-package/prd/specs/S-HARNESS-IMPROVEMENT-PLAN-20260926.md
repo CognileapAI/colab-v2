@@ -262,3 +262,8 @@
 - 새 intent(발행 예정 · 파일명은 발행 시 확정): ⓐ CI 회차 `harness-eval-run`(행 7 · PR 2 병합 전 결정) · ⓑ fcntl 잠금(행 5c · 지금 발행 · 소유 = `gates/tools/_lock.sh` · `_pg.sh` · `gate-host-mutex-selftest.sh` · PR A 뒤 집합 밖) · ⓒ = 기존 `dev-package/intent/2026-09-26-human-authorization-for-destructive-ops.md` 에 `authorized_by` 줄 추가(append-only).
 - 감사 보고서: 현재 `~/.claude/reports/harness-state-20260925/team-shared-20260926/{report.md,audit-mechanisms.md,audit-process-docs.md,audit-cost-concurrency.md}` → PR B 반입 뒤 `dev-package/reports/harness/20260925-harness-state/team-shared-20260926/` · 이 문서 §0 「근거(저장소 밖)」 4행의 다른 보고서도 같은 PR B 로 반입(D4 권고 범위 = `harness-state-20260925/` 전체).
 - §6 추가 질문: Q13 규칙 1(해시 집합 PR 동시 1건)을 `pr_contract.py` 가 검사할지(집합 변경 PR 이 open 중 = `gh api` 조회 필요 · CI 토큰 권한 = §6 Q9 와 같은 실측) — PR 2 spec 상세 때 Ted.
+
+### 10.6 CI 회차 경로 보류 (2026-09-26 · Ted 「클로드로 통일해서 쓸게」)
+- §10.2 행 7(CI 회차 intent 결정) · 행 8(구현) = **보류**. 회차는 각자 로컬 Claude 구독 CLI(현 E0 설계) · 팀 공용 절차 = 아무 write 권한자나 브랜치를 받아 회차 → `results/<run>/` 커밋 → push. 재개 조건은 CI intent 「추가 기록」 참조.
+- 순서(개정): S-red #178 회차·병합 → 소형 PR A(회차 1) → T11 재판정 → PR 2 → PR 3(온보딩 문서에 회차 절차 · macOS) → PR 4 → 이식 잠금 소형 PR.
+

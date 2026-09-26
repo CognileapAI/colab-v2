@@ -68,6 +68,10 @@ def run_task(task: Path, repeat: int, codex: str, timeout: int, output: Path) ->
     try:
         if not (task/'fixture').is_dir() or not (task/'expect.sh').is_file():
             raise ValueError('fixture/ or expect.sh missing')
+        # Same `mode` marker as eval/harness/run.sh (15라운드 판정 H18-rate): exactly `rate`, else readiness.
+        rate = (task/'mode').is_file()
+        if rate and (task/'mode').read_text(encoding='utf-8').rstrip('\n') != 'rate':
+            raise ValueError('unknown mode (only rate is accepted)')
         prompt = (task/'task.md').read_bytes()
         row['task_sha256'] = hashlib.sha256(prompt).hexdigest()
         process = subprocess.run([codex, '-C', str(task/'fixture'), 'exec',
@@ -82,8 +86,9 @@ def run_task(task: Path, repeat: int, codex: str, timeout: int, output: Path) ->
         Path(f'{prefix}.txt').write_text(answer, encoding='utf-8')
         row['model_evidence'] = runtime_model(raw)
         judge = judge_answer(task, answer)
-        row.update(status=('green' if judge.returncode == 0 else
-                           'judgment-failure' if judge.returncode == 1 else 'readiness-failure'),
+        row.update(status=('readiness-failure' if judge.returncode not in (0, 1) else
+                           'rate' if rate else
+                           'green' if judge.returncode == 0 else 'judgment-failure'),
                    judge_exit=judge.returncode,
                    evidence=(judge.stdout+judge.stderr).decode('utf-8', errors='replace'))
     except subprocess.TimeoutExpired as exc:
@@ -173,7 +178,8 @@ def main() -> int:
         return 1
     if any(r['status'] == 'readiness-failure' for r in rows):
         return 78
-    return 0 if rows and all(r['status'] == 'green' for r in rows) else 1
+    # `rate` rows (mode=rate tasks) record judge_exit as a rate and stay out of the exit judgment.
+    return 0 if rows and all(r['status'] in ('green', 'rate') for r in rows) else 1
 
 
 if __name__ == '__main__':

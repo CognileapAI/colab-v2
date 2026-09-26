@@ -13,5 +13,6 @@ CLAUDE.md
 gates/**
 scripts/harness/hooks/**
 eval/harness/**
+# 아래 줄은 자기 자신을 명시하는 줄이다 — 위 `eval/harness/**` 과 겹치고, 계산기(ls-files)는 중복을 한 번만 센다.
 eval/harness/config-paths.txt
 :(exclude)eval/harness/results/**

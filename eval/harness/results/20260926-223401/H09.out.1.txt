@@ -1,0 +1,12 @@
+상세 화면 정보 격자의 컨테이너 선과 칸 구분선이 같은 토큰 `--color-border` 를 쓴다. 두 선이 한 층으로 보이므로 디자인 요구사항 위반이다.
+
+- **컨테이너 선**: `detail.css:59` (`.detail-page .infogrid`), `border: 1px solid var(--color-border)`
+- **칸 구분선**: `detail.css:62` (`.detail-page .infogrid .ig`), `border-right` 와 `border-bottom` 둘 다 `var(--color-border)`
+- `detail.css:69` 의 720px 이하 미디어쿼리도 칸 `border-right` 를 같은 `--color-border` 로 다시 선언한다.
+- `--color-border` 의 정의는 `tokens.css:20` (`#e8ecf2`) 한 곳뿐이다. 다른 파일에서 값을 덮어쓰지 않으므로 두 선은 색까지 같다.
+- 층을 가를 수 있는 토큰은 이미 있다. `tokens.css:21` 의 `--color-border-strong` (`#dfe3e8`) 과 `tokens.css:23` 의 `--color-border-shell` (`#bfc6cc`) 이다.
+- `catalog.css` 의 표는 층을 가르고 있다. 헤더 구분선(`catalog.css:41`)은 `--color-border-strong`, 행 구분선(`catalog.css:46`)은 `--color-border` 를 쓴다. 정보 격자에서는 이렇게 갈리지 않는다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

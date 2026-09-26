@@ -1,0 +1,11 @@
+{
+  "schema": "colab-eval-config-hash/1",
+  "hash": "3e11341a0737d19a303a34077ba68030b91ad54b78499f034e51e3278344d760",
+  "files": 582,
+  "head": "b2412f492a0f93ad69abe904126c0cb7a13df11d",
+  "dirty": [],
+  "selected": "all",
+  "patterns_sha256": "6205e1a0259faa39b075fbd39ab667099dee353e2b5870b5cac39079fee2a4f0",
+  "claude_version": "2.1.283 (Claude Code)",
+  "computed_at": "2026-09-26T15:10:27Z"
+}

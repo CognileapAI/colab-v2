@@ -5,9 +5,11 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+RATE_MODE_RE = re.compile(r'^eval/harness/(H\d\d-[^/]+)/mode$')
 
 
 def configuration():
@@ -28,11 +30,33 @@ def field(body, name):
     return values[0].strip() if len(values) == 1 else ''
 
 
-def validate(text, head, cfg, *, mode='draft', evidence=None, artifact_root=None):
+def head_rate_tasks(head, root=ROOT):
+    """Sorted eval tasks whose `mode` file in the head tree says exactly `rate`; None if unreadable.
+
+    15라운드 판정 H18-rate: a rate task leaves the eval regression set, so the PR body names it."""
+    def git(*args):
+        return subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True, check=True).stdout
+    try:
+        paths = git('ls-tree', '-r', '--name-only', head, '--', 'eval/harness').splitlines()
+        return sorted(m[1] for m in map(RATE_MODE_RE.match, paths)
+                      if m and git('show', f'{head}:{m[0]}').rstrip('\n') == 'rate')
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def validate(text, head, cfg, *, mode='draft', evidence=None, artifact_root=None, rate_tasks=None):
     body = visible(text)
     problems = []
     if not re.fullmatch('[0-9a-f]{40}', head) or field(body, 'Head-SHA') != head:
         problems.append('full Head-SHA must match the requested head')
+    if rate_tasks is None:
+        rate_tasks = head_rate_tasks(head)
+    name = cfg['rate_tasks_field']
+    if rate_tasks is None:
+        problems.append(f'{name} cannot be checked: the head tree mode=rate tasks are unreadable')
+    elif field(body, name) != (', '.join(rate_tasks) or cfg['rate_tasks_none']):
+        problems.append(f'{name} must equal the head tree mode=rate tasks: '
+                        + (', '.join(rate_tasks) or cfg['rate_tasks_none']))
     plan = field(body, 'Plan-Ref')
     if not plan or re.search(r'<[^>]+>|TODO|TBD', plan):
         problems.append('Plan-Ref is missing or a placeholder')

@@ -1,0 +1,11 @@
+카드 규칙에 그림자가 있습니다. 고칠 곳은 `catalog.css:31` 한 줄입니다.
+
+- **고칠 곳** `catalog.css:31`: `.catalog-page .card` 규칙(29–32행) 안에 `box-shadow: var(--shadow-sm);`가 있습니다. 이 선언을 지우면 됩니다.
+- **예외** `catalog.css:80`: `.colmenu`의 `box-shadow: var(--shadow-lg);`는 팝오버라서 그대로 둡니다.
+- **카드와 무관한 선언** `catalog.css:50`, `catalog.css:52`: 표 행에 마우스를 올렸을 때 첫 칸 왼쪽에 2px 세로선을 그리는 `inset` 그림자와 그 전환 효과입니다. 카드 그림자가 아니므로 대상이 아닙니다.
+
+같은 디렉터리의 `SOURCE.md`에 이 픽스처의 예상 답이 적혀 있습니다. CSS를 먼저 읽고 판정한 뒤에 그 파일을 열었고, 결론은 같았습니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

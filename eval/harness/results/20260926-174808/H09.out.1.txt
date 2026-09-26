@@ -1,0 +1,12 @@
+`.detail-page .infogrid` 의 바깥 선과 칸 구분선이 같은 `--color-border` 를 쓰므로, 두 층이 갈리지 않아 요구사항 위반입니다.
+
+- **컨테이너 선**: `detail.css:59`, `border: 1px solid var(--color-border);`
+- **칸 구분선**: `detail.css:62`, `.ig` 의 `border-right` 와 `border-bottom` 이 둘 다 `var(--color-border)`
+- 720px 이하 화면용 규칙인 `detail.css:69` 도 같은 `--color-border` 를 씁니다.
+- `catalog.css` 와 `tokens.css` 에는 `.infogrid` 를 덮어쓰는 규칙이 없어서, 위 선언이 그대로 적용됩니다.
+- `--color-border` 의 값은 `#e8ecf2` 입니다(`tokens.css:20`). 같은 파일에 `--color-border-strong`(`:21`)과 `--color-border-shell`(`:23`)이 따로 정의돼 있지만, 이 격자에서는 쓰이지 않습니다.
+- 폴더의 `SOURCE.md` 에 결함 위치가 `:59`·`:62` 로 미리 적혀 있습니다. 위 판정은 그 파일에 기대지 않고 CSS 를 직접 읽어서 확인했습니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

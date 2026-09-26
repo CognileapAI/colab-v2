@@ -1,0 +1,26 @@
+`lineageGraph.css` 에서 덮인 선언 1곳과 미정의 토큰 참조 11건을 찾았다.
+
+**덮인 선언.** `.detail-page .lin-way` 규칙(28–35행) 하나에 `display` 가 두 번 있다.
+- 29행 `display: inline-flex;`
+- 33행 `display: inline-block;`
+
+같은 규칙 안이라 뒤에 오는 33행이 이긴다. 그래서 29행의 `inline-flex` 와 `align-items: center` 는 적용되지 않는다. 이 규칙 말고는 `display` 가 두 번 나오는 규칙이 없다.
+
+**미정의 토큰 참조.** 두 `:root` 어디에도 없는 토큰은 7종이다. 폴백이 있는 `var()` 는 이 파일에 없다.
+
+| 토큰 | 참조 행 | 건수 |
+|---|---|---|
+| `--color-accent-50` | 30, 83 | 2 |
+| `--color-accent-200` | 30 | 1 |
+| `--color-accent-700` | 31, 83 | 2 |
+| `--color-gray-300` | 48, 49 | 2 |
+| `--color-primary-800` | 51, 57 | 2 |
+| `--color-primary-200` | 57 | 1 |
+| `--color-ai` | 84 | 1 |
+| 합계 | | 11 |
+
+83행에는 서로 다른 미정의 토큰이 두 개 있어서 각각 1건으로 셌다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 지운 뒤 스크립트로 `tokens.css`·`detail.css` 의 `:root` 정의를 모으고, `lineageGraph.css` 의 폴백 없는 `var(--x)` 를 행마다 대조해 셌으며, 규칙마다 `display:` 가 나온 행을 모았다

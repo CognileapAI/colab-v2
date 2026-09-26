@@ -9,23 +9,30 @@
 #   기대를 낮추면 판정이 통과로 바뀐다. 이 레포의 대표 실패형(green-by-skip)의 **편집판**이다.
 #   사람이 사후에 diff 를 읽어야만 보이는 종류라, 그 자리에서 막는다.
 #
-# ⚠ **조건은 「fix 회차라고 선언됐는가」다.** `COLAB_FIX_LANE=1` 이 없으면 **조용히 통과**한다 —
-#   TDD 레인은 시험을 먼저 쓰는 것이 정상 작업이고(design-review SKILL §3 「RED → GREEN」),
-#   그것까지 막으면 회차 안의 정당한 일이 전부 걸린다. 훅은 선언된 맥락에서만 말한다.
+# ⚠ **조건은 두 가지다.** 어느 쪽도 아니면 **조용히 통과**한다 — TDD 레인은 시험을 먼저 쓰는 것이
+#   정상 작업이고(design-review SKILL §3 「RED → GREEN」), 그것까지 막으면 회차 안의 정당한 일이 전부 걸린다.
+#   ⑴ 열린 fix task 의 기록 RED 경로 — `lifecycle begin --role lane-worker --fix --red <시험>` 이 기록한
+#      경로. 도구·env·agent_id 무관, 대조 기준 = `file_path` 가 속한 checkout. 출구 = 인계
+#      (`handoff --mode complete`) · 버려진 task 는 부모가 그 worktree 를 제거 · PR 2 `handoff --mode blocked`.
+#      정본 = `docs/development/lifecycle-evidence.md` 「fix 레인」.
+#   ⑵ `COLAB_FIX_LANE=1` env 의 보호 4종(아래).
 #
-# 막는 자리 (fix 회차일 때):
+# 막는 자리 (⑵ fix 회차 env 일 때):
 #   frontend/test/**        화면 동작 시험
 #   services/*/tests/**     서비스 pytest 묶음
 #   gates/**                게이트 판정부·픽스처
 #   contracts/**            seam·이벤트 계약
-# 예외 = `COLAB_ALLOW_TEST_EDIT=1` — 시험 자체가 틀렸다는 판단은 **사람이 선언한 뒤** 한다.
+# 예외 = `COLAB_ALLOW_TEST_EDIT=1` — ⑵ 에만. 시험 자체가 틀렸다는 판단은 **사람이 선언한 뒤** 한다.
+#   ⑴ 의 잠금은 이 env 로 풀리지 않는다.
 #
-# ⚠ 경계 (2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 A2·A3):
+# ⚠ 경계 (2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 A2·A3 · S-HARNESS-SRED-REDRUN-20260926):
 #   · 대상 도구 = Edit/Write 뿐(`.claude/settings.json` PreToolUse matcher `Edit|Write`). `sed -i` ·
-#     리다이렉션 · `tee` · `python -c` 같은 Bash 쓰기는 대상이 아니다.
+#     리다이렉션 · `tee` · `python -c` 같은 Bash 쓰기는 대상이 아니다 — ⑴ 은 인계 시 blob 대조가 잡는다.
 #   · `COLAB_FIX_LANE=1` 은 Codex 경로(`scripts/agent-bridge.py` tool_environment · `scripts/dev.ps1`)만 넘긴다.
-#     Claude Code 는 hook env 를 lane 별로 줄 수 없어 Claude lane 에서는 이 hook 이 통과한다(편집 시점 차단 없음).
-#   · Bash 쓰기와 Claude lane 까지 잡는 사후 검사 = `lifecycle begin --scope <glob>` 를 선언한 task 의
+#     ⑴ 은 env 가 필요 없어 Claude·Codex 가 같다.
+#   · 잠금 없는 세션의 비용 = bash `git rev-parse` + `ls` (python 호출 0 추가). 마커
+#     `<git common dir>/colab-harness/red-locked/` 는 색인이고 판정은 task.json 이 한다.
+#   · Bash 쓰기까지 잡는 사후 검사 = `lifecycle begin --scope <glob>` 를 선언한 task 의
 #     handoff/H7 대조(인계 시점 · 도구 무관 · `docs/development/lifecycle-evidence.md` 「인계」).
 #
 # ── PreToolUse 입력 스키마 (stdin · 문서 인용) ────────────────────────────────
@@ -38,9 +45,15 @@
 # Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
-# 선언되지 않은 회차는 이 훅의 대상이 아니다. **python3 를 부르기 전에** 끝낸다.
-[ "${COLAB_FIX_LANE:-}" = "1" ] || exit 0
-[ "${COLAB_ALLOW_TEST_EDIT:-}" = "1" ] && exit 0
+# red-locked fast path — bash only; python runs only when a fix task is open.
+# CLAUDE_PROJECT_DIR 부재(Claude 는 항상 준다 · bridge 는 ROOT) → LOCKED=1 로 두고 python 판정(보수 방향).
+LOCKED=1
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+  COMMON="$(git -C "$CLAUDE_PROJECT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  if [ -n "$COMMON" ] && [ -z "$(ls -A "$COMMON/colab-harness/red-locked" 2>/dev/null)" ]; then LOCKED=0; fi
+fi
+# 잠금도 없고 선언된 회차도 아니면 이 훅의 대상이 아니다. **python3 를 부르기 전에** 끝낸다.
+if [ "$LOCKED" = 0 ] && [ "${COLAB_FIX_LANE:-}" != "1" ]; then exit 0; fi
 
 payload=""
 if [ ! -t 0 ]; then payload="$(cat 2>/dev/null || true)"; fi
@@ -71,11 +84,32 @@ case "$TOOL" in Edit|Write) : ;; *) exit 0 ;; esac
 [ -n "$CWD" ] || CWD="$PWD"
 
 # 레포 상대경로로 바꾼다 — 절대경로를 판정 기준으로 쓰지 않는다(`CLAUDE.md §5` · migration-guard 와 같은 자리).
+# 기준 = `file_path` 가 속한 checkout. 부모 세션이 lane worktree 의 파일을 고치면 payload cwd 는 부모지만
+# 판정은 그 lane checkout 의 잠금으로 한다. 대상 디렉터리가 아직 없는 Write 는 cwd checkout 으로 폴백한다.
 TOP="$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || true)"
+FTOP="$(git -C "$(dirname "$FP")" rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$FTOP" ] || FTOP="$TOP"
 REL="$FP"
-if [ -n "$TOP" ]; then
-  case "$FP" in "$TOP"/*) REL="${FP#"$TOP"/}" ;; esac
+if [ -n "$FTOP" ]; then
+  case "$FP" in "$FTOP"/*) REL="${FP#"$FTOP"/}" ;; esac
 fi
+
+# ⑴ 열린 fix task 의 기록 RED 경로 — env·신원 무관. lookup 실패는 차단(잠금 상태에서만 도달).
+if [ "$LOCKED" = 1 ] && [ -n "$FTOP" ]; then
+  LOCK_OUT="$(python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" red-locked --checkout "$FTOP" --path "$REL")" \
+    || { echo 'hook readiness failure: red-locked lookup failed' >&2; exit 2; }
+  if [ -n "$LOCK_OUT" ]; then
+    read -r LOCK_TASK LOCK_BLOB <<< "$LOCK_OUT"
+    echo "⛔ 차단(test-file-guard · red-run) — 이 checkout 의 열린 fix task $LOCK_TASK 가 기록한 RED 시험 \`$REL\` 은 인계 전에 고칠 수 없다(blob $LOCK_BLOB 고정).
+   출구: 제품 코드를 고쳐 GREEN 을 만든 뒤 handoff --mode complete · 시험 자체가 틀렸으면 부모가 재승인한 --red 로 새 task(버려진 task 의 잠금은 부모가 그 worktree 를 제거하면 풀린다 · PR 2 뒤 handoff --mode blocked).
+   정본: docs/development/lifecycle-evidence.md 「fix 레인」. 훅을 비활성화하지 않는다." >&2
+    exit 2
+  fi
+fi
+
+# ⑵ 선언된 fix 회차(env)의 보호 4종. 사람 선언 예외는 이 분기에만 적용된다.
+[ "${COLAB_FIX_LANE:-}" = "1" ] || exit 0
+[ "${COLAB_ALLOW_TEST_EDIT:-}" = "1" ] && exit 0
 
 WHY=""
 case "$REL" in

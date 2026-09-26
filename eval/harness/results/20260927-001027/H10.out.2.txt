@@ -1,0 +1,14 @@
+두 파일을 끝까지 확인했습니다. 코드에 있는 음수 margin 선언은 2건입니다.
+
+| 위치 | 선언 | 선택자 |
+|---|---|---|
+| `detail.css:93` | `margin: -12px 0 var(--space-6)` | `.detail-page .filelist` |
+| `shell.css:58` | `margin-left: -7px` | `.detail-page .backlink`, `.project-detail .backlink` |
+
+- **주석 확인:** `detail.css:93` 바로 앞 주석은 87행에서 닫히고, `shell.css:58` 앞 주석은 42행에서 닫힙니다. 둘 다 주석 밖에 있는 코드입니다. 주석 안에서 음수 margin 값은 나오지 않았습니다.
+- **margin이 아닌 음수 값:** `letter-spacing` 음수(`detail.css:33`, `shell.css:115`)와 `bottom: -11px`(`shell.css:188`)은 margin이 아니어서 셈에 넣지 않았습니다.
+- **`calc()`·`-var()`:** 이 방식으로 음수를 만든 margin도 없습니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

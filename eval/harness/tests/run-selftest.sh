@@ -4,7 +4,7 @@
 # ⚠ **실제 모델 호출 0회.** `claude` 를 임시 디렉터리의 스텁으로 갈아끼우고 `PATH` 앞에 둔다.
 #   러너가 절대경로로 `claude` 를 부르면 이 시험은 성립하지 않는다 — 그것도 이 시험이 잡는다.
 #
-# 케이스 17 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 22 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 과제 0건                                  → exit 1  (red(판정) · green-by-skip 금지)
 #   ⓑ `expect.sh` 부재                          → exit 78 (red(준비) · 판정 재료 부재)
 #   ⓒ 상한 변수 미선언                          → exit 78 (red(준비) · 관대한 기본값 금지)
@@ -18,6 +18,11 @@
 #   추가 4건: 같은 과제 1→78/42, 과제 간 1/78·78/1 혼재 → exit 1
 #   ⓛ 2/2 green 회차에 `config-hash.json`(hash 64hex · selected=all) ＋ summary 「설정 해시」 줄
 #   ⓜ `COLAB_EVAL_ONLY=H01` 회차는 selected=H01 (spec S-HARNESS-E0-EVAL-GATE-20260926 §4.2)
+#   ⓝ 응답 본문의 저장소 절대경로 → `H??.out.*.txt` 에는 `<repo>` 만 (spec S-HARNESS-SRED-REDRUN-20260926 §4.6 S-6a)
+#   ⓞ 저장소 밖 사용자 홈 경로 → `<home>` · 판정기 입력은 원문 그대로 (S-6a 후속 · audit C-9)
+#   ⓟ `mode`=rate ＋ 1/2 스텁              → exit 0 ＋ 요약 `… · rate 1` · 행 `rate 1/2` · 판정실패 관측 0
+#   ⓠ `mode`=rate ＋ 판정기 exit 78         → exit 78 (비율 과제도 못 재면 red(준비))
+#   ⓡ `mode` 본문 `ratio`(알 수 없는 mode) → exit 78 (엄격이 기본 · 15라운드 판정 H18-rate)
 #
 # ⓐ·ⓑ·ⓒ·ⓕ·ⓖ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 다섯이 존재 이유다.
 # ⓖ 는 advisor ② 가 재현한 구멍이다 — `rc 0` ＋ `result` 본문이 기대와 맞으면 오류 결과도 2/2 green 이 됐다.
@@ -62,6 +67,16 @@ case "${STUB_MODE:-green}" in
       printf '{"result":"BAD — 기대와 다른 답","total_cost_usd":0.01}\n'
       exit 0
     fi
+    ;;
+  rootpath)
+    # 응답 본문에 러너 저장소의 절대경로가 섞인다(실제 회차의 `Read` 결과 인용과 같은 모양).
+    printf '{"result":"OK-MARKER — %s/eval/harness/run.sh 를 읽었다","total_cost_usd":0.01}\n' "$STUB_ROOT"
+    exit 0
+    ;;
+  homepath)
+    # 저장소 밖 사용자 홈 경로가 섞인다(예: ~/.claude 아래 파일 인용).
+    printf '{"result":"OK-MARKER — %s/.colab-eval-probe/notes.txt 를 읽었다","total_cost_usd":0.01}\n' "$HOME"
+    exit 0
     ;;
 esac
 printf '{"result":"OK-MARKER — 판정 완료","total_cost_usd":0.01}\n'
@@ -172,6 +187,34 @@ if [ "$RC" -eq 0 ]; then
 else
   red "ⓜ — COLAB_EVAL_ONLY=H01 회차가 exit 0 이 아니다(rc=$RC):
 $(printf '%s\n' "$OUT" | sed 's/^/     /')"
+fi
+
+# ── ⓝ 응답 본문의 저장소 절대경로 → 결과 파일에는 <repo> 만 (S-6a) ──────────────
+# 증거 파일(커밋 대상)에 사용자 홈 경로가 남지 않게 한다. 판정기 입력은 원문 그대로다.
+REPO_TOP="$(git -C "$HARNESS_DIR" rev-parse --show-toplevel)"
+run_case "$T_OK" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 STUB_MODE=rootpath STUB_ROOT="$REPO_TOP"
+if check "ⓝ 응답 본문의 저장소 절대경로 치환" 0 "$RC"; then
+  OUT_DIRS=("$RESULTS"/*/)
+  for n in 1 2; do
+    OUT_TXT="${OUT_DIRS[0]}H01.out.$n.txt"
+    if grep -qF "$REPO_TOP" "$OUT_TXT" || ! grep -qF '<repo>/eval/harness/run.sh' "$OUT_TXT"; then
+      red "ⓝ — H01.out.$n.txt 에 저장소 절대경로가 남았거나 <repo> 치환이 없다: $(cat "$OUT_TXT")"
+    fi
+  done
+fi
+
+# ── ⓞ 저장소 밖 홈 경로 → 결과 파일에는 <home> · 판정기 입력은 원문 (S-6a 후속 · audit C-9) ──
+T_HOMEJ="$WORK/homejudge"; make_task "$T_HOMEJ" "H01-stub" yes
+printf '#!/usr/bin/env bash\ncat > "$JUDGE_COPY"\nexec grep -q "OK-MARKER" "$JUDGE_COPY"\n' > "$T_HOMEJ/H01-stub/expect.sh"
+run_case "$T_HOMEJ" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 STUB_MODE=homepath JUDGE_COPY="$WORK/judge-copy.txt"
+if check "ⓞ 저장소 밖 홈 경로 치환 · 판정기 입력 원문" 0 "$RC"; then
+  OUT_DIRS=("$RESULTS"/*/)
+  OUT_TXT="${OUT_DIRS[0]}H01.out.1.txt"
+  if grep -qF "$HOME/" "$OUT_TXT" || ! grep -qF '<home>/.colab-eval-probe/notes.txt' "$OUT_TXT"; then
+    red "ⓞ — H01.out.1.txt 에 홈 경로가 남았거나 <home> 치환이 없다: $(cat "$OUT_TXT")"
+  fi
+  grep -qF "$HOME/.colab-eval-probe/notes.txt" "$WORK/judge-copy.txt" \
+    || red "ⓞ — 판정기 입력이 원문이 아니다(치환된 본문이 판정기로 갔다): $(cat "$WORK/judge-copy.txt")"
 fi
 
 # ── ⓕ 상한 초과(스텁 sleep) → red(준비 · 78) ────────────────────────────────
@@ -288,6 +331,35 @@ for first_rc in 1 78; do
     || red "과제 간 판정 실패 관측 계수가 틀렸다"
 done
 
+# ── ⓟ·ⓠ·ⓡ 비율 측정 과제(`mode`=rate) — 비율만 기록하고 회귀 집합에서 뺀다 ────────
+# 표지 = 과제 디렉터리의 `mode` 파일(본문 정확히 `rate`). 부재 = pass/fail(엄격이 기본).
+T_RATE="$WORK/rate"; make_task "$T_RATE" "H01-stub" yes
+printf 'rate\n' > "$T_RATE/H01-stub/mode"
+run_case "$T_RATE" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 \
+  STUB_MODE=flaky STUB_COUNTER="$WORK/rate.count"
+if check "ⓟ mode=rate ＋ 1/2 → 비율 기록 · exit 0" 0 "$RC"; then
+  printf '%s\n' "$OUT" | grep -Eq '^과제 1 · 실행 2 · green 0 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0 · rate 1$' \
+    || red "ⓟ — 요약줄이 「green 0 · 불안정 0 · 준비 0 … 판정실패 관측 과제 0 · rate 1」이 아니다: $OUT"
+  for summary in "$RESULTS"/*/summary.md; do
+    grep -q '^| H01-stub | rate 1/2 |.*mode=rate' "$summary" \
+      || red "ⓟ — summary.md 에 「| H01-stub | rate 1/2 | … mode=rate」 행이 없다: $(cat "$summary")"
+  done
+fi
+
+T_RATE78="$WORK/rate78"; make_task "$T_RATE78" "H01-stub" yes
+printf 'rate\n' > "$T_RATE78/H01-stub/mode"
+printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 78\n' > "$T_RATE78/H01-stub/expect.sh"
+run_case "$T_RATE78" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50
+check "ⓠ mode=rate ＋ 판정기 exit 78 → red(준비)" 78 "$RC"
+
+T_RATIO="$WORK/ratio"; make_task "$T_RATIO" "H01-stub" yes
+printf 'ratio\n' > "$T_RATIO/H01-stub/mode"
+run_case "$T_RATIO" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50
+if check "ⓡ mode 본문 ratio(알 수 없는 mode) → red(준비)" 78 "$RC"; then
+  printf '%s' "$OUT" | grep -q '알 수 없는 mode' \
+    || red "ⓡ — exit 78 은 맞으나 사유에 「알 수 없는 mode」가 없다: $OUT"
+fi
+
 # ── allowed.txt 정본 한 자리 — README 가 같은 표를 담고 있는가 ───────────────
 ALLOWED="$HARNESS_DIR/allowed.txt"
 README="$HARNESS_DIR/README.md"
@@ -305,7 +377,7 @@ else
 fi
 
 if [ "$FAILED" -ne 0 ]; then
-  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/17)."
+  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/22)."
   exit 1
 fi
-echo "run-selftest green — 검사 17건 전건 기대대로 (green 3 · red(판정) 7 · red(준비) 7 · 모델 호출 0회)."
+echo "run-selftest green — 검사 22건 전건 기대대로 (green 6 · red(판정) 7 · red(준비) 9 · 모델 호출 0회)."

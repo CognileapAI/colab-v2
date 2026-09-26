@@ -1,0 +1,26 @@
+`.lineageGraph .lin-way` 규칙에서 `display` 가 두 번 선언된 자리를 찾았고, 두 `:root` 어디에도 정의되지 않은 토큰 참조는 11건입니다.
+
+**덮인 선언** — `.detail-page .lin-way` 규칙(28–35행) 안에서:
+- `lineageGraph.css:29` 의 `display: inline-flex;` 를
+- `lineageGraph.css:33` 의 `display: inline-block;` 이 덮습니다.
+
+같은 파일 안에서 한 규칙에 `display` 가 두 번 나오는 곳은 여기 하나뿐입니다.
+
+**미정의 토큰 참조** — 8가지 토큰, 참조 11건. 모두 폴백 인자가 없습니다.
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50`, `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200`, `--color-primary-800` |
+| 83 | `--color-accent-700`, `--color-accent-50` |
+| 84 | `--color-ai` |
+
+**주의할 점:** 이 디렉터리의 `SOURCE.md` 에 정답(`:33` 이 `:29` 를 덮음, 참조 11건과 행 목록)이 그대로 적혀 있습니다. 위 결과는 스크립트로 따로 쟀고 `SOURCE.md` 와 일치합니다. 다만 이 fixture 를 평가(eval)용으로 쓴다면, 답을 읽고 베끼기만 해도 통과할 수 있습니다. `SOURCE.md` 를 fixture 디렉터리 밖으로 옮기는 편이 좋겠습니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 를 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 공백으로 지운 뒤, `tokens.css`·`detail.css` 의 `:root` 에 정의된 이름을 모았습니다. 그다음 `lineageGraph.css` 의 `var(--…)` 참조를 그 목록과 대조해 한 번 나올 때마다 1건으로 셌고(폴백 없음 확인), 같은 규칙 본문에 `display:` 가 두 번 나오는 곳을 찾았습니다.

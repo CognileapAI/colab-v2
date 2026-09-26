@@ -1,0 +1,15 @@
+상세 화면 정보 격자는 바깥 선과 칸 구분선이 같은 토큰을 써서, 요구하는 두 층이 생기지 않습니다.
+
+| 선 | 선언 위치 | 토큰 |
+|---|---|---|
+| 컨테이너 선 (`.detail-page .infogrid`) | `detail.css:59` — `border: 1px solid var(--color-border)` | `--color-border` |
+| 칸 구분선 (`.detail-page .infogrid .ig`) | `detail.css:62` — `border-right` · `border-bottom: 1px solid var(--color-border)` | `--color-border` |
+
+- `--color-border` 값은 `tokens.css:20`의 `#e8ecf2`입니다. 두 선이 같은 색이라 바깥 선과 안쪽 선을 구분할 수 없습니다.
+- 비교 대상인 `catalog.css:79`는 바깥 컨테이너 선에 `--color-border-strong`(`tokens.css:21`, `#dfe3e8`)을 씁니다.
+- 좁은 화면용 규칙 `detail.css:69`도 칸 구분선을 `--color-border`로 다시 선언합니다. 그래서 반응형 구간에서도 두 층이 생기지 않습니다.
+- 이 폴더의 `SOURCE.md`에도 같은 결함이 일부러 넣어 둔 것이라고 적혀 있습니다(`detail.css:59`·`:62`).
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border
