@@ -268,9 +268,10 @@
 
 100 km MGRS 칸 자체(참고)는 T51SYB 125.2484/36.9983/126.4117/37.9256 · T52SCE 126.7776/35.2231/127.9010/36.1396 — 이것도 상자 안이다.
 
-**생성 결과** — payload `dev-package/tools/generated/dataset-evidence-payloads.json` sha256 `27c6ed87…` → `6499864e388213a82b26678d495470c96d33c9d5813f400b31e074c331ab3b17`.
-- reviewed 사실 123 → 120칸(region +5 · 타일 코드 −8 — 타일 코드는 지명이 아니라 reviewed region 에서 뺐고 위치는 정본 bbox 가 말한다) · draft 110 → 122칸.
-- region reviewed 8(1·2·6·7·13·14·19·20) · draft 13 · 없음 7.
+**생성 결과** — payload `dev-package/tools/generated/dataset-evidence-payloads.json` sha256 `27c6ed87…` → `c12b50d9e8a1b5bc911e44f257e3b9d41a0adc9e511b2149336c5c5e906ef052`(PR #174 수정 뒤 · 수정 전 `6499864e…`).
+- reviewed 사실 123 → 128칸(region +5 · 사라진 키 0) · draft 110 → 122칸.
+- **타일 코드 확정값 유지 · 초안 한반도와 공존** — seq 21~28 의 reviewed region(T51SYB·T52SCE·h27v05·h28v05)은 dev 에 실린 확정값이라 그대로 둔다. 21~24 는 같은 키에 초안 「한반도」(bbox-korea-peninsula)가 `draftFacts` 에 함께 서고, 행마다 `draftConflictsWithReviewed` 에 선언한다. 승격하면 확정값을 **대체**하므로 승격기·리허설은 `--allow-replace` 로 명시한 규칙만 바꾸고 아니면 거절·보고한다(`rehearsal/refused` 종료 1 · `rehearsal/allow-replace` 종료 0 · 12파일 `conflictsWithReviewed`).
+- region reviewed 16(1·2·6·7·13·14·19·20 + 타일 21~28) · draft 13(그중 4는 확정값과 공존) · 없음 3(15·17·18).
 
 | 규칙 | 초안 | 자료 ← 근거 |
 |---|---:|---|
@@ -278,11 +279,11 @@
 | region-from-lineage-sibling (신설) | 4 | 8·9·10·11 ← seq 12 의 공동 입력 seq 7(경기남부충청) · 12 와 7 의 기준 격자 파일(LAT_crop·LON_crop) 동일 |
 | bbox-korea-peninsula | 4 | 21·22·23·24 → 한반도 |
 | region-from-registration-note | 1 | 16 전지구(유지 — 계보 부모 15 에 정본 지역이 없어 더 나은 값이 없다) |
-| (없음) | — | 15·17·18(계보에 정본 지역 없음) · 25~28(bbox 가 상자에 걸침) |
+| (없음) | — | 15·17·18(계보에 정본 지역 없음) · 25~28 은 초안 없음(bbox 가 상자에 걸침 · 확정 타일 코드만) |
 
 파생 9건(판정 4) = 8·9·10·11·12·15·16·17·18 → 초안 6(sibling 4 · parent 1 · note 1) · 없음 3(15·17·18).
 
-**측정(결정 7)** — 입력 = 새 생성물에 1회차 승격 3규칙(dev 반영 완료)을 같은 함수로 겹친 사본 `input-payload.json` sha256 `3304c3e38666b0d1d3ce4b38e124cf51edcfda24d6727602507c855093b204a5`(옮긴 사실 53 · 남은 초안 69). 일회용 DB · 시드 evidence 543 · draft_withheld 69 · 평가 77회 · 모델 호출 0 · 지문 전후 543행 동일. 오라클 = 기존 probe + measure_only 16(1회차 복원 11 + 이번 「한반도」 region 5: PC-1-3#m3 · PC-1-4#m2 · PC-2-3#m2 · PC-2-4#m1 · PC-2-7#m1). 경로 1 33케이스 green 28 / 28 · 경로 2 10케이스 9 / 9.
+**측정(결정 7)** — 입력 = 새 생성물에 1회차 승격 3규칙(dev 반영 완료)을 같은 함수로 겹친 사본 `input-payload.json` sha256 `73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409`(옮긴 사실 53 · 남은 초안 69 · PR #174 수정 뒤 재측정 — 수정 전 `3304c3e3…` 와 규칙표·점수판 숫자 동일). 확정값과 공존하는 초안 4칸(seq 21~24 region)은 측정에서 대체로 겹친다(`draftReplacesReviewed`). 일회용 DB · 시드 evidence 543 · draft_withheld 69 · 평가 77회 · 모델 호출 0 · 지문 전후 543행 동일. 오라클 = 기존 probe + measure_only 16(1회차 복원 11 + 이번 「한반도」 region 5: PC-1-3#m3 · PC-1-4#m2 · PC-2-3#m2 · PC-2-4#m1 · PC-2-7#m1). 경로 1 33케이스 green 28 / 28 · 경로 2 10케이스 9 / 9.
 
 | 규칙 | 초안 | 경로 1 기여 / 역전 | 경로 2 기여 / 역전 | 제안 |
 |---|---:|---|---|---|
@@ -307,4 +308,10 @@
 
 **승격 제안** — 결정 5 지름길(두 경로 역전 0 · 기여 ≥1)을 만족하는 지역 규칙이 **없다**. 결정 3 임계(2케이스·2회차)도 해당 없음 → 승격 리허설을 만들지 않았다. 반사실이 보인 것은 「조건 검색이 남한⊂한반도 를 읽으면 region-from-lineage-parent 가 4 사례 probe 를 연다」이고, 그것은 규칙 승격이 아니라 **조건 검색 region 술어가 포함 관계를 읽게 할지**의 별도 제품 결정이다(계약 `semantics.json` 또는 그래프 연결 — 이 회차는 손대지 않았다).
 
-**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다. 반영하면 dev 현재(`41f488a4…`) 대비 13 데이터셋 · 본체 143파일의 facts·원문이 바뀐다 — region 추가 75파일(seq 1·2·6·19·20) · 타일 코드 region 제거 68파일(seq 21~28). ai 체인은 0012 적용이 따로 필요하다.
+**dev 반영은 별도 GO 대기다.** 이 회차는 dev 에 아무것도 쓰지 않았다. 반영하면 dev 현재(`41f488a4…`) 대비 reviewed 키는 **사라지는 것 0** · 추가 5(seq 1·2·19·20 남한 · 6 한반도 · 본체 75파일)이고 값 변경 0이다(`reviewed-diff-vs-dev-41f488a4.json` · 생성물 대 `27c6ed87…` 도 같은 결과 `reviewed-diff-vs-27c6ed87.json`). 원문 스냅숏은 지역·bbox 줄을 실은 13 데이터셋에서 바뀐다. ai 체인은 0012 적용이 따로 필요하다.
+
+**레인 해석 판정(2026-09-26, Ted, 원문 그대로):**
+> 권고대로 하자
+
+- ① 「대한민국 → 남한」 지명 별칭(정본 seq 13·14 「대한민국 내 기상관측소」) 채택 ② `region-from-lineage-sibling` 이 seq 8·9·10·11 에 초안 region 「경기남부충청」을 주는 해석 채택.
+- 같은 판정에서 **조건 검색 region 술어를 온톨로지 그래프(남한⊂한반도 등)로 넓히는 일은 별도 제품 intent 로 연다**(이 회차·PR #174 범위 밖).

@@ -179,8 +179,14 @@ def test_rule_inferred_facts_are_never_loaded_as_reviewed():
     drafted = 0
     for row in payloads["datasets"]:
         assert row["status"] == "reviewed"
+        # 2026-09-26(PR #174 수정) — 확정값과 **공존**하는 초안은 draftConflictsWithReviewed 에 선언돼야
+        # 한다(타일 코드 reviewed region + bbox 초안 「한반도」). reviewed 값 자체는 정본전재 그대로다.
+        declared = {c["key"]: c for c in row.get("draftConflictsWithReviewed", [])}
         for key in row["draftFacts"]:
-            assert key not in row["facts"], f"{row['name']}: 규칙값 {key} 가 reviewed 에 섞였다"
+            if key in row["facts"]:
+                assert key in declared, f"{row['name']}: 규칙값 {key} 가 선언 없이 reviewed 와 겹친다"
+                assert declared[key]["reviewed"] == row["facts"][key]
+                assert declared[key]["draft"] == row["draftFacts"][key]
             locator = row["draftProvenance"][key]
             assert "rule:" in locator, f"{row['name']}: 초안 {key} 에 규칙 ID 가 없다"
             assert locator.split("rule:", 1)[1].split(" ", 1)[0] in rules

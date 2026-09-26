@@ -42,7 +42,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "2": {
       "reviewed": "남한",
@@ -50,7 +51,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "3": {
       "reviewed": null,
@@ -58,7 +60,8 @@
       "draftRule": "region-from-lineage-parent",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "4": {
       "reviewed": null,
@@ -66,7 +69,8 @@
       "draftRule": "region-from-lineage-parent",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "5": {
       "reviewed": null,
@@ -74,7 +78,8 @@
       "draftRule": "region-from-lineage-parent",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "6": {
       "reviewed": "한반도",
@@ -82,7 +87,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "7": {
       "reviewed": "경기남부충청",
@@ -90,7 +96,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "8": {
       "reviewed": null,
@@ -98,7 +105,8 @@
       "draftRule": "region-from-lineage-sibling",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "9": {
       "reviewed": null,
@@ -106,7 +114,8 @@
       "draftRule": "region-from-lineage-sibling",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "10": {
       "reviewed": null,
@@ -114,7 +123,8 @@
       "draftRule": "region-from-lineage-sibling",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "11": {
       "reviewed": null,
@@ -122,7 +132,8 @@
       "draftRule": "region-from-lineage-sibling",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "12": {
       "reviewed": null,
@@ -130,7 +141,8 @@
       "draftRule": "region-from-lineage-parent",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "13": {
       "reviewed": "대한민국시군구",
@@ -138,7 +150,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "14": {
       "reviewed": "대한민국시군구",
@@ -146,7 +159,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "15": {
       "reviewed": null,
@@ -154,7 +168,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "16": {
       "reviewed": null,
@@ -162,7 +177,8 @@
       "draftRule": "region-from-registration-note",
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "17": {
       "reviewed": null,
@@ -170,7 +186,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "18": {
       "reviewed": null,
@@ -178,7 +195,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "19": {
       "reviewed": "남한",
@@ -186,7 +204,8 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "20": {
       "reviewed": "남한",
@@ -194,10 +213,11 @@
       "draftRule": null,
       "lineageConflict": null,
       "bbox": null,
-      "bboxInsideKoreaBox": null
+      "bboxInsideKoreaBox": null,
+      "draftCoexistsWithReviewed": false
     },
     "21": {
-      "reviewed": null,
+      "reviewed": "T51SYB",
       "draft": "한반도",
       "draftRule": "bbox-korea-peninsula",
       "lineageConflict": null,
@@ -207,10 +227,11 @@
         126.523,
         37.9256
       ],
-      "bboxInsideKoreaBox": true
+      "bboxInsideKoreaBox": true,
+      "draftCoexistsWithReviewed": true
     },
     "22": {
-      "reviewed": null,
+      "reviewed": "T52SCE",
       "draft": "한반도",
       "draftRule": "bbox-korea-peninsula",
       "lineageConflict": null,
@@ -220,10 +241,11 @@
         128.0097,
         36.1405
       ],
-      "bboxInsideKoreaBox": true
+      "bboxInsideKoreaBox": true,
+      "draftCoexistsWithReviewed": true
     },
     "23": {
-      "reviewed": null,
+      "reviewed": "T51SYB",
       "draft": "한반도",
       "draftRule": "bbox-korea-peninsula",
       "lineageConflict": null,
@@ -233,10 +255,11 @@
         126.523,
         37.9256
       ],
-      "bboxInsideKoreaBox": true
+      "bboxInsideKoreaBox": true,
+      "draftCoexistsWithReviewed": true
     },
     "24": {
-      "reviewed": null,
+      "reviewed": "T52SCE",
       "draft": "한반도",
       "draftRule": "bbox-korea-peninsula",
       "lineageConflict": null,
@@ -246,10 +269,11 @@
         128.0097,
         36.1405
       ],
-      "bboxInsideKoreaBox": true
+      "bboxInsideKoreaBox": true,
+      "draftCoexistsWithReviewed": true
     },
     "25": {
-      "reviewed": null,
+      "reviewed": "h27v05",
       "draft": null,
       "draftRule": null,
       "lineageConflict": null,
@@ -259,10 +283,11 @@
         130.5407,
         40.0
       ],
-      "bboxInsideKoreaBox": false
+      "bboxInsideKoreaBox": false,
+      "draftCoexistsWithReviewed": false
     },
     "26": {
-      "reviewed": null,
+      "reviewed": "h28v05",
       "draft": null,
       "draftRule": null,
       "lineageConflict": null,
@@ -272,10 +297,11 @@
         143.5948,
         40.0
       ],
-      "bboxInsideKoreaBox": false
+      "bboxInsideKoreaBox": false,
+      "draftCoexistsWithReviewed": false
     },
     "27": {
-      "reviewed": null,
+      "reviewed": "h27v05",
       "draft": null,
       "draftRule": null,
       "lineageConflict": null,
@@ -285,10 +311,11 @@
         130.5407,
         40.0
       ],
-      "bboxInsideKoreaBox": false
+      "bboxInsideKoreaBox": false,
+      "draftCoexistsWithReviewed": false
     },
     "28": {
-      "reviewed": null,
+      "reviewed": "h28v05",
       "draft": null,
       "draftRule": null,
       "lineageConflict": null,
@@ -298,7 +325,8 @@
         143.5948,
         40.0
       ],
-      "bboxInsideKoreaBox": false
+      "bboxInsideKoreaBox": false,
+      "draftCoexistsWithReviewed": false
     }
   },
   "draftNote": "규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 않고 이 payload 에만 남는다. 승격 단계는 rule:<ID> locator 로 찾아온다.",
@@ -342,6 +370,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 1 HSR 레이더 반사도 원자료",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-1",
@@ -388,6 +417,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 2 rn15 15분 누적강수",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-2",
@@ -438,6 +468,7 @@
         "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 3 hsr_sample",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-3",
@@ -488,6 +519,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 4 rn15_sample",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-4",
@@ -536,6 +568,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한) · seq 2(남한)"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 5 pred_sample",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-5",
@@ -584,6 +617,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 6 GK-2A 일 단위 식생자료",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-6",
@@ -638,6 +672,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 7 GK2A_NDVI_mean_202305",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-7",
@@ -690,6 +725,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 8 HLS_S30_NDVI_mean_202305",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-8",
@@ -736,6 +772,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 9 DEM",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-9",
@@ -782,6 +819,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 10 Aspect",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-10",
@@ -830,6 +868,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 11 LULC_2023",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-11",
@@ -880,6 +919,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 7(경기남부충청)"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 12 Prediction (공간상세화)",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-12",
@@ -926,6 +966,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/03.drought/DATASETS.md · seq 13 SPI-4weeks",
         "locator": "DATASETS.md#01.level-data/03.drought/DATASETS.md#seq-13",
@@ -972,6 +1013,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "01.level-data/03.drought/DATASETS.md · seq 14 SPEI-4weeks",
         "locator": "DATASETS.md#01.level-data/03.drought/DATASETS.md#seq-14",
@@ -1008,6 +1050,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 15"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 15 surface (ERA5 GRIB 원자료)",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-15",
@@ -1050,6 +1093,7 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "region": "규칙 · rule:region-from-registration-note · 읽은 정본 = 02.File-format/DATASETS.md seq 16"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 16 ERA5 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-16",
@@ -1092,6 +1136,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 17"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 17 GK-2A LST 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-17",
@@ -1132,6 +1177,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 18"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 18 GK-2A LST 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-18",
@@ -1174,6 +1220,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 19"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 19 HSR 레이더합성 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-19",
@@ -1218,6 +1265,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 20"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 20 HSR 레이더합성 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-20",
@@ -1237,11 +1285,13 @@
           "start": "2025-12-25",
           "end": "2025-12-25"
         },
-        "format": "tif"
+        "format": "tif",
+        "region": "T51SYB"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif"
+        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1258,6 +1308,14 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/21/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
+      "draftConflictsWithReviewed": [
+        {
+          "key": "region",
+          "reviewed": "T51SYB",
+          "draft": "한반도",
+          "rule": "bbox-korea-peninsula"
+        }
+      ],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 21 HLS S30 T51SYB 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-21",
@@ -1277,11 +1335,13 @@
           "start": "2025-12-27",
           "end": "2025-12-27"
         },
-        "format": "tif"
+        "format": "tif",
+        "region": "T52SCE"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif"
+        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1298,6 +1358,14 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/22/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
+      "draftConflictsWithReviewed": [
+        {
+          "key": "region",
+          "reviewed": "T52SCE",
+          "draft": "한반도",
+          "rule": "bbox-korea-peninsula"
+        }
+      ],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 22 HLS S30 T52SCE 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-22",
@@ -1317,11 +1385,13 @@
           "start": "2025-12-25",
           "end": "2025-12-25"
         },
-        "format": "npy"
+        "format": "npy",
+        "region": "T51SYB"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy"
+        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1338,6 +1408,14 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/23/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
+      "draftConflictsWithReviewed": [
+        {
+          "key": "region",
+          "reviewed": "T51SYB",
+          "draft": "한반도",
+          "rule": "bbox-korea-peninsula"
+        }
+      ],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 23 HLS S30 T51SYB 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-23",
@@ -1357,11 +1435,13 @@
           "start": "2025-12-27",
           "end": "2025-12-27"
         },
-        "format": "npy"
+        "format": "npy",
+        "region": "T52SCE"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy"
+        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1378,6 +1458,14 @@
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/24/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
+      "draftConflictsWithReviewed": [
+        {
+          "key": "region",
+          "reviewed": "T52SCE",
+          "draft": "한반도",
+          "rule": "bbox-korea-peninsula"
+        }
+      ],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 24 HLS S30 T52SCE 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-24",
@@ -1397,11 +1485,13 @@
           "start": "2019-09-30",
           "end": "2019-10-31"
         },
-        "variable": "엽면적지수"
+        "variable": "엽면적지수",
+        "region": "h27v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1416,6 +1506,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 25"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 25 hdf4 MOD15A2H h27v05 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-25",
@@ -1435,11 +1526,13 @@
           "start": "2019-09-30",
           "end": "2019-10-31"
         },
-        "variable": "엽면적지수"
+        "variable": "엽면적지수",
+        "region": "h28v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1454,6 +1547,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 26"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 26 hdf4 MOD15A2H h28v05 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-26",
@@ -1474,12 +1568,14 @@
           "end": "2019-10-31"
         },
         "format": "npy",
-        "variable": "엽면적지수"
+        "variable": "엽면적지수",
+        "region": "h27v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1494,6 +1590,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 27"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 27 hdf4 MOD15A2H h27v05 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-27",
@@ -1514,12 +1611,14 @@
           "end": "2019-10-31"
         },
         "format": "npy",
-        "variable": "엽면적지수"
+        "variable": "엽면적지수",
+        "region": "h28v05"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1534,6 +1633,7 @@
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 28"
       },
+      "draftConflictsWithReviewed": [],
       "source": {
         "label": "02.File-format/DATASETS.md · seq 28 hdf4 MOD15A2H h28v05 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-28",

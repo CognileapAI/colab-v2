@@ -1,0 +1,47 @@
+{
+ "schema": "colab-reviewed-diff/1",
+ "old": {
+  "path": "dev-package/reports/evidence-promotion/round-1-2026-09-26/promotion-plan/promoted-payload.json",
+  "sha256": "41f488a42ffb07c1c64d4460ea86a6b98c72b63494ec45291f72f5c73561c6fc"
+ },
+ "new": {
+  "path": "dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json",
+  "sha256": "73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409"
+ },
+ "datasets": {
+  "old": 28,
+  "new": 28
+ },
+ "removedReviewedKeys": 0,
+ "addedReviewedKeys": 5,
+ "changedReviewedKeys": 0,
+ "removed": [],
+ "added": [
+  {
+   "seq": 1,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 2,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 6,
+   "key": "region",
+   "new": "한반도"
+  },
+  {
+   "seq": 19,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 20,
+   "key": "region",
+   "new": "남한"
+  }
+ ],
+ "changed": []
+}

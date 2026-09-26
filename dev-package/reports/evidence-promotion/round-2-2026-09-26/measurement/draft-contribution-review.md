@@ -4,14 +4,14 @@
 
 ## 입력
 
-- payload `dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json` sha256 `3304c3e38666b0d1d3ce4b38e124cf51edcfda24d6727602507c855093b204a5` · 생성기 재생성 대조: 측정 칸 동일 = False · 그 밖의 칸 차이 26건
+- payload `dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json` sha256 `73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409` · 생성기 재생성 대조: 측정 칸 동일 = False · 그 밖의 칸 차이 26건
 - 일회용 DB 시드: 데이터셋 28 · 본체 543 · 계보 18 · 적재 보고 evidence 543 · topic 3 · source_label 9 · draft_withheld 69
 - `golden-cases.json` sha256 `ef5227126c801b1a7f527d6292456ffc146c3253c87e3e066845158818497c31`
 - `practitioner-conditions.json` sha256 `8ccb477bc9a1d34201cfa0cd0502dc6253bf3b346e0cbab0df2d1dfcc0f14012`
 - `heldout-cases.json` sha256 `a4f3f6a1dcc98cbd7783eedbe5db23c97e495420226393d16118ddd11ddcb736`
 - `interpret-fixture.json` sha256 `2e4d4a9cfff66ac58f5bca162e16b3a4a0dc345b19db3f7e91f0445f8ad6d89f`
 - `dev-data-snapshot-v2.json` sha256 `171ddd497a41a414eb37be31d394f9c97f6c1b0c330de76648a733a4cfafb952`
-- DB 지문 전 543행 `73bb368ad0734f88…` · 후 543행 `73bb368ad0734f88…` → **남은 변경 0**
+- DB 지문 전 543행 `4e5a5f60f8d532d7…` · 후 543행 `4e5a5f60f8d532d7…` → **남은 변경 0**
 - 평가 77회 · 모델 호출 0회 · 경로 2 해석 = `interpret-fixture.json`(규칙 기반 녹화, LLM 아님)
 
 ## 기준선 (green 케이스 수)

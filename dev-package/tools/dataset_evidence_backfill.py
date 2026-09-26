@@ -36,8 +36,15 @@
 종료) 보조 규칙 `bbox-korea-peninsula` 의 입력이 된다. 정본 지역이 없는 자료의 지명은 계보로
 잇되 **초안**이다 — `region-from-lineage-parent`(가장 가까운 조상의 정본 지역) ·
 `region-from-lineage-sibling`(같은 자식의 공동 입력이고 그 자식이 정본 지역을 가진 입력과 같은
-기준 격자에 산출될 때). 타일 코드(T51SYB·h27v05 …)는 지명이 아니므로 `region` 에 싣지 않는다 —
-위치는 정본 bbox 가 말한다.
+기준 격자에 산출될 때).
+
+**타일 코드 확정값 유지 · 초안 한반도와 공존**(2026-09-26 Ted — PR #174 수정 지시) — seq 21~28 의
+reviewed `region`(T51SYB·h27v05 …)은 dev 에 이미 실린 확정값이라 그대로 둔다. 그 위에
+`bbox-korea-peninsula` 가 초안 「한반도」를 `draftFacts` 에 **함께** 싣는다. 초안은 payload 파일에만
+살므로(결정 4 ㈎) 두 값이 한 파일에서 공존한다. 같은 키가 두 칸에 있는 행은 `draftConflictsWithReviewed`
+에 그 키와 확정값을 적는다 — 승격하면 확정값을 **바꾸는** 것이므로 승격기·리허설은 그 규칙이
+명시적으로 대체 허가(`--allow-replace`)를 받았을 때만 바꾸고, 아니면 거절·보고한다. 정본 지역·계보
+규칙은 종전대로 reviewed 지역이 있으면 초안을 만들지 않는다.
 
 쓰는 법
   python3 dev-package/tools/dataset_evidence_backfill.py
@@ -224,35 +231,35 @@ READINGS: dict[int, dict] = {
          "rules": {"platform": "ground", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": True}},
     21: {"quote": "HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료",
-         "facts": {},
+         "facts": {"region": "T51SYB"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     22: {"quote": "HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료",
-         "facts": {},
+         "facts": {"region": "T52SCE"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     23: {"quote": "재격자 없이 원자료 격자 위에 그대로 있다",
-         "facts": {},
+         "facts": {"region": "T51SYB"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     24: {"quote": "형상·구성은 T51SYB 결과와 같다",
-         "facts": {},
+         "facts": {"region": "T52SCE"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     25: {"quote": "MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일",
-         "facts": {"variable": "엽면적지수"},
+         "facts": {"variable": "엽면적지수", "region": "h27v05"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     26: {"quote": "MOD15A2H 의 h28v05 타일 4일치",
-         "facts": {"variable": "엽면적지수"},
+         "facts": {"variable": "엽면적지수", "region": "h28v05"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     27: {"quote": "h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과",
-         "facts": {"variable": "엽면적지수"},
+         "facts": {"variable": "엽면적지수", "region": "h27v05"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
     28: {"quote": "h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과",
-         "facts": {"variable": "엽면적지수"},
+         "facts": {"variable": "엽면적지수", "region": "h28v05"},
          "rules": {"platform": "satellite", "representation": "spatial_grid",
                    "directObservation": True, "interpolated": False}},
 }
@@ -501,7 +508,9 @@ def build() -> dict:
                     + " · ".join(f"seq {p}({reviewed[p]['value']})" for p in sibling["from"])
                     + " 과 같은 기준 격자")
         bbox_region = region_from_bbox(bbox)
-        if bbox_region and "region" not in draft_facts and "region" not in facts:
+        # bbox 보조는 reviewed 지역(타일 코드)과 **공존**한다 — 초안은 payload 에만 산다(결정 4 ㈎).
+        # 같은 키가 두 칸에 서면 draftConflictsWithReviewed 에 적어 승격이 조용히 덮지 못하게 한다.
+        if bbox_region and "region" not in draft_facts:
             draft_facts["region"] = bbox_region
             rule_summary["bbox-korea-peninsula"] += 1
             draft_provenance["region"] = (
@@ -516,6 +525,7 @@ def build() -> dict:
             "lineageConflict": (lineage or {}).get("conflict"),
             "bbox": ([bbox[k] for k in ("west", "south", "east", "north")] if bbox else None),
             "bboxInsideKoreaBox": (region_from_bbox(bbox) is not None) if bbox else None,
+            "draftCoexistsWithReviewed": "region" in facts and "region" in draft_facts,
         }
 
         # 원문 스냅숏에 정본 지역·bbox 줄을 함께 싣는다 — reviewed region 이 그 줄에서 왔다.
@@ -538,6 +548,11 @@ def build() -> dict:
             "draftStatus": "draft",
             "draftFacts": draft_facts,
             "draftProvenance": draft_provenance,
+            # 같은 키가 reviewed 와 draft 에 함께 선 자리 — 승격하면 확정값을 **바꾼다**(명시 허가 필요).
+            "draftConflictsWithReviewed": [
+                {"key": key, "reviewed": facts[key], "draft": draft_facts[key],
+                 "rule": re.search(r"rule:([a-z-]+)", draft_provenance[key])[1]}
+                for key in sorted(set(draft_facts) & set(facts))],
             "source": {
                 "label": f"{source['document']} · seq {seq} {canon['name']}"[:200],
                 "locator": f"DATASETS.md#{source['document']}#seq-{seq}"[:300],

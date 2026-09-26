@@ -1,17 +1,17 @@
 {
  "schema": "colab-draft-contribution/1",
  "round": "2회차 지역",
- "measuredAt": "2026-09-26T10:21:08+09:00",
+ "measuredAt": "2026-09-26T10:53:49+09:00",
  "tool": {
   "path": "eval/k4-search/measure_draft_contribution.py",
-  "sha256": "80684ca92492b7b2fb77b469559580fe16db6d741bdbf349a7d725be4ebe4a65",
-  "gitHead": "b18e35cd98b6e6c629dae748ce5400089d3e4367"
+  "sha256": "05eea1e7ab4fce2ce0a90c65c68deb38f5e861e84ee53db69b3fd914609fa994",
+  "gitHead": "1b8c75a83dbc8320c08cb44bde971109087ba5ed"
  },
  "intent": "dev-package/intent/2026-09-21-evidence-promotion.md",
  "inputs": {
   "payload": {
    "path": "dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json",
-   "sha256": "3304c3e38666b0d1d3ce4b38e124cf51edcfda24d6727602507c855093b204a5",
+   "sha256": "73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409",
    "draftFacts": 69,
    "ruleSummary": {
     "platform-from-instrument": 26,
@@ -1116,6 +1116,7 @@
         "end": "2025-12-25"
        },
        "format": "tif",
+       "region": "T51SYB",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1124,7 +1125,8 @@
         "start": "2025-12-25",
         "end": "2025-12-25"
        },
-       "format": "tif"
+       "format": "tif",
+       "region": "T51SYB"
       }
      },
      {
@@ -1168,6 +1170,7 @@
         "end": "2025-12-27"
        },
        "format": "tif",
+       "region": "T52SCE",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1176,7 +1179,8 @@
         "start": "2025-12-27",
         "end": "2025-12-27"
        },
-       "format": "tif"
+       "format": "tif",
+       "region": "T52SCE"
       }
      },
      {
@@ -1220,6 +1224,7 @@
         "end": "2025-12-25"
        },
        "format": "npy",
+       "region": "T51SYB",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1228,7 +1233,8 @@
         "start": "2025-12-25",
         "end": "2025-12-25"
        },
-       "format": "npy"
+       "format": "npy",
+       "region": "T51SYB"
       }
      },
      {
@@ -1272,6 +1278,7 @@
         "end": "2025-12-27"
        },
        "format": "npy",
+       "region": "T52SCE",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1280,7 +1287,8 @@
         "start": "2025-12-27",
         "end": "2025-12-27"
        },
-       "format": "npy"
+       "format": "npy",
+       "region": "T52SCE"
       }
      },
      {
@@ -1320,6 +1328,7 @@
         "end": "2019-10-31"
        },
        "variable": "엽면적지수",
+       "region": "h27v05",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1328,7 +1337,8 @@
         "start": "2019-09-30",
         "end": "2019-10-31"
        },
-       "variable": "엽면적지수"
+       "variable": "엽면적지수",
+       "region": "h27v05"
       }
      },
      {
@@ -1368,6 +1378,7 @@
         "end": "2019-10-31"
        },
        "variable": "엽면적지수",
+       "region": "h28v05",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1376,7 +1387,8 @@
         "start": "2019-09-30",
         "end": "2019-10-31"
        },
-       "variable": "엽면적지수"
+       "variable": "엽면적지수",
+       "region": "h28v05"
       }
      },
      {
@@ -1417,6 +1429,7 @@
        },
        "format": "npy",
        "variable": "엽면적지수",
+       "region": "h27v05",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1426,7 +1439,8 @@
         "end": "2019-10-31"
        },
        "format": "npy",
-       "variable": "엽면적지수"
+       "variable": "엽면적지수",
+       "region": "h27v05"
       }
      },
      {
@@ -1467,6 +1481,7 @@
        },
        "format": "npy",
        "variable": "엽면적지수",
+       "region": "h28v05",
        "platform": "satellite",
        "directObservation": true
       },
@@ -1476,7 +1491,8 @@
         "end": "2019-10-31"
        },
        "format": "npy",
-       "variable": "엽면적지수"
+       "variable": "엽면적지수",
+       "region": "h28v05"
       }
      }
     ],
@@ -1848,12 +1864,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-       "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif"
+       "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
       }
      },
      {
@@ -1862,12 +1880,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-       "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif"
+       "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
       }
      },
      {
@@ -1876,12 +1896,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-       "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy"
+       "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」"
       }
      },
      {
@@ -1890,12 +1912,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-       "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy"
+       "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」"
       }
      },
      {
@@ -1904,12 +1928,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-       "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
       }
      },
      {
@@ -1918,12 +1944,14 @@
       "payload": {
        "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-       "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
       }
      },
      {
@@ -1933,13 +1961,15 @@
        "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
        "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
-       "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       }
      },
      {
@@ -1949,13 +1979,15 @@
        "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
        "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "regenerated": {
        "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
        "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
-       "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       }
      }
     ],
@@ -1991,11 +2023,11 @@
  "db": {
   "before": {
    "rows": 543,
-   "sha256": "73bb368ad0734f889fc0c1e0c0a89c7b7593d524981adce8769ee392f131c956"
+   "sha256": "4e5a5f60f8d532d79b6d34ce5fa79f2ecedf70b26246f5fd5c67abb9e1404073"
   },
   "after": {
    "rows": 543,
-   "sha256": "73bb368ad0734f889fc0c1e0c0a89c7b7593d524981adce8769ee392f131c956"
+   "sha256": "4e5a5f60f8d532d79b6d34ce5fa79f2ecedf70b26246f5fd5c67abb9e1404073"
   },
   "unchanged": true,
   "fingerprint": "(file_id, revision, status, source_sha256, md5(facts)) 전 행 · A 연구실 스코프"
@@ -2155,6 +2187,12 @@
    }
   ]
  },
+ "draftReplacesReviewed": [
+  "seq21.region",
+  "seq22.region",
+  "seq23.region",
+  "seq24.region"
+ ],
  "bodyFilesByDataset": {
   "1": 10,
   "2": 10,
@@ -2178,8 +2216,8 @@
   "20": 12,
   "21": 3,
   "22": 3,
-  "24": 3,
   "23": 3,
+  "24": 3,
   "25": 4,
   "26": 4,
   "27": 24,
