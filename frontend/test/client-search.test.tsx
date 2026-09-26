@@ -42,4 +42,23 @@ describe('client research search', () => {
     expect(await screen.findByText('2025-01-01 ~ 2025-12-31')).toBeInTheDocument();
     expect(screen.queryByText('2025-12-31 ~ 2025-01-01')).toBeNull();
   });
+  it('labels the cadence range condition in words, not as a raw key or seconds', async () => {
+    // intent 2026-09-26-cadence-range-predicate 판정 6 — 「주기 1시간 이하」로 보인다.
+    const assessment:SearchAssessment = {
+      status:'answered', text:'조건을 확인했습니다.', questions:[], intent:'discover',
+      conditions:{ maxCadenceSeconds:3600, maxResolutionM:5000, cadence:'hourly' },
+      asOf:'2026-09-26T12:00:00+09:00', semanticVersion:'c'.repeat(64), scope:'등록 자료',
+      candidateLimitReached:false, unknownCount:0, comparisons:[],
+    };
+    const result:SearchResults = {
+      scope:{labId:'L',labName:'연구실',searchedCount:1}, isDataQuery:true, degraded:false,
+      items:[], totalCount:0, nextCursor:null, assessment,
+    };
+    render(<MemoryRouter initialEntries={['/search?q=1시간이하']}><SearchResultsPage source={{search:vi.fn().mockResolvedValue(result)}} /></MemoryRouter>);
+    const panel = await screen.findByTestId('search-assessment');
+    expect(panel).toHaveTextContent('주기1시간 이하');
+    expect(panel).toHaveTextContent('시간 간격매시');
+    expect(panel).not.toHaveTextContent('maxCadenceSeconds');
+    expect(panel).not.toHaveTextContent('3600');
+  });
 });

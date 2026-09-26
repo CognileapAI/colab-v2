@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "environment": "disposable fixture DB · real local core-api (this branch) + vite frontend · agent-browser",
+  "interpreter": "HTTP test double (eval/k4-search/search_journey.py) · no model call",
+  "checks": [
+    "login",
+    "path-1 condition panel shows 주기 + human limit",
+    "no raw key",
+    "no raw seconds"
+  ],
+  "cases": [
+    {
+      "name": "panel-1h",
+      "query": "시간해상도 1시간 이하, 공간해상도 5 km 이하 한반도 강수자료",
+      "expected": "1시간 이하",
+      "panelText": "조건과 근거로 찾았어요\n\n현재 접근 가능한 등록 자료에서 해석된 조건이 확인된 데이터셋은 0건입니다. 데이터셋마다 조건을 충족한 대표 파일을 표시합니다. 조건 근거가 없거나 오래된 자료는 포함하지 않습니다.\n\n현재 접근 가능한 플랫폼 등록 자료 · 2026. 9. 26. 기준\n\n관측 변수\n강수량\n지역\n한반도\n최대 공간 해상도(m)\n5000\n주기\n1시간 이하\n"
+    },
+    {
+      "name": "panel-30min",
+      "query": "30분 이내, 공간해상도 5 km 이하 강수자료",
+      "expected": "30분 이하",
+      "panelText": "조건과 근거로 찾았어요\n\n현재 접근 가능한 등록 자료에서 해석된 조건이 확인된 데이터셋은 0건입니다. 데이터셋마다 조건을 충족한 대표 파일을 표시합니다. 조건 근거가 없거나 오래된 자료는 포함하지 않습니다.\n\n현재 접근 가능한 플랫폼 등록 자료 · 2026. 9. 26. 기준\n\n관측 변수\n강수량\n최대 공간 해상도(m)\n5000\n주기\n30분 이하\n"
+    }
+  ]
+}
