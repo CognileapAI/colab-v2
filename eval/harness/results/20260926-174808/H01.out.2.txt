@@ -1,0 +1,24 @@
+인계 문서의 「다음 = …」 줄은 이 저장소의 현재 다음 단계와 다르다. 그 줄은 2026-09-08 시점에 적혔고, 이력은 이미 2026-09-26 의 다른 작업에 가 있다.
+
+**인계 문서 사본의 마지막 줄 (2026-09-08, R-B 마감 문단)**
+- 할 일 네 가지: ⑴ Ted 질의 판정(완료로 지워져 있음) ⑵ 배포 창 ⑶ R-C intent ⑷ `w9-dev-deploy-rebased` 처리
+- `SOURCE.md` 에 따르면 이 발췌는 `7a97259` 의 29~33행이다. 그 뒤에 R-C 와 R-D 가 진행됐다. `CLAUDE-5b.md` §5-b 1번 줄에도 R-C 마감 뒤에 「다음 = R-C intent」라고 적은 사고가 기록돼 있다.
+
+**이력 (`git log --oneline -12`)**
+- 최근 커밋은 모두 2026-09-26 이다. 이 브랜치의 HEAD `b6d8540f` 는 `5bb3d6fe`(PR #176 E0 병합, `origin/develop`) 위에 있다.
+- 그 위에 S-red spec(`dev-package/prd/specs/S-HARNESS-SRED-REDRUN-20260926.md`) §7 의 커밋 단위 ①~④′ 가 차례로 올라가 있다:
+  - `a99d3644` ① S-1 + S-4
+  - `955fa42e` ② S-2
+  - `d747a599` ③ S-3
+  - `2184be1b` ④ S-5
+  - `b6d8540f` ④′ S-6
+- spec §7 에서 ④′ 다음 단위는 ⑤ 실측이다. `eval/harness/results/<run>/` 에 ④′ 이후의 해시로 E0 규칙에 따라 한 회차를 재서 커밋한다.
+- 그다음 §9 에 따라 PR 본문 초안을 `~/.claude/pr-bodies/PR-BODY-harness-improvement-S-red.md` 에 쓰고, Ted 가 게시한다(T16).
+- `c0bc7f74` 로 S-auth intent 가 승인됐다. 커밋 본문에 따르면 S-auth 의 남은 세부는 spec 단계에서 advisor ① 로 다룬다. 이것은 S-red PR 다음 줄에 선다.
+- 배포 창, R-C intent, `w9-dev-deploy-rebased` 는 최근 이력 어디에도 다음 단계로 나오지 않는다.
+
+`eval/harness/results/20260926-174808/` 가 아직 커밋되지 않은 채로 있다. ⑤ 에 쓸 회차가 이미 진행 중이었을 수 있지만, 내용은 열어 보지 않았다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -12` · b6d8540
+- 다음 단계: S-red 커밋 ⑤ — ④′ 이후 해시로 `eval/harness/results/<run>/` 실측 회차를 커밋하고, PR 본문 초안을 쓴 뒤 Ted 가 게시(T16)

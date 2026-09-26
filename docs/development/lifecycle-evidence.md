@@ -97,6 +97,48 @@ baseline은 begin 시점의 추적·미추적(무시 제외) 파일 전체의 �
 ⑵ 범위 밖 변경을 되돌리고 게이트를 다시 돌려 같은 task로 인계한다. 범위를 선언하지 않은 task는 기존 동작 그대로다.
 시험 fixture의 승인 응답은 시험 데이터다. 실제 제품 승인 기록으로 옮기지 않는다.
 
+CLI `handoff`가 통과하면 task.json에 `handed_off = {mode, run_id, at}`을 기록한다(「인계됨」).
+SubagentStop H6/H7 경로는 판정만 하고 기록하지 않는다. 「닫힘」과 정리는 PR 2 몫이다.
+
+## fix 레인
+
+결함 수정 과제는 실패 시험을 먼저 기록하고 연다. 이 절이 fix 레인의 정본이다.
+
+```bash
+python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate <게이트> [--scope <glob>] \
+  --fix --red <시험 경로>[::<case>] [--red …]
+```
+
+- begin이 선언한 시험을 실제로 실행해 **rc 1(실패)일 때만** task를 연다. rc 0(이미 green)은 「a RED must fail before the fix」,
+  그 밖의 rc(수집 오류 · 인터프리터 부재 · 시간 초과 900초)는 「readiness, not RED」로 78 거절하고 task를 만들지 않는다.
+  `--fix`와 `--red`는 함께만 받는다. `lane-worker` 외 역할과 `--legacy`는 거절한다.
+- 러너 표(`scripts/harness/hooks/lifecycle_contract.py` `RED_RUNNERS` 한 곳 · 각 시험 묶음을 도는 게이트와 같은 인터프리터·옵션):
+
+  | 경로 | cwd | 명령 | `::case` |
+  |---|---|---|---|
+  | `scripts/tests/*.py` | 저장소 루트 | `python3 -m unittest <경로>` | `-k <case>` |
+  | `frontend/test/**` | `frontend` | `node_modules/.bin/vitest run <경로>` | `-t <case>` |
+  | `services/<svc>/tests/**` | `services/<svc>` | `.venv/bin/python -m pytest -q -p no:cacheprovider <경로>` | `<경로>::<case>` |
+  | `gates/tools/*-selftest.sh` · `eval/harness/tests/*.sh` | 저장소 루트 | `bash <경로>` | 불가 |
+
+  그 밖의 경로는 「no runner」로 거절한다. 와일드카드·절대경로·`..`는 받지 않는다.
+- 기록: task.json `fix.red[]` = `spec · path · case · blob`(`git hash-object`) `· runner · cwd · rc · output_sha256 · log`.
+  실행 출력은 task runtime `red/<i>.log`에 남는다. 보고에 RED를 인용할 때는 이 로그 경로를 적는다.
+- 편집 시점 차단: 열린 fix task가 기록한 경로에 대한 Edit/Write는 `test-file-guard`가 exit 2로 막는다(Claude·Codex 동일).
+  대조 기준은 `file_path`가 속한 checkout이다. env · agent_id · payload cwd · `COLAB_ALLOW_TEST_EDIT`와 무관하고,
+  부모 세션이 lane worktree의 기록 경로를 고치는 것도 막는다. 다른 checkout의 같은 상대경로와 기록하지 않은 경로는 막지 않는다.
+- 인계: `gates/run.sh task`는 선언 게이트 뒤 기록마다 `fix-red:<spec>` 행을 낸다. 시험 파일 blob이 기록과 같으면
+  같은 명령으로 다시 돌려 rc 0 green · rc 1 red(판정) · 그 밖 red(준비), 다르면 실행하지 않고 red(판정)이다.
+  `handoff --mode complete`와 H7은 이 행 전부 green과 현재 blob == 기록 blob을 요구한다.
+- 출구: 제품 코드를 고쳐 GREEN을 만든 뒤 `handoff --mode complete`(`handed_off` 기록 · 잠금 해제).
+  시험 자체가 틀렸으면 시험 파일을 기록 blob으로 되돌리고, 부모가 재승인한 `--red`로 새 task를 연다.
+  버려진 fix task의 잠금은 부모가 그 worktree를 제거하면 풀린다(checkout 부재 = 무시). PR 2에서 `handoff --mode blocked`가 추가된다.
+- 같은 파일에 case를 더하는 정당한 시험 확장도 blob 변경이라 거절된다 — 시험 확장도 새 task로 재승인한다.
+- Bash 쓰기(`sed -i` · 리다이렉션 등)는 편집 시점 차단 대상이 아니다. 인계의 blob 대조가 잡는다.
+- 마커 `<git common dir>/colab-harness/red-locked/<task_id>`는 색인이고 판정은 task.json이 한다.
+  마커를 손으로 지우면 편집 시점 차단만 사라지고 인계 대조는 남는다. 조회: `lifecycle_contract.py red-locked --checkout <경로>`.
+- unittest는 import 오류도 rc 1이라 RED로 기록될 수 있다. 로그와 `output_sha256`이 남으므로 리뷰에서 확인한다.
+
 ## Runtime 산출물 쓰기와 경계
 
 신규 산출물은 `runtime:artifacts/<파일>`로 정확히 선언한다. begin은 실제 절대경로를 반환한다.

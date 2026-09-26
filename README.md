@@ -123,6 +123,5 @@ its subprocesses」 · 적용 범위 「Any file」(`.claude/settings.local.json
 > task 의 handoff/H7(기준 = begin 시점 파일 내용 hash · 도구 무관 · `docs/development/lifecycle-evidence.md`
 > 「인계」). 게이트 쪽 사후 검사는 결정 번호 **중복**만 `work-item-consistency` 가 잡고(순번 건너뜀은
 > 못 잡음), 기존 migration 내용 수정은 없다(`migration-single-head` 는 head 분기만 본다).
-> `test-file-guard` 의 편집 시점 차단은 `COLAB_FIX_LANE=1` env 를 받는 Codex 경로에만 있다 —
-> Claude Code 는 hook env 를 lane 별로 줄 수 없어 Claude lane 에서는 통과하고, 경계는 인계 시점의
-> `--scope` 대조다.
+> fix 레인(`begin --fix`)의 기록 RED 경로는 Edit/Write 시점에 `test-file-guard` 가 차단한다(Claude·Codex
+> 동일 · `docs/development/lifecycle-evidence.md` 「fix 레인」). `COLAB_FIX_LANE=1` env 의 보호 4종은 Codex 경로의 보조다.

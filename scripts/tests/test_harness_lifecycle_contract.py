@@ -6,6 +6,7 @@ import sys
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -455,6 +456,133 @@ class LifecycleRedTests(unittest.TestCase):
             run.return_value = subprocess.CompletedProcess([],0,'','')
             bridge.dispatch_event(dict(cwd=str(child), hook_event_name='SubagentStart', agent_type='lane-worker'))
             self.assertEqual(json.loads(run.call_args.kwargs['input'])['cwd'], str(child))
+
+
+# ── S-red 편집 시점 차단 (spec S-HARNESS-SRED-REDRUN-20260926 §4.3 · 시험 ⑩-a…j · ⑫) ──
+PROBE_TEST = ('import unittest\n\nimport probe_product\n\n\nclass ProbeTests(unittest.TestCase):\n'
+              '    def test_fails(self):\n        self.assertEqual(probe_product.answer(), 42)\n')
+RED_PATH = 'scripts/tests/test_probe.py'
+RED_SPEC = RED_PATH + '::ProbeTests.test_fails'
+
+
+@unittest.skipIf(os.name == 'nt', 'Bash hook integration requires WSL')
+class RedLockedGuardTests(unittest.TestCase):
+    """The recorded RED path of an open fix task is locked at Edit/Write time for its checkout only."""
+    GUARD = ROOT/'.claude/hooks/test-file-guard.sh'
+    GIT = ('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid')
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = (Path(self.tmp.name)/'repo')
+        self.root.mkdir()
+        self.root = self.root.resolve()
+        self.seed(self.root)
+        self.env = dict(os.environ, COLAB_HOOKS='1', CLAUDE_PROJECT_DIR=str(self.root))
+        for key in ('COLAB_FIX_LANE', 'COLAB_ALLOW_TEST_EDIT', 'COLAB_GATE_REPORT_DIR', 'COLAB_TASK_ID'):
+            self.env.pop(key, None)
+
+    def seed(self, root, extra=()):
+        files = {'.gitignore': '__pycache__/\n.claude/worktrees/\n',
+                 'gates/run.sh': '#!/usr/bin/env bash\necho verified\n',
+                 'probe_product.py': 'def answer():\n    return 41\n', RED_PATH: PROBE_TEST}
+        for name, text in files.items():
+            (root/name).parent.mkdir(parents=True, exist_ok=True); (root/name).write_text(text)
+        subprocess.run(['git','init','-q',str(root)], check=True)
+        subprocess.run(['git','-C',str(root),'add','-A'], check=True)
+        subprocess.run(['git','-C',str(root),*self.GIT,'commit','-qm','initial'], check=True)
+
+    def worktree(self, name):
+        path = self.root/'.claude/worktrees'/name
+        subprocess.run(['git','-C',str(self.root),'worktree','add','-q','--detach',str(path)], check=True)
+        return path.resolve()
+
+    def open_fix(self, checkout):
+        return contract.begin(checkout, 'lane-worker', gates=['check'], fix=True, red=[RED_SPEC])['task_id']
+
+    def guard(self, file_path, cwd=None, payload=None, **env):
+        cwd = cwd or self.root
+        if payload is None:
+            payload = json.dumps(dict(cwd=str(cwd), tool_name='Edit',
+                                      tool_input=dict(file_path=str(file_path), old_string='42', new_string='41')))
+        environment = dict(self.env, **env)
+        for key, value in env.items():
+            if value is None:
+                environment.pop(key)
+        return subprocess.run(['bash', str(self.GUARD)], input=payload, text=True, capture_output=True,
+                              cwd=cwd, env=environment, timeout=120)
+
+    def test_a_b_locked_path_blocks_without_env_and_the_human_override_does_not_unlock(self):
+        self.open_fix(self.root)
+        result = self.guard(RED_PATH)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('red-run', result.stderr)
+        result = self.guard(RED_PATH, COLAB_ALLOW_TEST_EDIT='1')
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+
+    def test_c_d_only_recorded_paths_are_locked_and_the_env_branch_is_unchanged(self):
+        self.open_fix(self.root)
+        self.assertEqual(self.guard('frontend/test/x.test.ts').returncode, 0)
+        result = self.guard('frontend/test/x.test.ts', COLAB_FIX_LANE='1')
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('COLAB_FIX_LANE=1', result.stderr)
+
+    def test_e_handoff_unlocks(self):
+        task_id = self.open_fix(self.root)
+        (self.root/'probe_product.py').write_text('def answer():\n    return 42\n')
+        self.assertEqual(contract.run_gates(self.root, task_id), 0)
+        handed = subprocess.run([sys.executable, str(ROOT/'.claude/hooks/lifecycle_contract.py'), 'handoff',
+                                 '--task', task_id, '--mode', 'complete', '--summary', 'fixed'],
+                                cwd=self.root, text=True, capture_output=True, timeout=300)
+        self.assertEqual(handed.returncode, 0, handed.stderr)
+        result = self.guard(RED_PATH)
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+
+    def test_f_i_no_marker_and_no_env_is_silent(self):
+        result = self.guard(RED_PATH)
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+        result = self.guard(RED_PATH, CLAUDE_PROJECT_DIR=None)  # python path, nothing locked
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+
+    def test_g_malformed_payload_blocks_while_locked(self):
+        self.open_fix(self.root)
+        self.assertEqual(self.guard(RED_PATH, payload='{broken').returncode, 2)
+
+    def test_h_other_checkout_own_file_is_not_locked(self):
+        self.open_fix(self.root)
+        other = self.worktree('other')
+        result = self.guard(RED_PATH, cwd=other, CLAUDE_PROJECT_DIR=str(other))
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+
+    def test_j_parent_session_editing_the_lane_worktree_file_is_blocked(self):
+        lane = self.worktree('lane')
+        self.open_fix(lane)
+        result = self.guard(lane/RED_PATH)  # cwd and CLAUDE_PROJECT_DIR = parent checkout
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('red-run', result.stderr)
+        # The parent's own copy of the same relative path is not the lane's recorded RED.
+        result = self.guard(self.root/RED_PATH)
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+
+    def test_12_codex_apply_patch_hits_the_same_lock_without_env(self):
+        fixture = (Path(self.tmp.name)/'codex')
+        ignore = shutil.ignore_patterns('__pycache__')
+        (fixture/'scripts').mkdir(parents=True)
+        shutil.copy2(ROOT/'scripts/agent-bridge.py', fixture/'scripts/agent-bridge.py')
+        shutil.copytree(ROOT/'scripts/harness', fixture/'scripts/harness', ignore=ignore)
+        shutil.copytree(ROOT/'.claude/hooks', fixture/'.claude/hooks', ignore=ignore)
+        shutil.copy2(ROOT/'.claude/settings.json', fixture/'.claude/settings.json')
+        fixture = fixture.resolve()
+        self.seed(fixture)
+        self.open_fix(fixture)
+        event = {'cwd': str(fixture), 'hook_event_name': 'PreToolUse', 'tool_name': 'apply_patch',
+                 'tool_input': {'command': f'*** Begin Patch\n*** Update File: {RED_PATH}\n@@\n-42\n+41\n*** End Patch'}}
+        env = dict(self.env); env.pop('CLAUDE_PROJECT_DIR')
+        result = subprocess.run([sys.executable, str(fixture/'scripts/agent-bridge.py'), 'codex-event'],
+                                input=json.dumps(event), text=True, capture_output=True, env=env, timeout=120)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('test-file-guard', result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

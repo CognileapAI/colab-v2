@@ -55,6 +55,16 @@ def record_path(root, task_id):
     return confined(directory(root, task_id), directory(root, task_id) / 'task.json')
 
 
+def marker_dir(root):
+    """Index of open fix tasks: `<common>/colab-harness/red-locked/<task_id>` holds its record path.
+
+    Shared by every checkout of one repository (the common dir), so a parent session and its lane
+    worktrees see one index. The marker is only an index; task.json is the verdict.
+    """
+    _, common, _ = identity(root)
+    return confined(common, common / 'colab-harness' / 'red-locked')
+
+
 def run_directory(root, task):
     actual, _, key = identity(root)
     if task.get('schema') != 'colab-task/2' or task.get('checkout') != str(actual) or task.get('checkout_id') != key:
@@ -79,8 +89,14 @@ def bind_paths(root, task):
     # is None and `verify_task_report` fails on every single handoff — the role would be
     # able to open a task and never able to close one.
     task['report'] = str(base / 'gate-summary.json') if task['role'] in GATE_ROLES else None
-    task['logs'] = [str(base / 'logs' / f'{index}.log') for index, _ in enumerate(task['gates'])]
+    # A fix task's `fix-red:<spec>` rows follow the declared gates with continuing log numbers.
+    task['logs'] = [str(base / 'logs' / f'{index}.log') for index, _ in enumerate([*task['gates'], *fix_rows(task)])]
     return task
+
+
+def fix_rows(task):
+    """Gate-summary row names a fix task adds after its declared gates (one per recorded RED)."""
+    return ['fix-red:' + entry['spec'] for entry in (task.get('fix') or {}).get('red', [])]
 
 
 def resolve(root, task, name, *, artifact_only=False):

@@ -1,0 +1,12 @@
+그 지적은 v2 코드에 해당하지 않습니다. 이 `lineage.css` 사본에는 연결 불가 후보 행을 흐리게 만드는 선언이 한 건도 없습니다.
+
+- **후보 목록 규칙:** 두 개입니다.
+  - `.lin-picker`(105–108행)에는 `border-top`과 `padding-top`만 있습니다.
+  - `.lin-picker ul`(109–117행)에는 목록 초기화(`list-style`·`margin`·`padding`)와 flex 배치(`display`·`flex-direction`·`gap`·`align-items`)만 있습니다.
+- **흐림 선언 검색:** 파일 전체(138행)를 `opacity|filter|blur|disabled|grayscale`로 대소문자 구분 없이 검색했고 일치하는 행이 없습니다. `.lin-picker` 계열뿐 아니라 파일 어디에도 없습니다.
+- **판정 범위:** 이 파일 하나만 봤습니다. 다른 스타일시트, 인라인 스타일, 브라우저 기본 `:disabled` 스타일로 흐려질 가능성은 확인하지 않았습니다. 이 파일은 `upload.css`의 토큰을 쓴다고 1행에 적혀 있지만, 그 파일은 이 디렉터리에 없습니다.
+- 같은 디렉터리의 `SOURCE.md`에 기대 답이 적혀 있는 것도 봤습니다. 판정은 그 파일이 아니라 위 검색 결과를 근거로 했습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: lineage.css 전체(1–138행)를 `grep -nEi 'opacity|filter|blur|disabled|grayscale'`로 검색해 일치 0건, `.lin-picker` 규칙(105–117행)에는 테두리·여백·배치 선언만 있음

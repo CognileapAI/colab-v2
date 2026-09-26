@@ -1,0 +1,22 @@
+The table is broken: line 13 is a blank line, and it pushes the last 2 rows out of the table.
+
+`cat -A` shows line 13 as just `$`, so it's completely empty, not even a space. That ends the table there.
+
+| Line | Content | Status |
+|---|---|---|
+| 9 | Header row (출처 · URL · 라이선스 · 판본 · 내려받은 날) | Table |
+| 10 | Delimiter row `\|---\|…` | Table |
+| 11 | superpowers | Table |
+| 12 | mattpocock/skills | Table |
+| **13** | *(blank line)* | **Table ends here** |
+| 14 | emilkowalski/skills | Outside the table |
+| 15 | vercel-labs/agent-browser | Outside the table |
+
+- Lines 14 and 15 have no header or delimiter row of their own, so they don't form a second table. Together they render as one paragraph of text containing the raw `|` characters.
+- The file ends at line 15, so no other rows are affected.
+- The check command counts how many `|` lines follow line 9 without a break. It prints `4` now. Once line 13 is removed, it should print `6`: the header, the delimiter and 4 rows.
+
+- 판정: 있음
+- 빈 줄: 13
+- 표 밖으로 떨어진 행: 2건
+- 확인 명령: `awk 'NR>=9 && /^\|/ {n++; next} NR>=9 {exit} END {print n}' VENDORED-excerpt.md`

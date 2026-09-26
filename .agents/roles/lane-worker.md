@@ -35,13 +35,13 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 수정 전에 `docs/development/lifecycle-evidence.md`의 `begin --role lane-worker`를 실행해
 필수 `--gate`를 선언한다. 새 보고서는 작업별 Git common runtime에 자동 배치된다. 받은 task_id를 실제 게이트 명령의
 `COLAB_TASK_ID`로 전달한다.
-지시문이 파일 범위를 주면 `--scope <glob>`로 함께 선언한다. 범위 밖 변경은 인계에서 차단되며 출구는 범위를 넓힌 새 task 또는 되돌리기다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다.
+지시문이 파일 범위를 주면 `--scope <glob>`로 함께 선언한다. 범위 밖 변경은 인계에서 차단되며 출구는 범위를 넓힌 새 task 또는 되돌리기다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다. fix 과제의 시험 경로는 인계 전 편집 불가(`lifecycle-evidence.md` 「fix 레인」).
 
 ## 순서 (`CLAUDE.md §4`)
 
 1. **진입조건 확인** — 지시문·`WORK-UNITS.md` 의 해당 행. 미충족이면 **구현하지 말고 보고**한다.
 2. **계약 동결** — 계약을 건드리면 계약 게이트가 green 이어야 다음으로 간다.
-3. **실패 테스트** — **red 를 실제로 확인**한다. green 으로 시작한 테스트는 오라클이 아니다. red 로그 한 줄을 보고에 인용한다.
+3. **실패 테스트** — **red 를 실제로 확인**한다. green 으로 시작한 테스트는 오라클이 아니다. fix 과제는 `begin --fix --red <경로>` 가 RED 를 실행·기록한다(로그 = task runtime `red/`) · 보고 인용은 그 로그 경로다. fix 가 아닌 과제는 red 로그 한 줄을 인용한다.
 4. **구현** — 그 테스트를 green 으로 만든다.
 5. **게이트** — 아래 좁은 게이트 규칙.
 

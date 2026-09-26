@@ -12,8 +12,9 @@ compute  파일 집합 = `git ls-files --cached --others --exclude-standard -- <
          내용 기준이라 실행 시 dirty 였던 편집을 그대로 커밋하면 같은 해시다.
 verify   후보 = `results/<YYYYMMDD-HHMMSS>/config-hash.json` 중 hash == 현재 ∧ selected == all ∧
          summary.md 요약줄 `준비 0` ∧ 표의 과제 행 수 == --tasks. 없으면 78.
-         후보 중 id 최대 = R*. 직전 = R* 보다 id 가 작고 summary.md 가 있는 최신(해시 없는 옛 결과 포함 ·
-         선택 실행은 제외). green(직전) − green(R*) ≠ ∅ → 1(회귀). 그 밖 0.
+         후보 중 id 최대 = R*. 직전 = R* 보다 id 가 작고 summary.md 가 있으며 표의 과제 행 수 == --tasks 인
+         최신 전수 결과(해시 없는 옛 결과 포함 · 선택 실행 제외 · 행이 모자란 중단 회차 제외 — 중단 회차로
+         「회귀 0」을 만들지 않는다). green(직전) − green(R*) ≠ ∅ → 1(회귀). 그 밖 0.
          입력을 못 읽음(json 손상 · 요약줄/표 파싱 실패 · git 실패) = 78 — 「못 읽음 = 78 · 읽었는데 위반 = 1」.
 
 exit — 0 · 1(verify 회귀) · 78(준비). verify stdout = `<현재 해시>\\t<설명>` 한 줄.
@@ -211,16 +212,20 @@ def verify(root: Path, results: Path, tasks: int) -> tuple[int, str, str]:
             return 78, current, (f"현재 설정 해시와 일치하는 전수 결과(선택 실행 아님 · 준비 0 · 과제 {tasks})가 "
                                  f"{results} 에 없다 ({why})")
         best, best_rows = candidates[-1]
-        previous = None
-        for run in runs:
+        previous, prev_rows = None, []
+        # Newest first: the first full result (row count == tasks) is the baseline. Unreadable
+        # summaries on the way are still 78, as before, rather than being skipped silently.
+        for run in reversed(runs):
             if run.name >= best.name or not (run / "summary.md").is_file():
                 continue
             if run.name in meta and meta[run.name].get("selected") != "all":
                 continue
-            previous = run
+            _, rows = _summary(run)
+            if len(rows) == tasks:
+                previous, prev_rows = run, rows
+                break
         green = {name for name, verdict in best_rows if verdict == "green"}
         if previous is not None:
-            _, prev_rows = _summary(previous)
             regressed = sorted({name for name, verdict in prev_rows if verdict == "green"} - green)
             if regressed:
                 return 1, current, (f"회귀 — 직전 {previous.name} 에서 green 이던 과제 {len(regressed)}건이 "
