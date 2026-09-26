@@ -1,11 +1,46 @@
 {
-  "schema": "colab-visual-scenes/1",
+  "schema": "colab-visual-scenes/2",
   "spec": "dev-package/prd/specs/S-DESIGN-STRUCTURE-P0-20260924.md",
-  "viewport": {
-    "height": 900,
-    "deviceScaleFactor": 1
-  },
-  "scrollbars": "native",
+  "deviceScaleFactor": 1,
+  "viewports": [
+    {
+      "id": "390",
+      "width": 390,
+      "height": 844,
+      "input": "touch"
+    },
+    {
+      "id": "844x390",
+      "width": 844,
+      "height": 390,
+      "input": "touch"
+    },
+    {
+      "id": "820",
+      "width": 820,
+      "height": 1180,
+      "input": "touch"
+    },
+    {
+      "id": "1024",
+      "width": 1024,
+      "height": 1366,
+      "input": "touch"
+    },
+    {
+      "id": "1180",
+      "width": 1180,
+      "height": 820,
+      "input": "touch"
+    },
+    {
+      "id": "1440",
+      "width": 1440,
+      "height": 900,
+      "input": "mouse"
+    }
+  ],
+  "scrollbars": "touch: hidden (--hide-scrollbars) · mouse: native",
   "browser": {
     "args": [
       "--disable-gpu",
@@ -15,15 +50,27 @@
       "--force-color-profile=srgb",
       "--disable-lcd-text"
     ],
-    "why": "Without these, same-HEAD runs differed by 1-40 px (anti-aliasing of rounded corners and focus rings in dialogs); measured 2026-09-24."
+    "why": "Without these, same-HEAD runs differed by 1-40 px (anti-aliasing of rounded corners and focus rings in dialogs); measured 2026-09-24.",
+    "inputArgs": {
+      "touch": [
+        "--blink-settings=primaryPointerType=2,availablePointerTypes=2,primaryHoverType=1,availableHoverTypes=1",
+        "--touch-events=enabled",
+        "--hide-scrollbars"
+      ],
+      "mouse": [
+        "--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2"
+      ]
+    },
+    "inputWhy": "Input mode is fixed when the browser launches: capture.py writes one launch wrapper per input (browser.args + inputArgs + the Chrome binary) and passes it as the executable. blink-settings pointer 2 = coarse, 4 = fine; hover 1 = none, 2 = hover. The state check compares (pointer: coarse), (hover: hover), innerWidth and innerHeight with the viewport and stops with 78 on a mismatch."
   },
   "notes": [
     "30 scene names are inherited from dev-package/reports/design-consistency/20260912/full/scenes.json; account-admin, password-change, gnb-more are new.",
     "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
     "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector).",
-    "gnb-more has widths 375/768 only: .gnb-more is visible at <= 900px.",
+    "gnb-more uses viewports 390 · 844x390 · 820 only: .gnb-more is visible at <= 900px.",
     "primitives (P5 · spec S-DESIGN-STRUCTURE-P5-20260924) is the primitive gallery: static markup of primitives.css classes only, no GNB (STANDALONE in audit-design.tsx), no product components.",
-    "upload-register-ok (spec S-DESIGN-FIX-FOLLOWUPS-20260925 Q4) is audit-upload.html?register=ok: register/attach succeed locally and the modal is opened by the real parents UploadEntry and GridAttachEntry (useUploadModalPresence). Without the query audit-upload.html is unchanged."
+    "upload-register-ok (spec S-DESIGN-FIX-FOLLOWUPS-20260925 Q4) is audit-upload.html?register=ok: register/attach succeed locally and the modal is opened by the real parents UploadEntry and GridAttachEntry (useUploadModalPresence). Without the query audit-upload.html is unchanged.",
+    "viewports (spec S-DEVICE-WIDTH-INPUT-20260926 L0a · schema 2): a scene lists viewport ids in `viewports`; without it the scene uses all 6. Capture file = <scene>-<theme>-<viewport id>.png."
   ],
   "scenes": [
     {
@@ -33,11 +80,6 @@
         "scene": "catalog",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -58,11 +100,6 @@
         "scene": "lab",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -83,11 +120,6 @@
         "scene": "empty",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -108,11 +140,6 @@
         "scene": "projects",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -133,11 +160,6 @@
         "scene": "project-table",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -162,11 +184,6 @@
         "scene": "project-detail",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -187,11 +204,6 @@
         "scene": "project-dialog",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -212,11 +224,6 @@
         "scene": "project-close",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -237,11 +244,6 @@
         "scene": "detail",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -262,11 +264,6 @@
         "scene": "settings",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -287,11 +284,6 @@
         "scene": "members",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -312,11 +304,6 @@
         "scene": "lab-dialog",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -337,11 +324,6 @@
         "scene": "search",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -362,11 +344,6 @@
         "scene": "search-empty",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -387,11 +364,6 @@
         "scene": "search-down",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -412,11 +384,6 @@
         "scene": "search-degraded",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -437,11 +404,6 @@
         "scene": "preview",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -462,11 +424,6 @@
         "scene": "preview-done",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -487,11 +444,6 @@
         "scene": "preview-expired",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -512,11 +464,6 @@
         "scene": "access",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -537,11 +484,6 @@
         "scene": "pending",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -562,11 +504,6 @@
         "scene": "approval",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -587,11 +524,6 @@
         "scene": "approval-dialog",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -619,11 +551,6 @@
         "scene": "lineage-picker",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -644,11 +571,6 @@
         "scene": "login",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -669,11 +591,6 @@
         "scene": "not-found",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -691,11 +608,6 @@
       "name": "upload",
       "entry": "audit-upload.html",
       "query": {},
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -713,11 +625,6 @@
       "name": "upload-classify",
       "entry": "audit-upload.html",
       "query": {},
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -770,11 +677,6 @@
       "name": "upload-metadata",
       "entry": "audit-upload.html",
       "query": {},
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -830,11 +732,6 @@
       "name": "upload-link",
       "entry": "audit-upload.html",
       "query": {},
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -895,11 +792,6 @@
       "query": {
         "register": "ok"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -927,11 +819,6 @@
         "scene": "account-admin",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -952,11 +839,6 @@
         "scene": "password-change",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"
@@ -977,9 +859,10 @@
         "scene": "gnb-more",
         "design": "full"
       },
-      "widths": [
-        375,
-        768
+      "viewports": [
+        "390",
+        "844x390",
+        "820"
       ],
       "themes": [
         "light",
@@ -1005,11 +888,6 @@
         "scene": "primitives",
         "design": "full"
       },
-      "widths": [
-        375,
-        768,
-        1440
-      ],
       "themes": [
         "light",
         "dark"

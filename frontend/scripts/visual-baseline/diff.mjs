@@ -2,7 +2,12 @@
 // Pixel comparison of two capture directories written by capture.py.
 // Spec: dev-package/prd/specs/S-DESIGN-STRUCTURE-P0-20260924.md (P0).
 //
-//   node diff.mjs [--subset] <baselineDir> <candidateDir> <reportDir>
+//   node diff.mjs [--subset] [--viewport <id>[,<id>...]] <baselineDir> <candidateDir> <reportDir>
+//
+// --viewport (spec S-DEVICE-WIDTH-INPUT-20260926 L0a): compare only the captures whose `viewport` id (index.json
+//   schema 2) is listed — e.g. `--viewport 1440` for the mouse-only baseline. Applied on both sides after the scene /
+//   manifest checks; the selected capture sets must still match. 0 selected captures (unknown id, schema-1 index
+//   without `viewport`) is 78. Different from --subset, which narrows scenes, not viewports.
 //
 // --subset (P5 · spec S-DESIGN-STRUCTURE-P5-20260924): compare only the scenes present on both sides and skip the
 //   manifest sha256 check — for linking a baseline taken before a scene was added to one taken after it. Both
@@ -43,9 +48,19 @@ function readIndex(dir, side) {
 const sameSet = (a, b) => a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]);
 
 function main(argv) {
-  const subset = argv[0] === '--subset';
-  if (subset) argv = argv.slice(1);
-  if (argv.length !== 3) notReady('usage: node diff.mjs [--subset] <baselineDir> <candidateDir> <reportDir>');
+  const usage = 'usage: node diff.mjs [--subset] [--viewport <id>[,<id>...]] <baselineDir> <candidateDir> <reportDir>';
+  let subset = false;
+  let viewportFilter = null;
+  while (argv[0]?.startsWith('--')) {
+    const flag = argv.shift();
+    if (flag === '--subset') subset = true;
+    else if (flag === '--viewport') {
+      const ids = (argv.shift() ?? '').split(',').filter(Boolean);
+      if (!ids.length) notReady(`--viewport needs an id list · ${usage}`);
+      viewportFilter = ids;
+    } else notReady(`unknown flag ${flag} · ${usage}`);
+  }
+  if (argv.length !== 3) notReady(usage);
   const [baseDir, candDir, reportDir] = argv;
   const base = readIndex(baseDir, 'baseline');
   const cand = readIndex(candDir, 'candidate');
@@ -69,6 +84,12 @@ function main(argv) {
       notReady(`manifest sha256 differs: baseline ${base.manifestSha256} vs candidate ${cand.manifestSha256}`);
     }
     if (!sameSet(base.scenes ?? [], cand.scenes ?? [])) notReady('scene sets differ between baseline and candidate');
+  }
+  if (viewportFilter) {
+    const keep = new Set(viewportFilter);
+    baseCaps = baseCaps.filter((c) => keep.has(c.viewport));
+    candCaps = candCaps.filter((c) => keep.has(c.viewport));
+    if (!baseCaps.length || !candCaps.length) notReady(`--viewport ${viewportFilter.join(',')}: 0 captures selected`);
   }
   const baseNames = baseCaps.map((c) => c.name);
   const candNames = candCaps.map((c) => c.name);
@@ -95,7 +116,7 @@ function main(argv) {
     const edited = sha(a) !== c.sha256 || sha(b) !== candBy.get(c.name).sha256;
     const r = comparePng(a, b);
     const row = {
-      name: c.name, scene: c.scene, theme: c.theme, width: c.width,
+      name: c.name, scene: c.scene, theme: c.theme, viewport: c.viewport ?? null, width: c.width,
       strict: r.strict, strictPct: (r.strict / r.totalPixels) * 100, lenient: r.lenient,
       sizeMismatch: r.sizeMismatch, pixels: r.totalPixels, editedAfterCapture: edited, diffImage: null,
     };
@@ -122,6 +143,7 @@ function main(argv) {
     referenceSetting: { threshold: 0.1 },
     manifestSha256: base.manifestSha256,
     subset: subsetInfo,
+    viewportFilter,
     baseline: side(base, baseDir),
     candidate: side(cand, candDir),
     sameHead,
@@ -149,6 +171,7 @@ function main(argv) {
     `- 후보: \`${report.candidate.dir}\` · HEAD \`${cand.gitHead}\`${cand.gitDirty ? ' (미커밋 변경 있음)' : ''} · ${cand.capturedAt}`,
     `- 명세 sha256: \`${base.manifestSha256}\``,
     ...(subsetInfo ? [`- **부분집합 대조(--subset)** — 공통 장면 ${subsetInfo.commonScenes}개만 비교 · 명세 sha256 기준 \`${subsetInfo.baselineManifestSha256}\` / 후보 \`${subsetInfo.candidateManifestSha256}\` · 기준에만 있는 장면: ${subsetInfo.onlyBaseline.join(', ') || '없음'} · 후보에만 있는 장면: ${subsetInfo.onlyCandidate.join(', ') || '없음'}`] : []),
+    ...(viewportFilter ? [`- **뷰포트 거르기(--viewport)** — ${viewportFilter.join(', ')} 의 캡처만 비교`] : []),
     `- 캡처 ${report.totals.captures}장 · 장면 ${report.totals.scenes}개 · red ${red.length}장 · 엄격 차이 픽셀 합 ${report.totals.strictPixels} · 보조 차이 픽셀 합 ${report.totals.lenientPixels} · 크기 차이 ${report.totals.sizeMismatch}장`,
     `- 종료코드: **${exit}**`,
     '',

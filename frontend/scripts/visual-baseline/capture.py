@@ -6,8 +6,16 @@ Drives agent-browser through `python3 scripts/agent-bridge.py run-tool browser` 
 dev-package/reports/design-consistency/20260912/representative/capture.py) against the static audit
 build served by `vite preview --config audit.vite.config.ts` on a free local port.
 
-Output: <out>/<name>-<theme>-<width>.png + <out>/index.json. Default out: frontend/.visual/<label>/.
-Exit codes: 0 = all captures written; 78 = could not capture (build, server, browser, manifest, missing file).
+Viewports and input mode (spec dev-package/prd/specs/S-DEVICE-WIDTH-INPUT-20260926.md L0a · scenes schema 2): the
+manifest lists viewports {id, width, height, input}; a scene uses all of them unless it lists `viewports` ids. Input
+is fixed when the browser launches: one launch wrapper per input (Chrome + browser.args + browser.inputArgs[input]) is
+written to a temporary folder without spaces and passed to agent-browser as the executable. One session per
+theme × input. Before each screenshot the page state (theme, innerWidth, innerHeight, devicePixelRatio,
+(pointer: coarse), (hover: hover)) is compared with the viewport; a mismatch stops the run with 78.
+
+Output: <out>/<scene>-<theme>-<viewport id>.png + <out>/index.json. Default out: frontend/.visual/<label>/.
+Exit codes: 0 = all captures written; 78 = could not capture (build, server, browser, manifest, missing file,
+page state differs from the declared viewport or input).
 """
 from __future__ import annotations
 
@@ -18,10 +26,14 @@ import hashlib
 import json
 import os
 import pathlib
+import re
+import shlex
+import shutil
 import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -38,9 +50,12 @@ READINESS = 78
 FREEZE_CSS = '* { animation: none !important; transition: none !important; caret-color: transparent !important; }'
 
 
-# Chrome launch args from scenes.json `browser.args` (set in main). Passed on every call; only the
-# call that launches the session's browser uses them.
-BROWSER_ARGS: list[str] = []
+# Page media state each input's launch wrapper must produce (checked before every screenshot).
+INPUT_MEDIA = {'touch': {'coarse': True, 'hover': False}, 'mouse': {'coarse': False, 'hover': True}}
+
+# Session name -> launch wrapper path (set in main). Passed on every call; only the call that launches the
+# session's browser uses it.
+SESSION_EXEC: dict[str, str] = {}
 
 
 class CaptureError(RuntimeError):
@@ -55,8 +70,8 @@ def rel(path: pathlib.Path) -> str:
 
 
 def ab(session: str, *args: str, stdin: str | None = None, timeout: int = 90) -> str:
-    launch = ['--args', ','.join(BROWSER_ARGS)] if BROWSER_ARGS else []
-    cmd = ['python3', str(ROOT / 'scripts/agent-bridge.py'), 'run-tool', 'browser', '--', '--session', session, *launch, *args]
+    launch = ['--executable-path', SESSION_EXEC[session]] if session in SESSION_EXEC else []
+    cmd =['python3', str(ROOT / 'scripts/agent-bridge.py'), 'run-tool', 'browser', '--', '--session', session, *launch, *args]
     try:
         r = subprocess.run(cmd, cwd=ROOT, input=stdin, text=True, capture_output=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
@@ -115,6 +130,32 @@ def stop_preview(proc: subprocess.Popen | None) -> None:
             pass
 
 
+def chrome_binary() -> pathlib.Path:
+    """The Chrome agent-browser would launch: AGENT_BROWSER_EXECUTABLE_PATH, else its newest installed Chrome."""
+    env = os.environ.get('AGENT_BROWSER_EXECUTABLE_PATH')
+    if env:
+        found = [pathlib.Path(env)]
+    else:
+        version = lambda p: tuple(int(n) for n in re.findall(r'\d+', p.parent.name))
+        found = sorted((pathlib.Path.home() / '.agent-browser' / 'browsers').glob('chrome-*/chrome'), key=version)
+    if not found or not found[-1].is_file() or not os.access(found[-1], os.X_OK):
+        raise CaptureError('browser executable missing (AGENT_BROWSER_EXECUTABLE_PATH or ~/.agent-browser/browsers/chrome-*/chrome)')
+    return found[-1]
+
+
+def write_wrappers(folder: pathlib.Path, chrome: pathlib.Path, base_args: list[str], input_args: dict[str, list[str]]) -> dict[str, str]:
+    """One launch wrapper per input: Chrome with browser.args + that input's args, then agent-browser's own args."""
+    if re.search(r'\s', str(folder)):
+        raise CaptureError(f'wrapper folder has whitespace: {folder}')
+    wrappers = {}
+    for name, extra in input_args.items():
+        path = folder / f'chrome-{name}'
+        path.write_text('#!/bin/sh\nexec ' + ' '.join(shlex.quote(a) for a in [str(chrome), *base_args, *extra]) + ' "$@"\n')
+        path.chmod(0o755)
+        wrappers[name] = str(path)
+    return wrappers
+
+
 def run_action(session: str, action: dict) -> None:
     (kind, value), = action.items()
     if kind == 'click':
@@ -148,14 +189,20 @@ def url_for(port: int, scene: dict, theme: str) -> str:
     return f'http://127.0.0.1:{port}/{scene["entry"]}?{urllib.parse.urlencode(query)}'
 
 
-def capture_theme(theme: str, scenes: list[dict], port: int, out: pathlib.Path, session: str, height: int, dpr: int, blank: str) -> list[dict]:
+def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: dict[str, dict], port: int, out: pathlib.Path,
+                    session: str, dpr: int, blank: str) -> list[dict]:
+    """All captures of one theme whose viewport declares `input_name`, in one browser launched with that input's wrapper."""
     results = []
     ab(session, 'set', 'media', theme)
     for scene in scenes:
         if theme not in scene['themes']:
             continue
-        for width in scene['widths']:
-            name = f'{scene["name"]}-{theme}-{width}'
+        for vp_id in scene['viewports']:
+            vp = viewports[vp_id]
+            if vp['input'] != input_name:
+                continue
+            width, height = vp['width'], vp['height']
+            name = f'{scene["name"]}-{theme}-{vp_id}'
             ab(session, 'set', 'viewport', str(width), str(height), str(dpr))
             # Empty storage for every capture: open a same-origin static asset (no app code), clear, then open the scene.
             ab(session, 'open', f'http://127.0.0.1:{port}/{blank}')
@@ -168,9 +215,12 @@ def capture_theme(theme: str, scenes: list[dict], port: int, out: pathlib.Path, 
             for action in scene['actions']:
                 run_action(session, action)
             ab(session, 'wait', str(int(scene['settleMs'])))
-            state = js(session, '({theme: document.documentElement.dataset.theme, width: innerWidth, dpr: devicePixelRatio})')
-            if state.get('theme') != theme or state.get('width') != width or state.get('dpr') != dpr:
-                raise CaptureError(f'{name}: page state {state} does not match theme={theme} width={width} dpr={dpr}')
+            state = js(session, "({theme: document.documentElement.dataset.theme, width: innerWidth, height: innerHeight, "
+                                "dpr: devicePixelRatio, coarse: matchMedia('(pointer: coarse)').matches, "
+                                "hover: matchMedia('(hover: hover)').matches})")
+            want = {'theme': theme, 'width': width, 'height': height, 'dpr': dpr, **INPUT_MEDIA[vp['input']]}
+            if state != want:
+                raise CaptureError(f'{name}: page state {state} does not match viewport {vp_id} {want}')
             path = out / f'{name}.png'
             shot = ['screenshot', str(path)]
             if scene['fullPage']:
@@ -180,7 +230,8 @@ def capture_theme(theme: str, scenes: list[dict], port: int, out: pathlib.Path, 
                 raise CaptureError(f'{name}: screenshot missing or empty')
             errors = ab(session, 'errors').strip()
             data = path.read_bytes()
-            results.append({'name': name, 'scene': scene['name'], 'theme': theme, 'width': width, 'file': path.name,
+            results.append({'name': name, 'scene': scene['name'], 'theme': theme, 'viewport': vp_id, 'width': width,
+                            'height': height, 'input': vp['input'], 'file': path.name,
                             'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'fullPage': scene['fullPage'],
                             'pageErrors': errors})
             print(f'{name} {len(data)}B', flush=True)
@@ -198,8 +249,11 @@ def main() -> int:
     group.add_argument('--label', help='output to frontend/.visual/<label>/')
     group.add_argument('--out', help='output directory')
     ap.add_argument('--skip-build', action='store_true', help='reuse the existing audit build')
-    ap.add_argument('--parallel', type=int, choices=[1, 2], default=2, help='sessions in parallel (one per theme, max 2)')
+    ap.add_argument('--parallel', type=int, choices=[1, 2, 3, 4], default=2,
+                    help='sessions in parallel (one per theme x input, max 4)')
     ap.add_argument('--only', help='comma-separated scene names (debug; diff.mjs rejects a partial set with 78)')
+    ap.add_argument('--force-input', choices=sorted(INPUT_MEDIA),
+                    help='launch every session with this input wrapper (state-check proof: a viewport declaring the other input ends 78)')
     args = ap.parse_args()
 
     out = (FRONTEND / '.visual' / args.label) if args.label else pathlib.Path(args.out).resolve()
@@ -217,10 +271,31 @@ def main() -> int:
     if len(set(names)) != len(names) or not scenes:
         print('::visual-capture:: manifest has duplicate or no scenes', file=sys.stderr)
         return READINESS
-    expected = sum(len(s['widths']) * len(s['themes']) for s in scenes)
-    BROWSER_ARGS[:] = manifest.get('browser', {}).get('args', [])
-    height = int(manifest['viewport']['height'])
-    dpr = int(manifest['viewport']['deviceScaleFactor'])
+    viewport_list = manifest.get('viewports') or []
+    viewports = {v.get('id'): v for v in viewport_list}
+    browser = manifest.get('browser', {})
+    input_args = browser.get('inputArgs', {})
+    problems = []
+    if manifest.get('schema') != 'colab-visual-scenes/2':
+        problems.append(f'schema {manifest.get("schema")!r} is not colab-visual-scenes/2')
+    if not viewport_list or len(viewports) != len(viewport_list):
+        problems.append('viewports missing or ids not unique')
+    for v in viewport_list:
+        if not (isinstance(v.get('width'), int) and isinstance(v.get('height'), int) and v['width'] > 0 and v['height'] > 0):
+            problems.append(f'viewport {v.get("id")}: width/height must be positive integers')
+        if v.get('input') not in INPUT_MEDIA or v.get('input') not in input_args:
+            problems.append(f'viewport {v.get("id")}: input {v.get("input")!r} has no browser.inputArgs or no known media state')
+    for s in scenes:
+        s['viewports'] = s.get('viewports', list(viewports))
+        unknown_vp = [i for i in s['viewports'] if i not in viewports]
+        if 'widths' in s or not s['viewports'] or unknown_vp or len(set(s['viewports'])) != len(s['viewports']):
+            problems.append(f'scene {s["name"]}: viewports {s["viewports"]} (unknown {unknown_vp}) or legacy widths')
+    if problems:
+        print('::visual-capture:: manifest: ' + '; '.join(problems), file=sys.stderr)
+        return READINESS
+    expected = sum(len(s['viewports']) * len(s['themes']) for s in scenes)
+    base_args = browser.get('args', [])
+    dpr = int(manifest['deviceScaleFactor'])
 
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob('*.png'):
@@ -243,14 +318,19 @@ def main() -> int:
 
     run_id = f'{os.getpid()}-{int(time.time())}'
     themes = sorted({t for s in scenes for t in s['themes']}, key=['light', 'dark'].index)
-    sessions = {t: f'vb-{t}-{run_id}' for t in themes}
+    inputs = sorted({viewports[i]['input'] for s in scenes for i in s['viewports']})
+    sessions = {(t, i): f'vb-{t}-{i}-{run_id}' for t in themes for i in inputs}
+    wrap_dir = pathlib.Path(tempfile.mkdtemp(prefix='vb-wrap-'))
     preview = None
     started = datetime.datetime.now(datetime.timezone.utc)
     try:
+        wrappers = write_wrappers(wrap_dir, chrome_binary(), base_args, input_args)
+        for (_, i), s in sessions.items():
+            SESSION_EXEC[s] = wrappers[args.force_input or i]
         port = free_port()
         preview = start_preview(port)
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.parallel) as pool:
-            futures = [pool.submit(capture_theme, t, scenes, port, out, sessions[t], height, dpr, blank) for t in themes]
+            futures = [pool.submit(capture_session, t, i, scenes, viewports, port, out, s, dpr, blank) for (t, i), s in sessions.items()]
             captures = [c for f in futures for c in f.result()]
     except CaptureError as e:
         print(f'::visual-capture:: {e}', file=sys.stderr)
@@ -262,15 +342,17 @@ def main() -> int:
             except CaptureError:
                 pass
         stop_preview(preview)
+        shutil.rmtree(wrap_dir, ignore_errors=True)
 
     order = {n: i for i, n in enumerate(names)}
-    captures.sort(key=lambda c: (order[c['scene']], themes.index(c['theme']), c['width']))
+    vp_order = list(viewports)
+    captures.sort(key=lambda c: (order[c['scene']], themes.index(c['theme']), vp_order.index(c['viewport'])))
     pngs = sorted(p.name for p in out.glob('*.png'))
     if len(captures) != expected or len(pngs) != expected or any(c['bytes'] == 0 for c in captures):
         print(f'::visual-capture:: expected {expected} PNGs, wrote {len(pngs)}', file=sys.stderr)
         return READINESS
     index = {
-        'schema': 'colab-visual-index/1',
+        'schema': 'colab-visual-index/2',
         'manifest': rel(MANIFEST),
         'manifestSha256': hashlib.sha256(manifest_bytes).hexdigest(),
         'gitHead': git('rev-parse', 'HEAD'),
@@ -280,7 +362,11 @@ def main() -> int:
         'buildDir': rel(BUILD_DIR),
         'built': not args.skip_build,
         'parallel': args.parallel,
-        'browserArgs': BROWSER_ARGS,
+        'browserArgs': base_args,
+        'inputArgs': input_args,
+        'forcedInput': args.force_input,
+        'deviceScaleFactor': dpr,
+        'viewports': viewport_list,
         'scenes': names,
         'captureCount': len(captures),
         'captures': captures,
