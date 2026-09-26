@@ -33,6 +33,9 @@
 # ＋ CI 필터 대조 — `gates/tools/ci-filter-check.py` 로 `.github/workflows/ci.yml` 의
 #   `harness` 필터가 `CLAUDE.md`·`.claude/skills/**` 를 잡고 `frontend/**` 를 안 잡는지 본다.
 #   `dorny/paths-filter` 자체는 로컬에서 돌지 않는다 — 실제 GitHub 평가는 `[미상]` 이다.
+#   필터 정본 = 설정 해시 정본 `eval/harness/config-paths.txt` ∪ 필터 전용 3줄(ci-filter-check ㈏·㈖).
+# ＋ CI 정책 변이 시험 — `scripts/tests/test_ci_eval_policy.py`(필터 누락·정본 추가·면제 스텝 누락 등 변이 red ·
+#   시험 수 기준 7 미만이면 red).
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -255,6 +258,19 @@ else
   red "CI 필터 대조부가 없다: gates/tools/ci-filter-check.py"
 fi
 
+# ── CI 정책 변이 시험 — 필터·면제 스텝·정본 대조가 변이에 red 를 내는가 ────────
+# `scripts/tests/test_ci_eval_policy.py` 는 다른 게이트 목록에 없다 — 여기서 돈다(PyYAML 은 위 대조와 같은 의존).
+# 시험 수 기준값 = 7(2026-09-26 · E0). 적게 돌거나 skip 이 있으면 green-by-skip 이다.
+POLICY_OUT="$(cd "$REPO_ROOT" && python3 -m unittest scripts/tests/test_ci_eval_policy.py 2>&1)"
+POLICY_RC=$?
+POLICY_RAN="$(printf '%s\n' "$POLICY_OUT" | sed -n 's/^Ran \([0-9][0-9]*\) tests* .*/\1/p')"
+if [ "$POLICY_RC" -ne 0 ] || [ "${POLICY_RAN:-0}" -lt 7 ] || printf '%s' "$POLICY_OUT" | grep -q 'skipped'; then
+  red "CI 정책 변이 시험(test_ci_eval_policy.py)이 red 이거나 기준 7건 미만이다(rc=$POLICY_RC · ran=${POLICY_RAN:-0}):
+$(printf '%s\n' "$POLICY_OUT" | tail -20 | sed 's/^/     /')"
+else
+  echo "  CI 정책 변이 시험 green — ${POLICY_RAN}건(기준 7)"
+fi
+
 if [ "$FAILED" -ne 0 ] || [ "${#FAILURES[@]}" -ne 0 ]; then
   echo "::error::harness-eval-selftest red — 위 케이스가 기대와 다르다."
   [ "${#FAILURES[@]}" -eq 0 ] || printf '  - %s\n' "${FAILURES[@]}"
@@ -262,4 +278,4 @@ if [ "$FAILED" -ne 0 ] || [ "${#FAILURES[@]}" -ne 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict harness-eval-selftest
-echo "harness-eval-selftest green — 검사 18건 전건 기대대로 (green 5 · red(판정) 7 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조."
+echo "harness-eval-selftest green — 검사 18건 전건 기대대로 (green 5 · red(판정) 7 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조 ＋ CI 정책 변이 시험 ${POLICY_RAN}건."
