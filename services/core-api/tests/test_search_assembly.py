@@ -89,6 +89,54 @@ def test_낱말_일치_조사는_끝_글자_받침을_본다() -> None:
     assert _term_item("NDVI") == "‘NDVI’가 이름에 맞았어요"
 
 
+TOPIC = "강우·강수"
+DEV_QUERY = "강우 예측 pred_sample.npy 파일의 바로 앞 입력 데이터셋"
+
+
+def _topic_item(terms, *, query=DEV_QUERY, where=("이름·주제·요약",)) -> str:
+    match = SearchMatch(dataset_id=DS1, rank=0.9, matched_terms=tuple(terms), where=where)
+    facts = dataset_search.rationale_facts(match, topic=TOPIC, query=query)
+    assert [f["kind"] for f in facts] == ["term"]
+    return facts[0]["items"][0]
+
+
+def test_사용자가_치지_않은_주제_라벨은_맞은_낱말에서_빠진다() -> None:
+    """헤더가 이미 주제를 말한다 — 확장으로만 들어온 라벨은 낱말 목록에 없다
+    (intent `2026-09-26-rationale-facts-wording.md` ② ⑴)."""
+    assert _topic_item(["강우", TOPIC]) == "‘강우’가 이름·주제·요약에 맞았어요"
+
+
+def test_질의에_친_주제_라벨은_남는다() -> None:
+    """② ⑵ — 사용자가 친 말이면 맞은 낱말이다. 공백·대소문자는 접어 대조한다."""
+    assert _topic_item(["강우", TOPIC], query="강우·강수  자료") == \
+        "‘강우’, ‘강우·강수’가 이름·주제·요약에 맞았어요"
+
+
+def test_주제_라벨만_맞았으면_라벨을_남긴다() -> None:
+    """② ⑶ — 근거 필수(`product.md` §3). 문형은 현행 낱말 일치 그대로다(해소 ⒜)."""
+    assert _topic_item([TOPIC]) == "‘강우·강수’가 이름·주제·요약에 맞았어요"
+
+
+def test_라벨을_빼면_다음_실제_낱말이_상한_안에_든다() -> None:
+    """② ⑷ — 빼기는 3개 상한 적용 **전**이다."""
+    assert _topic_item([TOPIC, "강우", "예측", "pred_sample.npy"]) == \
+        "‘강우’, ‘예측’, ‘pred_sample.npy’가 이름·주제·요약에 맞았어요"
+
+
+def test_낱말_일치_자리_목록에_확인한_파일_근거가_없다() -> None:
+    """③ — 파일 근거는 「파일 근거」·「연결된 자료」 종류가 말한다."""
+    assert _topic_item(["강우", TOPIC], where=("이름·주제·요약", "확인한 파일 근거")) == \
+        "‘강우’가 이름·주제·요약에 맞았어요"
+
+
+def test_주제_라벨_분리는_한_줄에도_같이_적용된다() -> None:
+    """`rationale` 한 줄은 같은 사실에서 다시 만든다 — 패널과 갈라지지 않는다."""
+    match = SearchMatch(dataset_id=DS1, rank=0.9, matched_terms=("강우", TOPIC),
+                        where=("이름·주제·요약", "확인한 파일 근거"))
+    items, _ = dataset_search.compose((match,), total=1, offset=0, topic=TOPIC, query=DEV_QUERY)
+    assert items[0]["rationale"] == "‘강우’가 이름·주제·요약에 맞았어요."
+
+
 def test_관련_개념으로만_맞아도_이유가_하나_이상_있다() -> None:
     """`where == ("온톨로지 연결 근거",)` 만으로 맞은 결과 — 이 항목이 없으면 이유가 0개다
     (근거 필수 · `product.md` §3). 내부 기법 이름(온톨로지)은 화면 문구에 쓰지 않는다."""
@@ -105,6 +153,9 @@ def test_파일_근거로_맞으면_파일_근거_항목이_선다() -> None:
                             where=("확인한 파일 근거",)),)
     items, _ = _compose(evidence)
     assert [f["kind"] for f in items[0]["rationaleFacts"]] == ["evidence"]
+    # 파일 근거로만 맞은 결과는 낱말 일치 항목을 내지 않는다(③ · 해소 ⒝).
+    facts = dataset_search.rationale_facts(evidence[0], topic="강우·강수", query="강우")
+    assert [f["kind"] for f in facts] == ["evidence"]
 
 
 def test_한_줄은_사실을_순서대로_이은_것이다() -> None:

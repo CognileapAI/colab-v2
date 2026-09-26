@@ -32,8 +32,19 @@ def test_native_resolution_mismatch_is_related_not_silently_removed():
     # 카드 근거는 확인된 조건만 싣는다 — 불일치·미확인 조건은 근거 항목이 되지 않는다
     # (intent `2026-09-25-search-rationale-separation.md` Q6).
     facts = supported_facts(criteria, rows)
-    assert facts and all('처리 설명서' in f and '\n' not in f for f in facts)
+    assert facts and all('\n' not in f for f in facts)
+    # 출처(설명서 이름·절)는 카드 항목에 싣지 않는다 — 상세 「검색 근거」가 보인다
+    # (intent `2026-09-26-rationale-facts-wording.md` ①).
+    assert not [f for f in facts if '처리 설명서' in f or '입력 절' in f or '출처' in f]
     assert not [f for f in facts if '불일치' in f or '미확인' in f or '직접 관측' in f]
+
+
+def test_supported_fact_is_the_reason_sentence_without_source():
+    """dev 캡처 질의의 파일 근거 항목 — 「{파일명}에서 {조건} 조건이 맞았어요」에서 끝난다
+    (intent `2026-09-26-rationale-facts-wording.md` ①)."""
+    criteria = parse('강우 예측 pred_sample.npy 파일의 바로 앞 입력 데이터셋')
+    facts = supported_facts(criteria, [record('pred_sample', roles=['prediction'])])
+    assert facts == ['pred_sample.npy에서 파일 역할(예측 결과) 조건이 맞았어요']
 
 
 def test_unknown_subject_cannot_expand_by_date_alone():
