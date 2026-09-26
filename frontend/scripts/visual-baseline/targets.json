@@ -125,7 +125,7 @@
     {
       "n": 4,
       "screen": "맨 위 메뉴(폭 숨김)",
-      "selector": ".gnb-upload",
+      "selector": ".gnb .gnb-upload",
       "lane": "L2a",
       "widthHidden": true,
       "scenes": [

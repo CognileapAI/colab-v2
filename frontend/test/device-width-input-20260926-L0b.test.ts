@@ -83,6 +83,16 @@ describe('L0b ⑴ 대상 목록 — 부록 B 52항목(길이 먼저)', () => {
     expect(byN.get(53)?.selector).toBe('.sel');
   });
 
+  it('4번은 맨 위 메뉴(.gnb) 안의 올리기 버튼만 — 감사 장면이 main 에 직접 그린 .gnb-upload 는 대상이 아니다', () => {
+    // Product renders UploadEntry(.gnb-upload) only inside header.gnb, and the touch 44 rule is scoped `.gnb :is(… .gnb-upload …)`
+    // (shell/shell.css). The audit fixture (audit-upload.tsx) renders it directly in main.appmain, outside .gnb.
+    expect(byN.get(4)?.selector).toBe('.gnb .gnb-upload');
+    document.body.innerHTML = '<header class="gnb"><button class="gnb-upload" id="in"></button></header>'
+      + '<main class="appmain"><button class="gnb-upload" id="out"></button></main>';
+    expect([...document.querySelectorAll(byN.get(4)?.selector ?? '')].map((e) => e.id)).toEqual(['in']);
+    document.body.innerHTML = '';
+  });
+
   it('레인 장면 = 부록 I 자기 게이트의 `frontend-visual` 장면 ＋ 수치 전용 장면 · 모두 장면 목록에 있다', () => {
     expect(Object.keys(TARGETS.laneScenes)).toEqual(LANES);
     expect(TARGETS.laneScenes.L1).toEqual(['detail', 'preview', 'preview-done', ...NEW_SCENES]);
