@@ -161,6 +161,9 @@ eval/harness/H<번호>-<이름>/
   결과 포함 · 선택 실행 제외). `green(직전) − green(R*) ≠ ∅` 이면 1(과제 이름 나열). 직전이 없으면 회귀 기준이 없다(0).
 - **회차 무효화** — 회차는 병합 직전 head 에서 1회. 그 뒤 해시 집합 파일을 push 하면 게이트가 78 로 돌아간다.
   base(develop) 병합이 집합 파일을 건드리지 않으면 해시 불변 · 건드리면 재실측(≈32 USD). CI 는 머지 커밋 트리에서 계산한다.
+- **30일 경고** — 러너는 모델을 지정하지 않아 모델·CLI 가 저장소 diff 없이 바뀐다. `harness-contract`
+  (`scripts/harness/check.py`)가 최신 결과 id 가 30일보다 오래되면 `warning: harness-eval newest result <id> is <n> days old (>30)`
+  1줄을 낸다(exit 불변 · 신호) · green 줄에 `harness-eval newest <id> (<n>d)` · 결과 디렉터리 0건 = 78.
 
 ## 시험
 

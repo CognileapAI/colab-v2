@@ -294,5 +294,70 @@ class VerifyTests(unittest.TestCase):
         self.assertEqual(missing.returncode, 78)
 
 
+class FreshnessTests(unittest.TestCase):
+    """⑸ harness-contract warns when the newest eval result is older than 30 days (exit unchanged)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import datetime
+        cls.dt = datetime
+        sys.path.insert(0, str(ROOT / "scripts/harness"))
+        spec = importlib.util.spec_from_file_location("harness_check_fresh", ROOT / "scripts/harness/check.py")
+        cls.check = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.check)
+
+    @classmethod
+    def tearDownClass(cls):
+        sys.path.remove(str(ROOT / "scripts/harness"))
+
+    def root_with(self, dirs=(), files=()):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        results = Path(temp.name) / "eval/harness/results"
+        results.mkdir(parents=True)
+        for name in dirs:
+            (results / name).mkdir()
+        for name in files:
+            (results / name).write_text("{}", encoding="utf-8")
+        return Path(temp.name)
+
+    def test_29_days_is_quiet(self):
+        root = self.root_with(["20260901-120000"])
+        now = self.dt.datetime(2026, 9, 30, 12, 0, 0)
+        self.assertEqual(self.check.check_eval_freshness(root, now=now), (None, None))
+
+    def test_31_days_warns_with_id_and_days(self):
+        root = self.root_with(["20260801-000000", "20260901-120000"])
+        now = self.dt.datetime(2026, 10, 2, 12, 0, 0)
+        warning, readiness = self.check.check_eval_freshness(root, now=now)
+        self.assertIsNone(readiness)
+        self.assertEqual(warning, "warning: harness-eval newest result 20260901-120000 is 31 days old (>30)")
+
+    def test_absent_results_is_readiness(self):
+        with tempfile.TemporaryDirectory() as temp:
+            warning, readiness = self.check.check_eval_freshness(Path(temp))
+        self.assertIsNone(warning)
+        self.assertIsNotNone(readiness)
+
+    def test_non_run_names_are_ignored(self):
+        root = self.root_with(["codex-20260908-audit", "20260901-120000"],
+                              files=["activation-gate.json", "20261001-000000"])
+        now = self.dt.datetime(2026, 9, 30, 12, 0, 0)
+        self.assertEqual(self.check.check_eval_freshness(root, now=now), (None, None))
+        only_others = self.root_with(["codex-20260908-audit"], files=["activation-gate.json"])
+        warning, readiness = self.check.check_eval_freshness(only_others, now=now)
+        self.assertIsNone(warning)
+        self.assertIsNotNone(readiness, "zero parseable run ids is readiness, not green")
+
+    def test_contract_green_line_names_the_newest_result(self):
+        import contextlib
+        import io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            code = self.check.main(["--root", str(ROOT)])
+        self.assertEqual(code, 0)
+        self.assertRegex(out.getvalue(), r"harness-eval newest \d{8}-\d{6} \(\d+d\)")
+
+
 if __name__ == "__main__":
     unittest.main()
