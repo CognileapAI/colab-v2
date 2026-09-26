@@ -83,7 +83,7 @@
   background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-weight: 600;
   color: inherit; text-align: left;
 }
-.search-page .hit-name:hover { text-decoration: underline; }
+@media (hover: hover) { .search-page .hit-name:hover { text-decoration: underline; } }
 .search-page .relbar {
   height: 4px; border-radius: 999px; background: var(--color-gray-100);
   margin: 10px 0 8px; overflow: hidden;
@@ -148,8 +148,6 @@
 .search-page .verified svg { width: 11px; height: 11px; flex: none; }
 .search-page .hit-meta .why-top { color: var(--color-success-600); font-weight: 600; }
 
-@media (max-width: 640px) { .search-hero input { font-size: 16px; } }
-
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
 .lab-page .search-hero { max-width: 720px; padding-top: 24px; padding-bottom: 40px; }
 .search-hero button:active { background: var(--color-primary-700); }
@@ -160,4 +158,11 @@
 :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)), :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)):visited { color: var(--color-primary-700); text-underline-offset: 3px; }
 .search-page :is(.vfilter, .empty-acts .quiet, .empty-acts .strong) { min-height: var(--control-height); height: auto; }
 .search-page .empty-acts { flex-wrap: wrap; }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 18 · 19) — 터치 기기의 누름 칸 44. 글자 크기는 그대로 두고 누름 상자만 키운다.
+   교차 안내 링크는 검색 · 목록 두 화면 공용이다. 검색 중단 안내 문장 속 링크(20)는 우려 1ⓐ 로 뺀다. */
+@media (pointer: coarse) {
+  .search-page .hit-name { min-height: var(--control-height); min-width: var(--control-height); }
+  .crosslink a { display: inline-flex; align-items: center; min-height: var(--control-height); min-width: var(--control-height); }
+}
 }

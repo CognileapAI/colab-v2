@@ -108,7 +108,7 @@
 .detail-page .use-sec .use-c { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px 14px; background: var(--color-surface); }
 .detail-page .use-sec .use-t { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .detail-page .use-sec .use-t a { font-weight: 700; color: var(--color-text); text-decoration: none; }
-.detail-page .use-sec .use-t a:hover { text-decoration: underline; }
+@media (hover: hover) { .detail-page .use-sec .use-t a:hover { text-decoration: underline; } }
 .detail-page .use-sec .use-p { font-size: var(--text-body-sm); color: var(--color-gray-500); font-variant-numeric: tabular-nums; }
 .detail-page .use-sec .use-note { margin: 6px 0 0; font-size: var(--text-body-sm); color: var(--color-text-body); line-height: 1.6; }
 .detail-page .use-sec .use-dl { margin-top: 4px; }
@@ -202,7 +202,7 @@
   color: var(--color-gray-600);
   text-decoration: none;
 }
-.detail-page .dsec-menu-i:hover { background: var(--color-gray-100); }
+@media (hover: hover) { .detail-page .dsec-menu-i:hover { background: var(--color-gray-100); } }
 .detail-page .dsec-menu-i.is-active {
   background: var(--color-primary-50);
   color: var(--color-primary-600);
@@ -320,4 +320,13 @@
 
 /* 휴대폰·패드 대응 20260926 (L1a · spec 「레인 확정」 허용 1규칙) — 긴 파일 경로가 머리 밖으로 흐르지 않는다. */
 .detail-page .dh-file { overflow-wrap: anywhere; }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 24 · 25 · 28) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   구역 메뉴는 글자 크기를 두고 누름 상자만 키운다. 28 인라인 편집 칸은 기본 규칙과 같은 선택자(뒤 순서가 이긴다) ·
+   캡처 장면이 없어 CSS 시험이 확인한다. */
+@media (pointer: coarse) {
+  .detail-page .dsec-menu-i { display: inline-flex; align-items: center; min-height: var(--control-height); min-width: var(--control-height); }
+  .detail-page .infogrid .ig .v .ig-more { min-height: var(--control-height); min-width: var(--control-height); }
+  .detail-page .dt-edit.de-inline input, .detail-page .dt-edit.de-inline select { min-height: var(--control-height); min-width: var(--control-height); }
+}
 }

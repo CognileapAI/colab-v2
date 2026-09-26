@@ -210,7 +210,7 @@ describe('누름 ≠ hover(두 테마) — 회색 계열 누름 자리 전부', 
     ['shell', SHELL, '.gnb-logout:active', '.gnb-logout'],
     ['shell', SHELL, '.theme-switcher:active', '.theme-switcher'],
     ['shell', SHELL, ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active', ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x'],
-    ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td'],
+    ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td', '@media (hover: hover)'],
     ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover'],
     // F-final 1 · A21 — 업로드 달력 누름(값 19).
     ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover'],

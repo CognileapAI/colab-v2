@@ -350,4 +350,9 @@ section.lin {
 .lin-findbar :is(input, select) { width: 100%; min-width: 0; max-width: 100%; }
 .lin-picker li > button { border: 0; border-radius: var(--radius-sm); padding: 8px; background: transparent; color: var(--color-text); }
 .lin-picker li > button[aria-pressed="true"] { background: var(--color-surface-hover); }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 46) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다. */
+@media (pointer: coarse) {
+  .lin-link { min-height: var(--control-height); min-width: var(--control-height); }
+}
 }
