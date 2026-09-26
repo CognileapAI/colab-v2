@@ -94,6 +94,11 @@
 - 시험: `eval/harness/tests/expect-replay.sh`(신설 · 기록된 5회차 out 파일 전부를 expect 에 재생해 판정 행렬 고정 · 오답 모형 ≥3/과제 거부 · 모델 호출 0 · RED → GREEN) · README 「시험」 절 1줄.
 - 강제 기제: 재생 시험(FC · 단독 실행) · 병합 조건 = V-S12 · 커밋 ⑥ 교정 → ⑦ 회차.
 
+### 4.8 비율 측정 과제 모드 (단위 S-7d · 15라운드 편입 · 해시 집합 파일 → 이 레인의 회차와 동반)
+- 출처: 부모 intent 15라운드(2026-09-27). H18 은 규약 도달률을 재는 과제라 흔들림이 신호인데 회귀 규칙(직전 green → red)이 이를 회귀로 봄 → 과제별 `mode` 표지로 pass/fail 집합에서 기계적으로 분리.
+- 기제: `eval/harness/<과제>/mode` = `rate`(부재 = pass/fail · 그 외 값 78) · `run.sh` 행 `rate x/2` · 요약줄 ` · rate N` · `config_hash.py verify` 회귀 = `prev_green − green − rate` + head 트리 mode 집합 ↔ 결과 rate 행 대조(불일치 78) · `harness-eval.sh` 요약 앵커·계수 `passed + rate == tasks` · `pr_contract.py` `Rate-Tasks:` 필드(head 트리 mode 목록과 일치) · `check.py` 경고(README rate 표 누락 · 최근 3회 0/2) · Codex 러너 동일 규칙 · README 「세 상태」 rate 행 · 승격 조건은 pass/fail 19건 기준.
+- 시험: 러너 셀프테스트 +3(ⓟⓠⓡ) · 게이트 셀프테스트 +3(ⓣⓤⓥ) · `test_harness_eval_gate.py` +2 · expect-replay 에 223401 행렬 · 병합 조건 = V-S13 · 커밋 ⑧ 기제 → ⑨ 회차.
+
 ## 5. 시험 결정 (TDD 순서)
 1. `test_task_runtime.py` ①–⑨ 작성 → `bash gates/run.sh agent-bridge` RED(`--fix` 인자 없음 argparse 오류 · `red-locked` 미지원).
 2. `test_harness_lifecycle_contract.py` ⑩-a…j · ⑫ 작성 → RED(⑩-a · ⑩-j 가 0 = 결함 관측).
@@ -131,6 +136,7 @@
 | V-S9 | `COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` | 0 + 일치 run id + 두 해시 동일(실측 뒤) | E0 규칙 |
 | V-S11 | `bash eval/harness/tests/run-selftest.sh` · `bash gates/tools/harness-eval-selftest.sh` · `grep -c '/home/' eval/harness/results/<이번 run>/H02.out.1.txt` · `grep -c 'COLAB_EVAL_TIMEOUT=<초>' gates/tools/harness-eval.sh` | 18/18 · 19/19 · 0 · 0 | 4.6 |
 | V-S12 | `bash eval/harness/tests/expect-replay.sh` · 회차 과제별 판정(H12 · H15 · H16 2/2) · `COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` | 0 · 2/2 ×3 · green(hash 일치 · 회귀 0) | 4.7 |
+| V-S13 | `bash eval/harness/tests/run-selftest.sh` · `bash gates/run.sh harness-eval-selftest` · `python3 -m unittest scripts.tests.test_harness_eval_gate` · `COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` | 22/22 · 22/22 · OK · green(hash 일치 · 회귀 0 · rate 1(H18)) | 4.8 |
 | V-S10 | 병합·pull 뒤 오케스트레이터: fix 레인 1회 스폰(`--fix --red` 실제 red 과제 · T18) → 레인이 시험 파일 Edit 시도 | hook exit 2 관측 · intent 「확인」 기록(A2 ⓐ 「실제 Claude lane-worker 1회 실측」 대체) | 병합 뒤 |
 | 공통 | `bash -n scripts/harness/hooks/test-file-guard.sh` · `bash gates/run.sh exec-bit` · `bash gates/run.sh intent-ref` | 0 | |
 
