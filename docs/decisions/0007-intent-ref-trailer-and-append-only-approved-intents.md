@@ -24,6 +24,7 @@
 - 얻는 것: 커밋에서 승인 intent 로 기계 판독 연결이 생긴다. 승인된 intent 가 PR 안에서 조용히 고쳐지지 않는다.
 - 부담: 트레일러가 없는 열린 PR·브랜치는 첫 실행에서 red 다. 빈 커밋 1개로 소급한다. 문서만 바꾼 PR 은 대상 밖(건수 출력).
 - 알려진 비보호: 메타 줄이 없는 intent 5건, 그리고 메타에 `미승인` 문구가 남은 채 실제로는 승인된 intent 1건(`2026-09-08-harness-evals.md`)은 판별식상 보호되지 않는다. 정답표는 `gates/fixtures/intent-ref/intent-meta-classification.json` 에 둔다.
+- 2026-09-26 추가 — 소형 PR B(intent `dev-package/intent/2026-09-25-harness-improvement.md` 10라운드 Q4 · 11라운드 우려 #3 ⓐ)로 승인 판별식을 바꿨다. 아래 재검토 조건 「메타 형식이 바뀌어 승인 판별식이 틀리기 시작할 때」에 해당하는 같은 결정의 개정이라 새 번호를 쓰지 않는다. 승인 = 첫 `메타` 줄의 `승인: @<GitHub handle> <YYYY-MM-DD> "<원문>"`(형식 검사만 · 네트워크·토큰 없음 · 승인 행위는 사람의 병합 · ADR-0003), 또는 동결 스냅샷 `scripts/harness/intent_legacy_approved.txt`(develop `2ed59e9a` 에서 `intent_ref.py --freeze-legacy` 로 1회 생성 · 64건)에 이름이 있는 legacy 표기(「승인」 ∧ ¬「미승인」). 스냅샷은 도입 뒤 불변이다(바꾼 범위는 base 와 바이트가 다르면 red). base · head 모두에 스냅샷이 없으면 준비 실패 78 이다. 알려진 비보호에 `2026-09-18-missing-rate-predicate-recon.md`(메타가 두 줄로 나뉘어 첫 메타 줄에 승인 표기가 없음)를 더한다. 새 정답표는 `scripts/tests/fixtures/intent-ref/intent-meta-classification-v2.json` 이고 위 v1 정답표는 이력으로 바꾸지 않는다.
 
 ## 재검토 조건
 - 정상 PR 이 같은 이유로 red 가 되는 일이 반복될 때. 예를 들어 대상 경로가 너무 넓거나, 트레일러 소급이 잦을 때.
