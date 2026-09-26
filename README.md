@@ -59,6 +59,9 @@ colab-v2/
 
 새 Claude 세션은 `dev-package/prd/rounds/` 최신 `R-*.md` 하나만 읽는다(`CLAUDE.md §1`).
 
+처음 받은 저장소에서 한 번 — 온톨로지 보강 회차 도구 설정: `bash dev-package/tools/ontology-round/setup.sh`
+(실행 환경 생성·점검 · 절차는 `.agents/skills/ontology-round/SKILL.md`).
+
 ## 하네스 훅
 
 **이 레포를 클론하면 Claude Code 훅 7개가 같이 온다.** `.claude/settings.json` 이 **커밋돼 있기**
