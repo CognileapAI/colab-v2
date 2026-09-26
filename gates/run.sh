@@ -8,6 +8,71 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="${1:-}"
 
+# 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
+# (2026-09-26 A4 — 아래 인자 검사가 host mutex·gate-start 앞에서 읽도록 이 자리로 올렸다.)
+ALL_GATES=(
+  planning-freshness agent-bridge harness-contract adr-records intent-ref operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
+  seam-consistency generated-up-to-date import-boundary banned-import
+  ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
+  rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
+  frontend-typecheck frontend-test frontend-fixture-reach frontend-design-lint frontend-visual
+  preview-tile-slot artifact-ownership e2e-format-coverage render-latency
+  backup-cron-streak ops-observability exec-bit harness-eval
+  service-tests-core-api service-tests-ai-service
+  service-tests-viz-render service-tests-pipeline-worker
+  contract-selftest event-selftest boundary-selftest db-boundary-selftest
+  db-selftest rls-effect-selftest seam-consistency-selftest
+  generated-selftest work-item-selftest stage2-markers-selftest
+  autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
+  seed-plan-drift-selftest dev-reseed-selftest product-release-selftest product-reseed-selftest
+  e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
+  ops-observability-selftest is4-recovery-selftest
+  exec-bit-selftest migration-drift-selftest
+  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest frontend-design-lint-selftest
+  frontend-visual-selftest harness-eval-selftest harness-contract-selftest
+  service-tests-selftest gate-host-mutex-selftest
+)
+# 단독으로 부를 수 있는 이름 = `ALL_GATES` ＋ `case` 라벨 중 그 밖의 이름(`all` 실행 집합은 바꾸지 않는다).
+KNOWN_GATES=(
+  "${ALL_GATES[@]}"
+  selftest
+)
+
+# ── 인자 검사 (A4) — `task` 분기 · gate-start 증거 · host mutex 보다 앞 ─────────────
+# 버린 토큰·알 수 없는 이름은 판정할 수 없는 입력이다 → 준비 실패 78(AGENTS.md 종료코드 정의).
+# ⚠ 기존 동작 변화: `all -j`(N 없음) · `all -j abc` · `all -j4` 는 종전에 jobs 기본값으로 돌았으나 이제 78.
+gate_args_fail() { # $1=사유 $2=버린 토큰
+  echo "::gate-readiness-failure:: $1 · dropped=${2:-(none)} · usage: gates/run.sh <gate> | all [-j N] | task" >&2
+  exit 78
+}
+case "$GATE" in
+  "")
+    gate_args_fail "게이트 이름이 없다" "${*:2}"
+    ;;
+  all)
+    if [ "$#" -eq 1 ]; then
+      :
+    elif [ "$#" -eq 3 ] && [ "$2" = "-j" ] && [[ "$3" =~ ^[1-9][0-9]*$ ]]; then
+      :
+    elif [[ "${2:-}" =~ ^-j([1-9][0-9]*)$ ]]; then
+      gate_args_fail "all 의 병렬도는 공백으로 가른 \`-j ${BASH_REMATCH[1]}\` 형태다" "${*:2}"
+    else
+      gate_args_fail "all 은 인자 없이 또는 \`-j N\`(N ≥ 1 정수) 하나만 받는다" "${*:2}"
+    fi
+    ;;
+  task)
+    [ "$#" -eq 1 ] || gate_args_fail "task 는 추가 인자를 받지 않는다(게이트 집합은 begin 선언)" "${*:2}"
+    ;;
+  *)
+    gate_known=0
+    for known_name in "${KNOWN_GATES[@]}"; do
+      if [ "$known_name" = "$GATE" ]; then gate_known=1; break; fi
+    done
+    [ "$gate_known" -eq 1 ] || gate_args_fail "알 수 없는 게이트 '$GATE'" "$*"
+    [ "$#" -eq 1 ] || gate_args_fail "단독 게이트 '$GATE' 는 이름 하나만 받는다" "${*:2}"
+    ;;
+esac
+
 # ── 게이트 요약 JSON — 스키마 `colab-gate-summary/1` (스펙 D절 · P-J) ─────────
 # 왜 있나: 3상태 요약은 **사람이 읽는 텍스트로만** 있었고, 레인 종료 검사(H7)와 전수 재실행
 #   갈음(트리 해시 대조)은 그 텍스트를 사람이 옮겨 적은 값에 기대고 있었다. 옮겨 적는 자리는
@@ -280,34 +345,10 @@ if [ -n "$GATE" ] && [ -z "${COLAB_TEST_ENV_SOURCED:-}" ]; then
   fi
 fi
 
-# 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
-ALL_GATES=(
-  planning-freshness agent-bridge harness-contract adr-records intent-ref operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
-  seam-consistency generated-up-to-date import-boundary banned-import
-  ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
-  rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
-  frontend-typecheck frontend-test frontend-fixture-reach frontend-design-lint frontend-visual
-  preview-tile-slot artifact-ownership e2e-format-coverage render-latency
-  backup-cron-streak ops-observability exec-bit harness-eval
-  service-tests-core-api service-tests-ai-service
-  service-tests-viz-render service-tests-pipeline-worker
-  contract-selftest event-selftest boundary-selftest db-boundary-selftest
-  db-selftest rls-effect-selftest seam-consistency-selftest
-  generated-selftest work-item-selftest stage2-markers-selftest
-  autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
-  seed-plan-drift-selftest dev-reseed-selftest product-release-selftest product-reseed-selftest
-  e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
-  ops-observability-selftest is4-recovery-selftest
-  exec-bit-selftest migration-drift-selftest
-  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest frontend-design-lint-selftest
-  frontend-visual-selftest harness-eval-selftest harness-contract-selftest
-  service-tests-selftest gate-host-mutex-selftest
-)
-
 case "$GATE" in
   agent-bridge)
     # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
-    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py scripts/tests/test_git_guard.py scripts/tests/test_gates_run_args.py
     ;;
   harness-contract)
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
@@ -968,12 +1009,13 @@ case "$GATE" in
     [ -n "${COLAB_GATE_OUTDIR:-}" ] || rm -rf "$outdir"
     exit $rc
     ;;
+  # 아래 두 갈래는 맨 위 인자 검사(A4)가 먼저 막아 도달하지 않는다 — 방어용으로 남기고 78 로 맞춘다.
   "")
-    echo "usage: gates/run.sh <gate> | gates/run.sh all [-j N]" >&2
-    exit 2
+    echo "::gate-readiness-failure:: 게이트 이름이 없다 · usage: gates/run.sh <gate> | all [-j N] | task" >&2
+    exit 78
     ;;
   *)
-    echo "::error::알 수 없는 게이트 '$GATE'"
-    exit 2
+    echo "::gate-readiness-failure:: 알 수 없는 게이트 '$GATE'" >&2
+    exit 78
     ;;
 esac

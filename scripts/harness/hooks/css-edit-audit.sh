@@ -18,7 +18,9 @@
 #   https://code.claude.com/docs/en/hooks — 스키마 전문은 `git-guard.sh` 머리말에 있다.
 #   · `tool_name`·`tool_input`·`tool_response` 는 이벤트별. Edit·Write 의 대상은
 #     `tool_input.file_path` 한 자리다(PreToolUse 와 같다).
-#   · PostToolUse 의 stdout 은 맥락으로 실려 들어간다 — 그래서 **한 줄만** 찍는다.
+#   · PostToolUse 평문 stdout 은 debug log 전용이다(모델에 가는 평문 stdout 은 UserPromptSubmit ·
+#     UserPromptExpansion · SessionStart · PostModelSwitch 뿐). 맥락은 `hookSpecificOutput.additionalContext`
+#     JSON 으로 낸다(2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 C12) — 본문은 **한 줄만**.
 set -uo pipefail
 
 payload=""
@@ -71,5 +73,5 @@ OUT="$(cd "$TOP" && python3 "$AUDIT" --root frontend/src "$REL" 2>/dev/null \
 
 # 칸 순서(정본 = css_audit.py 요약표): file · <13px · neg margin · undefined token ·
 # local token def · box-shadow · motion decl · reduced-motion · contrast <4.5
-echo "$OUT"
+printf '%s' "$OUT" | python3 -c 'import json,sys; print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":sys.stdin.read()}}, ensure_ascii=False))' || true
 exit 0

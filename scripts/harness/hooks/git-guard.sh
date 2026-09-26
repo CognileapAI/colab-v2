@@ -10,8 +10,15 @@
 #
 # ⛔ **차단 대상은 명시 열거다 — 넓히지 않는다.** 스펙 C 의 H3 행 축자:
 #   「⚠ **레인 첫 줄 `git merge --ff-only` 를 막으면 안 된다**(D6 해법). 차단 대상을 명시 열거로 좁힘 —
-#     ⑴ main/master 로 push ⑵ `--force`/`-f` push ⑶ **HEAD 가 main/master 일 때의** `git merge`
+#     ⑴ 보호 브랜치(main · master · develop · product) 로 push ⑵ `--force`/`-f` push
+#     ⑶ **HEAD 가 보호 브랜치(main · master · develop · product) 일 때의** `git merge`
 #     ⑷ `gh pr merge` ⑸ `branch -D main`. 비-main 브랜치에서의 `merge --ff-only` 는 **허용**」
+#   ⟨2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 §4.1⟩ 같은 열거의 다른 argv 형태를 편입한다(새 규칙 아님):
+#   공백 경로 `-C "<…>"` · 대상 checkout(`-C` 누적 · `cd`/`pushd` · `--git-dir`/`--work-tree`)의 branch ·
+#   `gh -R`/`--repo` · `gh api -X PUT …/pulls/N/merge` · 묶은 short flag(`-fu`) · refspec `HEAD`/`@`/`+HEAD` ·
+#   보호 브랜치 위 `git pull --no-ff`/`--no-rebase`/`--rebase=false`/`--ff=false`(⑶ 의 pull 형태).
+#   명령 해석·규칙 판정은 `git_guard_parse.py`(python · 인용·heredoc 인식)가 한다. 아래 bash 규칙 엔진은
+#   해석기 폴백 전용 동결본이며 새 argv 형태를 모른다.
 #
 # ⭑ ⟨개정 2026-09-06 · P-J 설계 판정⟩ **⑶ 은 `--ff-only` 가 없을 때로 좁힌다.**
 #   `main` 에서의 `git merge --ff-only <레인>` 은 오케스트레이터가 승인된 형태로 병합하는
@@ -20,8 +27,9 @@
 #   **차단 유지** — 전수 green ＋ 〈N〉 재실측을 건너뛴 이력이 `main` 에 남는 자리가 거기다.
 #   ／ 종전 ~~`main` 에서의 모든 `git merge` 차단~~(`11-merge-guards-verification.md` §2-1 ⑸).
 #   허용(exit 0)이 정상인 것 — 비-main 브랜치의 `git merge --ff-only <x>` · `git push origin <기능브랜치>`
-#   · `git fetch` · `git pull --rebase` · `git worktree …` · `git push origin --delete <기능브랜치>`
-#   · git 이 아닌 모든 명령.
+#   · `git fetch` · `git pull`(플래그 없음) · `git pull --rebase` · `git pull --ff-only` · `git worktree …`
+#   · `git push origin --delete <기능브랜치>` · `gh api …/merge`(GET · 기본 method)
+#   · heredoc 본문·인용 문자열 안의 문구(`git commit -m "… git push -f …"` 등) · git 이 아닌 모든 명령.
 #
 # ⭑ ⟨개정 2026-09-06 · 어드바이저 게이트 ②⟩ **⑴ 은 `agent_id` 가 실린 호출(＝ 서브에이전트·레인)만
 #   막는다.** 같은 근거의 연장이다 — `main` 을 ff 로 밀어 넣는 자리는 오케스트레이터 하나이고
@@ -68,12 +76,19 @@
 #    and your stderr text otherwise."  ⇒ **stderr 한 줄이 곧 차단 사유다.**
 #   exit 0 의 stderr 는 "goes to the debug log only, never the transcript, and Claude never sees it"
 #   ⇒ 통과시킬 때는 아무것도 적지 않는다.
-#   ⚠ **exit 1 은 통과다.** 판정을 못 하면 통과가 기본값이고, 그것이 의도다 — 파싱 실패가
-#     모든 Bash 호출을 막으면 훅이 세션을 세운다. 이 훅은 보안 경계가 아니라 **마찰 장치**다.
+#   ⚠ **실패 방향은 2단이다.** ⑴ 준비 실패(python3 부재 · envelope 이상 — 아래 validate-input)
+#     = exit 2 차단(2026-09-09 계약). ⑵ envelope 통과 뒤 판정 불가(해석기 폴백 · branch 미해석 ·
+#     `agent_id` 부재) = 통과. exit 1 은 Claude Code 규약상 비차단이나 이 hook 은 exit 1 을 내지 않는다.
+#     판정 불가가 모든 Bash 호출을 막으면 훅이 세션을 세운다. 이 훅은 보안 경계가 아니라 **마찰 장치**다.
 #
 # ⚠ 알려진 한계 (넓히지 않는 이유): 한 겹 감싼 형태(`bash -c "git push origin main"`,
 #   `eval "$CMD"`)는 잡지 않는다. 잡으려고 문자열 어디에나 있는 `git` 을 세면 `echo`·문서 편집
 #   같은 무해한 호출이 걸린다 — 오탐이 붙은 차단 훅은 곧 `COLAB_HOOKS=0` 상시화로 끝난다.
+#   · 변수·명령치환으로 준 대상 dir(`git -C "$D"` · `cd $(…)` · `cd -` · `popd`)은 payload `cwd` 로 본다.
+#   · 서브셸 `( cd x && … )` 안의 `cd` 도 뒤 세그먼트에 적용한다(과대 근사).
+#   · `gh api graphql` 의 `mergePullRequest` mutation 은 잡지 않는다.
+#   · 폴백 = `bash -n` 이 거부하는 입력(짝 없는 인용 · 미종결 `$(`/`(`) · 해석기 부재/크래시/출력 이상 —
+#     stderr `git-guard: parser fallback: <사유>` 1줄(exit 0 이면 debug log 전용) 뒤 아래 bash 동결본으로 판정.
 set -uo pipefail
 
 payload=""
@@ -84,11 +99,43 @@ payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/life
 
 [ -n "$payload" ] || exit 0
 
-# ── 1. 입력 꺼내기 ────────────────────────────────────────────────────────────
-# `command` 는 줄바꿈·따옴표를 담으므로 sed 로는 온전히 못 꺼낸다. python3 이 정본이고,
-# 없으면 **통과**시킨다(판정 불가를 차단으로 세지 않는다).
-command -v python3 >/dev/null 2>&1 || exit 0
+# ── 0. 해석기 = 규칙 엔진(python 1회) ─────────────────────────────────────────
+# stdout JSON lines 를 정규식 3개로만 검증한다: 1행 `parsed` · 중간 줄 `{"seg":` 접두 · 끝 줄 `{"end":N}`
+# (N = 중간 줄 수) · 종료코드 0|2. 유효하면 그 종료코드가 판정이다(차단 사유 stderr 는 해석기가 낸다).
+# 그 밖(1행 `fallback …` · 파일 없음 · 출력 없음·절단 · 다른 종료코드)은 stderr 1줄을 남기고 아래 동결본으로 간다.
+parser_verdict() {
+  local parser out rc n i last
+  local -a lines
+  parser="$(dirname "${BASH_SOURCE[0]}")/git_guard_parse.py"
+  [ -f "$parser" ] || { FALLBACK_REASON="parser missing"; return; }
+  out="$(printf '%s' "$payload" | python3 "$parser")"; rc=$?
+  [ -n "$out" ] || { FALLBACK_REASON="no parser output (rc=$rc)"; return; }
+  mapfile -t lines <<< "$out"
+  n=${#lines[@]}
+  if [ "${lines[0]:-}" != parsed ]; then
+    case "${lines[0]:-}" in
+      "fallback "*) FALLBACK_REASON="${lines[0]#fallback }" ;;
+      *)            FALLBACK_REASON="unexpected first line (rc=$rc)" ;;
+    esac
+    return
+  fi
+  last="${lines[n-1]}"
+  [[ $last =~ ^\{\"end\":([0-9]+)\}$ ]] || { FALLBACK_REASON="end marker missing (rc=$rc)"; return; }
+  [ "${BASH_REMATCH[1]}" -eq $((n - 2)) ] || { FALLBACK_REASON="record count mismatch (rc=$rc)"; return; }
+  for ((i = 1; i < n - 1; i++)); do
+    [[ ${lines[i]} == '{"seg":'* ]] || { FALLBACK_REASON="malformed record (rc=$rc)"; return; }
+  done
+  case "$rc" in
+    0|2) exit "$rc" ;;
+    *)   FALLBACK_REASON="parser exit $rc" ;;
+  esac
+}
+FALLBACK_REASON=""
+parser_verdict
+echo "git-guard: parser fallback: ${FALLBACK_REASON//$'\n'/ }" >&2
 
+# ── 1. 입력 꺼내기 (폴백 전용) ─────────────────────────────────────────────────
+# `command` 는 줄바꿈·따옴표를 담으므로 sed 로는 온전히 못 꺼낸다. python3 이 정본이다.
 read_fields() {
   printf '%s' "$payload" | python3 -c '
 import json,sys
@@ -148,7 +195,7 @@ case "$BRANCH" in main|master|develop|product) on_main=1 ;; esac
 # `a && b`, `a ; b`, `a | b` 를 각각 한 명령으로 본다. 구분자를 개행으로 바꾸고 줄 단위로 읽는다.
 SEGS="$(printf '%s' "$CMD" | sed -e 's/&&/\n/g' -e 's/||/\n/g' -e 's/;/\n/g' -e 's/|/\n/g')"
 
-is_main_ref() { # $1=refspec 토큰 — 목적지(dst)가 main/master 인가
+is_main_ref() { # $1=refspec 토큰 — 목적지(dst)가 보호 브랜치(main · master · develop · product) 인가
   local t="$1" dst
   t="${t#+}"                       # `+main` 강제 갱신 표기
   case "$t" in *:*) dst="${t##*:}" ;; *) dst="$t" ;; esac
@@ -164,7 +211,7 @@ deny() { # $1=사유 한 줄 — stderr 한 줄이 그대로 차단 사유가 �
 while IFS= read -r seg; do
   # 앞머리 정리 — 공백·`env VAR=x`·`sudo`·`command`·`nohup`·`time` 은 넘기고 실행 파일부터 본다.
   # shellcheck disable=SC2086
-  set -- $seg
+  set -f; set -- $seg; set +f   # 단어 분할만 · glob 확장 차단
   while [ $# -gt 0 ]; do
     case "$1" in
       *=*)                       shift ;;   # 앞머리 환경변수
@@ -224,28 +271,28 @@ while IFS= read -r seg; do
         deny "product 직접 push 및 전체 브랜치 push 금지 — develop PR을 사람이 병합한다"
       fi
       if [ "$deleting" -eq 1 ] && [ "$targets_main" -eq 1 ]; then
-        deny "기준 브랜치(main/master/develop/product) 원격 삭제 금지"
+        deny "보호 브랜치(main · master · develop · product) 원격 삭제 금지"
       fi
-      # ⑵ 강제 푸시가 main/master 를 겨눈다 — **누가 부르든 차단**(오케스트레이터 포함)
+      # ⑵ 강제 푸시가 보호 브랜치(main · master · develop · product) 를 겨눈다 — **누가 부르든 차단**(오케스트레이터 포함)
       if [ "$force" -eq 1 ] && [ "$targets_main" -eq 1 ]; then
-        deny "main/master 로 강제 푸시(\`--force\`/\`-f\`/\`--force-with-lease\`) — 남의 커밋을 덮는다"
+        deny "보호 브랜치(main · master · develop · product) 로 강제 푸시(\`--force\`/\`-f\`/\`--force-with-lease\`) — 남의 커밋을 덮는다"
       fi
-      # ⑵-b refspec 이 없는 강제 push 를 main/master 위에서 — **누가 부르든 차단**
+      # ⑵-b refspec 이 없는 강제 push 를 보호 브랜치(main · master · develop · product) 위에서 — **누가 부르든 차단**
       if [ "$npos" -le 1 ] && [ "$on_main" -eq 1 ] && [ "$force" -eq 1 ]; then
-        deny "현재 브랜치가 \`$BRANCH\` 인데 refspec 없는 강제 push — main/master 가 그대로 덮인다"
+        deny "현재 브랜치가 \`$BRANCH\` 인데 refspec 없는 강제 push — 보호 브랜치(main · master · develop · product) 가 그대로 덮인다"
       fi
-      # ⑴-a refspec 이 main/master 를 명시했다 — **레인(서브에이전트)만 차단**
+      # ⑴-a refspec 이 보호 브랜치(main · master · develop · product) 를 명시했다 — **레인(서브에이전트)만 차단**
       if [ "$targets_main" -eq 1 ] && [ "$IS_SUBAGENT" -eq 1 ]; then
-        deny "레인(서브에이전트)이 main/master 로 push — \`main\` 은 오케스트레이터 한 자리에서만 움직인다(rules §2-1·§4-2)"
+        deny "레인(서브에이전트)이 보호 브랜치(main · master · develop · product) 로 push — 보호 브랜치는 오케스트레이터 한 자리에서만 움직인다(rules §2-1·§4-2)"
       fi
-      # ⑴-b refspec 이 없고 지금 서 있는 곳이 main/master 다 — **레인만 차단**
+      # ⑴-b refspec 이 없고 지금 서 있는 곳이 보호 브랜치(main · master · develop · product) 다 — **레인만 차단**
       if [ "$npos" -le 1 ] && [ "$on_main" -eq 1 ] && [ "$IS_SUBAGENT" -eq 1 ]; then
-        deny "레인(서브에이전트)이 \`$BRANCH\` 에서 refspec 없는 push — main/master 가 그대로 나간다"
+        deny "레인(서브에이전트)이 \`$BRANCH\` 에서 refspec 없는 push — 보호 브랜치(main · master · develop · product) 가 그대로 나간다"
       fi
       ;;
     merge)
       [ "$BRANCH" != product ] || deny "product 로컬 병합 금지 — develop PR을 사람이 병합한다"
-      # ⑶ **HEAD 가 main/master 이고 `--ff-only` 가 없을 때** 막는다.
+      # ⑶ **HEAD 가 보호 브랜치(main · master · develop · product) 이고 `--ff-only` 가 없을 때** 막는다.
       #    · 비-main 브랜치의 `git merge --ff-only <통합브랜치>`(레인 첫 줄) — 통과.
       #    · main 에서의 `git merge --ff-only <레인>`(오케스트레이터의 승인된 병합) — **통과**
       #      (⭑ 개정 2026-09-06 · P-J. 종전에는 이것도 막혔다).
@@ -255,7 +302,7 @@ while IFS= read -r seg; do
         case "$tok" in --ff-only) ff_only=1 ;; esac
       done
       if [ "$on_main" -eq 1 ] && [ "$ff_only" -eq 0 ]; then
-        deny "현재 브랜치가 \`$BRANCH\` 인 상태의 \`git merge\`(--ff-only 없음) — main 은 전수 green ＋ 〈N〉 재실측 뒤 \`git merge --ff-only <레인>\` 로만 움직인다"
+        deny "현재 브랜치가 \`$BRANCH\` 인 상태의 \`git merge\`(--ff-only 없음) — 보호 브랜치는 전수 green ＋ 〈N〉 재실측 뒤 \`git merge --ff-only <레인>\` 로만 움직인다"
       fi
       ;;
     branch)
@@ -268,7 +315,7 @@ while IFS= read -r seg; do
         esac
       done
       if [ "$del" -eq 1 ] && [ "$hit" -eq 1 ]; then
-        deny "\`git branch -D main|master\` — 기준 브랜치를 지운다"
+        deny "\`git branch -D\` 로 보호 브랜치(main · master · develop · product) 삭제 — 기준 브랜치를 지운다"
       fi
       ;;
   esac

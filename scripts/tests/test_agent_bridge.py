@@ -467,6 +467,28 @@ class HookIntegrationTests(unittest.TestCase):
                                     input=json.dumps(data), text=True, capture_output=True, timeout=60)
             self.assertEqual(result.returncode, expected, result.stderr)
 
+    def test_css_audit_hook_emits_post_tool_use_additional_context_json(self):
+        """C12 — PostToolUse 평문 stdout 은 debug log 전용이다. 맥락은 additionalContext JSON 1줄로 낸다."""
+        env = dict(os.environ)
+        env.pop('COLAB_HOOKS', None)
+        hook = bridge.ROOT / '.claude/hooks/css-edit-audit.sh'
+        for rel, expected in (('frontend/src/components/common/toast.css', True),
+                              ('frontend/src/main.tsx', False)):
+            data = {'cwd': str(bridge.ROOT), 'hook_event_name': 'PostToolUse', 'tool_name': 'Edit',
+                    'tool_input': {'file_path': str(bridge.ROOT / rel)}}
+            with self.subTest(path=rel):
+                result = subprocess.run(['bash', str(hook)], input=json.dumps(data), text=True,
+                                        capture_output=True, env=env, timeout=60)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                if not expected:
+                    self.assertEqual(result.stdout, '')
+                    continue
+                lines = result.stdout.splitlines()
+                self.assertEqual(len(lines), 1, result.stdout)
+                output = json.loads(lines[0])['hookSpecificOutput']
+                self.assertEqual(output['hookEventName'], 'PostToolUse')
+                self.assertIn('`components/common/toast.css`', output['additionalContext'])
+
     def run_guard(self, *args, extra_env=None):
         env = dict(os.environ)
         for key in ("COLAB_HOOKS", "COLAB_FIX_LANE", "COLAB_ALLOW_TEST_EDIT"):

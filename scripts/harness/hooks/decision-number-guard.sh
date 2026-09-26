@@ -5,8 +5,9 @@
 # 무엇을 해소하나 (D3): **결정 번호 〈N〉 은 예약하지 않는다.** 두 레인이 각자 착수 시점의 다음 빈
 #   번호를 집으면 같은 번호가 둘 난다 — 2026-08-29 에 `〈192〉`·`〈193〉` 이, 2026-08-31 에 `〈241〉` 이
 #   실제로 그렇게 겹쳤다(`PLAN-SoT §9` 번호 발급 규율 · `rules/colab-rules.md §4-1`).
-#   규율 축자 — 「병행 직전 `origin/main` 을 다시 받아 마지막으로 쓰인 번호를 세고 … 착수 시점에
-#   센 번호는 근거가 아니다」. 그 재실측을 사람 기억에서 훅으로 내린다.
+#   규율 요지 — 병합 직전 통합 브랜치의 원격 판(현재 `origin/develop`)을 다시 받아 마지막으로 쓰인
+#   번호를 센다 · 착수 시점에 센 번호는 근거가 아니다. 그 재실측을 사람 기억에서 훅으로 내린다.
+#   (2026-09-26 A6 — 기준을 통합 브랜치 develop 으로 옮겼다. 종전 기준은 과거 기본 브랜치였다.)
 #
 # ── 판정 규칙 ────────────────────────────────────────────────────────────────
 #   대상 = `dev-package/PLAN-SoT.md` 를 고치는 Edit·Write 하나뿐.
@@ -15,7 +16,7 @@
 #       DECISION_ROW_RE = re.compile(r"^\|\s*〈\s*(\d+)\s*〉\s*\|")
 #     같은 파일 주석 축자: 「본문 안의 `〈n〉` 은 다른 결정을 **가리키는 인용**이라 중복이 정상이다」.
 #     ⇒ 본문·다른 문서에서 기존 〈N〉 을 **인용만** 하는 편집에는 발동하지 않는다.
-#   기대값 = `origin/main` 의 최대 번호 + 1(그 사이 이 브랜치가 이미 쓴 번호는 건너뛴다).
+#   기대값 = `origin/develop` 의 최대 번호 + 1(그 사이 이 브랜치가 이미 쓴 번호는 건너뛴다).
 #   여러 행을 한 번에 더하면 연속(N, N+1, …)이어야 한다.
 #
 # ── PreToolUse 입력 (stdin · 문서 인용) ──────────────────────────────────────
@@ -24,7 +25,10 @@
 #     event-specific."  ⇒ 새 본문은 Edit 의 `tool_input.new_string`, Write 의 `tool_input.content`.
 #   · `cwd` — "Current working directory when the hook is invoked"
 #   · exit 2 = "Blocks the tool call" · "The blocking message is … your stderr text otherwise."
-#   ⚠ exit 1 은 통과다. 판정을 못 하면 통과가 기본값이다.
+#   ⚠ 실패 방향은 2단이다. ⑴ 준비 실패 = exit 2 차단 — python3 부재 · envelope 이상(아래 validate-input,
+#     2026-09-09 계약) · 새 결정 번호 후보가 있는데 기준(`origin/develop`)을 못 읽음(`git fetch origin develop`
+#     뒤 재시도). ⑵ 그 밖의 판정 불가(대상 밖 도구·경로 · 후보 없음 · checkout 미해석) = 통과.
+#     exit 1 은 Claude Code 규약상 비차단이나 이 hook 은 exit 1 을 내지 않는다.
 # Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
@@ -35,7 +39,6 @@ command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 mi
 payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field file_path)" || exit 2
 
 [ -n "$payload" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
 
 mapfile -t _f < <(printf '%s' "$payload" | python3 -c '
 import json,sys
@@ -60,17 +63,14 @@ case "$FP" in */dev-package/PLAN-SoT.md|dev-package/PLAN-SoT.md) : ;; *) exit 0 
 TOP="$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$TOP" ] || exit 0
 
-# ── 기대값의 기준선 = `origin/main` 의 최대 번호 ─────────────────────────────
-# 규율이 「병합 직전 `origin/main` 기준 재실측」이므로 워킹트리가 아니라 원격 판을 센다.
-# 못 읽으면(원격 미등록·오프라인) 도구의 기본 자리(워킹트리)로 물러서고, 그 사실을 사유에 적는다.
-BASE=""; BASE_SRC="origin/main"
-BASE="$(git -C "$CWD" show origin/main:dev-package/PLAN-SoT.md 2>/dev/null \
+# ── 기대값의 기준선 = `origin/develop` 의 최대 번호 ──────────────────────────
+# 규율이 「병합 직전 통합 브랜치 원격 판 기준 재실측」이므로 워킹트리가 아니라 원격 판을 센다.
+# 못 읽으면(원격 미등록·오프라인·미fetch) BASE 가 빈 채로 판정에 넘긴다 — 새 결정 번호 후보가 있을
+# 때만 준비 실패(exit 2)로 막고, 후보가 없으면 통과한다. 워킹트리로 조용히 대체하지 않는다
+# (워킹트리 판은 이 브랜치가 이미 쓴 번호를 포함해 기준이 될 수 없다).
+BASE_SRC="origin/develop"
+BASE="$(git -C "$CWD" show origin/develop:dev-package/PLAN-SoT.md 2>/dev/null \
         | grep -o '〈[0-9]\+〉' | tr -d '〈〉' | sort -n | tail -1)"
-if [ -z "$BASE" ] && [ -x "$TOP/dev-package/prd/tools/max-decision.sh" ]; then
-  BASE="$(bash "$TOP/dev-package/prd/tools/max-decision.sh" 2>/dev/null || true)"
-  BASE_SRC="워킹트리(prd/tools/max-decision.sh · origin/main 을 못 읽었다)"
-fi
-[ -n "$BASE" ] || exit 0
 
 printf '%s' "$payload" | BASE="$BASE" BASE_SRC="$BASE_SRC" LEDGER="$TOP/dev-package/PLAN-SoT.md" \
 python3 -c '
@@ -86,7 +86,6 @@ new = ti.get("new_string")
 if new is None: new = ti.get("content")
 if not isinstance(new, str) or not new: sys.exit(0)
 
-base = int(os.environ["BASE"])
 ledger = os.environ["LEDGER"]
 try:
     cur = open(ledger, encoding="utf-8").read()
@@ -96,6 +95,15 @@ existing = {int(m) for m in ROW.findall(cur)}
 incoming = [int(m) for m in ROW.findall(new)]
 fresh = sorted({n for n in incoming if n not in existing})
 if not fresh: sys.exit(0)
+
+# 새 결정 번호 후보가 있는데 기준을 못 읽었다 — 판정할 수 없으므로 준비 실패로 막는다.
+if not os.environ.get("BASE", "").isdigit():
+    sys.stderr.write(
+        "hook readiness failure(H5 decision-number-guard): %s 부재 — 새 결정 번호 %s 을(를) 대조할 기준이 없다"
+        " · `git fetch origin develop` 뒤 재시도한다. 훅을 비활성화하지 않는다.\n"
+        % (os.environ["BASE_SRC"], ", ".join("〈%d〉" % n for n in fresh)))
+    sys.exit(2)
+base = int(os.environ["BASE"])
 
 # 이 브랜치가 이미 쓴 번호는 건너뛴 다음 자리가 기대값이다.
 nxt = base + 1

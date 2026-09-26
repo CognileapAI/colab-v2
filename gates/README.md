@@ -76,6 +76,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 출력은 등록 순서로 되돌려 재생하므로 로그도 직렬판과 같은 줄이 같은 순서로 나온다.
 
 - `gates/run.sh all [-j N]` — 전 게이트를 동시 N 개씩. 하나라도 red 면 red 이고, 끝에 게이트별 판정을 요약한다.
+- 인자 오류 = 78(host mutex·gate-start 전 · stderr 에 버린 토큰) — 알 수 없는 게이트 · 인자 없음 · 단독 게이트·`task` 뒤 추가 인자 · `all -j` 형식 오류(`-j4` 붙여 쓰기 · `-j` 만 · 정수 아닌 N · N=0 · 뒤 토큰). ⚠ 기존 동작 변화: 종전에는 `all -j`·`all -j abc` 가 기본 병렬도로 돌았다.
 - `contract-selftest` · `event-selftest` · `boundary-selftest` · `rls-effect-selftest` 는 케이스를
   `gates/tools/_expect_pool.sh` 의 풀로 돈다. 케이스마다 자기 임시 픽스처(또는 자기 일회용 컨테이너)를
   들고 있어 서로를 볼 수 없다 — 격리는 그대로다. 종료코드가 없는 케이스는 **미실행으로 red** 다.
