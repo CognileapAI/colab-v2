@@ -1,4 +1,4 @@
-"""**적재된 그래프 실물**로 `K4-b` 를 증명한다 — 노드 54 · 엣지 20 (`PLAN-SoT §9-〈86〉`
+"""**적재된 그래프 실물**로 `K4-b` 를 증명한다 — 노드 55 · 엣지 21 (`PLAN-SoT §9-〈86〉`
 + Ted 판정 2026-09-18 결정 4·5, `0010_practitioner_concept`).
 
 `test_graph_expansion.py` 는 규칙을 축소판 그래프로 증명한다. **여기서는 시드가 그 규칙을
@@ -10,7 +10,7 @@ DB 가 없으면 **skip 이 아니라 fail** 이다 (`conftest.py` 와 같은 �
 from __future__ import annotations
 
 import pytest
-from colab_ai.domains.d9_ontology import KIND_OF, SAME_AS
+from colab_ai.domains.d9_ontology import INSIDE, KIND_OF, SAME_AS
 
 # 이 파일은 `dictionaries` 픽스처(= `COLAB_AI_TEST_DICT_DB_URL`)를 통째로 쓴다.
 # 표식은 **빼기 위한 이름**이지 skip 의 근거가 아니다 — 고른 실행에서는 그대로 판정한다.
@@ -25,16 +25,17 @@ def _graphed(dictionaries, query: str):
             {h.term: (h.relation, h.parent) for h in out.graph_hops})
 
 
-def test_시드가_노드_54_엣지_20_다(dictionaries) -> None:
-    """`〈86〉` 의 확정값 + 2026-09-18 결정 4·5. 여기가 흔들리면 아래 오라클이 다른 것을 잰다.
+def test_시드가_노드_55_엣지_21_다(dictionaries) -> None:
+    """`〈86〉` 의 확정값 + 2026-09-18 결정 4·5 + 2026-09-26 자료 지역 확정 1.
 
     49·19 → 54·20 은 원천표기 3(`s-era5`·`s-ecmwf`·`s-ecmwf-ko`) + 주제 2(`t-drought`·
     `t-fileformat`) + 엣지 `E1-12` 다. `~의 한 가지다` 7 은 **바뀌지 않는다** — 새 엣지는
     `같은 말이다` 하나뿐이고 `~이 제공한다` 는 결정 8 이 닫아 두었다.
+    54·20 → 55·21 은 지명 `p-south-korea`(남한) + 엣지 「남한 안에 있다 한반도」다(2026-09-26).
     """
     graph = dictionaries.load_graph()
-    assert len(graph.nodes) == 54
-    assert len(graph.edges) == 20
+    assert len(graph.nodes) == 55
+    assert len(graph.edges) == 21
     assert sum(1 for e in graph.edges if e.relation == SAME_AS) == 12
     assert sum(1 for e in graph.edges if e.relation == KIND_OF) == 7
 
@@ -85,6 +86,18 @@ def test_한반도가_충청권을_데려온다_안에_있다(dictionaries) -> N
     """§D-5 — `E2-1`. 결과 **집합**이 아니라 **순위**가 바뀌는 자리다."""
     terms, hops = _graphed(dictionaries, "한반도 전체 식생 자료")
     assert "충청권" in terms and hops["충청권"][1] == "한반도"
+
+
+def test_한반도가_남한을_데려온다_안에_있다(dictionaries) -> None:
+    """2026-09-26 Ted 판정 「자료 지역 확정」 1 — 「남한⊂한반도 관계로 연결」. 정본 남한 자료
+    (기상청 관측망 seq 1·2·19·20)에 「한반도」 질의가 닿는 한 홉이다."""
+    terms, hops = _graphed(dictionaries, "한반도 강수 자료")
+    assert "남한" in terms and hops["남한"] == (INSIDE, "한반도")
+
+
+def test_남한을_물으면_한반도로_올라가지_않는다(dictionaries) -> None:
+    terms, _ = _graphed(dictionaries, "남한 강수 자료")
+    assert "한반도" not in terms
 
 
 def test_충청권을_물으면_한반도로_올라가지_않는다(dictionaries) -> None:

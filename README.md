@@ -59,6 +59,9 @@ colab-v2/
 
 새 Claude 세션은 `dev-package/prd/rounds/` 최신 `R-*.md` 하나만 읽는다(`CLAUDE.md §1`).
 
+처음 받은 저장소에서 한 번 — 온톨로지 보강 회차 도구 설정: `bash dev-package/tools/ontology-round/setup.sh`
+(실행 환경 생성·점검 · 절차는 `dev-package/tools/ontology-round/PROCEDURE.md`).
+
 ## 하네스 훅
 
 **이 레포를 클론하면 Claude Code 훅 7개가 같이 온다.** `.claude/settings.json` 이 **커밋돼 있기**
@@ -69,10 +72,10 @@ colab-v2/
 | 훅 | 언제 뜨나 | 무엇을 하나 |
 |---|---|---|
 | `bootstrap-diet.sh` | 세션 시작 | **안내만.** 이번 회차에 읽을 라운드 파일 하나를 찍는다 — 종전 부트스트랩 문서 5개(2.4 MB)를 대체 |
-| `worktree-setup.sh` | `lane-worker` 스폰 | **차단 없음.** 새 워크트리의 `node_modules`·서비스 `.venv`·게이트 venv 를 세우고 대장 병합 드라이버를 건다 |
-| `git-guard.sh` | Bash 실행 전 | **차단.** ⑴ **레인(서브에이전트)의** main/master push ⑵ main 으로 강제 push ⑶ **HEAD 가 main 일 때 `--ff-only` 없는 `git merge`** ⑷ `gh pr merge` ⑸ `git branch -D main` 다섯 가지만. ⭑ **⑴ 은 `agent_id` 가 실린 호출에만 걸린다** — 오케스트레이터(메인 스레드)의 승인된 `git push origin main` 은 통과한다. 비-main 브랜치의 `merge --ff-only`·**main 에서의 `merge --ff-only`(오케스트레이터의 승인된 병합)**·기능 브랜치 push·`fetch`·`pull` 도 통과 |
+| `worktree-setup.sh` | `lane-worker` 스폰 | **차단 없음.** 새 워크트리의 `node_modules`·서비스 `.venv`·게이트 venv 를 세우고 대장 병합 드라이버를 건다. 출력 = `hookSpecificOutput.additionalContext` JSON 1줄(SubagentStart 평문 stdout 은 레인에 도달하지 않는다). payload `cwd` 가 세션 checkout 과 같은 toplevel 이면 「격리 아님」 권고 1줄 |
+| `git-guard.sh` | Bash 실행 전 | **차단.** 보호 브랜치 = main · master · develop · product. ⑴ **레인(서브에이전트)의** 보호 브랜치 push(refspec `HEAD`/`@` 포함) ⑵ 보호 브랜치로 강제 push(`-fu` 같은 묶은 flag · `+HEAD` 포함) ⑶ **HEAD 가 보호 브랜치일 때 `--ff-only` 없는 `git merge`** 와 `git pull --no-ff`/`--no-rebase`/`--rebase=false`/`--ff=false` ⑷ `gh pr merge`(`-R`/`--repo` 포함) · `gh api -X PUT …/pulls/N/merge` ⑸ `git branch -D <보호 브랜치>` 다섯 가지만. 판정 branch 는 명령이 겨누는 checkout(`-C "<공백 경로>"` · `cd`/`pushd` · `--git-dir`/`--work-tree`)의 것이다. ⭑ **⑴ 은 `agent_id` 가 실린 호출에만 걸린다** — 오케스트레이터(메인 스레드)의 승인된 `git push origin main` 은 통과한다. 비-main 브랜치의 `merge --ff-only`·**main 에서의 `merge --ff-only`(오케스트레이터의 승인된 병합)**·기능 브랜치 push·`fetch`·`pull`(플래그 없음·`--rebase`·`--ff-only`)·`gh api` GET·heredoc 본문과 인용 문자열 안의 문구도 통과. 명령 해석은 `git_guard_parse.py`(인용·heredoc 인식) · `bash -n` 이 거부하는 입력이나 해석기 결함이면 stderr `git-guard: parser fallback:` 1줄 뒤 기존 bash 규칙으로 판정. 잡지 않는 것: 변수·명령치환으로 준 대상 dir(payload `cwd` 로 봄) · 서브셸 `cd` 는 뒤 명령에도 적용(과대 근사) · `bash -c`/`eval` · `gh api graphql` mergePullRequest |
 | `migration-guard.sh` | Edit·Write 전 | **차단.** `origin/main` 에 **이미 있는** Alembic 마이그레이션 수정. 새 revision 은 통과 |
-| `decision-number-guard.sh` | Edit·Write 전 | **차단.** `dev-package/PLAN-SoT.md §9` 에 `origin/main` 최대 + 1 이 아닌 결정 번호 〈N〉 을 새로 쓰는 편집. 기존 번호 인용은 통과 |
+| `decision-number-guard.sh` | Edit·Write 전 | **차단.** `dev-package/PLAN-SoT.md §9` 에 `origin/develop` 최대 + 1 이 아닌 결정 번호 〈N〉 을 새로 쓰는 편집. 기존 번호 인용은 통과. `origin/develop` 을 못 읽으면 새 결정 번호가 있는 편집만 준비 실패로 막는다(`git fetch origin develop` 뒤 재시도) |
 | `uncommitted-artifacts.sh` | `researcher` 종료 | **차단.** `dev-package/sessions`·`reports`·`intent` 아래 **미추적 파일**이 남아 있으면 경로를 열거하고 세운다. 자동 커밋은 하지 않는다 — `git add <경로>` 는 사람·에이전트가 직접 한다 |
 | `lane-gate-summary.sh` | `lane-worker` 종료 | **차단.** `dev-package/reports/<회차>/<레인>/gate-summary.json` **부재**(＝ 게이트를 안 돌렸다) · **HEAD 와 어긋남**(JSON 의 `commit`·`tree` 가 둘 다 지금 HEAD 와 다르면 옛 회차의 값이므로 부재와 같이 본다) · `counts.red_판정 > 0`. 배출은 `COLAB_GATE_REPORT_DIR` 을 준 `gates/run.sh` 가 한다(`gates/README.md`). ⚠ 이 JSON 은 **추적하지 않는다**(`.gitignore`) — 커밋하면 다음 워크트리가 게이트 없이 통과한다 |
 
@@ -116,3 +119,13 @@ its subprocesses」 · 적용 범위 「Any file」(`.claude/settings.local.json
 > 훅은 **마찰 장치이지 보안 경계가 아니다.** 한 겹 감싼 명령(`bash -c "…"`)은 잡지 않는다.
 > 잡으려고 문자열 어디에나 있는 `git` 을 세면 무해한 호출이 걸리고, 오탐이 붙은 차단 훅은
 > 곧 상시 비활성으로 끝난다.
+>
+> `migration-guard`·`decision-number-guard`·`test-file-guard` 는 Edit/Write 도구만 본다
+> (`.claude/settings.json` PreToolUse matcher `Edit|Write`). `sed -i` · 리다이렉션 · `tee` · `python -c`
+> 같은 Bash 쓰기는 대상이 아니다. Bash 쓰기까지 잡는 사후 검사 = `lifecycle begin --scope` 를 선언한
+> task 의 handoff/H7(기준 = begin 시점 파일 내용 hash · 도구 무관 · `docs/development/lifecycle-evidence.md`
+> 「인계」). 게이트 쪽 사후 검사는 결정 번호 **중복**만 `work-item-consistency` 가 잡고(순번 건너뜀은
+> 못 잡음), 기존 migration 내용 수정은 없다(`migration-single-head` 는 head 분기만 본다).
+> `test-file-guard` 의 편집 시점 차단은 `COLAB_FIX_LANE=1` env 를 받는 Codex 경로에만 있다 —
+> Claude Code 는 hook env 를 lane 별로 줄 수 없어 Claude lane 에서는 통과하고, 경계는 인계 시점의
+> `--scope` 대조다.

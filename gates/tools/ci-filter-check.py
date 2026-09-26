@@ -7,9 +7,10 @@
   0개인 출력(`outputs.frontend`)이 있어 `frontend/` 만 바꾼 PR 이 게이트 잡 0개로 병합된
   선례가 있다(`ci.yml` 「프런트 게이트」 주석 · 2026-09-03 코드리뷰 #6).
 
-무엇을 재나 (여덟):
+무엇을 재나 (아홉):
   ㈎ `changes` 잡의 필터 블록에 `harness` 가 있다
-  ㈏ `harness` 패턴 집합이 정본과 축자 일치 — 공통 원본 + Claude/Codex adapter
+  ㈏ `harness` 패턴 집합 == 설정 해시 정본 `eval/harness/config-paths.txt` 의 포함 패턴 ∪ FILTER_ONLY(해시 밖 ·
+     필터 안) — 축자 일치. 정본을 이 파일에 두 벌로 두지 않는다(E0 · 필터와 해시 집합의 drift 방지)
   ㈐ 잡히는 것 — `AGENTS.md` · `.agents/**` · `scripts/harness/**` · `.claude/**` · `.codex/**`
   ㈑ 안 잡히는 것 — `frontend/src/a.tsx` · `services/core-api/x.py` (제품 경로가 하네스를 깨우지 않는다)
   ㈒ `changes` 잡 `outputs` 에 `harness` 항목이 있다(필터만 있고 출력이 없으면 소비처가 못 읽는다)
@@ -17,6 +18,8 @@
   ㈔ 그 잡에 `continue-on-error` 가 없고 로컬 평가 방침대로 API 키 없이 명시 면제·회귀 검사를 한다
   ㈕ `docs/decisions/<ADR>.md` · `scripts/harness/adr_gate.py` · `.agents/harness.yaml` 이 `dev-package` 필터에 잡힌다 — 어느 것만 바꾼 PR 도 `adr-records` 를 깨운다
      (`harness` 필터는 모델 호출 잡을 깨우므로 손대지 않는다 · 위 ㈏ 축자 대조 대상)
+  ㈖ 정본 `config-paths.txt` 의 모든 포함 패턴이 `harness` 필터에 있다 — 해시를 바꾸는 변경이 잡을 깨운다
+     (정본 자리 seam = `COLAB_EVAL_CONFIG_PATHS` · 시험 전용 · 게이트·러너는 정본 경로 고정)
 
 ⚠ **이 대조는 근사다.** 여기서 재는 것은 glob 문법의 뜻이고, `dorny/paths-filter` 가 실제 PR 의
   변경 목록에 그것을 어떻게 적용하는지는 **`[미상]`** 이다(로컬 실행 불가 · `act` 부재).
@@ -35,18 +38,10 @@ CI_PATH = os.environ.get("COLAB_CI_WORKFLOW") or os.path.join(
     REPO_ROOT, ".github", "workflows", "ci.yml"
 )
 
-# 정본 = 공통 원본과 두 도구 adapter. 제품 경로는 포함하지 않는다.
-WANT_PATTERNS = {
-    "AGENTS.md",
-    "CLAUDE.md",
-    ".agents/**",
-    ".codex/**",
-    ".claude/skills/**",
-    ".claude/hooks/**",
-    ".claude/agents/**",
-    "scripts/harness/**",
-    "scripts/agent-bridge.py",
-}
+# 정본 = 설정 해시 정본(eval/harness/config-paths.txt) ∪ 해시 밖 · 필터 안(FILTER_ONLY).
+# 제품 경로는 포함하지 않는다.
+CONFIG_PATHS_DEFAULT = os.path.join(REPO_ROOT, "eval", "harness", "config-paths.txt")
+FILTER_ONLY = {".codex/**", "scripts/harness/**", "scripts/agent-bridge.py"}
 MUST_MATCH = [
     "AGENTS.md",
     "CLAUDE.md",
@@ -55,6 +50,10 @@ MUST_MATCH = [
     ".claude/skills/colab-v2-work/SKILL.md",
     ".claude/hooks/bootstrap-diet.sh",
     ".claude/agents/lane-worker.md",
+    ".claude/settings.json",
+    ".claude/rules/colab-rules.md",
+    "gates/run.sh",
+    "eval/harness/run.sh",
     "scripts/harness/check.py",
     "scripts/agent-bridge.py",
 ]
@@ -79,6 +78,25 @@ def ready_red(missing: str, detail: str) -> None:
     print("   선언되지 않은/없는 것: %s" % missing)
     print("   %s" % detail)
     sys.exit(78)
+
+
+def config_paths_file() -> str:
+    return os.environ.get("COLAB_EVAL_CONFIG_PATHS") or CONFIG_PATHS_DEFAULT
+
+
+def read_config_paths() -> list[str]:
+    """Inclusion patterns of the config-hash canonical list — parsed by the hash calculator itself."""
+    import importlib.util
+
+    source = os.path.join(REPO_ROOT, "eval", "harness", "config_hash.py")
+    try:
+        spec = importlib.util.spec_from_file_location("config_hash", source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.include_patterns(config_paths_file())
+    except Exception as exc:  # missing calculator or list = cannot judge
+        ready_red(config_paths_file(), "설정 해시 정본을 읽지 못했다 (%s)." % exc)
+    return []
 
 
 def glob_to_re(pat: str) -> "re.Pattern[str]":
@@ -110,6 +128,8 @@ def main() -> int:
         ready_red("PyYAML", "ci.yml 을 파싱할 수 없다 (%s). pip install pyyaml" % exc)
     if not os.path.exists(CI_PATH):
         ready_red(CI_PATH, "워크플로 파일이 이 체크아웃에 없다.")
+    config_patterns = read_config_paths()
+    want_patterns = set(config_patterns) | FILTER_ONLY
 
     with open(CI_PATH, encoding="utf-8") as source:
         doc = yaml.safe_load(source)
@@ -135,11 +155,17 @@ def main() -> int:
         got = set()
     else:
         got = set(filters["harness"] or [])
-        if got != WANT_PATTERNS:
+        if got != want_patterns:
             fails.append(
-                "㈏ `harness` 패턴이 정본과 다르다 · 남음 %s · 모자람 %s"
-                % (sorted(got - WANT_PATTERNS), sorted(WANT_PATTERNS - got))
+                "㈏ `harness` 패턴이 정본(config-paths.txt ∪ FILTER_ONLY)과 다르다 · 남음 %s · 모자람 %s"
+                % (sorted(got - want_patterns), sorted(want_patterns - got))
             )
+
+    # ㈖ 해시를 바꾸는 경로는 모두 잡을 깨운다 — 정본의 포함 패턴 ⊆ 필터
+    for pattern in config_patterns:
+        if pattern not in got:
+            fails.append("㈖ 설정 해시 정본 패턴 `%s` 가 `harness` 필터에 없다 — 그 경로만 바꾼 PR 은 해시가 "
+                         "바뀌는데 harness-eval 잡이 깨어나지 않는다(정본 %s)." % (pattern, config_paths_file()))
 
     regexes = [glob_to_re(p) for p in sorted(got)]
 
@@ -198,10 +224,12 @@ def main() -> int:
         return 1
 
     print(
-        "ci-filter-check green — 필터 `harness` 패턴 %d개 · 잡히는 경로 %d건 · 안 잡히는 경로 %d건 · "
+        "ci-filter-check green — 필터 `harness` 패턴 %d개(정본 %s 포함 패턴 %d ＋ 필터 전용 %d) · "
+        "잡히는 경로 %d건 · 안 잡히는 경로 %d건 · "
         "outputs.harness 있음 · 잡 `%s` 조건·명시 면제·회귀 확인 · API 키 의존 0 · continue-on-error 0 · "
         "ADR 경로 → `%s` 필터 잡힘."
-        % (len(got), len(MUST_MATCH), len(MUST_NOT_MATCH), JOB, ADR_FILTER)
+        % (len(got), os.path.relpath(config_paths_file(), REPO_ROOT), len(config_patterns), len(FILTER_ONLY),
+           len(MUST_MATCH), len(MUST_NOT_MATCH), JOB, ADR_FILTER)
     )
     print(
         "   ⚠ 근사다 — 여기서 잰 것은 glob 문법의 뜻이고, `dorny/paths-filter` 가 실제 PR 에서 "

@@ -30,6 +30,22 @@
 **정본에 없으면 만들지 않는다**(`PLAN-SoT §9-㊴-②`). 값이 없는 칸은 비운다 —
 `EvidenceFacts` 는 성분 하나만 있으면 통과한다.
 
+**지역(2026-09-26 Ted 판정 「자료 지역 확정」)** — 정본 DATASETS.md 기계 블록의 `region` 줄
+(「남한 (Ted 확정 …)」)은 괄호 앞 지명을 `facts.region`(reviewed)으로 옮긴다. `bbox` 줄
+(표준 격자 계산 w/s/e/n)은 `canonical-metadata.json` 의 `bbox` 와 **같아야** 하고(어긋나면 비영
+종료) 보조 규칙 `bbox-korea-peninsula` 의 입력이 된다. 정본 지역이 없는 자료의 지명은 계보로
+잇되 **초안**이다 — `region-from-lineage-parent`(가장 가까운 조상의 정본 지역) ·
+`region-from-lineage-sibling`(같은 자식의 공동 입력이고 그 자식이 정본 지역을 가진 입력과 같은
+기준 격자에 산출될 때).
+
+**타일 코드 확정값 유지 · 초안 한반도와 공존**(2026-09-26 Ted — PR #174 수정 지시) — seq 21~28 의
+reviewed `region`(T51SYB·h27v05 …)은 dev 에 이미 실린 확정값이라 그대로 둔다. 그 위에
+`bbox-korea-peninsula` 가 초안 「한반도」를 `draftFacts` 에 **함께** 싣는다. 초안은 payload 파일에만
+살므로(결정 4 ㈎) 두 값이 한 파일에서 공존한다. 같은 키가 두 칸에 있는 행은 `draftConflictsWithReviewed`
+에 그 키와 확정값을 적는다 — 승격하면 확정값을 **바꾸는** 것이므로 승격기·리허설은 그 규칙이
+명시적으로 대체 허가(`--allow-replace`)를 받았을 때만 바꾸고, 아니면 거절·보고한다. 정본 지역·계보
+규칙은 종전대로 reviewed 지역이 있으면 초안을 만들지 않는다.
+
 쓰는 법
   python3 dev-package/tools/dataset_evidence_backfill.py
   python3 dev-package/tools/dataset_evidence_backfill.py --output <경로>
@@ -84,6 +100,18 @@ RULES = {
                            "정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) "
                            "안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 "
                            "지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다.",
+    "region-from-lineage-parent": "정본 지역이 없는 자료는 계보(plan-manifest.yaml parents)를 거슬러 "
+                                  "올라가 정본 지역(reviewed)을 가진 **가장 가까운 대**의 조상 지명을 "
+                                  "잇는다 — 그 대의 지명이 모두 같을 때만. Ted 판정 2026-09-26 「자료 지역 "
+                                  "확정」 2 「연구대상지는 부모 범위(남한)를 초안으로 이음」 · 4 「파생 자료 "
+                                  "9건은 계보로 잇되 초안(측정 후 승격)」.",
+    "region-from-lineage-sibling": "조상에 정본 지역이 없는 자료가 어떤 자식의 공동 입력이고, 그 자식이 "
+                                   "정본 지역을 가진 다른 입력과 **같은 기준 격자 파일**(grid_files)에 "
+                                   "산출되면 그 입력의 지명을 잇는다 — 자식이 입력들의 공통 격자 위에 "
+                                   "있다는 계보 추론. Ted 판정 2026-09-26 「자료 지역 확정」 4.",
+    "cadence-from-lineage-parent": "좌표변환·crop 만 한 산출물은 부모(계보 parents 하나)의 정본 주기(reviewed "
+                                   "cadence)를 잇는다 — 자기 정본 문장이 주기를 말하지 않을 때만. Ted 판정 "
+                                   "2026-09-26 「전부 권고대로」(intent 2026-09-26-cadence-range-predicate 질문 2·4).",
 }
 
 #: 보조 검증용 한반도 상자. 정본이 지명을 말하지 않는 자료의 **초안** region 에만 쓴다.
@@ -120,18 +148,21 @@ READINGS: dict[int, dict] = {
                   "directObservation": True, "interpolated": False}},
     2: {"quote": "지상 격자 15분 누적강수",
         "facts": {"variable": "강수량", "cadence": "15min", "provider": "기상청"},
+        "notes": {"cadence": "판정 2026-09-26 Ted 「전부 권고대로」 — 누적 기간 15분을 산출 간격 15분으로 읽는다"},
         "rules": {"platform": "ground", "representation": "spatial_grid",
                   "directObservation": True, "interpolated": False}},
     3: {"quote": "WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop",
         "facts": {"variable": "반사도", "provider": "기상청", "roles": ["model_input"]},
         "rules": {"platform": "ground", "representation": "spatial_grid",
                   "directObservation": True, "interpolated": True,
-                  "nativeResolutionM": 500.0}},
+                  "nativeResolutionM": 500.0, "cadence": "5min"}},
+    # 2026-09-26 Ted 「전부 권고대로」(질문 2) — 자기 정본 문장이 주기를 말하지 않는다(부모 이름
+    # 「rn15 15분 누적강수」뿐). reviewed 15min 을 거두고 계보 초안(cadence-from-lineage-parent)으로 내린다.
     4: {"quote": "WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop",
-        "facts": {"variable": "강수량", "cadence": "15min", "provider": "기상청",
+        "facts": {"variable": "강수량", "provider": "기상청",
                   "roles": ["validation"]},
         "rules": {"platform": "ground", "representation": "spatial_grid",
-                  "directObservation": True, "interpolated": True}},
+                  "directObservation": True, "interpolated": True, "cadence": "15min"}},
     5: {"quote": "U-Net 기반 모델의 예측 결과",
         "facts": {"variable": "강수량", "model": "U-Net", "roles": ["prediction"]},
         "rules": {"platform": "model", "representation": "spatial_grid",
@@ -186,6 +217,7 @@ READINGS: dict[int, dict] = {
                    "directObservation": False, "interpolated": False}},
     16: {"quote": "각 24시각이다",
          "facts": {"cadence": "hourly"},
+         "notes": {"cadence": "판정 2026-09-26 Ted 「전부 권고대로」 — 「각 24시각」을 산출 간격 매시로 읽는다"},
          "rules": {"platform": "model", "representation": "spatial_grid",
                    "directObservation": False, "interpolated": True,
                    "region": "전지구"}},
@@ -258,10 +290,11 @@ def expand_period(value: str, *, end: bool) -> str:
 
 
 def read_datasets_md() -> dict[int, dict]:
-    """4건의 DATASETS.md 기계 블록에서 seq → {document, description, name} 을 읽는다.
+    """4건의 DATASETS.md 기계 블록에서 seq → {document, description, name, region?, bbox?} 을 읽는다.
 
-    YAML 파서를 쓰지 않는다 — 이 블록에서 필요한 것은 `seq`·`name`·`description` 세 줄이고,
-    파서 의존을 늘리지 않는 편이 게이트 환경에서 안전하다. 형식이 어긋나면 비영 종료한다.
+    YAML 파서를 쓰지 않는다 — 이 블록에서 필요한 것은 `seq`·`name`·`description` 세 줄과
+    2026-09-26 에 더한 `region`·`bbox` 두 줄(있을 때만)이고, 파서 의존을 늘리지 않는 편이
+    게이트 환경에서 안전하다. 형식이 어긋나면 비영 종료한다.
     """
     out: dict[int, dict] = {}
     for path in sorted(DATASETS_MD_ROOT.rglob("DATASETS.md")):
@@ -278,7 +311,7 @@ def read_datasets_md() -> dict[int, dict]:
                 continue
             if current is None:
                 continue
-            for key in ("name", "description"):
+            for key in ("name", "description", "region", "bbox"):
                 found = re.match(rf'\s*{key}:\s*"(.*)"\s*$', line)
                 if found:
                     current[key] = found[1]
@@ -289,21 +322,112 @@ def read_datasets_md() -> dict[int, dict]:
 
 
 def read_manifest() -> dict[int, dict]:
-    """plan-manifest.yaml 에서 seq → {project, name, format, level} 을 읽는다."""
+    """plan-manifest.yaml 에서 seq → {project, name, format, level, parents, grid_files} 를 읽는다."""
     out: dict[int, dict] = {}
     current: dict | None = None
+    listing: str | None = None
     for line in MANIFEST.read_text(encoding="utf-8").splitlines():
         seq = re.match(r"- seq:\s*(\d+)\s*$", line)
         if seq:
-            current = {"seq": int(seq[1])}
+            current = {"seq": int(seq[1]), "parents": [], "grid_files": []}
             out[current["seq"]] = current
+            listing = None
             continue
         if current is None:
             continue
+        item = re.match(r"  - (.+?)\s*$", line)
+        if item and listing:
+            current[listing].append(item[1])
+            continue
+        listing = None
         found = re.match(r"  (project|name|format|level):\s*(.+?)\s*$", line)
         if found:
             current[found[1]] = found[2]
+            continue
+        opened = re.match(r"  (parents|grid_files):\s*(\[\])?\s*$", line)
+        if opened:
+            listing = None if opened[2] else opened[1]
     return out
+
+
+#: 정본 `region` 줄 — 「남한 (Ted 확정 2026-09-26 · 기상청 관측망)」 → 괄호 앞 지명.
+REGION_LINE = re.compile(r"^(?P<place>[^()]+?)\s*\((?P<basis>[^()]+)\)$")
+#: 정본 `bbox` 줄 — 「w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · …」.
+BBOX_LINE = re.compile(r"^w/s/e/n = (-?\d+\.\d+)/(-?\d+\.\d+)/(-?\d+\.\d+)/(-?\d+\.\d+) · ")
+
+
+def reviewed_regions(md: dict[int, dict]) -> dict[int, dict]:
+    """seq → {value, provenance}. 정본 `region` 줄과 판독표(READINGS)의 축자 region 을 모은다.
+
+    둘이 한 seq 에 겹치면 비영 종료한다 — 어느 쪽이 정본인지 조용히 고르지 않는다.
+    """
+    out: dict[int, dict] = {}
+    for seq in range(1, 29):
+        source, reading = md[seq], READINGS[seq]
+        line = source.get("region")
+        if line:
+            found = REGION_LINE.match(line)
+            if not found:
+                raise SystemExit(f"seq {seq}: 정본 region 줄의 형식이 「지명 (근거)」가 아니다 — {line!r}")
+            if "region" in reading["facts"]:
+                raise SystemExit(f"seq {seq}: 정본 region 줄과 판독표 region 이 겹친다")
+            out[seq] = {"value": found["place"].strip(),
+                        "provenance": f"정본전재 · {source['document']} seq {seq} 축자 「지역: {line}」"}
+        elif "region" in reading["facts"]:
+            quote = reading.get("quotes", {}).get("region", reading["quote"])
+            out[seq] = {"value": reading["facts"]["region"],
+                        "provenance": f"정본전재 · {source['document']} seq {seq} 축자 「{quote}」"}
+    return out
+
+
+def canonical_bbox(seq: int, canon: dict, source: dict) -> dict | None:
+    """정본 두 자리(canonical-metadata.json `bbox` · DATASETS.md `bbox` 줄)가 같은 값을 말하는지 본다."""
+    line, box = source.get("bbox"), canon.get("bbox")
+    if not line and not box:
+        return None
+    if not (line and box):
+        raise SystemExit(f"seq {seq}: bbox 가 정본 한 자리에만 있다(DATASETS.md {bool(line)} · "
+                         f"canonical-metadata.json {bool(box)})")
+    found = BBOX_LINE.match(line)
+    if not found:
+        raise SystemExit(f"seq {seq}: DATASETS.md bbox 줄 형식이 「w/s/e/n = …」가 아니다 — {line!r}")
+    said = [float(v) for v in found.groups()]
+    held = [float(box[k]) for k in ("west", "south", "east", "north")]
+    if said != held:
+        raise SystemExit(f"seq {seq}: bbox 가 두 정본에서 다르다 — DATASETS.md {said} · "
+                         f"canonical-metadata.json {held}")
+    return box
+
+
+def lineage_region(seq: int, parents_of: dict, reviewed: dict) -> dict | None:
+    """정본 지역을 가진 **가장 가까운 대**의 조상. 그 대의 지명이 갈리면 None(조용히 고르지 않는다)."""
+    frontier, seen = sorted(parents_of[seq]), set()
+    while frontier:
+        hits = {p: reviewed[p]["value"] for p in frontier if p in reviewed}
+        if hits:
+            values = set(hits.values())
+            if len(values) != 1:
+                return {"conflict": hits}
+            return {"value": values.pop(), "from": sorted(hits)}
+        seen.update(frontier)
+        frontier = sorted({g for p in frontier for g in parents_of[p]} - seen)
+    return None
+
+
+def sibling_region(seq: int, parents_of: dict, children_of: dict, grids: dict,
+                   reviewed: dict) -> dict | None:
+    """같은 자식의 공동 입력 중 정본 지역을 가진 것이 있고, 자식이 그 입력과 **같은 기준 격자
+    파일**에 산출되면 그 지명. 격자가 비었거나 다르면 말하지 않는다."""
+    for child in sorted(children_of.get(seq, ())):
+        grid = grids[child]
+        if not grid:
+            continue
+        anchors = {p: reviewed[p]["value"] for p in parents_of[child]
+                   if p != seq and p in reviewed and grids[p] == grid}
+        values = set(anchors.values())
+        if len(values) == 1:
+            return {"value": values.pop(), "child": child, "from": sorted(anchors)}
+    return None
 
 
 def build() -> dict:
@@ -312,6 +436,15 @@ def build() -> dict:
     manifest = read_manifest()
     canon_by_seq = {row["seq"]: row for row in canonical["datasets"]}
     aux_roles = {row["child"]: row["role"] for row in canonical.get("auxiliaryParents", [])}
+    reviewed = reviewed_regions(md)
+    seq_of_name = {plan["name"]: seq for seq, plan in manifest.items()}
+    parents_of = {seq: [seq_of_name[p] for p in manifest[seq]["parents"]] for seq in range(1, 29)}
+    children_of: dict[int, list[int]] = {}
+    for child, parents in parents_of.items():
+        for parent in parents:
+            children_of.setdefault(parent, []).append(child)
+    grids = {seq: sorted(manifest[seq]["grid_files"]) for seq in range(1, 29)}
+    region_lineage: dict[str, dict] = {}
 
     datasets = []
     rule_summary: dict[str, int] = {rule: 0 for rule in RULES}
@@ -339,6 +472,12 @@ def build() -> dict:
             facts[key] = value
             quote = reading.get("quotes", {}).get(key, reading["quote"])
             provenance[key] = f"정본전재 · {source['document']} seq {seq} 축자 「{quote}」"
+            if reading.get("notes", {}).get(key):
+                provenance[key] += f" · {reading['notes'][key]}"
+        if seq in reviewed:
+            facts["region"] = reviewed[seq]["value"]
+            provenance["region"] = reviewed[seq]["provenance"]
+        bbox = canonical_bbox(seq, canon, source)
 
         # 규칙 추론값은 **reviewed 사실에 섞지 않는다**(Ted 결정 1). 초안 칸으로 따로 담고
         # locator 에 규칙 ID 를 박아 승격·폐기 구조가 나중에 찾아올 수 있게 둔다.
@@ -349,22 +488,68 @@ def build() -> dict:
                    "directObservation": "direct-observation-from-level",
                    "interpolated": "interpolated-from-lineage",
                    "nativeResolutionM": "native-resolution-carried",
-                   "region": "region-from-registration-note"}
+                   "region": "region-from-registration-note",
+                   "cadence": "cadence-from-lineage-parent"}
         for key, value in reading["rules"].items():
             draft_facts[key] = value
             rule = rule_of[key]
             rule_summary[rule] += 1
             draft_provenance[key] = (f"규칙 · rule:{rule} · 읽은 정본 = "
                                      f"{source['document']} seq {seq}")
-        bbox_region = region_from_bbox(canon.get("bbox"))
-        if bbox_region and "region" not in draft_facts and "region" not in facts:
+            if key == "cadence":
+                # 부모 하나의 정본 주기(reviewed)와 같아야 한다 — 아니면 판독표가 어긋난 것이다.
+                parents = parents_of[seq]
+                parent_cadence = [READINGS[p]["facts"].get("cadence") for p in parents]
+                if len(parents) != 1 or parent_cadence != [value]:
+                    raise SystemExit(f"seq {seq}: 계보 주기 초안 {value!r} 가 부모 정본 주기 {parent_cadence} 와 다르다")
+                draft_provenance[key] = (f"규칙 · rule:{rule} · 읽은 정본 = plan-manifest.yaml parents · "
+                                         f"부모 seq {parents[0]}({value})")
+        # 지역 초안(2026-09-26 Ted 판정 「자료 지역 확정」 2·3·4) — 정본 지역이 없을 때만, 이 순서로
+        # 하나만 선다: 등록 note(판독표) → 계보 조상 → 계보 공동 입력 → bbox 보조.
+        lineage = sibling = None
+        if "region" not in facts and "region" not in draft_facts:
+            lineage = lineage_region(seq, parents_of, reviewed)
+            if lineage and "value" in lineage:
+                draft_facts["region"] = lineage["value"]
+                rule_summary["region-from-lineage-parent"] += 1
+                draft_provenance["region"] = (
+                    "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · "
+                    "조상 " + " · ".join(f"seq {p}({reviewed[p]['value']})" for p in lineage["from"]))
+        if "region" not in facts and "region" not in draft_facts and not lineage:
+            sibling = sibling_region(seq, parents_of, children_of, grids, reviewed)
+            if sibling:
+                draft_facts["region"] = sibling["value"]
+                rule_summary["region-from-lineage-sibling"] += 1
+                draft_provenance["region"] = (
+                    "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · "
+                    f"자식 seq {sibling['child']} 의 공동 입력 "
+                    + " · ".join(f"seq {p}({reviewed[p]['value']})" for p in sibling["from"])
+                    + " 과 같은 기준 격자")
+        bbox_region = region_from_bbox(bbox)
+        # bbox 보조는 reviewed 지역(타일 코드)과 **공존**한다 — 초안은 payload 에만 산다(결정 4 ㈎).
+        # 같은 키가 두 칸에 서면 draftConflictsWithReviewed 에 적어 승격이 조용히 덮지 못하게 한다.
+        if bbox_region and "region" not in draft_facts:
             draft_facts["region"] = bbox_region
             rule_summary["bbox-korea-peninsula"] += 1
             draft_provenance["region"] = (
                 "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = "
-                f"canonical-metadata.json#/datasets/{seq}/bbox {canon.get('bbox')}")
+                f"canonical-metadata.json#/datasets/{seq}/bbox w/s/e/n "
+                f"{bbox['west']}/{bbox['south']}/{bbox['east']}/{bbox['north']}")
+        region_lineage[str(seq)] = {
+            "reviewed": facts.get("region"),
+            "draft": draft_facts.get("region"),
+            "draftRule": (re.search(r"rule:([a-z-]+)", draft_provenance["region"])[1]
+                          if "region" in draft_facts else None),
+            "lineageConflict": (lineage or {}).get("conflict"),
+            "bbox": ([bbox[k] for k in ("west", "south", "east", "north")] if bbox else None),
+            "bboxInsideKoreaBox": (region_from_bbox(bbox) is not None) if bbox else None,
+            "draftCoexistsWithReviewed": "region" in facts and "region" in draft_facts,
+        }
 
-        text = (f"{source['description']}\n"
+        # 원문 스냅숏에 정본 지역·bbox 줄을 함께 싣는다 — reviewed region 이 그 줄에서 왔다.
+        spatial = "".join(f"{label}: {source[key]}\n" for key, label in
+                          (("region", "지역"), ("bbox", "공간범위(bbox)")) if source.get(key))
+        text = (f"{source['description']}\n{spatial}"
                 f"기간 근거: {canon['basis']} ({canon['start']} ~ {canon['end']}, "
                 f"{canon['granularity']} 단위)\n"
                 f"프로젝트: {plan.get('project')} · 레벨: {plan.get('level')} · "
@@ -381,6 +566,11 @@ def build() -> dict:
             "draftStatus": "draft",
             "draftFacts": draft_facts,
             "draftProvenance": draft_provenance,
+            # 같은 키가 reviewed 와 draft 에 함께 선 자리 — 승격하면 확정값을 **바꾼다**(명시 허가 필요).
+            "draftConflictsWithReviewed": [
+                {"key": key, "reviewed": facts[key], "draft": draft_facts[key],
+                 "rule": re.search(r"rule:([a-z-]+)", draft_provenance[key])[1]}
+                for key in sorted(set(draft_facts) & set(facts))],
             "source": {
                 "label": f"{source['document']} · seq {seq} {canon['name']}"[:200],
                 "locator": f"DATASETS.md#{source['document']}#seq-{seq}"[:300],
@@ -405,6 +595,7 @@ def build() -> dict:
         },
         "rules": RULES,
         "ruleSummary": rule_summary,
+        "regionTrace": region_lineage,
         "draftNote": ("규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). "
                       "d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 "
                       "reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 "

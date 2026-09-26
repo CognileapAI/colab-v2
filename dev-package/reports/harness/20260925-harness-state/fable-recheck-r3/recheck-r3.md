@@ -1,0 +1,13 @@
+### Q4
+VERDICT: REVISE
+- 최종 권고: 14일 · dry-run 기본 · 실제 삭제는 Ted 지시로만 — 유지. 추가 2건: ⑴ 종료 기록을 `handoff`(CLI `handoff` 통과 · `lifecycle_contract.py:564`·`:607`) 와 `closed`(SubagentStop/bridge stop 경로 `stop()` 통과 · `:350`·`:568`, 또는 메인 `lifecycle close`) 두 종류로 적고 prune 의 「닫힘」은 `closed` 만 센다 ⑵ `prune --apply` 를 Q5 의 git-guard subagent 규칙 1건에 같이 넣는다(`agent_id` 있는 호출 차단 · `git-guard.sh:105`·`:116`).
+- 반박 시도: ① 「14일 이 무의미(어차피 Ted 지시)」— dry-run 목록의 cutoff 는 필요 · 버팀. ② 「옛 task 204건은 종료 스키마가 없어 14일 규칙 대상 밖」— 사라진 checkout 규칙 + 첫 정리 별도 판정으로 커버 · 버팀. ③ 「Ted 지시로만 삭제」는 관례일 뿐 기계 강제 0 — `prune` 은 python 호출이라 git 규칙 밖 · 확인 사실 (1) 이 보여주듯 관례는 뚫린다 → ⑵ 로 서브에이전트만이라도 차단 · 무너짐(보강). ④ `stop()` 이 CLI handoff 에서도 호출되므로(`:607`) 「handoff 통과 = 닫힘」으로 두면 Q5 의 우회(아래)가 열린다 → ⑴ · 무너짐. ⑤ agent_id 정보 필드는 `:377` 대조와 무관 · `researcher-task.sh:8-10` 과 충돌 없음 · 버팀.
+- 바뀐 점: 종료 기록 2단화(⑴)는 Q5 ⓐ 의 「닫히지 않은 task」 정의를 위조 불가하게 만들기 위함 · ⑵ 는 비가역 삭제에 기계 뒷받침 1줄(PR 2 · 같은 규칙).
+- 위험: `closed` 가 hook 경로에서만 생기므로 Codex/bridge 의 stop 경로가 같은 필드를 쓰는지 spec 에서 고정해야 함 · 안 하면 Codex task 는 영구 「열림」.
+
+### Q5
+VERDICT: REVISE
+- 최종 권고: ⓐ 유지 + 2건 수정: ⑴ 거부 조건의 「닫히지 않은」 = `closed` 기록 없음(CLI `handoff` 통과만으로는 닫힘 아님) ⑵ SubagentStart 자동 begin 은 막지 않되 「경고만」 대신 같은 checkout 의 가장 오래된 열린 researcher task 의 baseline 을 상속해 연다(task.json `baseline_from=<task_id>` · `begin` 인자 1개 · `:210`).
+- 반박 시도: ① 재현 변형 「begin T1 → handoff T1(변경 없음 · 통과 · 종료 기록) → 편집 → begin T2 → read-only handoff T2」— 권고안 그대로면 T1 이 닫혀 T2 begin 통과 → 우회 재성립 · 무너짐 → ⑴. ② 「경고만」— 확인 사실 (2): SubagentStart 훅 평문 stdout 은 subagent 에 닿지 않고 `researcher-task.sh:13` 의 전제가 틀렸음 · 경고 수신자 0 · 그 사이 이전 researcher 의 미인계 변경이 자동 task baseline 에 흡수됨 · 무너짐 → ⑵(상속하면 새 researcher 의 H6 가 그 변경을 잡고 메인이 정리하게 됨 · spawn 은 안 막힘). ③ 「lifecycle close 메인 전용 규칙」— `stop` 도 CLI 로 직접 호출 가능(`:568`) 하므로 subagent 가 `stop` 을 위조해 자기 task 를 닫을 수 있음 → 규칙 패턴에 `stop` · `close` · `prune --apply` 를 함께 · 무너짐(보강). ④ 옛 task 제외 · agent_id 불필요 · ⓑ(문서만) 배제 — 재현됨이므로 ⓑ 는 기각 · 버팀. ⑤ Ted 기존 판정과 충돌: A2 ⓐ(PR 2) 선결 = L1 ⓐ + L8 스모크 — 본 수정은 L8 에 의존하지 않음 · 충돌 없음.
+- 바뀐 점: ⑴ 은 우회 변형 1건 차단(비용: `stop()` 에 source 플래그 1개) · ⑵ 는 「경고」의 수신자가 없다는 확인 사실에 맞춘 대체(비용: begin 에 baseline 참조 필드 1개 · 시험 1건 추가「열린 task 잔존 상태의 자동 begin → 잔존 변경 포함 read-only handoff 거부」).
+- 위험: ⑵ 는 인계 실패 task 가 남은 checkout 에서 후속 researcher 가 계속 red 를 받음 — 의도된 fail-closed 이나 거부 메시지에 출구(`lifecycle close <T_old>` 메인 실행)를 반드시 실음 · git-guard 규칙은 Bash `tool_input.command` 문자열 매칭이라 `python3 -c` · `bash -c` 래핑은 여전히 지나감(A1 tokenizer 범위 밖 · 잔여).

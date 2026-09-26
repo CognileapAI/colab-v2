@@ -1,0 +1,19 @@
+인계 사본의 「다음 = …」 줄은 낡았다. 그 줄은 2026-09-08 R-B 마감 때의 목록이고, 거기 적힌 ⑶ R-C intent 는 그 뒤 진행됐다. 이력에는 R-C-2 규약 개정(`f98d09de`)과 R-D 쪽 재리베이스·결정 번호 재발급(`88640e9b`, `daa6544a`)이 남아 있다. 저장소는 지금 하네스 개선 E0(eval gate) 회차에 있다.
+
+**인계 문서가 적은 다음 단계**
+- R-B 마감 뒤 ⑵ 배포 창 · ⑶ R-C intent · ⑷ `w9-dev-deploy-rebased` 처리
+
+**이력에서 확인한 사실**
+- 현재 브랜치는 `claude/harness-e0-eval-gate` 이고 최신 커밋은 `6645773` (2026-09-26)이다. 이 커밋은 9라운드 판정을 intent `dev-package/intent/2026-09-25-harness-improvement.md` 에 기록했다(Ted 원문 "e0 pr개시 전부 권고대로하자").
+  - ① E0 PR 을 develop 대상으로 게시하고, 병합은 Ted 가 한다.
+  - ④ S-auth intent 를 `/grill-me` 로 시작한다.
+  - ⑤ develop 의 `#175` 를 병합해 설정 해시가 `f25ce639` 에서 `5b84d899` 로 바뀌었으므로 회차를 1회 다시 잰다.
+  - ② T17 은 S-red 뒤 별도 소형 PR 로 한다.
+- PR 은 이미 열려 있다. `gh pr list` 로 보면 **#176 OPEN**(E0)이다.
+- 재측정은 시작됐지만 끝나지 않았다. `results/20260926-140939/` 는 아직 커밋되지 않았고, 안에는 `config-hash.json` 과 H01 결과만 있다.
+
+그래서 이력으로 본 다음 단계는 재측정 회차를 마치는 것이다. 회차를 마쳐 결과를 E0 브랜치에 커밋해야 PR #176 이 게이트 면제를 받고 Ted 가 병합할 수 있다. S-auth `/grill-me` 는 이와 병행한다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -12` · `git show 66457735` · `gh pr list --head claude/harness-e0-eval-gate` · 6645773
+- 다음 단계: PR #176(E0 → develop)의 설정 해시 `5b84d899` 재측정 1회를 마쳐 E0 브랜치에 커밋 → Ted 병합, 병행으로 S-auth intent `/grill-me` 시작

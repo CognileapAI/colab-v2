@@ -1,0 +1,179 @@
+{
+ "rule": "bbox-korea-peninsula",
+ "allowReplace": [
+  "bbox-korea-peninsula"
+ ],
+ "promoted_facts": 4,
+ "datasets": 4,
+ "files": 12,
+ "bodies": 12,
+ "unchanged": 0,
+ "reviewed_facts_before": 60,
+ "reviewed_facts_kept": 48,
+ "reviewed_facts_replaced": 12,
+ "promoted_added": 0,
+ "collisions": [],
+ "conflictsWithReviewed": [
+  {
+   "file_id": "01M39Y657QMQ68AB8BP5FJH9B5",
+   "seq": 21,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39Y657QMTMCW8AQHAFWJ1HD",
+   "seq": 21,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39Y657QPX1R0GBBBXAXEV4Z",
+   "seq": 21,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YCJN86PXDT2V6JA1G7KY1",
+   "seq": 22,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YCJN976Y343947N3N32FF",
+   "seq": 22,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YCJN9SN1CCB4RDAYW62N7",
+   "seq": 22,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YKTB2ABJKPVGXS2RHEKVZ",
+   "seq": 23,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YKTB2KHTS29VQCR9VZ3B3",
+   "seq": 23,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YKTB2KVFS4AHTF413MX1H",
+   "seq": 23,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T51SYB",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YQ5TM9QG6MJAA5WKSKFZE",
+   "seq": 24,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YQ5TMQADNVGBZA8QNKVCG",
+   "seq": 24,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  },
+  {
+   "file_id": "01M39YQ5TMTF932SAZ833QD9PF",
+   "seq": 24,
+   "conflicts": [
+    {
+     "key": "region",
+     "reviewed": "T52SCE",
+     "draft": "한반도",
+     "rule": "bbox-korea-peninsula",
+     "action": "replace"
+    }
+   ]
+  }
+ ],
+ "dropped": [],
+ "not_reviewed": 0,
+ "ok": true,
+ "contract_validated": 12,
+ "sent": 0
+}

@@ -8,6 +8,8 @@
 자료는 DEV 제품 DB 가 아니라 **게이트가 띄우는 일회용 postgres** 다. 28건의 이름·기간·주제는
 `dev-package/tools/dev-seed/canonical-metadata.json` · `plan-manifest.yaml` 전재이고,
 근거는 `dev-package/tools/generated/dataset-evidence-payloads.json`(생성물) 이 있을 때만 실린다.
+생성물 위에 **dev 에 반영된 승격 규칙**(`DEV_PROMOTED_RULES`)을 같은 함수로 겹쳐 싣는다 — 일회용 DB 가 dev 의
+reviewed 상태와 같은 모양이어야 오라클 등급이 dev 실상태를 말한다(2026-09-26 4회차 재채점).
 """
 from __future__ import annotations
 
@@ -25,6 +27,10 @@ TOOLS = REPO / "dev-package" / "tools"
 ORACLE_PATH = REPO / "eval" / "k4-search" / "practitioner-conditions.json"
 CANONICAL_PATH = TOOLS / "dev-seed" / "canonical-metadata.json"
 PAYLOAD_PATH = TOOLS / "generated" / "dataset-evidence-payloads.json"
+MEASURE_TOOL = REPO / "eval" / "k4-search" / "measure_draft_contribution.py"
+#: dev 에 reviewed 로 실린 승격 규칙 — `dev-package/intent/2026-09-21-evidence-promotion.md` 「판정 결과 — 1회차」
+#: 「dev 반영 완료 2026-09-25T23:52Z」(Ted 「전부 권고대로」). 승격 회차가 dev 에 반영될 때마다 여기에 더한다.
+DEV_PROMOTED_RULES = ("platform-from-instrument", "direct-observation-from-level", "native-resolution-carried")
 
 ORACLE = json.loads(ORACLE_PATH.read_text(encoding="utf-8"))
 CANONICAL = json.loads(CANONICAL_PATH.read_text(encoding="utf-8"))
@@ -82,9 +88,19 @@ def _apply_generated_evidence(sql) -> int:
         sys.path.insert(0, str(TOOLS))
     from dataset_evidence_apply import apply_payloads  # noqa: PLC0415
 
-    payloads = json.loads(PAYLOAD_PATH.read_text(encoding="utf-8"))
+    payloads = _dev_promoted(json.loads(PAYLOAD_PATH.read_text(encoding="utf-8")))
     report = apply_payloads(sql, payloads, reviewer_id=ACC_A_RES)
     return report["evidence"]
+
+
+def _dev_promoted(payloads):
+    """생성물에 dev 반영 승격 규칙을 겹친 사본 — 2·3회차 측정 입력(`input-payload.json`)과 같은 함수다."""
+    import importlib.util  # noqa: PLC0415
+
+    spec = importlib.util.spec_from_file_location("k4_measure_draft_for_oracle", MEASURE_TOOL)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.promote_payload(payloads, DEV_PROMOTED_RULES, "dev 반영 승격(1회차) — 조건 검색 오라클 일회용 DB")
 
 
 @pytest.fixture()
@@ -117,19 +133,20 @@ BLOCKED = [case["id"] for case in ORACLE["cases"] if case["mode"] in NO_CLAIM_MO
 
 
 def test_oracle_shape_is_the_one_ted_approved():
-    """2회차 집계 — 가능 3 · 부분 5 · blocked 3 · blocked_draft 3.
+    """4회차 집계(2026-09-26 재채점) — 가능 8 · 부분 3 · blocked 3 · blocked_draft 0.
 
-    1회차는 가능 8 · 부분 3 · blocked 3 이었다. 줄어든 자리는 **규칙 추론값을 초안으로 내린
-    것**이다(Ted 결정 1). platform·directObservation 으로 서 있던 probe 는 조건 검색이
-    reviewed 만 읽으므로 판정이 서지 않는다 — green 을 주장하지 않고 등급으로 드러낸다.
+    1회차는 가능 8 · 부분 3 · blocked 3 이었다. 2회차는 규칙 추론값을 초안으로 내려(Ted 결정 1)
+    가능 3 · 부분 5 · blocked 3 · blocked_draft 3 이었다. 그 규칙 셋(`DEV_PROMOTED_RULES`)이 1회차
+    승격으로 dev 에 reviewed 로 실렸으므로, 초안 때문에 내려간 5사례(blocked_draft 3 · partial 로 내린
+    PC-1-3 · PC-2-3)가 1회차 등급으로 돌아온다(intent `2026-09-26-cadence-range-predicate.md`).
     수가 바뀌면 판정이 바뀐 것이다.
     """
     modes = [case["mode"] for case in ORACLE["cases"]]
     assert len(modes) == 14
-    assert modes.count("full") == 3
-    assert modes.count("partial") == 5
+    assert modes.count("full") == 8
+    assert modes.count("partial") == 3
     assert modes.count("blocked") == 3
-    assert modes.count("blocked_draft") == 3
+    assert modes.count("blocked_draft") == 0
     for case in ORACLE["cases"]:
         if case["mode"] in NO_CLAIM_MODES:
             assert case["probes"] == [] and case["reason"].strip()
@@ -143,6 +160,30 @@ def test_blocked_cases_claim_nothing(case_id):
     case = CASES[case_id]
     assert case["mode"] in NO_CLAIM_MODES
     assert case["expectedCount"] is None
+
+
+def test_measure_only_probes_are_excluded_from_the_green_claim():
+    """되살린 1회차 probe(2026-09-26 Ted 「전부 권고대로」)는 **초안 값 측정 전용**이다.
+
+    `measureOnlyProbes` 는 초안 기여 측정기(`eval/k4-search/measure_draft_contribution.py`)의 공식
+    오라클이고, 이 파일의 조건 검색 판정(`case["probes"]` 만 돈다)에는 들어오지 않는다 — reviewed 만
+    읽는 조건 검색에 대고 green 을 주장하지 않는다. 사례의 mode·probe 수도 바꾸지 않는다.
+    """
+    restored = [(case["id"], probe) for case in ORACLE["cases"]
+                for probe in case.get("measureOnlyProbes", [])]
+    # 11 = 1회차 복원(2026-09-26 「전부 권고대로」) · +5 = 2회차 지역 「한반도」 region probe
+    # (Ted 판정 2026-09-26 「자료 지역 확정」 — PC-1-3·1-4·2-3·2-4·2-7) · −1 = 3회차 지역 포함 관계
+    # (intent `2026-09-26-region-containment-expansion.md`)로 reviewed 만으로 green 이 된 PC-1-4 「한반도 + 5분
+    # 주기」를 판정 probe 로 옮겼다. 나머지 4건은 seq 3·4·5 남한이 초안이라 measure_only 로 남는다.
+    # −11 = 4회차 재채점 — 1회차 복원 11건이 기대던 규칙(platform · directObservation · seq 3 해상도)이 dev 에
+    # 승격돼 reviewed 만으로 green 이라 판정 probe 로 옮겼다. 남는 4건은 지역 초안 대기다.
+    assert len(restored) == 4
+    assert "measure_only" in ORACLE["modes"]
+    for case_id, probe in restored:
+        case = CASES[case_id]
+        assert probe["mode"] == "measure_only" and probe["reason"] == "초안 값 측정 전용 · 정답 주장 아님"
+        assert case["mode"] != "measure_only"
+        assert probe not in case["probes"], f"{case_id} · {probe['name']} 가 green 판정 대상에 섞였다"
 
 
 def test_rule_inferred_facts_are_never_loaded_as_reviewed():
@@ -159,8 +200,14 @@ def test_rule_inferred_facts_are_never_loaded_as_reviewed():
     drafted = 0
     for row in payloads["datasets"]:
         assert row["status"] == "reviewed"
+        # 2026-09-26(PR #174 수정) — 확정값과 **공존**하는 초안은 draftConflictsWithReviewed 에 선언돼야
+        # 한다(타일 코드 reviewed region + bbox 초안 「한반도」). reviewed 값 자체는 정본전재 그대로다.
+        declared = {c["key"]: c for c in row.get("draftConflictsWithReviewed", [])}
         for key in row["draftFacts"]:
-            assert key not in row["facts"], f"{row['name']}: 규칙값 {key} 가 reviewed 에 섞였다"
+            if key in row["facts"]:
+                assert key in declared, f"{row['name']}: 규칙값 {key} 가 선언 없이 reviewed 와 겹친다"
+                assert declared[key]["reviewed"] == row["facts"][key]
+                assert declared[key]["draft"] == row["draftFacts"][key]
             locator = row["draftProvenance"][key]
             assert "rule:" in locator, f"{row['name']}: 초안 {key} 에 규칙 ID 가 없다"
             assert locator.split("rule:", 1)[1].split(" ", 1)[0] in rules

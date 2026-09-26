@@ -33,11 +33,14 @@ COLAB_AI_DB_URL=postgresql://…                      db/ai/tools/k2-coverage-ch
 | `versions/0005_k2b_concept_graph_seed.py` | 위 SQL 을 실행하는 리비전 |
 | `seed/practitioner_concept_nodes.sql` | **적재물.** 2026-09-18 결정 4·5 의 개념 6행(노드 5 · 엣지 1) → 노드 54 · 엣지 20. 멱등 |
 | `versions/0010_practitioner_concept_nodes.py` | 위 SQL 을 실행하는 리비전 (`0009` 뒤) |
-| `seed/k2b-graph-standard.tsv` | **완료 오라클의 기준.** 노드 54 · 엣지 20 전 행 + 근거 |
+| `seed/region_south_korea.sql` | **적재물.** 2026-09-26 자료 지역 확정 1 — 남한 노드(②) · 「남한 안에 있다 한반도」(⑥) · 별칭 남한·대한민국 → 노드 55 · 엣지 21. 멱등 |
+| `versions/0012_region_south_korea.py` | 위 SQL 을 실행하는 리비전 (`0011` 뒤) |
+| `seed/k2b-graph-standard.tsv` | **완료 오라클의 기준.** 노드 55 · 엣지 21 전 행 + 근거 |
 | `tools/k2b_graph_check.py` · `k2b-graph-check.sh` | 기준 ↔ 적재 **완전일치** 판정. 특히 `source_grade=6` 행이 Ted 승인 목록과 일치하는지 본다 |
 | `tools/k2b-graph-selftest.sh` | **판정기가 red 를 낼 수 있다는 증명** — 16 케이스. DB 없이 돈다 |
 | `tests/0004-0005-drift.sh` | 되돌리면 오라클이 red 를 낸다 + `schema.sql` = 마이그레이션 결과. docker + alembic 필요 |
 | `tests/0010-drift.sh` · `0010-assertions.sql` | 2026-09-18 결정 4·5 회차의 드리프트 오라클. 음성 대조 둘(0009 판에서 실패 · downgrade 가 6행을 되돌림) |
+| `tests/0012-drift.sh` · `0012-assertions.sql` | 2026-09-26 자료 지역 확정 1 의 드리프트 오라클. 음성 대조 둘(0011 판에서 실패 · downgrade 가 그래프·별칭 4행을 되돌림) |
 
 ```bash
 COLAB_AI_DB_CONTAINER=<컨테이너> db/ai/tools/k2b-graph-check.sh

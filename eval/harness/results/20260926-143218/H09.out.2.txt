@@ -1,0 +1,14 @@
+정보 격자의 바깥 컨테이너 선과 안쪽 칸 구분선이 같은 토큰 `--color-border`를 쓴다. 그래서 두 층이 갈리지 않고, 디자인 요구사항을 위반한다.
+
+| 역할 | 위치 | 선언 | 토큰 |
+|---|---|---|---|
+| 컨테이너 선 | `detail.css:59` | `.detail-page .infogrid { border: 1px solid var(--color-border); … }` | `--color-border` |
+| 칸 구분선 | `detail.css:62` | `.detail-page .infogrid .ig { … border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }` | `--color-border` |
+
+- **토큰 값:** `--color-border`는 `tokens.css:20`에서 `#e8ecf2`로 정의된다. 두 선의 색이 완전히 같다.
+- **좁은 화면:** 너비 720px 이하 구간의 `detail.css:69`도 칸 구분선에 같은 `--color-border`를 다시 쓴다. 이 구간에서도 두 층이 갈리지 않는다.
+- **이 CSS의 두 층 기준:** 표에서는 두 층이 나뉘어 있다. `catalog.css:41`·`:45`의 표 머리 선은 `--color-border-strong`(`#dfe3e8`)이고, `catalog.css:46`의 행 구분선은 `--color-border`다. 정보 격자에는 이 구분이 적용되지 않았다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

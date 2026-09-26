@@ -11,6 +11,12 @@
 #     0006_topic_vocab_six 로 이미 6값인데 그래프만 4개이던 비대칭을 없앤다.
 #   ⛔ 등급 6 노드는 그대로 0 건이고, 새 엣지는 등급 5 라 APPROVED_G6 9줄은 바뀌지 않는다.
 #
+# ⭑ <2026-09-26 · Ted 판정 「자료 지역 확정」 1 · intent/2026-09-21-evidence-promotion.md 판정 결과 — 2회차 지역>
+#   노드 54 -> 55 · 엣지 20 -> 21. 손으로 옮겨 적었다(적재물 = seed/region_south_korea.sql).
+#   축자 「㈎ 기상청 4건(seq 1·2·19·20)=남한, GK-2A(seq 6)=한반도, 남한⊂한반도 관계로 연결」.
+#   노드 p-south-korea 는 등급 2(정본 DATASETS.md 지역 줄) · 엣지는 등급 6(도메인 상식 — Ted 확인)이라
+#   APPROVED_G6 에 한 줄(2026-09-26 자료 지역 확정 1) 더해 10줄이다.
+#
 # 이 파일은 **기준**이고 db/ai/seed/k2b_concept_graph_seed.sql 은 **적재물**이다.
 # 둘을 일부러 갈라 두었다 — 기준을 적재물에서 생성하면 체크가 영원히 green 인 자동통과가 된다
 # (k2-coverage-standard.tsv 와 같은 이유).
@@ -60,7 +66,7 @@ node	t-lulc	주제	토지피복·LULC	1	t	상동
 node	t-drought	주제	가뭄	1	t	d9_topic_synonym CHECK 6값(0006_topic_vocab_six · Ted 판정 2026-09-06) · Ted 판정 2026-09-18 결정 5 「가뭄 파일포멧 예제 넣자. 데이터가 들어오면 검색이 되어야 한다」
 node	t-fileformat	주제	파일 포맷 예제	1	t	상동 — 같은 CHECK 6값의 나머지 하나. 새 주제 값을 만드는 것이 아니라 그래프를 사전에 맞춘다
 
-# ── 노드: 지명 8 ──────────────────────────────────────────────────────────────
+# ── 노드: 지명 9 (2026-09-26 +남한) ──────────────────────────────────────────────────────────────
 node	p-nakdong	지명	낙동강 유역	1	t	d9_place_alias 적재 · 목업 E-02
 node	p-han-upper	지명	한강 상류	1	t	d9_place_alias 적재 · 목업 제품
 node	p-geum-estuary	지명	금강 하굿둑	1	t	d9_place_alias 적재
@@ -69,6 +75,7 @@ node	p-chungcheong	지명	충청권	2	t	SEED-DATA §5.3 KWRA README · 126.70~12
 node	p-chungcheong-en	지명	southern Gyeonggi and Chungcheong regions	2	t	SEED-DATA §5.3 KWRA docx(영문)
 node	p-korea-peninsula	지명	한반도	2	t	SEED-DATA §5.3 「한반도 전역 — 852×1200 격자」 · 데이터셋 D-01 이름
 node	p-korea-en	지명	Korea	2	t	SEED-DATA §5.3 폴더명
+node	p-south-korea	지명	남한	2	t	정본 DATASETS.md seq 1·2·19·20 「지역: 남한」 · Ted 판정 2026-09-26 자료 지역 확정 1
 
 # ── 노드: 원천표기 13 (엔티티가 아니라 **표기 문자열**이다 — ㊸ 를 되살리지 않는다) ────────
 node	s-gk2a-hyphen	원천표기	GK-2A	2	t	SEED-DATA §5.4 「GK-2A(천리안위성2A호)」
@@ -114,3 +121,4 @@ edge	m-downscale	~의 한 가지다	m-regrid	6	Ted ✅ F-6 (2026-08-25). §D-4 [
 # E2-2(한강 상류 ⊂ 한강 유역, F-8)는 **F-10 ㈏ 가 「E2-2 는 넣지 않는다」로 닫아 시드에 없다.**
 # ⚠ 이 1행이 ㊸ · ONTOLOGY-SCOPE §2.4(유역 위계는 범위 밖)를 **부분적으로 되돌린다** — PLAN-SoT §9 기록.
 edge	p-chungcheong	안에 있다	p-korea-peninsula	3	SEED-DATA §5.3 실측 좌표가 D-01 한반도 852×1200 격자 범위 안이다 [E2-1]
+edge	p-south-korea	안에 있다	p-korea-peninsula	6	Ted 판정 2026-09-26 자료 지역 확정 1 「남한⊂한반도 관계로 연결」 [E2-2026-09-26]

@@ -37,10 +37,14 @@
 #      and it moves again when Claude runs `cd`. Read it when a hook needs the worktree path."
 #   ⇒ **스크립트 자리는 `$CLAUDE_PROJECT_DIR`(settings.json 의 등록줄), 작업 대상은 `cwd`.**
 #
-# ── stdout 의 행선지 (문서 인용) ──────────────────────────────────────────────
-#   "Unlike most hook events where plain-text stdout goes to the debug log only, `SessionStart`
-#    and `SubagentStart` hooks add plain-text stdout as context that Claude can see and act on"
+# ── stdout 의 행선지 ──────────────────────────────────────────────────────────
+#   종전 인용 「`SessionStart` and `SubagentStart` hooks add plain-text stdout as context」 은
+#   SubagentStart 에서 실측과 어긋났다(2026-09-26 · spec S-HARNESS-IMPROVEMENT-20260925 A7 — 2/2 발화 ·
+#   평문 도달 0). 그래서 요약을 평문으로 모은 뒤 끝에서 `hookSpecificOutput.additionalContext` JSON 1줄
+#   (hookEventName `SubagentStart`)로 낸다. python3 가 없으면 평문 그대로(도달 0 · debug log).
 #   ⇒ 요약은 **한 화면**을 넘기지 않는다. 여기 적히는 줄은 레인의 컨텍스트를 먹는다.
+#   ⚠ payload `cwd` 의 toplevel 이 `$CLAUDE_PROJECT_DIR` 의 toplevel 과 같으면 「격리 아님」 권고 1줄을
+#     싣는다(차단 아님 — 레인이 부모 checkout 에서 뜬 경우).
 set -uo pipefail
 
 t0=$(date +%s)
@@ -66,9 +70,18 @@ WT="$(hook_field cwd)"
 AGENT="$(hook_field agent_type)"
 [ -n "$WT" ] || WT="$PWD"
 
+# 본문 = 평문. main 의 stdout 을 모아 끝에서 additionalContext JSON 1줄로 낸다(안쪽 exit 0 은 서브셸 종료).
+main() {
 echo "── worktree-setup (H2) ──────────────────────────────────────"
 echo "  워크트리 : $WT"
 echo "  에이전트 : ${AGENT:-(미상)}"
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+  wt_top="$(git -C "$WT" rev-parse --show-toplevel 2>/dev/null || true)"
+  session_top="$(git -C "$CLAUDE_PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -n "$wt_top" ] && [ "$wt_top" = "$session_top" ]; then
+    echo "  ⚠ 격리 아님 — payload cwd 의 toplevel 이 세션 checkout(\$CLAUDE_PROJECT_DIR)과 같다. 구현하지 말고 오케스트레이터에 보고"
+  fi
+fi
 
 if [ ! -d "$WT" ] || [ ! -f "$WT/gates/run.sh" ]; then
   echo "  건너뜀 — CoLAB v2 체크아웃이 아니다(gates/run.sh 부재). env 를 세우지 않았다."
@@ -265,4 +278,15 @@ else
   rm -rf "$LOGDIR"
 fi
 echo "─────────────────────────────────────────────────────────────"
+exit 0
+}
+
+CONTEXT="$(main)"
+[ -n "$CONTEXT" ] || exit 0
+if command -v python3 >/dev/null 2>&1; then
+  printf '%s' "$CONTEXT" | python3 -c 'import json,sys; print(json.dumps({"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":sys.stdin.read()}}, ensure_ascii=False))' \
+    || printf '%s\n' "$CONTEXT"
+else
+  printf '%s\n' "$CONTEXT"
+fi
 exit 0

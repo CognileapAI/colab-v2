@@ -117,8 +117,9 @@ eval/harness/H<번호>-<이름>/
 
 ## 결과
 
-`eval/harness/results/<YYYYMMDD-HHMMSS>/` — 러너가 회차마다 **다섯 종**을 쓴다:
-`summary.md`(과제별 판정·초·USD 표 ＋ 요약줄) · `H??.out.{1,2}.txt`(응답 본문) ·
+`eval/harness/results/<YYYYMMDD-HHMMSS>/` — 러너가 회차마다 **여섯 종**을 쓴다:
+`summary.md`(과제별 판정·초·USD 표 ＋ 요약줄 ＋ 「설정 해시」 줄) · `config-hash.json`(이 회차를 잰 설정 해시 ·
+아래 「설정 해시 · 면제 조건」) · `H??.out.{1,2}.txt`(응답 본문) ·
 `H??.expect.{1,2}.txt`(`expect.sh` 의 판정 출력 — red 사유가 여기 있다 · `run.sh:190`) ·
 `H??.raw.{1,2}.json`(응답 원문) · `H??.err.{1,2}.txt`(표준오류).
 회차 이름은 **초 단위**다(⟨증보 2026-09-08⟩ 종전 ~~`<YYYYMMDD-HHMM>`~~ — 같은 분에 두 번 돌리면 앞 회차를 덮었다).
@@ -128,23 +129,46 @@ eval/harness/H<번호>-<이름>/
 넘어 남아야 하고, `eval/` 의 선례도 실측 산출을 추적한다
 (`s2b-alayer/baseline.json` · `s2b-alayer-g2/baseline-g2.json`).
 
-⭑ ⟨확정 2026-09-08 · WU-D6 · advisor ② 요구⟩ **추적하는 것은 다섯 중 셋이다** —
-`summary.md` · `H??.out.{1,2}.txt` · `H??.expect.{1,2}.txt`. 나머지 둘은 `results/.gitignore` 가 뺀다.
-／ 종전 ~~「이 폴더는 커밋한다(`.gitignore` 에 넣지 않는다)」~~ — 부분집합을 적지 않아 다섯 종 전부가
-추적 대상으로 읽혔다.
+⭑ ⟨갱신 2026-09-26 · E0⟩ **추적하는 것은 여섯 종 중 넷이다** —
+`summary.md` · `config-hash.json` · `H??.out.{1,2}.txt` · `H??.expect.{1,2}.txt`. 나머지 둘은 `results/.gitignore` 가 뺀다.
+／ 종전 ⟨확정 2026-09-08 · WU-D6⟩ 추적 3종(`config-hash.json` 이전) · 그 전 ~~「이 폴더는 커밋한다(`.gitignore` 에
+넣지 않는다)」~~ — 부분집합을 적지 않아 전 종이 추적 대상으로 읽혔다.
 
 | 종 | 추적 | 왜 |
 |---|---|---|
 | `summary.md` | **한다** | 승격 판정의 정본. 판정·초·USD 가 한 표에 있다 |
+| `config-hash.json` | **한다** | 「어느 설정에서 잰 결과인가」. 게이트 면제 분기가 현재 설정 해시와 대조한다 · `.gitignore` 제외 패턴에 걸리지 않아 자동 추적 |
 | `H??.out.{1,2}.txt` | **한다** | 「무엇을 답했는가」. 회귀를 읽는 자리 |
 | `H??.expect.{1,2}.txt` | **한다** | 「왜 red 였는가」. 불안정 과제의 판독 근거 |
 | `H??.raw.{1,2}.json` | 안 한다 | 본문이 `out` 과 중복 · `session_id`·`uuid` 가 회차마다 바뀌어 diff 만 늘린다. 비용·초는 `summary.md` 에 있다 |
 | `H??.err.{1,2}.txt` | 안 한다 | 성공 회차에서 빈 파일 · 실패 회차 내용은 `summary.md` 「사유」 칸에 인용된다 |
 
+## 설정 해시 · 면제 조건
+
+결과가 **어느 설정에서 잰 것인가**를 기계가 대조한다(spec `dev-package/prd/specs/S-HARNESS-E0-EVAL-GATE-20260926.md` §4.1 · §4.3).
+
+- **정본** = `eval/harness/config-paths.txt` 한 파일 — `AGENTS.md` · `CLAUDE.md` · `.claude/**` · `.agents/**` ·
+  `gates/**` · `scripts/harness/hooks/**` · `eval/harness/**`(`results/**` 제외) · 자기 자신. 계산기 = `eval/harness/config_hash.py`.
+  러너 · 게이트 · `gates/tools/ci-filter-check.py`(CI `harness` 필터 ⊇ 정본) 가 같은 파일을 읽는다.
+- **계산** — 파일 집합 = `git ls-files --cached --others --exclude-standard`(추적 + 비무시 미추적) · 파일마다
+  blob sha1(= `git hash-object`) · symlink 는 링크 텍스트(대상이 집합 밖 파일이면 대상 본문 포함) · 깨진 링크 `missing` ·
+  정렬된 `path\0sha\n` 의 sha256. **내용 기준**이라 dirty 로 잰 편집을 그대로 커밋하면 같은 해시다.
+  `config-hash.json` = `hash` · `files` · `head` · `dirty` · `selected` · `patterns_sha256` · `claude_version` · `computed_at`.
+- **면제 판정**(`COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` · `config_hash.py verify`) —
+  현재 해시와 일치하는 전수 결과(`selected == all` · 요약줄 `준비 0` · 과제 행 수 == 과제 N) 없음·입력 손상 = **78**
+  (`missing=eval-result:<hash>`) · 회귀 = **1** · 일치 ＋ 무회귀 = **0**(run id · `hash(head)=hash(회차)` 출력).
+- **회귀 규칙** — 일치 결과 중 id 최대 = R\*. 직전 = R\* 보다 id 가 작고 `summary.md` 가 있는 최신 전수 결과(해시 없는 옛
+  결과 포함 · 선택 실행 제외). `green(직전) − green(R*) ≠ ∅` 이면 1(과제 이름 나열). 직전이 없으면 회귀 기준이 없다(0).
+- **회차 무효화** — 회차는 병합 직전 head 에서 1회. 그 뒤 해시 집합 파일을 push 하면 게이트가 78 로 돌아간다.
+  base(develop) 병합이 집합 파일을 건드리지 않으면 해시 불변 · 건드리면 재실측(≈32 USD). CI 는 머지 커밋 트리에서 계산한다.
+- **30일 경고** — 러너는 모델을 지정하지 않아 모델·CLI 가 저장소 diff 없이 바뀐다. `harness-contract`
+  (`scripts/harness/check.py`)가 최신 결과 id 가 30일보다 오래되면 `warning: harness-eval newest result <id> is <n> days old (>30)`
+  1줄을 낸다(exit 불변 · 신호) · green 줄에 `harness-eval newest <id> (<n>d)` · 결과 디렉터리 0건 = 78.
+
 ## 시험
 
 ```bash
-bash eval/harness/tests/run-selftest.sh    # 7/7 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
+bash eval/harness/tests/run-selftest.sh    # 17/17 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
 ```
 
 ## 자리
@@ -153,4 +177,4 @@ bash eval/harness/tests/run-selftest.sh    # 7/7 · 실제 모델 호출 0회(cl
 |---|---|
 | 로스터 20건(과제 정의 정본) | `dev-package/intent/2026-09-08-harness-evals.md` |
 | 요구 정본 | `dev-package/prd/specs/R-D.md` · 실행 뷰 `dev-package/prd/rounds/R-D-2-harness-eval.md` |
-| 게이트 승격 | `harness-eval` — 3회 연속 2/2 green 뒤(WU-D7) |
+| 게이트 승격 | `harness-eval` — 3회 연속 2/2 green 뒤(WU-D7) · 면제 조건은 이미 설정 해시에 결합(위 「설정 해시 · 면제 조건」) |

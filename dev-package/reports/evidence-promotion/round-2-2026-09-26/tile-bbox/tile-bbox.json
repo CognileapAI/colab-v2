@@ -1,0 +1,239 @@
+{
+  "schema": "colab-tile-bbox/1",
+  "koreaBox": {
+    "latMin": 33.0,
+    "latMax": 39.0,
+    "lonMin": 124.0,
+    "lonMax": 132.0
+  },
+  "tiles": [
+    {
+      "tile": "T51SYB",
+      "kind": "MGRS/Sentinel-2(HLS)",
+      "utm": {
+        "zone": 51,
+        "band": "S",
+        "E0": 700000,
+        "N0": 4100000
+      },
+      "method": "MGRS 손 유도(E0·N0) → S2 타일 109.8 km(북서 모서리 원점) → pyproj EPSG:326zz→4326 · 가장자리 1 km 표본",
+      "bbox": {
+        "west": 125.2458,
+        "south": 36.907,
+        "east": 126.523,
+        "north": 37.9256
+      },
+      "corners": {
+        "SW": [
+          125.2458,
+          36.9366
+        ],
+        "SE": [
+          126.477,
+          36.907
+        ],
+        "NE": [
+          126.523,
+          37.8948
+        ],
+        "NW": [
+          125.2755,
+          37.9256
+        ]
+      },
+      "mgrsSquare100km": {
+        "west": 125.2484,
+        "south": 36.9983,
+        "east": 126.4117,
+        "north": 37.9256
+      },
+      "crossCheckMgrsPackage": {
+        "swOrigin_mgrs": [
+          125.248369,
+          37.024915
+        ],
+        "swOrigin_hand": [
+          125.248369,
+          37.024915
+        ],
+        "deltaDeg": 0.0
+      },
+      "crossCheckGridFile": {
+        "west": 125.2455,
+        "south": 36.9071,
+        "east": 126.5224,
+        "north": 37.9255,
+        "shape": [
+          3660,
+          3660
+        ]
+      },
+      "insideKoreaBox": true,
+      "square100kmInsideKoreaBox": true
+    },
+    {
+      "tile": "T52SCE",
+      "kind": "MGRS/Sentinel-2(HLS)",
+      "utm": {
+        "zone": 52,
+        "band": "S",
+        "E0": 300000,
+        "N0": 3900000
+      },
+      "method": "MGRS 손 유도(E0·N0) → S2 타일 109.8 km(북서 모서리 원점) → pyproj EPSG:326zz→4326 · 가장자리 1 km 표본",
+      "bbox": {
+        "west": 126.7776,
+        "south": 35.1348,
+        "east": 128.0097,
+        "north": 36.1405
+      },
+      "corners": {
+        "SW": [
+          126.8048,
+          35.1348
+        ],
+        "SE": [
+          128.0097,
+          35.1507
+        ],
+        "NE": [
+          127.9974,
+          36.1405
+        ],
+        "NW": [
+          126.7776,
+          36.1241
+        ]
+      },
+      "mgrsSquare100km": {
+        "west": 126.7776,
+        "south": 35.2231,
+        "east": 127.901,
+        "north": 36.1396
+      },
+      "crossCheckMgrsPackage": {
+        "swOrigin_mgrs": [
+          126.802458,
+          35.223125
+        ],
+        "swOrigin_hand": [
+          126.802458,
+          35.223125
+        ],
+        "deltaDeg": 0.0
+      },
+      "crossCheckGridFile": {
+        "west": 126.7778,
+        "south": 35.1351,
+        "east": 128.0096,
+        "north": 36.1406,
+        "shape": [
+          3660,
+          3660
+        ]
+      },
+      "insideKoreaBox": true,
+      "square100kmInsideKoreaBox": true
+    },
+    {
+      "tile": "h27v05",
+      "kind": "MODIS sinusoidal",
+      "method": "R=6371007.181 · T=1111950.5197665233 · 네 변 각 2400 표본 · 위도=y/R · 경도=x/(R·cos 위도)",
+      "bbox": {
+        "west": 103.923,
+        "south": 30.0,
+        "east": 130.5407,
+        "north": 40.0
+      },
+      "corners": {
+        "SW": [
+          103.923,
+          30.0
+        ],
+        "SE": [
+          115.4701,
+          30.0
+        ],
+        "NE": [
+          130.5407,
+          40.0
+        ],
+        "NW": [
+          117.4867,
+          40.0
+        ]
+      },
+      "sinusoidal_m": {
+        "x0": 10007554.679696131,
+        "x1": 11119505.199462654,
+        "y0": 3335851.558400859,
+        "y1": 4447802.078167383
+      },
+      "crossCheckHandLatitude": {
+        "south": 30.0,
+        "north": 40.0
+      },
+      "crossCheckGridFile": {
+        "west": 103.9276,
+        "south": 30.0021,
+        "east": 130.534,
+        "north": 39.9979,
+        "shape": [
+          2400,
+          2400
+        ]
+      },
+      "insideKoreaBox": false
+    },
+    {
+      "tile": "h28v05",
+      "kind": "MODIS sinusoidal",
+      "method": "R=6371007.181 · T=1111950.5197665233 · 네 변 각 2400 표본 · 위도=y/R · 경도=x/(R·cos 위도)",
+      "bbox": {
+        "west": 115.4701,
+        "south": 30.0,
+        "east": 143.5948,
+        "north": 40.0
+      },
+      "corners": {
+        "SW": [
+          115.4701,
+          30.0
+        ],
+        "SE": [
+          127.0171,
+          30.0
+        ],
+        "NE": [
+          143.5948,
+          40.0
+        ],
+        "NW": [
+          130.5407,
+          40.0
+        ]
+      },
+      "sinusoidal_m": {
+        "x0": 11119505.199462652,
+        "x1": 12231455.719229175,
+        "y0": 3335851.558400859,
+        "y1": 4447802.078167383
+      },
+      "crossCheckHandLatitude": {
+        "south": 30.0,
+        "north": 40.0
+      },
+      "crossCheckGridFile": {
+        "west": 115.4749,
+        "south": 30.0021,
+        "east": 143.5877,
+        "north": 39.9979,
+        "shape": [
+          2400,
+          2400
+        ]
+      },
+      "insideKoreaBox": false
+    }
+  ]
+}

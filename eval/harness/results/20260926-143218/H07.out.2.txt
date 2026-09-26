@@ -1,0 +1,17 @@
+`lineageGraph.css` has 13 `font-size` declarations below 13px. I removed the comments and counted the rest with a script, which gave 13. Reading the file by eye gave the same list. There are no `font-size` values inside comments and no `font:` shorthand anywhere in the file.
+
+| Value | Count | Lines |
+|---|---|---|
+| 10px | 5 | `:31` `:72` `:82` `:83` `:85` |
+| 10.5px | 1 | `:44` |
+| 11px | 5 | `:10` `:14` `:58` `:81` `:95` |
+| 12px | 1 | `:76` |
+| 12.5px | 1 | `:45` |
+
+- **Decimals:** the 10.5px and 12.5px lines are included. Counting whole numbers only would give 11.
+- **Not included:** three lines use design tokens instead of a pixel value: `var(--text-h2)` at `:9`, `var(--text-h3)` at `:92` and `var(--text-body-sm)` at `:93`. Their sizes are defined outside this file, so I couldn't check them here. Of the three, `--text-body-sm` is the one that could be under 13px.
+- `SOURCE.md` in this folder lists the same 13 lines and the same 10px minimum.
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

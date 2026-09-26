@@ -6,6 +6,8 @@ parameters; a cap is reported by the application and never presented as a total.
 from sqlalchemy import text
 import json
 import re
+from ..kernel.cadence_scope import cadences_within
+from ..kernel.region_scope import region_scope
 from ..kernel.search_semantics import SEMANTICS
 
 LIMIT = 200
@@ -23,7 +25,7 @@ def _percentage(value):
     return float(value)
 
 
-def candidates(session, conditions, *, verified_ids=None):
+def candidates(session, conditions, *, verified_ids=None, expand_region=True):
     where = ['d.deleted_at IS NULL']
     params = {'limit':LIMIT+1}
     if verified_ids is not None:
@@ -54,9 +56,15 @@ def candidates(session, conditions, *, verified_ids=None):
             params.pop(arg)
             continue
         if key in ('variable','region'):
-            facet = 'variables' if key=='variable' else 'regions'
-            aliases = [value,*SEMANTICS[facet].get(value,[])]
-            params[arg] = json.dumps([re.sub(r'[\s_\-]+','',v).casefold() for v in aliases])
+            if key == 'region':
+                # 의미 식별자 + 별칭 + 직계 하위 한 단계(`kernel/region_scope.py`). reference_match 는
+                # 기준 파일 지역 그대로라 넓히지 않는다(expand_region=False). 초안은 아래 EXISTS 가
+                # status='reviewed' 만 읽으므로 확장 대상이 아니다.
+                labels = list(region_scope(value, expand=expand_region))
+            else:
+                aliases = [value,*SEMANTICS['variables'].get(value,[])]
+                labels = [re.sub(r'[\s_\-]+','',v).casefold() for v in aliases]
+            params[arg] = json.dumps(labels)
             file_checks.append(f"regexp_replace(lower(e.facts->>'{key}'),'[[:space:]_-]+','','g') IN (SELECT jsonb_array_elements_text(CAST(:{arg} AS jsonb)))")
         elif key == 'format':
             file_checks.append(f"lower(coalesce(e.facts->>'format',substring(f.file_name from '[^.]+$')))=:{arg}")
@@ -65,6 +73,12 @@ def candidates(session, conditions, *, verified_ids=None):
             params.pop(arg)
         elif key == 'maxResolutionM':
             file_checks.append(f"CASE WHEN jsonb_typeof(e.facts->'nativeResolutionM')='number' THEN (e.facts->>'nativeResolutionM')::numeric <= :{arg} ELSE false END")
+        elif key == 'maxCadenceSeconds':
+            # 주기 상한 — 커널(`kernel/cadence_scope.py`)이 상한 이하의 주기 값 목록을 낸다. 표 밖 값·수·빈
+            # 값은 목록에 없어 맞지 않는다(unknown 은 supported 가 아니다). 상한은 양의 유한 초여야 한다.
+            params[arg] = json.dumps(cadences_within(value))
+            file_checks.append(f"jsonb_typeof(e.facts->'cadence')='string' AND e.facts->>'cadence' IN "
+                               f"(SELECT jsonb_array_elements_text(CAST(:{arg} AS jsonb)))")
         elif key == 'coverageYear':
             params[arg] = str(value)
             file_checks.append(f"e.facts->'period'->>'start' <= :{arg} || '-12-31' AND e.facts->'period'->>'end' >= :{arg} || '-01-01'")

@@ -1,0 +1,12 @@
+### Q8
+VERDICT: KEEP
+- 최종 권고: ⓐ — selftest 에 넣지 않음 · `check_gate_parallelism` fixture 시험 4종 · 역할 문서 1줄. 단, 조건 2개를 완료 기준에 붙인다 — ① B4 로 옮기는 `agent-bridge` gate 는 ci-required 에서 paths-filter 없이 무조건 실행(또는 filter 에 `scripts/harness/**`·`scripts/tests/**` 포함) ② intent `:22`(「`harness-contract-selftest` 가 lifecycle 시험을 돈다」)·`:304`·`:305` 를 ⓐ 문구로 정정.
+- 반박 시도: `gates/run.sh:308`–`316` — `agent-bridge` gate 만 `test_harness_lifecycle_contract.py`·`test_task_runtime.py` 를 돌리고 selftest 는 5파일. `.github/workflows/agent-bridge.yml:50`·`:61`–`:62` 는 `agent-bridge.py check`·`harness-contract-selftest`·`harness-contract` 만 부르고 `run.sh agent-bridge` 호출이 없다 → 현재 lifecycle 60 시험은 CI 어디서도 돌지 않는다(ci.yml `agent-bridge` 매치는 `:128` paths-filter 항목뿐). 이 공백은 ⓑ(selftest 추가)로도 막히지만 B4 결정(agent-bridge gate → ci-required)이 같은 공백을 막는다. ⓑ 의 실비용은 CI 시간이 아니라 시험 선택자 2곳 중복 — `ci.yml:459`–`460` 「선택자가 두 곳에 적히면 갈리고 갈린 쪽이 조용히 이긴다」 원칙과 충돌. 결과: ⓑ 무너짐, ⓐ 버팀. 다만 ⓐ 는 intent `:22` 그룹 L 완료기준 원문과 어긋나므로 정정 필요.
+- 위험: B4 구현 시 `agent-bridge` gate 가 paths-filter 뒤에 놓이면 lifecycle 코드 변경 PR 이 CI 를 통과하고, 로컬 lane 은 selftest 만 선언해 green — 공백이 그대로 남는다.
+
+### Q9
+VERDICT: REVISE
+- 최종 권고: ⓐ 유지하되 재현 설계를 바꾼다 — 실제 측정 회차가 아니라 사소한 과제(예: `run.sh no-such-gate` rc 보고)로 ① advisor+schema ② measurement-lane+schema ③ measurement-lane+schema 에 scratch agent 정의(`tools:` allowlist 제거 또는 결과 도구 추가) 3회 실행 · 각 run 의 StructuredOutput 호출 여부·도구 호출 수·종료 사유 기록 · 현행 우회(`VERDICT:` 텍스트)는 지금 `colab-v2-work` 에 1줄.
+- 반박 시도: `.claude/agents/measurement-lane.md:6` `tools: Bash, Read`(allowlist) ↔ `.claude/agents/advisor.md:6` `disallowedTools: Edit, Write, NotebookEdit`(denylist) — 두 역할의 실패 원인이 다를 수밖에 없다(measurement-lane: allowlist 가 결과 도구를 가림 / advisor: allowlist 없음 → maxTurns 12 소진이 유력, 현재 16). 「재현 2회」(역할당 1회)는 실패 재현만 하고 원인 판별은 못 한다 — 원인 판별엔 measurement-lane 의 allowlist 유무 차등 run 이 필요. 메모리 `workflow-advisor-model-and-schema.md:9` 는 「잦다」(3회)이지 항상이 아니므로 실측 회차 1회는 비용 대비 표본이 약하다 → 사소 과제로 회수 늘리는 편이 싸다. ⓑ(재현 없이 문서화)는 intent `:313` 완료 기준(재현 결과 기록)과 충돌 → 무너짐. 근거 문서 한계: `workflow-authoring` 스킬의 schema/allowlist 상호작용 원문은 이번에 조회 실패(glob 오류)로 미확인.
+- 바뀐 점: 재현 2회 → 사소 과제 3회(차등 run 추가). 이유 — 2회로는 measurement-lane 의 allowlist 가설을 확정·기각할 수 없고, 실측 회차 재현은 게이트 전수 실행 비용을 낸다.
+- 위험: 사소 과제 재현이 통과해도 긴 실측 회차(maxTurns 60 근접)에서만 나는 실패는 못 잡는다 — 그 경우 우회 문서화만 남기고 다음 실제 회차에서 1회 추가 관측.

@@ -42,7 +42,11 @@ def test_selected_file_concept_reaches_real_search_and_revoked_body_disappears(s
     response=search(client,TOKEN_PROF)
     assert response.status_code==200,response.text
     hit=next((i for i in response.json()['items'] if i['datasetId']==sources[0]),None)
-    assert hit is not None and '온톨로지' in hit['rationale'] and '강수' in hit['rationale'],response.json()
+    # 「관련 개념」 항목이 이유를 말하고, 내부 기법 이름(온톨로지)은 화면 문구에 쓰지 않는다
+    # (intent `2026-09-25-search-rationale-separation.md` Q7).
+    assert hit is not None and '온톨로지' not in hit['rationale'] and '강수' in hit['rationale'],response.json()
+    concept=[f for f in hit['rationaleFacts'] if f['kind']=='concept']
+    assert concept and any('강수' in i for i in concept[0]['items']),hit['rationaleFacts']
     # ⭑ **⟨2026-09-18 · 어드바이저 지적⟩ 이 시험의 `TOKEN_B` 음성은 「회수」의 증거가 아니다.**
     #   실측으로 확인했다 — **잠그기 전에도** `TOKEN_B` 의 검색 결과는 빈 집합이다. `sources` 는
     #   A 연구실 자료이고 `TOKEN_B` 는 B 연구실 교수라 **연구실 경계**가 먼저 지운다.

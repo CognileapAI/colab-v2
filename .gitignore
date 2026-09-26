@@ -52,6 +52,9 @@ dev-package/reports/dev-reseed-runs/
 
 # 워크트리는 레포에 들어가지 않는다 — git add -A 가 gitlink 로 집어넣는다
 .claude/worktrees/
+# 개인 설정·도구 잠금 — 메인 checkout 에만 있는 비추적 파일이 eval 설정 해시(.claude/**)를 갈라놓지 않게 한다
+.claude/settings.local.json
+.claude/.headroom_wrap_settings.lock
 /.codex/worktrees/
 /.codex/upload-preview-audit/
 /.codex/artifacts/

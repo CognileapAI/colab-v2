@@ -1,0 +1,14 @@
+지적은 v2 코드에 해당하지 않습니다. 이 `lineage.css` 사본의 후보 목록 규칙에는 행을 흐리게 만드는 선언이 없습니다.
+
+- **후보 목록 규칙은 두 개입니다.**
+  - `.lin-picker` (`lineage.css:105-108`): `border-top`과 `padding-top`만 있습니다.
+  - `.lin-picker ul` (`lineage.css:109-117`): `list-style`·`margin`·`padding`·`display`·`flex-direction`·`gap`·`align-items`만 있습니다.
+- **흐림 선언은 파일 전체에서 0건입니다.** `opacity`·`filter`·`blur`·`disabled`·`grayscale`·`saturate`·`brightness`·`mix-blend`·`rgba`·`hsla`·`transparent`를 대소문자 구분 없이 검색했고, 일치하는 줄이 하나도 없었습니다.
+- **연결 불가 후보를 따로 꾸미는 규칙도 없습니다.** 비활성 행을 가리키는 선택자가 파일에 없고, `.lin-picker` 계열에는 `color` 선언도 없습니다.
+- 2.33:1이라는 대비 수치는 이 CSS 파일로는 나올 근거가 없습니다. 목업 쪽 스타일에서 나온 지적으로 보입니다.
+
+같은 디렉터리의 `SOURCE.md`에 정답이 적혀 있지만, 그 파일을 근거로 삼지 않았습니다. 판정은 `lineage.css`를 직접 검색한 결과만으로 했습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `lineage.css`의 `.lin-picker`(105-108행)와 `.lin-picker ul`(109-117행)을 읽었고, 파일 전체에서 흐림 관련 키워드 11종 검색이 0건

@@ -223,3 +223,27 @@ services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 현재 helper 43건과 실제 core-api 공개 API를 통한 골든 12문항을 검사한다. DB는 일회용이며, 질문 해석은 고정 응답을 사용한다. Sonnet 호출·모델 품질 평가·배포 환경 데이터 변경은 하지 않는다.
 
 문항 보강은 `golden-cases.json`에서 질문·필수 결과·빈 결과 기대를 수정하고, 대응하는 고정 해석을 `eval/k4-search/fixtures/reference/expanded-normalized-02.json`의 `expansion.responses`에 같은 ID와 순서로 반영한다. 사례 수는 늘릴 수 있다. 빈 입력, ID/순서 불일치, 시험 실패는 실패로 처리한다.
+
+## 초안 사실 기여 측정 (intent `2026-09-21-evidence-promotion`)
+
+규칙 추론 초안(payload `draftFacts` 110칸)을 일회용 DB 의 reviewed 사실에 한 트랜잭션 안에서 겹쳐 쓰고, 규칙 단위·사실 단위로 하나씩 빼며 경로 1(`d3_client_search.candidates`)·경로 2(`search_evidence_conditions` → `search_datasets`)를 따로 잰 뒤 rollback 한다. 경로 2 해석은 `interpret-fixture.json`(규칙 기반 녹화 — LLM 녹화는 후속 단계)으로 고정하고 모델을 부르지 않는다. heldout 은 사후 확인 열이며 제안에 쓰지 않는다. 경로 1 오라클은 `practitioner-conditions.json` 의 `probes` 와 `measureOnlyProbes`(2회차가 거두거나 바꾼 1회차 probe · 초안 값 측정 전용 · 정답 주장 아님 · 2026-09-26 Ted 「전부 권고대로」)다 — 조건 검색 pytest 는 measure_only 를 green 으로 세지 않는다.
+
+```bash
+CONTAINER=<일회용 컨테이너> DB=colab_platform bash services/core-api/tests/fixtures/setup-db.sh   # 앱 롤 URL 출력
+services/core-api/.venv/bin/python eval/k4-search/measure_draft_contribution.py <앱 롤 URL> --seed-dev-like --i-know-this-is-disposable --output dev-package/reports/evidence-promotion/round-<N>-<날짜>
+services/core-api/.venv/bin/python eval/k4-search/measure_draft_contribution.py <앱 롤 URL> --i-know-this-is-disposable --rehearse-promote <규칙 ID> --output <같은 회차>/rehearsal   # 승격 PUT 본문 대조만 · 보내지 않음
+```
+
+**온톨로지 회차 절차에 이 표(`draft-contribution-review.md` + `draft-contribution.json`)를 첨부한다.** 기계는 제안만 하고 Ted 가 회차 intent 의 「판정 결과」 절에서 판정한다(결정 6).
+
+한계: 경로 2 는 `routes/catalog.py` 경로 2 블록을 도메인·순수 함수 호출로 재현한 것이다(HTTP 층 없이 부를 수 있는 제품 함수만 부르고 제품 코드는 고치지 않았다). 라우트의 verified 걸름·잠김 조립·근거 문장은 green 판정에 들어가지 않으며, 라우트가 바뀌면 이 재현도 따라가야 한다. 1회차 실측은 `dev-package/reports/evidence-promotion/round-1-2026-09-26/`.
+
+2회차 지역(2026-09-26 Ted 「자료 지역 확정」)은 `--round "2회차 지역"` 과 `--payload <회차 입력>` 으로 돌렸다 — 입력·재현 스크립트·「한반도」 region probe 상태표(반사실 포함)는 `dev-package/reports/evidence-promotion/round-2-2026-09-26/`.
+
+3회차 지역 포함 관계(intent `dev-package/intent/2026-09-26-region-containment-expansion.md`)는 **반사실 패치 없이 제품 코드로** 잰다 — 조건 검색 region 술어가 `contracts/search/semantics.json` `regionWithin`(한반도 → 남한·충청권 한 단계 · 게이트 `region-within-drift`)을 읽는다. 「한반도」 region probe 5건은 `pathB`(자연어 판)를 달고, 그 해석은 `interpret-fixture.json` 의 `PB-REGION-*`·`PB-LEAK-*` 규칙 기반 녹화다(실모델 녹화는 별도 승인 대기). 측정기 `Evaluator.path_b_probe` 는 경로 2 green 을 **파일 근거 후보**(`search_evidence_conditions.candidates` 포함 집합) 기준으로 내고 전체 검색 결과 기준은 참고 열로 둔다 — 결정 5 의 기여·역전 계산에는 넣지 않는다. 결과: 경로 1 reviewed 1/5(PC-1-4 「한반도 + 5분 주기」 — 판정 probe 로 옮김) · 초안 포함 5/5 · 경로 2 1/5 · 1/5 · 상향 누수 0 · 점수판 3/5/3/3 불변. 재현 = `bash dev-package/reports/evidence-promotion/round-3-2026-09-26/run_measurement.sh <태그> <payload> <산출 디렉터리> <상태표 json>`.
+
+4회차 주기 범위(intent `dev-package/intent/2026-09-26-cadence-range-predicate.md`) — 「시간해상도 1시간 이하」 = 산출 간격(주기) ≤ 1시간(Ted 정의 2026-09-26). 두 경로가 새 술어 `maxCadenceSeconds` 를 같은 커널 도우미(`services/core-api/src/colab_core/kernel/cadence_scope.py`)로 판정하고, 순서의 정본은 `contracts/search/semantics.json` `cadenceSeconds` 다. 주기는 정본 선언값의 전재이며 파일 시간축 실측이 아니다 — 범위 비교는 선언값 비교이고 연속 관측을 보증하지 않는다. PC-1-4·PC-2-4 에 「1시간 이하」 probe 5건(자연어 판 `PB-CADENCE-1·2` · 대조 녹화 `PB-CADENCE-3`)을 실었다. 결과(입력 `round-2-2026-09-26/input-payload.json` sha256 `73a523f0…` · 모델 호출 0): 경로 1 5/5 green(reviewed·초안 포함 같음 — 「1시간 이하」 전 자료 = seq 1 · 2 · 4 · 16 · 17) · 경로 2 자연어 판 2/2(파일 근거 후보 [1, 2, 4] · 한반도 [1, 2]) · 골든 경로 2 9/10 · heldout 불변 · 기존 probe 역전 0.
+
+같은 회차에 오라클을 **dev 실상태로 재채점**했다. 1회차 승격 3규칙(platform-from-instrument · direct-observation-from-level · native-resolution-carried)이 dev 에 reviewed 로 실렸으므로 그 규칙에 기대던 measure_only 11건을 판정 probe 로 옮기고, 초안 때문에 내려갔던 5사례를 1회차 등급으로 되돌렸다 — 점수판 **가능 8 · 부분 3 · blocked 3 · blocked_draft 0**(전 3 · 5 · 3 · 3). 조건 검색 pytest(`services/core-api/tests/test_practitioner_conditions.py`)의 일회용 DB 도 생성물에 같은 승격(`DEV_PROMOTED_RULES`)을 겹쳐 싣는다. measure_only 는 지역 초안 대기 4건만 남는다. 측정기는 reviewed 만의 green 목록(`greenWithoutAnyDraft`)을 함께 낸다. 재현 = `dev-package/reports/evidence-promotion/round-4-2026-09-26/run_measurement.sh <태그> <payload> <산출 디렉터리> <상태표 json>` · 재채점 = `python3 dev-package/reports/evidence-promotion/round-4-2026-09-26/regrade_oracle.py <측정 json>`(멱등).
+
+4회차 판정 반영(2026-09-26 Ted 「전부 권고대로」) — rn15_sample(seq 4) 의 reviewed 주기를 거두고 계보 초안 `rule:cadence-from-lineage-parent` 로 내렸고(승인된 제거 · `round-4-2026-09-26/reviewed-diff-*.json` 의 `reviewedRemovals`), hsr_sample(seq 3) 에 같은 규칙의 초안 5min 을 실었다. 15분·「1시간 이하」 probe 기대에서 seq 4 를 뺐다(`apply_cadence_decisions.py`). 재측정(`measurement-decided/` · 입력 `round-4-2026-09-26/input-payload.json` `a5f68030…`): 「1시간 이하」 경로 1 5/5 · 경로 2 2/2 · 역전 0. 경로 1 조건 패널은 `maxCadenceSeconds` 를 「주기 · 1시간 이하」로 보인다(실제 브라우저 확인 `round-4-2026-09-26/browser/`).

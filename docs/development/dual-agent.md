@@ -57,7 +57,9 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
   작업 시작·종료 기록은 `docs/development/lifecycle-evidence.md`를 따른다. H6는 해당 작업의 산출물과 실제 인계를 검증한다.
 - 디자인 조사도 같은 사본에서는 읽기 전용 결과를 부모에게 반환한다. 파일 작성이 필요한
   병렬 레인은 사본을 분리한다. 테스트 작성이 필요한 fix는 승인된 시험 작성 단계에서 RED를 확인한 뒤
-  `COLAB_FIX_LANE=1`의 구현 단계로 진행한다. 보호된 fix 단계에서 테스트 수정 우회 값을 켜지 않는다.
+  구현 단계로 진행한다. Codex는 `COLAB_FIX_LANE=1` env의 구현 단계에서 `test-file-guard`가 편집 시점에 막는다.
+  Claude Code는 hook env를 lane별로 줄 수 없어 편집 시점 차단이 없고, `begin --scope`의 인계(handoff/H7) 대조가 경계다.
+  Codex 보호 단계에서 테스트 수정 우회 값을 켜지 않는다.
 - agent-browser의 `references/` 8개와 `templates/` 3개는 원본 스킬 옆에 복원했다.
   확보 경로와 출처는 `.agents/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
 - `/eli5`, `explain-visually`는 쉬운 설명과 현재 사용 가능한 시각화 도구로 목적을 수행한다.
@@ -77,7 +79,8 @@ additionalContext JSON으로, SubagentStop 성공 출력은 systemMessage JSON�
 `hookSpecificOutput.additionalContext` JSON은 bridge가 본문만 꺼내 다시 싣는다.
 `researcher-task.sh`(SubagentStart · matcher `researcher`)는 스폰 시 cwd 체크아웃에서
 `lifecycle begin --role researcher`를 `--agent-id` 없이 실행하고 task_id·run_id·payload agent_id·handoff 명령을
-평문으로 싣는다(Codex는 additionalContext). begin이 실패해도 exit 0이며 사유와 직접 begin 명령을 출력한다.
+`hookSpecificOutput.additionalContext` JSON 1줄로 싣는다(`worktree-setup.sh`도 같다 · Claude·Codex 양쪽 동일).
+SubagentStart 평문 stdout은 subagent에 도달하지 않았다(2026-09-26 실측). begin이 실패해도 exit 0이며 사유와 직접 begin 명령을 출력한다.
 실행 오류는 차단으로 전달한다. H2는 환경 준비이며 격리 사본 생성이나 성공 보장이 아니다.
 프로젝트 trust와 `/hooks`의 정의별 review가 필요하다. 이 PC에서는 2026-09-09 확인 시
 7개 등록 항목 모두 enabled/trusted이며 SessionStart 실행과 PreToolUse 차단을 실측했다.
@@ -186,7 +189,7 @@ Windows 프로젝트 설정은 로그인 셸을 끄고 unelevated 샌드박스 �
 게이트는 지원되는 도구에서 **그 명령만** 샌드박스 밖 실행 승인을 요청한다. 전역 우회는 하지 않는다.
 승인이 불가능한 세션에서는 해당 명령을 실행할 수 있는 호스트에서 실행하고 증거를 구분한다.
 
-`eval/harness/run.sh`는 기존 Claude 평가 러너다. 그대로 유지하며 Astra 통과 근거로 쓰지 않는다.
+`eval/harness/run.sh`는 기존 Claude 평가 러너다(+ 설정 해시 결합 · 정본 `eval/harness/README.md`). 그대로 유지하며 Astra 통과 근거로 쓰지 않는다.
 Codex 연결 확인은 `scripts/agent-bridge.py check`와 별도의 로컬 Codex 읽기 전용 smoke로 수행한다.
 smoke는 등록·원본 탐색 확인일 뿐 기존 20과제의 Astra 행동 평가나 제품 E2E 통과가 아니다.
 CI의 기존 Claude eval 정책은 이번 변경에서 바꾸지 않는다. 별도 API 키 발급은 필요하지 않다.

@@ -427,7 +427,15 @@ class ResearcherTaskHookTests(unittest.TestCase):
                    'agent_type': 'researcher', 'agent_id': agent_id}
         result = self.run_hook(payload)
         self.assertEqual(result.returncode, 0, result.stderr)
-        return result.stdout
+        return self.context(result)
+
+    def context(self, result, event='SubagentStart'):
+        """A7 — SubagentStart 평문 stdout 은 subagent 에 도달하지 않는다. stdout = additionalContext JSON 1줄."""
+        lines = result.stdout.splitlines()
+        self.assertEqual(len(lines), 1, result.stdout)
+        output = json.loads(lines[0])['hookSpecificOutput']
+        self.assertEqual(output['hookEventName'], event)
+        return output['additionalContext']
 
     def printed(self, output, key):
         match = re.search(r'^\s*' + key + r'\s*:\s*([a-f0-9]{32})\s*$', output, re.MULTILINE)
@@ -512,10 +520,11 @@ class ResearcherTaskHookTests(unittest.TestCase):
         outside.mkdir()
         result = self.run_hook({'cwd': str(outside), 'agent_type': 'researcher', 'agent_id': 'a1'})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('researcher-task: begin 실패', result.stdout)
-        self.assertIn('사유', result.stdout)
-        self.assertIn('lifecycle begin --role researcher', result.stdout)
-        self.assertNotIn('--agent-id', result.stdout)
+        context = self.context(result)
+        self.assertIn('researcher-task: begin 실패', context)
+        self.assertIn('사유', context)
+        self.assertIn('lifecycle begin --role researcher', context)
+        self.assertNotIn('--agent-id', context)
 
     def test_e_disabled_hooks_print_nothing(self):
         result = self.run_hook({'cwd': str(self.root), 'agent_type': 'researcher', 'agent_id': 'a1'}, COLAB_HOOKS='0')
@@ -535,9 +544,31 @@ class ResearcherTaskHookTests(unittest.TestCase):
             with self.subTest(payload=sorted(payload)):
                 result = self.run_hook(payload)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn('researcher-task: agent_type 없음', result.stdout)
-                self.assertIn('lifecycle begin --role researcher', result.stdout)
+                context = self.context(result)
+                self.assertIn('researcher-task: agent_type 없음', context)
+                self.assertIn('lifecycle begin --role researcher', context)
         self.assertFalse(self.runtime_tasks())
+
+    def run_worktree_setup(self, project_dir):
+        environment = dict(os.environ, CLAUDE_PROJECT_DIR=str(project_dir))
+        environment.pop('COLAB_HOOKS', None)
+        payload = {'cwd': str(self.root), 'hook_event_name': 'SubagentStart',
+                   'agent_type': 'lane-worker', 'agent_id': 'lane-aid'}
+        return subprocess.run(['bash', str(ROOT / 'scripts/harness/hooks/worktree-setup.sh')],
+                              input=json.dumps(payload), text=True, capture_output=True,
+                              env=environment, timeout=120)
+
+    def test_g_worktree_setup_emits_one_json_line_and_flags_a_shared_checkout(self):
+        """A7 — worktree-setup 도 additionalContext JSON 1줄 · 같은 checkout 이면 「격리 아님」 권고(차단 아님)."""
+        same = self.run_worktree_setup(self.root)
+        self.assertEqual(same.returncode, 0, same.stderr)
+        context = self.context(same)
+        self.assertIn('worktree-setup (H2)', context)
+        self.assertIn('건너뜀', context)  # gates/run.sh 가 없는 fixture 체크아웃
+        self.assertIn('격리 아님', context)
+        other = self.run_worktree_setup(ROOT)
+        self.assertEqual(other.returncode, 0, other.stderr)
+        self.assertNotIn('격리 아님', self.context(other))
 
     def load_bridge(self):
         spec = importlib.util.spec_from_file_location('fixture_bridge', self.root / 'scripts/agent-bridge.py')

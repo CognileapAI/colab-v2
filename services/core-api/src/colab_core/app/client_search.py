@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 from ..kernel import errors
 from ..kernel.ids import Ulid
 
+from ..kernel.cadence_scope import cadence_within, parse_max_cadence_seconds
+from ..kernel.region_scope import region_match
 from ..kernel.search_semantics import SEMANTICS, SEMANTIC_VERSION
 
 SEOUL = ZoneInfo('Asia/Seoul')
@@ -135,6 +137,11 @@ def plan_query(query, *, now=None, context=None):
     resolution = re.search(r'(\d+(?:\.\d+)?)\s*(km|m)\s*(?:이하|이내)',query,re.I)
     if resolution:
         c['maxResolutionM'] = float(resolution[1]) * (1000 if resolution[2].lower()=='km' else 1)
+    # 주기 상한(「1시간 이하」 = 산출 간격 ≤ 1시간 · Ted 2026-09-26). 등호 주기와 따로 선다. 이것 하나로는
+    # recognized 를 세우지 않는다 — 제품 갈림(경로 1 ↔ 경로 2)을 바꾸지 않는다.
+    cadence_limit = parse_max_cadence_seconds(query)
+    if cadence_limit:
+        c['maxCadenceSeconds'] = cadence_limit
     if '설명' in q and ('둘다' in q or '모두' in q):
         words = re.findall(r"['\"‘’“”]([^'\"‘’“”]+)['\"‘’“”]", query)
         if len(words) >= 2:
@@ -202,7 +209,7 @@ def plan_query(query, *, now=None, context=None):
             'asOf':now.isoformat(), 'semanticVersion':SEMANTIC_VERSION,'referenceVariable':reference_variable}
 
 
-def _predicate(key, wanted, facts, metadata, row):
+def _predicate(key, wanted, facts, metadata, row, *, expand_region=True):
     if key == 'descriptionAll':
         return all(word.lower() in (metadata.get('summary') or '').lower() for word in wanted)
     if key == 'uploadedMonth':
@@ -227,6 +234,9 @@ def _predicate(key, wanted, facts, metadata, row):
     if key == 'maxResolutionM':
         value = facts.get('nativeResolutionM')
         return None if value is None else value <= wanted
+    if key == 'maxCadenceSeconds':
+        # 선언 주기의 순서 비교(`kernel/cadence_scope.py`). 주기가 없거나 표 밖 값이면 None → unknown.
+        return cadence_within(facts.get('cadence'), wanted)
     if key == 'maxMissingRatePercent':
         # 데이터셋 단위 술어라 파일 사실이 아니라 후보 줄에서 읽는다 (`uploadedMonth` 와 같은 자리).
         # 자유 입력이 수치로 파싱되지 않은 자료는 근거가 없는 것이지 반증된 것이 아니다 → unknown.
@@ -241,8 +251,11 @@ def _predicate(key, wanted, facts, metadata, row):
     value = facts.get(key)
     if value is None:
         return None
-    if key in ('variable','region'):
-        return canonical(value, 'variables' if key=='variable' else 'regions') == wanted
+    if key == 'region':
+        # 직계 하위 한 단계까지(`kernel/region_scope.py` · SQL 후보와 같은 표). 부분 문자열로 넓히지 않는다.
+        return region_match(wanted, value, expand=expand_region)[0]
+    if key == 'variable':
+        return canonical(value, 'variables') == wanted
     return value == wanted
 
 
@@ -250,7 +263,10 @@ def evaluate(plan, metadata, evidence):
     verdicts = []
     for row in evidence or [{}]:
         facts = row.get('facts',{})
-        predicates = {key:_predicate(key,wanted,facts,metadata,row) for key,wanted in plan['conditions'].items()}
+        # reference_match 의 지역은 기준 파일의 지역 그대로다 — 「같은 지역」은 포함 관계가 아니다.
+        expand = plan.get('intent') != 'reference_match'
+        predicates = {key:_predicate(key,wanted,facts,metadata,row,expand_region=expand)
+                      for key,wanted in plan['conditions'].items()}
         status = 'contradicted' if False in predicates.values() else 'unknown' if None in predicates.values() else 'supported'
         verdicts.append({'status':status,'checks':{k:'unknown' if v is None else 'supported' if v else 'contradicted' for k,v in predicates.items()},
                          'fileId':row.get('file_id'),'fileName':row.get('file_name'),

@@ -1,0 +1,533 @@
+{
+ "schema": "colab-interpret-fixture/1",
+ "note": "경로 2(LLM 해석 → search_evidence_conditions) 측정용 녹화 해석. 측정 중 모델을 부르지 않는다(intent 2026-09-21-evidence-promotion 결정 2 · 제약 「interpret 출력은 녹화 픽스처로 고정」). 이 파일은 규칙 기반 해석기(COLAB_AI_QUERY_INTERPRETATION=literal 경로)의 출력이며 LLM 녹화가 아니다. 실제 LLM 해석을 녹화해 교체하는 것은 후속 단계다 — 그때 isDataQuery·terms·topic 이 달라지면 경로 2 숫자도 달라진다.",
+ "provenance": {
+  "golden": {
+   "from": "eval/k4-search/fixtures/reference/expanded-normalized-02.json",
+   "sha256": "c01770f084b667d80b6c993cee7e7271e83b4f12d84ab8baf2b05a142f92be35",
+   "what": "golden_baseline.py --mode local-expanded 가 LiteralInterpreter + 동결 사전·그래프로 낸 응답(services/core-api/tests/test_search_reference_evidence.py 의 API 골든 회귀가 쓰는 같은 녹화)"
+  },
+  "heldout": {
+   "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 사후 확인 전용(승격 근거 아님)",
+   "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
+  },
+  "modelCalls": 0,
+  "practitionerPathB": {
+   "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 실무자 「한반도」 region probe 5건의 경로 2 자연어 판(PB-REGION-*)과 상향 누수 대조 질의(PB-LEAK-*). 실모델 녹화는 별도 승인 대기(intent 2026-09-26-region-containment-expansion 결정 3)",
+   "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
+  },
+  "practitionerCadence": {
+   "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 실무자 「1시간 이하」 주기 범위 probe 의 경로 2 자연어 판(PB-CADENCE-*). 실모델 녹화는 별도 승인 대기(intent 2026-09-26-cadence-range-predicate)",
+   "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
+  }
+ },
+ "entries": [
+  {
+   "id": "SEARCH-GOLD-001",
+   "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "경기",
+    "남부와",
+    "충청권의",
+    "식생",
+    "상태를",
+    "살펴볼",
+    "수",
+    "있는",
+    "월평균",
+    "위성",
+    "찾아줘",
+    "southern Gyeonggi and Chungcheong regions"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-002",
+   "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "경기",
+    "남부와",
+    "충청권에서",
+    "식물이",
+    "얼마나",
+    "푸른지",
+    "월평균으로",
+    "볼",
+    "수",
+    "있는",
+    "찾아줘",
+    "southern Gyeonggi and Chungcheong regions"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-003",
+   "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "1일의",
+    "식생지수를",
+    "U-Net",
+    "예측한",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-004",
+   "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "GK2A_NDVI_mean_202305",
+    "tif",
+    "만드는",
+    "데",
+    "쓴",
+    "천리안",
+    "원자료",
+    "찾아줘",
+    "GK-2A"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-005",
+   "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "U-Net",
+    "식생지수",
+    "모델에",
+    "쓴",
+    "지형·토지피복",
+    "보조자료와",
+    "검증용",
+    "식생자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-006",
+   "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "레이더",
+    "반사도로",
+    "만든",
+    "강우",
+    "추정",
+    "결과와",
+    "검증에",
+    "쓴",
+    "강수",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-007",
+   "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "WGS84",
+    "바꾸고",
+    "연구대상지에",
+    "맞춰",
+    "잘라",
+    "둔",
+    "15분",
+    "누적",
+    "강수",
+    "표본",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-008",
+   "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2000년부터",
+    "2025년까지",
+    "대한민국",
+    "시군구의",
+    "4주",
+    "가뭄지수를",
+    "주간으로",
+    "비교할",
+    "찾아줘",
+    "가뭄지수",
+    "가뭄"
+   ],
+   "topic": "가뭄",
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-009",
+   "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+   "isDataQuery": true,
+   "terms": [
+    "시군구별",
+    "주간",
+    "SPI-4weeks",
+    "찾아줘",
+    "SPEI",
+    "말고",
+    "SPI",
+    "필요해",
+    "가뭄"
+   ],
+   "topic": "가뭄",
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-010",
+   "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "검색",
+    "대상",
+    "중",
+    "U-Net",
+    "예측한",
+    "가뭄지수",
+    "찾아줘",
+    "가뭄"
+   ],
+   "topic": "가뭄",
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-011",
+   "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "결측률이",
+    "0%로",
+    "검증된",
+    "2023년",
+    "5월",
+    "식생",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "SEARCH-GOLD-012",
+   "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "100m로",
+    "직접",
+    "관측한",
+    "천리안",
+    "월평균",
+    "NDVI",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "expanded-normalized-02.json#/expansion/responses"
+  },
+  {
+   "id": "N19",
+   "query": "2023년 5월 23일 U-Net 식생지수 예측 파일을 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "23일",
+    "U-Net",
+    "식생지수",
+    "예측",
+    "파일을",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "N20",
+   "query": "2023년 5월 식생 모델의 검증용 위성자료만 찾아줘. DEM·경사향·토지피복은 빼줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "식생",
+    "모델의",
+    "검증용",
+    "위성자료만",
+    "찾아줘",
+    "DEM·경사향·토지피복은",
+    "빼줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "N21",
+   "query": "강우 자료 중 관측 원자료와 전처리 표본은 제외하고 U-Net 예측 결과만 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "강우",
+    "자료",
+    "중",
+    "관측",
+    "원자료와",
+    "전처리",
+    "표본은",
+    "제외하고",
+    "U-Net",
+    "예측",
+    "결과만",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "N22",
+   "query": "2025년 12월 27일 값까지 들어 있는 시군구 주간 SPI·SPEI 자료 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2025년",
+    "12월",
+    "27일",
+    "값까지",
+    "들어",
+    "있는",
+    "시군구",
+    "주간",
+    "SPI·SPEI",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "N23",
+   "query": "결측 보간을 하지 않은 2023년 5월 경기남부·충청 월평균 GK-2A NDVI를 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "결측",
+    "보간을",
+    "하지",
+    "않은",
+    "2023년",
+    "5월",
+    "경기남부·충청",
+    "월평균",
+    "GK-2A",
+    "NDVI",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "N24",
+   "query": "2023년 5월 17일 경기남부·충청권을 100m로 직접 관측한 천리안 NDVI 파일과 그 월평균을 함께 찾아줘.",
+   "isDataQuery": true,
+   "terms": [
+    "2023년",
+    "5월",
+    "17일",
+    "경기남부·충청권을",
+    "100m로",
+    "직접",
+    "관측한",
+    "천리안",
+    "NDVI",
+    "파일과",
+    "그",
+    "월평균을",
+    "함께",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-1",
+   "query": "2019년 7월 28일부터 2024년 7월 9일까지 한반도 레이더 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2019년",
+    "7월",
+    "28일부터",
+    "2024년",
+    "9일까지",
+    "한반도",
+    "레이더",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-2",
+   "query": "한반도 5분 주기 레이더 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "한반도",
+    "5분",
+    "주기",
+    "레이더",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-3",
+   "query": "2022년 한반도 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2022년",
+    "한반도",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-4",
+   "query": "한반도 15분 주기 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "한반도",
+    "15분",
+    "주기",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-5",
+   "query": "2021년이 포함된 한반도 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2021년이",
+    "포함된",
+    "한반도",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-LEAK-1",
+   "query": "남한 식생 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "남한",
+    "식생",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-1",
+   "query": "시간해상도 1시간 이하 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "시간해상도",
+    "1시간",
+    "이하",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-2",
+   "query": "시간해상도 1시간 이하 한반도 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "시간해상도",
+    "1시간",
+    "이하",
+    "한반도",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-CADENCE-3",
+   "query": "30분 이내 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "30분",
+    "이내",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  }
+ ]
+}

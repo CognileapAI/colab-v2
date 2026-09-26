@@ -1,0 +1,18 @@
+인계 문서 사본의 「다음 =」 줄은 2026-09-08 R-B 마감 시점의 기록이라 지금 이력과 맞지 않는다.
+
+**인계 문서 사본의 줄**
+- 2026-09-08 R-B 마감 뒤에 적힌 다음 단계는 네 가지다: ⑵ 배포 창(staging 예행 → dev, 마이그레이션 5건, 배포 전 실측 3건), ⑶ R-C intent, ⑷ `w9-dev-deploy-rebased` 처리. ⑴ Ted 질의 판정은 이미 완료로 지워져 있다.
+
+**저장소 이력**
+- 최근 커밋은 모두 2026-09-26 자이고 R-B·R-C 가 아니라 하네스 개선 작업이다.
+- 앞선 작업은 이미 끝났다: PR 1 병합(`44c8cf61`), T1 ruleset 적용(`e1e34ed6`). 그 뒤 E0 eval gate 커밋 ①~⑤가 `44df833e` 부터 `e2c93bce` 까지 쌓였다.
+- 순서는 총괄 계획 `dev-package/prd/specs/S-HARNESS-IMPROVEMENT-PLAN-20260926.md` 가 정한다: PR 1 → T1·T11 → E0 → S-red → PR 2 → …
+- `git branch -a --contains e2c93bce` 를 돌리면 이 워크트리 브랜치만 나온다. E0 는 구현까지만 됐고 아직 병합되지 않았다.
+- 계획서의 E0 병합 조건 중 남은 것은 세 가지다: 실측 1회 결과 커밋과 `harness-eval` MATCH green(T12), PR 게시(T16), Ted 병합(T13). 그다음이 S-red 소형 PR 이다.
+- `eval/harness/results/` 아래에 커밋되지 않은 회차 폴더 두 개가 있다(`20260926-125045`, `20260926-125205`). 실측이 진행 중이거나 결과가 아직 커밋되지 않은 상태로 보인다.
+
+이 오판은 `CLAUDE-5b.md` §5-b 첫 줄에 이미 적힌 사례와 같은 유형이다(낡은 HANDOFF 의 「다음」을 최신으로 믿음).
+
+- 판정: 낡음
+- 근거: `git log -n 8 --format='%h %ad %s' --date=short` · `git branch -a --contains e2c93bce` · e2c93bc
+- 다음 단계: E0 eval gate PR 마무리 — head 실측 회차 결과 커밋 후 `harness-eval` MATCH green(T12) → PR 게시(T16) → Ted 병합(T13). 그 뒤 S-red red-run 소형 PR 착수.

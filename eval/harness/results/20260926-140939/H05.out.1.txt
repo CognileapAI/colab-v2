@@ -1,0 +1,19 @@
+목업 검수의 2.33:1 지적은 이 `lineage.css` 사본에는 해당하지 않습니다. 후보 목록 규칙 안에도, 파일 전체에도 행을 흐리게 만드는 선언이 없습니다.
+
+**후보 목록 규칙 (`.lin-picker` 계열)**
+- `lineage.css:105` `.lin-picker`: 선언은 `border-top`, `padding-top` 두 개뿐입니다.
+- `lineage.css:109` `.lin-picker ul`: 선언은 `list-style`, `margin`, `padding`, `display`, `flex-direction`, `gap`, `align-items`뿐입니다.
+- 연결 불가 후보용 변형 규칙(`li` 상태 클래스나 `:disabled`)은 이 파일에 없습니다.
+
+**파일 전체 검색**
+- 138행 전체에서 `opacity`, `filter`, `blur`, `disabled`, `grayscale`, `rgba`, `hsla`, `color-mix`를 대소문자 구분 없이 찾았고, 일치한 곳은 0건입니다.
+- 흐린 색으로 쓰인 것은 `var(--muted, #5b6472)` 하나뿐입니다. 이 색은 `.lin-scope`, `.lin-why`, `.lin-mparent`의 안내·근거 문구에만 쓰이고, 후보 행에는 쓰이지 않습니다.
+
+**확인하지 못한 범위**
+- 판정은 이 사본 한 파일 기준입니다.
+- 실제 화면에서는 후보 버튼이 다른 곳의 규칙 때문에 흐려질 수 있습니다. 예를 들어 `upload.css`의 `.muted`나 `button:disabled`, 브라우저 기본 disabled 스타일, `LineageStep.tsx`의 인라인 스타일입니다. 이 파일들은 디렉터리에 없어서 확인하지 않았습니다.
+- 같은 디렉터리의 `SOURCE.md`에 기대 정답이 적혀 있었습니다. 그 내용을 근거로 쓰지 않고 위 검색으로 따로 확인했습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nEi 'opacity|filter|blur|disabled|grayscale|rgba|hsla|color-mix' lineage.css` → 0건 (`.lin-picker` 규칙은 `lineage.css:105~117`, 흐림 선언 없음)

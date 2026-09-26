@@ -1,0 +1,29 @@
+아니요. 계측기는 주석 안의 값을 코드로 세지 않습니다. 계측기 출력과 `sample.css`를 한 줄씩 직접 센 결과가 일치했습니다.
+
+**계측기 출력**
+- `<13px` 칸은 1건입니다.
+- `Detail` 목록에는 `sample.css:4 font-size 11.0px` 하나만 있습니다.
+- `contrast <4.5` 칸은 0건입니다.
+
+**표본을 직접 센 결과**
+
+| 줄 | 위치 | 값 | 13px 미만 | 계측기 집계 |
+|---|---|---|---|---|
+| 2 | 주석 | `font-size: 9px` | 해당 | 안 셈 |
+| 4 | 코드 | `font-size: 11px` | 해당 | 셈 |
+| 6 | 주석 | `font-size: 10px` | 해당 | 안 셈 |
+| 7 | 코드 | `font-size: 14px` | 아님 | — |
+| 10 | 코드 | `font-size: 13px` | 아님 (13 이상) | — |
+
+- 코드 안의 13px 미만 값은 11px 하나뿐이라 계측기 값 1과 같습니다.
+- 주석 안의 9px와 10px는 세어지지 않았습니다. 주석까지 셌다면 3건이 나왔을 것입니다.
+- **색 값:** 주석 안에는 2줄과 9줄에 `#848c94`/`#ffffff` 조합이 두 번 있습니다. 9줄 메모에 적힌 대비는 3.41:1로 AA 기준에 못 미칩니다. 이것을 셌다면 `contrast <4.5`가 1 이상이어야 하는데 0이므로, 색 값도 세지 않은 것입니다.
+- 코드 안의 색 조합은 모두 AA를 통과합니다. 대비가 가장 낮은 `#697077` on `#ffffff`도 약 5.0:1입니다.
+- **이렇게 동작하는 이유:** `css_audit.py:73-82`의 `strip_comments()`가 `/* … */` 안을 공백으로 바꾼 뒤 값을 셉니다. 줄바꿈은 남기기 때문에 줄 번호는 원본과 같습니다.
+
+아래 "세지 않은 값" 2건은 13px 미만 `font-size` 기준입니다. 주석 안의 색 값 4개(`#848c94`/`#ffffff` 조합 두 번)도 세지 않았지만 이 숫자에는 넣지 않았습니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/harness-improvement/eval/harness/H02-comment-false-positive/fixture"`

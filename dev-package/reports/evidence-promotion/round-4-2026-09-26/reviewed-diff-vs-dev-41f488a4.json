@@ -1,0 +1,60 @@
+{
+ "schema": "colab-reviewed-diff/2",
+ "old": {
+  "path": "round-1-2026-09-26/promotion-plan/promoted-payload.json",
+  "sha256": "41f488a42ffb07c1c64d4460ea86a6b98c72b63494ec45291f72f5c73561c6fc"
+ },
+ "new": {
+  "path": "round-4-2026-09-26/input-payload.json",
+  "sha256": "a5f6803090e802670fa2b177c3e288ae6f99e568da1104b85e24dc1922e325de"
+ },
+ "datasets": {
+  "old": 28,
+  "new": 28
+ },
+ "removedReviewedKeys": 0,
+ "approvedRemovals": 1,
+ "addedReviewedKeys": 5,
+ "changedReviewedKeys": 0,
+ "reviewedRemovals": [
+  {
+   "seq": 4,
+   "name": "rn15_sample",
+   "key": "cadence",
+   "old": "15min",
+   "approval": "Ted 2026-09-26 「전부 권고대로」 — intent 2026-09-26-cadence-range-predicate 질문 2: rn15_sample(seq 4) 의 정본 문장이 자기 주기를 말하지 않아 reviewed cadence 를 거두고 계보 초안(rule:cadence-from-lineage-parent)으로 내린다",
+   "nowDraft": "15min",
+   "nowDraftProvenance": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 2(15min)"
+  }
+ ],
+ "removed": [],
+ "added": [
+  {
+   "seq": 1,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 2,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 6,
+   "key": "region",
+   "new": "한반도"
+  },
+  {
+   "seq": 19,
+   "key": "region",
+   "new": "남한"
+  },
+  {
+   "seq": 20,
+   "key": "region",
+   "new": "남한"
+  }
+ ],
+ "changed": [],
+ "approvedButNotRemoved": []
+}
