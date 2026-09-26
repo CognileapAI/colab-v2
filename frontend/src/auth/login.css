@@ -81,8 +81,10 @@
   min-height: var(--control-height);
 }
 
-.login-submit:hover:not(:disabled) {
-  background: var(--color-primary-700);
+@media (hover: hover) {
+  .login-submit:hover:not(:disabled) {
+    background: var(--color-primary-700);
+  }
 }
 
 /* 비활성 = 단추 프리미티브와 같은 두 값(design-fix 후속 20260925 Q1c · 회색 채움은 활성 파랑과 명도비 1.01:1 이라 기각) */
@@ -243,7 +245,11 @@
 
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
 .login-theme { position: absolute; top: 20px; right: 20px; }
-@media (max-width: 640px) {
-  .login-input { font-size: 16px; }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 37 · 38) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   입력 글자 16px 하한은 셸 CSS 한 곳(640px 이하 또는 터치 기기)이 맡는다. */
+@media (pointer: coarse) {
+  .login-input { min-height: var(--control-height); min-width: var(--control-height); }
+  .login-submit { min-height: var(--control-height); min-width: var(--control-height); }
 }
 }

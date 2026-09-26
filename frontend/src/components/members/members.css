@@ -129,4 +129,10 @@
   .memgrid .memtbl td.pc.is-chg { padding: 8px; border-radius: var(--radius-sm); }
   .memgrid .memtbl td.who { padding-bottom: 6px; }
 }
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 35) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   고정 높이 36 을 최소 높이 44 가 이긴다. 권한 체크 칸(36)은 L3b 가 이 블록 안에 더한다. */
+@media (pointer: coarse) {
+  .settabs .st { min-height: var(--control-height); min-width: var(--control-height); }
+}
 }

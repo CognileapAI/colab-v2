@@ -108,8 +108,10 @@
   cursor: pointer;
 }
 
-.vt-del:hover {
-  color: var(--fg-danger);
+@media (hover: hover) {
+  .vt-del:hover {
+    color: var(--fg-danger);
+  }
 }
 
 /* 행 추가 — 표 **밖 아래**의 작은 버튼(rev2 `btn btn-secondary btn-sm` 자리). */
@@ -125,7 +127,16 @@
   cursor: pointer;
 }
 
-.vt-add:hover {
-  background: var(--color-surface-hover);
+@media (hover: hover) {
+  .vt-add:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 43 · 44) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   빼기 칸의 고정 높이 32 를 최소 높이 44 가 이긴다. 대표 라디오(45)는 L3b 가 이 블록 안에 더한다. */
+@media (pointer: coarse) {
+  .vt-del { min-height: var(--control-height); min-width: var(--control-height); }
+  .vt-add { min-height: var(--control-height); min-width: var(--control-height); }
 }
 }

@@ -398,7 +398,7 @@
   font-size: 13px;
 }
 
-.dash-open-catalog:hover { background: var(--color-surface-hover); }
+@media (hover: hover) { .dash-open-catalog:hover { background: var(--color-surface-hover); } }
 .dash-card-head { flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 20px; }
 .dash-lead { line-height: 1.7; overflow-wrap: anywhere; }
 .dash-steps { gap: 12px 20px; margin-top: 20px; }
@@ -428,5 +428,15 @@
   .dash-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dash-bar { min-height: 44px; grid-template-columns: 96px minmax(0, 1fr) 36px; }
   .dash-steps { flex-direction: column; gap: 12px; }
+}
+
+/* 휴대폰·패드 대응 20260926 (L2b · 부록 B 8–12) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
+   10 은 640px 규칙과 같은 선택자라 뒤 순서가 이긴다(640px 규칙은 그대로 둔다). 글자 크기는 바꾸지 않는다. */
+@media (pointer: coarse) {
+  .dash-section-label { min-height: var(--control-height); min-width: var(--control-height); }
+  .dash-quiet { min-height: var(--control-height); min-width: var(--control-height); }
+  .dash-bar { min-height: var(--control-height); min-width: var(--control-height); }
+  .titem button { min-height: var(--control-height); min-width: var(--control-height); }
+  .todo-more, .todo-all { min-height: var(--control-height); min-width: var(--control-height); }
 }
 }

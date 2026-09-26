@@ -211,10 +211,10 @@ describe('누름 ≠ hover(두 테마) — 회색 계열 누름 자리 전부', 
     ['shell', SHELL, '.theme-switcher:active', '.theme-switcher'],
     ['shell', SHELL, ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active', ':is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x'],
     ['catalog', CATALOG, '.tbl tr.clk:active td', '.tbl tr.clk:hover td', '@media (hover: hover)'],
-    ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover'],
+    ['upload', UPLOAD, '.dr-cal-d:active', '.dr-cal-d:hover', '@media (hover: hover)'],
     // F-final 1 · A21 — 업로드 달력 누름(값 19).
-    ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover'],
-    ['upload', UPLOAD, '.dr-useg button:active', '.dr-useg button:hover'],
+    ['upload', UPLOAD, '.dr-nav button:active', '.dr-nav button:hover', '@media (hover: hover)'],
+    ['upload', UPLOAD, '.dr-useg button:active', '.dr-useg button:hover', '@media (hover: hover)'],
   ];
   for (const [file, css, active, other, otherMedia = ''] of pairs) {
     for (const theme of THEMES) {

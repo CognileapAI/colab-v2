@@ -143,7 +143,7 @@ describe('V1 업로드 비활성 두 곳 — opacity .5 · cursor not-allowed', 
     );
     expect(hovers.length, '격자 칸 hover 선택자 수').toBe(1);
     expect(hovers[0]).toBe('.thumbrow .th-slot:where(:not(:disabled)):hover');
-    expect(prop(body(UPLOAD, hovers[0] ?? ''), 'border-color')).toBe('var(--color-primary-600)');
+    expect(prop(body(UPLOAD, hovers[0] ?? '', '@media (hover: hover)'), 'border-color')).toBe('var(--color-primary-600)');
   });
   it('`.btn-strong` 규칙은 cursor · opacity 를 정하지 않는다(프리미티브 비활성 규칙이 닿는다)', () => {
     const strong = rules(UPLOAD).filter((r) => r.selectors.some((s) => s.startsWith('.btn-strong')));
