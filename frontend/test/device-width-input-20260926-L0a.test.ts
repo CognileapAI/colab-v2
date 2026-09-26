@@ -10,6 +10,7 @@
  *    (오케스트레이터 결정 · spec 빈칸 「클릭 대상이 창 밖이면 먼저 창 안으로」). `capture.py` 의 `run_action` 을
  *    python 으로 불러 브라우저 호출을 기록하고, 기록된 페이지 스크립트를 가짜 문서 위에서 돌린다(실제 브라우저 없음).
  * 입력 래퍼의 실제 포인터 · hover 상태는 캡처 실행의 상태 확인(어긋나면 78)이 확인한다 — 이 시험 밖이다.
+ * 환경 의존: ⑶ 은 `python3` 를 부른다. 없으면 호출 종료코드 단언이 red 로 드러난다(건너뛰지 않는다).
  */
 // @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다 · 선례 design-fix-followups-20260925-L2).
 import { spawnSync } from 'node:child_process';
