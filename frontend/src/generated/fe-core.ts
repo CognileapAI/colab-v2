@@ -4639,7 +4639,7 @@ export interface components {
          * @enum {string}
          */
         AiConfidence: "확실" | "애매" | "모름";
-        /** @description AI 응답의 근거. **필수 필드이며 nullable 이 아니다.** 화면에서 한 줄로 서므로 줄바꿈을 허용하지 않는다. 근거: CLAUDE.md §3(근거 필드 필수·근거는 한 줄) · Policy_데이터_찾기 §결과 카드(AI 근거 한 줄) · contracts/README.md(AI seam). */
+        /** @description AI 응답의 근거. **필수 필드이며 nullable 이 아니다.** 항목 하나가 화면에서 한 줄로 서므로 줄바꿈을 허용하지 않는다(ADR-0010). 근거: CLAUDE.md §3(근거 필드 필수·근거는 항목마다 한 줄) · Policy_데이터_찾기 §결과 카드(AI 근거 · ADR-0010 이 개정) · contracts/README.md(AI seam). */
         AiRationale: string;
         /** @description 모든 제안이 지고 가는 두 값 — 확신도와 근거. 둘 다 required 다. */
         AiSuggestionBase: {
