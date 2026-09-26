@@ -590,4 +590,12 @@
 - 2026-09-26 T9 실행 — Ted 원문 "엉 삭제승인항게" · 이틀 넘은 `/tmp/service-tests-*` 210개 삭제(남은 131개는 최근 이틀 · gate 임시 postgres 없음 확인 뒤).
 - 2026-09-26 T3 33 실행 — Ted 원문 "33체크아웃이 뭔지모르겠다" · 관측: `33 CoLAB-v2` 는 2026-09-18 01:04 GitHub clone(HEAD 기록 = clone 1줄 · 이후 전환 · 커밋 0 · 전용 DB 컨테이너 없음) → 권고대로 `_worktree-archive-20260926/33 CoLAB-v2` 로 이동(삭제 아님 · 되돌릴 수 있음). 32 는 PR 3 병합 뒤 갱신 그대로.
 - 2026-09-26 T3 정정 — Ted 원문 "30 31 32 33 프로젝트 클론된게 동시작업을 위해있는건데 음". 30 · 31 · 32 · 33 은 동시 작업용으로 일부러 둔 clone 이다. 33 이동을 즉시 되돌렸다(`33 CoLAB-v2` 원위치 · 보관 폴더 삭제). T3 결론을 바꾼다: 어떤 clone 도 옮기거나 은퇴시키지 않는다 · 문제는 뒤처진 코드(33 = `cb30d344` · 호스트 뮤텍스 없음, 32 = `02d251d8` · `gate_mutex_spawn` 없음)이므로 각 clone 에서 작업을 시작하기 전에 develop 으로 `git pull --ff-only` 한다(갱신 시점은 Ted 확인) · T5 Codex 재신뢰는 그 갱신 직후.
+- 2026-09-26 5라운드(Opus 5.5 프롬프트 재기준 · 새 그룹 P) — Ted 요청(원문 「opus 5.5가 생겼잖아 이걸 바탕으로 개선할수있을까 과거 프롬프트 중에 opus쓰는케이스들은 다 개선되어야해」) → Fable 감사 4 + Fable advisor 검증 4 + 교차 점검(원문 `~/.claude/reports/harness-state-20260925/opus55-prompt-audit/` · 46건) → Ted 원문 「모두 권고대로 하고 최종결정인 병합은 사람이 한다」.
+  - Q1 ⓐ: 파일 기준 배정 — 역할 본문 · design-review §2-2 → PR 2 · 규칙 · product · dual-agent → PR 3 · 나머지 스킬 · hook 문구 → 새 PR 4 「Opus 5.5 프롬프트 재기준」.
+  - Q2: 조기 종료 4패턴의 정본 = `AGENTS.md`(PR 2 에서 역할 본문과 함께) · 역할 본문은 허용되는 정지만.
+  - Q3 ⓐ: 자기 브랜치 커밋 자유 · push · 병합 · 원장 등재는 승인 범위 · 에이전트 커밋 ≠ 승인.
+  - Q4 ⓐ: design-review 에서 계측한 쪽이 근거를 붙여 판정(있음 · 없음 · 미상)한다 · 최종 결정(처리 · 병합)은 사람.
+  - Q5 ⓐ: colab-rules §1-2 「전부 위임」은 수천 행 legacy 문서군에 한정.
+  - Q6 승인: effort(lane-worker high vs medium · researcher medium vs low)와 조건부 개선 3건의 실측 — 결과는 `dev-package/reports/harness/` · 메인 세션 effort 는 레인 결과 뒤.
+- 2026-09-26 설계 원칙(Ted 원문 「기본적으로 동작과 제약은 시스템으로 한다 에이전트 지침서는 너무 나약하고 얕고 불확실하니까」) — 이 intent 의 모든 그룹에 적용한다: 규칙(must/never)은 hook · gate · 설정 권한 · agent frontmatter · lifecycle · CI · ruleset 으로 강제하고, 강제할 수 없는 규칙은 지우거나 이유를 담은 맥락으로만 남긴다. 최종 결정인 병합은 사람이 하며 그 경계도 git-guard · ruleset 으로 받친다. 이 원칙으로 PR 2 · PR 3 · PR 4 항목을 다시 나눈다(6라운드).
 
