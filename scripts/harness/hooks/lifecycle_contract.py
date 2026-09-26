@@ -491,7 +491,7 @@ def verify_task_report(root, task, report=None):
     if not task.get('run_id'):
         raise ValueError('gate execution has not started for this task')
     data = json.loads(path.read_text(encoding='utf-8'))
-    validate_report(data, task['gates'], allow_red=task['role'] in MEASURING_ROLES)
+    validate_report(data, task['gates'] + runtime().fix_rows(task), allow_red=task['role'] in MEASURING_ROLES)
     expected = gate_evidence(root, task['task_id'])
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
@@ -504,6 +504,18 @@ def verify_task_report(root, task, report=None):
     if not isinstance(evidence, dict) or evidence.get('before') != expected or evidence.get('after') != expected:
         raise ValueError('missing, stale, changed-during-run or other-task evidence')
     return data
+
+
+def verify_red_locked(root, task):
+    """A fix task hands off only with every recorded RED test file byte-identical to its begin blob."""
+    for entry in (task.get('fix') or {}).get('red', []):
+        current = current_blob(root, entry['path'])
+        if current != entry['blob']:
+            raise ValueError(
+                f"recorded RED test changed: {entry['spec']} (blob {entry['blob']} → {current or 'missing'})"
+                ' — exits: (1) restore the test file to the recorded blob and rerun gates;'
+                ' (2) if the test itself was wrong, hand this task off as blocked (PR 2)'
+                ' or let the parent begin a new task with a re-approved --red')
 
 
 def stop(data, expected_role):
@@ -584,6 +596,7 @@ def stop(data, expected_role):
                     + task['role'] + ' --scope <glob> …, same --gate set), rerun its gates and hand off'
                     ' that task, naming the widened paths and why in --summary;'
                     ' (2) revert the out-of-scope changes, rerun gates and hand off this task again')
+        verify_red_locked(root, task)
         verify_task_report(root, task)
     return 'H6' if expected_role == 'researcher' else 'H7'
 
@@ -638,6 +651,25 @@ def run_gates(root, task_id, before=None):
         readiness = next((line for line in result.stdout.splitlines() if line.startswith('::gate-readiness-failure::')), '')
         state = 'green' if result.returncode == 0 else ('red_준비' if result.returncode == 78 or readiness else 'red_판정')
         rows.append(dict(name=gate, status=state, state=state, exit=result.returncode, readiness=readiness or None))
+    # Fix task: rerun each recorded RED as its own row. A changed test file is never run.
+    for offset, (name, entry) in enumerate(zip(runtime().fix_rows(task), (task.get('fix') or {}).get('red', []))):
+        log = logs / (str(len(task['gates']) + offset) + '.log')
+        if task['schema'] == 'colab-task/2':
+            log = resolve_task_path(root, task, str(log))
+        current = current_blob(root, entry['path'])
+        if current != entry['blob']:
+            text = f"recorded RED test changed: blob {entry['blob']} → {current or 'missing'} — not run\n"
+            state, code, readiness = 'red_판정', 1, None
+        else:
+            path, case, cwd, argv = red_runner(root, entry['spec'])
+            rc, output = run_red(cwd, argv)
+            text = output.decode('utf-8', 'replace')
+            state = {0: 'green', 1: 'red_판정'}.get(rc, 'red_준비')
+            code = rc if rc is not None else 78
+            readiness = f'red-run: rc {rc}' if state == 'red_준비' else None
+        log.write_text(text, encoding='utf-8')
+        print(f'── {name} : {state}\n{text}', end='' if text.endswith('\n') else '\n', flush=True)
+        rows.append(dict(name=name, status=state, state=state, exit=code, readiness=readiness))
     after = gate_evidence(root, task_id)
     counts = {state: sum(row['status'] == state for row in rows) for state in STATES}
     doc = dict(schema='colab-gate-summary/1', gates=rows, counts=counts,

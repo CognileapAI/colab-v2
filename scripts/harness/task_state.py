@@ -89,8 +89,14 @@ def bind_paths(root, task):
     # is None and `verify_task_report` fails on every single handoff — the role would be
     # able to open a task and never able to close one.
     task['report'] = str(base / 'gate-summary.json') if task['role'] in GATE_ROLES else None
-    task['logs'] = [str(base / 'logs' / f'{index}.log') for index, _ in enumerate(task['gates'])]
+    # A fix task's `fix-red:<spec>` rows follow the declared gates with continuing log numbers.
+    task['logs'] = [str(base / 'logs' / f'{index}.log') for index, _ in enumerate([*task['gates'], *fix_rows(task)])]
     return task
+
+
+def fix_rows(task):
+    """Gate-summary row names a fix task adds after its declared gates (one per recorded RED)."""
+    return ['fix-red:' + entry['spec'] for entry in (task.get('fix') or {}).get('red', [])]
 
 
 def resolve(root, task, name, *, artifact_only=False):

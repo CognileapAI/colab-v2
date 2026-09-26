@@ -512,6 +512,65 @@ class RedRunFixLaneTests(unittest.TestCase):
         self.refused(self.cli(*lane, 'eval/harness/tests/probe.sh'), 'readiness, not RED')
         self.refused(self.cli(*lane, 'eval/harness/tests/probe.sh::one'), 'no case selection')
 
+    def test_5_product_fix_turns_the_row_green_and_handoff_records_handed_off(self):
+        task_id = self.begin_fix()
+        self.write('probe_product.py', FIXED_PRODUCT)
+        self.assertEqual(self.cli('run-gates', '--task', task_id).returncode, 0)
+        task, rows, report = self.rows(task_id)
+        self.assertEqual(rows['fix-red:' + RED_SPEC]['status'], 'green')
+        self.assertEqual(report['targets']['selected'], ['check'])
+        self.assertEqual(report['counts'], {'green': 2, 'red_판정': 0, 'red_준비': 0})
+        handed = self.cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'fixed the product')
+        self.assertEqual(handed.returncode, 0, handed.stderr)
+        self.assertIn('COLAB_HANDOFF', handed.stdout)
+        record = contract.load_task(self.root, task_id)
+        self.assertEqual(record['handed_off']['mode'], 'complete')
+        self.assertEqual(record['handed_off']['run_id'], task['run_id'])
+        self.assertTrue(record['handed_off']['at'])
+        self.assertFalse(self.marker(task_id).exists())
+        self.assertEqual(self.red_locked(), {'paths': [], 'tasks': []})
+
+    def test_6_still_red_blocks_gates_and_handoff(self):
+        task_id = self.begin_fix()
+        self.assertEqual(self.cli('run-gates', '--task', task_id).returncode, 1)
+        _, rows, _ = self.rows(task_id)
+        self.assertEqual((rows['fix-red:' + RED_SPEC]['status'], rows['fix-red:' + RED_SPEC]['exit']), ('red_판정', 1))
+        self.refused(self.cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'x'),
+                     'gate failures remain')
+        self.assertNotIn('handed_off', contract.load_task(self.root, task_id))
+        self.assertTrue(self.marker(task_id).exists())
+
+    def test_7_green_by_editing_the_recorded_test_is_refused_until_restored(self):
+        task_id = self.begin_fix()
+        self.write(RED_PATH, PROBE_TEST.replace('42', '41'))  # the cheap green: change the expectation
+        self.assertEqual(self.cli('run-gates', '--task', task_id).returncode, 1)
+        task, rows, _ = self.rows(task_id)
+        row = rows['fix-red:' + RED_SPEC]
+        self.assertEqual(row['status'], 'red_판정')
+        log = Path(task['logs'][len(task['gates'])]).read_text(encoding='utf-8')
+        self.assertIn('recorded RED test changed', log)
+        refused = self.cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'x')
+        self.refused(refused, 'recorded RED test changed')
+        self.assertIn('exits', refused.stderr)
+        self.write(RED_PATH, PROBE_TEST)
+        self.write('probe_product.py', FIXED_PRODUCT)
+        self.assertEqual(self.cli('run-gates', '--task', task_id).returncode, 0)
+        handed = self.cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'fixed the product')
+        self.assertEqual(handed.returncode, 0, handed.stderr)
+
+    def test_8_report_without_the_fix_row_is_missing_required_gates(self):
+        task_id = self.begin_fix()
+        evidence = contract.gate_start(self.root, task_id)
+        task = contract.load_task(self.root, task_id)
+        report = {'schema': 'colab-gate-summary/1', 'commit': evidence['commit'], 'tree': evidence['tree'],
+                  'counts': {'green': 1, 'red_판정': 0, 'red_준비': 0},
+                  'gates': [{'name': 'check', 'status': 'green', 'exit': 0}],
+                  'task_evidence': {'before': evidence, 'after': evidence}}
+        path = Path(task['report']); path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report))
+        with self.assertRaisesRegex(ValueError, 'required gates are missing'):
+            contract.verify_task_report(self.root, task)
+
     def test_9_red_locked_drops_handed_off_and_orphan_markers(self):
         task_id = self.begin_fix()
         record = contract.task_path(self.root, task_id)
