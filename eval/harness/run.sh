@@ -164,11 +164,13 @@ for d in "${TASKS[@]}"; do
     #   `is_error`·`subtype` 을 함께 읽어 그 회차를 red(준비)로 돌린다(시험 ⓖ).
     # 출력 = `<USD>\t<오류 subtype 또는 빈 칸>` 한 줄.
     # 증거 파일 `H??.out.*.txt`(커밋 대상)에는 러너 저장소의 절대경로(`$REPO_TOP` · 사용자 홈 포함)를
-    # `<repo>` 로 바꿔 쓴다. 판정기 입력(`$JUDGE_IN`)은 원문 그대로다 — 판정 재료를 바꾸지 않는다(S-6a).
+    # `<repo>` 로, 그 밖의 사용자 홈(`$HOME`)은 `<home>` 으로 바꿔 쓴다(저장소가 홈 아래여도 `<repo>` 가 먼저다).
+    # 판정기 입력(`$JUDGE_IN`)은 원문 그대로다 — 판정 재료를 바꾸지 않는다(S-6a · audit C-9).
     JUDGE_IN="$OUT/.judge-in"
-    meta="$(python3 - "$raw" "$txt" "$REPO_TOP" "$JUDGE_IN" <<'PY'
+    meta="$(python3 - "$raw" "$txt" "$REPO_TOP" "$JUDGE_IN" "${HOME:-}" <<'PY'
 import json, sys
-raw_path, txt_path, repo_top, judge_path = sys.argv[1:5]
+raw_path, txt_path, repo_top, judge_path, home = sys.argv[1:6]
+home = home.rstrip('/')
 data = open(raw_path, encoding='utf-8', errors='replace').read()
 text, cost, err = data, '', ''
 try:
@@ -188,7 +190,10 @@ if isinstance(obj, dict):
     elif 'subtype' in obj and obj.get('subtype') != 'success':
         err = str(obj.get('subtype'))
 open(judge_path, 'w', encoding='utf-8').write(text)
-open(txt_path, 'w', encoding='utf-8').write(text.replace(repo_top, '<repo>') if repo_top else text)
+evidence = text.replace(repo_top, '<repo>') if repo_top else text
+if home:
+    evidence = evidence.replace(home, '<home>')
+open(txt_path, 'w', encoding='utf-8').write(evidence)
 print('%s\t%s' % (cost, err.replace('\t', ' ').replace('\n', ' ')))
 PY
 )"
