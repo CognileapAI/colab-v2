@@ -55,6 +55,16 @@ def record_path(root, task_id):
     return confined(directory(root, task_id), directory(root, task_id) / 'task.json')
 
 
+def marker_dir(root):
+    """Index of open fix tasks: `<common>/colab-harness/red-locked/<task_id>` holds its record path.
+
+    Shared by every checkout of one repository (the common dir), so a parent session and its lane
+    worktrees see one index. The marker is only an index; task.json is the verdict.
+    """
+    _, common, _ = identity(root)
+    return confined(common, common / 'colab-harness' / 'red-locked')
+
+
 def run_directory(root, task):
     actual, _, key = identity(root)
     if task.get('schema') != 'colab-task/2' or task.get('checkout') != str(actual) or task.get('checkout_id') != key:

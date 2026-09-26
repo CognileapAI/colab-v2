@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import os
@@ -386,6 +387,144 @@ class TaskRuntimeTests(unittest.TestCase):
         accepted = cli('handoff', '--task', task_id, '--mode', 'complete', '--summary', 'lane result')
         self.assertEqual(accepted.returncode, 0, accepted.stderr)
         self.assertIn('COLAB_HANDOFF', accepted.stdout)
+
+
+# ── S-red red-run (spec S-HARNESS-SRED-REDRUN-20260926 §4.1·4.2·4.4 · 시험 ①–⑨) ──
+PROBE_TEST = '''import unittest
+
+import probe_product
+
+
+class ProbeTests(unittest.TestCase):
+    def test_fails(self):
+        self.assertEqual(probe_product.answer(), 42)
+
+    def test_passes(self):
+        self.assertTrue(True)
+'''
+BROKEN_PRODUCT = 'def answer():\n    return 41\n'
+FIXED_PRODUCT = 'def answer():\n    return 42\n'
+RED_PATH = 'scripts/tests/test_probe.py'
+RED_SPEC = RED_PATH + '::ProbeTests.test_fails'
+
+
+class RedRunFixLaneTests(unittest.TestCase):
+    """A fix task records a real RED at begin; gates rerun it; handoff needs GREEN with the blob unchanged."""
+    SCRIPT = str(ROOT / 'scripts/harness/hooks/lifecycle_contract.py')
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = (Path(self.tmp.name) / 'repo')
+        self.root.mkdir()
+        self.root = self.root.resolve()
+        self.write('.gitignore', '__pycache__/\n')
+        self.write('gates/run.sh', '#!/usr/bin/env bash\necho verified\n')
+        self.write('probe_product.py', BROKEN_PRODUCT)
+        self.write(RED_PATH, PROBE_TEST)
+        git = ['git', '-C', str(self.root)]
+        subprocess.run(git + ['init', '-q'], check=True)
+        subprocess.run(git + ['add', '-A'], check=True)
+        subprocess.run(git + ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                              'commit', '-qm', 'initial'], check=True)
+
+    def write(self, relative, text):
+        target = self.root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text)
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, self.SCRIPT, *args], cwd=self.root, text=True,
+                              capture_output=True, timeout=300)
+
+    def begin_fix(self):
+        result = self.cli('begin', '--role', 'lane-worker', '--gate', 'check', '--fix', '--red', RED_SPEC)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)['task_id']
+
+    def refused(self, result, text):
+        self.assertEqual(result.returncode, 78, result.stdout + result.stderr)
+        self.assertIn(text, result.stderr)
+
+    def blob(self, relative):
+        return subprocess.check_output(['git', '-C', str(self.root), 'hash-object', '--', relative], text=True).strip()
+
+    def common(self):
+        return Path(subprocess.check_output(['git', '-C', str(self.root), 'rev-parse', '--path-format=absolute',
+                                             '--git-common-dir'], text=True).strip())
+
+    def marker(self, task_id):
+        return self.common() / 'colab-harness' / 'red-locked' / task_id
+
+    def red_locked(self):
+        result = self.cli('red-locked', '--checkout', str(self.root))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def rows(self, task_id):
+        task = contract.load_task(self.root, task_id)
+        report = json.loads(Path(task['report']).read_text(encoding='utf-8'))
+        return task, {row['name']: row for row in report['gates']}, report
+
+    def test_1_begin_runs_the_red_case_and_records_blob_rc_log_and_marker(self):
+        task_id = self.begin_fix()
+        task = contract.load_task(self.root, task_id)
+        entry, = task['fix']['red']
+        self.assertEqual((entry['spec'], entry['path'], entry['case']), (RED_SPEC, RED_PATH, 'ProbeTests.test_fails'))
+        self.assertEqual(entry['blob'], self.blob(RED_PATH))
+        self.assertEqual(entry['rc'], 1)
+        log = Path(entry['log'])
+        self.assertTrue(log.is_file())
+        text = log.read_text(encoding='utf-8')
+        self.assertIn('Ran 1 test', text)  # -k selected the one failing case, not the whole file
+        self.assertIn('FAILED', text)
+        self.assertEqual(entry['output_sha256'], hashlib.sha256(log.read_bytes()).hexdigest())
+        self.assertIn('-k', entry['runner'])
+        self.assertTrue(self.marker(task_id).is_file())
+        # ⑨ — the lookup the edit guard uses
+        self.assertEqual(self.red_locked(), {'paths': [RED_PATH], 'tasks': [task_id]})
+
+    def test_2_already_green_case_is_not_a_red_and_opens_no_task(self):
+        self.refused(self.cli('begin', '--role', 'lane-worker', '--gate', 'check', '--fix',
+                              '--red', RED_PATH + '::ProbeTests.test_passes'), 'already green')
+        self.assertEqual(list((self.common() / 'colab-harness').rglob('task.json'))
+                         if (self.common() / 'colab-harness').exists() else [], [])
+
+    def test_3_fix_and_red_declarations_are_refused_with_their_reasons(self):
+        lane = ('begin', '--role', 'lane-worker', '--gate', 'check')
+        self.refused(self.cli(*lane, '--red', RED_SPEC), '--red requires --fix')
+        self.refused(self.cli(*lane, '--fix'), '--fix requires --red')
+        for role in ('researcher', 'measurement-lane'):
+            with self.subTest(role=role):
+                self.refused(self.cli('begin', '--role', role, '--fix', '--red', RED_SPEC),
+                             'fix lane requires --role lane-worker')
+        self.refused(self.cli(*lane, '--legacy', '--report', 'dev-package/reports/r/l/gate-summary.json',
+                              '--fix', '--red', RED_SPEC), 'drop --legacy')
+        self.refused(self.cli(*lane, '--fix', '--red', RED_SPEC, '--red', RED_SPEC), 'duplicate task declaration')
+
+    def test_4_unsupported_missing_and_non_test_paths_are_readiness_failures(self):
+        lane = ('begin', '--role', 'lane-worker', '--gate', 'check', '--fix', '--red')
+        self.refused(self.cli(*lane, 'docs/x.md'), 'no runner')
+        self.refused(self.cli(*lane, 'scripts/tests/missing.py'), 'missing.py')
+        self.refused(self.cli(*lane, '/abs/test_x.py'), 'repository-relative')
+        self.refused(self.cli(*lane, 'scripts/tests/*.py'), 'repository-relative')
+        self.write('eval/harness/tests/probe.sh', 'exit 3\n')
+        self.refused(self.cli(*lane, 'eval/harness/tests/probe.sh'), 'readiness, not RED')
+        self.refused(self.cli(*lane, 'eval/harness/tests/probe.sh::one'), 'no case selection')
+
+    def test_9_red_locked_drops_handed_off_and_orphan_markers(self):
+        task_id = self.begin_fix()
+        record = contract.task_path(self.root, task_id)
+        data = json.loads(record.read_text(encoding='utf-8'))
+        data['handed_off'] = {'mode': 'complete', 'run_id': data['run_id'], 'at': 'now'}
+        record.write_text(json.dumps(data))
+        self.assertEqual(self.red_locked(), {'paths': [], 'tasks': []})
+        self.assertFalse(self.marker(task_id).exists())
+        orphan = self.marker('f' * 32)
+        orphan.write_text(str(record.parent.parent / ('f' * 32) / 'task.json'))
+        self.assertEqual(self.red_locked(), {'paths': [], 'tasks': []})
+        self.assertFalse(orphan.exists())
+
 
 class ResearcherTaskHookTests(unittest.TestCase):
     """R1 — `SubagentStart` (researcher) opens the H6 task so the first Stop is not bounced.

@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import collections
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 import errno
 import stat
 import hashlib
@@ -95,6 +96,136 @@ def check_scope_declarations(scope, root=None):
 def out_of_scope(task, changed):
     patterns = [scope_regex(g) for g in (*task['scope'], *SCOPE_DEFAULTS)]
     return sorted(p for p in changed if not any(r.fullmatch(p) for r in patterns))
+
+
+# ── Fix lane red-run (spec S-HARNESS-SRED-REDRUN-20260926 §4.1) ──
+# `begin --fix --red <path>[::case]` runs the declared test and opens the task only on a real
+# RED (rc 1). `run_gates` reruns the same argv as a `fix-red:<spec>` row and handoff requires it
+# green with the test file's blob unchanged. The runners use the interpreter and options of the
+# gate that owns each test tree; anything else has no runner and is refused.
+def _unittest_runner(root, path, case):
+    # Same path-argument form as `gates/run.sh agent-bridge` (no `scripts.tests` package assumed).
+    return root, [sys.executable, '-m', 'unittest', path, *(['-k', case] if case else [])]
+
+
+def _vitest_runner(root, path, case):
+    # `frontend/package.json` test script = `vitest run`.
+    return root / 'frontend', ['node_modules/.bin/vitest', 'run', path.removeprefix('frontend/'),
+                               *(['-t', case] if case else [])]
+
+
+def _pytest_runner(root, path, case):
+    # Same interpreter and options as `gates/tools/service-tests.sh`.
+    service = '/'.join(path.split('/')[:2])
+    target = path.removeprefix(service + '/') + ('::' + case if case else '')
+    return root / service, ['.venv/bin/python', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', target]
+
+
+def _bash_runner(root, path, case):
+    if case:
+        raise ValueError(f'red-run: {path} has no case selection — declare the file without ::case')
+    return root, ['bash', path]
+
+
+RED_RUNNERS = (
+    ('scripts/tests/*.py', _unittest_runner),
+    ('frontend/test/**', _vitest_runner),
+    ('services/*/tests/**', _pytest_runner),
+    ('gates/tools/*-selftest.sh', _bash_runner),
+    ('eval/harness/tests/*.sh', _bash_runner),
+)
+RED_TIMEOUT = 900
+
+
+def utc_now():
+    return datetime.now(timezone.utc).isoformat(timespec='seconds')
+
+
+def red_runner(root, spec):
+    """Parse `path[::case]` and return (path, case, cwd, argv); refuse what cannot be a RED test."""
+    if not isinstance(spec, str) or not spec:
+        raise ValueError('red-run: empty --red declaration')
+    path, _, case = spec.partition('::')
+    check_scope_declarations([path])
+    if any(ch in path for ch in '*?['):
+        raise ValueError(f'red-run: {spec!r} must name one repository-relative test file, not a glob')
+    builder = next((build for glob, build in RED_RUNNERS if scope_regex(glob).fullmatch(path)), None)
+    if builder is None:
+        raise ValueError(f'red-run: no runner for {path} — supported: ' + ', '.join(g for g, _ in RED_RUNNERS))
+    if not (root / path).is_file():
+        raise ValueError(f'red-run: {path} is not a file in this checkout')
+    cwd, argv = builder(root, path, case)
+    return path, case, cwd, argv
+
+
+def run_red(cwd, argv):
+    """(rc, output) — rc None when the runner could not start or timed out."""
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1')  # a rerun must not add files mid-gate
+    try:
+        result = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, timeout=RED_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        return None, (exc.stdout or b'') + (exc.stderr or b'') + f'\nred-run: timeout {RED_TIMEOUT} s\n'.encode()
+    except OSError as exc:
+        return None, f'red-run: runner did not start: {exc}\n'.encode()
+    return result.returncode, result.stdout + result.stderr
+
+
+def current_blob(root, path):
+    target = root / path
+    if not target.is_file():
+        return None
+    return git(root, 'hash-object', '--', path)
+
+
+def record_red(root, spec):
+    """Run one declared RED at begin. Returns (entry, output); refuses anything but rc 1."""
+    path, case, cwd, argv = red_runner(root, spec)
+    rc, output = run_red(cwd, argv)
+    if rc == 0:
+        raise ValueError(f'red-run: {spec} is already green — a RED must fail before the fix')
+    if rc != 1:
+        detail = f'rc {rc}' if rc is not None else output.decode('utf-8', 'replace').strip().splitlines()[-1]
+        raise ValueError(f'red-run: {spec} did not run as a test ({detail}) — readiness, not RED')
+    entry = dict(spec=spec, path=path, case=case or None, blob=current_blob(root, path), runner=argv,
+                 cwd=str(cwd), rc=rc, output_sha256=hashlib.sha256(output).hexdigest())
+    return entry, output
+
+
+def red_locked(path, target=None):
+    """Recorded RED paths of the open fix tasks of the checkout that holds `path`.
+
+    Markers of handed-off tasks, of missing task records and of removed checkouts are dropped
+    (the exit for an abandoned fix task is removing its worktree). Returns (summary, hits):
+    hits = [(task_id, blob)] of tasks whose recorded path equals `target`.
+    """
+    root = checkout(path)
+    index = runtime().marker_dir(root)
+    base = index.parent
+    paths, tasks, hits = [], [], []
+    for marker in (sorted(index.iterdir()) if index.is_dir() else []):
+        task_id = runtime().identifier(marker.name)
+        record = runtime().confined(base, Path(marker.read_text(encoding='utf-8').strip()))
+        if record.name != 'task.json' or record.parent.name != task_id:
+            raise ValueError('red-locked marker does not name its task record: ' + marker.name)
+        if not record.is_file():
+            marker.unlink(missing_ok=True)
+            continue
+        task = json.loads(record.read_text(encoding='utf-8'))
+        if task.get('task_id') != task_id:
+            raise ValueError('red-locked marker and task record differ: ' + task_id)
+        owner = task.get('checkout')
+        if task.get('handed_off') or not isinstance(owner, str) or not owner or not Path(owner).is_dir():
+            marker.unlink(missing_ok=True)
+            continue
+        if owner != str(root):
+            continue
+        tasks.append(task_id)
+        for entry in (task.get('fix') or {}).get('red', []):
+            if entry['path'] not in paths:
+                paths.append(entry['path'])
+            if entry['path'] == target:
+                hits.append((task_id, entry['blob']))
+    return dict(paths=paths, tasks=tasks), hits
 
 
 def resolve_task_path(root, task, name, artifact_only=False):
@@ -207,11 +338,22 @@ def archive_report(source, destination):
             temporary.unlink(missing_ok=True)
 
 
-def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False, scope=None):
+def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False, scope=None,
+          fix=False, red=()):
     root = checkout(root)
-    artifacts, gates, scope = artifacts or [], gates or [], scope or []
+    artifacts, gates, scope, red = artifacts or [], gates or [], scope or [], list(red or [])
     if role not in TASK_ROLES:
         raise ValueError('unsupported task role')
+    if fix and role != 'lane-worker':
+        raise ValueError('fix lane requires --role lane-worker')
+    if fix and not red:
+        raise ValueError('--fix requires --red <path>[::case]')
+    if red and not fix:
+        raise ValueError('--red requires --fix')
+    if fix and legacy:
+        raise ValueError('fix lane requires the colab-task/2 runtime; drop --legacy')
+    if len(set(red)) != len(red):
+        raise ValueError('duplicate task declaration')
     if scope and role not in GATE_ROLES:
         raise ValueError('research task declares artifacts, not a lane scope')
     check_scope_declarations(scope, root)
@@ -240,13 +382,30 @@ def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, le
             raise ValueError('research task must not declare implementation gates')
         for name in artifacts:
             runtime().relative_artifact(name)
+        # Fix lane: declare every RED before running any; no task exists unless all are rc 1.
+        for spec in red:
+            red_runner(root, spec)
+        records = [record_red(root, spec) for spec in red]
         _, _, key = runtime().identity(root)
         task = dict(schema='colab-task/2', task_id=uuid.uuid4().hex, run_id=uuid.uuid4().hex,
                     checkout=str(root), checkout_id=key, role=role, agent_id=agent_id,
                     artifact_declarations=artifacts, gates=gates, baseline=snapshot(root),
                     started_identity=head_identity(root), **extra)
+        if fix:
+            folder = runtime().directory(root, task['task_id']) / 'red'
+            for index, (entry, _) in enumerate(records):
+                entry['log'] = str(folder / f'{index}.log')
+            task['fix'] = dict(red=[entry for entry, _ in records], recorded_at=utc_now())
         runtime().bind_paths(root, task)
         runtime().save(root, task)
+        if fix:
+            base = runtime().directory(root, task['task_id'])
+            folder.mkdir(exist_ok=True)
+            for entry, output in records:
+                runtime().confined(base, Path(entry['log'])).write_bytes(output)
+            index = runtime().marker_dir(root)
+            index.mkdir(parents=True, exist_ok=True)
+            (index / task['task_id']).write_text(str(runtime().record_path(root, task['task_id'])), encoding='utf-8')
         return task
     # `measurement-lane` is a new role; it has no legacy repository-output history to stay
     # compatible with. Say so plainly instead of letting it fall through to the researcher
@@ -536,6 +695,30 @@ def resolve_edit(root, data, name):
         return resolve_task_path(root, task, name, artifact_only=True)
 
 
+def handoff(root, task_id, mode, summary):
+    """CLI handoff: judge through `stop()`, then record that the task was handed off (L1 first half).
+
+    The SubagentStop hook path (`stop` subcommand) only judges and never writes; closing and
+    pruning are PR 2. A handed-off fix task releases its red-locked marker.
+    """
+    task = load_task(root, task_id)
+    result = dict(task_id=task_id, mode=mode, summary=summary,
+                  artifacts={p: digest(resolve_task_path(root, task, p, artifact_only=True)) for p in task['artifacts']})
+    if task['schema'] == 'colab-task/2':
+        result['run_id'] = task['run_id']
+    marker = 'COLAB_HANDOFF ' + json.dumps(result, ensure_ascii=False)
+    stop(dict(cwd=str(root), agent_type=task['role'], agent_id=task.get('agent_id'),
+              last_assistant_message=marker), task['role'])
+    task['handed_off'] = dict(mode=mode, run_id=task.get('run_id'), at=utc_now())
+    if task['schema'] == 'colab-task/2':
+        runtime().save(root, task)
+    else:
+        task_path(root, task_id).write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding='utf-8')
+    if task.get('fix'):
+        (runtime().marker_dir(root) / task_id).unlink(missing_ok=True)
+    return marker
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -548,6 +731,13 @@ def main():
     start.add_argument('--legacy', action='store_true', help='explicit legacy repository-output compatibility')
     start.add_argument('--scope', action='append', default=[],
                        help='lane file glob (repeatable); handoff --mode complete blocks changes outside it')
+    start.add_argument('--fix', action='store_true',
+                       help='fix lane: begin runs every --red test and opens the task only if each fails (rc 1)')
+    start.add_argument('--red', action='append', default=[],
+                       help='recorded RED test <path>[::case] (repeatable; requires --fix)')
+    locked = commands.add_parser('red-locked', help='recorded RED paths of open fix tasks in a checkout')
+    locked.add_argument('--checkout', required=True)
+    locked.add_argument('--path', help='print "<task_id> <blob>" per open fix task locking this relative path')
     write = commands.add_parser('write-artifact')
     write.add_argument('--task', required=True)
     write.add_argument('--run-id', required=True)
@@ -574,10 +764,17 @@ def main():
         elif args.command == 'stop':
             label = stop(json.load(sys.stdin), args.role)
             print(label + ' — current task evidence and handoff verified; no automatic commit')
+        elif args.command == 'red-locked':
+            summary, hits = red_locked(args.checkout, args.path)
+            if args.path is None:
+                print(json.dumps(summary))
+            for task_id, blob in hits:
+                print(task_id, blob)
         else:
             root = checkout(Path.cwd())
             if args.command == 'begin':
-                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id, args.legacy, args.scope)
+                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id, args.legacy, args.scope,
+                             args.fix, args.red)
                 print(json.dumps({k: v for k, v in task.items() if k != 'baseline'}, ensure_ascii=False))
             elif args.command == 'gate-snapshot':
                 print(json.dumps(gate_evidence(root, args.task)))
@@ -598,15 +795,7 @@ def main():
                 target.write_text(sys.stdin.read(), encoding='utf-8')
                 print(json.dumps(dict(path=str(target), sha256=digest(target))))
             else:
-                task = load_task(root, args.task)
-                handoff = dict(task_id=args.task, mode=args.mode, summary=args.summary,
-                               artifacts={p: digest(resolve_task_path(root, task, p, artifact_only=True)) for p in task['artifacts']})
-                if task['schema'] == 'colab-task/2':
-                    handoff['run_id'] = task['run_id']
-                marker = 'COLAB_HANDOFF ' + json.dumps(handoff, ensure_ascii=False)
-                stop(dict(cwd=str(root), agent_type=task['role'], agent_id=task.get('agent_id'),
-                          last_assistant_message=marker), task['role'])
-                print(marker)
+                print(handoff(root, args.task, args.mode, args.summary))
         return 0
     except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError) as exc:
         print('lifecycle evidence blocked: ' + str(exc), file=sys.stderr)
