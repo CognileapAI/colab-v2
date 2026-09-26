@@ -8,10 +8,18 @@ const variables = { land_surface_temperature: '지표면 온도', air_temperatur
 const statistics = { instantaneous: '순간값', daily_mean: '일평균', daily_max: '일최고', daily_min: '일최저', monthly_mean: '월평균', monthly_mean_daily_max: '일최고값의 월평균', monthly_mean_daily_min: '일최저값의 월평균' };
 const regions = { seoul: '서울', jeju: '제주', korean_peninsula: '한반도' };
 const labels: Record<string,string> = { variable:'관측 변수',region:'지역',period:'기간',statistics:'통계값',nativeResolutionM:'원래 공간 해상도(m)',platform:'관측 기반',provider:'제공 기관',unit:'단위',representation:'자료 형태',cadence:'시간 간격',directObservation:'직접 관측',format:'파일 형식' };
-const conditionLabels: Record<string,string> = { ...labels, maxResolutionM:'최대 공간 해상도(m)',maxMissingRatePercent:'최대 결측률(%)',descriptionAll:'설명에 모두 포함',coverageYear:'관측 연도(겹치는 기간)',uploadedMonth:'플랫폼 등록 월',exactPeriod:'기준 파일과 동일한 기간' };
+const conditionLabels: Record<string,string> = { ...labels, maxResolutionM:'최대 공간 해상도(m)',maxCadenceSeconds:'주기',maxMissingRatePercent:'최대 결측률(%)',descriptionAll:'설명에 모두 포함',coverageYear:'관측 연도(겹치는 기간)',uploadedMonth:'플랫폼 등록 월',exactPeriod:'기준 파일과 동일한 기간' };
+
+// 주기 상한(초) → 「1시간 이하」·「30분 이하」. 값은 등록 설명의 선언 주기와 비교한다(intent 2026-09-26-cadence-range-predicate).
+function cadenceLimit(seconds: number): string {
+  if (seconds % 3600 === 0) return `${seconds / 3600}시간 이하`;
+  if (seconds % 60 === 0) return `${seconds / 60}분 이하`;
+  return `${seconds}초 이하`;
+}
 
 function display(key: string, value: unknown): string {
   if (value == null) return '미확인';
+  if (key === 'maxCadenceSeconds' && typeof value === 'number') return cadenceLimit(value);
   if (key === 'variable') return variables[value as keyof typeof variables] ?? String(value);
   if (key === 'region') return regions[value as keyof typeof regions] ?? String(value);
   if (key === 'statistics' && Array.isArray(value)) return value.map(v => statistics[v as keyof typeof statistics] ?? v).join(', ');
@@ -21,7 +29,7 @@ function display(key: string, value: unknown): string {
   }
   if (typeof value === 'object') return Object.values(value).join(' ~ ');
   if (typeof value === 'boolean') return value ? '예' : '아니요';
-  const terms:Record<string,string> = {spatial:'공간자료',spatial_grid:'공간 격자',point_observations:'공간 좌표가 있는 점 관측',table:'표',array:'배열',satellite:'위성',ground:'지상',model:'모델',mixed:'혼합',daily:'일별',monthly:'월별',weekly:'주별','15min':'15분'};
+  const terms:Record<string,string> = {spatial:'공간자료',spatial_grid:'공간 격자',point_observations:'공간 좌표가 있는 점 관측',table:'표',array:'배열',satellite:'위성',ground:'지상',model:'모델',mixed:'혼합',daily:'일별',monthly:'월별',weekly:'주별','15min':'15분','5min':'5분','10min':'10분',hourly:'매시',yearly:'연 단위'};
   if (String(value) in terms) return terms[String(value)]!;
   return String(value);
 }

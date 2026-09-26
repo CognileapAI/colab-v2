@@ -1,0 +1,34 @@
+{
+ "schema": "colab-reviewed-diff/2",
+ "old": {
+  "path": "round-2-2026-09-26/input-payload.json",
+  "sha256": "73a523f0da239665a71940f0b23d7838c1c7abc06a41b92035f995a24374a409"
+ },
+ "new": {
+  "path": "round-4-2026-09-26/input-payload.json",
+  "sha256": "a5f6803090e802670fa2b177c3e288ae6f99e568da1104b85e24dc1922e325de"
+ },
+ "datasets": {
+  "old": 28,
+  "new": 28
+ },
+ "removedReviewedKeys": 0,
+ "approvedRemovals": 1,
+ "addedReviewedKeys": 0,
+ "changedReviewedKeys": 0,
+ "reviewedRemovals": [
+  {
+   "seq": 4,
+   "name": "rn15_sample",
+   "key": "cadence",
+   "old": "15min",
+   "approval": "Ted 2026-09-26 「전부 권고대로」 — intent 2026-09-26-cadence-range-predicate 질문 2: rn15_sample(seq 4) 의 정본 문장이 자기 주기를 말하지 않아 reviewed cadence 를 거두고 계보 초안(rule:cadence-from-lineage-parent)으로 내린다",
+   "nowDraft": "15min",
+   "nowDraftProvenance": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 2(15min)"
+  }
+ ],
+ "removed": [],
+ "added": [],
+ "changed": [],
+ "approvedButNotRemoved": []
+}
