@@ -3,15 +3,15 @@
   "generated": {
     "by": "dev-package/tools/dataset_evidence_backfill.py",
     "note": "생성물 — 손으로 고치지 않는다. 값을 바꾸려면 정본을 고치고 다시 돌린다.",
-    "at": "2026-09-21"
+    "at": "2026-09-26"
   },
   "sourceHashes": {
-    "dev-package/tools/dev-seed/canonical-metadata.json": "2edf26d663fff09c6e660a2388e064e55ad6dd1984ef6f60c7efa358da078789",
+    "dev-package/tools/dev-seed/canonical-metadata.json": "4a49c675c62fceb5342f4c26d477169d38a5d67c20ab919d373a7b38c5ea65d1",
     "dev-package/tools/dev-seed/plan-manifest.yaml": "cc887ec8cbcb62efb9fc55199d06748a11064288a8f0d18c7486cf851735fc10",
-    "dev-package/reports/reference-data/datasets-md/01.level-data/01.precipitation/DATASETS.md": "c4b4408a53746a4ee43cc152532fe99fd51fcd1d755dd6660f30fb3ea838aa4a",
-    "dev-package/reports/reference-data/datasets-md/01.level-data/02.vegetation/DATASETS.md": "45cba55befd722cb958bfb0205c4cdf0ddc29f2be7390d54df6d71fbc08a5509",
+    "dev-package/reports/reference-data/datasets-md/01.level-data/01.precipitation/DATASETS.md": "ce6ba1177c95c09c2b825b635b33e430e8156903a38dcec2db96236929f98cf6",
+    "dev-package/reports/reference-data/datasets-md/01.level-data/02.vegetation/DATASETS.md": "6b61beccec81e010ebce0a2c2daa5e44ca469d5ec91625d52a1f5fead07ae70d",
     "dev-package/reports/reference-data/datasets-md/01.level-data/03.drought/DATASETS.md": "256471d3bf2df4f9f0f154a4a0976566e0e8c17e256d570c000c767f28148757",
-    "dev-package/reports/reference-data/datasets-md/02.File-format/DATASETS.md": "26bcacc49c6822d61553113ea3b416a2dc93072ed41f7faa191e5133300a5ea6"
+    "dev-package/reports/reference-data/datasets-md/02.File-format/DATASETS.md": "0a2594338ca3b0d1316b71a87c4618d90808fdbbd7e023817163a801e89d86db"
   },
   "rules": {
     "platform-from-instrument": "정본이 이름 댄 관측 기기·산출 방식으로 가른다 — 레이더·지상격자·기상관측소=ground · GK-2A/HLS/MODIS/Landsat=satellite · 재분석·U-Net 예측=model.",
@@ -20,7 +20,9 @@
     "interpolated-from-lineage": "정본 설명이 좌표변환·crop·재격자·평균을 말하면 true, 「재격자 없이 원자료 격자 위에 그대로」면 false.",
     "native-resolution-carried": "좌표변환·crop 만 한 산출물은 부모의 원 관측 해상도를 잇는다(재격자화 크기가 아니다 — semantics.json invariants 축자).",
     "region-from-registration-note": "정본 note 가 공간 범위를 말하면 그대로 적는다 — seq 16 축자「전지구 격자라 한반도 경계 밖」.",
-    "bbox-korea-peninsula": "보조 규칙(2026-09-21 Ted 결정 2 「가를 넣고, 보조하는 용도로 나를」) — 정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) 안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다."
+    "bbox-korea-peninsula": "보조 규칙(2026-09-21 Ted 결정 2 「가를 넣고, 보조하는 용도로 나를」) — 정본이 bbox 를 주고 그 상자가 한반도 상자(위도 33~39 · 경도 124~132) 안에 온전히 들어가면 region 초안 사실 「한반도」를 만든다. 정본 문면이 지명을 고정한 reviewed region 은 이 규칙과 무관하게 정본에서만 온다.",
+    "region-from-lineage-parent": "정본 지역이 없는 자료는 계보(plan-manifest.yaml parents)를 거슬러 올라가 정본 지역(reviewed)을 가진 **가장 가까운 대**의 조상 지명을 잇는다 — 그 대의 지명이 모두 같을 때만. Ted 판정 2026-09-26 「자료 지역 확정」 2 「연구대상지는 부모 범위(남한)를 초안으로 이음」 · 4 「파생 자료 9건은 계보로 잇되 초안(측정 후 승격)」.",
+    "region-from-lineage-sibling": "조상에 정본 지역이 없는 자료가 어떤 자식의 공동 입력이고, 그 자식이 정본 지역을 가진 다른 입력과 **같은 기준 격자 파일**(grid_files)에 산출되면 그 입력의 지명을 잇는다 — 자식이 입력들의 공통 격자 위에 있다는 계보 추론. Ted 판정 2026-09-26 「자료 지역 확정」 4."
   },
   "ruleSummary": {
     "platform-from-instrument": 26,
@@ -29,7 +31,275 @@
     "interpolated-from-lineage": 28,
     "native-resolution-carried": 1,
     "region-from-registration-note": 1,
-    "bbox-korea-peninsula": 0
+    "bbox-korea-peninsula": 4,
+    "region-from-lineage-parent": 4,
+    "region-from-lineage-sibling": 4
+  },
+  "regionTrace": {
+    "1": {
+      "reviewed": "남한",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "2": {
+      "reviewed": "남한",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "3": {
+      "reviewed": null,
+      "draft": "남한",
+      "draftRule": "region-from-lineage-parent",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "4": {
+      "reviewed": null,
+      "draft": "남한",
+      "draftRule": "region-from-lineage-parent",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "5": {
+      "reviewed": null,
+      "draft": "남한",
+      "draftRule": "region-from-lineage-parent",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "6": {
+      "reviewed": "한반도",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "7": {
+      "reviewed": "경기남부충청",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "8": {
+      "reviewed": null,
+      "draft": "경기남부충청",
+      "draftRule": "region-from-lineage-sibling",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "9": {
+      "reviewed": null,
+      "draft": "경기남부충청",
+      "draftRule": "region-from-lineage-sibling",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "10": {
+      "reviewed": null,
+      "draft": "경기남부충청",
+      "draftRule": "region-from-lineage-sibling",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "11": {
+      "reviewed": null,
+      "draft": "경기남부충청",
+      "draftRule": "region-from-lineage-sibling",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "12": {
+      "reviewed": null,
+      "draft": "경기남부충청",
+      "draftRule": "region-from-lineage-parent",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "13": {
+      "reviewed": "대한민국시군구",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "14": {
+      "reviewed": "대한민국시군구",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "15": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "16": {
+      "reviewed": null,
+      "draft": "전지구",
+      "draftRule": "region-from-registration-note",
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "17": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "18": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "19": {
+      "reviewed": "남한",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "20": {
+      "reviewed": "남한",
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": null,
+      "bboxInsideKoreaBox": null
+    },
+    "21": {
+      "reviewed": null,
+      "draft": "한반도",
+      "draftRule": "bbox-korea-peninsula",
+      "lineageConflict": null,
+      "bbox": [
+        125.2458,
+        36.907,
+        126.523,
+        37.9256
+      ],
+      "bboxInsideKoreaBox": true
+    },
+    "22": {
+      "reviewed": null,
+      "draft": "한반도",
+      "draftRule": "bbox-korea-peninsula",
+      "lineageConflict": null,
+      "bbox": [
+        126.7776,
+        35.1348,
+        128.0097,
+        36.1405
+      ],
+      "bboxInsideKoreaBox": true
+    },
+    "23": {
+      "reviewed": null,
+      "draft": "한반도",
+      "draftRule": "bbox-korea-peninsula",
+      "lineageConflict": null,
+      "bbox": [
+        125.2458,
+        36.907,
+        126.523,
+        37.9256
+      ],
+      "bboxInsideKoreaBox": true
+    },
+    "24": {
+      "reviewed": null,
+      "draft": "한반도",
+      "draftRule": "bbox-korea-peninsula",
+      "lineageConflict": null,
+      "bbox": [
+        126.7776,
+        35.1348,
+        128.0097,
+        36.1405
+      ],
+      "bboxInsideKoreaBox": true
+    },
+    "25": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": [
+        103.923,
+        30.0,
+        130.5407,
+        40.0
+      ],
+      "bboxInsideKoreaBox": false
+    },
+    "26": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": [
+        115.4701,
+        30.0,
+        143.5948,
+        40.0
+      ],
+      "bboxInsideKoreaBox": false
+    },
+    "27": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": [
+        103.923,
+        30.0,
+        130.5407,
+        40.0
+      ],
+      "bboxInsideKoreaBox": false
+    },
+    "28": {
+      "reviewed": null,
+      "draft": null,
+      "draftRule": null,
+      "lineageConflict": null,
+      "bbox": [
+        115.4701,
+        30.0,
+        143.5948,
+        40.0
+      ],
+      "bboxInsideKoreaBox": false
+    }
   },
   "draftNote": "규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 않고 이 payload 에만 남는다. 승격 단계는 rule:<ID> locator 로 찾아온다.",
   "datasets": [
@@ -48,14 +318,16 @@
         "variable": "반사도",
         "nativeResolutionM": 500.0,
         "provider": "기상청",
-        "cadence": "5min"
+        "cadence": "5min",
+        "region": "남한"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/1 · 기간 근거 축자 「10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시」",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
-        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」"
+        "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -73,8 +345,8 @@
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 1 HSR 레이더 반사도 원자료",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-1",
-        "text": "기상청 API허브가 제공하는 HSR 합성 반사도 원자료. 시/공간해상도 5분 / 0.5 km, 변량은 반사도. 정해진 규칙에 맞추어 원자료를 꺼내오는 이진 파일 형식이다.\n기간 근거: 10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시 (2019-07-28 ~ 2024-07-09, 일 단위)\n프로젝트: precipitation · 레벨: Lv0 · 정본 포맷: bin(gzip)",
-        "sha256": "54c648697a7101ac9b81b400604af31dcdb0f040df2d86d8d034a13d1c73be52"
+        "text": "기상청 API허브가 제공하는 HSR 합성 반사도 원자료. 시/공간해상도 5분 / 0.5 km, 변량은 반사도. 정해진 규칙에 맞추어 원자료를 꺼내오는 이진 파일 형식이다.\n지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)\n기간 근거: 10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시 (2019-07-28 ~ 2024-07-09, 일 단위)\n프로젝트: precipitation · 레벨: Lv0 · 정본 포맷: bin(gzip)",
+        "sha256": "7ddba05e99cc3707f871c50e84161514cfc2e05dd1937a472fc72f469d43478c"
       }
     },
     {
@@ -92,14 +364,16 @@
         "format": "netcdf",
         "variable": "강수량",
         "cadence": "15min",
-        "provider": "기상청"
+        "provider": "기상청",
+        "region": "남한"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 2 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
-        "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」"
+        "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -117,8 +391,8 @@
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 2 rn15 15분 누적강수",
         "locator": "DATASETS.md#01.level-data/01.precipitation/DATASETS.md#seq-2",
-        "text": "기상청 API허브가 제공하는 지상 격자 15분 누적강수. 관측자료에 지형효과를 반영한 3차원 객관분석 기법으로 생산한 분석자료이며, 이 중 15분 누적 강수를 사용한다.\n기간 근거: 같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시 (2019-07-28 ~ 2024-07-09, 일 단위)\n프로젝트: precipitation · 레벨: Lv0 · 정본 포맷: NetCDF4",
-        "sha256": "c5df672ce7c375d18ad1227836030d038a8afc83464063faa4de5e61a95d6917"
+        "text": "기상청 API허브가 제공하는 지상 격자 15분 누적강수. 관측자료에 지형효과를 반영한 3차원 객관분석 기법으로 생산한 분석자료이며, 이 중 15분 누적 강수를 사용한다.\n지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)\n기간 근거: 같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시 (2019-07-28 ~ 2024-07-09, 일 단위)\n프로젝트: precipitation · 레벨: Lv0 · 정본 포맷: NetCDF4",
+        "sha256": "7a488c0048ede97b3c61977f151740039ab45a3f99828407548e1c522059b65d"
       }
     },
     {
@@ -153,14 +427,16 @@
         "representation": "spatial_grid",
         "directObservation": true,
         "interpolated": true,
-        "nativeResolutionM": 500.0
+        "nativeResolutionM": 500.0,
+        "region": "남한"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
-        "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3"
+        "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+        "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
       },
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 3 hsr_sample",
@@ -202,13 +478,15 @@
         "platform": "ground",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": true
+        "interpolated": true,
+        "region": "남한"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+        "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
       },
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 4 rn15_sample",
@@ -222,7 +500,7 @@
       "name": "pred_sample",
       "topic": "강우·강수",
       "sourceLabel": null,
-      "auxiliaryRole": null,
+      "auxiliaryRole": "보조입력",
       "status": "reviewed",
       "facts": {
         "period": {
@@ -248,13 +526,15 @@
         "platform": "model",
         "representation": "spatial_grid",
         "directObservation": false,
-        "interpolated": true
+        "interpolated": true,
+        "region": "남한"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+        "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한) · seq 2(남한)"
       },
       "source": {
         "label": "01.level-data/01.precipitation/DATASETS.md · seq 5 pred_sample",
@@ -279,7 +559,8 @@
         "variable": "NDVI",
         "cadence": "daily",
         "nativeResolutionM": 2000.0,
-        "provider": "국가기상위성센터"
+        "provider": "국가기상위성센터",
+        "region": "한반도"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/6 · 기간 근거 축자 「파일명 전월 범위」",
@@ -287,7 +568,8 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
-        "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」"
+        "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+        "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -305,8 +587,8 @@
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 6 GK-2A 일 단위 식생자료",
         "locator": "DATASETS.md#01.level-data/02.vegetation/DATASETS.md#seq-6",
-        "text": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.\n기간 근거: 파일명 전월 범위 (2023-05-01 ~ 2023-05-31, 일 단위)\n프로젝트: vegetation · 레벨: Lv0 · 정본 포맷: NetCDF4",
-        "sha256": "c05ad4ce4c99d57d1322619b933d06400badf19d2810ce4d2426f0230387dd19"
+        "text": "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.\n지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)\n기간 근거: 파일명 전월 범위 (2023-05-01 ~ 2023-05-31, 일 단위)\n프로젝트: vegetation · 레벨: Lv0 · 정본 포맷: NetCDF4",
+        "sha256": "63e2ac8b69bbb40e8ae3473fd3371e58de0263917b2f9905d71ac21df19d82b2"
       }
     },
     {
@@ -398,13 +680,15 @@
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": true
+        "interpolated": true,
+        "region": "경기남부충청"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+        "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 8 HLS_S30_NDVI_mean_202305",
@@ -444,11 +728,13 @@
       "draftStatus": "draft",
       "draftFacts": {
         "representation": "spatial_grid",
-        "interpolated": true
+        "interpolated": true,
+        "region": "경기남부충청"
       },
       "draftProvenance": {
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 9",
+        "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 9 DEM",
@@ -488,11 +774,13 @@
       "draftStatus": "draft",
       "draftFacts": {
         "representation": "spatial_grid",
-        "interpolated": true
+        "interpolated": true,
+        "region": "경기남부충청"
       },
       "draftProvenance": {
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 10",
+        "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 10 Aspect",
@@ -532,13 +820,15 @@
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": false
+        "interpolated": false,
+        "region": "경기남부충청"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+        "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 11 LULC_2023",
@@ -580,13 +870,15 @@
         "platform": "model",
         "representation": "spatial_grid",
         "directObservation": false,
-        "interpolated": true
+        "interpolated": true,
+        "region": "경기남부충청"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+        "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 7(경기남부충청)"
       },
       "source": {
         "label": "01.level-data/02.vegetation/DATASETS.md · seq 12 Prediction (공간상세화)",
@@ -860,12 +1152,14 @@
           "end": "2025-08-13"
         },
         "variable": "반사도",
-        "provider": "기상청"
+        "provider": "기상청",
+        "region": "남한"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
-        "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」"
+        "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -883,8 +1177,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 19 HSR 레이더합성 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-19",
-        "text": "기상청 HSR 합성 반사도 바이너리 원자료. 파일 안에 좌표도 투영 파라미터도 없어 위경도 npy 쌍을 밖에서 붙여야 한다.\n기간 근거: 12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위 (2025-08-13 ~ 2025-08-13, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: bin(gzip)",
-        "sha256": "98090099a746055fcbd02d620a2b4aebed28afd237dd1e48ad95cc1b1aa324e7"
+        "text": "기상청 HSR 합성 반사도 바이너리 원자료. 파일 안에 좌표도 투영 파라미터도 없어 위경도 npy 쌍을 밖에서 붙여야 한다.\n지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)\n기간 근거: 12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위 (2025-08-13 ~ 2025-08-13, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: bin(gzip)",
+        "sha256": "6c7e4508a998bda04b611213f22a9636bc3de5bb0612655e86150221d2432d64"
       }
     },
     {
@@ -901,13 +1195,15 @@
         },
         "format": "npy",
         "variable": "반사도",
-        "provider": "기상청"
+        "provider": "기상청",
+        "region": "남한"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/20 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
-        "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」"
+        "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -925,8 +1221,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 20 HSR 레이더합성 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-20",
-        "text": "bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과. 형상은 (2881, 2305) 로 격자 파일과 일치한다.\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-08-13 ~ 2025-08-13, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
-        "sha256": "9857b0e5113387533c7545032de872712b8f8615010f5f63a414bc42a61b18b8"
+        "text": "bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과. 형상은 (2881, 2305) 로 격자 파일과 일치한다.\n지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-08-13 ~ 2025-08-13, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
+        "sha256": "1f2d943dddeb0b060dcc45aa99c39b8ccdc274bf8066b25ab7384d16a4add361"
       }
     },
     {
@@ -941,32 +1237,32 @@
           "start": "2025-12-25",
           "end": "2025-12-25"
         },
-        "format": "tif",
-        "region": "T51SYB"
+        "format": "tif"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+        "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif"
       },
       "draftStatus": "draft",
       "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": false
+        "interpolated": false,
+        "region": "한반도"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+        "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/21/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
       "source": {
         "label": "02.File-format/DATASETS.md · seq 21 HLS S30 T51SYB 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-21",
-        "text": "HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. 변환 코드 축자는 「HLS S30 Bands: B02: Blue (459-479 nm) / B03: Green (545-565 nm) / B04: Red (620-670 nm)」다.\n기간 근거: GeoTIFF SENSING_TIME (2025-12-25 ~ 2025-12-25, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: GeoTIFF",
-        "sha256": "a95c3895565d5bf1efdad11450897bde1292e17a1539c55d3f6e36ec18827cea"
+        "text": "HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. 변환 코드 축자는 「HLS S30 Bands: B02: Blue (459-479 nm) / B03: Green (545-565 nm) / B04: Red (620-670 nm)」다.\n공간범위(bbox): w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본\n기간 근거: GeoTIFF SENSING_TIME (2025-12-25 ~ 2025-12-25, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: GeoTIFF",
+        "sha256": "7a8e3b681aaeb5fdf9ef04ac17729d783fcbd18282ef0adb53a189b76aa5a002"
       }
     },
     {
@@ -981,32 +1277,32 @@
           "start": "2025-12-27",
           "end": "2025-12-27"
         },
-        "format": "tif",
-        "region": "T52SCE"
+        "format": "tif"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
-        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+        "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif"
       },
       "draftStatus": "draft",
       "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": false
+        "interpolated": false,
+        "region": "한반도"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+        "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/22/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
       "source": {
         "label": "02.File-format/DATASETS.md · seq 22 HLS S30 T52SCE 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-22",
-        "text": "HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. T51SYB 와 같은 구성이고 촬영 시각과 타일 위치가 다르다.\n기간 근거: GeoTIFF SENSING_TIME (2025-12-27 ~ 2025-12-27, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: GeoTIFF",
-        "sha256": "13c4aafe61686873e5f29adb32af02299cf79d1d1f606f724af6dc15e6ee0fa7"
+        "text": "HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. T51SYB 와 같은 구성이고 촬영 시각과 타일 위치가 다르다.\n공간범위(bbox): w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본\n기간 근거: GeoTIFF SENSING_TIME (2025-12-27 ~ 2025-12-27, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: GeoTIFF",
+        "sha256": "53d2693efa03aec26054c080f4aa235805d58cb8df6830575baeb24c3f336a87"
       }
     },
     {
@@ -1021,32 +1317,32 @@
           "start": "2025-12-25",
           "end": "2025-12-25"
         },
-        "format": "npy",
-        "region": "T51SYB"
+        "format": "npy"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」"
+        "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy"
       },
       "draftStatus": "draft",
       "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": false
+        "interpolated": false,
+        "region": "한반도"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+        "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/23/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
       "source": {
         "label": "02.File-format/DATASETS.md · seq 23 HLS S30 T51SYB 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-23",
-        "text": "T51SYB 타일 3밴드를 배열로 바꾼 결과. 형상은 (3660, 3660) 이고 재격자 없이 원자료 격자 위에 그대로 있다.\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-12-25 ~ 2025-12-25, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
-        "sha256": "65f0ef1557289ea8ae5c375cfb57f9c1047bfe70bc28bd8f2408e0433ed7d5dd"
+        "text": "T51SYB 타일 3밴드를 배열로 바꾼 결과. 형상은 (3660, 3660) 이고 재격자 없이 원자료 격자 위에 그대로 있다.\n공간범위(bbox): w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-12-25 ~ 2025-12-25, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
+        "sha256": "a6ec4b9a4934eab50b6d97fabf2ad3030574a85b2171d3d443542705f1eef014"
       }
     },
     {
@@ -1061,32 +1357,32 @@
           "start": "2025-12-27",
           "end": "2025-12-27"
         },
-        "format": "npy",
-        "region": "T52SCE"
+        "format": "npy"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
-        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」"
+        "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy"
       },
       "draftStatus": "draft",
       "draftFacts": {
         "platform": "satellite",
         "representation": "spatial_grid",
         "directObservation": true,
-        "interpolated": false
+        "interpolated": false,
+        "region": "한반도"
       },
       "draftProvenance": {
         "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
-        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24"
+        "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+        "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/24/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
       "source": {
         "label": "02.File-format/DATASETS.md · seq 24 HLS S30 T52SCE 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-24",
-        "text": "T52SCE 타일 3밴드를 배열로 바꾼 결과. 형상·구성은 T51SYB 결과와 같다.\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-12-27 ~ 2025-12-27, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
-        "sha256": "058492e573a07ded7d3fd83f968e78e41f64f6e12a74d28841d68bc3a78f5ce2"
+        "text": "T52SCE 타일 3밴드를 배열로 바꾼 결과. 형상·구성은 T51SYB 결과와 같다.\n공간범위(bbox): w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본\n기간 근거: 원자료 계보와 같은 파일 어간 (2025-12-27 ~ 2025-12-27, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
+        "sha256": "d310eb050ff3df7fae742792b6c19fc0f83b7ea0b5621052ba52cf79079d7518"
       }
     },
     {
@@ -1101,13 +1397,11 @@
           "start": "2019-09-30",
           "end": "2019-10-31"
         },
-        "variable": "엽면적지수",
-        "region": "h27v05"
+        "variable": "엽면적지수"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1125,8 +1419,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 25 hdf4 MOD15A2H h27v05 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-25",
-        "text": "MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일 4일치. 폴더 이름은 `file_format_5_HDF5` 이나 파일 매직은 HDF4 라 데이터셋 이름을 hdf4 로 적는다.\n기간 근거: HDF4 내부 RANGEDATETIME (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: HDF4",
-        "sha256": "01ca93e328f315709ba95a39a2a39fd904ff087744955843d8c77cac06fa44a3"
+        "text": "MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일 4일치. 폴더 이름은 `file_format_5_HDF5` 이나 파일 매직은 HDF4 라 데이터셋 이름을 hdf4 로 적는다.\n공간범위(bbox): w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접\n기간 근거: HDF4 내부 RANGEDATETIME (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: HDF4",
+        "sha256": "5c355c79812e6dc26f2886e64cc596bed70e4cd022c9aa7af780b6badd8e059e"
       }
     },
     {
@@ -1141,13 +1435,11 @@
           "start": "2019-09-30",
           "end": "2019-10-31"
         },
-        "variable": "엽면적지수",
-        "region": "h28v05"
+        "variable": "엽면적지수"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1165,8 +1457,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 26 hdf4 MOD15A2H h28v05 원자료",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-26",
-        "text": "MOD15A2H 의 h28v05 타일 4일치. 폴더 이름은 hdf5 이나 실물은 HDF4 다. 타일이 다르면 위경도 쌍도 달라 별도 데이터셋이다.\n기간 근거: HDF4 내부 RANGEDATETIME (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: HDF4",
-        "sha256": "bbe5246347d3c49cd1a73f0c987d4330d0704a2f96c332e819bb76e4d07d3e5c"
+        "text": "MOD15A2H 의 h28v05 타일 4일치. 폴더 이름은 hdf5 이나 실물은 HDF4 다. 타일이 다르면 위경도 쌍도 달라 별도 데이터셋이다.\n공간범위(bbox): w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접\n기간 근거: HDF4 내부 RANGEDATETIME (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv0 · 정본 포맷: HDF4",
+        "sha256": "4543973e01b478162969056060f978989c9473cd48bcc9bc7cf662fbe02fae5d"
       }
     },
     {
@@ -1182,14 +1474,12 @@
           "end": "2019-10-31"
         },
         "format": "npy",
-        "variable": "엽면적지수",
-        "region": "h27v05"
+        "variable": "엽면적지수"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1207,8 +1497,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 27 hdf4 MOD15A2H h27v05 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-27",
-        "text": "h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. 목적이 하나이므로 변수별로 데이터셋을 나누지 않는다.\n기간 근거: 원자료 계보와 같은 파일 어간 (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
-        "sha256": "926a645b3d0531408c6806783d735aab41bc5a96aa42cafc109108b20c495281"
+        "text": "h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. 목적이 하나이므로 변수별로 데이터셋을 나누지 않는다.\n공간범위(bbox): w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접\n기간 근거: 원자료 계보와 같은 파일 어간 (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
+        "sha256": "2471336009825c8d786a6c4ecb4565f0c6f60705dd64b2c84f9fdf4bfec8a923"
       }
     },
     {
@@ -1224,14 +1514,12 @@
           "end": "2019-10-31"
         },
         "format": "npy",
-        "variable": "엽면적지수",
-        "region": "h28v05"
+        "variable": "엽면적지수"
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
       },
       "draftStatus": "draft",
       "draftFacts": {
@@ -1249,8 +1537,8 @@
       "source": {
         "label": "02.File-format/DATASETS.md · seq 28 hdf4 MOD15A2H h28v05 변환 결과",
         "locator": "DATASETS.md#02.File-format/DATASETS.md#seq-28",
-        "text": "h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. h27v05 결과와 같은 구성이고 타일만 다르다.\n기간 근거: 원자료 계보와 같은 파일 어간 (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
-        "sha256": "ccd0da4f551f3f3f7be13e90e19c7c8be447e506e776182f459b75cab31d95f4"
+        "text": "h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. h27v05 결과와 같은 구성이고 타일만 다르다.\n공간범위(bbox): w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접\n기간 근거: 원자료 계보와 같은 파일 어간 (2019-09-30 ~ 2019-10-31, 일 단위)\n프로젝트: 포멧테스트 · 레벨: Lv1 · 정본 포맷: npy",
+        "sha256": "eff60bffd65b3efbe1265afaef9df044d8c97d80b8cbad3a93dd7b4fc21979f1"
       }
     }
   ]

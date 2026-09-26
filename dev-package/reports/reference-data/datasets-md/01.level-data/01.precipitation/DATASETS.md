@@ -28,6 +28,7 @@
 - 파일: `01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_*.bin.gz` · 10건 · 16,998,652 B · 시각 10점 `201907281430`·`202005151115`·`202007221045`·`202106031430`·`202107031745`·`202207110415`·`202208100500`·`202307140830`·`202405151930`·`202407091315`(연속 계열 아님 · 출처 축자 「자료 전달 기간: test dataset 중 일부 샘플」)
 - 격자: 파일 2건 `01.precipitation/#metadata/LAT_HSR.npy`·`01.precipitation/#metadata/LON_HSR.npy` · 근거 = 출처 축자 「기상청에서 제공하는 각각의 lat, lon 파일에 맞추어 WGS84로 좌표계 변환」 ＋ HSR 은 헤더에 투영 파라미터가 없어 격자 파일이 필요(`dev-package/DATA-REFERENCE.md §1.1`)
 - 설명: 기상청 API허브가 제공하는 HSR 합성 반사도 원자료. 시/공간해상도 5분 / 0.5 km, 변량은 반사도. 정해진 규칙에 맞추어 원자료를 꺼내오는 이진 파일 형식이다.
+- 지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)
 - 비고: 오늘 실측 — 등록됨(파일 10건 · 화면 접수 70,124,548 B). **프로젝트에 연결되지 않았다**(`dev-package/sessions/DR-3-run-2026-09-13.md §4`). 미리보기 판정 5종에 들지 않아 렌더 미측정.
 
 ### rn15 15분 누적강수
@@ -37,6 +38,7 @@
 - 파일: `01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_*.nc` · 10건 · 1,247,581 B · 시각은 HSR 과 같은 10점
 - 격자: 파일 2건 `01.precipitation/#metadata/LAT_RN15.npy`·`01.precipitation/#metadata/LON_RN15.npy` · 근거 = HSR 과 다른 형상의 별도 쌍이 `#metadata` 에 존재(실측 각 16,793,732 B)
 - 설명: 기상청 API허브가 제공하는 지상 격자 15분 누적강수. 관측자료에 지형효과를 반영한 3차원 객관분석 기법으로 생산한 분석자료이며, 이 중 15분 누적 강수를 사용한다.
+- 지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)
 - 비고: 오늘 실측 — 등록됨(10건 · 화면 접수 34,835,045 B). 렌더 미측정.
 
 ### hsr_sample
@@ -92,6 +94,7 @@
 ```yaml
 # colab-datasets v1 — 이 블록이 생성기의 입력이다. 표와 어긋나면 생성기가 비영 종료한다.
 # `summary` = 러너가 화면에 그대로 치는 한 줄. `description`·`note` = 문서 요약(생성기 미출력).
+# `region`·`bbox` = 검색 근거 생성기(`dev-package/tools/dataset_evidence_backfill.py`) 입력 — Ted 확정 2026-09-26(자료 지역 확정). 등재표 생성기는 읽지 않는다.
 project: precipitation
 project_name: "precipitation"
 project_description: "HSR 레이더 반사도와 rn15 지상강수를 좌표변환·crop 한 뒤 U-Net 예측까지 잇는 강수 3단 자료. Lv.0 2갈래 → Lv.1 2갈래 → Lv.2 예측 1건."
@@ -109,6 +112,7 @@ datasets:
     format: "bin(gzip)"
     preview_expected: "미측정(판정 5종 밖)"
     description: "기상청 API허브가 제공하는 HSR 합성 반사도 원자료. 시/공간해상도 5분 / 0.5 km, 변량은 반사도. 정해진 규칙에 맞추어 원자료를 꺼내오는 이진 파일 형식이다."
+    region: "남한 (Ted 확정 2026-09-26 · 기상청 관측망)"
     note: "오늘 실측 — 등록됨(파일 10건 · 화면 접수 70,124,548 B). **프로젝트에 연결되지 않았다**(`dev-package/sessions/DR-3-run-2026-09-13.md §4`). 미리보기 판정 5종에 들지 않아 렌더 미측정."
   - seq: 2
     name: "rn15 15분 누적강수"
@@ -122,6 +126,7 @@ datasets:
     format: "NetCDF4"
     preview_expected: "미측정"
     description: "기상청 API허브가 제공하는 지상 격자 15분 누적강수. 관측자료에 지형효과를 반영한 3차원 객관분석 기법으로 생산한 분석자료이며, 이 중 15분 누적 강수를 사용한다."
+    region: "남한 (Ted 확정 2026-09-26 · 기상청 관측망)"
     note: "오늘 실측 — 등록됨(10건 · 화면 접수 34,835,045 B). 렌더 미측정."
   - seq: 3
     name: "hsr_sample"

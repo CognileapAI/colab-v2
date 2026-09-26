@@ -76,6 +76,7 @@
 - 파일: `file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_*.bin.gz` · 12건 · 15,341,732 B · `202508131000` ~ `202508131055` 5분 간격
 - 격자: 파일 2건 `04.Lat_Lon_info/Lat_HSR.npy`·`Lon_HSR.npy` · 근거 = **다섯 포맷 중 유일하게 격자 파일이 반드시 필요한 포맷**이다. 헤더가 주는 것은 `nx=2305`·`ny=2881`·`dxy=500`·`map_code=1` 뿐이고 투영 파라미터 자리(36~63 B)가 전부 0 이다(`dev-package/DATA-REFERENCE.md §1.1`). 같은 폴더의 `rdr_500m_latlon.nc` 는 형상은 같으나 값이 다르고 표준위도가 없어 정본이 아니다
 - 설명: 기상청 HSR 합성 반사도 바이너리 원자료. 파일 안에 좌표도 투영 파라미터도 없어 위경도 npy 쌍을 밖에서 붙여야 한다.
+- 지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)
 - 비고: 오늘 실측 — 등록됨(12건 · 화면 접수 68,467,628 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 문면도 이미지도 없이 미리보기 칸이 빈 채로 남는다(`unavailable` 0 · `images` 0).
 
 ### HSR 레이더합성 변환 결과
@@ -85,6 +86,7 @@
 - 파일: `02.Results/RDR_CMP_HSR_PUB_*.npy` · 12건 · 637,509,216 B · 시각 범위는 원자료와 동일
 - 격자: 파일 2건 `04.Lat_Lon_info/Lat_HSR.npy`·`Lon_HSR.npy`
 - 설명: bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과. 형상은 (2881, 2305) 로 격자 파일과 일치한다.
+- 지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)
 - 비고: 오늘 실측 — 등록됨(12건 · 화면 접수 690,635,112 B). 격자 재확인(전체 파일 기준 영역 변경)이 떠서 확인 조작으로 통과. 미리보기 판정 대상 아님.
 
 ### HLS S30 T51SYB 원자료
@@ -94,6 +96,7 @@
 - 파일: `file_format_4_tif/00.Data/HLS.S30.T51SYB.*.tif` · 3건 · 74,288,594 B · 밴드 3(`B02` 24,577,705 · `B03` 24,819,967 · `B04` 24,890,922) · 촬영 `2025359T023019`
 - 격자: 파일 2건 `04.Lat_Lon_info/HLS.S30.T51SYB.2025359T023019.v2.0_lat2d.npy`·`_lon2d.npy` · 근거 = 타일마다 위경도 npy 쌍이 따로 있고 형상 (3660, 3660) 이 결과와 일치
 - 설명: HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. 변환 코드 축자는 「HLS S30 Bands: B02: Blue (459-479 nm) / B03: Green (545-565 nm) / B04: Red (620-670 nm)」다.
+- 공간범위(bbox): w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본
 - 비고: 오늘 실측 — 등록됨(3건 · 화면 접수 288,618,450 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 2·3패스 문면 「그리는 서버에 연결하지 못했다: timed out」.
 
 ### HLS S30 T52SCE 원자료
@@ -103,6 +106,7 @@
 - 파일: `file_format_4_tif/00.Data/HLS.S30.T52SCE.*.tif` · 3건 · 79,083,782 B · 밴드 3(`B02` 25,748,555 · `B03` 26,326,160 · `B04` 27,009,067) · 촬영 `2025361T022121`
 - 격자: 파일 2건 `04.Lat_Lon_info/HLS.S30.T52SCE.2025361T022121.v2.0_lat2d.npy`·`_lon2d.npy`
 - 설명: HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. T51SYB 와 같은 구성이고 촬영 시각과 타일 위치가 다르다.
+- 공간범위(bbox): w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본
 - 비고: 오늘 실측 — 등록됨(3건 · 화면 접수 293,413,638 B). 기준 격자 칸 미출현. 미리보기 판정 대상 아님(판정은 T51SYB 하나로 했다).
 
 ### HLS S30 T51SYB 변환 결과
@@ -112,6 +116,7 @@
 - 파일: `02.Results/HLS.S30.T51SYB.*.npy` · 3건 · 160,747,584 B · 밴드 3 · 파일당 53,582,528 B 동일
 - 격자: 파일 2건 T51SYB 쌍
 - 설명: T51SYB 타일 3밴드를 배열로 바꾼 결과. 형상은 (3660, 3660) 이고 재격자 없이 원자료 격자 위에 그대로 있다.
+- 공간범위(bbox): w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본
 - 비고: 오늘 실측 — 등록됨(3건 · 화면 접수 375,077,440 B). 격자 재확인 확인 조작으로 통과.
 
 ### HLS S30 T52SCE 변환 결과
@@ -121,6 +126,7 @@
 - 파일: `02.Results/HLS.S30.T52SCE.*.npy` · 3건 · 160,747,584 B · 밴드 3
 - 격자: 파일 2건 T52SCE 쌍
 - 설명: T52SCE 타일 3밴드를 배열로 바꾼 결과. 형상·구성은 T51SYB 결과와 같다.
+- 공간범위(bbox): w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본
 - 비고: 오늘 실측 — 등록됨(3건 · 화면 접수 375,077,440 B). 격자 재확인 확인 조작으로 통과.
 
 ### hdf4 MOD15A2H h27v05 원자료
@@ -130,6 +136,7 @@
 - 파일: `file_format_5_HDF5/00.Data/MOD15A2H.*.h27v05.*.hdf` · 4건 · 37,562,489 B · 날짜 4(`A2019273`·`A2019281`·`A2019289`·`A2019297`)
 - 격자: 파일 2건 `04.Lat_Lon_info/lat2d_h27v05.npy`·`lon2d_h27v05.npy` · 근거 = Sinusoidal 타일마다 쌍이 따로 있고 형상 (2400, 2400) 이 결과와 일치
 - 설명: MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일 4일치. 폴더 이름은 `file_format_5_HDF5` 이나 파일 매직은 HDF4 라 데이터셋 이름을 hdf4 로 적는다.
+- 공간범위(bbox): w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접
 - 비고: 오늘 실측 — 등록됨(4건 · 화면 접수 129,722,745 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 2·3패스 문면 「그리는 서버에 연결하지 못했다: timed out」.
 
 ### hdf4 MOD15A2H h28v05 원자료
@@ -139,6 +146,7 @@
 - 파일: `file_format_5_HDF5/00.Data/MOD15A2H.*.h28v05.*.hdf` · 4건 · 17,687,060 B · 날짜 4(h27v05 와 동일)
 - 격자: 파일 2건 `04.Lat_Lon_info/lat2d_h28v05.npy`·`lon2d_h28v05.npy`
 - 설명: MOD15A2H 의 h28v05 타일 4일치. 폴더 이름은 hdf5 이나 실물은 HDF4 다. 타일이 다르면 위경도 쌍도 달라 별도 데이터셋이다.
+- 공간범위(bbox): w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접
 - 비고: 오늘 실측 — 등록됨(4건 · 화면 접수 109,847,316 B). 기준 격자 칸 미출현.
 
 ### hdf4 MOD15A2H h27v05 변환 결과
@@ -148,6 +156,7 @@
 - 파일: `02.Results/MOD15A2H.*.h27v05.*.npy` · 24건 · 552,963,072 B · 변수 6(`Fpar_500m`·`Lai_500m`·`FparStdDev_500m`·`LaiStdDev_500m`·`FparLai_QC`·`FparExtra_QC`) × 날짜 4 · 파일당 23,040,128 B 동일
 - 격자: 파일 2건 h27v05 쌍
 - 설명: h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. 목적이 하나이므로 변수별로 데이터셋을 나누지 않는다.
+- 공간범위(bbox): w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접
 - 비고: 오늘 실측 — 등록됨(24건 · 화면 접수 645,123,328 B). 격자 재확인 확인 조작으로 통과.
 
 ### hdf4 MOD15A2H h28v05 변환 결과
@@ -157,6 +166,7 @@
 - 파일: `02.Results/MOD15A2H.*.h28v05.*.npy` · 24건 · 552,963,072 B · 변수 6 × 날짜 4
 - 격자: 파일 2건 h28v05 쌍
 - 설명: h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. h27v05 결과와 같은 구성이고 타일만 다르다.
+- 공간범위(bbox): w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접
 - 비고: 오늘 실측 — 등록됨(24건 · 화면 접수 645,123,328 B). 격자 재확인 확인 조작으로 통과.
 
 ## 판정 기록 (Ted 확정 2026-09-14)
@@ -190,6 +200,7 @@
 ```yaml
 # colab-datasets v1 — 이 블록이 생성기의 입력이다. 표와 어긋나면 생성기가 비영 종료한다.
 # `summary` = 러너가 화면에 그대로 치는 한 줄. `description`·`note` = 문서 요약(생성기 미출력).
+# `region`·`bbox` = 검색 근거 생성기(`dev-package/tools/dataset_evidence_backfill.py`) 입력 — Ted 확정 2026-09-26(자료 지역 확정). 등재표 생성기는 읽지 않는다.
 project: format-test
 project_name: "포멧테스트"
 project_description: "grib · nc · bin · tif · hdf4 다섯 포맷의 원자료와 변환 결과를 한 쌍씩 담아 포맷별 미리보기 렌더를 확인하는 프로젝트."
@@ -259,6 +270,7 @@ datasets:
     format: "bin(gzip)"
     preview_expected: "**렌더 미성립(3패스 전부)**"
     description: "기상청 HSR 합성 반사도 바이너리 원자료. 파일 안에 좌표도 투영 파라미터도 없어 위경도 npy 쌍을 밖에서 붙여야 한다."
+    region: "남한 (Ted 확정 2026-09-26 · 기상청 관측망)"
     note: "오늘 실측 — 등록됨(12건 · 화면 접수 68,467,628 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 문면도 이미지도 없이 미리보기 칸이 빈 채로 남는다(`unavailable` 0 · `images` 0)."
   - seq: 20
     name: "HSR 레이더합성 변환 결과"
@@ -272,6 +284,7 @@ datasets:
     format: "npy"
     preview_expected: "미판정 대상"
     description: "bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과. 형상은 (2881, 2305) 로 격자 파일과 일치한다."
+    region: "남한 (Ted 확정 2026-09-26 · 기상청 관측망)"
     note: "오늘 실측 — 등록됨(12건 · 화면 접수 690,635,112 B). 격자 재확인(전체 파일 기준 영역 변경)이 떠서 확인 조작으로 통과. 미리보기 판정 대상 아님."
   - seq: 21
     name: "HLS S30 T51SYB 원자료"
@@ -285,6 +298,7 @@ datasets:
     format: "GeoTIFF"
     preview_expected: "**렌더 미성립(3패스 전부)**"
     description: "HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. 변환 코드 축자는 「HLS S30 Bands: B02: Blue (459-479 nm) / B03: Green (545-565 nm) / B04: Red (620-670 nm)」다."
+    bbox: "w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본"
     note: "오늘 실측 — 등록됨(3건 · 화면 접수 288,618,450 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 2·3패스 문면 「그리는 서버에 연결하지 못했다: timed out」."
   - seq: 22
     name: "HLS S30 T52SCE 원자료"
@@ -298,6 +312,7 @@ datasets:
     format: "GeoTIFF"
     preview_expected: "미판정 대상"
     description: "HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료. T51SYB 와 같은 구성이고 촬영 시각과 타일 위치가 다르다."
+    bbox: "w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본"
     note: "오늘 실측 — 등록됨(3건 · 화면 접수 293,413,638 B). 기준 격자 칸 미출현. 미리보기 판정 대상 아님(판정은 T51SYB 하나로 했다)."
   - seq: 23
     name: "HLS S30 T51SYB 변환 결과"
@@ -311,6 +326,7 @@ datasets:
     format: "npy"
     preview_expected: "미판정 대상"
     description: "T51SYB 타일 3밴드를 배열로 바꾼 결과. 형상은 (3660, 3660) 이고 재격자 없이 원자료 격자 위에 그대로 있다."
+    bbox: "w/s/e/n = 125.2458/36.9070/126.5230/37.9256 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T51SYB 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본"
     note: "오늘 실측 — 등록됨(3건 · 화면 접수 375,077,440 B). 격자 재확인 확인 조작으로 통과."
   - seq: 24
     name: "HLS S30 T52SCE 변환 결과"
@@ -324,6 +340,7 @@ datasets:
     format: "npy"
     preview_expected: "미판정 대상"
     description: "T52SCE 타일 3밴드를 배열로 바꾼 결과. 형상·구성은 T51SYB 결과와 같다."
+    bbox: "w/s/e/n = 126.7776/35.1348/128.0097/36.1405 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MGRS T52SCE 100 km 칸 북서 모서리 원점 · Sentinel-2/HLS 타일 109.8 km · UTM→WGS84 가장자리 표본"
     note: "오늘 실측 — 등록됨(3건 · 화면 접수 375,077,440 B). 격자 재확인 확인 조작으로 통과."
   - seq: 25
     name: "hdf4 MOD15A2H h27v05 원자료"
@@ -337,6 +354,7 @@ datasets:
     format: "HDF4"
     preview_expected: "**렌더 미성립(3패스 전부)**"
     description: "MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일 4일치. 폴더 이름은 `file_format_5_HDF5` 이나 파일 매직은 HDF4 라 데이터셋 이름을 hdf4 로 적는다."
+    bbox: "w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접"
     note: "오늘 실측 — 등록됨(4건 · 화면 접수 129,722,745 B). 기준 격자 칸 미출현. **미리보기 = 3패스 전부 안 그려짐(렌더 미성립)** · 2·3패스 문면 「그리는 서버에 연결하지 못했다: timed out」."
   - seq: 26
     name: "hdf4 MOD15A2H h28v05 원자료"
@@ -350,6 +368,7 @@ datasets:
     format: "HDF4"
     preview_expected: "미판정 대상"
     description: "MOD15A2H 의 h28v05 타일 4일치. 폴더 이름은 hdf5 이나 실물은 HDF4 다. 타일이 다르면 위경도 쌍도 달라 별도 데이터셋이다."
+    bbox: "w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접"
     note: "오늘 실측 — 등록됨(4건 · 화면 접수 109,847,316 B). 기준 격자 칸 미출현."
   - seq: 27
     name: "hdf4 MOD15A2H h27v05 변환 결과"
@@ -363,6 +382,7 @@ datasets:
     format: "npy"
     preview_expected: "미판정 대상"
     description: "h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. 목적이 하나이므로 변수별로 데이터셋을 나누지 않는다."
+    bbox: "w/s/e/n = 103.9230/30.0000/130.5407/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h27v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접"
     note: "오늘 실측 — 등록됨(24건 · 화면 접수 645,123,328 B). 격자 재확인 확인 조작으로 통과."
   - seq: 28
     name: "hdf4 MOD15A2H h28v05 변환 결과"
@@ -376,5 +396,6 @@ datasets:
     format: "npy"
     preview_expected: "미판정 대상"
     description: "h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과. h27v05 결과와 같은 구성이고 타일만 다르다."
+    bbox: "w/s/e/n = 115.4701/30.0000/143.5948/40.0000 · 표준 격자 계산 (MGRS/MODIS sinusoidal) · Ted 확정 2026-09-26 · MODIS sinusoidal h28v05 · R 6371007.181 m · 타일 1111950.5198 m · 가장자리 표본 외접"
     note: "오늘 실측 — 등록됨(24건 · 화면 접수 645,123,328 B). 격자 재확인 확인 조작으로 통과."
 ```
