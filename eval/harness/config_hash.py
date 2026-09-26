@@ -14,7 +14,9 @@ verify   후보 = `results/<YYYYMMDD-HHMMSS>/config-hash.json` 중 hash == 현�
          summary.md 요약줄 `준비 0` ∧ 표의 과제 행 수 == --tasks. 없으면 78.
          후보 중 id 최대 = R*. 직전 = R* 보다 id 가 작고 summary.md 가 있으며 표의 과제 행 수 == --tasks 인
          최신 전수 결과(해시 없는 옛 결과 포함 · 선택 실행 제외 · 행이 모자란 중단 회차 제외 — 중단 회차로
-         「회귀 0」을 만들지 않는다). green(직전) − green(R*) ≠ ∅ → 1(회귀). 그 밖 0.
+         「회귀 0」을 만들지 않는다). green(직전) − green(R*) − rate(R*) ≠ ∅ → 1(회귀). 그 밖 0.
+         rate(R*) = 판정 칸 `rate [0-2]/2` 행(비율 측정 과제 · 15라운드 판정 H18-rate) — `rate` 로 시작하는
+         그 밖의 칸 = 78 · rate 행 집합 ≠ `eval/harness/H??-*/mode`(본문 `rate`) 집합 = 78(해시 일치 결과 아님).
          입력을 못 읽음(json 손상 · 요약줄/표 파싱 실패 · git 실패) = 78 — 「못 읽음 = 78 · 읽었는데 위반 = 1」.
 
 exit — 0 · 1(verify 회귀) · 78(준비). verify stdout = `<현재 해시>\\t<설명>` 한 줄.
@@ -37,7 +39,10 @@ SCHEMA = "colab-eval-config-hash/1"
 RUN_ID_RE = re.compile(r"^\d{8}-\d{6}$")
 SUMMARY_RE = re.compile(
     r"^- 요약 — 과제 (\d+) · 실행 (\d+) · green (\d+) · 불안정 (\d+) · 준비 (\d+) · ", re.MULTILINE)
-ROW_RE = re.compile(r"^\| (H\d\d-[^ |]+) \| ([^ |]+) \|", re.MULTILINE)
+# Verdict cell may contain a space (`rate 1/2`); the old tokens (green · 불안정 · 실패 · 준비) have none.
+ROW_RE = re.compile(r"^\| (H\d\d-[^ |]+) \| ([^|]+?) \|", re.MULTILINE)
+RATE_RE = re.compile(r"^rate [0-2]/2$")
+MODE_RATE = "rate"
 
 
 class ConfigHashError(Exception):
@@ -168,6 +173,21 @@ def _summary(run: Path) -> tuple[int, list[tuple[str, str]]]:
     return int(match.group(5)), rows
 
 
+def mode_rate_tasks(root: Path) -> set[str]:
+    """Task dirs `eval/harness/H??-*/` whose `mode` file says exactly `rate` (15라운드 판정 H18-rate).
+
+    The marker is inside the hash set, so a hash-matched result must carry exactly these rate rows."""
+    found = set()
+    for mode in sorted((Path(root) / "eval/harness").glob("H[0-9][0-9]-*/mode")):
+        try:
+            text = mode.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ConfigHashError(f"{mode.parent.name}/mode 를 읽지 못했다: {exc}") from exc
+        if text.rstrip("\n") == MODE_RATE:
+            found.add(mode.parent.name)
+    return found
+
+
 def verify(root: Path, results: Path, tasks: int) -> tuple[int, str, str]:
     """Return (exit code, current hash, detail)."""
     try:
@@ -225,15 +245,28 @@ def verify(root: Path, results: Path, tasks: int) -> tuple[int, str, str]:
                 previous, prev_rows = run, rows
                 break
         green = {name for name, verdict in best_rows if verdict == "green"}
+        # Rate tasks are reported as a rate and left out of the regression set. `results/**` is outside
+        # the hash set, so the rate rows must equal the `mode` markers of the hashed tree (검증 #1 · #7).
+        rate = {name for name, verdict in best_rows if verdict.startswith("rate")}
+        malformed = sorted(f"{n} {v!r}" for n, v in best_rows if n in rate and not RATE_RE.match(v))
+        if malformed:
+            raise ConfigHashError(f"{best.name}/summary.md 의 rate 판정 칸을 읽지 못했다(rate [0-2]/2 아님): "
+                                  + ", ".join(malformed))
+        expected_rate = mode_rate_tasks(root)
+        if rate != expected_rate:
+            return 78, current, (f"해시 일치 결과 아님 — {best.name} 의 rate 행 {sorted(rate) or '없음'} ≠ "
+                                 f"eval/harness/H??-*/mode=rate 표지 {sorted(expected_rate) or '없음'}")
+        rate_detail = (" · rate %d(%s)" % (len(rate), ", ".join(f"{n} {v[5:]}" for n, v in best_rows if n in rate))
+                       if rate else " · rate 0")
         if previous is not None:
-            regressed = sorted({name for name, verdict in prev_rows if verdict == "green"} - green)
+            regressed = sorted({name for name, verdict in prev_rows if verdict == "green"} - green - rate)
             if regressed:
                 return 1, current, (f"회귀 — 직전 {previous.name} 에서 green 이던 과제 {len(regressed)}건이 "
                                     f"일치 결과 {best.name} 에서 green 이 아니다: {', '.join(regressed)}")
     except ConfigHashError as exc:
         return 78, current, str(exc)
     return 0, current, (f"hash(head)={current} hash(회차)={meta[best.name]['hash']} 일치 결과 {best.name} · "
-                        f"green {len(green)}/{tasks} · 판정 red {tasks - len(green)} · "
+                        f"green {len(green)}/{tasks} · 판정 red {tasks - len(green) - len(rate)}{rate_detail} · "
                         f"직전 {previous.name if previous else '없음'}")
 
 
