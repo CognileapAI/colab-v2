@@ -270,6 +270,18 @@ describe('V7 · 터치 44(부록 B 레인 L2a · 셸 CSS 끝 `(pointer: coarse)`
     const outside = shellRules.filter((r) => r.media !== COARSE && r.selectors.some((s) => s.includes('.avatar-wrap')));
     expect(outside.flatMap((r) => decls(r.body)).filter((d) => d.startsWith('display') || d.startsWith('white-space'))).toEqual([]);
   });
+  it('로고 묶음(`.gnb a.brand`)은 터치에서 줄어들지 않는다(1024 터치 로고 표식 20.2 · 10.3 눌림 수정 · E 보고 §5-3)', () => {
+    // 터치 44 의 min-width 가 자동 최소 폭(내용 폭)을 대신해 묶음이 내용보다 좁게 눌렸다. 표식만 막으면 글자가 묶음 밖으로 넘친다.
+    const brand = coarse.filter((r) => r.selectors.length === 1 && r.selectors[0] === '.gnb a.brand');
+    expect(brand.length).toBe(1);
+    expect(decls(brand[0]?.body ?? '')).toEqual(['flex-shrink: 0']);
+    // 마우스 쪽은 그대로 — 터치 블록 밖에서 로고 묶음 · 표식의 flex 를 바꾸는 규칙 0(1440 마우스 픽셀 불변).
+    const outside = shellRules.filter(
+      (r) => r.media !== COARSE && r.selectors.some((s) => /\.brand\b|\.logo\b/.test(s)),
+    );
+    expect(outside.length).toBeGreaterThan(0);
+    expect(outside.flatMap((r) => decls(r.body)).filter((d) => d.startsWith('flex'))).toEqual([]);
+  });
   it('터치 블록에 글자 크기 선언 0', () => {
     expect(coarse.flatMap((r) => decls(r.body)).filter((d) => d.startsWith('font'))).toEqual([]);
   });
