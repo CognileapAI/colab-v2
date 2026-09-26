@@ -80,11 +80,20 @@
 - 지우는 산문 0건 검사: `grep -n '편집 시점 차단 없음' .agents/skills/design-review/SKILL.md docs/development/dual-agent.md scripts/harness/hooks/test-file-guard.sh` 0.
 - 강제 기제: 없음(문서) · 병합 조건 = V-S7.
 
+### 4.6 E0 후속 4건 (단위 S-6 · E0 advisor ② 개선 · 해시 집합 파일 → 이 레인의 회차와 동반)
+- 출처: 부모 intent 「판정 기록」 2026-09-26 E0 advisor ②(비차단 · 「S-red 레인 동반」으로 확정) · 9라운드. 네 파일 모두 해시 집합(`eval/harness/**` · `gates/**`) 안이라 실측 회차(커밋 ⑤) **앞**에 넣고, 그 회차가 이 변경까지 잰다.
+- S-6a 러너 결과의 홈 절대경로 치환 — `eval/harness/run.sh` 가 `H??.out.*.txt` 를 쓸 때 `$REPO_TOP`(`:82` · 이 checkout 절대경로)을 `<repo>` 로 치환한다(증거 파일에 사용자 홈 경로가 남지 않게 · 기존 회차 파일은 손대지 않는다). 시험: `eval/harness/tests/run-selftest.sh` 사례 1 — 스텁 출력에 뿌리 경로를 넣고 결과 파일에 `<repo>` 만 남는지.
+- S-6b 회귀 규칙 「직전」 선정 — `gates/tools/harness-eval.sh` · `config_hash.py verify` 가 직전 회차를 고를 때 `len(rows) == tasks`(과제 행 수 == 과제 N)인 전수 결과만 후보로 둔다(중단된 회차를 직전으로 삼아 「회귀 0」을 만들지 않게). 시험: `gates/tools/harness-eval-selftest.sh` 사례 1 — 행 수 부족 회차가 직전에서 제외.
+- S-6c 정본 중복 패턴 주석 — `eval/harness/config-paths.txt` 의 `eval/harness/config-paths.txt` 줄은 `eval/harness/**` 에 이미 포함된다 → 「자기 자신을 명시하는 줄 · `**` 과 겹침 · 계산기는 중복을 한 번만 센다」 주석 1줄(파일이 해시 집합이라 회차 동반).
+- S-6d 게이트 안내문 값 — `gates/tools/harness-eval.sh:105`(`93` · `2.01`) 와 `:109` · `:115`(`<초>` · `<USD>`)의 상한 표기를 README 「실행」 절 권장값 한 가지로 통일(placeholder 와 실제값 혼재 제거 · 검사 = `grep -c 'COLAB_EVAL_TIMEOUT=<초>' gates/tools/harness-eval.sh` 0).
+- 강제 기제: S-6a · S-6b = 시험(FC · 셀프테스트 등록 기존) · S-6c · S-6d = 산문 · 병합 조건 = V-S11.
+
 ## 5. 시험 결정 (TDD 순서)
 1. `test_task_runtime.py` ①–⑨ 작성 → `bash gates/run.sh agent-bridge` RED(`--fix` 인자 없음 argparse 오류 · `red-locked` 미지원).
 2. `test_harness_lifecycle_contract.py` ⑩-a…j · ⑫ 작성 → RED(⑩-a · ⑩-j 가 0 = 결함 관측).
 3. 구현 커밋 ①(S-1 · S-4 · `red-locked` · task_state) → ①–④ · ⑨ GREEN · ②(S-2) → ⑤–⑧ GREEN · ③(S-3) → ⑩ · ⑫ GREEN.
 4. 기존 시험 무변경 green 확인 · 시험 수 증가분 기록.
+5. S-6a · S-6b 시험 2건 작성 → RED → 커밋 ④′ → GREEN(러너 셀프테스트 17 → 18 · 게이트 셀프테스트 18 → 19) · 그 뒤 커밋 ⑤ 실측.
 - seam: fixture repo(`:18-26`) · hook 직접 호출(`:431`) · tempdir 복사 fixture(`:400-410`) — 제품 hook 에 새 env seam 없음.
 
 ## 6. 위험 · 롤백
@@ -98,9 +107,9 @@
 
 ## 7. 레인 지시 (PR S-red · lane-worker 1개)
 - 스폰: `Agent(subagent_type: "lane-worker", isolation: "worktree")` · 기준 = E0 병합 뒤 develop · 첫 행동 `git merge --ff-only develop` · 부모 checkout 판정 정지 규칙 동일.
-- begin: `python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate agent-bridge --gate harness-contract --gate intent-ref --gate exec-bit --gate harness-eval --scope 'scripts/harness/hooks/lifecycle_contract.py' --scope 'scripts/harness/task_state.py' --scope 'scripts/harness/hooks/test-file-guard.sh' --scope 'scripts/tests/test_task_runtime.py' --scope 'scripts/tests/test_harness_lifecycle_contract.py' --scope 'docs/development/lifecycle-evidence.md' --scope 'docs/development/dual-agent.md' --scope '.agents/skills/design-review/SKILL.md' --scope '.agents/roles/lane-worker.md' --scope 'README.md' --scope 'eval/harness/results/**'`(S-red head 회차 커밋용 · T12). 이 레인 자체는 `--fix` 가 아니다(신규 기능 · 시험 먼저 작성이 정상 작업).
+- begin: `python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate agent-bridge --gate harness-contract --gate intent-ref --gate exec-bit --gate harness-eval --scope 'scripts/harness/hooks/lifecycle_contract.py' --scope 'scripts/harness/task_state.py' --scope 'scripts/harness/hooks/test-file-guard.sh' --scope 'scripts/tests/test_task_runtime.py' --scope 'scripts/tests/test_harness_lifecycle_contract.py' --scope 'docs/development/lifecycle-evidence.md' --scope 'docs/development/dual-agent.md' --scope '.agents/skills/design-review/SKILL.md' --scope '.agents/roles/lane-worker.md' --scope 'README.md' --scope 'eval/harness/results/**' --scope 'eval/harness/run.sh' --scope 'eval/harness/tests/run-selftest.sh' --scope 'eval/harness/config-paths.txt' --scope 'gates/tools/harness-eval.sh' --scope 'gates/tools/harness-eval-selftest.sh'`(S-red head 회차 커밋용 · T12 · 뒤 5개 = S-6). 이 레인 자체는 `--fix` 가 아니다(신규 기능 · 시험 먼저 작성이 정상 작업).
 - 게이트: `COLAB_HARNESS_EVAL_EXEMPT=1 COLAB_TASK_ID=<id> bash gates/run.sh task` 1회 · 실측 결과 커밋 뒤(E0 규칙) · 호스트 단독 · 커밋 ⑤ 뒤 해시 집합 파일 변경 금지.
-- 커밋 단위(각 트레일러): ① S-1 + S-4 + `red-locked` + `task_state.py` + 시험 ①–④·⑨ ② S-2 + 시험 ⑤–⑧ ③ S-3 hook + 시험 ⑩·⑫ + hook 머리말 ④ 문서 4곳(S-5) ⑤ `results/<run>/`(실측 · E0 규칙) — 되돌림 단위 = ③ · ②.
+- 커밋 단위(각 트레일러): ① S-1 + S-4 + `red-locked` + `task_state.py` + 시험 ①–④·⑨ ② S-2 + 시험 ⑤–⑧ ③ S-3 hook + 시험 ⑩·⑫ + hook 머리말 ④ 문서 4곳(S-5) ④′ E0 후속 4건(S-6 · 시험 2건 동반 · 해시 집합 파일) ⑤ `results/<run>/`(실측 · E0 규칙 · ④′ 뒤의 해시로) — 되돌림 단위 = ③ · ②.
 - 인계: `lifecycle handoff --task <id> --mode complete --summary '…'` · `COLAB_HANDOFF` · `WORKTREE= BRANCH=`. push · 게시(T16) · 병합(T13) = Ted.
 
 ## 8. 검증표
@@ -114,6 +123,7 @@
 | V-S7 | `grep -n '편집 시점 차단 없음' …3파일` · `grep -c 'fix 레인' docs/development/lifecycle-evidence.md` | 0 · ≥1 | 4.5 |
 | V-S8 | `bash gates/run.sh agent-bridge`(전체) · `python3 scripts/agent-bridge.py check` · `git diff develop -- .claude/settings.json .codex/hooks.json` | green · green · diff 0 | 공통 |
 | V-S9 | `COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` | 0 + 일치 run id + 두 해시 동일(실측 뒤) | E0 규칙 |
+| V-S11 | `bash eval/harness/tests/run-selftest.sh` · `bash gates/tools/harness-eval-selftest.sh` · `grep -c '/home/' eval/harness/results/<이번 run>/H02.out.1.txt` · `grep -c 'COLAB_EVAL_TIMEOUT=<초>' gates/tools/harness-eval.sh` | 18/18 · 19/19 · 0 · 0 | 4.6 |
 | V-S10 | 병합·pull 뒤 오케스트레이터: fix 레인 1회 스폰(`--fix --red` 실제 red 과제 · T18) → 레인이 시험 파일 Edit 시도 | hook exit 2 관측 · intent 「확인」 기록(A2 ⓐ 「실제 Claude lane-worker 1회 실측」 대체) | 병합 뒤 |
 | 공통 | `bash -n scripts/harness/hooks/test-file-guard.sh` · `bash gates/run.sh exec-bit` · `bash gates/run.sh intent-ref` | 0 | |
 
