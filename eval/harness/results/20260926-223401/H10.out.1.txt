@@ -1,0 +1,21 @@
+두 파일 모두 음수 margin 선언이 1건씩 있어 합계 2건입니다. 둘 다 주석 밖의 실제 코드입니다.
+
+**음수 margin 선언**
+- `detail.css:93`: `.detail-page .filelist { margin: -12px 0 var(--space-6); … }`
+  - 위쪽 −12px로 바로 앞의 기본 정보 칸(`.infogrid`)에 올라붙습니다.
+  - 같은 규칙에 `border-top: none`과 아래쪽에만 둥근 모서리가 있어서, 앞 요소에 이어 붙이려는 용도가 분명합니다.
+  - 정의 ⑴의 모양 그대로입니다.
+- `shell.css:58`: `.backlink { padding: 3px 9px 3px 7px; margin-left: -7px; … }`
+  - 자기 `padding-left: 7px`을 −7px로 지워서 글자를 컨테이너 왼쪽 선에 맞춥니다.
+  - 방향이 가로이고 앞 요소에 붙는 것도 아니라서, 정의 ⑴의 예시와는 성격이 다릅니다.
+  - 그래도 자식이 음수 margin으로 컨테이너 여백을 넘어가는 것이라 음수 margin 선언으로 셉니다.
+
+**셈에서 뺀 것**
+- `shell.css:188`의 `bottom: -11px`: margin이 아니라 위치 지정 값입니다.
+- `detail.css:33`, `shell.css:115`의 음수 `letter-spacing`: margin이 아닙니다.
+- 주석: 두 파일의 주석 안에는 margin 값이 없습니다.
+- 여러 행에 걸친 선언: 음수 숫자를 전부 찾아봤고, margin에 해당하는 것은 위 두 행뿐입니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58
