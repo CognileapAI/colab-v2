@@ -101,6 +101,15 @@ def newest_eval_result(root: Path) -> tuple[str, "dt.datetime"] | None:
     return newest
 
 
+def eval_age_days(stamp: "dt.datetime", now: "dt.datetime | None" = None) -> int:
+    """Whole days since a run id's stamp, never negative.
+
+    Run ids carry the recording machine's local clock (`date +%Y%m%d-%H%M%S` in the runner), so a
+    runner in an earlier timezone (CI is UTC; results are recorded in KST) that reads a same-day
+    result sees a stamp in its own future. That is "0 days old", not "-1d" (E0 PR #176 CI red)."""
+    return max(0, ((now or dt.datetime.now()) - stamp).days)
+
+
 def check_eval_freshness(root: Path, now: "dt.datetime | None" = None,
                          max_days: int = EVAL_MAX_DAYS) -> tuple[str | None, str | None]:
     """Return (warning, readiness). No parseable result id = readiness (the target was not read)."""
@@ -160,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         f"home-path roots {len(value['hygiene']['home_path_roots'])} "
         f"(scanned {home_stats.get('scanned', 0)}, skipped {home_stats.get('skipped', 0)} binary/non-UTF-8/symlink), "
         f"parallel-safety declarations {judged_gates}, "
-        f"harness-eval newest {newest_id} ({(dt.datetime.now() - newest_stamp).days}d)"
+        f"harness-eval newest {newest_id} ({eval_age_days(newest_stamp)}d)"
     )
     return 0
 

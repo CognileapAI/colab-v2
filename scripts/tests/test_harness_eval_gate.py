@@ -358,6 +358,15 @@ class FreshnessTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertRegex(out.getvalue(), r"harness-eval newest \d{8}-\d{6} \(\d+d\)")
 
+    def test_age_days_never_negative_across_timezones(self):
+        """Run ids are the recorder's local clock (KST); a UTC CI runner reading a same-day result
+        must print 0d, not -1d (E0 PR #176: compatibility · gate-selftest red)."""
+        stamp = self.dt.datetime(2026, 9, 26, 12, 52, 5)      # 20260926-125205 recorded in KST
+        utc_same_day = self.dt.datetime(2026, 9, 26, 5, 9, 53)  # CI wall clock, 7h43m "before" it
+        self.assertEqual(self.check.eval_age_days(stamp, now=utc_same_day), 0)
+        self.assertEqual(self.check.eval_age_days(stamp, now=stamp + self.dt.timedelta(days=3, hours=1)), 3)
+        self.assertEqual(self.check.eval_age_days(stamp, now=stamp + self.dt.timedelta(hours=23)), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
