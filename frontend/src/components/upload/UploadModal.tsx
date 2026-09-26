@@ -24,6 +24,7 @@ import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import type { ParentCard } from '../lineage/types';
 import { Toast } from '../common/Toast';
+import { useInputMode } from '../common/useInputMode';
 import { type AccessState } from '../common/accessState';
 import {
   ANALYZED_CHIP,
@@ -80,6 +81,13 @@ import {
   type UploadSources,
   type UploadStatus,
 } from './types';
+
+/**
+ * 이어 올리기 안내 — 마우스 원문(이전 판정대로 유지) 바로 다음 줄이 터치 문구다
+ * (spec S-DEVICE-WIDTH-INPUT-20260926 「새 문구안」 5 확정 원문). 고르기와 끌어 놓기 모두 같은 이어 올리기로 간다.
+ */
+export const RESUME_HINT = '같은 파일을 다시 끌어다 놓으면 남은 조각부터 이어서 올라가요.';
+export const RESUME_HINT_TOUCH = '같은 파일을 다시 고르면 남은 조각부터 이어서 올라가요.';
 
 export function missingClassificationId(category: string, dataType: string, level: string): string | null {
   return !category ? 'reg-category' : !dataType ? 'reg-datatype' : !level ? 'reg-level' : null;
@@ -238,6 +246,7 @@ export function UploadModal(props: {
 }) {
   const account = useAccount();
   const navigate = useNavigate();
+  const touchInput = useInputMode() === 'touch';
   const { upload } = props.sources;
   const operator = account?.canManageServiceAccounts === true;
   const [targetLabId, setTargetLabId] = useState(props.initialLabId ?? '');
@@ -1476,7 +1485,7 @@ export function UploadModal(props: {
               ))}
               {resumeId && (
                 <p className="ub-hint" data-testid="up-resume-hint">
-                  같은 파일을 다시 끌어다 놓으면 남은 조각부터 이어서 올라가요.
+                  {touchInput ? RESUME_HINT_TOUCH : RESUME_HINT}
                 </p>
               )}
             </aside>

@@ -95,6 +95,12 @@
   accent-color: var(--color-primary-600);
 }
 
+/* 휴대폰·패드 대응 20260926 (L3b · 우려 2ⓐ · 부록 B 45) — 대표 라디오를 감싼 label 이 칸 폭을 채운다.
+   라디오는 label 안 한 줄 그대로라 마우스 모양은 바뀌지 않는다. 터치 44 는 파일 끝 터치 블록. */
+.vartable td > label {
+  display: block;
+}
+
 /* 빼기 — rev2 `.vt-del`. 한 글자짜리 칸이라 테두리를 두지 않는다. */
 .vt-del {
   width: 100%;
@@ -134,9 +140,17 @@
 }
 
 /* 휴대폰·패드 대응 20260926 (L2b · 부록 B 43 · 44) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
-   빼기 칸의 고정 높이 32 를 최소 높이 44 가 이긴다. 대표 라디오(45)는 L3b 가 이 블록 안에 더한다. */
+   빼기 칸의 고정 높이 32 를 최소 높이 44 가 이긴다. 대표 라디오(45)는 L3b 가 이 블록 안에 더한다.
+   L3b(우려 2ⓐ) — 대표 라디오를 감싼 label 을 44 칸으로 키우고 라디오를 가운데 둔다. */
 @media (pointer: coarse) {
   .vt-del { min-height: var(--control-height); min-width: var(--control-height); }
   .vt-add { min-height: var(--control-height); min-width: var(--control-height); }
+  .vartable td > label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--control-height);
+    min-width: var(--control-height);
+  }
 }
 }

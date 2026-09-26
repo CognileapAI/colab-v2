@@ -143,14 +143,15 @@ const HOVERS: [FileName, string, string, 'block'?][] = [
   ['login', '.login-submit:hover:not(:disabled)', '.login-submit:hover:not(:disabled) { background: var(--color-primary-700); }', 'block'],
 ];
 
-type Tap = { n: number; file: FileName; block: string[]; blind?: true; row?: true; text?: true; wide?: true; tall?: true };
+type Tap = { n: number; file: FileName; block: string[]; blind?: true; row?: true; text?: true; wide?: true; tall?: true; lane?: 'L3b' };
 /** 부록 B 레인 L2b — 34 개(L2b-1 13 ＋ L2b-2 21). 캡처 사각 15–17 · 28 · 47–49. 13 은 행 높이로 잰다(우려 1ⓐ · 링크 모양 불변).
  *  `text` = 글자 링크 · 탭(inline-flex 누름 상자만 키움 · 글자 크기 불변).
  *  `wide` = 가로만 모자란 대상(31 · 42 · 부록 B 「이미 세로 44 라 가로만」) — 터치 블록은 최소 가로만 둔다(advisor ① L2b-2).
  *  42 의 규칙은 셸 CSS 가 아니라 업로드 CSS 터치 블록에 둔다(advisor ① L2b-2 · 셸 CSS 변경 0).
  *  `tall` = 세로만 두는 대상(49 · 오케스트레이터 결정 49 ⓐ · Ted 번복 가능 · spec 미달 1 「49 가로 · 641+ 터치」).
  *  기간 달력 7열 격자가 날짜 칸 가로를 정한다 — 최소 가로 44 는 641px 이상 터치에서 격자를 달력 틀 밖으로 밀어냈다
- *  (L2b-2 보고 §8). 달력 터치 배치는 다음 intent(배치 정리). */
+ *  (L2b-2 보고 §8). 달력 터치 배치는 다음 intent(배치 정리).
+ *  `lane: 'L3b'` = L3b 가 같은 파일 끝 터치 블록에 더한 체크 칸(36) · 대표 라디오(45) — label 상자(우려 2ⓐ · 머리 주석). */
 const TAPS: Tap[] = [
   { n: 13, file: 'catalog', block: ['.tbl tr.clk'], row: true },
   { n: 14, file: 'catalog', block: ['.tbl .rowact .rab'] },
@@ -175,6 +176,7 @@ const TAPS: Tap[] = [
   { n: 33, file: 'project', block: ['.pd-linkurl'], text: true },
   { n: 34, file: 'project', block: ['.pj-seg button'] },
   { n: 35, file: 'members', block: ['.settabs .st'] },
+  { n: 36, file: 'members', block: ['.memtbl td.pc > label'], lane: 'L3b' },
   { n: 37, file: 'login', block: ['.login-input'] },
   { n: 38, file: 'login', block: ['.login-submit'] },
   { n: 39, file: 'upload', block: ['.regsteps .rs-x'] },
@@ -183,6 +185,7 @@ const TAPS: Tap[] = [
   { n: 42, file: 'upload', block: ['.mapbar .btn-ghost'], wide: true },
   { n: 43, file: 'variableTable', block: ['.vt-del'] },
   { n: 44, file: 'variableTable', block: ['.vt-add'] },
+  { n: 45, file: 'variableTable', block: ['.vartable td > label'], lane: 'L3b' },
   { n: 47, file: 'upload', block: ['.dr-nav button'], blind: true },
   { n: 48, file: 'upload', block: ['.dr-useg button'], blind: true },
   { n: 49, file: 'upload', block: ['.dr-cal-d'], blind: true, tall: true },
@@ -205,9 +208,14 @@ describe('대상 개수(green-by-skip 방지 · spec 총합)', () => {
     expect(NAMES).toEqual(['catalog', 'search', 'detail', 'lineageGraph', 'lineage', 'approval', 'dashboard', 'project', 'members', 'variableTable', 'upload', 'login']);
     expect(NAMES.map(per)).toEqual([8, 1, 2, 2, 0, 1, 1, 0, 0, 2, 6, 1]);
   });
-  it('터치 44 대상 = 34 · 캡처 사각 7(15–17 · 28 · 47–49) · 가로만 2(31 · 42) · 대상 목록(targets.json)의 레인 L2b 34 와 같은 번호', () => {
-    expect(TAPS.length).toBe(34);
+  it('터치 44 대상 = 36(레인 L2b 34 ＋ L3b 2) · 캡처 사각 7(15–17 · 28 · 47–49) · 가로만 2(31 · 42) · 대상 목록(targets.json)의 레인 L2b 34 · L3b 2 와 같은 번호', () => {
+    expect(TAPS.length).toBe(36);
     expect(TAPS.map((t) => t.n).sort((a, b) => a - b)).toEqual([
+      8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    ]);
+    const L2B_TAPS = TAPS.filter((t) => t.lane === undefined);
+    expect(L2B_TAPS.length).toBe(34);
+    expect(L2B_TAPS.map((t) => t.n).sort((a, b) => a - b)).toEqual([
       8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49,
     ]);
     expect(TAPS.filter((t) => t.blind).map((t) => t.n)).toEqual([15, 16, 17, 28, 47, 48, 49]);
@@ -215,9 +223,13 @@ describe('대상 개수(green-by-skip 방지 · spec 총합)', () => {
     expect(TAPS.filter((t) => t.tall).map((t) => t.n)).toEqual([49]);
     const lane = TARGETS.targets.filter((t) => t.lane === 'L2b');
     expect(lane.length).toBe(34);
-    expect(lane.map((t) => t.n).sort((a, b) => a - b)).toEqual(TAPS.map((t) => t.n).sort((a, b) => a - b));
+    expect(lane.map((t) => t.n).sort((a, b) => a - b)).toEqual(L2B_TAPS.map((t) => t.n).sort((a, b) => a - b));
     expect(lane.filter((t) => t.captureBlind).map((t) => t.n)).toEqual([15, 16, 17, 28, 47, 48, 49]);
     expect(lane.filter((t) => t.measure === 'row').map((t) => t.n)).toEqual([13]);
+    // 레인 L3b 2항목(36 · 45 · label 상자로 잼) — 대상 목록의 레인 L3b 와 같은 번호.
+    const l3b = TARGETS.targets.filter((t) => t.lane === 'L3b');
+    expect(l3b.map((t) => t.n).sort((a, b) => a - b)).toEqual([36, 45]);
+    expect(TAPS.filter((t) => t.lane === 'L3b').map((t) => t.n)).toEqual([36, 45]);
   });
 });
 
@@ -403,13 +415,17 @@ describe('V7 · 터치 44(부록 B 레인 L2b 34 · 화면 CSS 끝 `(pointer: co
     ]);
     expect(new Set(n720.map((r) => r.top)).size).toBe(6);
   });
-  // L3b 앞 경계(advisor ① L2b-2): 구성원 · 변수 표 터치 블록에는 35 · 43 · 44 만 있다. 체크 칸(36) · 대표 라디오(45)는 L3b 몫.
+  // L3b 경계(advisor ① L2b-2 · L3b): 구성원 · 변수 표 터치 블록 = L2b 35 · 43 · 44 ＋ L3b 체크 칸(36) · 대표 라디오(45) label.
   const L3B_ONLY = /input|checkbox|radio|label|\.pc\b|memtbl|vartable/;
-  it('구성원 · 변수 표 터치 블록 = 35 · 43 · 44 선택자뿐 · 체크 칸 · 대표 라디오 선택자 0(L3b 몫)', () => {
-    expect(coarseOf('members').flatMap((r) => r.selectors)).toEqual(['.settabs .st']);
-    expect(coarseOf('variableTable').flatMap((r) => r.selectors).sort()).toEqual(['.vt-add', '.vt-del']);
+  it('구성원 · 변수 표 터치 블록 = 35 · 43 · 44 선택자 ＋ 체크 칸 · 대표 라디오 선택자 = L3b label 2(36 · 45)', () => {
+    expect(coarseOf('members').flatMap((r) => r.selectors)).toEqual(['.settabs .st', '.memtbl td.pc > label']);
+    expect(coarseOf('variableTable').flatMap((r) => r.selectors).sort()).toEqual(['.vartable td > label', '.vt-add', '.vt-del']);
+    const want: Record<'members' | 'variableTable', string[]> = {
+      members: ['.memtbl td.pc > label'],
+      variableTable: ['.vartable td > label'],
+    };
     for (const f of ['members', 'variableTable'] as const) {
-      expect(coarseOf(f).flatMap((r) => r.selectors).filter((s) => L3B_ONLY.test(s)), f).toEqual([]);
+      expect(coarseOf(f).flatMap((r) => r.selectors).filter((s) => L3B_ONLY.test(s)), f).toEqual(want[f]);
     }
   });
   it('42 확장보기 단추(`.mapbar .btn-ghost`) 규칙은 업로드 CSS 터치 블록에만 있다(셸 · 프리미티브 CSS 변경 0)', () => {
