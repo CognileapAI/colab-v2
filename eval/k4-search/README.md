@@ -237,3 +237,5 @@ services/core-api/.venv/bin/python eval/k4-search/measure_draft_contribution.py 
 **온톨로지 회차 절차에 이 표(`draft-contribution-review.md` + `draft-contribution.json`)를 첨부한다.** 기계는 제안만 하고 Ted 가 회차 intent 의 「판정 결과」 절에서 판정한다(결정 6).
 
 한계: 경로 2 는 `routes/catalog.py` 경로 2 블록을 도메인·순수 함수 호출로 재현한 것이다(HTTP 층 없이 부를 수 있는 제품 함수만 부르고 제품 코드는 고치지 않았다). 라우트의 verified 걸름·잠김 조립·근거 문장은 green 판정에 들어가지 않으며, 라우트가 바뀌면 이 재현도 따라가야 한다. 1회차 실측은 `dev-package/reports/evidence-promotion/round-1-2026-09-26/`.
+
+2회차 지역(2026-09-26 Ted 「자료 지역 확정」)은 `--round "2회차 지역"` 과 `--payload <회차 입력>` 으로 돌렸다 — 입력·재현 스크립트·「한반도」 region probe 상태표(반사실 포함)는 `dev-package/reports/evidence-promotion/round-2-2026-09-26/`.

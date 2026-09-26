@@ -17,7 +17,9 @@ def test_시드_22행이_그대로_읽힌다(dictionaries) -> None:
     loaded = dictionaries.load()
     assert len(loaded.method_terms) == 13
     assert len(loaded.topic_synonyms) == 5
-    assert len(loaded.place_aliases) == 4
+    # 4 = K2 시드 · +2 = `region_south_korea.sql`(2026-09-26 자료 지역 확정 1 — 남한·대한민국 → 남한).
+    #   setup-db.sh 가 그 파일을 싣는다. `practitioner_lexicon.sql` 은 이 픽스처에 싣지 않는다.
+    assert len(loaded.place_aliases) == 6
 
 
 def test_강우데이터가_주제로_간다(dictionaries) -> None:

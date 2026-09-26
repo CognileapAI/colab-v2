@@ -233,5 +233,42 @@ class RehearsalTest(unittest.TestCase):
         self.assertEqual(report["collisions"], [{"file_id": "F2", "key": "platform"}])
 
 
+    def test_conflict_with_reviewed_is_listed_and_refused_without_permission(self):
+        rows = [dict(self.ROWS[1], facts={"region": "T51SYB"})]
+        facts = [{"fact_id": "seq01.region", "seq": 1, "name": "d1", "key": "region", "value": "한반도",
+                  "rule": "bbox-korea-peninsula", "replacesReviewed": True}]
+        report = M.rehearse(rows, facts, "bbox-korea-peninsula", {"D1": 1})["report"]
+        self.assertFalse(report["ok"])
+        self.assertEqual(report["conflictsWithReviewed"][0]["conflicts"][0]["action"], "refused")
+        out = M.rehearse(rows, facts, "bbox-korea-peninsula", {"D1": 1}, "bbox-korea-peninsula")
+        self.assertTrue(out["report"]["ok"])
+        self.assertEqual(out["report"]["reviewed_facts_replaced"], 1)
+        self.assertEqual(out["report"]["conflictsWithReviewed"][0]["conflicts"][0]["action"], "replace")
+        self.assertEqual(out["bodies"][0]["body"]["facts"], {"region": "한반도"})
+
+    def test_promotion_replaces_only_when_explicitly_allowed(self):
+        payload = {"datasets": [{
+            "seq": 21, "facts": {"region": "T51SYB"}, "provenance": {"region": "정본전재"},
+            "draftFacts": {"region": "한반도"},
+            "draftProvenance": {"region": "규칙 · rule:bbox-korea-peninsula · x"},
+            "draftConflictsWithReviewed": [{"key": "region", "reviewed": "T51SYB", "draft": "한반도",
+                                            "rule": "bbox-korea-peninsula"}]}]}
+        with self.assertRaises(M.Refused):
+            M.promote_payload(payload, ["bbox-korea-peninsula"], "x")
+        out = M.promote_payload(payload, ["bbox-korea-peninsula"], "x", "bbox-korea-peninsula")
+        self.assertEqual(out["datasets"][0]["facts"]["region"], "한반도")
+        self.assertEqual(out["promotion"]["replaced"][0]["reviewed"], "T51SYB")
+        self.assertEqual(out["datasets"][0]["draftConflictsWithReviewed"], [])
+
+    def test_undeclared_overlap_is_refused_by_the_fact_reader(self):
+        payload = {"datasets": [{"seq": 1, "name": "d", "facts": {"region": "T51SYB"},
+                                 "draftFacts": {"region": "한반도"},
+                                 "draftProvenance": {"region": "규칙 · rule:bbox-korea-peninsula"}}]}
+        with self.assertRaises(M.Refused):
+            M.draft_facts(payload)
+        payload["datasets"][0]["draftConflictsWithReviewed"] = [{"key": "region"}]
+        self.assertTrue(M.draft_facts(payload)[0]["replacesReviewed"])
+
+
 if __name__ == "__main__":
     unittest.main()

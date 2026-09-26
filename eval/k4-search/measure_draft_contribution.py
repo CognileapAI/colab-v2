@@ -156,8 +156,13 @@ def draft_facts(payload: dict) -> list[dict]:
             found = re.search(r"rule:([A-Za-z0-9_-]+)", row["draftProvenance"].get(key, ""))
             if not found:
                 raise Refused(f"seq {row['seq']} {key}: draftProvenance 에 rule:<ID> 가 없다")
+            listed = {c["key"] for c in row.get("draftConflictsWithReviewed") or []}
+            if key in (row.get("facts") or {}) and key not in listed:
+                raise Refused(f"seq {row['seq']} {key}: 초안이 reviewed 와 겹치는데 draftConflictsWithReviewed 에 "
+                              "적혀 있지 않다 — 생성기가 공존을 선언하지 않은 겹침이다")
             out.append({"fact_id": f"seq{row['seq']:02d}.{key}", "seq": row["seq"],
-                        "name": row["name"], "key": key, "value": value, "rule": found[1]})
+                        "name": row["name"], "key": key, "value": value, "rule": found[1],
+                        "replacesReviewed": key in listed})
     return out
 
 
@@ -310,45 +315,65 @@ def rule_list(value) -> list[str]:
     return list(dict.fromkeys(r.strip() for r in items if r.strip()))
 
 
-def promote_payload(payload: dict, rules, note: str) -> dict:
+def promote_payload(payload: dict, rules, note: str, allow_replace=()) -> dict:
     """승격 판정을 반영한 payload 사본 — 규칙의 draftFacts 를 `facts` 로 옮기고 provenance 에 판정을 적는다.
 
     생성물(원본 payload)은 손대지 않는다. 결과는 **기존 적재기**(`dataset_evidence_apply.py`)의 입력이다 —
     적재기는 `facts` 전체를 reviewed 로 싣고, 같은 facts 면 쓰지 않는다(멱등). reviewed 값과 겹치는 성분이
     있으면 덮지 않고 거절한다(전체 교체 API 에서 조용히 값이 바뀌지 않게).
+
+    ⭑ 2026-09-26(PR #174 수정) — 초안과 확정값이 한 키에 공존하는 행(`draftConflictsWithReviewed`)이 있다.
+    그 규칙을 `allow_replace` 에 **명시**했을 때만 확정값을 초안으로 **대체**하고, 대체한 칸을
+    `promotion.replaced` 에 옛 값과 함께 남긴다. 명시하지 않으면 종전처럼 거절한다.
     """
     wanted = set(rule_list(rules))
+    replace_ok = set(rule_list(allow_replace)) if allow_replace else set()
     out = json.loads(json.dumps(payload, ensure_ascii=False))
-    moved = 0
+    moved, replaced = 0, []
     for row in out["datasets"]:
         for key in list(row.get("draftFacts") or {}):
             found = re.search(r"rule:([A-Za-z0-9_-]+)", row["draftProvenance"].get(key, ""))
             if not found or found[1] not in wanted:
                 continue
             if key in row["facts"]:
-                raise Refused(f"seq {row['seq']} {key}: reviewed 사실과 겹친다 — 승격이 값을 덮는다")
+                if found[1] not in replace_ok:
+                    raise Refused(f"seq {row['seq']} {key}: reviewed 사실과 겹친다 — 승격이 값을 덮는다"
+                                  f"(대체하려면 --allow-replace {found[1]} 를 명시한다)")
+                replaced.append({"seq": row["seq"], "key": key, "reviewed": row["facts"][key],
+                                 "draft": row["draftFacts"][key], "rule": found[1]})
             row["facts"][key] = row["draftFacts"].pop(key)
             row["provenance"][key] = f"승격 · {row['draftProvenance'].pop(key)} · {note}"
+            if row.get("draftConflictsWithReviewed"):
+                row["draftConflictsWithReviewed"] = [c for c in row["draftConflictsWithReviewed"]
+                                                     if c["key"] != key]
             moved += 1
-    out["promotion"] = {"rules": sorted(wanted), "movedFacts": moved, "note": note}
+    out["promotion"] = {"rules": sorted(wanted), "movedFacts": moved, "note": note,
+                        "allowReplace": sorted(replace_ok), "replaced": replaced}
     return out
 
 
-def rehearse(rows: list[dict], facts: list[dict], rule, seq_of_dataset: dict) -> dict:
+def rehearse(rows: list[dict], facts: list[dict], rule, seq_of_dataset: dict, allow_replace=()) -> dict:
     """규칙(하나 또는 여럿)을 병합한 PUT 본문(`EvidenceWrite`)을 만들고 reviewed 사실이 하나도 빠지지 않음을 대조한다.
 
     `rows` = 현재 행({file_id, dataset_id, revision, file_revision, status, facts, source_label,
     source_locator, source_text}). **보내지 않는다.** 같은 facts 면 본문을 만들지 않는다(멱등 판정).
+
+    확정값과 다른 초안은 파일마다 `conflictsWithReviewed` 에 적는다. 그 규칙이 `allow_replace` 에
+    명시돼 있으면 **대체(REPLACE)** 로 본문에 싣고(`action: replace`), 아니면 싣지 않고 `collisions` 로
+    올려 `ok=false` 다 — 조용히 덮지 않는다.
     """
     rules = rule_list(rule)
-    promoted = {}
+    replace_ok = set(rule_list(allow_replace)) if allow_replace else set()
+    promoted: dict = {}
     for fact in facts:
         if fact["rule"] in rules:
-            promoted.setdefault(fact["seq"], {})[fact["key"]] = fact["value"]
-    report = {"rule": ",".join(rules), "promoted_facts": sum(len(v) for v in promoted.values()),
+            promoted.setdefault(fact["seq"], {})[fact["key"]] = (fact["value"], fact["rule"])
+    report = {"rule": ",".join(rules), "allowReplace": sorted(replace_ok),
+              "promoted_facts": sum(len(v) for v in promoted.values()),
               "datasets": len(promoted), "files": 0, "bodies": 0, "unchanged": 0,
-              "reviewed_facts_before": 0, "reviewed_facts_kept": 0, "promoted_added": 0,
-              "collisions": [], "dropped": [], "not_reviewed": 0}
+              "reviewed_facts_before": 0, "reviewed_facts_kept": 0, "reviewed_facts_replaced": 0,
+              "promoted_added": 0, "collisions": [], "conflictsWithReviewed": [], "dropped": [],
+              "not_reviewed": 0}
     bodies = []
     for row in rows:
         seq = seq_of_dataset.get(row["dataset_id"])
@@ -359,15 +384,26 @@ def rehearse(rows: list[dict], facts: list[dict], rule, seq_of_dataset: dict) ->
             report["not_reviewed"] += 1
         current = dict(row["facts"] or {})
         merged = dict(current)
-        for key, value in promoted[seq].items():
+        replaced_keys = set()
+        conflicts = []
+        for key, (value, rule_id) in promoted[seq].items():
             if key in current and current[key] != value:
-                report["collisions"].append({"file_id": row["file_id"], "key": key})
-                continue
+                action = "replace" if rule_id in replace_ok else "refused"
+                conflicts.append({"key": key, "reviewed": current[key], "draft": value,
+                                  "rule": rule_id, "action": action})
+                if action == "refused":
+                    report["collisions"].append({"file_id": row["file_id"], "key": key})
+                    continue
+                replaced_keys.add(key)
             merged[key] = value
+        if conflicts:
+            report["conflictsWithReviewed"].append({"file_id": row["file_id"], "seq": seq,
+                                                    "conflicts": conflicts})
         report["reviewed_facts_before"] += len(current)
         kept = [k for k, v in current.items() if merged.get(k) == v]
         report["reviewed_facts_kept"] += len(kept)
-        dropped = sorted(set(current) - set(kept))
+        report["reviewed_facts_replaced"] += len(replaced_keys)
+        dropped = sorted(set(current) - set(kept) - replaced_keys)
         if dropped:
             report["dropped"].append({"file_id": row["file_id"], "keys": dropped})
         if merged == current:
@@ -381,7 +417,7 @@ def rehearse(rows: list[dict], facts: list[dict], rule, seq_of_dataset: dict) ->
                        "text": row["source_text"]}}})
     report["bodies"] = len(bodies)
     report["ok"] = not report["dropped"] and not report["collisions"] and \
-        report["reviewed_facts_kept"] == report["reviewed_facts_before"]
+        report["reviewed_facts_kept"] + report["reviewed_facts_replaced"] == report["reviewed_facts_before"]
     return {"report": report, "bodies": bodies}
 
 
@@ -548,11 +584,14 @@ class Evaluator:
         self.body_files = {ds: sorted(fid for _, ids in g.values() for fid in ids) for ds, g in self.groups.items()}
         self.drafts: dict[str, dict[str, tuple]] = {}
         self.collisions = []
+        self.replaces_reviewed = []
         for f in facts:
             ds = self.id_of[f["seq"]]
             for facts_value, _ in self.groups.get(ds, {}).values():
                 if f["key"] in facts_value:
-                    self.collisions.append(f["fact_id"])
+                    # 생성기가 공존을 선언한 칸(draftConflictsWithReviewed)은 측정에서 **대체**로 겹친다 —
+                    # 「이 초안을 승격해 확정값을 바꾸면」의 반사실이다. 선언 없는 겹침은 종전처럼 거절한다.
+                    (self.replaces_reviewed if f.get("replacesReviewed") else self.collisions).append(f["fact_id"])
             self.drafts.setdefault(ds, {})[f["fact_id"]] = (f["key"], f["value"])
         if self.collisions:
             raise Refused(f"초안 성분이 reviewed 사실과 겹친다: {self.collisions} — 합본이 reviewed 값을 덮는다")
@@ -830,10 +869,13 @@ def _parser() -> argparse.ArgumentParser:
                    help="빈 일회용 DB 에 스냅숏 v2 28건과 payload 를 먼저 싣는다(이것만 커밋)")
     p.add_argument("--rehearse-promote", metavar="RULE_ID[,RULE_ID]",
                    help="규칙(쉼표로 여럿)의 승격 PUT 본문을 만들어 reviewed 사실 보존만 대조한다(보내지 않는다)")
+    p.add_argument("--allow-replace", metavar="RULE_ID[,RULE_ID]", default="",
+                   help="확정값과 공존하는 초안(draftConflictsWithReviewed)을 승격하며 확정값을 대체해도 되는 규칙 — 명시한 것만")
     p.add_argument("--write-promoted-payload", type=pathlib.Path, metavar="PATH",
                    help="리허설과 함께 승격 반영 payload 사본을 쓴다 — dataset_evidence_apply.py 의 입력")
     p.add_argument("--promotion-note", default="판정 결과 미기재",
                    help="승격 payload provenance 에 붙일 판정 근거(회차 intent 판정 결과 절)")
+    p.add_argument("--round", default="1회차", help="산출물에 적을 회차 이름(예: 2회차 지역)")
     p.add_argument("--i-know-this-is-disposable", action="store_true",
                    help="localhost 가 아닌 일회용 DB(도커 브리지 IP 등)임을 명시한다")
     return p
@@ -888,7 +930,7 @@ def _rehearse(db, session, payload, facts, args) -> int:
     rows = [dict(r) for r in session.execute(db.text(
         """SELECT file_id::text AS file_id, dataset_id::text AS dataset_id, revision, file_revision, status, facts,
            source_label, source_locator, source_text FROM d3_search_evidence ORDER BY file_id""")).mappings()]
-    out = rehearse(rows, facts, rules, seq_of)
+    out = rehearse(rows, facts, rules, seq_of, args.allow_replace)
     for item in out["bodies"]:
         EvidenceWrite.model_validate(item["body"])  # 전체 교체 본문이 계약을 통과하는지 — 보내지는 않는다
     report = dict(out["report"], contract_validated=len(out["bodies"]), sent=0)
@@ -903,7 +945,7 @@ def _rehearse(db, session, payload, facts, args) -> int:
     if args.write_promoted_payload:
         if args.write_promoted_payload.exists():
             raise Refused(f"승격 payload 가 이미 있다 — {args.write_promoted_payload}")
-        promoted = promote_payload(payload, rules, args.promotion_note)
+        promoted = promote_payload(payload, rules, args.promotion_note, args.allow_replace)
         args.write_promoted_payload.parent.mkdir(parents=True, exist_ok=True)
         args.write_promoted_payload.write_text(
             json.dumps(promoted, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -941,7 +983,7 @@ def _measure(db, factory, session, payload, facts, args) -> int:
     unchanged = fingerprints_equal(before, after)
     result = {
         "schema": "colab-draft-contribution/1",
-        "round": "1회차",
+        "round": args.round,
         "measuredAt": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "tool": {"path": "eval/k4-search/measure_draft_contribution.py",
                  "sha256": sha256_file(pathlib.Path(__file__)), "gitHead": _git_head()},
@@ -962,6 +1004,7 @@ def _measure(db, factory, session, payload, facts, args) -> int:
         "cases": {"A": sorted(evaluator.case_reads["A"]), "B": sorted(evaluator.case_reads["B"]),
                   "heldout": [c["id"] for c in cases["heldout"]],
                   "excluded": evaluator.excluded()},
+        "draftReplacesReviewed": sorted(evaluator.replaces_reviewed),
         "bodyFilesByDataset": {str(evaluator.seq_of[ds]): len(ids) for ds, ids in evaluator.body_files.items()},
         **table,
     }

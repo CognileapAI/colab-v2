@@ -38,6 +38,9 @@
     {"id": "LEX-24", "term": "ECMWF", "mode": "graph", "expectGraph": ["유럽중기예보센터"], "now": "hit", "by": "사례 제공자 #1 #1-6 · 사례 제공자 #2 #2-1 (ERA5 를 명시로 부르는 사례 6건)", "note": "결정 4 재개봉 — ONTOLOGY-SCOPE.md §2.7-⑴ 축자 「ECMWF (ERA5)」·「유럽중기예보센터 재분석 강수를 격자 보간·품질검사한 자료」. 엣지 E1-12 가 두 표기를 잇는다"},
     {"id": "LEX-25", "term": "유럽중기예보센터", "mode": "graph", "expectGraph": ["ECMWF"], "now": "hit", "by": "같은 근거 — 「같은 말이다」는 대칭이라 반대 방향도 재야 한다", "note": "이 방향이 red 로 남으면 정규형(src < dst) 한 행이 한쪽만 펴는 것이다"},
     {"id": "LEX-26", "term": "가뭄", "mode": "topic", "expectTopic": "가뭄", "now": "hit", "by": "Ted 판정 2026-09-18 결정 5 축자 「가뭄 파일포멧 예제 넣자. 데이터가 들어오면 검색이 되어야 한다」", "note": "⚠ 이 줄은 2회차 **전에도** hit 였다 — 사전(`topic_synonym_six.sql`)이 2026-09-06 에 이미 닿고 있었다. 결정 5 가 없애는 것은 사전-그래프 **비대칭**이고 이 줄의 상태가 아니다. 전이를 주장하지 않는다"},
-    {"id": "LEX-27", "term": "SPI", "mode": "topic", "expectTopic": "가뭄", "now": "hit", "by": "같은 판정 · 실데이터 LD-DRGH-LV1 이름 「주간 SPI/SPEI-4weeks」", "note": "LEX-26 과 같다 — 2회차 전에도 hit 다"}
+    {"id": "LEX-27", "term": "SPI", "mode": "topic", "expectTopic": "가뭄", "now": "hit", "by": "같은 판정 · 실데이터 LD-DRGH-LV1 이름 「주간 SPI/SPEI-4weeks」", "note": "LEX-26 과 같다 — 2회차 전에도 hit 다"},
+    {"id": "LEX-28", "term": "한반도", "mode": "graph", "expectGraph": ["남한"], "now": "hit", "by": "Ted 판정 2026-09-26 「자료 지역 확정」 1 축자 「㈎ 기상청 4건(seq 1·2·19·20)=남한, GK-2A(seq 6)=한반도, 남한⊂한반도 관계로 연결」 · 실무자 사례 #1-3·#1-4·#2-3·#2-4·#2-6·#2-7", "note": "「한반도」 질의가 남한 자료(기상청 관측망 4건)에 닿으려면 그래프가 한반도→남한 한 홉을 펴야 한다. 0012_region_south_korea 가 남한 노드·「남한 안에 있다 한반도」 엣지를 싣기 전에는 miss 였다(직전 커밋)"},
+    {"id": "LEX-29", "term": "남한", "mode": "place", "expectPlace": "남한", "now": "hit", "by": "Ted 판정 2026-09-26 「자료 지역 확정」 1 — 정본 DATASETS.md seq 1·2·19·20 의 「지역: 남한」 줄", "note": "practitioner_lexicon.sql 이 「남한」을 정본 근거 0건이라 넣지 않았다 — 이번 판정이 그 근거다"},
+    {"id": "LEX-30", "term": "대한민국", "mode": "place", "expectPlace": "남한", "now": "hit", "by": "정본 01.level-data/03.drought/DATASETS.md seq 13·14 축자 「대한민국 내 기상관측소」 · Ted 판정 2026-09-26 「자료 지역 확정」 1", "note": "대한민국 = 남한 표기 변형으로 잇는다(별칭 → 정본 표기 1:1)"}
   ]
 }

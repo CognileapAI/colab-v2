@@ -2,8 +2,8 @@
   "schema": "colab-dataset-evidence-rule-summary/1",
   "payload": "dataset-evidence-payloads.json",
   "note": "규칙 추론값은 초안이다 — 사람 확인 후 승격(2026-09-21 Ted 결정 1). d3_search_evidence 는 file_id 가 PK 이고 status 가 행 단위라 한 파일이 reviewed 와 draft 를 함께 가질 수 없다. 그래서 draftFacts 는 DB 에 실리지 않고 이 payload 에만 남는다. 승격 단계는 rule:<ID> locator 로 찾아온다.",
-  "draftFactsTotal": 110,
-  "reviewedFactsTotal": 123,
+  "draftFactsTotal": 122,
+  "reviewedFactsTotal": 128,
   "byRule": {
     "platform-from-instrument": 26,
     "representation-from-shape": 28,
@@ -11,6 +11,8 @@
     "interpolated-from-lineage": 28,
     "native-resolution-carried": 1,
     "region-from-registration-note": 1,
-    "bbox-korea-peninsula": 0
+    "bbox-korea-peninsula": 4,
+    "region-from-lineage-parent": 4,
+    "region-from-lineage-sibling": 4
   }
 }

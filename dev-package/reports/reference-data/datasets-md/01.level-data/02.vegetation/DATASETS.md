@@ -30,6 +30,7 @@
 - 파일: `02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_*.nc` · 31건 · 57,900,869 B · 일 단위 `202305010000` ~ `202305310000`(2023-05 전월 31일)
 - 격자: 파일 2건 `02.vegetation/#metadata/LAT.npy`·`02.vegetation/#metadata/LON.npy` · 근거 = 출처 축자 「Lv.0: LAT.npy, LON.npy」
 - 설명: 국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다.
+- 지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)
 - 비고: 오늘 실측 — 등록됨(31건 · 화면 접수 74,259,525 B). 기준 격자 칸이 뜨지 않아 격자 부착을 생략했다(화면이 좌표 보유로 판정 · `DR-3 §5`). 렌더 미측정.
 
 ### GK2A_NDVI_mean_202305
@@ -116,6 +117,7 @@
 ```yaml
 # colab-datasets v1 — 이 블록이 생성기의 입력이다. 표와 어긋나면 생성기가 비영 종료한다.
 # `summary` = 러너가 화면에 그대로 치는 한 줄. `description`·`note` = 문서 요약(생성기 미출력).
+# `region`·`bbox` = 검색 근거 생성기(`dev-package/tools/dataset_evidence_backfill.py`) 입력 — Ted 확정 2026-09-26(자료 지역 확정). 등재표 생성기는 읽지 않는다.
 project: vegetation
 project_name: "vegetation"
 project_description: "GK-2A 식생자료(Lv.0)에서 월평균 NDVI(Lv.1)를 만들고, 수치표고모형·경사향·토지피복을 추가 입력으로 써 100 m 일 단위 공간상세화 예측(Lv.2)까지 잇는다."
@@ -133,6 +135,7 @@ datasets:
     format: "NetCDF4"
     preview_expected: "미측정(판정 5종 밖)"
     description: "국가기상위성센터가 제공하는 GK-2A le2 식생자료. 좌표계는 Lambert Conformal Conic, 시/공간해상도는 1일 / 2 km 다. 파일 하나에 NDVI·EVI·FVC·DQF·좌표계 정의 5개 자료가 들어 있고 이 흐름은 NDVI 만 사용한다."
+    region: "한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)"
     note: "오늘 실측 — 등록됨(31건 · 화면 접수 74,259,525 B). 기준 격자 칸이 뜨지 않아 격자 부착을 생략했다(화면이 좌표 보유로 판정 · `DR-3 §5`). 렌더 미측정."
   - seq: 7
     name: "GK2A_NDVI_mean_202305"
