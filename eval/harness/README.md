@@ -143,6 +143,25 @@ eval/harness/H<번호>-<이름>/
 | `H??.raw.{1,2}.json` | 안 한다 | 본문이 `out` 과 중복 · `session_id`·`uuid` 가 회차마다 바뀌어 diff 만 늘린다. 비용·초는 `summary.md` 에 있다 |
 | `H??.err.{1,2}.txt` | 안 한다 | 성공 회차에서 빈 파일 · 실패 회차 내용은 `summary.md` 「사유」 칸에 인용된다 |
 
+## 설정 해시 · 면제 조건
+
+결과가 **어느 설정에서 잰 것인가**를 기계가 대조한다(spec `dev-package/prd/specs/S-HARNESS-E0-EVAL-GATE-20260926.md` §4.1 · §4.3).
+
+- **정본** = `eval/harness/config-paths.txt` 한 파일 — `AGENTS.md` · `CLAUDE.md` · `.claude/**` · `.agents/**` ·
+  `gates/**` · `scripts/harness/hooks/**` · `eval/harness/**`(`results/**` 제외) · 자기 자신. 계산기 = `eval/harness/config_hash.py`.
+  러너 · 게이트 · `gates/tools/ci-filter-check.py`(CI `harness` 필터 ⊇ 정본) 가 같은 파일을 읽는다.
+- **계산** — 파일 집합 = `git ls-files --cached --others --exclude-standard`(추적 + 비무시 미추적) · 파일마다
+  blob sha1(= `git hash-object`) · symlink 는 링크 텍스트(대상이 집합 밖 파일이면 대상 본문 포함) · 깨진 링크 `missing` ·
+  정렬된 `path\0sha\n` 의 sha256. **내용 기준**이라 dirty 로 잰 편집을 그대로 커밋하면 같은 해시다.
+  `config-hash.json` = `hash` · `files` · `head` · `dirty` · `selected` · `patterns_sha256` · `claude_version` · `computed_at`.
+- **면제 판정**(`COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` · `config_hash.py verify`) —
+  현재 해시와 일치하는 전수 결과(`selected == all` · 요약줄 `준비 0` · 과제 행 수 == 과제 N) 없음·입력 손상 = **78**
+  (`missing=eval-result:<hash>`) · 회귀 = **1** · 일치 ＋ 무회귀 = **0**(run id · `hash(head)=hash(회차)` 출력).
+- **회귀 규칙** — 일치 결과 중 id 최대 = R\*. 직전 = R\* 보다 id 가 작고 `summary.md` 가 있는 최신 전수 결과(해시 없는 옛
+  결과 포함 · 선택 실행 제외). `green(직전) − green(R*) ≠ ∅` 이면 1(과제 이름 나열). 직전이 없으면 회귀 기준이 없다(0).
+- **회차 무효화** — 회차는 병합 직전 head 에서 1회. 그 뒤 해시 집합 파일을 push 하면 게이트가 78 로 돌아간다.
+  base(develop) 병합이 집합 파일을 건드리지 않으면 해시 불변 · 건드리면 재실측(≈32 USD). CI 는 머지 커밋 트리에서 계산한다.
+
 ## 시험
 
 ```bash
@@ -155,4 +174,4 @@ bash eval/harness/tests/run-selftest.sh    # 17/17 · 실제 모델 호출 0회(
 |---|---|
 | 로스터 20건(과제 정의 정본) | `dev-package/intent/2026-09-08-harness-evals.md` |
 | 요구 정본 | `dev-package/prd/specs/R-D.md` · 실행 뷰 `dev-package/prd/rounds/R-D-2-harness-eval.md` |
-| 게이트 승격 | `harness-eval` — 3회 연속 2/2 green 뒤(WU-D7) |
+| 게이트 승격 | `harness-eval` — 3회 연속 2/2 green 뒤(WU-D7) · 면제 조건은 이미 설정 해시에 결합(위 「설정 해시 · 면제 조건」) |
