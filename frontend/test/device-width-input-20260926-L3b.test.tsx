@@ -8,10 +8,6 @@
  * 입력 방식 훅은 L3a 와 같은 모듈 모의로 터치 · 마우스 두 갈래를 그린다. 마우스 갈래는 대상 요소 수를 먼저 센다
  * (green-by-skip 방지). jsdom 은 배치를 재지 않는다 — 44 높이 · 1440 픽셀 · 세로 넘침은 캡처 수치(레인 보고)가 근거다.
  */
-// @ts-expect-error — 타입 선언 없이 런타임만 쓴다(선례 device-width-input-20260926-L2b · vitest css 스텁은 `?raw` 도 빈 문자열).
-import { readFileSync } from 'node:fs';
-// @ts-expect-error — 같은 이유.
-import { resolve } from 'node:path';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -34,10 +30,31 @@ import type {
   UploadSource,
   UploadSources,
 } from '../src/components/upload/types';
+import variableTableCss from '../src/components/common/variableTable.css?raw';
+import membersCss from '../src/components/members/members.css?raw';
 import { researcher } from './factories';
 
-declare const process: { cwd(): string };
-const raw = (rel: string): string => String(readFileSync(resolve(process.cwd(), rel), 'utf8'));
+/**
+ * 원문은 `?raw` 로 받는다 — `node:fs` 금지(`e01-apply-points.test.ts` 머리 주석 · 2026-09-02 배포 불가 사고).
+ * vitest css 스텁은 허용 목록(`vite.config.ts` `test.css.include`) 밖 `?raw` 를 빈 문자열로 만든다 → 아래 「적재」 시험이 red.
+ * 값 = [원문, 그 파일에 반드시 있는 선택자].
+ */
+const RAW_CSS: Record<string, readonly [string, string]> = {
+  'src/components/members/members.css': [membersCss, '.memtbl'],
+  'src/components/common/variableTable.css': [variableTableCss, '.vartable'],
+};
+const raw = (rel: string): string => {
+  const hit = RAW_CSS[rel];
+  if (!hit) throw new Error(`?raw 로 받지 않은 파일: ${rel}`);
+  return hit[0];
+};
+
+describe('CSS 원문 적재 — `?raw` 가 비지 않고 알려진 선택자를 담는다(허용 목록 누락 = red)', () => {
+  it.each(Object.entries(RAW_CSS))('%s', (rel, [css, known]) => {
+    expect(css.length, rel).toBeGreaterThan(0);
+    expect(css, rel).toContain(known);
+  });
+});
 
 const mode = vi.hoisted(() => ({ current: 'mouse' as 'touch' | 'mouse' }));
 vi.mock('../src/components/common/useInputMode', () => ({ useInputMode: () => mode.current }));

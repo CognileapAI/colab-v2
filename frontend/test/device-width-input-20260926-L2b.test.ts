@@ -16,15 +16,52 @@
  * 「체크 칸 · 대표 라디오 선택자 0」 시험(`L3B_ONLY`)은 그때 기대값을 L3b 선택자 목록으로 바꾼다(단언을 지우지 않는다).
  * 블록 = 1 · 파일 끝 단언은 그대로 둔다.
  */
-// @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다 · 선례 design-fix-20260924-L1).
-import { readFileSync } from 'node:fs';
-// @ts-expect-error — 같은 이유.
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import targetsJson from '../scripts/visual-baseline/targets.json?raw';
+import approvalCss from '../src/components/approval/approval.css?raw';
+import catalogCss from '../src/components/catalog/catalog.css?raw';
+import variableTableCss from '../src/components/common/variableTable.css?raw';
+import dashboardCss from '../src/components/dashboard/dashboard.css?raw';
+import detailCss from '../src/components/detail/detail.css?raw';
+import lineageCss from '../src/components/lineage/lineage.css?raw';
+import lineageGraphCss from '../src/components/lineage/lineageGraph.css?raw';
+import membersCss from '../src/components/members/members.css?raw';
+import projectCss from '../src/components/project/project.css?raw';
+import searchCss from '../src/components/search/search.css?raw';
+import uploadCss from '../src/components/upload/upload.css?raw';
+import loginCss from '../src/auth/login.css?raw';
 
-declare const process: { cwd(): string };
+/**
+ * 원문은 `?raw` 로 받는다 — `node:fs` 금지(`e01-apply-points.test.ts` 머리 주석 · 2026-09-02 배포 불가 사고).
+ * vitest css 스텁은 허용 목록(`vite.config.ts` `test.css.include`) 밖 `?raw` 를 빈 문자열로 만든다 → 아래 「적재」 시험이 red.
+ * 값 = [원문, 그 파일에 반드시 있는 선택자].
+ */
+const RAW_CSS: Record<string, readonly [string, string]> = {
+  'src/components/catalog/catalog.css': [catalogCss, '.catalog-page'],
+  'src/components/search/search.css': [searchCss, '.search-hero'],
+  'src/components/detail/detail.css': [detailCss, '.infogrid'],
+  'src/components/lineage/lineageGraph.css': [lineageGraphCss, '.lrow'],
+  'src/components/lineage/lineage.css': [lineageCss, '.lin-link'],
+  'src/components/approval/approval.css': [approvalCss, '.ar-pending'],
+  'src/components/dashboard/dashboard.css': [dashboardCss, '.dash-columns'],
+  'src/components/project/project.css': [projectCss, '.pj-modal-back'],
+  'src/components/members/members.css': [membersCss, '.memtbl'],
+  'src/components/common/variableTable.css': [variableTableCss, '.vartable'],
+  'src/components/upload/upload.css': [uploadCss, '.modal-takeover'],
+  'src/auth/login.css': [loginCss, '.login-submit'],
+};
+const raw = (rel: string): string => {
+  const hit = RAW_CSS[rel];
+  if (!hit) throw new Error(`?raw 로 받지 않은 파일: ${rel}`);
+  return hit[0];
+};
 
-const raw = (rel: string): string => String(readFileSync(resolve(process.cwd(), rel), 'utf8'));
+describe('CSS 원문 적재 — `?raw` 가 비지 않고 알려진 선택자를 담는다(허용 목록 누락 = red)', () => {
+  it.each(Object.entries(RAW_CSS))('%s', (rel, [css, known]) => {
+    expect(css.length, rel).toBeGreaterThan(0);
+    expect(css, rel).toContain(known);
+  });
+});
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
 
 const FILES = {
@@ -44,7 +81,7 @@ const FILES = {
 type FileName = keyof typeof FILES;
 const NAMES = Object.keys(FILES) as FileName[];
 const CSS = Object.fromEntries(NAMES.map((f) => [f, strip(raw(FILES[f]))])) as Record<FileName, string>;
-const TARGETS = JSON.parse(raw('scripts/visual-baseline/targets.json')) as {
+const TARGETS = JSON.parse(targetsJson) as {
   targets: { n: number; selector: string; lane: string; captureBlind?: boolean; measure?: string }[];
 };
 

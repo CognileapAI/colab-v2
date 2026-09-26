@@ -30,8 +30,32 @@ import type { PreviewSource as UploadSource } from '../src/components/upload/typ
 import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
 import { clickPreviewDrawWhenReady } from './helpers/previewDraw';
 import { installMapCellWidth, stubPointer, type MapCellWidth } from './helpers/mapCellWidth';
+import detailCss from '../src/components/detail/detail.css?raw';
+import previewCss from '../src/components/preview/preview.css?raw';
 
 declare const process: { cwd(): string };
+
+/**
+ * CSS 원문은 `?raw` 로 받는다 — `node:fs` 금지(`e01-apply-points.test.ts` 머리 주석 · 2026-09-02 배포 불가 사고).
+ * vitest css 스텁은 허용 목록(`vite.config.ts` `test.css.include`) 밖 `?raw` 를 빈 문자열로 만든다 → 아래 「적재」 시험이 red.
+ * 값 = [원문, 그 파일에 반드시 있는 선택자].
+ */
+const RAW_CSS: Record<string, readonly [string, string]> = {
+  'src/components/preview/preview.css': [previewCss, '.pv-viewport'],
+  'src/components/detail/detail.css': [detailCss, '.infogrid'],
+};
+const rawCss = (rel: string): string => {
+  const hit = RAW_CSS[rel];
+  if (!hit) throw new Error(`?raw 로 받지 않은 파일: ${rel}`);
+  return hit[0];
+};
+
+describe('CSS 원문 적재 — `?raw` 가 비지 않고 알려진 선택자를 담는다(허용 목록 누락 = red)', () => {
+  it.each(Object.entries(RAW_CSS))('%s', (rel, [css, known]) => {
+    expect(css.length, rel).toBeGreaterThan(0);
+    expect(css, rel).toContain(known);
+  });
+});
 
 const DATASET_ID = '0000000000000000000000DS12';
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP2';
@@ -166,8 +190,7 @@ function scaleOf(layersTestId: string): number {
 
 /* ── CSS 원문 ───────────────────────────────────────────────────────────── */
 
-const read = (rel: string): string =>
-  String(readFileSync(resolve(process.cwd(), rel), 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+const read = (rel: string): string => rawCss(rel).replace(/\/\*[\s\S]*?\*\//g, '');
 const PREVIEW_CSS = read('src/components/preview/preview.css');
 const DETAIL_CSS = read('src/components/detail/detail.css');
 

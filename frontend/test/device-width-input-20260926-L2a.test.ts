@@ -7,15 +7,35 @@
  * 원문 CSS 에서 주석을 걷고 규칙을 잘라 잰다(선례 design-fix 20260924 F-css · jsdom 은 스타일을 계산하지 않는다).
  * 대상 목록 길이를 먼저 단언한다(green-by-skip 방지). 렌더된 누름 칸 · 글자 크기는 캡처 수치(레인 보고)가 확인한다.
  */
-// @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다 · 선례 design-fix-20260924-L1).
-import { readFileSync } from 'node:fs';
-// @ts-expect-error — 같은 이유.
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import baseCss from '../src/shell/base.css?raw';
+import primitivesCss from '../src/shell/primitives.css?raw';
+import shellCss from '../src/shell/shell.css?raw';
+import tokensCss from '../src/shell/tokens.css?raw';
 
-declare const process: { cwd(): string };
+/**
+ * 원문은 `?raw` 로 받는다 — `node:fs` 금지(`e01-apply-points.test.ts` 머리 주석 · 2026-09-02 배포 불가 사고).
+ * vitest css 스텁은 허용 목록(`vite.config.ts` `test.css.include`) 밖 `?raw` 를 빈 문자열로 만든다 → 아래 「적재」 시험이 red.
+ * 값 = [원문, 그 파일에 반드시 있는 선택자].
+ */
+const RAW_CSS: Record<string, readonly [string, string]> = {
+  'src/shell/base.css': [baseCss, 'button, input, select, textarea'],
+  'src/shell/primitives.css': [primitivesCss, '.btn-sm'],
+  'src/shell/shell.css': [shellCss, '.backlink'],
+  'src/shell/tokens.css': [tokensCss, '--shell-gnb-offset'],
+};
+const raw = (rel: string): string => {
+  const hit = RAW_CSS[rel];
+  if (!hit) throw new Error(`?raw 로 받지 않은 파일: ${rel}`);
+  return hit[0];
+};
 
-const raw = (rel: string): string => String(readFileSync(resolve(process.cwd(), rel), 'utf8'));
+describe('CSS 원문 적재 — `?raw` 가 비지 않고 알려진 선택자를 담는다(허용 목록 누락 = red)', () => {
+  it.each(Object.entries(RAW_CSS))('%s', (rel, [css, known]) => {
+    expect(css.length, rel).toBeGreaterThan(0);
+    expect(css, rel).toContain(known);
+  });
+});
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
 
 const FILES = {

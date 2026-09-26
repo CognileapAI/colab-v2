@@ -29,8 +29,36 @@ import { FIXTURE_LINEAGE } from '../src/components/lineage/graphFixture';
 import type { LineageGraph, LineageGraphSource } from '../src/components/lineage/graphTypes';
 import { AccountAdminPage } from '../src/routes/AccountAdminPage';
 import { SessionProvider } from '../src/permission/session';
+import loginCss from '../src/auth/login.css?raw';
+import touchNoteCss from '../src/components/common/touchNote.css?raw';
+import lineageGraphCss from '../src/components/lineage/lineageGraph.css?raw';
+import tokensCss from '../src/shell/tokens.css?raw';
 
 declare const process: { cwd(): string };
+
+/**
+ * CSS 원문은 `?raw` 로 받는다 — `node:fs` 금지(`e01-apply-points.test.ts` 머리 주석 · 2026-09-02 배포 불가 사고).
+ * vitest css 스텁은 허용 목록(`vite.config.ts` `test.css.include`) 밖 `?raw` 를 빈 문자열로 만든다 → 아래 「적재」 시험이 red.
+ * 값 = [원문, 그 파일에 반드시 있는 선택자].
+ */
+const RAW_CSS: Record<string, readonly [string, string]> = {
+  'src/components/common/touchNote.css': [touchNoteCss, '.touch-note-trigger'],
+  'src/components/lineage/lineageGraph.css': [lineageGraphCss, '.lrow'],
+  'src/auth/login.css': [loginCss, '.login-submit'],
+  'src/shell/tokens.css': [tokensCss, '--shell-gnb-offset'],
+};
+const rawCss = (rel: string): string => {
+  const hit = RAW_CSS[rel];
+  if (!hit) throw new Error(`?raw 로 받지 않은 파일: ${rel}`);
+  return hit[0];
+};
+
+describe('CSS 원문 적재 — `?raw` 가 비지 않고 알려진 선택자를 담는다(허용 목록 누락 = red)', () => {
+  it.each(Object.entries(RAW_CSS))('%s', (rel, [css, known]) => {
+    expect(css.length, rel).toBeGreaterThan(0);
+    expect(css, rel).toContain(known);
+  });
+});
 
 const mode = vi.hoisted(() => ({ current: 'mouse' as 'touch' | 'mouse' }));
 vi.mock('../src/components/common/useInputMode', () => ({ useInputMode: () => mode.current }));
@@ -530,13 +558,13 @@ function rules(css: string, media = '', topBase = -1): Rule[] {
 const decls = (b: string): string[] => b.split(';').map((d) => d.trim().replace(/\s+/g, ' ')).filter(Boolean);
 const COARSE = '@media (pointer: coarse)';
 const CONTROL = 'var(--control-height)';
-const cssRules = (rel: string): Rule[] => rules(strip(raw(rel)));
+const cssRules = (rel: string): Rule[] => rules(strip(rawCss(rel)));
 const ruleOf = (rs: Rule[], sel: string, media = ''): Rule[] => rs.filter((r) => r.media === media && r.selectors.includes(sel));
 
 describe('CSS — 새 부품 CSS(누르면 보이는 설명)', () => {
   const FILE = 'src/components/common/touchNote.css';
   it('한 층 블록(`@layer screens`) · 새 색 0 · 강제 우선 0', () => {
-    const t = strip(raw(FILE)).trim();
+    const t = strip(rawCss(FILE)).trim();
     expect(t.startsWith('@layer screens {')).toBe(true);
     expect(t.endsWith('}')).toBe(true);
     expect(t).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
@@ -608,7 +636,7 @@ describe('CSS — 줄바꿈 규칙(9 · 10)은 파일 끝 터치 블록 앞 · �
 
 /* ═══ 대비 — 터치 전용 설명 글(보조 글자 토큰)은 두 테마의 면 위에서 4.5 이상(디자인 제약 · CSS 계산 단언) ═══ */
 describe('대비 — 펼침 글 `--color-text-muted` 대 면 토큰(라이트 · 다크) ≥ 4.5', () => {
-  const tokens = strip(raw('src/shell/tokens.css'));
+  const tokens = strip(rawCss('src/shell/tokens.css'));
   const block = (head: string): Map<string, string> => {
     const at = tokens.indexOf(head);
     expect(at, head).toBeGreaterThanOrEqual(0);
