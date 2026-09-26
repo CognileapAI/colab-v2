@@ -1351,7 +1351,10 @@ paths:
           (`Policy_데이터_찾기 §3.3`). **0건은 정상 응답이다** — 오류로 만들지 않는다.
         - **관련도는 막대 하나다.** `relevanceBar` 를 퍼센트·등급 텍스트로 그리지 않는다(§4).
           확신도(`AiConfidence`)와 **다른 개념**이고, 확신도에는 숫자가 없다.
-        - **근거는 한 줄 고정**이고 **한계도 그 한 줄 안에서** 밝힌다 — 별도 필드를 두지 않는다.
+        - **근거는 검색된 이유만 싣는다** — `rationale` 은 이유를 줄바꿈 없이 이은 한 줄이고,
+          같은 사실의 구조형이 선택 칸 `rationaleFacts`(근거 종류별 항목)다. 한계·부정 문장은
+          카드 근거에 싣지 않는다. [사용자 승인] intent `2026-09-25-search-rationale-separation.md`
+          Q6·Q7 — 종전 「한계도 그 한 줄 안에서」는 이 결정으로 개정했다(정본 개정은 별도 절차).
         - **잠긴 데이터가 결과에서 빠지지 않는다** (§1.3-6). 잠김 표시는 core 가 붙인다.
 
         **`Verified 우선` 정렬은 core 가 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
@@ -5371,9 +5374,28 @@ components:
                 AI 가 제 몫을 못 했다. `true` 면 결과가 비었거나 부분적이다 —
                 **5xx 로 끝내지 않는다.** 카탈로그·업로드는 그대로 돈다
                 (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+                **설정으로 고른 낱말 그대로 해석은 `degraded` 가 아니다**(`PLAN-SoT §9-〈148〉`) —
+                그 사실은 `interpretation` 이 싣는다.
               type: boolean
+            interpretation:
+              description: |
+                이번 질의 해석이 **어디서 왔는가**(`core-ai.yaml` 해석 `source` 그대로). `literal` 은
+                모델 없이 질문의 낱말 그대로 찾은 것이다. 화면은 `literal` 이고 `degraded` 가
+                `false` 일 때 범위 줄에 「질문의 낱말 그대로 찾았어요.」를 한 번 적는다 — 카드 근거에서
+                뺀 「질의 해석 없이」를 응답 머리가 대신 말한다(intent
+                `2026-09-25-search-rationale-separation.md` ⑤ · 추기 2026-09-26). 해석을 거치지 않은
+                조건 검색 갈래(`assessment`)에는 싣지 않는다.
+              type: string
+              enum: [llm, literal]
             degradedReason:
               description: 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다.
+              type: string
+              minLength: 1
+            topic:
+              description: |
+                [사용자 승인] 이번 검색이 좁혀 뒤진 **주제**. 주제로 좁혔을 때만 싣는다 —
+                화면은 범위 줄 뒤에 「주제 ‘X’로 좁혀 뒤졌어요.」를 한 번 적는다. 종전에는 카드
+                근거마다 반복됐다(intent `2026-09-25-search-rationale-separation.md` Q8).
               type: string
               minLength: 1
             items:
@@ -5505,8 +5527,34 @@ components:
             rationale:
               allOf: [{ $ref: "../schemas/common.json#/$defs/AiRationale" }]
               description: |
-                「왜 이 결과?」 **한 줄.** 한계도 이 한 줄 안에서 함께 밝힌다 —
-                별도 필드를 두지 않는다 (`§4 한계 표시` · `§8 AI 근거 블록`).
+                이 결과가 검색된 이유 **한 줄**(줄바꿈 없음). **이유만 싣고 한계·부정 문장은
+                싣지 않는다** — `rationaleFacts` 의 항목을 순서대로 이은 문장이다(구 화면 호환 ·
+                화면과 같은 사실을 말한다). 뒤진 범위·주제 같은 질의 공통부는 여기 넣지 않고
+                응답 머리(`scope`·`topic`)가 한 번 말한다.
+                [사용자 승인] intent `2026-09-25-search-rationale-separation.md` Q6·Q8 ·
+                미해결 질문 ⒝ — 종전 「한계도 이 한 줄 안에서 함께 밝힌다」를 개정했다
+                (정본 `Policy_데이터_찾기 §4·§8` 개정은 별도 절차).
+            rationaleFacts:
+              description: |
+                [사용자 승인] 검색된 이유의 **구조형** — 근거 종류별 사실 목록. 화면은 이것을
+                「AI」 패널의 2단계 목록으로 그리고, 없으면 `rationale` 한 줄로 대신 그린다
+                (intent `2026-09-25-search-rationale-separation.md` Q1b·Q7).
+                종류 순서는 서버가 정한다: `term`(낱말 일치) → `concept`(관련 개념) →
+                `linked`(연결된 자료) → `evidence`(파일 근거). **사실이 없는 종류는 싣지 않는다.**
+                항목은 이유만 담는다 — 한계·부정 문장은 싣지 않는다.
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [kind, items]
+                properties:
+                  kind:
+                    type: string
+                    enum: [term, concept, linked, evidence]
+                  items:
+                    type: array
+                    minItems: 1
+                    items: { $ref: "../schemas/common.json#/$defs/AiRationale" }
             labName:
               description: |
                 [사용자 승인] 이 자료가 속한 연구실 이름 — intent `2026-09-25-operator-search-scope.md`

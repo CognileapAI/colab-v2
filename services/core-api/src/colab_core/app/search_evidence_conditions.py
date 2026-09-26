@@ -120,10 +120,16 @@ def candidates(criteria: dict, records: list[dict], body_ids: dict[str,set[str]]
     return included,excluded
 
 
-def explain(base: str, criteria: dict, records: list[dict]) -> str:
+def supported_facts(criteria: dict, records: list[dict]) -> list[str]:
+    """파일 근거 중 **확인(supported)된 조건만** 「파일 근거」 항목으로 적는다.
+
+    Ted 2026-09-26 결정(intent `2026-09-25-search-rationale-separation.md` Q6) — 카드 근거는
+    검색된 이유만 싣는다. 종전 `explain` 이 함께 적던 「불일치」·「미확인」 조각은 싣지 않는다.
+    항목마다 한 줄이다(`AiRationale` 패턴 · 원문 글의 줄바꿈은 한 칸으로 접는다).
+    """
     assessed=[(r,assess(criteria,r['facts'])) for r in records]
     assessed=[(r,c) for r,c in assessed if c]
-    if not assessed: return base
+    if not assessed: return []
     supported = [(r,c) for r,c in assessed if all(v[0]=='supported' for v in c.values())]
     if supported:
         assessed = supported
@@ -134,13 +140,12 @@ def explain(base: str, criteria: dict, records: list[dict]) -> str:
     # Prefer files that satisfy the complete conjunction; do not assemble a
     # synthetic match from different files with individually matching fields.
     assessed.sort(key=lambda pair: (-sum(v[0]=='supported' for v in pair[1].values()),pair[0]['file_id']))
-    pieces=[]
+    facts=[]
     for row,checks in assessed[:4]:
-        states=[]
-        for state,label in [('supported','확인'),('contradicted','불일치'),('unknown','미확인')]:
-            names=[key+(f'({value[1]})' if state=='contradicted' or key in ('기간','파일 역할') else '')
-                   for key,value in checks.items() if value[0]==state]
-            if names: states.append(label+': '+', '.join(names))
-        source=row['source']
-        pieces.append(f"{row['file_name']} ({'; '.join(states)}; 출처 {source['label']} · {source['locator']})")
-    return re.sub(r'\s+',' ',base.rstrip()+' 파일 근거 — '+' / '.join(pieces)+'.').strip()
+        names=[key+(f'({value[1]})' if key in ('기간','파일 역할') else '')
+               for key,value in checks.items() if value[0]=='supported']
+        if not names: continue
+        # 출처(설명서 이름·절)는 싣지 않는다 — 상세 「검색 근거」가 보인다
+        # (intent `2026-09-26-rationale-facts-wording.md` ①).
+        facts.append(re.sub(r'\s+',' ',f"{row['file_name']}에서 {', '.join(names)} 조건이 맞았어요").strip())
+    return facts

@@ -145,6 +145,24 @@ def test_blocked_cases_claim_nothing(case_id):
     assert case["expectedCount"] is None
 
 
+def test_measure_only_probes_are_excluded_from_the_green_claim():
+    """되살린 1회차 probe(2026-09-26 Ted 「전부 권고대로」)는 **초안 값 측정 전용**이다.
+
+    `measureOnlyProbes` 는 초안 기여 측정기(`eval/k4-search/measure_draft_contribution.py`)의 공식
+    오라클이고, 이 파일의 조건 검색 판정(`case["probes"]` 만 돈다)에는 들어오지 않는다 — reviewed 만
+    읽는 조건 검색에 대고 green 을 주장하지 않는다. 사례의 mode·probe 수도 바꾸지 않는다.
+    """
+    restored = [(case["id"], probe) for case in ORACLE["cases"]
+                for probe in case.get("measureOnlyProbes", [])]
+    assert len(restored) == 11
+    assert "measure_only" in ORACLE["modes"]
+    for case_id, probe in restored:
+        case = CASES[case_id]
+        assert probe["mode"] == "measure_only" and probe["reason"] == "초안 값 측정 전용 · 정답 주장 아님"
+        assert case["mode"] != "measure_only"
+        assert probe not in case["probes"], f"{case_id} · {probe['name']} 가 green 판정 대상에 섞였다"
+
+
 def test_rule_inferred_facts_are_never_loaded_as_reviewed():
     """규칙 추론값은 reviewed 사실에 섞이지 않는다 — 초안은 DB 에 실리지 않는다(결정 1).
 

@@ -1,4 +1,4 @@
-"""검색 결과 조립 — 순서 · 관련도 막대 · **근거 한 줄**. **조립 루트에 둔다.**
+"""검색 결과 조립 — 순서 · 관련도 막대 · **근거(검색된 이유)**. **조립 루트에 둔다.**
 
 `K4-a` 가 `services/ai-service/src/colab_ai/domains/d10_ai_services.py` 에 두었던 조립이다.
 Ted 판정(2026-08-25 ㈎)이 `tsvector` 실행을 core-api 로 옮기면서 **근거의 재료**(맞은 말·
@@ -20,7 +20,7 @@ import binascii
 
 from ..domains.d3_catalog import SearchMatch
 
-#: 근거 한 줄에 열거하는 검색어 상한. 카드 한 줄이 넘치면 정본의 「한 줄 고정」이 깨진다.
+#: 「낱말 일치」 항목에 열거하는 검색어 상한. 항목 한 줄이 넘치지 않게 한다.
 MAX_TERMS_IN_RATIONALE = 3
 
 
@@ -39,11 +39,22 @@ def decode_cursor(cursor: str | None) -> int:
     return int(raw[2:]) if raw.startswith("o:") and raw[2:].isdigit() else 0
 
 
+def _josa(phrase: str, final: str, open_: str) -> str:
+    """닫는 따옴표 앞 마지막 글자가 **받침 있는 한글 음절**이면 `final`, 아니면 `open_`.
+
+    한글로 끝나지 않는 말(‘NDVI’)은 종전 모양(`open_`)을 그대로 쓴다.
+    """
+    last = phrase.rstrip("’")[-1:]
+    if "가" <= last <= "힣" and (ord(last) - 0xAC00) % 28:
+        return final
+    return open_
+
+
 #: 그래프가 데려온 말을 근거에 **어떻게 읽어 주는가.** 관계 3값을 사람 문장으로 옮긴 것이고,
 #: 빈칸 둘은 (부모, 넓힌 말) 순서다. 열쇠는 `d9_concept_edge.relation` CHECK 값 그대로다.
 _EXPANSION_PHRASE = {
     "~의 한 가지다": "‘{parent}’의 한 가지인 ‘{term}’",
-    "같은 말이다": "‘{parent}’와 같은 말인 ‘{term}’",
+    "같은 말이다": "‘{parent}’{wa} 같은 말인 ‘{term}’",
     "안에 있다": "‘{parent}’ 안에 있는 ‘{term}’",
 }
 
@@ -60,44 +71,92 @@ def _matched_phrase(term: str, expansions: dict[str, tuple[str, str]] | None) ->
         return f"‘{term}’"
     relation, parent = hop
     template = _EXPANSION_PHRASE.get(relation)
-    return template.format(parent=parent, term=term) if template else f"‘{term}’"
+    return (template.format(parent=parent, term=term, wa=_josa(parent, "과", "와"))
+            if template else f"‘{term}’")
 
 
-def rationale(match: SearchMatch, *, lab_name: str, searched: int, topic: str | None,
-              interpretation_degraded: bool,
-              expansions: dict[str, tuple[str, str]] | None = None) -> str:
-    """**한 줄이고, 같은 줄에서 한계도 밝힌다** (`Policy_데이터_찾기 §8` — 펼침·더보기 없음).
+#: 근거 종류 — 화면 「AI」 패널의 상위 항목 순서다(낱말 일치 → 관련 개념 → 연결된 자료 →
+#: 파일 근거 · intent `2026-09-25-search-rationale-separation.md` Q7 · 계약
+#: `SearchResultRow.rationaleFacts`). 사실이 없는 종류는 싣지 않는다.
+FACT_KINDS = ("term", "concept", "linked", "evidence")
 
-    앞 절은 실행기가 준 사실(뒤진 범위 · 맞은 말 · 맞은 자리)이고, 뒤 절은 **이 검색이 못 본
-    것**이다. 좋은 점만 적는 줄이 따로 생기지 않도록 두 절을 한 문장에 붙여 둔다.
+#: 파일 근거 자리 이름(`d3_catalog._WHERE_LABELS`). 「낱말 일치」 자리 목록에는 싣지 않는다 —
+#: 그 사실은 「파일 근거」·「연결된 자료」 종류가 말한다(intent `2026-09-26-rationale-facts-wording.md` ③).
+_EVIDENCE_WHERE = "확인한 파일 근거"
+#: 개념 주석 자리 이름(`d3_catalog._WHERE_LABELS`). 내부 기법 이름이라 카드 문구에 쓰지 않는다 —
+#: 그 사실은 「관련 개념」 종류가 말한다(선행 intent `2026-09-25-search-rationale-separation.md` Q7).
+_ONTOLOGY_WHERE = "온톨로지 연결 근거"
+#: 「낱말 일치」 자리 목록에서 빼는 자리와, 그 자리로만 맞았을 때 대신 서는 사실(근거 필수).
+_FACT_ONLY_WHERE = {
+    _EVIDENCE_WHERE: {"kind": "evidence", "items": ["확인한 파일 근거가 질문 조건에 맞았어요"]},
+    # 이 항목이 없으면 개념 주석으로만 맞은 결과의 이유가 0개다(`product.md` §3).
+    _ONTOLOGY_WHERE: {"kind": "concept", "items": ["자료에 적힌 개념이 질문과 연결돼요"]},
+}
 
-    ⭑ **종결은 해요체다** (화면 검수 2026-09-03 #12 · `Policy_데이터_찾기 §120행`). 종전에는
-    「…맞았다 — …직접 보라」로 **해라체**였고, 제품의 다른 모든 문구(「4건을 찾았어요」·
-    「맞는 데이터를 못 찾았어요」)와 한 화면에서 어긋났다. 이 문장은 **서버가 만들어 화면이
-    그대로 싣는다** — 그래서 문체도 여기서 정해진다. 화면에서 고칠 수 없는 자리다.
+
+def _fold(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def _shown_terms(terms: tuple[str, ...], topic: str | None, query: str) -> tuple[str, ...]:
+    """응답 `topic` 과 같고 질의 원문에 없는 검색어를 뺀다 — 헤더가 이미 주제를 말한다.
+
+    남는 낱말이 없으면 그대로 둔다(근거 필수). 검색어·순위는 건드리지 않는 표시 규칙이다
+    (intent `2026-09-26-rationale-facts-wording.md` ② · 해소 ⒜).
     """
-    heads = [_matched_phrase(t, expansions)
-             for t in match.matched_terms[:MAX_TERMS_IN_RATIONALE]]
+    if not topic or _fold(topic) in _fold(query):
+        return terms
+    kept = tuple(t for t in terms if _fold(t) != _fold(topic))
+    return kept or terms
+
+
+def rationale_facts(match: SearchMatch, *,
+                    expansions: dict[str, tuple[str, str]] | None = None,
+                    topic: str | None = None, query: str = "") -> list[dict]:
+    """맞은 사실을 **근거 종류별 항목**으로 적는다 — **검색된 이유만** 싣는다.
+
+    ⭑ Ted 2026-09-26 결정(intent `2026-09-25-search-rationale-separation.md` Q6·Q8)으로
+    종전 「한 줄 안에 한계도 함께 밝힌다」를 버렸다. 뒤진 범위·주제·해석 여부는 응답 머리
+    (`scope`·`topic`·`degraded`)가 한 번 말하고, 한계·부정 문장은 카드 근거에 싣지 않는다.
+    그래프 확장어는 「낱말 일치」 아래에 둔다(미해결 질문 ⒜) — 「관련 개념」은 개념 주석 일치다.
+
+    ⭑ **종결은 해요체다** (화면 검수 2026-09-03 #12 · `Policy_데이터_찾기 §120행`). 이 문장은
+    **서버가 만들어 화면이 그대로 싣는다** — 그래서 문체도 여기서 정해진다.
+    """
+    places = tuple(w for w in match.where if w not in _FACT_ONLY_WHERE)
+    if match.where and not places:
+        # 파일 근거·개념 주석 자리로만 맞았다 — 낱말 일치 줄 없이 그 종류의 사실만 낸다.
+        return [dict(_FACT_ONLY_WHERE[w], items=list(_FACT_ONLY_WHERE[w]["items"]))
+                for w in dict.fromkeys(match.where)]
+    terms = _shown_terms(match.matched_terms, topic, query)
+    heads = [_matched_phrase(t, expansions) for t in terms[:MAX_TERMS_IN_RATIONALE]]
     matched = ", ".join(heads) or "‘질문의 낱말’"
-    where = "·".join(match.where) if match.where else "카탈로그"
-    head = f"{lab_name} 안 {searched}건에서 {matched}가 {where}에 맞았어요"
-    if match.where == ("확인한 파일 근거",):
-        head = f"{lab_name} 안 {searched}건에서 확인한 파일 근거가 질문 조건에 맞았어요"
-    if match.where == ("온톨로지 연결 근거",):
-        head = f"{lab_name} 안 {searched}건에서 자료에 적힌 개념의 온톨로지 연결로 찾았어요"
-    if topic:
-        head += f" (주제 {topic}로 좁혀 뒤졌어요)"
-    tail = "기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요"
-    if interpretation_degraded:
-        tail = "질의 해석 없이 질문의 낱말 그대로 찾았고, " + tail
-    return f"{head} — {tail}."
+    where = "·".join(places) if places else "카탈로그"
+    return [{"kind": "term", "items": [f"{matched}{_josa(matched, '이', '가')} {where}에 맞았어요"]}]
 
 
-def compose(matches, *, lab_name: str, searched: int, topic: str | None,
-            interpretation_degraded: bool, total: int, offset: int,
-            expansions: dict[str, tuple[str, str]] | None = None
+def ordered_facts(facts: list[dict]) -> list[dict]:
+    """종류 순서를 고정하고 **빈 종류를 뺀다.** 항목의 공백·줄바꿈은 한 칸으로 접는다."""
+    by_kind: dict[str, list[str]] = {}
+    for fact in facts:
+        by_kind.setdefault(fact["kind"], []).extend(
+            " ".join(item.split()) for item in fact["items"] if item and item.strip())
+    return [{"kind": kind, "items": by_kind[kind]} for kind in FACT_KINDS if by_kind.get(kind)]
+
+
+def rationale_line(facts: list[dict]) -> str:
+    """`rationale` 한 줄 = 사실 항목을 순서대로 이은 문장(구 화면 호환 · 미해결 질문 ⒝).
+
+    패널과 같은 사실을 말하고, 한계·공통부가 없으며, 줄바꿈이 없다(`AiRationale` 패턴).
+    """
+    return " ".join(f"{item.rstrip('.')}." for fact in facts for item in fact["items"])
+
+
+def compose(matches, *, total: int, offset: int,
+            expansions: dict[str, tuple[str, str]] | None = None,
+            topic: str | None = None, query: str = ""
             ) -> tuple[list[dict], str | None]:
-    """후보를 **정본 모양의 세 값**으로 접는다 — `datasetId` · `relevanceBar` · `rationale`.
+    """후보를 **정본 모양의 값**으로 접는다 — `datasetId` · `relevanceBar` · 근거(구조형 + 한 줄).
 
     동점은 **식별자 오름차순**으로 고정한다 — DB 가 같은 점수를 낸 두 행의 순서까지
     재현되어야 평가셋이 회귀를 잡는다 (SQL 도 같은 순서를 내지만, 순서를 이 층에서도
@@ -105,17 +164,16 @@ def compose(matches, *, lab_name: str, searched: int, topic: str | None,
     """
     ordered = sorted(matches, key=lambda m: (-m.rank, m.dataset_id))
     top = max((m.rank for m in ordered), default=0.0)
-    items = [
-        {
+    items = []
+    for m in ordered:
+        facts = ordered_facts(rationale_facts(m, expansions=expansions, topic=topic, query=query))
+        items.append({
             "datasetId": m.dataset_id,
             # 막대의 길이일 뿐이다. **화면에 숫자로 서면 정본 위반이다**
             # (`Policy_데이터_찾기 §4 용어(관련도)`).
             "relevanceBar": round(m.rank / top, 3) if top > 0 else 0.0,
-            "rationale": rationale(m, lab_name=lab_name, searched=searched, topic=topic,
-                                   interpretation_degraded=interpretation_degraded,
-                                   expansions=expansions),
-        }
-        for m in ordered
-    ]
+            "rationaleFacts": facts,
+            "rationale": rationale_line(facts),
+        })
     next_cursor = encode_cursor(offset + len(items)) if offset + len(items) < total else None
     return items, next_cursor

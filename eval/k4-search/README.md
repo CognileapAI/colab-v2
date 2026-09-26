@@ -223,3 +223,17 @@ services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 현재 helper 43건과 실제 core-api 공개 API를 통한 골든 12문항을 검사한다. DB는 일회용이며, 질문 해석은 고정 응답을 사용한다. Sonnet 호출·모델 품질 평가·배포 환경 데이터 변경은 하지 않는다.
 
 문항 보강은 `golden-cases.json`에서 질문·필수 결과·빈 결과 기대를 수정하고, 대응하는 고정 해석을 `eval/k4-search/fixtures/reference/expanded-normalized-02.json`의 `expansion.responses`에 같은 ID와 순서로 반영한다. 사례 수는 늘릴 수 있다. 빈 입력, ID/순서 불일치, 시험 실패는 실패로 처리한다.
+
+## 초안 사실 기여 측정 (intent `2026-09-21-evidence-promotion`)
+
+규칙 추론 초안(payload `draftFacts` 110칸)을 일회용 DB 의 reviewed 사실에 한 트랜잭션 안에서 겹쳐 쓰고, 규칙 단위·사실 단위로 하나씩 빼며 경로 1(`d3_client_search.candidates`)·경로 2(`search_evidence_conditions` → `search_datasets`)를 따로 잰 뒤 rollback 한다. 경로 2 해석은 `interpret-fixture.json`(규칙 기반 녹화 — LLM 녹화는 후속 단계)으로 고정하고 모델을 부르지 않는다. heldout 은 사후 확인 열이며 제안에 쓰지 않는다. 경로 1 오라클은 `practitioner-conditions.json` 의 `probes` 와 `measureOnlyProbes`(2회차가 거두거나 바꾼 1회차 probe · 초안 값 측정 전용 · 정답 주장 아님 · 2026-09-26 Ted 「전부 권고대로」)다 — 조건 검색 pytest 는 measure_only 를 green 으로 세지 않는다.
+
+```bash
+CONTAINER=<일회용 컨테이너> DB=colab_platform bash services/core-api/tests/fixtures/setup-db.sh   # 앱 롤 URL 출력
+services/core-api/.venv/bin/python eval/k4-search/measure_draft_contribution.py <앱 롤 URL> --seed-dev-like --i-know-this-is-disposable --output dev-package/reports/evidence-promotion/round-<N>-<날짜>
+services/core-api/.venv/bin/python eval/k4-search/measure_draft_contribution.py <앱 롤 URL> --i-know-this-is-disposable --rehearse-promote <규칙 ID> --output <같은 회차>/rehearsal   # 승격 PUT 본문 대조만 · 보내지 않음
+```
+
+**온톨로지 회차 절차에 이 표(`draft-contribution-review.md` + `draft-contribution.json`)를 첨부한다.** 기계는 제안만 하고 Ted 가 회차 intent 의 「판정 결과」 절에서 판정한다(결정 6).
+
+한계: 경로 2 는 `routes/catalog.py` 경로 2 블록을 도메인·순수 함수 호출로 재현한 것이다(HTTP 층 없이 부를 수 있는 제품 함수만 부르고 제품 코드는 고치지 않았다). 라우트의 verified 걸름·잠김 조립·근거 문장은 green 판정에 들어가지 않으며, 라우트가 바뀌면 이 재현도 따라가야 한다. 1회차 실측은 `dev-package/reports/evidence-promotion/round-1-2026-09-26/`.

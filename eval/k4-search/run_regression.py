@@ -17,6 +17,7 @@ HELPER_FILES = (
     "test_condition_assessment.py",
     "test_golden_baseline.py",
     "test_heldout_eval.py",
+    "test_measure_draft_contribution.py",
     "test_reference_evidence.py",
     "test_stage_evidence.py",
     "test_structured_probe.py",
