@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from colab_core.app import dataset_search
 from colab_core.domains.d3_catalog import SearchMatch
 
@@ -31,6 +33,32 @@ MATCHES = (
 #: 카드 근거에 나오면 안 되는 한계·부정 문구 (intent 검증 절 축자 + 종전 공통부).
 NEGATIVE = ("확인하지 못", "미확인", "불일치", "보장하지 않", "아니에요", "없었어요", "못했어요")
 COMMON = ("A 연구실", "안 3건에서", "좁혀 뒤졌어요", "질의 해석 없이")
+#: 카드 문구에 쓰지 않는 내부 기법 이름 (선행 intent `2026-09-25-search-rationale-separation.md` Q7).
+MECHANISM = ("온톨로지", "계보")
+
+
+def _assert_no_mechanism(texts) -> None:
+    leaked = [t for t in texts for w in MECHANISM if w in t]
+    assert not leaked, leaked
+
+
+@pytest.fixture(autouse=True)
+def _no_mechanism_names(monkeypatch):
+    """이 파일의 모든 조립 시험에서 사실 항목과 `rationale` 한 줄에 내부 기법 이름이 없다(Q7)."""
+    facts_fn, line_fn = dataset_search.rationale_facts, dataset_search.rationale_line
+
+    def facts(*args, **kwargs):
+        out = facts_fn(*args, **kwargs)
+        _assert_no_mechanism([i for f in out for i in f["items"]])
+        return out
+
+    def line(*args, **kwargs):
+        out = line_fn(*args, **kwargs)
+        _assert_no_mechanism([out])
+        return out
+
+    monkeypatch.setattr(dataset_search, "rationale_facts", facts)
+    monkeypatch.setattr(dataset_search, "rationale_line", line)
 
 
 def _compose(matches=MATCHES, *, total=None, offset=0, expansions=None):
@@ -145,7 +173,32 @@ def test_관련_개념으로만_맞아도_이유가_하나_이상_있다() -> No
     items, _ = _compose(concept)
     facts = items[0]["rationaleFacts"]
     assert [f["kind"] for f in facts] == ["concept"] and facts[0]["items"]
-    assert all("온톨로지" not in t and "계보" not in t for t in _texts(items[0]))
+    _assert_no_mechanism(_texts(items[0]))
+    # 맞은 낱말이 있어도 온톨로지 자리로만 맞았으면 낱말 일치 항목을 내지 않는다.
+    only = SearchMatch(dataset_id=DS1, rank=0.3, matched_terms=("강우",),
+                       where=("온톨로지 연결 근거",))
+    facts = dataset_search.rationale_facts(only, topic=TOPIC, query=DEV_QUERY)
+    assert [f["kind"] for f in facts] == ["concept"] and facts[0]["items"]
+
+
+def test_낱말_일치_자리_목록에_온톨로지_연결_근거가_없다() -> None:
+    """내부 기법 이름은 카드 문구에 쓰지 않는다(선행 Q7) — 그 사실은 「관련 개념」 종류가 말한다."""
+    assert _topic_item(["강우", TOPIC], where=("이름·주제·요약", "온톨로지 연결 근거")) == \
+        "‘강우’가 이름·주제·요약에 맞았어요"
+    assert _topic_item(["강우"], where=("이름·주제·요약", "포맷·변수", "확인한 파일 근거",
+                                         "온톨로지 연결 근거")) == \
+        "‘강우’가 이름·주제·요약·포맷·변수에 맞았어요"
+
+
+def test_파일_근거와_온톨로지로만_맞으면_낱말_일치_없이_두_종류가_선다() -> None:
+    """보일 자리 이름이 하나도 남지 않으면 낱말 일치 항목(「카탈로그에 맞았어요」)을 짓지 않는다."""
+    both = (SearchMatch(dataset_id=DS1, rank=0.3, matched_terms=("강우",),
+                        where=("확인한 파일 근거", "온톨로지 연결 근거")),)
+    items, _ = dataset_search.compose(both, total=1, offset=0, topic=TOPIC, query=DEV_QUERY)
+    facts = items[0]["rationaleFacts"]
+    assert [f["kind"] for f in facts] == ["concept", "evidence"]
+    assert all(f["items"] for f in facts)
+    assert "카탈로그" not in items[0]["rationale"]
 
 
 def test_파일_근거로_맞으면_파일_근거_항목이_선다() -> None:
