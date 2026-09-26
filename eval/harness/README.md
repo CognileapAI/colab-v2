@@ -11,8 +11,8 @@
 ## 실행
 
 ```bash
-COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh
-COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 COLAB_EVAL_ONLY=H01 bash eval/harness/run.sh
+COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh
+COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 COLAB_EVAL_ONLY=H01 bash eval/harness/run.sh
 ```
 
 | 변수 | 뜻 | 미선언이면 |
@@ -60,7 +60,7 @@ eval/harness/H<번호>-<이름>/
 
 | 값 | 현재 | 근거 |
 |---|---|---|
-| `COLAB_EVAL_TIMEOUT` | **93** | 실측 p95 **46.4**초 × 2 = 92.8 → 93. ／ 종전 ~~180(초안)~~ |
+| `COLAB_EVAL_TIMEOUT` | **150** | ⭑ ⟨갱신 2026-09-26 · S-red⟩ H18 이 회차 `20260926-125205`·`140939`·`143218` 에서 60–95초를 쟀고 93초가 회차 2(`140939`)에서 red(준비)를 냈다 → 150. 게이트 안내문(`gates/tools/harness-eval.sh` `RUN_HINT`)·위 「실행」과 같은 값. ／ 종전 ~~93~~(실측 p95 46.4초 × 2) · ~~180(초안)~~ |
 | `COLAB_EVAL_BUDGET` | **2.01** | 1회 최대 **1.0067** USD(H08 1회차) × 2 = 2.0134 → 2.01. ／ 종전 ~~0.50(초안)~~ |
 | 실측 p50 / p95 / 최대 | **32.8 / 46.4 / 46.6** 초 | 40실행 표본 · `results/20260908-161538/summary.md` |
 | 과제별 최대 USD | **1.0067**(1회) · **1.9523**(2회 합 · H08) | 같은 회차 |
@@ -138,7 +138,7 @@ eval/harness/H<번호>-<이름>/
 |---|---|---|
 | `summary.md` | **한다** | 승격 판정의 정본. 판정·초·USD 가 한 표에 있다 |
 | `config-hash.json` | **한다** | 「어느 설정에서 잰 결과인가」. 게이트 면제 분기가 현재 설정 해시와 대조한다 · `.gitignore` 제외 패턴에 걸리지 않아 자동 추적 |
-| `H??.out.{1,2}.txt` | **한다** | 「무엇을 답했는가」. 회귀를 읽는 자리 |
+| `H??.out.{1,2}.txt` | **한다** | 「무엇을 답했는가」. 회귀를 읽는 자리 · ⭑ ⟨2026-09-26 · S-red⟩ 러너 저장소 절대경로는 `<repo>` 로 치환해 쓴다(사용자 홈 경로 비노출 · 판정기 입력은 원문) · 그 전 회차 파일은 그대로 |
 | `H??.expect.{1,2}.txt` | **한다** | 「왜 red 였는가」. 불안정 과제의 판독 근거 |
 | `H??.raw.{1,2}.json` | 안 한다 | 본문이 `out` 과 중복 · `session_id`·`uuid` 가 회차마다 바뀌어 diff 만 늘린다. 비용·초는 `summary.md` 에 있다 |
 | `H??.err.{1,2}.txt` | 안 한다 | 성공 회차에서 빈 파일 · 실패 회차 내용은 `summary.md` 「사유」 칸에 인용된다 |
@@ -157,8 +157,8 @@ eval/harness/H<번호>-<이름>/
 - **면제 판정**(`COLAB_HARNESS_EVAL_EXEMPT=1 bash gates/run.sh harness-eval` · `config_hash.py verify`) —
   현재 해시와 일치하는 전수 결과(`selected == all` · 요약줄 `준비 0` · 과제 행 수 == 과제 N) 없음·입력 손상 = **78**
   (`missing=eval-result:<hash>`) · 회귀 = **1** · 일치 ＋ 무회귀 = **0**(run id · `hash(head)=hash(회차)` 출력).
-- **회귀 규칙** — 일치 결과 중 id 최대 = R\*. 직전 = R\* 보다 id 가 작고 `summary.md` 가 있는 최신 전수 결과(해시 없는 옛
-  결과 포함 · 선택 실행 제외). `green(직전) − green(R*) ≠ ∅` 이면 1(과제 이름 나열). 직전이 없으면 회귀 기준이 없다(0).
+- **회귀 규칙** — 일치 결과 중 id 최대 = R\*. 직전 = R\* 보다 id 가 작고 `summary.md` 가 있으며 과제 행 수 == 과제 N 인
+  최신 전수 결과(해시 없는 옛 결과 포함 · 선택 실행 제외 · 행이 모자란 중단 회차 제외 — 중단 회차로 「회귀 0」을 만들지 않는다). `green(직전) − green(R*) ≠ ∅` 이면 1(과제 이름 나열). 직전이 없으면 회귀 기준이 없다(0).
 - **회차 무효화** — 회차는 병합 직전 head 에서 1회. 그 뒤 해시 집합 파일을 push 하면 게이트가 78 로 돌아간다.
   base(develop) 병합이 집합 파일을 건드리지 않으면 해시 불변 · 건드리면 재실측(≈32 USD). CI 는 머지 커밋 트리에서 계산한다.
 - **30일 경고** — 러너는 모델을 지정하지 않아 모델·CLI 가 저장소 diff 없이 바뀐다. `harness-contract`
@@ -168,7 +168,7 @@ eval/harness/H<번호>-<이름>/
 ## 시험
 
 ```bash
-bash eval/harness/tests/run-selftest.sh    # 17/17 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
+bash eval/harness/tests/run-selftest.sh    # 18/18 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
 ```
 
 ## 자리

@@ -7,7 +7,7 @@
 #   여기서는 **개정 전 red → 개정 후 green** 이 근거가 된다.
 #
 # 실행 (상한 변수는 **미선언이면 red(준비)** — 관대한 기본값을 두지 않는다):
-#   COLAB_EVAL_TIMEOUT=180 COLAB_EVAL_BUDGET=0.50 bash eval/harness/run.sh
+#   COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh   (권장값 정본 = README 「상한」)
 #   COLAB_EVAL_ONLY=H01 …                     한 과제만
 #
 # 판정 (과제당 2회 · intent Q8):
@@ -47,7 +47,7 @@ judg_red() { echo "::error::harness-eval red(판정) — $*"; exit 1; }
 # ── ⑴ 상한 선언 — 미선언은 red(준비) ────────────────────────────────────────
 # `${VAR:-}` 는 **존재 여부를 묻기 위한 것**이지 기본값이 아니다. 값을 대신 채우지 않는다.
 [ -n "${COLAB_EVAL_TIMEOUT:-}" ] || ready_red "COLAB_EVAL_TIMEOUT" \
-  "과제 1회 실행의 초 단위 상한이다. 선언하는 법 = COLAB_EVAL_TIMEOUT=180 COLAB_EVAL_BUDGET=0.50 bash eval/harness/run.sh · 값의 근거는 README 「상한」 절(첫 실측 p95×2)."
+  "과제 1회 실행의 초 단위 상한이다. 선언하는 법 = COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh · 값의 근거는 README 「상한」 절."
 [ -n "${COLAB_EVAL_BUDGET:-}" ] || ready_red "COLAB_EVAL_BUDGET" \
   '과제 1회 실행의 달러 상한(--max-budget-usd)이다. 선언하는 법은 위와 같다.'
 command -v python3 >/dev/null 2>&1 || ready_red "python3" \
@@ -163,9 +163,12 @@ for d in "${TASKS[@]}"; do
     #   `{"is_error":true,"result":"<기대와 맞는 문장>"}` 에 rc 0 이면 `expect.sh` 가 통과했다.
     #   `is_error`·`subtype` 을 함께 읽어 그 회차를 red(준비)로 돌린다(시험 ⓖ).
     # 출력 = `<USD>\t<오류 subtype 또는 빈 칸>` 한 줄.
-    meta="$(python3 - "$raw" "$txt" <<'PY'
+    # 증거 파일 `H??.out.*.txt`(커밋 대상)에는 러너 저장소의 절대경로(`$REPO_TOP` · 사용자 홈 포함)를
+    # `<repo>` 로 바꿔 쓴다. 판정기 입력(`$JUDGE_IN`)은 원문 그대로다 — 판정 재료를 바꾸지 않는다(S-6a).
+    JUDGE_IN="$OUT/.judge-in"
+    meta="$(python3 - "$raw" "$txt" "$REPO_TOP" "$JUDGE_IN" <<'PY'
 import json, sys
-raw_path, txt_path = sys.argv[1], sys.argv[2]
+raw_path, txt_path, repo_top, judge_path = sys.argv[1:5]
 data = open(raw_path, encoding='utf-8', errors='replace').read()
 text, cost, err = data, '', ''
 try:
@@ -184,7 +187,8 @@ if isinstance(obj, dict):
         err = str(obj.get('subtype', '[미상]'))
     elif 'subtype' in obj and obj.get('subtype') != 'success':
         err = str(obj.get('subtype'))
-open(txt_path, 'w', encoding='utf-8').write(text)
+open(judge_path, 'w', encoding='utf-8').write(text)
+open(txt_path, 'w', encoding='utf-8').write(text.replace(repo_top, '<repo>') if repo_top else text)
 print('%s\t%s' % (cost, err.replace('\t', ' ').replace('\n', ' ')))
 PY
 )"
@@ -206,8 +210,9 @@ PY
 
     # 판정 실패와 판정 불가를 구분한다. 원문 stderr와 실제 rc는 회차별로 보존한다.
     judge_err="$OUT/$id.expect.$n.err.txt"
-    bash "$d/expect.sh" < "$txt" > "$OUT/$id.expect.$n.txt" 2> "$judge_err"
+    bash "$d/expect.sh" < "$JUDGE_IN" > "$OUT/$id.expect.$n.txt" 2> "$judge_err"
     judge_rc=$?
+    rm -f "$JUDGE_IN"
     printf '%s\n' "$judge_rc" > "$OUT/$id.expect.$n.rc"
     case "$judge_rc" in
       0) pass=$((pass + 1)) ;;
@@ -286,7 +291,7 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
   awk -F'|' '{printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5}' "$ROWS_FILE"
 } > "$OUT/summary.md"
 
-rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE"
+rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE" "$OUT/.judge-in"
 
 # 허용 도구 정본 경로를 요약과 함께 낸다 — 정본이 바꿔치기되면 출력에서 보인다(advisor ② 권고).
 echo "허용 도구 정본: $ALLOWED_FILE"

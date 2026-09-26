@@ -5,7 +5,7 @@
 #   임시 디렉터리의 스텁으로 갈아끼워 `PATH` 앞에 둔다. 과제 뿌리도 임시 자리다
 #   (`COLAB_EVAL_TASKS_DIR` — 러너가 `tests/run-selftest.sh` 를 위해 낸 자리 그대로).
 #
-# 케이스 18 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 19 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 면제 선언 ＋ 과제 0건        → red(판정 · 1)  「대상이 없어 통과」를 만들지 않는다
 #   ⓑ 면제 선언 ＋ 과제 3건 ＋ 해시 일치 전수 결과
 #                                  → green ＋ 출력에 `과제 3건`(건수 노출 · 조용한 건너뛰기 금지)
@@ -26,6 +26,8 @@
 #   ⓟ 일치 결과 준비 1              → red(준비 · 78)
 #   ⓠ fixture `gates/x.sh` 1바이트 변경 뒤 ⓜ → red(준비 · 78) 해시 불일치
 #   ⓡ 일치 결과 green 2/3 · 직전 없음 → green (첫 결과 · 회귀 기준 없음)
+#   ⓢ 일치 결과 green 2/3 · 그 앞에 행 2개뿐인 중단 회차 · 더 앞에 3/3 → red(판정 · 1)
+#      직전 = 과제 행 수 == 과제 N 인 전수 결과만(중단 회차로 「회귀 0」을 만들지 않는다 · spec S-HARNESS-SRED-REDRUN-20260926 §4.6 S-6b)
 #
 # ⓐ·ⓒ·ⓓ 가 통과해 버리면 이 게이트는 아무것도 막지 않는다 — 그 셋이 존재 이유다.
 # ⓑ 는 「면제인데 건수를 안 보인다」를 잡는다(면제가 조용해지는 순간 green-by-skip 이다).
@@ -116,6 +118,9 @@ write_result "$WORK/res-cfg_regress"  20260926-100000 all 0 "${TWO3[@]}"
 write_result "$WORK/res-cfg_selected" 20260926-100000 H02 0 H02-beta:green
 write_result "$WORK/res-cfg_ready"    20260926-100000 all 1 H01-alpha:green H02-beta:green H03-gamma:준비
 write_result "$WORK/res-cfg_first"    20260926-100000 all 0 "${TWO3[@]}"
+write_result "$WORK/res-cfg_partial"  20260912-211809 all 0 "${ALL3[@]}"
+write_result "$WORK/res-cfg_partial"  20260920-000000 all 0 H01-alpha:green H02-beta:green
+write_result "$WORK/res-cfg_partial"  20260926-100000 all 0 "${TWO3[@]}"
 
 expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
   local want="$1" label="$2" key="$3" out rc results
@@ -124,7 +129,7 @@ expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
     empty_exempt)
       out="$(COLAB_EVAL_TASKS_DIR="$T_EMPTY" COLAB_HARNESS_EVAL= COLAB_HARNESS_EVAL_EXEMPT=1 \
              "$GATE" 2>&1)"; rc=$? ;;
-    exempt3|cfg_none|cfg_match|cfg_regress|cfg_selected|cfg_ready|cfg_first|cfg_changed)
+    exempt3|cfg_none|cfg_match|cfg_regress|cfg_selected|cfg_ready|cfg_first|cfg_partial|cfg_changed)
       # 면제 판정 — REPO_ROOT seam 으로 fixture 저장소의 설정 해시를 결과 fixture 와 대조한다.
       local res="$WORK/res-$key"
       case "$key" in
@@ -211,6 +216,10 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
     red "$label — 회귀 red 가 회귀 과제 이름을 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
+  if [ "$key" = cfg_partial ] && ! printf '%s' "$out" | grep -q '직전 20260912-211809 에서 green 이던 과제 1건.*H03-gamma'; then
+    red "$label — 직전이 행 수 == 과제 N 인 전수 결과(20260912-211809)가 아니다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
   if [ "$key" = cfg_first ] && ! printf '%s' "$out" | grep -q '직전 없음'; then
     red "$label — 첫 결과인데 「직전 없음」을 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
@@ -243,6 +252,7 @@ expect red    "ⓝ 면제 ＋ 일치 결과 green 2/3 · 직전 3/3(회귀)" cfg
 expect 미선언 "ⓞ 면제 ＋ 일치 결과가 선택 실행(H02)뿐" cfg_selected
 expect 미선언 "ⓟ 면제 ＋ 일치 결과 준비 1" cfg_ready
 expect green  "ⓡ 면제 ＋ 일치 결과 green 2/3 · 직전 없음(첫 결과)" cfg_first
+expect red    "ⓢ 면제 ＋ 일치 결과 green 2/3 · 행 부족 중단 회차는 직전이 아니다(3/3 과 대조)" cfg_partial
 # ⓠ 는 fixture 의 gates/x.sh 를 바꾸므로 마지막에 둔다.
 expect 미선언 "ⓠ 면제 ＋ 해시 집합 파일 1바이트 변경 뒤 ⓜ 결과(해시 불일치)" cfg_changed
 
@@ -278,4 +288,4 @@ if [ "$FAILED" -ne 0 ] || [ "${#FAILURES[@]}" -ne 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict harness-eval-selftest
-echo "harness-eval-selftest green — 검사 18건 전건 기대대로 (green 5 · red(판정) 7 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조 ＋ CI 정책 변이 시험 ${POLICY_RAN}건."
+echo "harness-eval-selftest green — 검사 19건 전건 기대대로 (green 5 · red(판정) 8 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조 ＋ CI 정책 변이 시험 ${POLICY_RAN}건."
