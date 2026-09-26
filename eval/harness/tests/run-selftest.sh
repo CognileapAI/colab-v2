@@ -4,7 +4,7 @@
 # ⚠ **실제 모델 호출 0회.** `claude` 를 임시 디렉터리의 스텁으로 갈아끼우고 `PATH` 앞에 둔다.
 #   러너가 절대경로로 `claude` 를 부르면 이 시험은 성립하지 않는다 — 그것도 이 시험이 잡는다.
 #
-# 케이스 19 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 22 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 과제 0건                                  → exit 1  (red(판정) · green-by-skip 금지)
 #   ⓑ `expect.sh` 부재                          → exit 78 (red(준비) · 판정 재료 부재)
 #   ⓒ 상한 변수 미선언                          → exit 78 (red(준비) · 관대한 기본값 금지)
@@ -20,6 +20,9 @@
 #   ⓜ `COLAB_EVAL_ONLY=H01` 회차는 selected=H01 (spec S-HARNESS-E0-EVAL-GATE-20260926 §4.2)
 #   ⓝ 응답 본문의 저장소 절대경로 → `H??.out.*.txt` 에는 `<repo>` 만 (spec S-HARNESS-SRED-REDRUN-20260926 §4.6 S-6a)
 #   ⓞ 저장소 밖 사용자 홈 경로 → `<home>` · 판정기 입력은 원문 그대로 (S-6a 후속 · audit C-9)
+#   ⓟ `mode`=rate ＋ 1/2 스텁              → exit 0 ＋ 요약 `… · rate 1` · 행 `rate 1/2` · 판정실패 관측 0
+#   ⓠ `mode`=rate ＋ 판정기 exit 78         → exit 78 (비율 과제도 못 재면 red(준비))
+#   ⓡ `mode` 본문 `ratio`(알 수 없는 mode) → exit 78 (엄격이 기본 · 15라운드 판정 H18-rate)
 #
 # ⓐ·ⓑ·ⓒ·ⓕ·ⓖ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 다섯이 존재 이유다.
 # ⓖ 는 advisor ② 가 재현한 구멍이다 — `rc 0` ＋ `result` 본문이 기대와 맞으면 오류 결과도 2/2 green 이 됐다.
@@ -328,6 +331,35 @@ for first_rc in 1 78; do
     || red "과제 간 판정 실패 관측 계수가 틀렸다"
 done
 
+# ── ⓟ·ⓠ·ⓡ 비율 측정 과제(`mode`=rate) — 비율만 기록하고 회귀 집합에서 뺀다 ────────
+# 표지 = 과제 디렉터리의 `mode` 파일(본문 정확히 `rate`). 부재 = pass/fail(엄격이 기본).
+T_RATE="$WORK/rate"; make_task "$T_RATE" "H01-stub" yes
+printf 'rate\n' > "$T_RATE/H01-stub/mode"
+run_case "$T_RATE" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 \
+  STUB_MODE=flaky STUB_COUNTER="$WORK/rate.count"
+if check "ⓟ mode=rate ＋ 1/2 → 비율 기록 · exit 0" 0 "$RC"; then
+  printf '%s\n' "$OUT" | grep -Eq '^과제 1 · 실행 2 · green 0 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0 · rate 1$' \
+    || red "ⓟ — 요약줄이 「green 0 · 불안정 0 · 준비 0 … 판정실패 관측 과제 0 · rate 1」이 아니다: $OUT"
+  for summary in "$RESULTS"/*/summary.md; do
+    grep -q '^| H01-stub | rate 1/2 |.*mode=rate' "$summary" \
+      || red "ⓟ — summary.md 에 「| H01-stub | rate 1/2 | … mode=rate」 행이 없다: $(cat "$summary")"
+  done
+fi
+
+T_RATE78="$WORK/rate78"; make_task "$T_RATE78" "H01-stub" yes
+printf 'rate\n' > "$T_RATE78/H01-stub/mode"
+printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 78\n' > "$T_RATE78/H01-stub/expect.sh"
+run_case "$T_RATE78" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50
+check "ⓠ mode=rate ＋ 판정기 exit 78 → red(준비)" 78 "$RC"
+
+T_RATIO="$WORK/ratio"; make_task "$T_RATIO" "H01-stub" yes
+printf 'ratio\n' > "$T_RATIO/H01-stub/mode"
+run_case "$T_RATIO" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50
+if check "ⓡ mode 본문 ratio(알 수 없는 mode) → red(준비)" 78 "$RC"; then
+  printf '%s' "$OUT" | grep -q '알 수 없는 mode' \
+    || red "ⓡ — exit 78 은 맞으나 사유에 「알 수 없는 mode」가 없다: $OUT"
+fi
+
 # ── allowed.txt 정본 한 자리 — README 가 같은 표를 담고 있는가 ───────────────
 ALLOWED="$HARNESS_DIR/allowed.txt"
 README="$HARNESS_DIR/README.md"
@@ -345,7 +377,7 @@ else
 fi
 
 if [ "$FAILED" -ne 0 ]; then
-  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/19)."
+  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/22)."
   exit 1
 fi
-echo "run-selftest green — 검사 19건 전건 기대대로 (green 5 · red(판정) 7 · red(준비) 7 · 모델 호출 0회)."
+echo "run-selftest green — 검사 22건 전건 기대대로 (green 6 · red(판정) 7 · red(준비) 9 · 모델 호출 0회)."
