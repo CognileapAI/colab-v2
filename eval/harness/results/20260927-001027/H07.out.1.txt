@@ -1,0 +1,19 @@
+`lineageGraph.css` 에는 13px 미만 `font-size` 선언이 13건 있습니다. 가장 작은 값은 10px 입니다.
+
+주석을 먼저 지우고 셌습니다. 주석 여섯 곳에는 `font-size` 가 없어서 결과는 달라지지 않았습니다. 손으로 센 값과 스크립트로 센 값이 같았습니다.
+
+| 값 | 건수 | 위치(줄) |
+|---|---|---|
+| 10px | 5 | 31 `.lin-way` · 72 `.lrow .stg` · 82 `.hist` · 83 `.aiflag` · 85 `.manflag` |
+| 10.5px | 1 | 44 `.ln .n-role` |
+| 11px | 5 | 10 `.dsec-h .hint` · 14 `.lin-stale .d` · 58 `.lin-use` · 81 `.lrow .ln-sub` · 95 `.lin-empty .muted` |
+| 12px | 1 | 76 `.lrow .ln-name` |
+| 12.5px | 1 | 45 `.ln .n-name` |
+
+- 이 파일의 `font-size` 선언은 모두 17개입니다. px 값이 14개이고, 그중 13px 이상은 26줄 `.lin-arw` 의 15px 하나뿐입니다.
+- 나머지 3개는 token 입니다: `var(--text-h2)`(9줄), `var(--text-h3)`(92줄), `var(--text-body-sm)`(93줄). 실제 크기는 token 정의 파일에 있어서 이 파일만으로는 알 수 없습니다. 그래서 건수에 넣지 않았습니다.
+- `font:` 축약 선언은 없습니다.
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

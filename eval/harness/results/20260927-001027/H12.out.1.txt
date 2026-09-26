@@ -1,0 +1,22 @@
+네 단계 중 3단계만 색을 받지 못합니다. 0·1·2 단계는 규칙이 있습니다.
+
+**칩 클래스를 만드는 자리**
+- `CatalogTable.tsx:162`: `` className={`lvl lvl-${displayLevel(row)}`} `` 이므로 `lvl-0` ~ `lvl-3` 이 나올 수 있습니다.
+- `CatalogTable.tsx:161`: `displayLevel(row) === null` 이면 칩을 그리지 않습니다. 0~3 값은 모두 칩으로 그려집니다.
+
+**`catalog.css` 에 있는 대응 규칙** (`lvl` 이 들어간 줄은 이 네 줄이 전부입니다)
+
+| 선택자 | 위치 | background | color |
+|---|---|---|---|
+| `.lvl` | `catalog.css:130` | 없음 | 없음 (모양만 정함: height 21px · pill radius · padding · font) |
+| `.lvl-0` | `catalog.css:131` | `--color-gray-100` | `--color-gray-600` |
+| `.lvl-1` | `catalog.css:132` | `--color-primary-50` | `--color-primary-700` |
+| `.lvl-2` | `catalog.css:133` | `--color-primary-100` | `--color-primary-700` |
+| `.lvl-3` | 없음 | — | — |
+
+- `[class*="lvl-"]` 같은 속성 선택자나 다른 경로로 색을 주는 규칙도 없습니다.
+- 그래서 `lvl-3` 칩은 `.lvl` 의 모양만 받습니다. 배경이 투명하고 글자색은 부모 `<td>` 색을 그대로 씁니다.
+
+- 판정: 있음
+- 빠진 규칙: .lvl-3
+- 증상: Lv3 칩만 배경색 없이 셀 기본 글자색의 "Lv3" 글자로만 보이고, 옆 행의 Lv0~Lv2 색 칩과 달리 칩으로 보이지 않는다.
