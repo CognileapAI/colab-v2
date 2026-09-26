@@ -125,3 +125,4 @@
 - 캡처는 호스트 뮤텍스를 쓰지 않는다. 두 캡처 중 다른 세션의 부하 유무는 재지 않았다(두 캡처 차이 0).
 - agent-browser 세션: 캡처 도구가 만든 실행별 이름(`vb-…`)과 게이트 판정부의 `la-…` 만 쓰였고 각 도구가 닫았다. 직접 연 세션 0.
 - 작업용 파일(추적 제외 · `frontend/.visual/dwi0926-b0-work/`): 판정 보고 JSON · 로그 · 요약 스크립트 · 게이트 실행 래퍼.
+- (오케스트레이터 추기 · advisor ② 후속) 미리보기 서버 종료에 쓴 `pkill -f 'vite preview --config audit.vite.config.ts --host 127.0.0.1 --port 47391'` 은 이 레인이 띄운 고유 포트 한 개만 맞는다. 다른 세션 서버 · agent-browser 세션(`dev-op-501` · `dev-test-admin` · `default`)은 살아 있음을 확인했다. 이후 레인은 시작 때 저장한 PID 로만 종료한다.
