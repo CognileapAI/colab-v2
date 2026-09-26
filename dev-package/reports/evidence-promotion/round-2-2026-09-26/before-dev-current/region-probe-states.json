@@ -1,0 +1,720 @@
+{
+ "schema": "colab-region-probe-states/1",
+ "payload": "dev-package/reports/evidence-promotion/round-1-2026-09-26/promotion-plan/promoted-payload.json",
+ "payloadSha256": "41f488a42ffb07c1c64d4460ea86a6b98c72b63494ec45291f72f5c73561c6fc",
+ "graphOneHop": [
+  "남한",
+  "충청권",
+  "Korea"
+ ],
+ "regionRules": [
+  "region-from-lineage-parent",
+  "region-from-lineage-sibling",
+  "bbox-korea-peninsula",
+  "region-from-registration-note"
+ ],
+ "probesA": [
+  {
+   "id": "PC-1-1#p1",
+   "name": "강수 변수 + 기간 포함",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "variable": "precipitation",
+    "period": {
+     "start": "2023-07-01",
+     "end": "2023-07-31"
+    }
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-2#m1",
+   "name": "지상(레이더·지상격자·관측소)",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "platform": "ground"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-2#m2",
+   "name": "위성",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "platform": "satellite"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-2#m3",
+   "name": "모형·재분석",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "platform": "model"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-3#p1",
+   "name": "레이더 기간 전체를 덮는 자료 — 기간 축만",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "period": {
+     "start": "2019-07-28",
+     "end": "2024-07-09"
+    }
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-3#p2",
+   "name": "식생 예측 기간을 덮는 자료 — 기간 축만",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "period": {
+     "start": "2023-05-01",
+     "end": "2023-05-31"
+    }
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-3#m1",
+   "name": "레이더 기간 전체를 덮는 지상 자료",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "period": {
+     "start": "2019-07-28",
+     "end": "2024-07-09"
+    },
+    "platform": "ground"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-3#m2",
+   "name": "식생 예측 기간을 덮는 모형 자료",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "period": {
+     "start": "2023-05-01",
+     "end": "2023-05-31"
+    },
+    "platform": "model"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-3#m3",
+   "name": "한반도 + 레이더 기간 전체를 덮는 자료",
+   "mode": "measure_only",
+   "region": true,
+   "conditions": {
+    "region": "korean_peninsula",
+    "period": {
+     "start": "2019-07-28",
+     "end": "2024-07-09"
+    }
+   },
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "PC-1-4#p1",
+   "name": "15분 주기",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "15min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#p2",
+   "name": "매시 주기 — 결정 2-ⓐ 로 새로 연 값",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "hourly"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#p3",
+   "name": "5분 주기 — 결정 3 으로 새로 연 값",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "5min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#p4",
+   "name": "10분 주기 — 결정 3 으로 새로 연 값",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "10min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#p6",
+   "name": "두 조건 결합",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "15min",
+    "maxResolutionM": 5000
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#m1",
+   "name": "5 km 이하 원 관측 해상도 — 1회차 기대(seq 3 포함)",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "maxResolutionM": 5000
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-4#m2",
+   "name": "한반도 + 5분 주기",
+   "mode": "measure_only",
+   "region": true,
+   "conditions": {
+    "region": "korean_peninsula",
+    "cadence": "5min"
+   },
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "PC-1-6#m1",
+   "name": "직접 관측",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "directObservation": true
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-1-6#m2",
+   "name": "직접 관측이 아닌 것(예측·재분석·지수)",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "directObservation": false
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-1#p1",
+   "name": "강수 변수 + 2023년 포함",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "variable": "precipitation",
+    "coverageYear": 2023
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-2#m1",
+   "name": "위성 + 2 km 이하",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "platform": "satellite",
+    "maxResolutionM": 2000
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-2#m2",
+   "name": "지상 + 1 km 이하",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "platform": "ground",
+    "maxResolutionM": 1000
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-3#p1",
+   "name": "2022년을 덮는 자료",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "coverageYear": 2022
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-3#m1",
+   "name": "2022년을 덮는 모형 자료",
+   "mode": "measure_only",
+   "region": false,
+   "conditions": {
+    "coverageYear": 2022,
+    "platform": "model"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-3#m2",
+   "name": "2022년 한반도 자료",
+   "mode": "measure_only",
+   "region": true,
+   "conditions": {
+    "region": "korean_peninsula",
+    "coverageYear": 2022
+   },
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "PC-2-4#p1",
+   "name": "강수 변수 + 15분 주기",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "variable": "precipitation",
+    "cadence": "15min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-4#p2",
+   "name": "매시 주기 자료",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "hourly"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-4#p3",
+   "name": "5분 주기 자료 — 1시간 이하",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "5min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-4#p4",
+   "name": "10분 주기 자료 — 1시간 이하",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "cadence": "10min"
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-4#m1",
+   "name": "한반도 강수 + 15분 주기",
+   "mode": "measure_only",
+   "region": true,
+   "conditions": {
+    "region": "korean_peninsula",
+    "variable": "precipitation",
+    "cadence": "15min"
+   },
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "PC-2-7#p1",
+   "name": "후보집합 — 강수 변수 + 2021년 포함",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "variable": "precipitation",
+    "coverageYear": 2021
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-7#p2",
+   "name": "후보집합 — 강수 변수 + 여름 기간 포함",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "variable": "precipitation",
+    "period": {
+     "start": "2021-06-01",
+     "end": "2021-08-31"
+    }
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "PC-2-7#m1",
+   "name": "한반도 강수 + 2021년 포함",
+   "mode": "measure_only",
+   "region": true,
+   "conditions": {
+    "region": "korean_peninsula",
+    "variable": "precipitation",
+    "coverageYear": 2021
+   },
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "PC-2-8#p1",
+   "name": "정확히 같은 기간을 갖는 묶음",
+   "mode": "probe",
+   "region": false,
+   "conditions": {
+    "exactPeriod": {
+     "start": "2019-07-28",
+     "end": "2024-07-09"
+    }
+   },
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  }
+ ],
+ "goldenB": [
+  {
+   "id": "SEARCH-GOLD-001",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-002",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-003",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-004",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-005",
+   "reviewed": false,
+   "all_drafts": false,
+   "region_drafts": false,
+   "cf_reviewed": false,
+   "cf_all_drafts": false,
+   "cf_region_drafts": false
+  },
+  {
+   "id": "SEARCH-GOLD-006",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-007",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-008",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-009",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  },
+  {
+   "id": "SEARCH-GOLD-010",
+   "reviewed": true,
+   "all_drafts": true,
+   "region_drafts": true,
+   "cf_reviewed": true,
+   "cf_all_drafts": true,
+   "cf_region_drafts": true
+  }
+ ],
+ "counterfactualRules": [
+  {
+   "rule": "region-from-lineage-parent",
+   "facts": 0,
+   "contribution_A": 0,
+   "reversal_A": 0,
+   "flipped_case_ids_A": [],
+   "contribution_B": 0,
+   "reversal_B": 0,
+   "measured_A": "미측정(초안 0건)",
+   "measured_B": "미측정(초안 0건)"
+  },
+  {
+   "rule": "region-from-lineage-sibling",
+   "facts": 0,
+   "contribution_A": 0,
+   "reversal_A": 0,
+   "flipped_case_ids_A": [],
+   "contribution_B": 0,
+   "reversal_B": 0,
+   "measured_A": "미측정(초안 0건)",
+   "measured_B": "미측정(초안 0건)"
+  },
+  {
+   "rule": "bbox-korea-peninsula",
+   "facts": 0,
+   "contribution_A": 0,
+   "reversal_A": 0,
+   "flipped_case_ids_A": [],
+   "contribution_B": 0,
+   "reversal_B": 0,
+   "measured_A": "미측정(초안 0건)",
+   "measured_B": "미측정(초안 0건)"
+  },
+  {
+   "rule": "region-from-registration-note",
+   "facts": 1,
+   "contribution_A": 0,
+   "reversal_A": 0,
+   "flipped_case_ids_A": [],
+   "contribution_B": 0,
+   "reversal_B": 0,
+   "measured_A": "측정(5케이스)",
+   "measured_B": "측정(4케이스)"
+  }
+ ],
+ "counterfactualNote": "반사실 — 판정 근거가 아니다(결정 5 는 제품 경로의 기여만 센다). 경로 1 region 표기 사전에 그래프 한 홉을 더했을 때 지역 초안 규칙이 낼 기여의 크기다.",
+ "greenCounts": {
+  "reviewed": {
+   "A": 28,
+   "B": 9
+  },
+  "all_drafts": {
+   "A": 28,
+   "B": 9
+  },
+  "region_drafts": {
+   "A": 28,
+   "B": 9
+  },
+  "cf_reviewed": {
+   "A": 28,
+   "B": 9
+  },
+  "cf_all_drafts": {
+   "A": 28,
+   "B": 9
+  },
+  "cf_region_drafts": {
+   "A": 28,
+   "B": 9
+  }
+ }
+}

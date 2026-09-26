@@ -1,0 +1,2342 @@
+{
+ "schema": "colab-draft-contribution/1",
+ "round": "2회차 지역",
+ "measuredAt": "2026-09-26T10:21:08+09:00",
+ "tool": {
+  "path": "eval/k4-search/measure_draft_contribution.py",
+  "sha256": "80684ca92492b7b2fb77b469559580fe16db6d741bdbf349a7d725be4ebe4a65",
+  "gitHead": "b18e35cd98b6e6c629dae748ce5400089d3e4367"
+ },
+ "intent": "dev-package/intent/2026-09-21-evidence-promotion.md",
+ "inputs": {
+  "payload": {
+   "path": "dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json",
+   "sha256": "3304c3e38666b0d1d3ce4b38e124cf51edcfda24d6727602507c855093b204a5",
+   "draftFacts": 69,
+   "ruleSummary": {
+    "platform-from-instrument": 26,
+    "representation-from-shape": 28,
+    "direct-observation-from-level": 26,
+    "interpolated-from-lineage": 28,
+    "native-resolution-carried": 1,
+    "region-from-registration-note": 1,
+    "bbox-korea-peninsula": 4,
+    "region-from-lineage-parent": 4,
+    "region-from-lineage-sibling": 4
+   },
+   "regeneration": {
+    "measuredFieldsEqual": false,
+    "rulesEqual": true,
+    "measuredFieldDiffs": [
+     {
+      "seq": 1,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 1,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1"
+      }
+     },
+     {
+      "seq": 1,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "variable": "반사도",
+       "nativeResolutionM": 500.0,
+       "provider": "기상청",
+       "cadence": "5min",
+       "region": "남한",
+       "platform": "ground",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "variable": "반사도",
+       "nativeResolutionM": 500.0,
+       "provider": "기상청",
+       "cadence": "5min",
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 2,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 2,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2"
+      }
+     },
+     {
+      "seq": 2,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "netcdf",
+       "variable": "강수량",
+       "cadence": "15min",
+       "provider": "기상청",
+       "region": "남한",
+       "platform": "ground",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "netcdf",
+       "variable": "강수량",
+       "cadence": "15min",
+       "provider": "기상청",
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 3,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "남한"
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true,
+       "nativeResolutionM": 500.0,
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 3,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
+      }
+     },
+     {
+      "seq": 3,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "반사도",
+       "provider": "기상청",
+       "roles": [
+        "model_input"
+       ],
+       "platform": "ground",
+       "directObservation": true,
+       "nativeResolutionM": 500.0
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "반사도",
+       "provider": "기상청",
+       "roles": [
+        "model_input"
+       ]
+      }
+     },
+     {
+      "seq": 4,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "남한"
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true,
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 4,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
+      }
+     },
+     {
+      "seq": 4,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "강수량",
+       "cadence": "15min",
+       "provider": "기상청",
+       "roles": [
+        "validation"
+       ],
+       "platform": "ground",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "강수량",
+       "cadence": "15min",
+       "provider": "기상청",
+       "roles": [
+        "validation"
+       ]
+      }
+     },
+     {
+      "seq": 5,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "남한"
+      },
+      "regenerated": {
+       "platform": "model",
+       "representation": "spatial_grid",
+       "directObservation": false,
+       "interpolated": true,
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 5,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한) · seq 2(남한)"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한) · seq 2(남한)"
+      }
+     },
+     {
+      "seq": 5,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "강수량",
+       "model": "U-Net",
+       "roles": [
+        "prediction"
+       ],
+       "platform": "model",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-07-28",
+        "end": "2024-07-09"
+       },
+       "format": "npy",
+       "variable": "강수량",
+       "model": "U-Net",
+       "roles": [
+        "prediction"
+       ]
+      }
+     },
+     {
+      "seq": 6,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 6,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6"
+      }
+     },
+     {
+      "seq": 6,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "netcdf",
+       "variable": "NDVI",
+       "cadence": "daily",
+       "nativeResolutionM": 2000.0,
+       "provider": "국가기상위성센터",
+       "region": "한반도",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "netcdf",
+       "variable": "NDVI",
+       "cadence": "daily",
+       "nativeResolutionM": 2000.0,
+       "provider": "국가기상위성센터",
+       "region": "한반도"
+      }
+     },
+     {
+      "seq": 7,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true
+      }
+     },
+     {
+      "seq": 7,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7"
+      }
+     },
+     {
+      "seq": 7,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "tif",
+       "variable": "NDVI",
+       "cadence": "monthly",
+       "nativeResolutionM": 2000.0,
+       "statistics": [
+        "monthly_mean"
+       ],
+       "region": "경기남부충청",
+       "roles": [
+        "model_input"
+       ],
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "tif",
+       "variable": "NDVI",
+       "cadence": "monthly",
+       "nativeResolutionM": 2000.0,
+       "statistics": [
+        "monthly_mean"
+       ],
+       "region": "경기남부충청",
+       "roles": [
+        "model_input"
+       ]
+      }
+     },
+     {
+      "seq": 8,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "경기남부충청"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true,
+       "region": "경기남부충청"
+      }
+     },
+     {
+      "seq": 8,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
+       "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
+      }
+     },
+     {
+      "seq": 8,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "tif",
+       "variable": "NDVI",
+       "cadence": "monthly",
+       "statistics": [
+        "monthly_mean"
+       ],
+       "roles": [
+        "validation"
+       ],
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "tif",
+       "variable": "NDVI",
+       "cadence": "monthly",
+       "statistics": [
+        "monthly_mean"
+       ],
+       "roles": [
+        "validation"
+       ]
+      }
+     },
+     {
+      "seq": 11,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false,
+       "region": "경기남부충청"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false,
+       "region": "경기남부충청"
+      }
+     },
+     {
+      "seq": 11,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
+       "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
+      }
+     },
+     {
+      "seq": 11,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2023-01-01",
+        "end": "2023-12-31"
+       },
+       "format": "tif",
+       "variable": "토지피복",
+       "roles": [
+        "model_input"
+       ],
+       "cadence": "yearly",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2023-01-01",
+        "end": "2023-12-31"
+       },
+       "format": "tif",
+       "variable": "토지피복",
+       "roles": [
+        "model_input"
+       ],
+       "cadence": "yearly"
+      }
+     },
+     {
+      "seq": 12,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "경기남부충청"
+      },
+      "regenerated": {
+       "platform": "model",
+       "representation": "spatial_grid",
+       "directObservation": false,
+       "interpolated": true,
+       "region": "경기남부충청"
+      }
+     },
+     {
+      "seq": 12,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 7(경기남부충청)"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
+       "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 7(경기남부충청)"
+      }
+     },
+     {
+      "seq": 12,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "npy",
+       "variable": "NDVI",
+       "cadence": "daily",
+       "model": "U-Net",
+       "roles": [
+        "prediction"
+       ],
+       "platform": "model",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2023-05-01",
+        "end": "2023-05-31"
+       },
+       "format": "npy",
+       "variable": "NDVI",
+       "cadence": "daily",
+       "model": "U-Net",
+       "roles": [
+        "prediction"
+       ]
+      }
+     },
+     {
+      "seq": 13,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "table",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "table",
+       "directObservation": false,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 13,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13"
+      }
+     },
+     {
+      "seq": 13,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2000-01-01",
+        "end": "2025-12-20"
+       },
+       "variable": "SPI",
+       "cadence": "weekly",
+       "region": "대한민국시군구",
+       "roles": [
+        "index"
+       ],
+       "platform": "ground",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2000-01-01",
+        "end": "2025-12-20"
+       },
+       "variable": "SPI",
+       "cadence": "weekly",
+       "region": "대한민국시군구",
+       "roles": [
+        "index"
+       ]
+      }
+     },
+     {
+      "seq": 14,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "table",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "table",
+       "directObservation": false,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 14,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14"
+      }
+     },
+     {
+      "seq": 14,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2000-01-01",
+        "end": "2025-12-20"
+       },
+       "variable": "SPEI",
+       "cadence": "weekly",
+       "region": "대한민국시군구",
+       "roles": [
+        "index"
+       ],
+       "platform": "ground",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2000-01-01",
+        "end": "2025-12-20"
+       },
+       "variable": "SPEI",
+       "cadence": "weekly",
+       "region": "대한민국시군구",
+       "roles": [
+        "index"
+       ]
+      }
+     },
+     {
+      "seq": 15,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "model",
+       "representation": "spatial_grid",
+       "directObservation": false,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 15,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 15"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 15"
+      }
+     },
+     {
+      "seq": 15,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-09-01",
+        "end": "2025-09-01"
+       },
+       "platform": "model",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-09-01",
+        "end": "2025-09-01"
+       }
+      }
+     },
+     {
+      "seq": 16,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true,
+       "region": "전지구"
+      },
+      "regenerated": {
+       "platform": "model",
+       "representation": "spatial_grid",
+       "directObservation": false,
+       "interpolated": true,
+       "region": "전지구"
+      }
+     },
+     {
+      "seq": 16,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "region": "규칙 · rule:region-from-registration-note · 읽은 정본 = 02.File-format/DATASETS.md seq 16"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
+       "region": "규칙 · rule:region-from-registration-note · 읽은 정본 = 02.File-format/DATASETS.md seq 16"
+      }
+     },
+     {
+      "seq": 16,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-09-01",
+        "end": "2025-09-01"
+       },
+       "format": "npy",
+       "cadence": "hourly",
+       "platform": "model",
+       "directObservation": false
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-09-01",
+        "end": "2025-09-01"
+       },
+       "format": "npy",
+       "cadence": "hourly"
+      }
+     },
+     {
+      "seq": 17,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 17,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 17"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 17"
+      }
+     },
+     {
+      "seq": 17,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2020-05-01",
+        "end": "2020-05-01"
+       },
+       "format": "netcdf",
+       "variable": "지표온도",
+       "cadence": "10min",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2020-05-01",
+        "end": "2020-05-01"
+       },
+       "format": "netcdf",
+       "variable": "지표온도",
+       "cadence": "10min"
+      }
+     },
+     {
+      "seq": 18,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true
+      }
+     },
+     {
+      "seq": 18,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 18"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 18"
+      }
+     },
+     {
+      "seq": 18,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2020-05-01",
+        "end": "2020-05-01"
+       },
+       "format": "npy",
+       "variable": "지표온도",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2020-05-01",
+        "end": "2020-05-01"
+       },
+       "format": "npy",
+       "variable": "지표온도"
+      }
+     },
+     {
+      "seq": 19,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 19,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 19"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 19"
+      }
+     },
+     {
+      "seq": 19,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-08-13",
+        "end": "2025-08-13"
+       },
+       "variable": "반사도",
+       "provider": "기상청",
+       "region": "남한",
+       "platform": "ground",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-08-13",
+        "end": "2025-08-13"
+       },
+       "variable": "반사도",
+       "provider": "기상청",
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 20,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": true
+      },
+      "regenerated": {
+       "platform": "ground",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": true
+      }
+     },
+     {
+      "seq": 20,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 20"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 20"
+      }
+     },
+     {
+      "seq": 20,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-08-13",
+        "end": "2025-08-13"
+       },
+       "format": "npy",
+       "variable": "반사도",
+       "provider": "기상청",
+       "region": "남한",
+       "platform": "ground",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-08-13",
+        "end": "2025-08-13"
+       },
+       "format": "npy",
+       "variable": "반사도",
+       "provider": "기상청",
+       "region": "남한"
+      }
+     },
+     {
+      "seq": 21,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false,
+       "region": "한반도"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false,
+       "region": "한반도"
+      }
+     },
+     {
+      "seq": 21,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/21/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/21/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
+      }
+     },
+     {
+      "seq": 21,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-12-25",
+        "end": "2025-12-25"
+       },
+       "format": "tif",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-12-25",
+        "end": "2025-12-25"
+       },
+       "format": "tif"
+      }
+     },
+     {
+      "seq": 22,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false,
+       "region": "한반도"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false,
+       "region": "한반도"
+      }
+     },
+     {
+      "seq": 22,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/22/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/22/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
+      }
+     },
+     {
+      "seq": 22,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-12-27",
+        "end": "2025-12-27"
+       },
+       "format": "tif",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-12-27",
+        "end": "2025-12-27"
+       },
+       "format": "tif"
+      }
+     },
+     {
+      "seq": 23,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false,
+       "region": "한반도"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false,
+       "region": "한반도"
+      }
+     },
+     {
+      "seq": 23,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/23/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/23/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
+      }
+     },
+     {
+      "seq": 23,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-12-25",
+        "end": "2025-12-25"
+       },
+       "format": "npy",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-12-25",
+        "end": "2025-12-25"
+       },
+       "format": "npy"
+      }
+     },
+     {
+      "seq": 24,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false,
+       "region": "한반도"
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false,
+       "region": "한반도"
+      }
+     },
+     {
+      "seq": 24,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/24/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
+       "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/24/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
+      }
+     },
+     {
+      "seq": 24,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2025-12-27",
+        "end": "2025-12-27"
+       },
+       "format": "npy",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2025-12-27",
+        "end": "2025-12-27"
+       },
+       "format": "npy"
+      }
+     },
+     {
+      "seq": 25,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 25,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 25"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 25"
+      }
+     },
+     {
+      "seq": 25,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "variable": "엽면적지수",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "variable": "엽면적지수"
+      }
+     },
+     {
+      "seq": 26,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 26,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 26"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 26"
+      }
+     },
+     {
+      "seq": 26,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "variable": "엽면적지수",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "variable": "엽면적지수"
+      }
+     },
+     {
+      "seq": 27,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 27,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 27"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 27"
+      }
+     },
+     {
+      "seq": 27,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "format": "npy",
+       "variable": "엽면적지수",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "format": "npy",
+       "variable": "엽면적지수"
+      }
+     },
+     {
+      "seq": 28,
+      "field": "draftFacts",
+      "payload": {
+       "representation": "spatial_grid",
+       "interpolated": false
+      },
+      "regenerated": {
+       "platform": "satellite",
+       "representation": "spatial_grid",
+       "directObservation": true,
+       "interpolated": false
+      }
+     },
+     {
+      "seq": 28,
+      "field": "draftProvenance",
+      "payload": {
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 28"
+      },
+      "regenerated": {
+       "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
+       "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
+       "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
+       "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 28"
+      }
+     },
+     {
+      "seq": 28,
+      "field": "facts",
+      "payload": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "format": "npy",
+       "variable": "엽면적지수",
+       "platform": "satellite",
+       "directObservation": true
+      },
+      "regenerated": {
+       "period": {
+        "start": "2019-09-30",
+        "end": "2019-10-31"
+       },
+       "format": "npy",
+       "variable": "엽면적지수"
+      }
+     }
+    ],
+    "otherFieldDiffs": [
+     {
+      "seq": 1,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/1 · 기간 근거 축자 「10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시」",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/1 · 기간 근거 축자 「10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시」",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
+       "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+      }
+     },
+     {
+      "seq": 2,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 2 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 2 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
+       "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+      }
+     },
+     {
+      "seq": 3,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/3 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 3 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "nativeResolutionM": "승격 · 규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/3 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 3 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」"
+      }
+     },
+     {
+      "seq": 4,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/4 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 4 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/4 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 4 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」"
+      }
+     },
+     {
+      "seq": 5,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/5 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 5 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+       "model": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/5 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
+       "format": "정본전재 · plan-manifest.yaml seq 5 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+       "model": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+       "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」"
+      }
+     },
+     {
+      "seq": 6,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/6 · 기간 근거 축자 「파일명 전월 범위」",
+       "format": "정본전재 · plan-manifest.yaml seq 6 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/6 · 기간 근거 축자 「파일명 전월 범위」",
+       "format": "정본전재 · plan-manifest.yaml seq 6 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
+       "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)」"
+      }
+     },
+     {
+      "seq": 7,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/7 · 기간 근거 축자 「파일명 월과 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 7 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/7 · 기간 근거 축자 「파일명 월과 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 7 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」"
+      }
+     },
+     {
+      "seq": 8,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/8 · 기간 근거 축자 「파일명 월과 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 8 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/8 · 기간 근거 축자 「파일명 월과 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 8 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」"
+      }
+     },
+     {
+      "seq": 11,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/11 · 기간 근거 축자 「파일명 연도와 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 11 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/11 · 기간 근거 축자 「파일명 연도와 정본 설명」",
+       "format": "정본전재 · plan-manifest.yaml seq 11 format GeoTIFF → 계약 enum tif",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」"
+      }
+     },
+     {
+      "seq": 12,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/12 · 기간 근거 축자 「파일명 일 범위」",
+       "format": "정본전재 · plan-manifest.yaml seq 12 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "model": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/12 · 기간 근거 축자 「파일명 일 범위」",
+       "format": "정본전재 · plan-manifest.yaml seq 12 format npy → 계약 enum npy",
+       "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "model": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+       "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」"
+      }
+     },
+     {
+      "seq": 13,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/13 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
+       "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/13 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
+       "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+      }
+     },
+     {
+      "seq": 14,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/14 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
+       "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/14 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
+       "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+       "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+      }
+     },
+     {
+      "seq": 15,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」"
+      }
+     },
+     {
+      "seq": 16,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
+       "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
+       "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」"
+      }
+     },
+     {
+      "seq": 17,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/17 · 기간 근거 축자 「NetCDF 내부 관측시각」",
+       "format": "정본전재 · plan-manifest.yaml seq 17 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
+       "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/17 · 기간 근거 축자 「NetCDF 내부 관측시각」",
+       "format": "정본전재 · plan-manifest.yaml seq 17 format NetCDF4 → 계약 enum netcdf",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
+       "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」"
+      }
+     },
+     {
+      "seq": 18,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」"
+      }
+     },
+     {
+      "seq": 19,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+       "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+       "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+      }
+     },
+     {
+      "seq": 20,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/20 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+       "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/20 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+       "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
+       "region": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+      }
+     },
+     {
+      "seq": 21,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+       "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+       "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif"
+      }
+     },
+     {
+      "seq": 22,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+       "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
+       "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif"
+      }
+     },
+     {
+      "seq": 23,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy"
+      }
+     },
+     {
+      "seq": 24,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy"
+      }
+     },
+     {
+      "seq": 25,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+      }
+     },
+     {
+      "seq": 26,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+      }
+     },
+     {
+      "seq": 27,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+      }
+     },
+     {
+      "seq": 28,
+      "field": "provenance",
+      "payload": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+       "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)",
+       "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 2회차 측정 기준선(dev 와 같은 승격 상태)"
+      },
+      "regenerated": {
+       "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
+       "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
+       "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+      }
+     }
+    ],
+    "note": "dataset_evidence_backfill.build() 재생성과 비교. 측정은 dev 적재와 같은 **커밋된 payload** 로 한다(결정 7) — 적재기가 읽지 않는 칸(auxiliaryRole 등)의 차이는 측정에 닿지 않는다."
+   }
+  },
+  "caseSets": {
+   "golden-cases.json": "ef5227126c801b1a7f527d6292456ffc146c3253c87e3e066845158818497c31",
+   "practitioner-conditions.json": "8ccb477bc9a1d34201cfa0cd0502dc6253bf3b346e0cbab0df2d1dfcc0f14012",
+   "heldout-cases.json": "a4f3f6a1dcc98cbd7783eedbe5db23c97e495420226393d16118ddd11ddcb736",
+   "interpret-fixture.json": "2e4d4a9cfff66ac58f5bca162e16b3a4a0dc345b19db3f7e91f0445f8ad6d89f",
+   "dev-data-snapshot-v2.json": "171ddd497a41a414eb37be31d394f9c97f6c1b0c330de76648a733a4cfafb952"
+  },
+  "planNow": "2026-09-25T00:00:00+09:00",
+  "searchLimit": 100,
+  "modelCalls": 0
+ },
+ "seed": {
+  "datasets": 28,
+  "bodyFiles": 543,
+  "lineageEdges": 18,
+  "apply": {
+   "datasets": 28,
+   "missing": [],
+   "evidence": 543,
+   "evidence_unchanged": 0,
+   "topic": 3,
+   "source_label": 9,
+   "files": 543,
+   "draft_withheld": 69
+  }
+ },
+ "db": {
+  "before": {
+   "rows": 543,
+   "sha256": "73bb368ad0734f889fc0c1e0c0a89c7b7593d524981adce8769ee392f131c956"
+  },
+  "after": {
+   "rows": 543,
+   "sha256": "73bb368ad0734f889fc0c1e0c0a89c7b7593d524981adce8769ee392f131c956"
+  },
+  "unchanged": true,
+  "fingerprint": "(file_id, revision, status, source_sha256, md5(facts)) 전 행 · A 연구실 스코프"
+ },
+ "evaluations": 77,
+ "cases": {
+  "A": [
+   "PC-1-1#p1",
+   "PC-1-2#m1",
+   "PC-1-2#m2",
+   "PC-1-2#m3",
+   "PC-1-3#m1",
+   "PC-1-3#m2",
+   "PC-1-3#m3",
+   "PC-1-3#p1",
+   "PC-1-3#p2",
+   "PC-1-4#m1",
+   "PC-1-4#m2",
+   "PC-1-4#p1",
+   "PC-1-4#p2",
+   "PC-1-4#p3",
+   "PC-1-4#p4",
+   "PC-1-4#p6",
+   "PC-1-6#m1",
+   "PC-1-6#m2",
+   "PC-2-1#p1",
+   "PC-2-2#m1",
+   "PC-2-2#m2",
+   "PC-2-3#m1",
+   "PC-2-3#m2",
+   "PC-2-3#p1",
+   "PC-2-4#m1",
+   "PC-2-4#p1",
+   "PC-2-4#p2",
+   "PC-2-4#p3",
+   "PC-2-4#p4",
+   "PC-2-7#m1",
+   "PC-2-7#p1",
+   "PC-2-7#p2",
+   "PC-2-8#p1"
+  ],
+  "B": [
+   "SEARCH-GOLD-001",
+   "SEARCH-GOLD-002",
+   "SEARCH-GOLD-003",
+   "SEARCH-GOLD-004",
+   "SEARCH-GOLD-005",
+   "SEARCH-GOLD-006",
+   "SEARCH-GOLD-007",
+   "SEARCH-GOLD-008",
+   "SEARCH-GOLD-009",
+   "SEARCH-GOLD-010"
+  ],
+  "heldout": [
+   "N19",
+   "N20",
+   "N21",
+   "N22",
+   "N23",
+   "N24"
+  ],
+  "excluded": [
+   {
+    "id": "PC-1-1#p2",
+    "path": "A",
+    "reason": "근거 독립·제외(maxMissingRatePercent → d3_dataset_variable)"
+   },
+   {
+    "id": "PC-1-4#p5",
+    "path": "A",
+    "reason": "PC-1-4#m1(measure_only)가 대신한다 — 초안 보류 때문에 바뀐 기대다"
+   },
+   {
+    "id": "PC-1-5",
+    "path": "A",
+    "reason": "probe 0건(mode blocked) — 판정할 것이 없다"
+   },
+   {
+    "id": "PC-2-1#p2",
+    "path": "A",
+    "reason": "근거 독립·제외(maxMissingRatePercent → d3_dataset_variable)"
+   },
+   {
+    "id": "PC-2-5",
+    "path": "A",
+    "reason": "probe 0건(mode blocked) — 판정할 것이 없다"
+   },
+   {
+    "id": "PC-2-6",
+    "path": "A",
+    "reason": "probe 0건(mode blocked) — 판정할 것이 없다"
+   },
+   {
+    "id": "PC-2-7#p3",
+    "path": "A",
+    "reason": "근거 독립·제외(maxMissingRatePercent → d3_dataset_variable)"
+   },
+   {
+    "id": "SEARCH-GOLD-001",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-002",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-003",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-004",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-005",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-006",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-007",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-008",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-009",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-010",
+    "path": "A",
+    "reason": "plan_query 미인식 — 제품에서 경로 1 로 가지 않는다(경로 2 만 측정)"
+   },
+   {
+    "id": "SEARCH-GOLD-011",
+    "path": "A·B",
+    "reason": "manual — golden_baseline.assess 가 판정하지 않는다"
+   },
+   {
+    "id": "SEARCH-GOLD-012",
+    "path": "A·B",
+    "reason": "manual — golden_baseline.assess 가 판정하지 않는다"
+   }
+  ]
+ },
+ "bodyFilesByDataset": {
+  "1": 10,
+  "2": 10,
+  "3": 1,
+  "4": 1,
+  "5": 1,
+  "6": 31,
+  "7": 1,
+  "8": 1,
+  "9": 1,
+  "10": 1,
+  "11": 1,
+  "12": 31,
+  "16": 72,
+  "13": 1,
+  "14": 1,
+  "15": 1,
+  "17": 143,
+  "18": 143,
+  "19": 12,
+  "20": 12,
+  "21": 3,
+  "22": 3,
+  "24": 3,
+  "23": 3,
+  "25": 4,
+  "26": 4,
+  "27": 24,
+  "28": 24
+ },
+ "summary": {
+  "A": {
+   "withAllDrafts": 28,
+   "withoutAnyDraft": 28,
+   "cases": 33
+  },
+  "B": {
+   "withAllDrafts": 9,
+   "withoutAnyDraft": 9,
+   "cases": 10
+  },
+  "heldout_A": {
+   "withAllDrafts": 0,
+   "withoutAnyDraft": 0,
+   "cases": 0
+  },
+  "heldout_B": {
+   "withAllDrafts": 4,
+   "withoutAnyDraft": 3,
+   "cases": 6
+  }
+ },
+ "greenWithAllDrafts": {
+  "A": [
+   "PC-1-1#p1",
+   "PC-1-2#m1",
+   "PC-1-2#m2",
+   "PC-1-2#m3",
+   "PC-1-3#m1",
+   "PC-1-3#m2",
+   "PC-1-3#p1",
+   "PC-1-3#p2",
+   "PC-1-4#m1",
+   "PC-1-4#p1",
+   "PC-1-4#p2",
+   "PC-1-4#p3",
+   "PC-1-4#p4",
+   "PC-1-4#p6",
+   "PC-1-6#m1",
+   "PC-1-6#m2",
+   "PC-2-1#p1",
+   "PC-2-2#m1",
+   "PC-2-2#m2",
+   "PC-2-3#m1",
+   "PC-2-3#p1",
+   "PC-2-4#p1",
+   "PC-2-4#p2",
+   "PC-2-4#p3",
+   "PC-2-4#p4",
+   "PC-2-7#p1",
+   "PC-2-7#p2",
+   "PC-2-8#p1"
+  ],
+  "B": [
+   "SEARCH-GOLD-001",
+   "SEARCH-GOLD-002",
+   "SEARCH-GOLD-003",
+   "SEARCH-GOLD-004",
+   "SEARCH-GOLD-006",
+   "SEARCH-GOLD-007",
+   "SEARCH-GOLD-008",
+   "SEARCH-GOLD-009",
+   "SEARCH-GOLD-010"
+  ],
+  "heldout_A": [],
+  "heldout_B": [
+   "N19",
+   "N20",
+   "N21",
+   "N23"
+  ]
+ },
+ "rules": [
+  {"rule":"platform-from-instrument","facts":0,"predicates":[],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(초안 0건)","measured_B":"미측정(초안 0건)","제안":"미측정 — 초안 0건"},
+  {"rule":"representation-from-shape","facts":28,"predicates":["representation"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 · 보류"},
+  {"rule":"direct-observation-from-level","facts":0,"predicates":[],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(초안 0건)","measured_B":"미측정(초안 0건)","제안":"미측정 — 초안 0건"},
+  {"rule":"interpolated-from-lineage","facts":28,"predicates":["interpolated"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":3,"flipped":["N23"],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정(경로 1)·보류 — 결정 5 고정"},
+  {"rule":"bbox-korea-peninsula","facts":4,"predicates":["region"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"보류 — 기여 0"},
+  {"rule":"native-resolution-carried","facts":0,"predicates":[],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(초안 0건)","measured_B":"미측정(초안 0건)","제안":"미측정 — 초안 0건"},
+  {"rule":"region-from-registration-note","facts":1,"predicates":["region"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"보류 — 기여 0"},
+  {"rule":"region-from-lineage-parent","facts":4,"predicates":["region"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"보류 — 기여 0"},
+  {"rule":"region-from-lineage-sibling","facts":4,"predicates":["region"],"green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"보류 — 기여 0"}
+ ],
+ "facts": [
+  {"fact_id":"seq01.representation","dataset_seq":1,"dataset_name":"HSR 레이더 반사도 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq01.interpolated","dataset_seq":1,"dataset_name":"HSR 레이더 반사도 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq02.representation","dataset_seq":2,"dataset_name":"rn15 15분 누적강수","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq02.interpolated","dataset_seq":2,"dataset_name":"rn15 15분 누적강수","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq03.representation","dataset_seq":3,"dataset_name":"hsr_sample","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq03.interpolated","dataset_seq":3,"dataset_name":"hsr_sample","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq03.region","dataset_seq":3,"dataset_name":"hsr_sample","predicate":"region","value":"남한","rule_id":"region-from-lineage-parent","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq04.representation","dataset_seq":4,"dataset_name":"rn15_sample","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq04.interpolated","dataset_seq":4,"dataset_name":"rn15_sample","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq04.region","dataset_seq":4,"dataset_name":"rn15_sample","predicate":"region","value":"남한","rule_id":"region-from-lineage-parent","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq05.representation","dataset_seq":5,"dataset_name":"pred_sample","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq05.interpolated","dataset_seq":5,"dataset_name":"pred_sample","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq05.region","dataset_seq":5,"dataset_name":"pred_sample","predicate":"region","value":"남한","rule_id":"region-from-lineage-parent","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq06.representation","dataset_seq":6,"dataset_name":"GK-2A 일 단위 식생자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq06.interpolated","dataset_seq":6,"dataset_name":"GK-2A 일 단위 식생자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq07.representation","dataset_seq":7,"dataset_name":"GK2A_NDVI_mean_202305","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq07.interpolated","dataset_seq":7,"dataset_name":"GK2A_NDVI_mean_202305","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":3,"flipped":["N23"],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq08.representation","dataset_seq":8,"dataset_name":"HLS_S30_NDVI_mean_202305","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq08.interpolated","dataset_seq":8,"dataset_name":"HLS_S30_NDVI_mean_202305","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq08.region","dataset_seq":8,"dataset_name":"HLS_S30_NDVI_mean_202305","predicate":"region","value":"경기남부충청","rule_id":"region-from-lineage-sibling","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq09.representation","dataset_seq":9,"dataset_name":"DEM","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq09.interpolated","dataset_seq":9,"dataset_name":"DEM","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq09.region","dataset_seq":9,"dataset_name":"DEM","predicate":"region","value":"경기남부충청","rule_id":"region-from-lineage-sibling","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq10.representation","dataset_seq":10,"dataset_name":"Aspect","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq10.interpolated","dataset_seq":10,"dataset_name":"Aspect","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq10.region","dataset_seq":10,"dataset_name":"Aspect","predicate":"region","value":"경기남부충청","rule_id":"region-from-lineage-sibling","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq11.representation","dataset_seq":11,"dataset_name":"LULC_2023","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq11.interpolated","dataset_seq":11,"dataset_name":"LULC_2023","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq11.region","dataset_seq":11,"dataset_name":"LULC_2023","predicate":"region","value":"경기남부충청","rule_id":"region-from-lineage-sibling","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq12.representation","dataset_seq":12,"dataset_name":"Prediction (공간상세화)","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq12.interpolated","dataset_seq":12,"dataset_name":"Prediction (공간상세화)","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq12.region","dataset_seq":12,"dataset_name":"Prediction (공간상세화)","predicate":"region","value":"경기남부충청","rule_id":"region-from-lineage-parent","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq13.representation","dataset_seq":13,"dataset_name":"SPI-4weeks","predicate":"representation","value":"table","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq13.interpolated","dataset_seq":13,"dataset_name":"SPI-4weeks","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq14.representation","dataset_seq":14,"dataset_name":"SPEI-4weeks","predicate":"representation","value":"table","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq14.interpolated","dataset_seq":14,"dataset_name":"SPEI-4weeks","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq15.representation","dataset_seq":15,"dataset_name":"surface (ERA5 GRIB 원자료)","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq15.interpolated","dataset_seq":15,"dataset_name":"surface (ERA5 GRIB 원자료)","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq16.representation","dataset_seq":16,"dataset_name":"ERA5 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq16.interpolated","dataset_seq":16,"dataset_name":"ERA5 변환 결과","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq16.region","dataset_seq":16,"dataset_name":"ERA5 변환 결과","predicate":"region","value":"전지구","rule_id":"region-from-registration-note","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq17.representation","dataset_seq":17,"dataset_name":"GK-2A LST 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq17.interpolated","dataset_seq":17,"dataset_name":"GK-2A LST 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq18.representation","dataset_seq":18,"dataset_name":"GK-2A LST 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq18.interpolated","dataset_seq":18,"dataset_name":"GK-2A LST 변환 결과","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq19.representation","dataset_seq":19,"dataset_name":"HSR 레이더합성 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq19.interpolated","dataset_seq":19,"dataset_name":"HSR 레이더합성 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq20.representation","dataset_seq":20,"dataset_name":"HSR 레이더합성 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq20.interpolated","dataset_seq":20,"dataset_name":"HSR 레이더합성 변환 결과","predicate":"interpolated","value":true,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq21.representation","dataset_seq":21,"dataset_name":"HLS S30 T51SYB 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq21.interpolated","dataset_seq":21,"dataset_name":"HLS S30 T51SYB 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq21.region","dataset_seq":21,"dataset_name":"HLS S30 T51SYB 원자료","predicate":"region","value":"한반도","rule_id":"bbox-korea-peninsula","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq22.representation","dataset_seq":22,"dataset_name":"HLS S30 T52SCE 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq22.interpolated","dataset_seq":22,"dataset_name":"HLS S30 T52SCE 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq22.region","dataset_seq":22,"dataset_name":"HLS S30 T52SCE 원자료","predicate":"region","value":"한반도","rule_id":"bbox-korea-peninsula","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq23.representation","dataset_seq":23,"dataset_name":"HLS S30 T51SYB 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq23.interpolated","dataset_seq":23,"dataset_name":"HLS S30 T51SYB 변환 결과","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq23.region","dataset_seq":23,"dataset_name":"HLS S30 T51SYB 변환 결과","predicate":"region","value":"한반도","rule_id":"bbox-korea-peninsula","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq24.representation","dataset_seq":24,"dataset_name":"HLS S30 T52SCE 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq24.interpolated","dataset_seq":24,"dataset_name":"HLS S30 T52SCE 변환 결과","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq24.region","dataset_seq":24,"dataset_name":"HLS S30 T52SCE 변환 결과","predicate":"region","value":"한반도","rule_id":"bbox-korea-peninsula","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"측정(5케이스)","measured_B":"측정(4케이스)","제안":"1회차 관측 — 기여 0 · 보류(폐기는 K=3 회차 연속 필요)"},
+  {"fact_id":"seq25.representation","dataset_seq":25,"dataset_name":"hdf4 MOD15A2H h27v05 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq25.interpolated","dataset_seq":25,"dataset_name":"hdf4 MOD15A2H h27v05 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq26.representation","dataset_seq":26,"dataset_name":"hdf4 MOD15A2H h28v05 원자료","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq26.interpolated","dataset_seq":26,"dataset_name":"hdf4 MOD15A2H h28v05 원자료","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq27.representation","dataset_seq":27,"dataset_name":"hdf4 MOD15A2H h27v05 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq27.interpolated","dataset_seq":27,"dataset_name":"hdf4 MOD15A2H h27v05 변환 결과","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq28.representation","dataset_seq":28,"dataset_name":"hdf4 MOD15A2H h28v05 변환 결과","predicate":"representation","value":"spatial_grid","rule_id":"representation-from-shape","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(케이스 0)","measured_B":"미측정(술어 없음)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"},
+  {"fact_id":"seq28.interpolated","dataset_seq":28,"dataset_name":"hdf4 MOD15A2H h28v05 변환 결과","predicate":"interpolated","value":false,"rule_id":"interpolated-from-lineage","green_with_A":28,"green_without_A":28,"contribution_A":0,"reversal_A":0,"flipped_case_ids_A":[],"reversal_case_ids_A":[],"rank_delta_A":{},"green_with_B":9,"green_without_B":9,"contribution_B":0,"reversal_B":0,"flipped_case_ids_B":[],"reversal_case_ids_B":[],"rank_delta_B":{},"heldout_A":{"green_with":0,"green_without":0,"flipped":[],"reversal":[]},"heldout_B":{"green_with":4,"green_without":4,"flipped":[],"reversal":[]},"measured_A":"미측정(술어 없음)","measured_B":"미측정(케이스 0)","제안":"미측정 — 폐기하지 않는다(결정 3: 케이스 0건은 폐기 제안 대상 아님)"}
+ ]
+}

@@ -834,6 +834,7 @@ def _parser() -> argparse.ArgumentParser:
                    help="리허설과 함께 승격 반영 payload 사본을 쓴다 — dataset_evidence_apply.py 의 입력")
     p.add_argument("--promotion-note", default="판정 결과 미기재",
                    help="승격 payload provenance 에 붙일 판정 근거(회차 intent 판정 결과 절)")
+    p.add_argument("--round", default="1회차", help="산출물에 적을 회차 이름(예: 2회차 지역)")
     p.add_argument("--i-know-this-is-disposable", action="store_true",
                    help="localhost 가 아닌 일회용 DB(도커 브리지 IP 등)임을 명시한다")
     return p
@@ -941,7 +942,7 @@ def _measure(db, factory, session, payload, facts, args) -> int:
     unchanged = fingerprints_equal(before, after)
     result = {
         "schema": "colab-draft-contribution/1",
-        "round": "1회차",
+        "round": args.round,
         "measuredAt": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "tool": {"path": "eval/k4-search/measure_draft_contribution.py",
                  "sha256": sha256_file(pathlib.Path(__file__)), "gitHead": _git_head()},
