@@ -66,16 +66,16 @@
       "question": "시간해상도 1시간 이하이고 공간해상도가 가장 높은 강수자료",
       "requiredEvidence": ["cadence", "nativeResolutionM"],
       "probes": [
-        {"name": "15분 주기", "conditions": {"cadence": "15min"}, "expectSeq": [2, 4], "forbidSeq": [6, 7, 12]},
+        {"name": "15분 주기", "conditions": {"cadence": "15min"}, "expectSeq": [2], "forbidSeq": [6, 7, 12], "decisionNote": "2026-09-26 Ted 「전부 권고대로」 질문 2 — seq 4(rn15_sample) 주기는 계보 초안이라 reviewed 만으로는 unknown 이다 → 기대에서 뺐다"},
         {"name": "매시 주기 — 결정 2-ⓐ 로 새로 연 값", "conditions": {"cadence": "hourly"}, "expectSeq": [16], "forbidSeq": [2, 4, 6]},
         {"name": "5분 주기 — 결정 3 으로 새로 연 값", "conditions": {"cadence": "5min"}, "expectSeq": [1], "forbidSeq": [2, 4, 16, 17]},
         {"name": "10분 주기 — 결정 3 으로 새로 연 값", "conditions": {"cadence": "10min"}, "expectSeq": [17], "forbidSeq": [1, 2, 4, 16]},
         {"name": "5 km 이하 원 관측 해상도", "conditions": {"maxResolutionM": 5000}, "expectSeq": [1, 3, 6, 7, 9, 10], "forbidSeq": [2, 4], "regradeNote": "2026-09-26 4회차 재채점 — 1회차 승격(platform-from-instrument · direct-observation-from-level · native-resolution-carried, dev 반영 2026-09-25T23:52Z) 뒤 reviewed 만으로 green 이라 measure_only 에서 판정 probe 로 옮겼다(intent 2026-09-26-cadence-range-predicate) · 1회차 기대(seq 3 포함)가 이 probe 의 기대를 대신한다"},
         {"name": "두 조건 결합", "conditions": {"cadence": "15min", "maxResolutionM": 5000}, "expectSeq": [], "forbidSeq": [2, 4], "expectEmpty": true},
         {"name": "한반도 + 5분 주기", "conditions": {"region": "korean_peninsula", "cadence": "5min"}, "expectSeq": [1], "forbidSeq": [16, 17], "pathB": {"id": "PB-REGION-2", "query": "한반도 5분 주기 레이더 강우 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}, "regionNote": "2026-09-26 3회차 — 지역 포함 관계(intent 2026-09-26-region-containment-expansion)로 reviewed seq 1(남한)이 한반도 조건에 맞아 measure_only 에서 판정 probe 로 옮겼다(3회차 측정 경로 1 reviewed green)"},
-        {"name": "1시간 이하 주기 — 범위 술어(전 자료)", "conditions": {"maxCadenceSeconds": 3600}, "expectSeq": [1, 2, 4, 16, 17], "forbidSeq": [3, 5, 6, 7, 8, 11, 12, 13, 14]},
-        {"name": "강수 변수 + 1시간 이하", "conditions": {"variable": "precipitation", "maxCadenceSeconds": 3600}, "expectSeq": [2, 4], "forbidSeq": [5, 6, 12], "pathB": {"id": "PB-CADENCE-1", "query": "시간해상도 1시간 이하 강수 자료 찾아줘", "note": "경로 2 자연어 판. 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}},
-        {"name": "1시간 이하 + 5 km 이하", "conditions": {"maxCadenceSeconds": 3600, "maxResolutionM": 5000}, "expectSeq": [1], "forbidSeq": [2, 3, 4, 6, 7, 16, 17]}
+        {"name": "1시간 이하 주기 — 범위 술어(전 자료)", "conditions": {"maxCadenceSeconds": 3600}, "expectSeq": [1, 2, 16, 17], "forbidSeq": [5, 6, 7, 8, 11, 12, 13, 14], "decisionNote": "2026-09-26 Ted 「전부 권고대로」 질문 2 — seq 4(rn15_sample) 주기는 계보 초안이라 reviewed 만으로는 unknown 이다 → 기대에서 뺐다 · 2026-09-26 Ted 「전부 권고대로」 질문 4 — seq 3(hsr_sample) 에 계보 초안 5min 이 있어 초안 포함 측정에서 맞는다 → forbidSeq 에서 뺐다"},
+        {"name": "강수 변수 + 1시간 이하", "conditions": {"variable": "precipitation", "maxCadenceSeconds": 3600}, "expectSeq": [2], "forbidSeq": [5, 6, 12], "pathB": {"id": "PB-CADENCE-1", "query": "시간해상도 1시간 이하 강수 자료 찾아줘", "note": "경로 2 자연어 판. 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}, "decisionNote": "2026-09-26 Ted 「전부 권고대로」 질문 2 — seq 4(rn15_sample) 주기는 계보 초안이라 reviewed 만으로는 unknown 이다 → 기대에서 뺐다"},
+        {"name": "1시간 이하 + 5 km 이하", "conditions": {"maxCadenceSeconds": 3600, "maxResolutionM": 5000}, "expectSeq": [1], "forbidSeq": [2, 4, 6, 7, 16, 17], "decisionNote": "2026-09-26 Ted 「전부 권고대로」 질문 4 — seq 3(hsr_sample) 에 계보 초안 5min 이 있어 초안 포함 측정에서 맞는다 → forbidSeq 에서 뺐다"}
       ],
       "deferred": ["rn15 의 공간해상도가 정본에 없다 → 결합 조건이 0건이다"],
       "expectedCount": null
@@ -155,7 +155,7 @@
       "question": "시간해상도 1시간 이하, 공간해상도 5 km 이하 한반도 강수자료",
       "requiredEvidence": ["cadence", "nativeResolutionM", "region"],
       "probes": [
-        {"name": "강수 변수 + 15분 주기", "conditions": {"variable": "precipitation", "cadence": "15min"}, "expectSeq": [2, 4], "forbidSeq": [5, 6]},
+        {"name": "강수 변수 + 15분 주기", "conditions": {"variable": "precipitation", "cadence": "15min"}, "expectSeq": [2], "forbidSeq": [5, 6], "decisionNote": "2026-09-26 Ted 「전부 권고대로」 질문 2 — seq 4(rn15_sample) 주기는 계보 초안이라 reviewed 만으로는 unknown 이다 → 기대에서 뺐다"},
         {"name": "매시 주기 자료", "conditions": {"cadence": "hourly"}, "expectSeq": [16], "forbidSeq": [2, 4]},
         {"name": "5분 주기 자료 — 1시간 이하", "conditions": {"cadence": "5min"}, "expectSeq": [1], "forbidSeq": [2, 4, 16]},
         {"name": "10분 주기 자료 — 1시간 이하", "conditions": {"cadence": "10min"}, "expectSeq": [17], "forbidSeq": [1, 2, 4, 16]},

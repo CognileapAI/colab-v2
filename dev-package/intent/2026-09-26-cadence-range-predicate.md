@@ -54,6 +54,7 @@
 | 17 | GK-2A LST 원자료 | 10min | 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」 | (a) | 충분 |
 
 - (b)·(c)·(d) 세 자료(seq 2 · 4 · 16)의 reviewed 값은 **그대로 둔다**(PR #174 과 같은 규칙 — reviewed 사실을 지우지 않는다). 범위 술어도 이 값을 읽는다. 대신 이 표와 PR 본문에 약한 근거로 드러내고 Ted 질문으로 올린다.
+  - ⭑ 판정 뒤(2026-09-26 「전부 권고대로」 · 아래 「판정 결과」): seq 2 · 16 은 reviewed 유지 + provenance 판정 주석 · seq 4 는 reviewed 에서 거두고 계보 초안으로 내림(승인된 제거 — `reviewedRemovals`).
 - 자르기·표본 자료의 주기 — 부모의 선언 주기를 **규칙으로 이어받지 않는다**.
   - hsr_sample(seq 3): 정본 문장에 주기가 없다(「형태는 (10, 128, 128)」). reviewed 에도 초안에도 주기가 없다 → 범위 술어에서 unknown(맞추지 않는다).
   - rn15_sample(seq 4): 정본 문장이 자기 주기를 말하지 않는다. 값은 규칙 ID 가 없는 판독표 사실(`provenance` 「정본전재」)로 reviewed 에 실려 있다 — 규칙으로 이어받은 값이 아니므로 초안 규칙이 아니고, 문장 근거도 없다. 질문 2 로 올린다.
@@ -74,7 +75,7 @@
 - 확인 방법: PC-1-4 · PC-2-4 의 「1시간 이하」 probe 가 경로 1 에서 green 이고, 경로 2 자연어 판이 같은 강수 자료를 파일 근거 후보로 올린다. 다른 probe·골든은 뒤집히지 않는다.
 
 ## 영향 범위
-- 사용자 / 화면: 경로 2 카드 근거에 「주기 범위(15분 — 1시간 이하 · 등록 설명의 선언값, 파일 시간축 실측 아님) 조건이 맞았어요」가 붙는다. 경로 1 조건 판정 패널(`frontend/src/components/search/SearchAssessment.tsx:34`)은 새 조건 키를 라벨 없이 키 이름 그대로 보인다(아래 범위 밖).
+- 사용자 / 화면: 경로 2 카드 근거에 「주기 범위(15분 — 1시간 이하 · 등록 설명의 선언값, 파일 시간축 실측 아님) 조건이 맞았어요」가 붙는다. 경로 1 조건 판정 패널(`frontend/src/components/search/SearchAssessment.tsx`)은 새 조건을 「주기 · 1시간 이하」로 보인다(판정 6 · 실제 브라우저 확인).
 - 서비스 · 스키마 · 계약:
   - `contracts/search/semantics.json` 에 `cadenceSeconds`(주기 → 명목 초) 추가 · 생성물 두 벌 재생성.
   - core-api 커널 `kernel/cadence_scope.py` 신설(순서 비교 · 문구 파싱 한 곳). 경로 1 `plan_query` · `_predicate` · `d3_client_search.candidates` 와 경로 2 `parse` · `assess` · `supported_facts` 가 이것을 읽는다.
@@ -107,17 +108,26 @@
 - ④ 측정: 일회용 DB · develop payload + 1회차 승격 · `measure_draft_contribution.py` · 다른 probe·골든 역전 0.
 - ⑤ 점수판: 두 intent(이 파일 · `2026-09-21-evidence-promotion.md`)의 숫자를 dev 실상태와 맞춘다.
 
-## 미해결 질문 (Ted 확인 필요 · 번호)
+## 미해결 질문 (Ted 확인 필요 · 번호) — 2026-09-26 전부 판정됨(아래 「판정 결과」)
 1. rn15 15분 누적강수(seq 2) — 정본 문장은 누적 기간 「15분 누적강수」만 말한다. 산출 간격도 15분으로 읽어도 되는가? (지금 reviewed `15min` · 범위 술어가 이 값을 읽는다)
 2. rn15_sample(seq 4) — 정본 문장이 자기 주기를 말하지 않는다(부모 이름 「rn15 15분 누적강수」뿐). reviewed `15min` 을 그대로 둘 것인가, 초안 규칙(부모 주기 이어받기)으로 내릴 것인가? 내리면 PC-1-4·2-4 의 15분 probe 기대가 [2, 4] → [2] 로 바뀐다.
 3. ERA5 변환 결과(seq 16) — 정본 문장은 「각 24시각이다」로 시각 수만 말한다. 산출 간격을 매시(`hourly`)로 읽어도 되는가?
 4. hsr_sample(seq 3) — 주기 사실이 없다. 부모 HSR 의 「5분」을 초안 규칙으로 이어받는 규칙을 둘 것인가? (지금은 범위 술어에서 unknown)
 5. 점수판 — PC-1-3 · PC-2-3 을 1회차 등급(full)으로 되돌린 재채점(아래 측정 결과 · 8 · 3 · 3 · 0)을 받을 것인가, 지역 probe 가 초안 대기인 동안 partial(6 · 5 · 3 · 0)로 둘 것인가?
 
+## 판정 결과 — 미해결 질문 1~5 · 패널 라벨(2026-09-26, Ted, 원문 그대로)
+> 전부 권고대로
+
+1. rn15(seq 2) 「15분 누적강수」 = 산출 간격 15분 — reviewed `15min` 유지. provenance 에 판정 주석을 단다(「판정 2026-09-26 Ted 「전부 권고대로」 — 누적 기간 15분을 산출 간격 15분으로 읽는다」).
+2. rn15_sample(seq 4) — reviewed `cadence` 를 거두고 계보 초안 `rule:cadence-from-lineage-parent`(부모 seq 2 · 15min)로 내린다. **Ted 가 승인한 의도적 제거**다 — PR #174 규칙대로 조용히 지우지 않고 대조 증명의 `reviewedRemovals` 절(`round-4-2026-09-26/reviewed-diff-vs-dev-41f488a4.json` · `-vs-73a523f0.json`)과 PR 본문에 이름 붙여 적는다. 15분·「1시간 이하」 probe 기대에서 seq 4 를 뺐다(`apply_cadence_decisions.py`).
+3. ERA5 변환 결과(seq 16) 「각 24시각」 = 매시 — reviewed `hourly` 유지 + provenance 판정 주석.
+4. hsr_sample(seq 3) — 계보 초안 `rule:cadence-from-lineage-parent` 5min(부모 HSR seq 1)을 싣는다(reviewed 아님 · 승격은 다음 승격 회차).
+5. 점수판 8 · 3 · 3 · 0 을 받는다.
+6. 경로 1 조건 패널은 새 조건을 사람 말로 보인다 — 「주기 · 1시간 이하」(초 → 분/시간). 구현 `SearchAssessment.tsx` · 단위 시험 `frontend/test/client-search.test.tsx` · 실제 브라우저 확인 `round-4-2026-09-26/browser/`(아래 측정 결과).
+
 ## 범위 밖 (명시 제외)
 - 주기 실측(파일 시간축 간격 측정) — 헤더 파서 부활과 함께 별도 과제.
 - 「이상」「미만」「초과」 하한·엄격 술어, 연구 조건(`SearchContext.research`)의 주기 상한 필드.
-- 경로 1 조건 판정 패널의 새 키 라벨(`SearchAssessment.tsx` `conditionLabels`) — UI 변경이라 브라우저 검증과 함께 따로 한다.
 - 파일 포맷 예제 주제(seq 15~28)의 경로 2 주제 연결 — 경로 2 는 강우·식생·가뭄 세 주제만 읽어서 ERA5(16) · GK-2A LST(17) 는 경로 2 「1시간 이하」에 닿지 않는다.
 - 지역 초안 규칙(`region-from-lineage-parent` 등)의 승격 — 다음 승격 회차.
 - dev 반영. 이 PR 은 dev 에 쓰지 않는다.
@@ -174,3 +184,16 @@
   - 이 두 건을 partial 로 둘지는 Ted 판정으로 되돌릴 수 있다(`regrade_oracle.py` 의 `BACK_TO_FULL` · pytest 집계 두 줄).
 - 이번 회차의 주기 범위 술어는 등급을 바꾸지 않는다. PC-1-4 · 2-4 는 이미 full 이었고, deferred 「「1시간 이하」 범위 술어」가 닫혔다.
 - dev 실상태 주의: 등급은 develop 생성물 + 1회차 승격(= 2회차 payload 가 dev 에 반영될 때의 모양) 기준이다. dev 에는 2회차 지역 reviewed(seq 1 · 2 · 19 · 20 남한)가 아직 없다(dev 반영 GO 대기). 그래서 지역을 쓰는 판정 probe 2건(PC-1-4#p7 「한반도 + 5분 주기」 · PC-2-4#p5 「한반도 + 1시간 이하」)은 지금 dev 에서는 0건이다. 두 probe 가 든 사례의 다른 probe 는 dev 에서도 선다. 승격 3규칙(platform · directObservation · seq 3 해상도)은 dev 에 이미 있다(`2026-09-21-evidence-promotion.md` dev 반영 표 — platform=ground 8건 · directObservation=true 20건 · 5 km 이하 6건).
+
+## 측정 결과 — 4회차 판정 반영 뒤(2026-09-26 · 「전부 권고대로」)
+- 생성물: `dev-package/tools/generated/dataset-evidence-payloads.json` `c12b50d9…` → `9d6c54e3…`(reviewed 127칸 · 초안 124칸 · `cadence-from-lineage-parent` 2). 측정 입력 `round-4-2026-09-26/input-payload.json` sha256 `a5f68030…`(생성물 + 1회차 승격 3규칙 · 같은 함수 · 옮긴 사실 53 · 남은 초안 71).
+- 대조 증명(`round-4-2026-09-26/reviewed_diff.py` — 승인 밖 제거가 있으면 판정 실패):
+
+| 대조 | 승인 밖 제거 | 승인된 제거(`reviewedRemovals`) | 추가 | 값 변경 |
+|---|---:|---|---:|---:|
+| dev 현재(`41f488a4…`) → 새 입력 | 0 | seq 4 rn15_sample `cadence` 15min → 초안(rule:cadence-from-lineage-parent · 부모 seq 2) | 5(2회차 지역) | 0 |
+| 2·3회차 입력(`73a523f0…`) → 새 입력 | 0 | 같음 | 0 | 0 |
+
+- 「1시간 이하」 probe(reviewed = 초안 포함 · `cadence-probe-states-decided.json`): 경로 1 5/5 · 경로 2 2/2 green. 바뀐 것 — 전 자료 hit 가 [1, 2, 4, 16, 17] → **[1, 2, 16, 17]**(seq 4 는 reviewed 에서 주기를 모른다) · 「강수 + 1시간 이하」 [2, 4] → [2] · 경로 2 PB-CADENCE-1 후보 [1, 2, 4] → [1, 2]. 15분 등호 probe 2건(PC-1-4 「15분 주기」 · PC-2-4 「강수 변수 + 15분 주기」) 기대 [2, 4] → [2].
+- 역전 0: 판정 전 측정(`measurement/`)과 green 집합이 초안 포함·제외 모두 같다(경로 1 38 · 34 · 골든 경로 2 9/10 · heldout 불변). 새 규칙 `cadence-from-lineage-parent` 경로 1 기여 1(PC-2-4#m1 한반도 강수 + 15분 · 초안 포함) · 역전 0.
+- 경로 1 조건 패널(판정 6) — 실제 브라우저(agent-browser) · 이 브랜치의 로컬 core-api + vite · 일회용 fixture DB · 해석은 HTTP 테스트 대역(모델 0): 「시간해상도 1시간 이하, 공간해상도 5 km 이하 한반도 강수자료」 → 패널 「주기 / 1시간 이하」, 「30분 이내, 공간해상도 5 km 이하 강수자료」 → 「주기 / 30분 이하」. 원래 키·초 값은 보이지 않는다. 스크린숏 `round-4-2026-09-26/browser/panel-1h.png` · `panel-30min.png`. fixture DB 에 주기 근거가 없어 비교 결과는 0건이다 — 이 확인은 패널 라벨에 한정한다. 경로 2 카드 문구는 단위 시험으로만 확인했다(브라우저 미확인).
