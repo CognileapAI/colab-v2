@@ -1,0 +1,26 @@
+덮인 선언 1자리와 미정의 토큰 참조 11건을 찾았다. 이 디렉터리의 `SOURCE.md` 에 기대값이 적혀 있었지만 그대로 옮기지 않고 스크립트로 따로 쟀다.
+
+**⑴ 덮인 선언**
+- 블록은 `.detail-page .lin-way`(27~35행) 하나다.
+- 29행의 `display: inline-flex` 를 33행의 `display: inline-block` 이 덮는다. 뒤 선언이 이기므로 29행이 무효다.
+- 이 외에 한 규칙 안에서 `display` 가 두 번 나오는 블록은 없다.
+
+**⑵ 미정의 토큰 참조: 11건**
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50`, `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200`, `--color-primary-800` |
+| 83 | `--color-accent-700`, `--color-accent-50` |
+| 84 | `--color-ai` |
+
+- 11건 모두 폴백이 없다. `lineageGraph.css` 안에서 스스로 정의한 토큰도 없다.
+- 토큰 가짓수는 7이다(accent-50·200·700, gray-300, primary-200·800, ai). `SOURCE.md` 는 「가짓수 8」이라고 적었는데 실제로는 7이다. 답으로 요구된 참조 건수 11은 일치한다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 지운 뒤, `tokens.css`·`detail.css` 의 `:root` 에서 정의 토큰을 모으고, `lineageGraph.css` 의 폴백 없는 `var(--x)` 를 행 단위로 대조해 세고, 가장 안쪽 `{…}` 블록마다 `display:` 가 나오는 횟수를 셌다(python 스크립트).

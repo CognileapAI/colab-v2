@@ -1,0 +1,11 @@
+`.detail-page .infogrid` 의 바깥 선과 칸 구분선이 같은 토큰 `--color-border` 를 쓴다. 두 선이 구분되지 않으므로 「보더는 두 층으로 갈린다」 요구를 위반한다.
+
+- **컨테이너 선**: `detail.css:59` 에서 `border: 1px solid var(--color-border)` 를 쓴다.
+- **칸 구분선**: `detail.css:62` 의 `.ig` 에서 `border-right` 와 `border-bottom` 이 둘 다 `var(--color-border)` 를 쓴다.
+- 1024px 이하 반응형 구간(`detail.css:69`)에서 다시 거는 구분선도 `--color-border` 다.
+- `catalog.css` 에는 `.infogrid` 를 덮어쓰는 규칙이 없어서 위 판정이 그대로 유지된다.
+- `tokens.css:20-23` 에는 `--color-border` 와 다른 값인 `--color-border-strong`(`#dfe3e8`)과 `--color-border-shell`(`#bfc6cc`)이 이미 있다. 따라서 둘 중 어느 선에 다른 토큰을 쓸지만 정하면 된다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

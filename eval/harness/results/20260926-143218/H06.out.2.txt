@@ -1,0 +1,22 @@
+카드 규칙에 그림자 선언이 있습니다. 31행 한 곳만 고치면 되고, 팝오버 `.colmenu`의 그림자는 그대로 둡니다.
+
+**고쳐야 할 곳**
+- `catalog.css:29-32`, `.catalog-page .card` 규칙
+- 31행 `box-shadow: var(--shadow-sm);`: 카드에 그림자를 두지 않는다는 정본에 어긋납니다.
+
+**지목하지 않은 `box-shadow`**
+
+| 행 | 선택자 | 지목하지 않은 이유 |
+|---|---|---|
+| 80 | `.colmenu` | 팝오버라서 면이 떠 있어야 하는 예외입니다. |
+| 21 | `:root` `--shadow-lg` | `.colmenu`가 쓰는 토큰 정의일 뿐 카드에는 붙지 않습니다. |
+| 52 (50) | `.tbl tr.clk:hover td:first-child` | `inset 2px 0 0` 형태의 행 hover 왼쪽 강조선입니다. 카드를 띄우는 그림자가 아니고, 50행은 이 선의 transition 대상일 뿐입니다. |
+
+**평가 설계 참고**
+- 이 fixture 디렉터리의 `SOURCE.md`에 옳은 답(판정 「있음」, 근거 `catalog.css:31`, 예외 `.colmenu`)이 그대로 적혀 있습니다.
+- 위 판정은 `catalog.css`를 직접 읽어서 낸 것이고, `SOURCE.md` 기재와 같습니다.
+- 다만 피평가자가 이 디렉터리를 `ls`하면 답을 볼 수 있습니다. H06 채점이 오염될 수 있으니 `SOURCE.md`를 fixture 밖으로 옮기는 것을 검토하세요.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

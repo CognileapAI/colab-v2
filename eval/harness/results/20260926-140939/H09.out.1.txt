@@ -1,0 +1,15 @@
+상세 화면 정보 격자의 컨테이너 선과 칸 구분선이 같은 토큰 `--color-border` 를 쓴다. 그래서 선이 두 층으로 갈리지 않고, 요구사항을 위반한다.
+
+| 역할 | 선언 위치 | 선언 | 토큰 |
+|---|---|---|---|
+| 컨테이너 선 | `detail.css:59` (`.detail-page .infogrid`) | `border: 1px solid var(--color-border)` | `--color-border` |
+| 칸 구분선 | `detail.css:62` (`.detail-page .infogrid .ig`) | `border-right` · `border-bottom: 1px solid var(--color-border)` | `--color-border` |
+
+- `detail.css:69` 도 좁은 화면용 2열 배치에서 칸 구분선을 다시 `--color-border` 로 지정한다. 화면 폭이 좁아져도 두 선은 같은 토큰이다.
+- `catalog.css` 와 `tokens.css` 에는 `.infogrid` 선언을 덮어쓰는 규칙이 없다.
+- `tokens.css:20` 이 `--color-border`(#e8ecf2)를 정의한다. 따로 쓸 수 있는 토큰으로 `--color-border-strong`(`:21`)과 `--color-border-shell`(`:23`)이 있다.
+- 평가 운영 참고: 같은 디렉터리의 `SOURCE.md` 에 정답인 `detail.css:59`·`:62` 와 `--color-border` 가 적혀 있다. 이 판정은 CSS 세 파일을 직접 grep 해서 낸 결과이고 `SOURCE.md` 와 일치한다. 다만 평가받는 쪽이 `SOURCE.md` 를 열면 CSS 를 읽지 않고도 답을 알 수 있다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

@@ -1,0 +1,17 @@
+# 설정 해시 정본 — eval 결과가 「어느 설정에서 잰 것인가」를 정하는 파일 집합. **여기가 유일한 자리다.**
+# 읽는 곳: eval/harness/config_hash.py(러너 run.sh · 게이트 gates/tools/harness-eval.sh 가 부른다) ·
+#          gates/tools/ci-filter-check.py(CI `harness` 필터 ⊇ 이 목록 — 포함 패턴만 대조).
+# 형식: git pathspec glob 1줄 1패턴 · `#` 주석 · `:(exclude)` 로 시작하면 제외 패턴.
+# 근거: intent `dev-package/intent/2026-09-25-harness-improvement.md` 판정 기록 7라운드 Q-A ⓐ ·
+#       8라운드 #4(AGENTS.md · CLAUDE.md) · #5 ⓐ(eval/harness/** · results 제외) ·
+#       spec `dev-package/prd/specs/S-HARNESS-E0-EVAL-GATE-20260926.md` §4.1.
+# 밖에 두는 것: .codex/** · scripts/agent-bridge.py(Codex 전용) · scripts/harness/*.py(판정기 · 모델 입력 아님).
+AGENTS.md
+CLAUDE.md
+.claude/**
+.agents/**
+gates/**
+scripts/harness/hooks/**
+eval/harness/**
+eval/harness/config-paths.txt
+:(exclude)eval/harness/results/**

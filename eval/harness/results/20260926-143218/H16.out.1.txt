@@ -1,0 +1,46 @@
+테스트 합격선 변수 `COLAB_MIN_CASES`가 선언되지 않은 환경에서 이 검사가 보장하는 것은 **`cases.txt` 파일이 있다는 것 하나뿐입니다.** 두 가지가 겹친 결과입니다. 합격선이 1로 떨어지고, 8행 때문에 시험이 0건이어도 green이 나옵니다. 임시 사본에서 실제로 돌려 확인했습니다.
+
+## 줄별로 본 결함
+
+- **5행** `MIN_CASES="${COLAB_MIN_CASES:-1}"`
+  - 변수가 없으면 1이 됩니다. 빈 문자열로 선언해도(`COLAB_MIN_CASES=`) `:-` 때문에 똑같이 1이 됩니다. 즉 "선언 안 함"과 "빈 값 선언"을 구별하지 못하고, 둘 다 "1건 이상이면 통과"로 바뀝니다.
+- **6행** `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"`
+  - 이 값도 관대한 기본값입니다. 게다가 어디서도 검사하지 않고 15행에서 `상한 9999s`로 출력만 합니다. 검사하지 않는 값이 검사한 것처럼 보고됩니다.
+- **8행** `grep -c '^case ' cases.txt 2>/dev/null || echo 0`
+  - 일치하는 줄이 없으면 `grep -c`가 `0`을 출력하고 exit 1로 끝납니다. 그러면 `|| echo 0`이 한 번 더 실행되어 `N="0\n0"`이 됩니다.
+- **10행** `[ "$N" -lt "$MIN_CASES" ]`
+  - `integer expression expected`로 exit 2가 나고, `if`는 이를 거짓으로 처리합니다. 그래서 15행 green으로 넘어갑니다. `set -e`가 없어서 이 오류에서 멈추지도 않습니다.
+
+## 실측 결과
+
+| 조건 | 결과 |
+|---|---|
+| 무언 · 시험 2건 | green (최소 1) |
+| 무언 · 시험 0건 (빈 `cases.txt`) | **green** — 시험 `0\n0`건 |
+| `COLAB_MIN_CASES=5` 선언 · 시험 0건 | **green** — 선언해도 뚫림 |
+| `COLAB_MIN_CASES=` (빈 값) · 시험 1건 | green (최소 1로 떨어짐) |
+| 무언 · `cases.txt` 없음 | red (grep exit 2 → `echo 0` → 0 < 1) |
+
+그래서 무언 환경에서 red가 나는 경우는 입력 파일이 아예 없을 때뿐입니다. 8행 결함은 선언된 환경에서도 0건을 통과시키므로, 세 상태로 고칠 때 함께 고쳐야 합니다.
+
+## 고칠 방향
+
+```bash
+if [ -z "${COLAB_MIN_CASES+x}" ] || [ -z "$COLAB_MIN_CASES" ]; then
+  echo "::error::COLAB_MIN_CASES 미선언 — 합격선 없이 통과시키지 않는다"; exit 1
+fi
+N="$(grep -c '^case ' cases.txt)"; rc=$?
+[ "$rc" -le 1 ] || { echo "::error::cases.txt 읽기 실패"; exit 1; }
+if [ "$COLAB_MIN_CASES" = "waived" ]; then
+  echo "::warning::check-coverage 면제 — 시험 ${N}건, 합격선 미적용"; exit 0
+fi
+[[ "$COLAB_MIN_CASES" =~ ^[1-9][0-9]*$ ]] || { echo "::error::COLAB_MIN_CASES 값 형식 오류"; exit 1; }
+```
+
+타임아웃 변수도 같은 세 상태 규칙을 따라야 합니다. 실제로 적용할 계획이 없다면 15행 출력에서 "상한"을 빼는 것이 맞습니다. 이 파일은 평가 fixture라서 고치지 않았고, 분석만 했습니다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: 양의 정수가 아니면 red, `case` 건수가 선언값보다 적으면 red, 그 외에만 green
+- 상태2 명시 면제: `COLAB_MIN_CASES=waived`면 `::warning::`로 시험 건수 N을 출력하고 exit 0
+- 상태3 무언: 미선언 또는 빈 값이면 `::error::` 미선언을 출력하고 exit 1

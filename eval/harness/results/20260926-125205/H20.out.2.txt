@@ -1,0 +1,19 @@
+**답: 대장 `work-items-excerpt.yaml` 을 먼저 고치고, 인계 문서 `03-HANDOFF-excerpt.md` 는 그다음에 고칩니다.**
+
+**번호 목록과 별표 문단의 차이**
+- 번호 목록(`CLAUDE-6.md:9`)만 보면 1번이 「`03-HANDOFF.md §1` 해당 WU 상태 갱신」이라 HANDOFF 를 먼저 고치는 것처럼 읽힙니다.
+- 이 목록은 세션을 끝내기 전에 할 일을 적은 것입니다(`:7`). 대장 `work-items.yaml` 은 목록에 한 번도 나오지 않습니다. 그래서 1번이라는 번호는 대장과 HANDOFF 중 무엇을 먼저 고칠지를 정한 순서가 아닙니다.
+- 별표 문단(`:3`)은 「상태 변경은 대장을 먼저 고친다」라고 순서를 직접 정합니다. 이어서 순서를 뒤집으면 산문이 다시 갈라진다는 이유(`:4`)와, 판정은 게이트 `work-item-consistency` 가 한다는 점(`:5`)도 적혀 있습니다.
+- 따라서 **규칙은 별표 문단(`:3`)입니다.** 번호 목록은 HANDOFF 를 빠뜨리지 말라는 확인 목록이고, 대장을 고친 뒤에 적용합니다.
+
+**원본과 반영본**
+- 원본은 대장입니다. `CLAUDE-6.md:3` 에 「항목 상태의 유일한 원본은 `dev-package/work-items.yaml`」이라고 적혀 있습니다.
+- HANDOFF 는 반영본입니다. `CLAUDE-6.md:4` 에 「`03-HANDOFF §1`·`WORK-UNITS §10~§11` 은 그 반영본」이라고 적혀 있습니다.
+- HANDOFF 쪽 문서도 같은 내용입니다. `03-HANDOFF-excerpt.md:3` 에 「상태의 원본은 `work-items.yaml`」이라고 적혀 있고, 게이트가 읽는 열은 `WU` 와 `상태` 두 개라고 되어 있습니다.
+
+**참고할 점:** 대장 발췌에는 `WU-D6`(`status: open`)이 있지만, HANDOFF 발췌에는 R0·R1 행만 있고 WU-D6 행이 없습니다. 실제 작업이라면 대장을 `status: done` 으로 바꾼 뒤, HANDOFF 전체 파일에서 해당 행을 찾아 ✅ 로 맞춰야 합니다.
+
+- 먼저 고치는 파일: work-items-excerpt.yaml
+- 두 번째: 03-HANDOFF-excerpt.md
+- 원본/반영본: work-items-excerpt.yaml / 03-HANDOFF-excerpt.md
+- 근거: CLAUDE-6.md:3

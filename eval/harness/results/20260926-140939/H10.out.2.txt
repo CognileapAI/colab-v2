@@ -1,0 +1,15 @@
+두 파일에서 음수 margin 선언은 2건입니다. 모든 `margin` 줄을 찾아 확인했고, 주석 속 하이픈 숫자(`BF-11`, `S-05`, `2026-09-03` 등)는 코드가 아니어서 뺐습니다.
+
+| 위치 | 선언 | 성격 |
+|---|---|---|
+| `detail.css:93` | `.detail-page .filelist { margin: -12px 0 var(--space-6); …` | 위쪽 음수 margin입니다. `.filelist` 를 앞 요소에 12px 끌어 붙이며, 정본이 말하는 ⑴ 모양 그대로입니다. |
+| `shell.css:58` | `.backlink { … margin-left: -7px; …` | 가로 음수 margin입니다. 자기 `padding-left: 7px`(57행)만큼 왼쪽으로 당겨 글자를 컨테이너 가장자리에 맞춥니다. 앞 요소에 붙이는 용도는 아니지만, 음수 값으로 여백을 상쇄하는 선언입니다. |
+
+제외한 것:
+- `shell.css:188 bottom: -11px`: 위치 지정 속성이고 margin이 아닙니다.
+- `letter-spacing` 의 음수 값(`detail.css:33`, `shell.css:115`): 여백이 아닙니다.
+- `calc(-…)`, 유니코드 마이너스(`−`), `translate` 로 된 음수 오프셋은 없습니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

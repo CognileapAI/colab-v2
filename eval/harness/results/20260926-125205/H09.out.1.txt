@@ -1,0 +1,15 @@
+상세 화면 정보 격자의 바깥 컨테이너 선과 안쪽 칸 구분선이 같은 토큰 `--color-border`를 쓰고 있어서, 두 층이 갈리지 않습니다.
+
+| 선 | 선언 위치 | 선언 | 토큰 |
+|---|---|---|---|
+| 컨테이너 선 | `detail.css:59` (`.detail-page .infogrid`) | `border: 1px solid var(--color-border)` | `--color-border` |
+| 칸 구분선 | `detail.css:62` (`.detail-page .infogrid .ig`) | `border-right` / `border-bottom: 1px solid var(--color-border)` | `--color-border` |
+
+- 두 선 모두 `#e8ecf2` 한 값으로 그려집니다. 이 값은 `tokens.css:20`에 정의돼 있습니다.
+- 좁은 화면용 규칙인 `detail.css:69`도 칸 구분선에 같은 `--color-border`를 씁니다.
+- 바깥 선에 쓸 수 있는 토큰으로 `--color-border-strong`(`tokens.css:21`)이 이미 있습니다. `catalog.css:79`는 컨테이너에 이 토큰을 씁니다.
+- 파일을 고치지 않고 판정만 했습니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

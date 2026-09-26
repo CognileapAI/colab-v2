@@ -1,0 +1,26 @@
+계측기는 주석 안의 값을 코드로 세지 않습니다. 계측기 값과 `sample.css`를 눈으로 센 값이 맞습니다.
+
+**계측기 출력**
+- `<13px` 칸: 1
+- `Detail`: `sample.css:4 font-size 11.0px` 한 줄뿐입니다.
+- `contrast <4.5` 칸: 0
+
+**표본을 눈으로 센 결과**
+
+| 줄 | 위치 | 값 | 13px 미만 여부 |
+|---|---|---|---|
+| 2 | 주석 | `font-size: 9px` | 미만. 계측기는 세지 않음 |
+| 4 | 코드 `.a` | `font-size: 11px` | 미만. 계측기가 셈 |
+| 6 | 주석 | `font-size: 10px` | 미만. 계측기는 세지 않음 |
+| 7 | 코드 `.b` | `font-size: 14px` | 미만 아님 |
+| 10 | 코드 `.c` | `font-size: 13px` | 미만 아님 (기준은 13px 이상) |
+
+- 코드에서 13px 미만은 4번 줄 하나이고, 계측기 값 1과 같습니다.
+- 색 값 가운데 대비가 AA(4.5:1)에 못 미치는 조합은 주석에만 있습니다. 2번 줄과 9번 줄의 `#848c94` on `#ffffff`로, 대비는 3.41:1입니다. 계측기는 이것도 세지 않아 `contrast <4.5`가 0입니다.
+- 코드에 있는 색 조합은 모두 4.5:1 이상입니다. 예를 들어 `.a`의 `#697077` on `#ffffff`는 직접 계산해 약 5.0:1이 나왔습니다.
+- 주석을 빼는 방식은 `css_audit.py:73-82`에 있습니다. `COMMENT_RE`가 `/* … */`를 찾고, `strip_comments()`가 줄바꿈만 남긴 채 주석을 지운 뒤 값을 셉니다. 그래서 줄 번호도 실제와 같게 나옵니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a1db59e6b1fb2d971/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "/home/ttlhi10/workspace/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/agent-a1db59e6b1fb2d971/eval/harness/H02-comment-false-positive/fixture"`
