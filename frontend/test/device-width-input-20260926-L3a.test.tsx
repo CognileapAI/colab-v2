@@ -559,12 +559,15 @@ describe('CSS — 새 부품 CSS(누르면 보이는 설명)', () => {
     const active = ruleOf(rs, '.touch-note-btn:active').flatMap((r) => decls(r.body));
     expect(active).toContain('background: var(--color-surface-pressed)');
   });
-  it('펼침 글 = 캡션 토큰 · 보조 글자 토큰 · 줄바꿈 · 접힘은 `hidden` 이 이긴다', () => {
+  it('펼침 글 = 캡션 토큰 · 보조 글자 토큰 · 줄바꿈 · 내용 폭(최대 16rem) · 접힘은 `hidden` 이 이긴다', () => {
     const rs = cssRules(FILE);
     const text = ruleOf(rs, '.touch-note-text').flatMap((r) => decls(r.body));
     expect(text).toContain('font-size: var(--text-caption)');
     expect(text).toContain('color: var(--color-text-muted)');
     expect(text).toContain('white-space: normal');
+    // 표 칸 안에서 글 폭이 한 글자로 눌리지 않게 — 글 폭 = 내용 폭(최대 16rem). 표는 가로로 밀린다(390 캡처 판독).
+    expect(text).toContain('width: max-content');
+    expect(text).toContain('max-width: 16rem');
     expect(ruleOf(rs, '.touch-note-text[hidden]').flatMap((r) => decls(r.body))).toContain('display: none');
   });
 });

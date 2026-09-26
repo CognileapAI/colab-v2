@@ -15,6 +15,8 @@ import { Link } from 'react-router-dom';
 import { Toast } from '../common/Toast';
 import { PRE_LINEAGE_ADDED } from '../common/toastCopy';
 import { displayLevel } from '../common/processingLevel';
+import { TouchNote } from '../common/TouchNote';
+import { useInputMode } from '../common/useInputMode';
 import type { LineageEdge, LineageGraph, LineageNode } from './graphTypes';
 import { LineageFixModal, type ParentCandidateSource } from './LineageFixModal';
 import { apiLineageEditSource, type LineageEditSource } from './lineageEditSource';
@@ -112,6 +114,7 @@ function NodeBody(props: { node: LineageNode }) {
 
 function GraphNode(props: { node: LineageNode }) {
   const n = props.node;
+  const mouse = useInputMode() === 'mouse';
   const cls = [
     'ln',
     n.kind === '이 데이터' ? 'is-self' : '',
@@ -134,6 +137,21 @@ function GraphNode(props: { node: LineageNode }) {
         <NodeBody node={n} />
         <span className="arw">›</span>
       </Link>
+    );
+  }
+  // ⭑ 휴대폰·패드 대응 20260926 L3a(V9 · 부록 C 7) — 터치에서 원천 · 묘비 노드는 **누르면 이유가 펼쳐지는 노드**다
+  //    (상자 모양 그대로 · 이동하지 않음). 마우스는 원래 상자와 `title` 그대로다.
+  const note = nodeTitle(n);
+  if (!mouse && note) {
+    return (
+      <TouchNote
+        as="node"
+        note={note}
+        className={cls}
+        attrs={{ 'data-testid': 'lin-node', 'data-kind': n.kind, 'data-dataset-id': n.datasetId ?? undefined }}
+      >
+        <NodeBody node={n} />
+      </TouchNote>
     );
   }
   return (
@@ -171,6 +189,7 @@ function OriginFlag(props: { origin: LineageEdge['origin'] }) {
 
 function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; derived: boolean; datasetId?: string; editSource?: LineageEditSource | undefined; onSaved?: (graph: LineageGraph) => void }) {
   const { edge, node, derived } = props;
+  const mouse = useInputMode() === 'mouse';
   const [editing, setEditing] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [method, setMethod] = useState(edge.method ?? '');
@@ -215,12 +234,14 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
               <span className="arw">›</span>
             </Link>
           ) : (
-            <span className="ln-name" title={node ? nodeTitle(node) : undefined}>
+            <span className="ln-name" title={mouse && node ? nodeTitle(node) : undefined}>
               {name}
             </span>
           )}
           <OriginFlag origin={edge.origin} />
         </div>
+        {/* 휴대폰·패드 대응 20260926 L3a(V9 · 부록 C 8) — 터치에서는 이유가 이름 줄 바로 아래에 보인다. */}
+        {!mouse && node && nodeTitle(node) ? <div className="ln-sub">{nodeTitle(node)}</div> : null}
         {/* 값이 없으면 **구분자도 없다** (검수 #23 — 빈 가공 방식 앞의 `·` 로 줄이 시작했다).
             빈 조각을 걷어낸 뒤 남은 것만 `·` 로 잇는다. */}
         <div className="ln-sub">
@@ -275,6 +296,7 @@ export function LineageSection(props: {
   const [saved, setSaved] = useState<LineageGraph | null>(null);
   const [fixing, setFixing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const mouse = useInputMode() === 'mouse';
   const g = saved?.datasetId === props.graph.datasetId ? saved : props.graph;
   const previousDatasetId = useRef(props.graph.datasetId);
   useEffect(() => { setSaved(null); }, [props.graph]);
@@ -425,12 +447,14 @@ export function LineageSection(props: {
                         {ways.map((e, m) => (
                           <span
                             key={`${e.parentDatasetId ?? '원천'}>${e.childDatasetId}#${m}`}
-                            className="lin-way"
+                            /* 휴대폰·패드 대응 20260926 L3a(V9 · 부록 C 9) — 터치에서는 말줄임 대신 줄바꿈으로
+                               전문이 보인다(`lin-way--wrap` · 새 문구 0). 마우스는 원래 말줄임과 `title` 그대로 */
+                            className={mouse ? 'lin-way' : 'lin-way lin-way--wrap'}
                             data-testid="lin-method"
                             data-origin={e.origin}
                             /* 상자 폭을 넘으면 …로 접힌다(`lineageGraph.css`). **전문은
                                여기 남는다** — 접혔다고 값이 사라지면 안 된다 (검수 #22) */
-                            title={e.method ?? undefined}
+                            title={mouse ? (e.method ?? undefined) : undefined}
                           >
                             {e.origin === 'ai' ? `✦ ${e.method}` : e.method}
                           </span>

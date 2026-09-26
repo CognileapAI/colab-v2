@@ -11,6 +11,7 @@ import '../auth/login.css';
 import { validNewPassword } from '../auth/passwordRules';
 import { useWorkProtection } from '../auth/useWorkProtection';
 import { useDialogFocus } from '../components/common/useDialogFocus';
+import { useInputMode } from '../components/common/useInputMode';
 
 type Row = Schemas['ServiceAccountSummaryV2'];
 type Options = Schemas['AccountOptions'];
@@ -112,6 +113,9 @@ function OperatorDialog(props: { row: Row; next: boolean; busy: boolean; onClose
 
 export function AccountAdminPage() {
   const account = useAccount();
+  // 휴대폰·패드 대응 20260926 L3a(V9 · 부록 C 10) — 터치에서는 잘린 칸을 줄바꿈으로 다 보이고 `title` 을 달지 않는다.
+  const mouse = useInputMode() === 'mouse';
+  const cellText = mouse ? 'account-cell-text' : 'account-cell-text account-cell-wrap';
   const operator = account?.canManageServiceAccounts === true;
   const [options, setOptions] = useState<Options>();
   const [message, setMessage] = useState<string | null>(null);
@@ -324,10 +328,10 @@ export function AccountAdminPage() {
                 const roleText = row.role === '교수' ? '교수 관리자' : row.role ?? '없음';
                 return (
                 <tr key={row.accountId}>
-                  <td className="account-cell-text" title={row.email}>{row.email}</td>
-                  <td className="account-cell-text" title={row.name}>{row.name}</td>
-                  <td className="account-cell-text" title={roleText}>{roleText}</td>
-                  <td className="account-cell-text" title={labText}>{labText}</td>
+                  <td className={cellText} title={mouse ? row.email : undefined}>{row.email}</td>
+                  <td className={cellText} title={mouse ? row.name : undefined}>{row.name}</td>
+                  <td className={cellText} title={mouse ? roleText : undefined}>{roleText}</td>
+                  <td className={cellText} title={mouse ? labText : undefined}>{labText}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
                   <td>{row.operator ? '시스템 관리자' : '아니요'}</td>
                   <td>{day(row.lastLoginAt)}</td>

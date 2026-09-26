@@ -11,9 +11,10 @@
 /* 누르는 순간 피드백 — 목록 행 누름(`.tbl tr.clk:active td`)과 같은 누름 면 토큰. */
 .touch-note-btn:active { background: var(--color-surface-pressed); }
 
-/* 펼침 글 — 캡션 토큰(13px) · 보조 글자 토큰. 같은 칸 안 라벨 바로 뒤(우려 10ⓐ) · 칸의 `nowrap` 을 풀고 폭을 묶는다. */
+/* 펼침 글 — 캡션 토큰(13px) · 보조 글자 토큰. 같은 칸 안 라벨 바로 뒤(우려 10ⓐ) · 칸의 `nowrap` 을 풀고 폭을 묶는다.
+   글 폭 = 내용 폭(최대 16rem) — 폭을 주지 않으면 표 칸이 글을 한 글자 폭으로 누른다(390 캡처 판독). 표는 가로로 밀린다. */
 .touch-note-text {
-  display: block; max-width: 16rem; margin-top: 4px;
+  display: block; width: max-content; max-width: 16rem; margin-top: 4px;
   font-size: var(--text-caption); font-weight: 400; line-height: 1.5;
   color: var(--color-text-muted); white-space: normal; overflow-wrap: anywhere; text-align: left;
 }

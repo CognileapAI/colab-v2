@@ -246,6 +246,11 @@
 /* ── P2a: 보정 층(P2a 에서 삭제)에서 옮긴 규칙 — 렌더 값 그대로 · 접두 제거 ── */
 .login-theme { position: absolute; top: 20px; right: 20px; }
 
+/* 휴대폰·패드 대응 20260926 (L3a · V9 · 부록 C 10) — 터치에서만 TSX 가 다는 표지 규칙이다(입력 방식 훅).
+   잘린 이메일 · 이름 · 역할 · 연구실 칸은 말줄임 대신 줄바꿈으로 전체 값을 보인다(`title` 없이 · 새 문구 0).
+   `.account-table td:not(.account-row-actions-cell)` 과 명시도가 같고 뒤에 있다. 파일 끝 터치 블록(L2b) 앞. */
+.account-table td.account-cell-wrap { white-space: normal; overflow-wrap: anywhere; }
+
 /* 휴대폰·패드 대응 20260926 (L2b · 부록 B 37 · 38) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
    입력 글자 16px 하한은 셸 CSS 한 곳(640px 이하 또는 터치 기기)이 맡는다. */
 @media (pointer: coarse) {
