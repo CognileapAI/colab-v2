@@ -1,0 +1,41 @@
+**답: 합격선 변수를 아무도 선언하지 않으면, 이 검사는 사실상 `cases.txt` 파일이 있다는 것만 보장합니다.** 시험 건수가 0건이어도 green이 나옵니다. 판정은 결함 있음입니다.
+
+**근거 (`check-coverage.sh`)**
+- **5행** `MIN_CASES="${COLAB_MIN_CASES:-1}"`: 변수가 선언되지 않았거나 빈 값이면 조용히 `1`로 떨어집니다. 선언하지 않았는데도 합격선이 있는 것처럼 동작하고, green 메시지에도 「최소 1」이 찍혀 누군가 1로 정한 것처럼 보입니다.
+- **6행** `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"`: 두 번째 관대한 기본값입니다. 15행에서 출력만 하고 실제로 적용하는 곳이 없습니다. 그래서 「상한 9999s」는 검사하지 않는 표시입니다.
+- **8·10행**: 기본값보다 더 넓게 뚫린 곳입니다.
+  - `cases.txt`에 `case` 줄이 0건이면 `grep -c`가 `0`을 출력하면서 종료코드 1을 냅니다.
+  - 그러면 `|| echo 0`이 한 번 더 실행돼 `N`이 `"0\n0"`이 됩니다.
+  - 10행의 `[ ... -lt ... ]`는 이 값을 정수로 읽지 못해 오류를 내고, if 조건이 거짓이 되어 15행 green으로 넘어갑니다.
+  - `set -e`가 없어서 이 오류에도 스크립트가 멈추지 않습니다.
+  - 이 결함은 합격선을 선언해도 그대로 남습니다.
+
+**실측 (고치지 않은 사본으로 실행)**
+
+| 조건 | 결과 |
+|---|---|
+| 변수 두 개 모두 미선언, 현재 2건 | `green — 시험 2건 (최소 1 · 상한 9999s)`, exit 0 |
+| `COLAB_MIN_CASES=5`, case 0건 | `integer expression expected` 뒤 `green — 시험 0\n0건 (최소 5 ...)`, exit 0 |
+| `COLAB_MIN_CASES=5`, `cases.txt` 없음 | `::error::시험 0 건 < 최소 5 건`, exit 1 |
+
+미선언 상태에서 red가 나오는 경우는 `cases.txt`가 없을 때뿐입니다.
+
+**고칠 방향 (5행을 이렇게 바꾸는 골자, 파일은 수정하지 않았습니다)**
+```bash
+case "${COLAB_MIN_CASES:-}" in
+  '')          echo "::error::COLAB_MIN_CASES 미선언 — 합격선 없이는 판정하지 않는다 (면제는 =exempt)"; exit 1 ;;
+  exempt)      MIN_CASES="" ;;
+  *[!0-9]*|0)  echo "::error::COLAB_MIN_CASES='$COLAB_MIN_CASES' 는 양의 정수·exempt 가 아니다"; exit 1 ;;
+  *)           MIN_CASES="$COLAB_MIN_CASES" ;;
+esac
+N="$(grep -c '^case ' cases.txt)"; [ $? -le 1 ] || { echo "::error::cases.txt 읽기 실패"; exit 1; }
+```
+- 8행의 `|| echo 0`은 없애고, grep 종료코드 2(파일 없음·읽기 실패)만 오류로 처리합니다.
+- 면제 표시로 `0` 대신 `exempt` 문자열을 쓰는 이유: grep으로 찾을 수 있고, 출력에 「면제」로 드러납니다.
+- 6행 timeout도 같은 세 상태로 다루거나, 적용하지 않을 거라면 15행 메시지에서 뺍니다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: COLAB_MIN_CASES가 양의 정수면 `^case ` 건수와 비교해 미달은 `::error::` 출력 후 exit 1, 충족은 green에 건수와 합격선을 출력한다
+- 상태2 명시 면제: COLAB_MIN_CASES=exempt면 비교를 건너뛰되 「면제 — 시험 N건」을 출력하고 exit 0으로 끝낸다
+- 상태3 무언: COLAB_MIN_CASES가 미선언이거나 빈 값이면 「합격선 미선언」을 `::error::`로 출력하고 exit 1로 끝낸다

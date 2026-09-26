@@ -1,0 +1,10 @@
+카드 규칙에 `box-shadow` 가 있습니다. 고칠 곳은 한 곳입니다.
+
+- **고칠 곳:** `catalog.css:31` 입니다. `.catalog-page .card` 규칙(29–32행) 안에 `box-shadow: var(--shadow-sm);` 가 있어 「카드에 그림자를 두지 않는다」에 어긋납니다. 카드는 이미 `border: 1px solid var(--color-border)` 로 테두리가 그어져 있습니다.
+- **예외라 그대로 둡니다:** `catalog.css:80` 입니다. `.colmenu` 규칙(77–82행)의 `box-shadow: var(--shadow-lg);` 는 팝오버가 떠 있게 보이도록 둔 그림자입니다.
+- **카드와 무관합니다:** `catalog.css:52` 입니다. `.tbl tr.clk:hover td:first-child` 의 `box-shadow: inset 2px 0 0 …` 는 표 행에 마우스를 올렸을 때 왼쪽에 그어지는 2px 강조선입니다. 그림자가 아니므로 이 규칙 적용 대상이 아닙니다.
+- 640px 이하 화면용 규칙(158–168행)에는 `box-shadow` 가 없습니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

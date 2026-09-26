@@ -1,0 +1,14 @@
+`.catalog-page .card` 규칙에 그림자 선언이 있습니다. 고쳐야 할 곳은 `catalog.css:31` 한 곳입니다.
+
+**고칠 곳**
+- `catalog.css:29-32` 카드 규칙의 31행에 `box-shadow: var(--shadow-sm);` 가 있습니다. 카드에 그림자를 두지 않는다는 정본에 어긋납니다.
+- `--shadow-sm` 은 이 파일에 정의되어 있지 않습니다. 공유 토큰(`shell/tokens.css`)에서 오는 값으로 보입니다. 그래서 31행 선언만 지우면 되고, 토큰 정의는 건드릴 필요가 없습니다.
+
+**그대로 둘 곳**
+- `catalog.css:80` `.colmenu` 의 `box-shadow: var(--shadow-lg);` 는 팝오버 예외입니다.
+- `catalog.css:21` `--shadow-lg` 토큰 정의는 위 `.colmenu` 가 쓰고 있으므로 남겨야 합니다.
+- `catalog.css:52` `.tbl tr.clk:hover td:first-child` 의 `box-shadow: inset 2px 0 0 …` 는 행에 마우스를 올렸을 때 왼쪽에 나타나는 2px 강조선입니다. 입체감을 주는 그림자가 아니고 카드 규칙도 아니어서 대상이 아닙니다. 50행의 `transition: … box-shadow` 도 이 강조선에 딸린 것입니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu
