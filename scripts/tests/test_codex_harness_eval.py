@@ -133,6 +133,21 @@ class EvidenceTests(ResponseTests):
                 with patch.object(runner.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, raw, b'')), patch.object(runner, 'runtime_model', return_value={'models':['test-model']}), patch.object(runner, 'judge_answer', return_value=subprocess.CompletedProcess([], code, b'', b'')):
                     self.assertEqual(runner.run_task(task, 1, 'codex', 1, Path(tmp))['status'], want)
 
+    def test_rate_mode_task_records_rate_and_unknown_mode_is_readiness(self):
+        # Same `mode` marker as eval/harness/run.sh (15라운드 판정 H18-rate · verifier #8).
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp)/'H01-example'
+            (task/'fixture').mkdir(parents=True)
+            (task/'task.md').write_text('inspect')
+            (task/'expect.sh').write_text('exit 1')
+            raw = self.raw(self.message('answer'), {'type':'turn.completed'}).encode()
+            for body, code, want in [('rate\n', 1, 'rate'), ('rate\n', 0, 'rate'), ('rate\n', 78, 'readiness-failure'),
+                                     ('ratio\n', 0, 'readiness-failure')]:
+                (task/'mode').write_text(body)
+                with patch.object(runner.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, raw, b'')), patch.object(runner, 'runtime_model', return_value={'models':['test-model']}), patch.object(runner, 'judge_answer', return_value=subprocess.CompletedProcess([], code, b'', b'')):
+                    with self.subTest(mode=body, judge=code):
+                        self.assertEqual(runner.run_task(task, 1, 'codex', 1, Path(tmp))['status'], want)
+
     def test_missing_completion_empty_or_invalid_output_is_readiness_failure(self):
         for raw in ('', '{}', '[]', 'null', '{"type":"item.completed","item":null}', 'not JSON', self.raw(self.message('result')),
                     self.raw(self.message(''), {'type': 'turn.completed'})):
@@ -188,6 +203,8 @@ class OverallExitTests(unittest.TestCase):
             (('green', 'readiness-failure'), 78),
             (('readiness-failure', 'readiness-failure'), 78),
             (('green', 'judgment-failure'), 1),
+            (('green', 'green', 'rate', 'rate'), 0),
+            (('rate', 'rate'), 0),
         ):
             with self.subTest(statuses=statuses):
                 self.assertEqual(self.run_statuses(statuses), want)
