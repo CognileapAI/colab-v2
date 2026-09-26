@@ -1,0 +1,266 @@
+{
+  "env": "dev",
+  "sha": "501ef4398f42",
+  "captured": "2026-09-26",
+  "account_role": "운영자(무소속)",
+  "queries": [
+    {
+      "query": "강우 예측 pred_sample.npy 파일의 바로 앞 입력 데이터셋",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 5,
+      "assertions": {
+        "sourceParenInCards": 0,
+        "topicLabelInTermFacts": 0,
+        "bannedWordsInCards": {
+          "확인한 파일 근거": 0,
+          "온톨로지 연결 근거": 0,
+          "온톨로지": 0,
+          "계보": 0,
+          "못했어요": 0
+        }
+      },
+      "cards": [
+        {
+          "name": "pred_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’, ‘예측’, ‘pred_sample.npy’가 이름·주제·요약·포맷·변수에 맞았어요"
+              ]
+            },
+            {
+              "kind": "evidence",
+              "items": [
+                "pred_sample.npy에서 파일 역할(예측 결과) 조건이 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’, ‘예측’, ‘pred_sample.npy’가 이름·주제·요약·포맷·변수에 맞았어요. pred_sample.npy에서 파일 역할(예측 결과) 조건이 맞았어요."
+        },
+        {
+          "name": "HSR 레이더 반사도 원자료",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "rn15 15분 누적강수",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "hsr_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            },
+            {
+              "kind": "linked",
+              "items": [
+                "‘pred_sample.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’가 이름·주제·요약에 맞았어요. ‘pred_sample.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요."
+        },
+        {
+          "name": "rn15_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            },
+            {
+              "kind": "linked",
+              "items": [
+                "‘pred_sample.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’가 이름·주제·요약에 맞았어요. ‘pred_sample.npy’ 파일이 속한 자료의 바로 앞 단계 자료예요."
+        }
+      ]
+    },
+    {
+      "query": "강수",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 5,
+      "assertions": {
+        "sourceParenInCards": 0,
+        "topicLabelInTermFacts": 0,
+        "bannedWordsInCards": {
+          "확인한 파일 근거": 0,
+          "온톨로지 연결 근거": 0,
+          "온톨로지": 0,
+          "계보": 0,
+          "못했어요": 0
+        }
+      },
+      "cards": [
+        {
+          "name": "HSR 레이더 반사도 원자료",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강수’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강수’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "rn15 15분 누적강수",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강수’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강수’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "hsr_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강수’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강수’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "rn15_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강수’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강수’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "pred_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강수’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강수’가 이름·주제·요약에 맞았어요."
+        }
+      ]
+    },
+    {
+      "query": "레이더 반사도로 강우를 예측한 모델 결과",
+      "status": 200,
+      "interpretation": "llm",
+      "degraded": false,
+      "topic": "강우·강수",
+      "scope": {
+        "operatorScope": true,
+        "labName": "전체 연구실",
+        "searchedCount": 28
+      },
+      "totalCount": 3,
+      "assertions": {
+        "sourceParenInCards": 0,
+        "topicLabelInTermFacts": 0,
+        "bannedWordsInCards": {
+          "확인한 파일 근거": 0,
+          "온톨로지 연결 근거": 0,
+          "온톨로지": 0,
+          "계보": 0,
+          "못했어요": 0
+        }
+      },
+      "cards": [
+        {
+          "name": "HSR 레이더 반사도 원자료",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘레이더’, ‘반사도’, ‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘레이더’, ‘반사도’, ‘강우’가 이름·주제·요약에 맞았어요."
+        },
+        {
+          "name": "pred_sample",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘레이더’, ‘반사도’, ‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            },
+            {
+              "kind": "evidence",
+              "items": [
+                "pred_sample.npy에서 파일 역할(예측 결과) 조건이 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘레이더’, ‘반사도’, ‘강우’가 이름·주제·요약에 맞았어요. pred_sample.npy에서 파일 역할(예측 결과) 조건이 맞았어요."
+        },
+        {
+          "name": "rn15 15분 누적강수",
+          "rationaleFacts": [
+            {
+              "kind": "term",
+              "items": [
+                "‘강우’가 이름·주제·요약에 맞았어요"
+              ]
+            }
+          ],
+          "rationale": "‘강우’가 이름·주제·요약에 맞았어요."
+        }
+      ]
+    }
+  ]
+}
