@@ -143,11 +143,14 @@ const HOVERS: [FileName, string, string, 'block'?][] = [
   ['login', '.login-submit:hover:not(:disabled)', '.login-submit:hover:not(:disabled) { background: var(--color-primary-700); }', 'block'],
 ];
 
-type Tap = { n: number; file: FileName; block: string[]; blind?: true; row?: true; text?: true; wide?: true };
+type Tap = { n: number; file: FileName; block: string[]; blind?: true; row?: true; text?: true; wide?: true; tall?: true };
 /** 부록 B 레인 L2b — 34 개(L2b-1 13 ＋ L2b-2 21). 캡처 사각 15–17 · 28 · 47–49. 13 은 행 높이로 잰다(우려 1ⓐ · 링크 모양 불변).
  *  `text` = 글자 링크 · 탭(inline-flex 누름 상자만 키움 · 글자 크기 불변).
  *  `wide` = 가로만 모자란 대상(31 · 42 · 부록 B 「이미 세로 44 라 가로만」) — 터치 블록은 최소 가로만 둔다(advisor ① L2b-2).
- *  42 의 규칙은 셸 CSS 가 아니라 업로드 CSS 터치 블록에 둔다(advisor ① L2b-2 · 셸 CSS 변경 0). */
+ *  42 의 규칙은 셸 CSS 가 아니라 업로드 CSS 터치 블록에 둔다(advisor ① L2b-2 · 셸 CSS 변경 0).
+ *  `tall` = 세로만 두는 대상(49 · 오케스트레이터 결정 49 ⓐ · Ted 번복 가능 · spec 미달 1 「49 가로 · 641+ 터치」).
+ *  기간 달력 7열 격자가 날짜 칸 가로를 정한다 — 최소 가로 44 는 641px 이상 터치에서 격자를 달력 틀 밖으로 밀어냈다
+ *  (L2b-2 보고 §8). 달력 터치 배치는 다음 intent(배치 정리). */
 const TAPS: Tap[] = [
   { n: 13, file: 'catalog', block: ['.tbl tr.clk'], row: true },
   { n: 14, file: 'catalog', block: ['.tbl .rowact .rab'] },
@@ -182,7 +185,7 @@ const TAPS: Tap[] = [
   { n: 44, file: 'variableTable', block: ['.vt-add'] },
   { n: 47, file: 'upload', block: ['.dr-nav button'], blind: true },
   { n: 48, file: 'upload', block: ['.dr-useg button'], blind: true },
-  { n: 49, file: 'upload', block: ['.dr-cal-d'], blind: true },
+  { n: 49, file: 'upload', block: ['.dr-cal-d'], blind: true, tall: true },
 ];
 
 /** 입력 글자 하한을 세는 선택자(V8 세는 범위) — `input` · `select` · `textarea` · `.inp` · `.sel`. */
@@ -209,6 +212,7 @@ describe('대상 개수(green-by-skip 방지 · spec 총합)', () => {
     ]);
     expect(TAPS.filter((t) => t.blind).map((t) => t.n)).toEqual([15, 16, 17, 28, 47, 48, 49]);
     expect(TAPS.filter((t) => t.wide).map((t) => t.n)).toEqual([31, 42]);
+    expect(TAPS.filter((t) => t.tall).map((t) => t.n)).toEqual([49]);
     const lane = TARGETS.targets.filter((t) => t.lane === 'L2b');
     expect(lane.length).toBe(34);
     expect(lane.map((t) => t.n).sort((a, b) => a - b)).toEqual(TAPS.map((t) => t.n).sort((a, b) => a - b));
@@ -319,8 +323,8 @@ describe('V7 · 터치 44(부록 B 레인 L2b 34 · 화면 CSS 끝 `(pointer: co
     }
   });
   for (const t of TAPS) {
-    const label = `${t.n}${t.blind ? '(캡처 사각 · CSS 규칙 존재 단언)' : ''}${t.row ? '(행 높이로 잼)' : ''}${t.wide ? '(가로만)' : ''}`;
-    const what = t.row ? '행 높이' : t.wide ? '최소 가로' : '최소 높이 · 최소 가로';
+    const label = `${t.n}${t.blind ? '(캡처 사각 · CSS 규칙 존재 단언)' : ''}${t.row ? '(행 높이로 잼)' : ''}${t.wide ? '(가로만)' : ''}${t.tall ? '(세로만 · 결정 49 ⓐ)' : ''}`;
+    const what = t.row ? '행 높이' : t.wide ? '최소 가로' : t.tall ? '최소 높이' : '최소 높이 · 최소 가로';
     it(`${label} \`${t.block.join(', ')}\` → ${what} = ${CONTROL}`, () => {
       for (const sel of t.block) {
         const d = coarseOf(t.file).filter((r) => r.selectors.includes(sel)).flatMap((r) => decls(r.body));
@@ -329,6 +333,8 @@ describe('V7 · 터치 44(부록 B 레인 L2b 34 · 화면 CSS 끝 `(pointer: co
           expect(d).toEqual([`height: ${CONTROL}`]);
         } else if (t.wide) {
           expect(d).toEqual([`min-width: ${CONTROL}`]);
+        } else if (t.tall) {
+          expect(d).toEqual([`min-height: ${CONTROL}`]);
         } else {
           expect(d).toContain(`min-height: ${CONTROL}`);
           expect(d).toContain(`min-width: ${CONTROL}`);

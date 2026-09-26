@@ -716,7 +716,9 @@ textarea.inp { resize: vertical; }
 /* 휴대폰·패드 대응 20260926 (L2b · 부록 B 39–42 · 47–49) — 터치 기기의 누름 칸 44. 마우스 화면은 그대로다.
    펼침 제목(40 · 41)은 글자 크기를 그대로 두고 누름 상자만 키운다. 42 확장보기 단추는 이미 세로 44 라 가로만 둔다
    (셸 CSS 는 바꾸지 않는다). 47–49 기간 달력은 캡처 장면이 없어 CSS 시험이 확인한다. 49 는 640px 규칙
-   (`height: 44px`)과 같은 선택자라 뒤 순서가 이긴다. 위 720px 블록들은 다음 intent 몫이라 그대로 둔다. */
+   (`height: 44px`)과 같은 선택자라 뒤 순서가 이긴다. 49 는 세로만 둔다 — 날짜 칸 가로는 7열 격자가 정하고,
+   최소 가로 44 는 641px 이상 터치에서 격자를 달력 틀 밖으로 밀어낸다(오케스트레이터 결정 49 ⓐ · 달력 터치
+   배치는 다음 intent). 위 720px 블록들은 다음 intent 몫이라 그대로 둔다. */
 @media (pointer: coarse) {
   .regsteps .rs-x { min-height: var(--control-height); min-width: var(--control-height); }
   .up-preview-options > summary { min-height: var(--control-height); min-width: var(--control-height); }
@@ -724,6 +726,6 @@ textarea.inp { resize: vertical; }
   .mapbar .btn-ghost { min-width: var(--control-height); }
   .dr-nav button { min-height: var(--control-height); min-width: var(--control-height); }
   .dr-useg button { min-height: var(--control-height); min-width: var(--control-height); }
-  .dr-cal-d { min-height: var(--control-height); min-width: var(--control-height); }
+  .dr-cal-d { min-height: var(--control-height); }
 }
 }
