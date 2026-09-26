@@ -4,7 +4,8 @@
 - intent: `dev-package/intent/2026-09-26-device-width-input-rules.md`
 - 브랜치: `claude/dwi-l0b` · 기준 `15b9226c`(통합 브랜치 `claude/device-width-input-impl` 머리) · 구현 커밋 `b1c77494`
 - task: `9e58483b99a840e3aab59b42ba9227c9` (게이트 `frontend-typecheck` · `frontend-test` · `frontend-fixture-reach` · 범위 `frontend/scripts/visual-baseline/**` · `frontend/audit-design.tsx` · `frontend/audit-map.png` · 픽스처 2 · L0a/L0b 시험)
-- 판정: **L0b 미완 — 새 장면 두 번 찍기가 차이 3장(137px × 3)으로 78 에서 멈춤(§4).** 도구 · 판정 · 대상 목록 · 장면 연결 · 시험 · 게이트는 끝남. 원인은 제품 화면의 경과 시간 글자(`dt-preview-total`)이고, 고치는 방법은 spec 에 없어 판정이 필요하다(§4-1).
+- 판정(처음 레인): **L0b 미완 — 새 장면 두 번 찍기가 차이 3장(137px × 3)으로 78 에서 멈춤(§4).** 도구 · 판정 · 대상 목록 · 장면 연결 · 시험 · 게이트는 끝남. 원인은 제품 화면의 경과 시간 글자(`dt-preview-total`)이고, 고치는 방법은 spec 에 없어 판정이 필요하다(§4-1).
+- 판정(마무리 레인 · §8): **L0b 완료 — 오케스트레이터 결정 ⓐ(장면 가림) 적용 뒤 새 장면 36장 두 번 찍기 차이 0.** 브랜치 `claude/dwi-l0b-finish` · 구현 커밋 `da06c2cd`.
 
 ## 1. 바뀐 것
 
@@ -103,3 +104,59 @@
   - `DatasetPreviewSection` 의 경과 시간 글자는 캡처 결정성을 깬다 — 어느 게이트에도 걸리지 않는다(§4-1 판정 대상).
   - agent-browser 0.27.0 의 「daemon already running」 경고는 L0a 보고와 같다(동작 영향 없음).
 - 캡처 폴더(추적 제외 · `frontend/.visual/`): `dwi0926-det-c` · `dwi0926-det-d` · `dwi0926-det-cd-diff` · `dwi0926-l0b-links` · `dwi0926-l0b-links-1024` · `dwi0926-l0b-clickscenes` · `dwi0926-l0b-smoke`. agent-browser 세션은 도구가 만든 이름(`vb-…`) · 시험용 `l0b-abtest` · `l0b-probe` 만 쓰고 그것만 닫았다.
+
+## 8. 마무리 레인 — 장면 가림(mask) · 두 번 찍기 0
+
+- 브랜치: `claude/dwi-l0b-finish` · 기준 `7e8f9465`(`claude/dwi-l0b` 머리) · 구현 커밋 `da06c2cd`
+- task: `6b06da4bc188489ea5699e8684297cb9`(게이트 `frontend-typecheck` · `frontend-test` · `frontend-fixture-reach` · 범위 `frontend/scripts/visual-baseline/**` · L0b 시험 · 이 보고 폴더)
+- §4 · §7 의 「미완」은 이 절로 닫는다(§1–§7 본문은 처음 레인 기록 그대로 둔다).
+
+### 8-1. 결정(오케스트레이터 · spec 빈칸)
+
+- **오케스트레이터 결정** — spec 빈칸 「실행마다 바뀌는 경과 시간 글자는 캡처에서 자리를 유지한 채 가린다」. §4-1 ⓐ 를 그대로 적용: 상세 지도 두 장면(`detail-preview-map` · `detail-preview-map-value`)에서만 `[data-testid=dt-preview-total]` 을 캡처 때 `visibility: hidden` 으로 가린다. 다른 장면은 건드리지 않는다. 제품 코드 변경 0.
+- 방식: 장면 목록의 선언 키 `mask`(선택자 목록 · 없으면 가림 0)를 캡처 도구가 읽는다. 멈춤 CSS 와 같은 자리(글꼴 준비 뒤 · 동작 전)에 선택자마다 `visibility: hidden !important` 규칙 하나를 담은 `style[data-visual-baseline=mask]` 를 넣는다(나중에 그려지는 글자에도 적용). 정착 · 상태 확인 · 전제조건 뒤, 수치 · 스크린샷 전에 선택자마다 맞는 요소 수와 계산된 `visibility: hidden` 수를 확인한다.
+- 정의한 동작: 선언 키 형식 오류(빈 목록 · 빈 문자열 · 문자열 아님 · 중복) = 목록 오류 78 · 선택자에 맞는 요소 0 = 78(이름이 바뀐 test id 가 조용히 가림을 끄지 못하게) · 잘못된 선택자 = 78 · 맞는 요소 중 가려지지 않은 것 있음 = 78. 색인 행에 `mask` 를 적는다(선언 장면만).
+- 가림 대상은 부록 B 대상이 아니다(52 대상 선택자와 겹치지 않음).
+
+### 8-2. 시험 RED → GREEN
+
+- 추가 9사례(⑸) — 선언 장면 = 두 장면뿐 · 선택자 하나 · 제품 글자 존재 · `scene_mask` 형식 · 주입 스크립트(선택자마다 규칙 · display 없음 · 표식) · 확인 스크립트(맞는 수 · 가려진 수 · 잘못된 선택자 error) · `check_mask`(통과 · 0 · 일부 · error · 응답 없음 = 78) · 순서(글꼴 → 멈춤 → 가림 주입 → 동작 → 상태 → 가림 확인 → 수치 · 행 `mask`) · 가림 0 이면 수치 전에 78 · `mask` 없는 장면은 주입 · 확인 0 · 행 키 없음.
+- RED(시험만 · 구현 0): `Tests  7 failed | 55 passed (62)` — 예: `expected [] to deeply equal [ 'detail-preview-map', …(1) ]` · capture.py 불러오기 Traceback(`scene_mask` · `mask_inject_script` · `mask_check_script` · `check_mask` 없음 · 종료 1) · `page state True does not match viewport 390`(가림 주입이 없어 응답이 한 칸씩 밀림). 처음부터 통과한 새 사례 2개는 제품 글자 존재 · `mask` 없는 장면(회귀 감시).
+- GREEN: `Tests  62 passed (62)`(L0b). L0a · 업로드 잠금(`design-fix-followups-20260925-L2`) · `visual-diff` 와 함께 `113 passed (113)`. 단언 삭제 0.
+
+### 8-3. 새 장면 두 번 찍기(`dwi0926-det-c` 대 `dwi0926-det-d`) — 종료 0
+
+| 실행 | 결과 |
+|---|---|
+| `capture.py --label dwi0926-det-c --only <새 3> --metrics`(audit 빌드 포함) | 종료 0 · 36장 · `gitHead da06c2cd` · `gitDirty false` · 203초 |
+| `capture.py --label dwi0926-det-d --only <새 3> --metrics --skip-build` | 종료 0 · 36장 · 같은 HEAD · 깨끗함 · 194초 |
+| `diff.mjs det-c det-d` | **종료 0 · 36장 · red 0 · 엄격 픽셀 0** |
+
+- 가림 행: 두 실행 모두 24장(상세 지도 두 장면 × 12)에 `mask` · `upload-preview-expand` 12장은 가림 없음. 가림 확인이 24장 모두 통과(맞는 요소 ≥ 1 · 모두 가려짐 — 아니면 78 로 멈춘다).
+- 수치 파일 36개도 두 실행 사이 바이트 동일(차이 0).
+
+### 8-4. 가림이 수치를 바꾸지 않음 — 확인
+
+- `detail-preview-map` · 390 · 라이트, `--metrics-only` 두 번: 가림 있음(`dwi0926-mask-eq-on`) · 작업 사본에서만 `mask` 키를 뺀 목록(`dwi0926-mask-eq-off` · 실행 뒤 원본 복원 · 커밋 없음).
+- 결과: 두 수치 파일 **바이트 동일**(14,796 B) · `det-c` 의 같은 캡처 수치 파일과도 동일. 44 대상 52 · 16 미만 0 · 넘침 루트 2 · 지도 칸 폭 332 · 네 도구 100 · 확대 묶음 20.5 · 범례 87.
+
+### 8-5. 기존 장면 영향 없음
+
+- 장면 목록 38개 중 `mask` 선언 = `detail-preview-map` · `detail-preview-map-value` 둘뿐(시험 ⑸ 첫 사례가 잠금). `mask` 없는 장면은 주입 · 확인 호출 0(시험 ⑸ 마지막 사례).
+- `catalog` 12장: 가림 전 도구(`7e8f9465` 의 `capture.py` 를 같은 폴더 임시 파일로 꺼내 실행 · 뒤에 삭제) `dwi0926-cat-before` 대 새 도구 `dwi0926-cat-after` → **종료 0 · 12장 · red 0 · 엄격 픽셀 0**. 새 도구 색인 행 `mask` 0.
+
+### 8-6. 게이트(task 실행 · 호스트 단독)
+
+| 게이트 | 결과 |
+|---|---|
+| `frontend-typecheck` | green — `tsc --noEmit` 오류 0 |
+| `frontend-test` | green — 147파일 1972건 통과 · 실패 0(처음 레인 1963 ＋ ⑸ 9) |
+| `frontend-fixture-reach` | green — 도달 209 · 금지 모듈 0 |
+| 계 | green 3 / red(판정) 0 / red(준비) 0 |
+
+- 명령: `COLAB_TEST_ENV_FILE=… COLAB_TASK_ID=6b06da4bc188489ea5699e8684297cb9 bash gates/run.sh task`. 이 보고서 커밋 뒤 같은 명령으로 한 번 더 돌려 인계한다(gate-summary 경로는 인계 메시지).
+
+### 8-7. 이탈 · 남은 것
+
+- 이탈 0. 추가 캡처 폴더(추적 제외 · `frontend/.visual/`): `dwi0926-det-c` · `dwi0926-det-d` · `dwi0926-det-cd-diff` · `dwi0926-mask-eq-on` · `dwi0926-mask-eq-off` · `dwi0926-cat-before` · `dwi0926-cat-after` · `dwi0926-cat-diff`. agent-browser 세션은 도구가 만든 이름(`vb-…`)만 쓰고 도구가 닫았다.
+- 후속: 경과 시간 글자 자체는 제품에서 실행마다 바뀐다 — 캡처만 가렸다. 다른 장면이 이 글자를 그리게 되면 그 장면에도 `mask` 선언이 필요하다(선언 없이 차이가 나면 두 번 찍기가 드러낸다).
