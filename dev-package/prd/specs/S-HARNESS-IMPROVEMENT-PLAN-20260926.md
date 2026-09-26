@@ -190,6 +190,7 @@
 - 공통: 여러 PR 이 같은 파일(`lifecycle_contract.py` · `test-file-guard.sh` · `ci.yml` · `AGENTS.md`)을 순차 편집 → 각 lane 은 앞 PR 병합 뒤 develop 기준 `--expect-head` 로 시작 · 게이트 lane 은 호스트에 하나(postgres 슬롯 4 · `_lock.sh` host mutex).
 
 ## 6. 미해결(Ted 판정 · 프로브 필요 · 담당)
+- **8라운드 판정(2026-09-26 · Ted 원문 「권고대로」): 아래 1–12 전부 권고안 = 결정.** 실측 항목(6 · 8 · 9 · 10 일부)은 실행 결과를 intent 「확인」 절에 적고, 10 의 S-auth 는 별도 intent 로 발행한다. E0 spec 4.1 정본에 `eval/harness/**`(results 제외)를 넣었다(#3 · #5).
 1. E0 회차 비용 · 범위: 해시 집합은 Q-A ⓐ 확정(재질문 없음). 회차 = E0 · S-red · PR 2 · PR 3 · PR 4 각 1회(5회 ≈160 USD · Ted 「≈64 USD · PR 2 전 1회 + PR 4 뒤 1회」 초과) + S-dep 의 `.agents/ci-producers.json` 편집 = 회차 1회 또는 `harness.yaml eval.hash_exclude: [.agents/ci-producers.json]`(명시 목록 · harness-contract 가 목록 존재를 노출) — 5~6회 승인인지 · hash_exclude 허용인지 Ted.
 2. S-red 순서 대안(문서 간 충돌 · 미해결): gate-1 master 검증자 = S-red 를 E0 보다 먼저 병합(EXEMPT 모드 창 · 회차 불요 · E0 head 회차가 S-red 를 덮음 · 1회 ≈32 USD 절감) vs 7라운드 확정 E0 → S-red(E0·S-red 검증자 확인 · S-red 회차 1회). 이 문서와 두 spec 은 E0 → S-red 기준 · 권고 = 확정 순서 유지(S-red 가 편집 시점 차단을 E0 게이트 아래에서 검증) — 변경 여부 Ted.
 3. `eval/harness/**`(results 제외)의 해시 포함 여부(문서 간 충돌 · 미해결): master 검증자 ⓐ 포함(해시 = 필터 집합 · expect.sh/러너 수정으로 만든 green 도 재실측 강제) vs E0 spec 4.1 ⓑ 제외(측정 도구 · 자기 참조 · 필터에만) — 권고 ⓐ(엄격 · 정본 1집합) · 7라운드 목록에 없는 추가이므로 Ted 판정(E0 spec 우려 #5).

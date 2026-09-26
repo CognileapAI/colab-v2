@@ -133,10 +133,10 @@
 ## 우려 항목
 | # | 항목 | ⓐ | ⓑ | 권고 | 판정 |
 |---|---|---|---|---|---|
-| 1 | 잠금 대상 신원 | checkout 결속(`file_path` 가 속한 checkout · agent_id·env·cwd 무관) | subagent(`agent_id` 있는 payload)만 | ⓐ — Codex 페이로드에 `agent_type` 없음(`:257-260`) · 부모가 lane checkout 의 red 시험을 고치는 것도 막아야 함(⑩-j 가 증명) | 〈판정 대기〉 |
-| 2 | 버려진 fix task 출구 | PR 2 `handoff --mode blocked` 까지 worktree 제거만 | S-red 에 `release-red` 명령 | ⓐ — release 는 에이전트도 부를 수 있어 우회(PR 2 2-9 ⑽ git-guard 규칙 전) | 〈판정 대기〉 |
-| 3 | RED 조건 | rc == 1 만 | rc ≠ 0 전부 | ⓐ — 수집 오류·인터프리터 부재를 RED 로 기록하지 않는다 | 〈판정 대기〉 |
-| 4 | 순서 · 회차(문서 간 충돌 · 정본 질문은 E0 spec 우려 #6 · 총괄 §6 Q2) | E0 → S-red(확정 · S-red head 회차 1회) | S-red → E0(EXEMPT 창 · 회차 불요) | ⓐ — 이 문서는 ⓐ 기준으로 작성 | 〈판정 대기〉 |
+| 1 | 잠금 대상 신원 | checkout 결속(`file_path` 가 속한 checkout · agent_id·env·cwd 무관) | subagent(`agent_id` 있는 payload)만 | ⓐ — Codex 페이로드에 `agent_type` 없음(`:257-260`) · 부모가 lane checkout 의 red 시험을 고치는 것도 막아야 함(⑩-j 가 증명) | 확정(8라운드 · Ted 「권고대로」 · 권고 = 결정) |
+| 2 | 버려진 fix task 출구 | PR 2 `handoff --mode blocked` 까지 worktree 제거만 | S-red 에 `release-red` 명령 | ⓐ — release 는 에이전트도 부를 수 있어 우회(PR 2 2-9 ⑽ git-guard 규칙 전) | 확정(8라운드 · Ted 「권고대로」 · 권고 = 결정) |
+| 3 | RED 조건 | rc == 1 만 | rc ≠ 0 전부 | ⓐ — 수집 오류·인터프리터 부재를 RED 로 기록하지 않는다 | 확정(8라운드 · Ted 「권고대로」 · 권고 = 결정) |
+| 4 | 순서 · 회차(문서 간 충돌 · 정본 질문은 E0 spec 우려 #6 · 총괄 §6 Q2) | E0 → S-red(확정 · S-red head 회차 1회) | S-red → E0(EXEMPT 창 · 회차 불요) | ⓐ — 이 문서는 ⓐ 기준으로 작성 | 확정(8라운드 · Ted 「권고대로」 · 권고 = 결정) |
 
 ## 범위 밖
 - 2-8 ⓐ/ⓑ/ⓒ/ⓓ 역할·scope 분기 · `COLAB_AGENT_TYPE` env · L1 「닫힘」·prune · `handoff --mode blocked` · Bash 쓰기 차단 · git-guard 규칙(`lifecycle` 하위 명령 서브에이전트 차단 = PR 2 2-9 ⑽) · 시험 확장 허용 규칙 · Codex Windows 중계 env 목록(`:277-279`) 변경 없음 · `.agents/ci-producers.json` · `harness.yaml` diff 0.
