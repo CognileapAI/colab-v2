@@ -1,0 +1,12 @@
+`lineage.css`의 `.lin-picker` 계열에는 흐리게 만드는 선언이 없습니다. 따라서 목업 검수의 2.33:1 지적은 이 파일에는 해당하지 않습니다.
+
+- **후보 목록 규칙은 두 개입니다.**
+  - `.lin-picker`(`lineage.css:105`)는 `border-top`과 `padding-top`만 선언합니다.
+  - `.lin-picker ul`(`lineage.css:109`)은 목록 모양과 배치(`list-style`·`margin`·`padding`·`display`·`flex-direction`·`gap`·`align-items`)만 선언합니다.
+- **흐림 선언은 0건입니다.** 파일 전체 138행에서 `opacity|filter|blur|disabled|lin-picker`를 검색하면 걸리는 줄은 105행과 109행(선택자 줄)뿐입니다. 두 규칙에는 `color`나 `background` 선언도 없습니다.
+- **판정 범위는 이 파일 하나입니다.** 파일 첫 줄 주석에 "`upload.css`의 토큰·버튼을 그대로 쓴다"고 적혀 있습니다. 후보 행이 버튼이라면 비활성 상태의 색은 이 디렉터리에 없는 `upload.css`나 전역 스타일에서 올 수 있지만, 확인하지 않았습니다.
+- 같은 디렉터리의 `SOURCE.md`에 이 문항의 정답이 적혀 있어 읽었습니다. 판정은 위 `grep` 결과만으로 내렸습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nE 'opacity|filter|blur|disabled|lin-picker' lineage.css` → 105행·109행 선택자 두 줄만 걸리고, 흐림 선언은 없다

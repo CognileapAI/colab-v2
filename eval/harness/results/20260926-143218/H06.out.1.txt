@@ -1,0 +1,21 @@
+`.catalog-page .card` 규칙에 카드 그림자가 있어서 정본에 어긋납니다. 고칠 곳은 이 한 줄입니다.
+
+```css
+29 .catalog-page .card {
+30   background: var(--color-surface); border: 1px solid var(--color-border);
+31   border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+32 }
+```
+
+- **고칠 곳:** `catalog.css:31`의 `box-shadow: var(--shadow-sm);`입니다. 같은 줄의 `border-radius`와 `overflow`는 그대로 둡니다.
+- **`--shadow-sm` 정의:** 이 파일에는 없습니다. 공유 파일(`shell/tokens.css`)에서 오는 토큰입니다. 이 줄의 선언만 지우면 되고, 토큰은 건드리지 않아도 됩니다.
+- **`@media (max-width: 640px)`:** 카드 규칙을 다시 정의하지 않습니다. 모바일 쪽에는 고칠 곳이 없습니다.
+
+지목하지 않은 `box-shadow`:
+
+- **`.colmenu` (80행)의 `box-shadow: var(--shadow-lg)`:** 열 메뉴 팝오버라서 예외로 남깁니다. 이 값이 쓰는 `--shadow-lg`(21행)도 그대로 둡니다.
+- **`.tbl tr.clk:hover td:first-child` (52행)의 `box-shadow: inset 2px 0 0 …`:** 행에 마우스를 올렸을 때 왼쪽에 2px 선을 긋는 표시입니다. 면을 띄우는 그림자가 아니고 카드도 아닙니다. 50행의 `transition: … box-shadow`는 이 선에 딸린 전환 효과입니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

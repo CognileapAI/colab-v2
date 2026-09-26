@@ -1,0 +1,30 @@
+두 가지 모두 찾았습니다. SOURCE.md 에 적힌 기대값을 옮기지 않고 직접 재서 확인했습니다.
+
+**⑴ 덮인 선언**
+- `.detail-page .lin-way` 규칙(`lineageGraph.css:28`~`:35`) 안에서 `display` 가 두 번 나옵니다.
+- `:29` 는 `display: inline-flex`, `:33` 은 `display: inline-block` 입니다.
+- 뒤에 온 `:33` 이 이기므로 `:29` 는 효력이 없습니다. 그 결과 `:29` 에 함께 적힌 `align-items: center` 도 작동하지 않습니다.
+
+**⑵ 미정의 토큰 참조**
+- 두 `:root` 에서 정의된 토큰을 주석을 빼고 모았더니 45종이었습니다. 두 파일 모두 `:root` 밖에서 정의한 토큰은 없습니다.
+- `lineageGraph.css` 에서 이 45종에 없고 폴백도 없는 `var()` 참조는 다음과 같습니다.
+
+| 행 | 토큰 |
+|---|---|
+| :30 | `--color-accent-50`, `--color-accent-200` |
+| :31 | `--color-accent-700` |
+| :48 | `--color-gray-300` |
+| :49 | `--color-gray-300` |
+| :51 | `--color-primary-800` |
+| :57 | `--color-primary-200`, `--color-primary-800` |
+| :83 | `--color-accent-700`, `--color-accent-50` |
+| :84 | `--color-ai` |
+
+- 참조는 11건입니다. 서로 다른 토큰은 7종입니다.
+- 이 7종을 `tokens.css`·`detail.css` 전체에서 grep 해 보니 한 줄도 나오지 않았습니다(exit=1). 주석 안에서도 정의되지 않았다는 뜻입니다.
+
+**SOURCE.md 와 다른 점:** SOURCE.md 는 토큰이 8종이라고 적었지만, 같은 문서가 행별로 나열한 토큰도 7종뿐입니다. 참조 건수 11은 일치하므로 답은 그대로이고, 틀린 것은 SOURCE.md 의 종 수 한 곳입니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 를 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 공백으로 지워 행 번호를 보존한 뒤, 두 `:root` 블록의 `--x:` 정의 집합과 `lineageGraph.css` 의 폴백 없는 `var(--x)` 를 행 단위로 대조하고, 규칙 본문 `{…}` 마다 `display:` 가 나온 횟수를 셌다(파이썬 스크립트 + grep 으로 교차 확인)

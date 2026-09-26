@@ -1,0 +1,17 @@
+v2의 `lineage.css`에는 이 지적이 해당하지 않습니다. 후보 목록 규칙에 행을 흐리게 만드는 선언이 없습니다.
+
+**후보 목록 규칙(`.lin-picker` 계열)**
+- 두 규칙뿐입니다: `lineage.css:105-108`의 `.lin-picker`, `lineage.css:109-117`의 `.lin-picker ul`.
+- 선언은 `border-top`·`padding-top`·`list-style`·`margin`·`padding`·`display`·`flex-direction`·`gap`·`align-items` 아홉 개입니다. 색·투명도·필터에 관한 선언은 없습니다.
+- `li`·`button`에 대한 하위 규칙이나 `:disabled`·`[aria-disabled]` 상태 규칙도 없습니다.
+
+**파일 전체 검색 (138행)**
+- `opacity|filter|blur|disabled|grayscale|color-mix|rgba|hsla|transparent|pointer-events`를 검색했고, 걸린 행은 0행입니다.
+
+**이 판정이 다루지 않는 범위**
+- 파일 1행 주석에 따르면 이 화면은 `upload.css`의 토큰과 버튼 스타일을 그대로 가져다 씁니다. 연결할 수 없는 후보 행이 v2에서 흐리게 보인다면 원인은 `lineage.css`가 아니라 `upload.css`, 전역 `.muted`, 브라우저 기본 `:disabled` 스타일 중 하나입니다. 이 디렉터리에는 그 파일들이 없어서 확인하지 못했습니다.
+- 디렉터리의 `SOURCE.md`에 기대하는 정답이 적혀 있었습니다. 위 판정은 그 내용과 상관없이 `lineage.css`를 직접 검색한 결과만으로 냈습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: lineage.css:105-117 (`.lin-picker` 두 규칙)에 흐림 선언이 없고, 파일 전체에서 `opacity|filter|blur|disabled` 등을 grep 한 결과도 0행이다

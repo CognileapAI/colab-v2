@@ -1,0 +1,15 @@
+카드 규칙에 `box-shadow` 선언이 있습니다. 고칠 곳은 31행 한 곳입니다.
+
+- **고칠 곳**: `catalog.css:31`
+  - 카드 규칙 `.catalog-page .card`(29–32행) 안에 `box-shadow: var(--shadow-sm);` 가 있습니다.
+  - `--shadow-sm` 은 이 파일에 정의되어 있지 않습니다. 공유 토큰에서 오는 값으로 보입니다. 값이 무엇이든 카드에 그림자를 거는 선언이므로 지목 대상입니다.
+  - 좁은 화면 규칙(157–168행)에는 카드를 다시 정의하는 선언이 없습니다. 그래서 위의 한 곳뿐입니다.
+- **유지할 예외**: `catalog.css:80`
+  - 팝오버 `.colmenu` 의 `box-shadow: var(--shadow-lg);` 는 예외라서 지목하지 않습니다.
+- **그 밖의 `box-shadow`**: `catalog.css:52`
+  - `.tbl tr.clk:hover td:first-child { box-shadow: inset 2px 0 0 … }` 입니다.
+  - 표 행에 마우스를 올렸을 때 왼쪽에 나타나는 2px 선입니다. 카드 그림자가 아니므로 이번 지목 범위에 넣지 않았습니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

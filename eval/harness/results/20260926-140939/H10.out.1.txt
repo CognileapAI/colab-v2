@@ -1,0 +1,14 @@
+음수 margin 선언은 두 파일에 한 건씩, 모두 2건입니다. 두 파일의 `margin` 선언을 모두 확인했고, 음수 값은 아래 두 줄뿐입니다.
+
+| 위치 | 선언 | 성격 |
+|---|---|---|
+| `detail.css:93` | `.filelist { margin: -12px 0 var(--space-6); … border-top: none; }` | 앞 요소(`.infogrid`)에 음수로 붙이는 전형적인 음수 상쇄입니다. `border-top: none` 과 함께 써서 위 카드에 이어 붙입니다. |
+| `shell.css:58` | `.backlink { padding: 3px 9px 3px 7px; margin-left: -7px; }` | 자기 왼쪽 padding 7px 를 음수 margin 으로 없애 글자를 열 가장자리에 맞춥니다. 앞 요소에 붙이는 용도는 아니지만, 자식이 음수 margin 으로 자리를 옮기므로 「컨테이너 소유」 원칙에 어긋납니다. |
+
+- **제외한 것:** `letter-spacing: -0.03em`(`detail.css:33`)과 `letter-spacing: -0.02em`(`shell.css:115`)은 margin 이 아닙니다. `bottom: -11px`(`shell.css:188`)는 위치 지정 속성입니다.
+- **주석 확인:** 두 선언 모두 주석 밖에 있습니다. `shell.css:58` 앞 주석은 43행에서 끝나고, `detail.css:93` 앞 주석은 87행에서 끝납니다. 주석 안에는 음수 margin 값이 없습니다.
+- **대조:** 같은 디렉터리의 `SOURCE.md` 에 적힌 2건과 일치합니다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58
