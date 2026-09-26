@@ -318,6 +318,26 @@ def test_topic_is_said_once_in_the_response_not_on_each_card(p2_client, fake_ai,
     assert all("좁혀 뒤졌어요" not in i["rationale"] for i in body["items"])
 
 
+def test_topic_label_the_user_did_not_type_is_not_a_matched_term(p2_client, fake_ai, sql) -> None:
+    """확장으로만 들어온 주제 라벨은 카드 「낱말 일치」에 없고, 친 라벨은 남는다
+    (intent `2026-09-26-rationale-facts-wording.md` ② · 검색어·결과 집합은 그대로)."""
+    from conftest import LAB_A
+    sql("UPDATE d3_dataset_description SET topic='강우·강수' WHERE dataset_id IN (:a,:b)", {"a": DS_A1, "b": DS_A2})
+    fake_ai["body"] = _ai_body(["강우", "강우·강수"], lab_id=LAB_A, topic="강우·강수")
+    client = p2_client(ai_base_url=fake_ai["url"])
+    untyped = client.post(SEARCH, json={"query": "강우 자료"}, headers=auth(TOKEN_RES)).json()
+    typed = client.post(SEARCH, json={"query": "강우·강수 자료"}, headers=auth(TOKEN_RES)).json()
+    assert [i["datasetId"] for i in untyped["items"]] == [i["datasetId"] for i in typed["items"]]
+    assert untyped["items"]
+
+    def term_items(body):
+        return [t for i in body["items"] for f in i["rationaleFacts"] if f["kind"] == "term"
+                for t in f["items"]]
+    assert term_items(untyped) and all("‘강우·강수’" not in t and "‘강우’" in t for t in term_items(untyped))
+    assert all("‘강우·강수’" not in i["rationale"] for i in untyped["items"])
+    assert all("‘강우·강수’" in t for t in term_items(typed))
+
+
 def test_no_topic_means_no_topic_field(p2_client, fake_ai) -> None:
     from conftest import LAB_A
     fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A, topic=None)

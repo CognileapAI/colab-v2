@@ -585,6 +585,8 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             matches,
             # 그래프가 데려온 말이면 「낱말 일치」 항목이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
             expansions=answer.get("expansions"),
+            # 헤더가 말한 주제 라벨은 사용자가 치지 않았으면 「맞은 낱말」에서 뺀다(표시만 · 검색어 불변).
+            topic=search_topic, query=query,
             total=total, offset=fetch_offset)
 
         by_id = {row["datasetId"]: row for row in _compose(db)}

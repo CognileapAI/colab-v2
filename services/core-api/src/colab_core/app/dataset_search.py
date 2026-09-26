@@ -80,9 +80,39 @@ def _matched_phrase(term: str, expansions: dict[str, tuple[str, str]] | None) ->
 #: `SearchResultRow.rationaleFacts`). 사실이 없는 종류는 싣지 않는다.
 FACT_KINDS = ("term", "concept", "linked", "evidence")
 
+#: 파일 근거 자리 이름(`d3_catalog._WHERE_LABELS`). 「낱말 일치」 자리 목록에는 싣지 않는다 —
+#: 그 사실은 「파일 근거」·「연결된 자료」 종류가 말한다(intent `2026-09-26-rationale-facts-wording.md` ③).
+_EVIDENCE_WHERE = "확인한 파일 근거"
+#: 개념 주석 자리 이름(`d3_catalog._WHERE_LABELS`). 내부 기법 이름이라 카드 문구에 쓰지 않는다 —
+#: 그 사실은 「관련 개념」 종류가 말한다(선행 intent `2026-09-25-search-rationale-separation.md` Q7).
+_ONTOLOGY_WHERE = "온톨로지 연결 근거"
+#: 「낱말 일치」 자리 목록에서 빼는 자리와, 그 자리로만 맞았을 때 대신 서는 사실(근거 필수).
+_FACT_ONLY_WHERE = {
+    _EVIDENCE_WHERE: {"kind": "evidence", "items": ["확인한 파일 근거가 질문 조건에 맞았어요"]},
+    # 이 항목이 없으면 개념 주석으로만 맞은 결과의 이유가 0개다(`product.md` §3).
+    _ONTOLOGY_WHERE: {"kind": "concept", "items": ["자료에 적힌 개념이 질문과 연결돼요"]},
+}
+
+
+def _fold(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def _shown_terms(terms: tuple[str, ...], topic: str | None, query: str) -> tuple[str, ...]:
+    """응답 `topic` 과 같고 질의 원문에 없는 검색어를 뺀다 — 헤더가 이미 주제를 말한다.
+
+    남는 낱말이 없으면 그대로 둔다(근거 필수). 검색어·순위는 건드리지 않는 표시 규칙이다
+    (intent `2026-09-26-rationale-facts-wording.md` ② · 해소 ⒜).
+    """
+    if not topic or _fold(topic) in _fold(query):
+        return terms
+    kept = tuple(t for t in terms if _fold(t) != _fold(topic))
+    return kept or terms
+
 
 def rationale_facts(match: SearchMatch, *,
-                    expansions: dict[str, tuple[str, str]] | None = None) -> list[dict]:
+                    expansions: dict[str, tuple[str, str]] | None = None,
+                    topic: str | None = None, query: str = "") -> list[dict]:
     """맞은 사실을 **근거 종류별 항목**으로 적는다 — **검색된 이유만** 싣는다.
 
     ⭑ Ted 2026-09-26 결정(intent `2026-09-25-search-rationale-separation.md` Q6·Q8)으로
@@ -93,15 +123,15 @@ def rationale_facts(match: SearchMatch, *,
     ⭑ **종결은 해요체다** (화면 검수 2026-09-03 #12 · `Policy_데이터_찾기 §120행`). 이 문장은
     **서버가 만들어 화면이 그대로 싣는다** — 그래서 문체도 여기서 정해진다.
     """
-    if match.where == ("확인한 파일 근거",):
-        return [{"kind": "evidence", "items": ["확인한 파일 근거가 질문 조건에 맞았어요"]}]
-    if match.where == ("온톨로지 연결 근거",):
-        # 근거 필수(`product.md` §3) — 이 항목이 없으면 개념 주석으로만 맞은 결과의 이유가 0개다.
-        return [{"kind": "concept", "items": ["자료에 적힌 개념이 질문과 연결돼요"]}]
-    heads = [_matched_phrase(t, expansions)
-             for t in match.matched_terms[:MAX_TERMS_IN_RATIONALE]]
+    places = tuple(w for w in match.where if w not in _FACT_ONLY_WHERE)
+    if match.where and not places:
+        # 파일 근거·개념 주석 자리로만 맞았다 — 낱말 일치 줄 없이 그 종류의 사실만 낸다.
+        return [dict(_FACT_ONLY_WHERE[w], items=list(_FACT_ONLY_WHERE[w]["items"]))
+                for w in dict.fromkeys(match.where)]
+    terms = _shown_terms(match.matched_terms, topic, query)
+    heads = [_matched_phrase(t, expansions) for t in terms[:MAX_TERMS_IN_RATIONALE]]
     matched = ", ".join(heads) or "‘질문의 낱말’"
-    where = "·".join(match.where) if match.where else "카탈로그"
+    where = "·".join(places) if places else "카탈로그"
     return [{"kind": "term", "items": [f"{matched}{_josa(matched, '이', '가')} {where}에 맞았어요"]}]
 
 
@@ -123,7 +153,8 @@ def rationale_line(facts: list[dict]) -> str:
 
 
 def compose(matches, *, total: int, offset: int,
-            expansions: dict[str, tuple[str, str]] | None = None
+            expansions: dict[str, tuple[str, str]] | None = None,
+            topic: str | None = None, query: str = ""
             ) -> tuple[list[dict], str | None]:
     """후보를 **정본 모양의 값**으로 접는다 — `datasetId` · `relevanceBar` · 근거(구조형 + 한 줄).
 
@@ -135,7 +166,7 @@ def compose(matches, *, total: int, offset: int,
     top = max((m.rank for m in ordered), default=0.0)
     items = []
     for m in ordered:
-        facts = ordered_facts(rationale_facts(m, expansions=expansions))
+        facts = ordered_facts(rationale_facts(m, expansions=expansions, topic=topic, query=query))
         items.append({
             "datasetId": m.dataset_id,
             # 막대의 길이일 뿐이다. **화면에 숫자로 서면 정본 위반이다**

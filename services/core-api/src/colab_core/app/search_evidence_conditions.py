@@ -145,7 +145,7 @@ def supported_facts(criteria: dict, records: list[dict]) -> list[str]:
         names=[key+(f'({value[1]})' if key in ('기간','파일 역할') else '')
                for key,value in checks.items() if value[0]=='supported']
         if not names: continue
-        source=row['source']
-        facts.append(re.sub(r'\s+',' ',f"{row['file_name']}에서 {', '.join(names)} 조건이 맞았어요 "
-                                          f"(출처 {source['label']} · {source['locator']})").strip())
+        # 출처(설명서 이름·절)는 싣지 않는다 — 상세 「검색 근거」가 보인다
+        # (intent `2026-09-26-rationale-facts-wording.md` ①).
+        facts.append(re.sub(r'\s+',' ',f"{row['file_name']}에서 {', '.join(names)} 조건이 맞았어요").strip())
     return facts
