@@ -644,6 +644,11 @@
   max-width: 100%;
 }
 
+/* 미등록 미리보기 — 틀 묶음 gap 이 없는 자리라 지도 구역과의 사이를 블록이 여백 토큰 한 칸으로 갖는다. */
+.pv-map + .pv-below {
+  margin-top: var(--space-2);
+}
+
 .pv-below :is(.pv-hud, .pv-value, .pv-legend, .pv-shot) {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

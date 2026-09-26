@@ -467,6 +467,10 @@ describe('CSS 원문 — L1a 새 규칙은 기존 고정 블록 뒤에 있다', 
     expect(face).toHaveLength(1);
     for (const d of ['background: var(--color-surface)', 'border: 1px solid var(--color-border)',
       'border-radius: var(--radius-sm)', 'box-shadow: none']) expect(face[0]!.body).toContain(d);
+    // 미등록(틀 묶음 gap 이 없는 자리)에서도 지도 구역과 아래 블록 사이가 여백 토큰 한 칸이다
+    const sibling = rulesOf(PREVIEW_CSS, '.pv-map + .pv-below');
+    expect(sibling).toHaveLength(1);
+    expect(sibling[0]!.body).toContain('margin-top: var(--space-2)');
     // 도구 층 전용 범례 최대 높이는 아래 블록에 걸지 않는다
     expect(PREVIEW_CSS).not.toMatch(/\.pv-below[^{]*\{[^}]*max-height/);
   });
