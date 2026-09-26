@@ -13,10 +13,15 @@
 - 제품 안 자동 작업자는 「워커 위임 계약」 결정 대기(2026-09-15~)로 보류다.
 - 2026-09-18~26 의 1~4회차는 매번 손으로 수집·대조·판정 페이지·측정을 새로 짰다. 반복 절차가 문서·도구로 없다.
 
+## 판정 (2026-09-26, Ted 「권고댜로」 = 권고대로)
+- 하네스 eval 해시 규칙(#176) 때문에 `.agents/**`·`.claude/**` 를 바꾸면 eval 전수(약 8달러·30분)가 필요하다.
+  ㈏ 채택 — 이번에는 도구와 절차 문서만 넣고, 스킬 등록(얇은 안내 2파일)은 다음 하네스 변경 때 eval 한 번에 함께 넣는다.
+- 절차 본문은 `dev-package/tools/ontology-round/PROCEDURE.md` 에 둔다 — 절차를 고쳐도 eval 을 다시 돌리지 않는다.
+
 ## 원한 결과
 - 누구나 `setup.sh` 한 번으로 회차를 돌릴 준비가 된다(없는 것을 줄마다 알려 준다 · 0/78).
 - `round.sh init` 한 번으로 지난 회차 이후 자료의 빈칸·후보·사전에 없는 낱말이 요약된다(dev 읽기 전용).
-- 에이전트는 SKILL.md 절차로 판단하고, `page.py` 로 Ted 판정 페이지를 만든다.
+- 에이전트는 PROCEDURE.md 절차로 판단하고, `page.py` 로 Ted 판정 페이지를 만든다.
 - 반영·측정·적재는 기존 도구(생성기·측정기·비교기·적재기)를 그대로 쓴다.
 
 ## 설계트리
@@ -28,8 +33,8 @@
 - Q6 새 업로드 자료의 카드는 어떻게 넣나? → A 확정값은 자료 상세의 검색 근거 편집기에서 등록자·Ted 가 저장. 회차는 칸·값·출처 표를 넘긴다. payload 변환기는 필요가 드러나면 후속.
 
 ## 범위
-- 신규: `.agents/skills/ontology-round/SKILL.md` · `.claude/skills/ontology-round/SKILL.md`(어댑터) ·
-  `dev-package/tools/ontology-round/`(setup.sh · round.sh · collect.py · analyze.py · page.py · README · 예시).
+- 신규: `dev-package/tools/ontology-round/`(PROCEDURE.md · setup.sh · round.sh · collect.py · analyze.py · page.py · README · 예시).
+- 후속(별도 PR · eval 동반): `.agents/skills/ontology-round/SKILL.md` · `.claude/skills/ontology-round/SKILL.md` — PROCEDURE.md 를 가리키는 얇은 안내.
 - 수정: `README.md` 「개발 세션 시작」에 설정 한 줄.
 - 제품 코드·스키마·계약·마이그레이션 변경 없음.
 
@@ -37,7 +42,7 @@
 - `setup.sh` 가 새 워크트리에서 venv 를 만들고 0 으로 끝난다(실측).
 - `round.sh init --all` 이 dev 28건을 읽기 전용으로 모아 summary.md 를 낸다 · 두 번째 `init` 은 지난 회차 이후 0건(실측).
 - `page.py` 예시가 브라우저에서 결정 2개·결정 문장을 그린다 · 외부 참조 0(실측).
-- 게이트: harness-contract · exec-bit green.
+- 게이트: harness-contract · exec-bit green · CI harness-eval 은 설정 해시 무변경이라 기존 결과로 통과.
 
 ## 범위 밖
 - 제품 안 자동 배치·LLM 제안(모델 호출 승인 필요) · 새 업로드 자료 payload 변환기 · 별도 서버/cron 이전(서버 정보 대기).

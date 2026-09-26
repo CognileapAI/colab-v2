@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 온톨로지 회차 실행기. 절차 정본 = .agents/skills/ontology-round/SKILL.md
+# 온톨로지 회차 실행기. 절차 정본 = dev-package/tools/ontology-round/PROCEDURE.md
 #
 #   bash dev-package/tools/ontology-round/round.sh init [--all | --since ISO] [--database-url URL]
 #       준비 점검 → 지난 회차 이후 자료 수집(기본 dev · 읽기 전용) → 분석 → summary.md. 회차 폴더 경로를 출력한다.
@@ -9,7 +9,7 @@
 #       일회용 postgres 에서 초안 사실 기여·역전 측정(eval/k4-search/measure_draft_contribution.py) — DEV·운영 DB 무접촉
 #
 # 회차 폴더 기본 자리 = ${COLAB_ONTOLOGY_ROUND_HOME:-~/.local/state/colab/ontology-rounds}/<YYYYMMDD-N>
-#   (레포 밖 — dev 자료 설명 원문이 들어 있다. PR 에는 SKILL.md 가 정한 파일만 옮긴다.)
+#   (레포 밖 — dev 자료 설명 원문이 들어 있다. PR 에는 PROCEDURE.md 가 정한 파일만 옮긴다.)
 # 종료코드: 0 · 1 판정 실패 · 78 준비 실패
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,7 +37,7 @@ case "$cmd" in
     python3 "$HERE/collect.py" "${args[@]}" || { rc=$?; echo "수집 실패(rc=$rc) — 회차 폴더 $R"; exit $rc; }
     "$PY" "$HERE/analyze.py" "$R/datasets.json" --out "$R/analysis.json" --md "$R/summary.md" || exit $?
     python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));json.dump({"schema":"colab-ontology-round-state/1","collectedAt":d["collectedAt"],"since":d["since"],"source":d["source"],"datasets":len(d["datasets"])},open(sys.argv[2],"w"),ensure_ascii=False,indent=2)' "$R/datasets.json" "$R/state.json"
-    echo "회차 폴더: $R"; echo "다음: summary.md·analysis.json 을 읽고 SKILL.md 3단계(에이전트 판단)로 decisions.json 을 쓴다" ;;
+    echo "회차 폴더: $R"; echo "다음: summary.md·analysis.json 을 읽고 PROCEDURE.md 3단계(에이전트 판단)로 decisions.json 을 쓴다" ;;
   page)
     R="${1:?회차 폴더}"; python3 "$HERE/page.py" "$R/decisions.json" --out "$R/decision-page.html" ;;
   measure)

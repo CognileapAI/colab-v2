@@ -1,7 +1,7 @@
 # 온톨로지 보강 회차 도구
 
 새로 올라온 자료를 모아 빈칸·후보·사전에 없는 낱말을 뽑고, Ted 판정 페이지를 만들고, 초안 사실을 측정한다.
-절차(언제 무엇을 판단하는지)의 정본은 `.agents/skills/ontology-round/SKILL.md` 다. 이 문서는 설치와 명령만 다룬다.
+절차(언제 무엇을 판단하는지)의 정본은 같은 폴더 `PROCEDURE.md` 다. 이 문서는 설치와 명령만 다룬다.
 
 ## 설정 — 누구나 한 번
 
@@ -34,7 +34,7 @@ bash dev-package/tools/ontology-round/round.sh measure <회차 폴더> <payload.
 ```
 
 회차 폴더 기본 자리는 `~/.local/state/colab/ontology-rounds/<YYYYMMDD-N>/`(`COLAB_ONTOLOGY_ROUND_HOME` 로 바꾼다).
-레포 밖인 이유는 dev 자료 설명 원문이 들어 있어서다. PR 에 옮길 파일은 SKILL.md 6단계가 정한다.
+레포 밖인 이유는 dev 자료 설명 원문이 들어 있어서다. PR 에 옮길 파일은 PROCEDURE.md 6단계가 정한다.
 
 | 파일 | 만드는 것 | 내용 |
 |---|---|---|
