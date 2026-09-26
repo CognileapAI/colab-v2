@@ -278,6 +278,42 @@ class VerifyTests(unittest.TestCase):
         (out / "summary.md").write_text("no summary line\n", encoding="utf-8")
         self.assertEqual(self.verify()[0], 78)
 
+    def test_rate_task_is_reported_and_left_out_of_the_regression_set(self):
+        # 15라운드 판정 H18-rate — a `mode`=rate task is a rate, not a green/regression member.
+        self.repo.write("eval/harness/H03-c/mode", "rate\n")
+        current = self.repo.hash()
+        write_result(self.results, "20260912-211809", green=["H01-a", "H02-b", "H03-c"])
+        write_result(self.results, "20260926-100000", green=["H01-a", "H02-b"], hash_value=current,
+                     extra_rows=["| H03-c | rate 1/2 | 1.0/1.0 | 0.1/0.1 | x |"])
+        code, _, detail = self.verify()
+        self.assertEqual(code, 0, detail)
+        self.assertIn("rate 1(H03-c 1/2)", detail)
+        # the rate task never hides a neighbour's regression
+        write_result(self.results, "20260926-110000", green=["H01-a"], red=["H02-b"], hash_value=current,
+                     extra_rows=["| H03-c | rate 0/2 | 1.0/1.0 | 0.1/0.1 | x |"])
+        code, _, detail = self.verify()
+        self.assertEqual(code, 1, detail)
+        self.assertIn("H02-b", detail)
+        self.assertNotIn("H03-c", detail.split(":")[-1])
+
+    def test_rate_rows_must_match_the_mode_markers_in_the_hashed_tree(self):
+        # results/** is outside the hash set: a hand-edited `rate` row without a `mode` marker is not
+        # a result of this configuration (verifier #1), and a malformed rate verdict is unreadable (#7).
+        write_result(self.results, "20260912-211809", green=["H01-a", "H02-b", "H03-c"])
+        out = write_result(self.results, "20260926-100000", green=["H01-a", "H02-b"], hash_value=self.current,
+                           extra_rows=["| H03-c | rate 1/2 | 1.0/1.0 | 0.1/0.1 | x |"])
+        code, _, detail = self.verify()
+        self.assertEqual(code, 78, detail)
+        self.assertIn("해시 일치 결과 아님", detail)
+        self.repo.write("eval/harness/H03-c/mode", "rate\n")
+        current = self.repo.hash()
+        (out / "config-hash.json").write_text(json.dumps({"hash": current, "selected": "all"}))
+        summary = (out / "summary.md").read_text(encoding="utf-8")
+        for bad in ("rate x", "rate 3/2", "rate"):
+            with self.subTest(verdict=bad):
+                (out / "summary.md").write_text(summary.replace("rate 1/2", bad), encoding="utf-8")
+                self.assertEqual(self.verify()[0], 78)
+
     def test_cli_exit_codes_and_first_field(self):
         write_result(self.results, "20260926-100000", green=["H01-a", "H02-b", "H03-c"],
                      hash_value=self.current)

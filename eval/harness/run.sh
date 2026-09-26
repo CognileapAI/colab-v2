@@ -16,6 +16,10 @@
 #   `is_error:true` · `subtype != success` 도 red(준비) — rc 0 이고 본문이 기대와 맞아도 판정하지 않는다.
 #   판정기 exit 0은 green, 1은 판정 실패, 78 및 그 외 비정상 종료는 red(준비).
 #   과제 0건 → red(판정 · 1). 「대상이 없어 통과」를 만들지 않는다 (CLAUDE.md §4).
+#   비율 측정 과제 — 과제 디렉터리의 `mode` 파일 본문이 정확히 `rate` 면 2회를 그대로 돌리고 `rate x/2` 로
+#   적는다. green·불안정 계수와 판정 실패 관측에 넣지 않는다(회귀 집합 제외 · 15라운드 판정 H18-rate).
+#   `mode` 부재 = pass/fail(엄격이 기본) · 그 밖의 본문 = red(준비 · 「알 수 없는 mode」) ·
+#   비율 과제도 판정기 78·비정상 종료·상한 초과면 red(준비)다(비율이 준비 실패를 삼키지 않는다).
 #
 # exit — 0 green · 1 red(판정) · 78 red(준비).
 #   ⚠ 판정 red 와 준비 red 가 함께 나면 **1** 이다. 준비 red 도 병합 진입을 막는다(둘 다 0 이어야 한다).
@@ -94,7 +98,7 @@ mkdir -p "$OUT" || ready_red "$OUT" "결과 자리를 만들지 못했다."
 printf '%s\n' "$CONFIG_HASH_JSON" > "$OUT/config-hash.json" || ready_red "$OUT/config-hash.json" "설정 해시를 쓰지 못했다."
 
 # ── ⑶ 실행 ──────────────────────────────────────────────────────────────────
-N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0
+N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0; N_RATE=0
 SECS_FILE="$OUT/.secs"; : > "$SECS_FILE"
 COST_FILE="$OUT/.usd"; : > "$COST_FILE"
 ROWS_FILE="$OUT/.rows"; : > "$ROWS_FILE"
@@ -103,6 +107,7 @@ COST_UNKNOWN=0
 for d in "${TASKS[@]}"; do
   name="$(basename "$d")"
   id="${name%%-*}"
+  mode=""  # per task — a previous task's mode must never leak into this one (검증 #2)
 
   miss=""
   [ -f "$d/task.md" ]   || miss="$miss task.md"
@@ -113,6 +118,17 @@ for d in "${TASKS[@]}"; do
     printf '%s|준비|—|—|세 파일 중 부재:%s\n' "$name" "$miss" >> "$ROWS_FILE"
     echo "  ─ $name red(준비) — 세 파일 중 부재:$miss"
     continue
+  fi
+
+  # 비율 측정 표지 — 본문 정확히 `rate` 만 인정한다. 부재 = pass/fail · 그 밖 = red(준비).
+  if [ -f "$d/mode" ]; then
+    mode="$(cat "$d/mode")"
+    if [ "$mode" != rate ]; then
+      N_READY=$((N_READY + 1))
+      printf '%s|준비|—|—|알 수 없는 mode — %s/mode 본문은 rate 한 줄만 인정한다\n' "$name" "$name" >> "$ROWS_FILE"
+      echo "  ─ $name red(준비) — 알 수 없는 mode(${name}/mode) — rate 만 인정한다."
+      continue
+    fi
   fi
 
   FIXABS="$(cd "$d/fixture" && pwd)"
@@ -222,7 +238,8 @@ PY
     case "$judge_rc" in
       0) pass=$((pass + 1)) ;;
       1)
-        task_judgments="${task_judgments:+$task_judgments, }${n}회차(rc=1)"
+        # 비율 과제의 오답은 판정 실패가 아니라 비율의 분자에서 빠지는 한 회차다(78·기타는 아래 그대로 준비).
+        [ "$mode" = rate ] || task_judgments="${task_judgments:+$task_judgments, }${n}회차(rc=1)"
         ;; # 후속 준비 실패가 앞선 판정 실패 관측을 지우지 않게 한다.
       78)
         task_ready="판정기 준비 실패(rc=$judge_rc · ${n}회차) — stderr: $judge_err"
@@ -246,6 +263,12 @@ PY
     N_READY=$((N_READY + 1))
     printf '%s|준비|%s|%s|%s\n' "$name" "${task_secs:--}" "${task_cost:--}" "$task_ready" >> "$ROWS_FILE"
     echo "  ─ $name red(준비) — $task_ready"
+  elif [ "$mode" = rate ]; then
+    # 2/2 여도 `rate 2/2` 다 — green 계수를 부풀리지 않는다.
+    N_RATE=$((N_RATE + 1))
+    printf '%s|rate %s/%s|%s|%s|%s/%s 통과 · mode=rate · 회귀 집합 제외\n' "$name" "$pass" "$RUNS_PER_TASK" \
+      "$task_secs" "$task_cost" "$pass" "$RUNS_PER_TASK" >> "$ROWS_FILE"
+    echo "  ~ $name rate — $pass/$RUNS_PER_TASK (mode=rate · 회귀 집합 제외)"
   elif [ "$pass" -eq "$RUNS_PER_TASK" ]; then
     N_GREEN=$((N_GREEN + 1))
     printf '%s|green|%s|%s|%s/%s 통과\n' "$name" "$task_secs" "$task_cost" "$pass" "$RUNS_PER_TASK" >> "$ROWS_FILE"
@@ -280,7 +303,7 @@ PY
 )"
 read -r P50 P95 USD <<< "$STATS"
 
-SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD · 판정실패 관측 과제 $N_JUDGMENT"
+SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD · 판정실패 관측 과제 $N_JUDGMENT · rate $N_RATE"
 
 {
   echo "# harness eval 실측 — $RUN_ID"
@@ -288,7 +311,7 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
   echo "- 요약 — $SUMMARY"
   echo "- 상한 — \`COLAB_EVAL_TIMEOUT=$COLAB_EVAL_TIMEOUT\` · \`COLAB_EVAL_BUDGET=$COLAB_EVAL_BUDGET\` · 과제당 ${RUNS_PER_TASK}회"
   echo "- 설정 해시 — $HASH_LINE"
-  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비)"
+  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비) · mode=rate 과제는 비율만 기록(rate x/2 · 회귀 집합 제외)"
   [ "$COST_UNKNOWN" -eq 1 ] && echo "- ⚠ USD \`[미상]\` — \`claude -p --output-format json\` 출력에서 비용 필드를 찾지 못한 회차가 있다. 지어내지 않는다."
   echo
   echo "| 과제 | 판정 | 초(1/2) | USD(1/2) | 사유 |"

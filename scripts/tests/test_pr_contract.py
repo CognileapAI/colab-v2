@@ -32,7 +32,7 @@ class HandoffContractTests(unittest.TestCase):
     def test_verified_claim_consumes_registry_bundle_in_both_modes(self):
         ci = load('verify_evidence'); module = load('pr_contract'); cfg = module.configuration()
         self.assertEqual(len(cfg['required_sections']), 6)
-        body = 'Plan-Ref: approved\nHead-SHA: '+'a'*40+'\n검증 상태: 검증됨\nEvidence-Ref: ci.json\nCI-Ref: local-run-1\n'
+        body = 'Plan-Ref: approved\nHead-SHA: '+'a'*40+'\nRate-Tasks: 없음\n검증 상태: 검증됨\nEvidence-Ref: ci.json\nCI-Ref: local-run-1\n'
         body += ''.join('\n## '+section+'\nConcrete content.\n' for section in cfg['required_sections'])
         registry = ci.load_registry()
         filters = {key: 'false' for item in registry.values() for key in item['filters']}
@@ -56,10 +56,10 @@ class HandoffContractTests(unittest.TestCase):
             evidence = ci.build_ci_evidence('1', 1, 'a'*40, 'b'*40, ci.event_shas('push', event, 'a'*40), jobs)
             evidence['inputs'] = {'event_name': 'push', 'event': event, 'needs': needs, 'filters': filters}
             for mode in ('draft', 'complete'):
-                self.assertEqual(module.validate(body, 'a'*40, cfg, mode=mode, evidence=evidence, artifact_root=bundle), [])
+                self.assertEqual(module.validate(body, 'a'*40, cfg, rate_tasks=[], mode=mode, evidence=evidence, artifact_root=bundle), [])
             evidence['jobs'] = []
             for mode in ('draft', 'complete'):
-                self.assertTrue(module.validate(body, 'a'*40, cfg, mode=mode, evidence=evidence, artifact_root=bundle))
+                self.assertTrue(module.validate(body, 'a'*40, cfg, rate_tasks=[], mode=mode, evidence=evidence, artifact_root=bundle))
 
     def test_snapshot_preserves_revision_and_detects_tamper_and_links(self):
         module = load('agreement_snapshot')
@@ -101,17 +101,17 @@ class HandoffContractTests(unittest.TestCase):
     def test_pr_draft_and_completion_require_explicit_sha_and_evidence(self):
         module=load('pr_contract')
         cfg=module.configuration()
-        body='Plan-Ref: approved-plan\nHead-SHA: '+'a'*40+'\n검증 상태: 미검증\n'
+        body='Plan-Ref: approved-plan\nHead-SHA: '+'a'*40+'\nRate-Tasks: 없음\n검증 상태: 미검증\n'
         body+=''.join('\n## '+section+'\nCurrent scope and evidence limitations.\n' for section in cfg['required_sections'])
-        self.assertEqual(module.validate(body,'a'*40,cfg,mode='draft'),[])
-        self.assertTrue(module.validate(body,'b'*40,cfg,mode='draft'))
-        self.assertTrue(module.validate(body,'a'*40,cfg,mode='complete'))
-        self.assertTrue(module.validate(body.replace('## 범위','## 기타'),'a'*40,cfg,mode='draft'))
+        self.assertEqual(module.validate(body,'a'*40,cfg,rate_tasks=[],mode='draft'),[])
+        self.assertTrue(module.validate(body,'b'*40,cfg,rate_tasks=[],mode='draft'))
+        self.assertTrue(module.validate(body,'a'*40,cfg,rate_tasks=[],mode='complete'))
+        self.assertTrue(module.validate(body.replace('## 범위','## 기타'),'a'*40,cfg,rate_tasks=[],mode='draft'))
         evidence={'schema':'colab-ci-evidence/1','commit':'a'*40,'counts':{'green':1,'red_judgment':0,'red_readiness':0,'not_applicable':0},
                   'jobs':[{'name':'check','state':'green'}]}
         completed=body.replace('검증 상태: 미검증','검증 상태: 검증됨')+'\nEvidence-Ref: ci-evidence.json\nCI-Ref: local-ci-evidence\n'
-        self.assertTrue(module.validate(completed,'a'*40,cfg,mode='complete',evidence=evidence))
-        self.assertTrue(module.validate(completed,'a'*40,cfg,mode='draft',evidence=evidence))
+        self.assertTrue(module.validate(completed,'a'*40,cfg,rate_tasks=[],mode='complete',evidence=evidence))
+        self.assertTrue(module.validate(completed,'a'*40,cfg,rate_tasks=[],mode='draft',evidence=evidence))
         with tempfile.TemporaryDirectory() as directory:
             folder=Path(directory)
             raw=json.dumps(evidence).encode(); evidence_path=folder/'ci.json'; evidence_path.write_bytes(raw)
@@ -121,7 +121,32 @@ class HandoffContractTests(unittest.TestCase):
             evidence_path.write_bytes(raw+b' ')
             self.assertEqual(subprocess.run(command,capture_output=True).returncode,1)
         evidence['commit']='c'*40
-        self.assertTrue(module.validate(completed,'a'*40,cfg,mode='complete',evidence=evidence))
+        self.assertTrue(module.validate(completed,'a'*40,cfg,rate_tasks=[],mode='complete',evidence=evidence))
+
+    def test_rate_tasks_field_must_equal_the_head_tree_rate_markers(self):
+        # 15라운드 판정 H18-rate · verifier #1 — a `mode`=rate marker shows up in the PR body, by name.
+        module=load('pr_contract'); cfg=module.configuration()
+        with tempfile.TemporaryDirectory() as directory:
+            repo=Path(directory)
+            subprocess.run(['git','init','-q',str(repo)],check=True)
+            for rel,text in (('eval/harness/H18-b/mode','rate\n'),('eval/harness/H02-a/mode','rate\n'),
+                             ('eval/harness/H03-c/task.md','task\n'),('eval/harness/H04-d/mode','ratio\n')):
+                (repo/rel).parent.mkdir(parents=True,exist_ok=True); (repo/rel).write_text(text)
+            subprocess.run(['git','-C',str(repo),'add','-A'],check=True)
+            subprocess.run(['git','-C',str(repo),'-c','user.name=t','-c','user.email=t@example.invalid','commit','-qm','x'],check=True)
+            head=subprocess.run(['git','-C',str(repo),'rev-parse','HEAD'],check=True,capture_output=True,text=True).stdout.strip()
+            listed=module.head_rate_tasks(head,root=repo)
+            self.assertIsNone(module.head_rate_tasks('f'*40,root=repo))
+        self.assertEqual(listed,['H02-a','H18-b'])
+        body='Plan-Ref: approved-plan\nHead-SHA: '+head+'\n검증 상태: 미검증\n'
+        body+=''.join('\n## '+section+'\nCurrent scope and evidence limitations.\n' for section in cfg['required_sections'])
+        self.assertTrue(module.validate(body,head,cfg,rate_tasks=listed,mode='draft'))
+        for value,ok in (('H02-a, H18-b',True),('H18-b, H02-a',False),('H18-b',False),('없음',False)):
+            with self.subTest(value=value):
+                problems=module.validate(body.replace('검증 상태','Rate-Tasks: '+value+'\n검증 상태'),head,cfg,rate_tasks=listed,mode='draft')
+                self.assertEqual(problems==[],ok,problems)
+        self.assertTrue(module.validate(body.replace('검증 상태','Rate-Tasks: 없음\n검증 상태'),head,cfg,rate_tasks=None,mode='draft'),
+                        'an unreadable head tree cannot confirm Rate-Tasks')
 
 
 if __name__=='__main__': unittest.main()

@@ -1,0 +1,15 @@
+카드 규칙에 그림자가 있습니다. 고칠 곳은 `.catalog-page .card` 블록(29–32행) 안의 31행입니다.
+
+- **고칠 곳** `catalog.css:31`:
+  `border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;`
+  여기서 `box-shadow: var(--shadow-sm);` 한 개만 빼면 됩니다. 같은 줄의 `border-radius` 와 `overflow` 는 그대로 둡니다.
+- **유지할 곳** `catalog.css:80`: `.colmenu` 의 `box-shadow: var(--shadow-lg);` 는 팝오버라서 예외입니다. 이 값을 정의하는 `--shadow-lg` 토큰(21행)도 이 팝오버가 쓰므로 남깁니다.
+- **지목 대상이 아닌 그림자**:
+  - 50행 `.tbl tr.clk td` 는 `transition` 에 `box-shadow` 가 적혀 있을 뿐입니다.
+  - 52행 `.tbl tr.clk:hover td:first-child` 의 `inset 2px 0 0` 은 행에 마우스를 올렸을 때 왼쪽에 나타나는 선입니다. 카드를 띄우는 그림자가 아닙니다.
+
+판정은 CSS를 직접 읽고 내렸습니다. 다만 같은 디렉터리의 `SOURCE.md` 에 이 과제의 정답(「있음」 · `catalog.css:31` · `.colmenu`)이 그대로 적혀 있습니다. 평가 픽스처라면 풀이하는 쪽이 이 파일을 읽을 수 없게 옮기는 편이 맞습니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

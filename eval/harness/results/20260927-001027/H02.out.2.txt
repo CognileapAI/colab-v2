@@ -1,0 +1,30 @@
+`css_audit.py` 는 주석 안의 값을 코드로 세지 않습니다. 이 표본에서 주석분은 0건입니다.
+
+**계측기 출력**
+- `<13px` 칸: 1
+- `Detail`: `sample.css:4` font-size 11.0px, 한 건뿐입니다.
+- `contrast <4.5` 칸: 0
+
+**`sample.css` 를 눈으로 센 값**
+
+| 줄 | 위치 | 값 | 13px 미만 |
+|---|---|---|---|
+| 2 | 주석 | font-size: 9px · color #848c94 · background #ffffff | 해당 (세지 않음) |
+| 4 | 코드 `.a` | font-size: 11px | 해당 |
+| 6 | 주석 | font-size: 10px | 해당 (세지 않음) |
+| 7 | 코드 `.b` | font-size: 14px | 아님 |
+| 9 | 주석 | #848c94 on #ffffff → 3.41:1 | 글꼴 크기 아님 (대비 메모) |
+| 10 | 코드 `.c` | font-size: 13px | 아님 (기준이 13 미만이라 경계값 13은 빠짐) |
+
+**대조**
+- 코드 안에서 13px 미만은 4번 줄 11px 하나입니다. 계측기의 1건, `Detail` 의 줄 번호와 모두 맞습니다.
+- 주석 안의 9px(2번 줄)와 10px(6번 줄)는 출력에 나오지 않습니다.
+- 이유는 `css_audit.py:76-78` 의 `strip_comments()` 에 있습니다. `/* … */` 안의 글자를 공백으로 바꾸고 줄바꿈은 남깁니다. 그래서 줄 번호가 어긋나지 않습니다.
+- 이 함수는 `audit_file()` 과 `collect_defs()` 가 파일을 읽을 때 매번 거칩니다(`css_audit.py:82`, `css_audit.py:60`).
+- 주석 안의 색 값(2번 줄과 9번 줄의 #848c94, #ffffff)도 대비 계산에 쓰이지 않았습니다. `contrast <4.5` 가 0입니다.
+- 코드 쪽 색 조합 세 개는 `Detail` 에 없으므로 모두 4.5:1 이상으로 계산된 것입니다. 이 비율들은 직접 다시 계산해 보지 않았습니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "<repo>/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "<repo>/eval/harness/H02-comment-false-positive/fixture"`

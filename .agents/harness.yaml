@@ -110,6 +110,8 @@
   },
   "pr_contract": {
     "required_sections": [],
+    "rate_tasks_field": "Rate-Tasks",
+    "rate_tasks_none": "없음",
     "evidence_schema": "colab-ci-evidence/1",
     "required_counts": ["green", "red_judgment", "red_readiness"]
   },
