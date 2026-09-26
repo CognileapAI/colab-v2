@@ -66,11 +66,13 @@
   "notes": [
     "30 scene names are inherited from dev-package/reports/design-consistency/20260912/full/scenes.json; account-admin, password-change, gnb-more are new.",
     "account flags are passed as query (upload/labSettings/operator = 1|0). audit-upload.html ignores them: its account is fixed in audit-upload.tsx (upload on, no GNB).",
-    "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector).",
+    "actions: click(selector) | wait(ms) | waitFor(selector) | select([selector, value]) | pickFile({selector, name, bytes}) | scrollIntoView(selector) | waitImage(selector: complete and naturalWidth > 0) | stable(selector: box, zoom scale and document height unchanged for 150 ms x 3). click first scrolls a target that is outside the window or cut by a scroll container.",
     "gnb-more uses viewports 390 · 844x390 · 820 only: .gnb-more is visible at <= 900px.",
     "primitives (P5 · spec S-DESIGN-STRUCTURE-P5-20260924) is the primitive gallery: static markup of primitives.css classes only, no GNB (STANDALONE in audit-design.tsx), no product components.",
     "upload-register-ok (spec S-DESIGN-FIX-FOLLOWUPS-20260925 Q4) is audit-upload.html?register=ok: register/attach succeed locally and the modal is opened by the real parents UploadEntry and GridAttachEntry (useUploadModalPresence). Without the query audit-upload.html is unchanged.",
-    "viewports (spec S-DEVICE-WIDTH-INPUT-20260926 L0a · schema 2): a scene lists viewport ids in `viewports`; without it the scene uses all 6. Capture file = <scene>-<theme>-<viewport id>.png."
+    "viewports (spec S-DEVICE-WIDTH-INPUT-20260926 L0a · schema 2): a scene lists viewport ids in `viewports`; without it the scene uses all 6. Capture file = <scene>-<theme>-<viewport id>.png.",
+    "require (spec S-DEVICE-WIDTH-INPUT-20260926 L0b): preconditions checked after settling, before metrics and screenshot — {imageLoaded|box|exists: selector}. A false precondition stops the run with 78.",
+    "detail-preview-map · detail-preview-map-value · upload-preview-expand (L0b): the real dataset detail page with the fixture preview source (src/components/datasetpreview/fixture.ts) and the upload preview panel alone (src/components/upload/fixture.ts); image = frontend/audit-map.png. upload-preview-expand enters by audit-design.html, so the upload scene lock (audit-upload.html · 4 names · empty query) does not see it. The value scene clicks the map viewport centre with a real pointer (a covering tool receives it) and waits for the value panel to settle; before the layout fix the panel keeps the guide sentence (V4)."
   ],
   "scenes": [
     {
@@ -895,6 +897,156 @@
       "fullPage": true,
       "actions": [],
       "settleMs": 500,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "detail-preview-map",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "detail-preview-map",
+        "design": "full"
+      },
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [
+        {
+          "waitFor": "[data-testid=dt-preview-draw]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=dt-preview-draw]"
+        },
+        {
+          "waitImage": "[data-testid=preview-single-image]"
+        },
+        {
+          "stable": "[data-testid=preview-single-image]"
+        }
+      ],
+      "require": [
+        {
+          "imageLoaded": "[data-testid=preview-single-image]"
+        },
+        {
+          "box": "[data-testid=preview-viewport]"
+        },
+        {
+          "exists": "[data-testid=preview-layers][data-zoom-scale]"
+        },
+        {
+          "exists": ".pv-shot button"
+        }
+      ],
+      "settleMs": 1000,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "detail-preview-map-value",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "detail-preview-map-value",
+        "design": "full"
+      },
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": true,
+      "actions": [
+        {
+          "waitFor": "[data-testid=dt-preview-draw]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=dt-preview-draw]"
+        },
+        {
+          "waitImage": "[data-testid=preview-single-image]"
+        },
+        {
+          "stable": "[data-testid=preview-single-image]"
+        },
+        {
+          "click": "[data-testid=preview-viewport]"
+        },
+        {
+          "stable": "[data-testid=value-lookup]"
+        }
+      ],
+      "require": [
+        {
+          "imageLoaded": "[data-testid=preview-single-image]"
+        },
+        {
+          "box": "[data-testid=preview-viewport]"
+        },
+        {
+          "exists": "[data-testid=preview-layers][data-zoom-scale]"
+        },
+        {
+          "exists": ".pv-shot button"
+        }
+      ],
+      "settleMs": 1000,
+      "account": {
+        "upload": true,
+        "labSettings": true,
+        "operator": false
+      }
+    },
+    {
+      "name": "upload-preview-expand",
+      "entry": "audit-design.html",
+      "query": {
+        "scene": "upload-preview-expand",
+        "design": "full"
+      },
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "fullPage": false,
+      "actions": [
+        {
+          "waitFor": "[data-testid=up-preview-draw]:not([disabled])"
+        },
+        {
+          "click": "[data-testid=up-preview-draw]"
+        },
+        {
+          "waitImage": "[data-testid=up-preview-image]"
+        },
+        {
+          "click": "[data-testid=pv-expand]"
+        },
+        {
+          "waitImage": "[data-testid=pv-expand-image]"
+        },
+        {
+          "stable": "[data-testid=pv-expand-image]"
+        }
+      ],
+      "require": [
+        {
+          "imageLoaded": "[data-testid=pv-expand-image]"
+        },
+        {
+          "box": "[data-testid=pv-expand-viewport]"
+        },
+        {
+          "exists": "[data-testid=pv-expand-zoom]"
+        }
+      ],
+      "settleMs": 1000,
       "account": {
         "upload": true,
         "labSettings": true,

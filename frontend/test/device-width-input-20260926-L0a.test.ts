@@ -43,6 +43,10 @@ interface Manifest {
 const MANIFEST = JSON.parse(readFileSync(resolve(process.cwd(), 'scripts/visual-baseline/scenes.json'), 'utf8')) as Manifest;
 const DIFF = resolve(process.cwd(), 'scripts/visual-baseline/diff.mjs');
 
+// L0b(같은 spec 다음 단계)가 더하는 새 장면 3 — 아래 「기존 장면」 단언은 이 셋을 빼고 센다(색인 450 = 414 ＋ 36 · L0b 시험).
+const L0B_SCENES = ['detail-preview-map', 'detail-preview-map-value', 'upload-preview-expand'];
+const EXISTING = MANIFEST.scenes.filter((s) => !L0B_SCENES.includes(s.name));
+
 const SIX: Viewport[] = [
   { id: '390', width: 390, height: 844, input: 'touch' },
   { id: '844x390', width: 844, height: 390, input: 'touch' },
@@ -78,7 +82,7 @@ describe('L0a ⑴ 장면 목록 스키마 — 6크기 × 입력 방식', () => {
 
   it('장면은 폭 목록(`widths`)을 쓰지 않고, 뷰포트 참조는 목록 안의 id 만 쓴다', () => {
     const ids = new Set(MANIFEST.viewports.map((v) => v.id));
-    expect(MANIFEST.scenes.length).toBe(35);
+    expect(EXISTING.length).toBe(35);
     for (const s of MANIFEST.scenes) {
       expect(s.widths, s.name).toBeUndefined();
       if (s.viewports === undefined) continue;
@@ -95,7 +99,7 @@ describe('L0a ⑴ 장면 목록 스키마 — 6크기 × 입력 방식', () => {
   });
 
   it('기존 장면 캡처 수 = 34 × 12 ＋ 더보기 6 = 414', () => {
-    const count = MANIFEST.scenes.reduce((n, s) => n + (s.viewports ?? SIX.map((v) => v.id)).length * s.themes.length, 0);
+    const count = EXISTING.reduce((n, s) => n + (s.viewports ?? SIX.map((v) => v.id)).length * s.themes.length, 0);
     expect(count).toBe(414);
   });
 });

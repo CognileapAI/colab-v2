@@ -13,9 +13,19 @@ written to a temporary folder without spaces and passed to agent-browser as the 
 theme × input. Before each screenshot the page state (theme, innerWidth, innerHeight, devicePixelRatio,
 (pointer: coarse), (hover: hover)) is compared with the viewport; a mismatch stops the run with 78.
 
+Numeric mode (spec S-DEVICE-WIDTH-INPUT-20260926 L0b): with --metrics, measure.js runs on every settled capture (after the
+state check and the scene's `require` preconditions, before the screenshot) and writes <out>/<name>.metrics.json; the
+index row carries a summary. Measure options come from targets.json (부록 B target list) and judge-exempt.txt.
+--metrics-only --scene <name> --viewport <id | WxH[:touch|mouse]> measures one scene at one viewport (a size outside the
+list is allowed) without screenshots: <out>/<scene>-<theme>-<viewport>.metrics.json + run.json, no index.json, so the
+folder is never a pixel-comparison input. judge.mjs judges the files.
+Action vocabulary adds waitImage(selector) (complete and naturalWidth > 0) and stable(selector) (the element box, the
+zoom scale attribute and the document height unchanged for 150 ms x 3). A scene's `require` list
+({imageLoaded|box|exists: selector}) is checked after settling; a false precondition is 78.
+
 Output: <out>/<scene>-<theme>-<viewport id>.png + <out>/index.json. Default out: frontend/.visual/<label>/.
 Exit codes: 0 = all captures written; 78 = could not capture (build, server, browser, manifest, missing file,
-page state differs from the declared viewport or input).
+page state differs from the declared viewport or input, precondition false, action timed out, measurement failed).
 """
 from __future__ import annotations
 
@@ -52,6 +62,14 @@ FREEZE_CSS = '* { animation: none !important; transition: none !important; caret
 
 # Page media state each input's launch wrapper must produce (checked before every screenshot).
 INPUT_MEDIA = {'touch': {'coarse': True, 'hover': False}, 'mouse': {'coarse': False, 'hover': True}}
+
+# Numeric mode inputs (L0b).
+MEASURE = HERE / 'measure.js'
+TARGETS = HERE / 'targets.json'
+EXEMPT = HERE / 'judge-exempt.txt'
+WAIT_IMAGE_TRIES = 150  # x 100 ms
+STABLE_TRIES = 100  # x 150 ms
+STABLE_SAME = 3
 
 # Session name -> launch wrapper path (set in main). Passed on every call; only the call that launches the
 # session's browser uses it.
@@ -157,16 +175,109 @@ def write_wrappers(folder: pathlib.Path, chrome: pathlib.Path, base_args: list[s
 
 
 def reveal_script(selector: str) -> str:
-    """Page script run before `click`: scroll the target into the window only when its box is not fully inside it.
+    """Page script run before `click`: scroll the target into view only when its box is not fully visible.
 
     Orchestrator decision for spec S-DEVICE-WIDTH-INPUT-20260926 L0a (spec gap: a click target outside the window is
     first brought inside). agent-browser 0.27.0 `click` does not scroll: at 844x390 the upload open button sat at
-    y=411.7 and the click did not land. A target already fully inside the window is not scrolled at all.
+    y=411.7 and the click did not land. L0b (advisor note on L0a): a target inside the window but cut by a scroll
+    container (overflow other than visible, up to a fixed-position boundary) is also scrolled. A target fully visible
+    in the window and in every clipping ancestor is not scrolled at all.
     Returns 'scrolled' | 'inside' | 'absent'; a missing target is left to the click itself to report."""
     return (f"(() => {{ const el = document.querySelector({json.dumps(selector)}); if (!el) return 'absent'; "
             "const r = el.getBoundingClientRect(); "
-            "if (r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth) return 'inside'; "
+            "let inside = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth; "
+            "for (let cur = el, e = el.parentElement; inside && e && e !== document.body && e !== document.documentElement; "
+            "cur = e, e = e.parentElement) { "
+            "if (getComputedStyle(cur).position === 'fixed') break; "
+            "const cs = getComputedStyle(e); if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue; "
+            "const p = e.getBoundingClientRect(); const left = p.left + e.clientLeft; const top = p.top + e.clientTop; "
+            "if ((cs.overflowX !== 'visible' && (r.left < left - 0.5 || r.right > left + e.clientWidth + 0.5)) || "
+            "(cs.overflowY !== 'visible' && (r.top < top - 0.5 || r.bottom > top + e.clientHeight + 0.5))) inside = false; } "
+            "if (inside) return 'inside'; "
             "el.scrollIntoView({block: 'nearest', inline: 'nearest'}); return 'scrolled'; })()")
+
+
+def image_ready_script(selector: str) -> str:
+    """「그림 로드 대기」: the image exists, is complete and has a natural width."""
+    return (f"(() => {{ const i = document.querySelector({json.dumps(selector)}); "
+            "return Boolean(i) && i.complete === true && i.naturalWidth > 0; })()")
+
+
+def stable_script(selector: str) -> str:
+    """「안정 대기」 signature: element box, zoom scale attribute (nearest, else first), document height."""
+    return (f"(() => {{ const el = document.querySelector({json.dumps(selector)}); if (!el) return 'absent'; "
+            "const r = el.getBoundingClientRect(); "
+            "const z = el.closest('[data-zoom-scale]') || document.querySelector('[data-zoom-scale]'); "
+            "return [r.x, r.y, r.width, r.height, z ? z.getAttribute('data-zoom-scale') : '-', "
+            "document.documentElement.scrollHeight].join(','); })()")
+
+
+REQUIRE_CHECKS = {
+    'imageLoaded': lambda s: f"((i) => Boolean(i) && i.complete === true && i.naturalWidth > 0)(document.querySelector({s}))",
+    'box': lambda s: f"((e) => {{ if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; }})(document.querySelector({s}))",
+    'exists': lambda s: f"Boolean(document.querySelector({s}))",
+}
+
+
+def check_require(session: str, name: str, reqs: list[dict] | None) -> None:
+    """Scene preconditions after settling (spec: a missing precondition is 78). One page script, one boolean each."""
+    if not reqs:
+        return
+    items = []
+    for req in reqs:
+        (kind, selector), = req.items()
+        if kind not in REQUIRE_CHECKS:
+            raise CaptureError(f'{name}: unknown precondition {kind}')
+        items.append((kind, selector))
+    got = js(session, '[' + ', '.join(REQUIRE_CHECKS[k](json.dumps(sel)) for k, sel in items) + ']')
+    failed = [f'{k} {sel}' for (k, sel), ok in zip(items, got if isinstance(got, list) else []) if ok is not True]
+    if not isinstance(got, list) or len(got) != len(items) or failed:
+        raise CaptureError(f'{name}: precondition failed: {", ".join(failed) or got}')
+
+
+def parse_viewport(spec: str, viewports: dict[str, dict]) -> dict:
+    """--viewport for --metrics-only: a manifest id, or WxH[:touch|mouse] (default touch) for a size outside the list."""
+    if spec in viewports:
+        v = viewports[spec]
+        return {'id': v['id'], 'width': v['width'], 'height': v['height'], 'input': v['input']}
+    m = re.fullmatch(r'(\d+)x(\d+)(?::(touch|mouse))?', spec)
+    if not m or int(m[1]) <= 0 or int(m[2]) <= 0:
+        raise CaptureError(f'--viewport {spec!r}: not a viewport id or WxH[:touch|mouse]')
+    return {'id': f'{m[1]}x{m[2]}', 'width': int(m[1]), 'height': int(m[2]), 'input': m[3] or 'touch'}
+
+
+def measure_options() -> dict:
+    """measure.js source and options from targets.json and judge-exempt.txt (read once per run)."""
+    try:
+        targets = json.loads(TARGETS.read_text())['targets']
+        source = MEASURE.read_text()
+    except (OSError, ValueError, KeyError) as e:
+        raise CaptureError(f'numeric mode inputs unreadable: {e}') from e
+    exempt = []
+    for raw in EXEMPT.read_text().splitlines() if EXEMPT.exists() else []:
+        parts = [p.strip() for p in raw.split('·')]
+        if raw.strip() and not raw.strip().startswith('#') and len(parts) >= 3:
+            exempt.append({'metric': parts[0], 'selector': parts[1]})
+    return {'source': source, 'targets': [{k: t[k] for k in ('n', 'selector', 'measure') if k in t} for t in targets],
+            'exempt': exempt}
+
+
+def measure(session: str, name: str, scene: dict, theme: str, vp_id: str, vp: dict, opts: dict) -> dict:
+    data = js(session, f"({opts['source']})({json.dumps({'touch': vp['input'] == 'touch', 'targets': opts['targets'], 'exempt': opts['exempt']})})")
+    if not isinstance(data, dict) or 'overflow' not in data:
+        raise CaptureError(f'{name}: measure.js returned no metrics')
+    return {'schema': 'colab-visual-metrics/1', 'scene': scene['name'], 'theme': theme, 'viewport': vp_id,
+            'width': vp['width'], 'height': vp['height'], 'input': vp['input'], 'exemptList': opts['exempt'], **data}
+
+
+def metrics_summary(m: dict) -> dict:
+    cov = (m.get('map') or {}).get('coverage') or {}
+    small44 = sum(1 for t in m.get('targets') or [] for h in t.get('hits', []) if h['box'] and (h['w'] < 44 or h['h'] < 44))
+    return {'small44Hits': small44 if m.get('targets') is not None else None,
+            'font16': len(m['inputFont']['small']) if m.get('inputFont') else None,
+            'overflowRoots': len(m['overflow']['roots']), 'cellWidth': (m.get('map') or {}).get('cellWidth'),
+            'fourTools': cov.get('fourTools'), 'zoomGroup': cov.get('zoomGroup'),
+            'touchAction': (m.get('map') or {}).get('touchAction'), 'valueState': (m.get('map') or {}).get('valueState')}
 
 
 def run_action(session: str, action: dict) -> None:
@@ -183,6 +294,26 @@ def run_action(session: str, action: dict) -> None:
         ab(session, 'select', value[0], value[1])
     elif kind == 'scrollIntoView':
         ab(session, 'scrollintoview', value)
+    elif kind == 'waitImage':
+        for _ in range(WAIT_IMAGE_TRIES):
+            if js(session, image_ready_script(value)) is True:
+                break
+            time.sleep(0.1)
+        else:
+            raise CaptureError(f'waitImage: {value} not loaded (complete, naturalWidth > 0) within {WAIT_IMAGE_TRIES / 10:.0f}s')
+    elif kind == 'stable':
+        prev, same = None, 0
+        for _ in range(STABLE_TRIES):
+            sig = js(session, stable_script(value))
+            if sig is not None and sig == prev:
+                same += 1
+                if same >= STABLE_SAME:
+                    break
+            else:
+                prev, same = sig, 0
+            time.sleep(0.15)
+        else:
+            raise CaptureError(f'stable: {value} box / zoom scale / document height did not settle within {STABLE_TRIES * 0.15:.0f}s')
     elif kind == 'pickFile':
         # agent-browser 0.27.0 `upload` leaves the page unresponsive to Runtime.evaluate afterwards
         # (measured 2026-09-24), so the file is placed through DataTransfer in the page instead.
@@ -205,8 +336,10 @@ def url_for(port: int, scene: dict, theme: str) -> str:
 
 
 def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: dict[str, dict], port: int, out: pathlib.Path,
-                    session: str, dpr: int, blank: str) -> list[dict]:
-    """All captures of one theme whose viewport declares `input_name`, in one browser launched with that input's wrapper."""
+                    session: str, dpr: int, blank: str, metrics: dict | None = None, shoot: bool = True) -> list[dict]:
+    """All captures of one theme whose viewport declares `input_name`, in one browser launched with that input's wrapper.
+
+    metrics: measure_options() for numeric mode (None = off). shoot=False (--metrics-only) writes metrics only."""
     results = []
     ab(session, 'set', 'media', theme)
     for scene in scenes:
@@ -236,6 +369,19 @@ def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: 
             want = {'theme': theme, 'width': width, 'height': height, 'dpr': dpr, **INPUT_MEDIA[vp['input']]}
             if state != want:
                 raise CaptureError(f'{name}: page state {state} does not match viewport {vp_id} {want}')
+            check_require(session, name, scene.get('require'))
+            row = {'name': name, 'scene': scene['name'], 'theme': theme, 'viewport': vp_id, 'width': width,
+                   'height': height, 'input': vp['input']}
+            if metrics is not None:
+                # Before the screenshot: measure.js only reads boxes, styles and media state (no scroll, no DOM change).
+                m = measure(session, name, scene, theme, vp_id, vp, metrics)
+                mfile = out / f'{name}.metrics.json'
+                mfile.write_text(json.dumps(m, ensure_ascii=False, indent=1) + '\n')
+                row['metrics'] = {'file': mfile.name, **metrics_summary(m)}
+            if not shoot:
+                results.append(row)
+                print(f'{name} metrics {json.dumps(row["metrics"], ensure_ascii=False)}', flush=True)
+                continue
             path = out / f'{name}.png'
             shot = ['screenshot', str(path)]
             if scene['fullPage']:
@@ -245,8 +391,7 @@ def capture_session(theme: str, input_name: str, scenes: list[dict], viewports: 
                 raise CaptureError(f'{name}: screenshot missing or empty')
             errors = ab(session, 'errors').strip()
             data = path.read_bytes()
-            results.append({'name': name, 'scene': scene['name'], 'theme': theme, 'viewport': vp_id, 'width': width,
-                            'height': height, 'input': vp['input'], 'file': path.name,
+            results.append({**row, 'file': path.name,
                             'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'fullPage': scene['fullPage'],
                             'pageErrors': errors})
             print(f'{name} {len(data)}B', flush=True)
@@ -269,12 +414,27 @@ def main() -> int:
     ap.add_argument('--only', help='comma-separated scene names (debug; diff.mjs rejects a partial set with 78)')
     ap.add_argument('--force-input', choices=sorted(INPUT_MEDIA),
                     help='launch every session with this input wrapper (state-check proof: a viewport declaring the other input ends 78)')
+    ap.add_argument('--metrics', action='store_true',
+                    help='numeric mode: measure.js on every capture -> <name>.metrics.json + index summary (L0b)')
+    ap.add_argument('--metrics-only', action='store_true',
+                    help='measure one --scene at one --viewport without screenshots or index.json (L0b)')
+    ap.add_argument('--scene', help='--metrics-only: the scene name')
+    ap.add_argument('--viewport', help='--metrics-only: a viewport id or WxH[:touch|mouse] (default touch)')
+    ap.add_argument('--theme', choices=['light', 'dark'], help='--metrics-only: one theme (default: the scene themes)')
     args = ap.parse_args()
+    if args.metrics_only and (not args.scene or not args.viewport or args.only or args.metrics or args.force_input):
+        print('::visual-capture:: --metrics-only needs --scene and --viewport and takes no --only/--metrics/--force-input', file=sys.stderr)
+        return READINESS
+    if not args.metrics_only and (args.scene or args.viewport or args.theme):
+        print('::visual-capture:: --scene/--viewport/--theme are for --metrics-only', file=sys.stderr)
+        return READINESS
 
     out = (FRONTEND / '.visual' / args.label) if args.label else pathlib.Path(args.out).resolve()
     manifest_bytes = MANIFEST.read_bytes()
     manifest = json.loads(manifest_bytes)
     scenes = manifest['scenes']
+    if args.metrics_only:
+        args.only = args.scene
     if args.only:
         wanted = set(args.only.split(','))
         unknown = wanted - {s['name'] for s in scenes}
@@ -308,14 +468,35 @@ def main() -> int:
     if problems:
         print('::visual-capture:: manifest: ' + '; '.join(problems), file=sys.stderr)
         return READINESS
+    metrics_opts = None
+    try:
+        if args.metrics or args.metrics_only:
+            metrics_opts = measure_options()
+        if args.metrics_only:
+            vp = parse_viewport(args.viewport, viewports)
+            if vp['input'] not in input_args:
+                raise CaptureError(f'--viewport {args.viewport}: input {vp["input"]} has no browser.inputArgs')
+            scenes = [{**scenes[0], 'viewports': [vp['id']], 'themes': [args.theme] if args.theme else scenes[0]['themes']}]
+            viewports = {vp['id']: vp}
+    except CaptureError as e:
+        print(f'::visual-capture:: {e}', file=sys.stderr)
+        return READINESS
     expected = sum(len(s['viewports']) * len(s['themes']) for s in scenes)
     base_args = browser.get('args', [])
     dpr = int(manifest['deviceScaleFactor'])
 
     out.mkdir(parents=True, exist_ok=True)
-    for old in out.glob('*.png'):
-        old.unlink()
-    (out / 'index.json').unlink(missing_ok=True)
+    if args.metrics_only:
+        # Outside any index: never a pixel-comparison folder. Replace only this scene x viewport's files.
+        if (out / 'index.json').exists():
+            print(f'::visual-capture:: --metrics-only output {rel(out)} holds an index.json (a capture folder)', file=sys.stderr)
+            return READINESS
+        for theme in ('light', 'dark'):
+            (out / f'{scenes[0]["name"]}-{theme}-{scenes[0]["viewports"][0]}.metrics.json').unlink(missing_ok=True)
+    else:
+        for old in [*out.glob('*.png'), *out.glob('*.metrics.json')]:
+            old.unlink()
+        (out / 'index.json').unlink(missing_ok=True)
 
     if not args.skip_build:
         r = subprocess.run(['npm', 'run', 'audit:build'], cwd=FRONTEND, text=True, capture_output=True)
@@ -345,7 +526,8 @@ def main() -> int:
         port = free_port()
         preview = start_preview(port)
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.parallel) as pool:
-            futures = [pool.submit(capture_session, t, i, scenes, viewports, port, out, s, dpr, blank) for (t, i), s in sessions.items()]
+            futures = [pool.submit(capture_session, t, i, scenes, viewports, port, out, s, dpr, blank, metrics_opts,
+                                   not args.metrics_only) for (t, i), s in sessions.items()]
             captures = [c for f in futures for c in f.result()]
     except CaptureError as e:
         print(f'::visual-capture:: {e}', file=sys.stderr)
@@ -359,6 +541,16 @@ def main() -> int:
         stop_preview(preview)
         shutil.rmtree(wrap_dir, ignore_errors=True)
 
+    if args.metrics_only:
+        if len(captures) != expected:
+            print(f'::visual-capture:: expected {expected} metrics files, wrote {len(captures)}', file=sys.stderr)
+            return READINESS
+        run = {'schema': 'colab-visual-metrics-run/1', 'scene': scenes[0]['name'], 'viewport': viewports[scenes[0]['viewports'][0]],
+               'gitHead': git('rev-parse', 'HEAD'), 'gitDirty': bool(git('status', '--porcelain', '--untracked-files=no')),
+               'capturedAt': started.isoformat(timespec='seconds'), 'built': not args.skip_build, 'captures': captures}
+        (out / f'run-{scenes[0]["name"]}-{scenes[0]["viewports"][0]}.json').write_text(json.dumps(run, ensure_ascii=False, indent=2) + '\n')
+        print(f'{len(captures)} metrics files -> {rel(out)}')
+        return 0
     order = {n: i for i, n in enumerate(names)}
     vp_order = list(viewports)
     captures.sort(key=lambda c: (order[c['scene']], themes.index(c['theme']), vp_order.index(c['viewport'])))
@@ -380,6 +572,8 @@ def main() -> int:
         'browserArgs': base_args,
         'inputArgs': input_args,
         'forcedInput': args.force_input,
+        'metrics': bool(args.metrics),
+        'metricsInputs': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (MEASURE, TARGETS, EXEMPT)} if args.metrics else None,
         'deviceScaleFactor': dpr,
         'viewports': viewport_list,
         'scenes': names,
