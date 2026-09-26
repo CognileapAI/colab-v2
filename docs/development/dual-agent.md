@@ -57,8 +57,8 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
   작업 시작·종료 기록은 `docs/development/lifecycle-evidence.md`를 따른다. H6는 해당 작업의 산출물과 실제 인계를 검증한다.
 - 디자인 조사도 같은 사본에서는 읽기 전용 결과를 부모에게 반환한다. 파일 작성이 필요한
   병렬 레인은 사본을 분리한다. 테스트 작성이 필요한 fix는 승인된 시험 작성 단계에서 RED를 확인한 뒤
-  구현 단계로 진행한다. Codex는 `COLAB_FIX_LANE=1` env의 구현 단계에서 `test-file-guard`가 편집 시점에 막는다.
-  Claude Code는 hook env를 lane별로 줄 수 없어 편집 시점 차단이 없고, `begin --scope`의 인계(handoff/H7) 대조가 경계다.
+  구현 단계로 진행한다. fix는 `begin --fix --red`로 RED를 기록하고 `test-file-guard`가 기록 경로를 막는다(Claude·Codex 동일 ·
+  정본 `docs/development/lifecycle-evidence.md` 「fix 레인」). Codex `COLAB_FIX_LANE=1` env의 보호 4종은 보조다.
   Codex 보호 단계에서 테스트 수정 우회 값을 켜지 않는다.
 - agent-browser의 `references/` 8개와 `templates/` 3개는 원본 스킬 옆에 복원했다.
   확보 경로와 출처는 `.agents/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
