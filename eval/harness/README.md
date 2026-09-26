@@ -117,8 +117,9 @@ eval/harness/H<번호>-<이름>/
 
 ## 결과
 
-`eval/harness/results/<YYYYMMDD-HHMMSS>/` — 러너가 회차마다 **다섯 종**을 쓴다:
-`summary.md`(과제별 판정·초·USD 표 ＋ 요약줄) · `H??.out.{1,2}.txt`(응답 본문) ·
+`eval/harness/results/<YYYYMMDD-HHMMSS>/` — 러너가 회차마다 **여섯 종**을 쓴다:
+`summary.md`(과제별 판정·초·USD 표 ＋ 요약줄 ＋ 「설정 해시」 줄) · `config-hash.json`(이 회차를 잰 설정 해시 ·
+아래 「설정 해시 · 면제 조건」) · `H??.out.{1,2}.txt`(응답 본문) ·
 `H??.expect.{1,2}.txt`(`expect.sh` 의 판정 출력 — red 사유가 여기 있다 · `run.sh:190`) ·
 `H??.raw.{1,2}.json`(응답 원문) · `H??.err.{1,2}.txt`(표준오류).
 회차 이름은 **초 단위**다(⟨증보 2026-09-08⟩ 종전 ~~`<YYYYMMDD-HHMM>`~~ — 같은 분에 두 번 돌리면 앞 회차를 덮었다).
@@ -128,14 +129,15 @@ eval/harness/H<번호>-<이름>/
 넘어 남아야 하고, `eval/` 의 선례도 실측 산출을 추적한다
 (`s2b-alayer/baseline.json` · `s2b-alayer-g2/baseline-g2.json`).
 
-⭑ ⟨확정 2026-09-08 · WU-D6 · advisor ② 요구⟩ **추적하는 것은 다섯 중 셋이다** —
-`summary.md` · `H??.out.{1,2}.txt` · `H??.expect.{1,2}.txt`. 나머지 둘은 `results/.gitignore` 가 뺀다.
-／ 종전 ~~「이 폴더는 커밋한다(`.gitignore` 에 넣지 않는다)」~~ — 부분집합을 적지 않아 다섯 종 전부가
-추적 대상으로 읽혔다.
+⭑ ⟨갱신 2026-09-26 · E0⟩ **추적하는 것은 여섯 종 중 넷이다** —
+`summary.md` · `config-hash.json` · `H??.out.{1,2}.txt` · `H??.expect.{1,2}.txt`. 나머지 둘은 `results/.gitignore` 가 뺀다.
+／ 종전 ⟨확정 2026-09-08 · WU-D6⟩ 추적 3종(`config-hash.json` 이전) · 그 전 ~~「이 폴더는 커밋한다(`.gitignore` 에
+넣지 않는다)」~~ — 부분집합을 적지 않아 전 종이 추적 대상으로 읽혔다.
 
 | 종 | 추적 | 왜 |
 |---|---|---|
 | `summary.md` | **한다** | 승격 판정의 정본. 판정·초·USD 가 한 표에 있다 |
+| `config-hash.json` | **한다** | 「어느 설정에서 잰 결과인가」. 게이트 면제 분기가 현재 설정 해시와 대조한다 · `.gitignore` 제외 패턴에 걸리지 않아 자동 추적 |
 | `H??.out.{1,2}.txt` | **한다** | 「무엇을 답했는가」. 회귀를 읽는 자리 |
 | `H??.expect.{1,2}.txt` | **한다** | 「왜 red 였는가」. 불안정 과제의 판독 근거 |
 | `H??.raw.{1,2}.json` | 안 한다 | 본문이 `out` 과 중복 · `session_id`·`uuid` 가 회차마다 바뀌어 diff 만 늘린다. 비용·초는 `summary.md` 에 있다 |
@@ -144,7 +146,7 @@ eval/harness/H<번호>-<이름>/
 ## 시험
 
 ```bash
-bash eval/harness/tests/run-selftest.sh    # 7/7 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
+bash eval/harness/tests/run-selftest.sh    # 17/17 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
 ```
 
 ## 자리
