@@ -1,0 +1,26 @@
+@layer screens {
+/* 누르면 보이는 설명(spec S-DEVICE-WIDTH-INPUT-20260926 V9 · L3a). 터치일 때만 그려진다(입력 방식 훅) —
+   마우스 화면에는 이 규칙이 맞는 요소가 없다. 새 색 0 · 새 토큰 0 · 새 전환 0(펼침은 즉시). */
+
+/* 설명 단추 — 안에 든 기존 라벨(칩 · 표식)의 모양 · 글자를 그대로 둔다. 단추 자체는 투명한 누름 칸이다. */
+.touch-note-btn {
+  display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+  margin: 0; padding: 0; border: 0; border-radius: var(--radius-pill);
+  background: none; font: inherit; color: inherit; text-align: inherit; cursor: pointer;
+}
+/* 누르는 순간 피드백 — 목록 행 누름(`.tbl tr.clk:active td`)과 같은 누름 면 토큰. */
+.touch-note-btn:active { background: var(--color-surface-pressed); }
+
+/* 펼침 글 — 캡션 토큰(13px) · 보조 글자 토큰. 같은 칸 안 라벨 바로 뒤(우려 10ⓐ) · 칸의 `nowrap` 을 풀고 폭을 묶는다. */
+.touch-note-text {
+  display: block; max-width: 16rem; margin-top: 4px;
+  font-size: var(--text-caption); font-weight: 400; line-height: 1.5;
+  color: var(--color-text-muted); white-space: normal; overflow-wrap: anywhere; text-align: left;
+}
+.touch-note-text[hidden] { display: none; }
+
+/* 터치 기기 누름 칸 44 — 부록 B 밖의 새 누름 대상(설명 단추 · 누르는 계보 노드). 글자 크기는 그대로다. */
+@media (pointer: coarse) {
+  .touch-note-trigger { min-height: var(--control-height); min-width: var(--control-height); }
+}
+}
