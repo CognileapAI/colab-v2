@@ -51,11 +51,11 @@
         {"name": "레이더 기간 전체를 덮는 자료 — 기간 축만", "conditions": {"period": {"start": "2019-07-28", "end": "2024-07-09"}}, "expectSeq": [1, 2, 3, 4, 5, 13, 14], "forbidSeq": [6, 15, 16, 17, 19, 21, 25]},
         {"name": "식생 예측 기간을 덮는 자료 — 기간 축만", "conditions": {"period": {"start": "2023-05-01", "end": "2023-05-31"}}, "expectSeq": [6, 7, 8, 9, 10, 11, 12], "forbidSeq": [15, 16, 17, 19, 21, 25]}
       ],
-      "deferred": ["기간 교집합 계산(계산 기능)", "region 술어 — 2026-09-26 정본이 seq 1·2·19·20=남한 · 6=한반도로 고정했다(Ted 판정 「자료 지역 확정」). 그러나 조건 검색 region 은 표기 일치라 「한반도」가 남한 자료를 부르지 않는다 — measureOnlyProbes 로 잰다", "DEV 28건에 NWP 원천 자료가 0건이다(2026-09-15 후속 5번과 같은 축)", "platform 으로 지상·모형을 가르던 축 — 규칙 추론값은 초안 — 사람 확인 후 승격(결정 1). 기간 축만 남겨 partial 로 내렸다"],
+      "deferred": ["기간 교집합 계산(계산 기능)", "region 술어 — 2026-09-26 정본이 seq 1·2·19·20=남한 · 6=한반도로 고정했고(Ted 판정 「자료 지역 확정」) 조건 검색이 한반도 → 남한 한 단계를 편다(3회차). 남은 간극은 seq 3·4·5 남한이 초안이라는 것 — measureOnlyProbes 로 잰다", "DEV 28건에 NWP 원천 자료가 0건이다(2026-09-15 후속 5번과 같은 축)", "platform 으로 지상·모형을 가르던 축 — 규칙 추론값은 초안 — 사람 확인 후 승격(결정 1). 기간 축만 남겨 partial 로 내렸다"],
       "measureOnlyProbes": [
         {"name": "레이더 기간 전체를 덮는 지상 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "conditions": {"period": {"start": "2019-07-28", "end": "2024-07-09"}, "platform": "ground"}, "expectSeq": [1, 2, 3, 4, 13, 14], "forbidSeq": [19, 20]},
         {"name": "식생 예측 기간을 덮는 모형 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "conditions": {"period": {"start": "2023-05-01", "end": "2023-05-31"}, "platform": "model"}, "expectSeq": [5, 12], "forbidSeq": [15, 16]},
-        {"name": "한반도 + 레이더 기간 전체를 덮는 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」이므로 남한 자료(seq 1·2·19·20 정본 · 3·4·5 계보 초안)를 한반도 후보로 기대한다. 조건 검색의 region 은 표기 일치(contracts/search/semantics.json regions)라 지금은 남한을 한반도로 펴지 않는다 — 그 간극을 재는 probe 다", "conditions": {"region": "korean_peninsula", "period": {"start": "2019-07-28", "end": "2024-07-09"}}, "expectSeq": [1, 2, 3, 4, 5], "forbidSeq": [15, 16]}
+        {"name": "한반도 + 레이더 기간 전체를 덮는 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」. 조건 검색은 이제 한반도 → 남한·충청권 한 단계를 편다(intent 2026-09-26-region-containment-expansion · contracts/search/semantics.json regionWithin). 남은 간극은 seq 3·4·5 의 「남한」이 초안(region-from-lineage-parent)이라 reviewed 만 읽는 조건 검색에 서지 않는 것 — 승격 뒤 green 을 기대한다", "conditions": {"region": "korean_peninsula", "period": {"start": "2019-07-28", "end": "2024-07-09"}}, "expectSeq": [1, 2, 3, 4, 5], "forbidSeq": [15, 16], "pathB": {"id": "PB-REGION-1", "query": "2019년 7월 28일부터 2024년 7월 9일까지 한반도 레이더 강우 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}}
       ],
       "expectedCount": null
     },
@@ -71,12 +71,12 @@
         {"name": "5분 주기 — 결정 3 으로 새로 연 값", "conditions": {"cadence": "5min"}, "expectSeq": [1], "forbidSeq": [2, 4, 16, 17]},
         {"name": "10분 주기 — 결정 3 으로 새로 연 값", "conditions": {"cadence": "10min"}, "expectSeq": [17], "forbidSeq": [1, 2, 4, 16]},
         {"name": "5 km 이하 원 관측 해상도", "conditions": {"maxResolutionM": 5000}, "expectSeq": [1, 6, 7, 9, 10], "forbidSeq": [2, 3, 4]},
-        {"name": "두 조건 결합", "conditions": {"cadence": "15min", "maxResolutionM": 5000}, "expectSeq": [], "forbidSeq": [2, 4], "expectEmpty": true}
+        {"name": "두 조건 결합", "conditions": {"cadence": "15min", "maxResolutionM": 5000}, "expectSeq": [], "forbidSeq": [2, 4], "expectEmpty": true},
+        {"name": "한반도 + 5분 주기", "conditions": {"region": "korean_peninsula", "cadence": "5min"}, "expectSeq": [1], "forbidSeq": [16, 17], "pathB": {"id": "PB-REGION-2", "query": "한반도 5분 주기 레이더 강우 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}, "regionNote": "2026-09-26 3회차 — 지역 포함 관계(intent 2026-09-26-region-containment-expansion)로 reviewed seq 1(남한)이 한반도 조건에 맞아 measure_only 에서 판정 probe 로 옮겼다(3회차 측정 경로 1 reviewed green)"}
       ],
       "deferred": ["「1시간 이하」 범위 술어 — cadence 는 동등 비교뿐이다(d3_client_search.py 의 jsonb 등호)", "rn15 의 공간해상도가 정본에 없다 → 결합 조건이 0건이다", "hsr_sample(seq 3)의 공간해상도는 부모에게서 이어받은 규칙값(rule:native-resolution-carried)이라 이 회차에는 초안이다 — 그래서 5 km 이하 후보에서 빠지고 forbidSeq 에 적었다"],
       "measureOnlyProbes": [
-        {"name": "5 km 이하 원 관측 해상도 — 1회차 기대(seq 3 포함)", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "conditions": {"maxResolutionM": 5000}, "expectSeq": [1, 3, 6, 7, 9, 10], "forbidSeq": [2, 4], "supersedes": "5 km 이하 원 관측 해상도", "supersedeReason": "2회차(d533d374)는 seq 3 의 해상도가 규칙값(native-resolution-carried)이라 초안으로 내리면서 seq 3 을 forbidSeq 로 옮겼다 — 초안 보류의 산물이지 seq 3 이 5 km 를 넘는다는 정본 주장이 아니다. 초안 기여 측정에서는 이 1회차 기대가 그 probe 를 대신한다(reviewed 만 읽는 pytest 는 기존 probe 그대로)."},
-        {"name": "한반도 + 5분 주기", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」이므로 남한 자료(seq 1·2·19·20 정본 · 3·4·5 계보 초안)를 한반도 후보로 기대한다. 조건 검색의 region 은 표기 일치(contracts/search/semantics.json regions)라 지금은 남한을 한반도로 펴지 않는다 — 그 간극을 재는 probe 다", "conditions": {"region": "korean_peninsula", "cadence": "5min"}, "expectSeq": [1], "forbidSeq": [16, 17]}
+        {"name": "5 km 이하 원 관측 해상도 — 1회차 기대(seq 3 포함)", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "conditions": {"maxResolutionM": 5000}, "expectSeq": [1, 3, 6, 7, 9, 10], "forbidSeq": [2, 4], "supersedes": "5 km 이하 원 관측 해상도", "supersedeReason": "2회차(d533d374)는 seq 3 의 해상도가 규칙값(native-resolution-carried)이라 초안으로 내리면서 seq 3 을 forbidSeq 로 옮겼다 — 초안 보류의 산물이지 seq 3 이 5 km 를 넘는다는 정본 주장이 아니다. 초안 기여 측정에서는 이 1회차 기대가 그 probe 를 대신한다(reviewed 만 읽는 pytest 는 기존 probe 그대로)."}
       ],
       "expectedCount": null
     },
@@ -145,7 +145,7 @@
       "deferred": ["격자 해상도 대조 문장", "DEV 28건에 NWP 원천이 0건이다", "「2022년을 덮는 **모형** 자료」 probe — platform 은 규칙 추론값이라 초안 — 사람 확인 후 승격(결정 1). 연도 축만 남겨 partial 로 내렸다"],
       "measureOnlyProbes": [
         {"name": "2022년을 덮는 모형 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "conditions": {"coverageYear": 2022, "platform": "model"}, "expectSeq": [5], "forbidSeq": [15, 16, 12]},
-        {"name": "2022년 한반도 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」이므로 남한 자료(seq 1·2·19·20 정본 · 3·4·5 계보 초안)를 한반도 후보로 기대한다. 조건 검색의 region 은 표기 일치(contracts/search/semantics.json regions)라 지금은 남한을 한반도로 펴지 않는다 — 그 간극을 재는 probe 다", "conditions": {"region": "korean_peninsula", "coverageYear": 2022}, "expectSeq": [1, 2, 3, 4, 5], "forbidSeq": [15, 16]}
+        {"name": "2022년 한반도 자료", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」. 조건 검색은 이제 한반도 → 남한·충청권 한 단계를 편다(intent 2026-09-26-region-containment-expansion · contracts/search/semantics.json regionWithin). 남은 간극은 seq 3·4·5 의 「남한」이 초안(region-from-lineage-parent)이라 reviewed 만 읽는 조건 검색에 서지 않는 것 — 승격 뒤 green 을 기대한다", "conditions": {"region": "korean_peninsula", "coverageYear": 2022}, "expectSeq": [1, 2, 3, 4, 5], "forbidSeq": [15, 16], "pathB": {"id": "PB-REGION-3", "query": "2022년 한반도 강우 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}}
       ],
       "expectedCount": null
     },
@@ -161,10 +161,10 @@
         {"name": "5분 주기 자료 — 1시간 이하", "conditions": {"cadence": "5min"}, "expectSeq": [1], "forbidSeq": [2, 4, 16]},
         {"name": "10분 주기 자료 — 1시간 이하", "conditions": {"cadence": "10min"}, "expectSeq": [17], "forbidSeq": [1, 2, 4, 16]}
       ],
-      "deferred": ["「1시간 이하」 범위 술어", "region 한반도 — 2026-09-26 정본이 seq 1·2·19·20=남한 · 6=한반도로 고정했다(Ted 판정 「자료 지역 확정」). 조건 검색 region 은 표기 일치라 남한⊂한반도를 펴지 않는다 — measureOnlyProbes 로 잰다", "결측률 비교"],
+      "deferred": ["「1시간 이하」 범위 술어", "region 한반도 — 조건 검색이 한반도 → 남한 한 단계를 편다(3회차 · intent 2026-09-26-region-containment-expansion). seq 4 남한이 초안이라 이 probe 는 승격 뒤 green 이다 — measureOnlyProbes 로 잰다", "결측률 비교"],
       "expectedCount": null,
       "measureOnlyProbes": [
-        {"name": "한반도 강수 + 15분 주기", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」이므로 남한 자료(seq 1·2·19·20 정본 · 3·4·5 계보 초안)를 한반도 후보로 기대한다. 조건 검색의 region 은 표기 일치(contracts/search/semantics.json regions)라 지금은 남한을 한반도로 펴지 않는다 — 그 간극을 재는 probe 다", "conditions": {"region": "korean_peninsula", "variable": "precipitation", "cadence": "15min"}, "expectSeq": [2, 4], "forbidSeq": [5, 6]}
+        {"name": "한반도 강수 + 15분 주기", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」. 조건 검색은 이제 한반도 → 남한·충청권 한 단계를 편다(intent 2026-09-26-region-containment-expansion · contracts/search/semantics.json regionWithin). 남은 간극은 seq 3·4·5 의 「남한」이 초안(region-from-lineage-parent)이라 reviewed 만 읽는 조건 검색에 서지 않는 것 — 승격 뒤 green 을 기대한다", "conditions": {"region": "korean_peninsula", "variable": "precipitation", "cadence": "15min"}, "expectSeq": [2, 4], "forbidSeq": [5, 6], "pathB": {"id": "PB-REGION-4", "query": "한반도 15분 주기 강수 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}}
       ]
     },
     {
@@ -201,7 +201,7 @@
       "deferred": ["결측률 수치 비교·순위 — 상한 술어(maxMissingRatePercent)는 d3_dataset_variable.missing_rate_percent 로 열렸으나 DEV 28건에 값이 없어 후보가 0건이고, 순위 자체는 이 오라클 스키마가 재지 않는다. NL 경로의 test_search_numeric_quality.py 골든은 그대로다(결정 4=㈎)", "2016~2025 전 기간을 덮는 자료가 DEV 28건에 없다 — 후보집합은 실제로 덮이는 해로 잰다"],
       "expectedCount": null,
       "measureOnlyProbes": [
-        {"name": "한반도 강수 + 2021년 포함", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」이므로 남한 자료(seq 1·2·19·20 정본 · 3·4·5 계보 초안)를 한반도 후보로 기대한다. 조건 검색의 region 은 표기 일치(contracts/search/semantics.json regions)라 지금은 남한을 한반도로 펴지 않는다 — 그 간극을 재는 probe 다", "conditions": {"region": "korean_peninsula", "variable": "precipitation", "coverageYear": 2021}, "expectSeq": [2, 4, 5], "forbidSeq": [6, 7]}
+        {"name": "한반도 강수 + 2021년 포함", "mode": "measure_only", "reason": "초안 값 측정 전용 · 정답 주장 아님", "regionNote": "2026-09-26 Ted 판정 「자료 지역 확정」 — 1 「남한⊂한반도 관계로 연결」. 조건 검색은 이제 한반도 → 남한·충청권 한 단계를 편다(intent 2026-09-26-region-containment-expansion · contracts/search/semantics.json regionWithin). 남은 간극은 seq 3·4·5 의 「남한」이 초안(region-from-lineage-parent)이라 reviewed 만 읽는 조건 검색에 서지 않는 것 — 승격 뒤 green 을 기대한다", "conditions": {"region": "korean_peninsula", "variable": "precipitation", "coverageYear": 2021}, "expectSeq": [2, 4, 5], "forbidSeq": [6, 7], "pathB": {"id": "PB-REGION-5", "query": "2021년이 포함된 한반도 강수 자료 찾아줘", "note": "경로 2 자연어 판(결정 3). 해석은 interpret-fixture.json 의 규칙 기반 녹화 — 실모델 녹화는 별도 승인 대기"}}
       ]
     },
     {

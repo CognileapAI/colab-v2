@@ -329,3 +329,23 @@
 - 그래프: `db/ai/seed/region_south_korea.sql` · `db/ai/seed/k2b-graph-standard.tsv` · `services/ai-service/src/colab_ai/domains/d9_ontology.py`
 - 근거 패널 규칙: `dev-package/intent/2026-09-25-search-rationale-separation.md`(Q6·Q7) · `2026-09-26-rationale-facts-wording.md`
 - 결정: 〈N〉 (병합 시 기입)
+
+## 측정 결과 — 3회차(2026-09-26 · 제품 코드 · 반사실 패치 없음)
+- 입력: `dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json`(develop 생성물 + 1회차 승격 = dev 적재 모양 · `prepare_input_payload.py` 재생성 sha256 `73a523f0…` 동일). 일회용 postgres · 시드 evidence 543 · draft_withheld 69 · 평가 77회 · 모델 호출 0 · DB 지문 전후 동일.
+- 산출: `dev-package/reports/evidence-promotion/round-3-2026-09-26/`(`measurement/draft-contribution{.json,-review.md}` · `region-probe-states.json` · 재현 `run_measurement.sh` · `region_probe_states.py` · 경로 2 녹화 `record_path_b_queries.py` · 오라클 반영 `apply_oracle_changes.py`).
+
+| probe | 경로 1 reviewed | 경로 1 초안 포함 | 경로 2 reviewed | 경로 2 초안 포함 | 경로 2가 못 서는 이유 |
+|---|---|---|---|---|---|
+| PC-1-3#m3 한반도 + 레이더 기간 전체 | red [1,2] | green [1..5] | red [] | red [] | 일 단위 두 끝의 기간을 파서가 값으로 옮기지 못한다(period null → 기간 unknown) |
+| PC-1-4 한반도 + 5분 주기(→ 판정 probe `#p7`) | green [1] | green [1] | green [1] | green [1] | — |
+| PC-2-3#m2 2022년 한반도 | red [1,2] | green [1..5] | red [] | red [] | 연도만 쓴 기간을 파서가 값으로 옮기지 못한다 |
+| PC-2-4#m1 한반도 강수 + 15분 | red [2] | green [2,4] | red [1,2] | red [1..5] | 「15분」 주기를 파서가 읽지 않는다 → 주기 조건 없이 seq 5(금지)까지 들어온다 |
+| PC-2-7#m1 한반도 강수 + 2021년 | red [2] | green [2,4,5] | red [] | red [] | 연도 포함 조건을 파서가 값으로 옮기지 못한다 |
+
+- 합계: 경로 1 reviewed 1/5 · 초안 포함 5/5(완료 정의 ② 충족). 경로 2(파일 근거 후보) 1/5 · 1/5. 경로 2 전체 검색 결과(낱말 일치 포함 · 참고 열) 기준 green 은 3/5 · 3/5다.
+- 상향 누수 0 — 경로 1 `{"region": "남한"}` 은 reviewed [1,2,19,20] · 초안 포함 [1..5,19,20]만 부르고 한반도 자료(6 · 초안 21~24)를 부르지 않는다. 경로 2 「남한 식생 자료」는 seq 6(한반도)을 파일 근거 후보로 올리지 않는다.
+- 역전 0 — 경로 1 33케이스 초안 포함 green 28 → 33(늘어난 5 = 「한반도」 probe) · 초안 제외 28 → 29(PC-1-4) · 경로 2 골든 9/10 불변 · heldout 불변.
+- 규칙표: `region-from-lineage-parent` 경로 1 기여 4 · 역전 0(경로 2 0 / 0). 결정 5 지름길이 제품 경로에서 선다 — 승격은 다음 승격 회차의 Ted 판정이다(완료 정의 ③).
+- 오라클(완료 정의 ⑤ — 부분): reviewed 만으로 green 인 PC-1-4 「한반도 + 5분 주기」만 `probes`로 옮겼다(measure_only 16 → 15). 나머지 4건은 초안 승격 대기로 measure_only에 남기고, regionNote·deferred 문장을 「포함 관계는 열렸고 남은 간극은 초안 승격」으로 고쳤다.
+- 경로 2 완료(완료 정의 ④)는 이번 PR에서 주장하지 않는다 — 규칙 기반 녹화로 1/5이고, 남은 4건은 지역이 아니라 기간·주기 파서 한계다. 실모델 녹화는 별도 승인 대기다.
+- 점수판(완료 정의 ⑥): 3/5/3/3 불변(`2026-09-21-evidence-promotion.md` 점수판 3회차 줄).

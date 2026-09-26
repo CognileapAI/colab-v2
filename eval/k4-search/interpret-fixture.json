@@ -11,7 +11,11 @@
    "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 사후 확인 전용(승격 근거 아님)",
    "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
   },
-  "modelCalls": 0
+  "modelCalls": 0,
+  "practitionerPathB": {
+   "what": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음. 실무자 「한반도」 region probe 5건의 경로 2 자연어 판(PB-REGION-*)과 상향 누수 대조 질의(PB-LEAK-*). 실모델 녹화는 별도 승인 대기(intent 2026-09-26-region-containment-expansion 결정 3)",
+   "interpreterSha256": "6f80c7ec260c6aeaf4ae5818e16c56bf6f0083acfff98ffabbed4ac993a05181"
+  }
  },
  "entries": [
   {
@@ -369,6 +373,104 @@
     "그",
     "월평균을",
     "함께",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-1",
+   "query": "2019년 7월 28일부터 2024년 7월 9일까지 한반도 레이더 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2019년",
+    "7월",
+    "28일부터",
+    "2024년",
+    "9일까지",
+    "한반도",
+    "레이더",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-2",
+   "query": "한반도 5분 주기 레이더 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "한반도",
+    "5분",
+    "주기",
+    "레이더",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-3",
+   "query": "2022년 한반도 강우 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2022년",
+    "한반도",
+    "강우",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-4",
+   "query": "한반도 15분 주기 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "한반도",
+    "15분",
+    "주기",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-REGION-5",
+   "query": "2021년이 포함된 한반도 강수 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "2021년이",
+    "포함된",
+    "한반도",
+    "강수",
+    "자료",
+    "찾아줘"
+   ],
+   "topic": null,
+   "source": "literal",
+   "recordedFrom": "LiteralInterpreter().interpret(query) — 사전·그래프 확장 없음"
+  },
+  {
+   "id": "PB-LEAK-1",
+   "query": "남한 식생 자료 찾아줘",
+   "isDataQuery": true,
+   "terms": [
+    "남한",
+    "식생",
+    "자료",
     "찾아줘"
    ],
    "topic": null,
