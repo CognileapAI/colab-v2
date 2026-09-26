@@ -302,7 +302,10 @@ def measure(evaluate, facts: list[dict], rules: list[str], case_reads: dict) -> 
                for group in (*DECISION_GROUPS, *SIDE_GROUPS)}
     return {"summary": summary, "rules": rule_rows, "facts": fact_rows,
             "greenWithAllDrafts": {g: sorted(c for c, v in with_all[g].items() if v["green"])
-                                   for g in (*DECISION_GROUPS, *SIDE_GROUPS)}}
+                                   for g in (*DECISION_GROUPS, *SIDE_GROUPS)},
+            # reviewed 만(초안 전부 뺌)으로 green 인 케이스 — 오라클 재채점(measure_only → probe)의 근거 열.
+            "greenWithoutAnyDraft": {g: sorted(c for c, v in without_all[g].items() if v["green"])
+                                     for g in (*DECISION_GROUPS, *SIDE_GROUPS)}}
 
 
 def fingerprint_digest(rows: list[tuple]) -> dict:

@@ -112,6 +112,7 @@
 2. rn15_sample(seq 4) — 정본 문장이 자기 주기를 말하지 않는다(부모 이름 「rn15 15분 누적강수」뿐). reviewed `15min` 을 그대로 둘 것인가, 초안 규칙(부모 주기 이어받기)으로 내릴 것인가? 내리면 PC-1-4·2-4 의 15분 probe 기대가 [2, 4] → [2] 로 바뀐다.
 3. ERA5 변환 결과(seq 16) — 정본 문장은 「각 24시각이다」로 시각 수만 말한다. 산출 간격을 매시(`hourly`)로 읽어도 되는가?
 4. hsr_sample(seq 3) — 주기 사실이 없다. 부모 HSR 의 「5분」을 초안 규칙으로 이어받는 규칙을 둘 것인가? (지금은 범위 술어에서 unknown)
+5. 점수판 — PC-1-3 · PC-2-3 을 1회차 등급(full)으로 되돌린 재채점(아래 측정 결과 · 8 · 3 · 3 · 0)을 받을 것인가, 지역 probe 가 초안 대기인 동안 partial(6 · 5 · 3 · 0)로 둘 것인가?
 
 ## 범위 밖 (명시 제외)
 - 주기 실측(파일 시간축 간격 측정) — 헤더 파서 부활과 함께 별도 과제.
@@ -133,3 +134,43 @@
 - 정본: `dev-package/reports/reference-data/datasets-md/**/DATASETS.md` · 판독표 `dev-package/tools/dataset_evidence_backfill.py` `READINGS`
 - 측정: `dev-package/reports/evidence-promotion/round-4-2026-09-26/`
 - 결정: 〈N〉 (병합 시 기입)
+
+## 측정 결과 — 4회차(2026-09-26 · 제품 코드 · 반사실 패치 없음)
+- 입력: `dev-package/reports/evidence-promotion/round-2-2026-09-26/input-payload.json`(develop 생성물 `c12b50d9…` + 1회차 승격 3규칙 = dev 적재 모양 · 재생성 sha256 `73a523f0…` 동일 확인). 일회용 postgres · 시드 evidence 543 · draft_withheld 69 · 평가 77회 · 모델 호출 0 · DB 지문 전후 동일.
+- 산출: `dev-package/reports/evidence-promotion/round-4-2026-09-26/` — `measurement/`(재채점 뒤) · `measurement-code/`(재채점 전 · 구현만) · `cadence-probe-states.json` · 재현 `run_measurement.sh` · probe 추가 `add_cadence_probes.py` · 재채점 `regrade_oracle.py`(+ `oracle_format.py`).
+
+### 「1시간 이하」 probe (reviewed 만 = 초안 포함 · 결과 같음)
+
+| probe | 경로 | 결과 | 맞은 자료(seq · 이름 · 주기) |
+|---|---|---|---|
+| PC-1-4#p8 1시간 이하(전 자료) `maxCadenceSeconds=3600` | 1 | green | 1 HSR 레이더 반사도 원자료(5min) · 2 rn15 15분 누적강수(15min) · 4 rn15_sample(15min) · 16 ERA5 변환 결과(hourly) · 17 GK-2A LST 원자료(10min) |
+| PC-1-4#p9 강수 변수 + 1시간 이하 | 1 | green | 2 · 4 |
+| 〃 자연어 판 PB-CADENCE-1 「시간해상도 1시간 이하 강수 자료 찾아줘」 | 2 | green | 파일 근거 후보 1 · 2 · 4(강우·강수 주제) |
+| PC-1-4#p10 1시간 이하 + 5 km 이하 | 1 | green | 1 |
+| PC-2-4#p5 한반도 + 1시간 이하 | 1 | green | 1 · 2(남한 ⊂ 한반도) |
+| 〃 자연어 판 PB-CADENCE-2 「시간해상도 1시간 이하 한반도 강수 자료 찾아줘」 | 2 | green | 파일 근거 후보 1 · 2 |
+| PC-2-4#p6 한반도 + 1시간 이하 + 5 km 이하 | 1 | green | 1 |
+
+- 일·주·월·연 자료(6 · 7 · 8 · 11 · 12 · 13 · 14)와 주기 없는 자료(3 · 5)는 들어오지 않는다.
+- 경로 2 는 강우·식생·가뭄 세 주제만 읽는다 — ERA5(16) · GK-2A LST(17)는 「파일 포맷 예제」 주제라 경로 2 「1시간 이하」에 닿지 않는다(범위 밖).
+- 약한 근거(질문 1~3): 맞은 5 자료 중 seq 2 · 4 · 16 의 주기는 정본 문장이 산출 간격을 직접 말하지 않는다. 값은 그대로 두고 Ted 확인을 기다린다.
+- 대조 녹화 PB-CADENCE-3 「30분 이내 강우 자료 찾아줘」 → 경로 2 조건 `maxCadenceSeconds=1800`.
+
+### 다른 probe·골든 (역전 0)
+- 3회차 측정(같은 입력 · develop 코드)과 비교: 경로 1 초안 포함 green 33 → 38 · 초안 제외 29 → 34(늘어난 5 = 새 probe) · 잃은 green 0 · 골든 경로 2 9/10 · heldout 경로 2 초안 포함 4/6 · 제외 3/6 불변.
+- 경로 2 「15분」 주기 읽기(설계트리 Q6): 영향은 PC-2-4 「한반도 강수 + 15분 주기」 자연어 판(PB-REGION-4) 하나다 — reviewed red(후보 [1, 2] → [2], seq 4 지역이 초안) · 초안 포함 red [1..5] → **green [2, 4]**. 3회차가 이 probe 의 red 원인으로 적은 「「15분」 주기를 파서가 읽지 않는다」가 풀렸다. 골든·heldout 은 뒤집히지 않았다.
+
+### 14사례 점수판 (오라클 등급 · 답 가능 = full · 부분 = partial · 불가 = blocked · 초안 대기 = blocked_draft)
+
+| | 답 가능 | 부분 | 불가 | 초안 대기 |
+|---|---:|---:|---:|---:|
+| 전 — 오라클 기록(2회차 이후 · dev 보다 한 회차 뒤) | 3 | 5 | 3 | 3 |
+| 후 — 4회차 재채점(dev 실상태 = 1회차 승격 반영) | **8** | **3** | 3 | **0** |
+
+- 기대했던 6 · 5 · 3 · 0 이 아니라 **8 · 3 · 3 · 0** 이다. 오라클 규칙대로 매기면 이렇게 된다.
+  - blocked_draft 3사례(PC-1-2 · 1-6 · 2-2): 사유였던 규칙이 승격돼 1회차 probe 가 reviewed 만으로 green 이다 → full.
+  - PC-1-3 · PC-2-3: 2회차가 **platform 초안 때문에** full → partial 로 내린 사례다. 그 사례 deferred 가 사유를 축자로 적었다 — 「… 기간 축만 남겨 partial 로 내렸다」 · 「… 연도 축만 남겨 partial 로 내렸다」. 1회차에는 같은 probe 로 full 이었다(`git show d533d374^:eval/k4-search/practitioner-conditions.json`). 사유가 풀렸으므로 1회차 등급으로 되돌렸다.
+  - 두 사례에 남은 deferred(지역 초안 · NWP 원천 0건 · 기간 교집합)는 1회차 full 때도 있던 것이다. 지역 probe 는 measure_only 에 남는다 — PC-2-4 · 2-7 과 같은 모양이다.
+  - 이 두 건을 partial 로 둘지는 Ted 판정으로 되돌릴 수 있다(`regrade_oracle.py` 의 `BACK_TO_FULL` · pytest 집계 두 줄).
+- 이번 회차의 주기 범위 술어는 등급을 바꾸지 않는다. PC-1-4 · 2-4 는 이미 full 이었고, deferred 「「1시간 이하」 범위 술어」가 닫혔다.
+- dev 실상태 주의: 등급은 develop 생성물 + 1회차 승격(= 2회차 payload 가 dev 에 반영될 때의 모양) 기준이다. dev 에는 2회차 지역 reviewed(seq 1 · 2 · 19 · 20 남한)가 아직 없다(dev 반영 GO 대기). 그래서 지역을 쓰는 판정 probe 2건(PC-1-4#p7 「한반도 + 5분 주기」 · PC-2-4#p5 「한반도 + 1시간 이하」)은 지금 dev 에서는 0건이다. 두 probe 가 든 사례의 다른 probe 는 dev 에서도 선다. 승격 3규칙(platform · directObservation · seq 3 해상도)은 dev 에 이미 있다(`2026-09-21-evidence-promotion.md` dev 반영 표 — platform=ground 8건 · directObservation=true 20건 · 5 km 이하 6건).
