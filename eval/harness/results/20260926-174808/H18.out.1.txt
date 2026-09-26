@@ -1,0 +1,52 @@
+`gate-render-latency.sh` 를 읽고 입력 다섯 가지로 직접 돌려 봤습니다. 이 게이트는 「못 잰 것」을 세 군데에서 통과로 셉니다. 파일은 고치지 않았습니다.
+
+## 지금 갈래 (`gate-render-latency.sh`)
+
+| 줄 | 조건 | 지금 동작 | 실제 뜻 |
+|---|---|---|---|
+| 7–10 | `COLAB_RENDER_URL` 이 비어 있음 | 「측정 생략」 출력 · exit 0 | 무언인데 통과로 셈 |
+| 12–16 | URL 은 있는데 curl 결과가 비어 있음 | 「측정 생략」 출력 · exit 0 | 값을 선언했는데 못 쟀고, 통과로 셈 |
+| 18–21 | p95 > 1200 | red · exit 1 | 정상 |
+| 23–24 | 그 밖의 모든 경우 | green · exit 0 | 숫자가 아닌 응답도 여기로 옴 |
+
+실행 결과 (`file://` 로 응답을 흉내 냄):
+- URL 없음 → exit 0
+- `http://127.0.0.1:1` (연결 거부) → exit 0
+- 응답이 `<html>502 Bad Gateway</html>` → 18행에서 `[: integer expression expected` 오류가 난 뒤 `render-latency green — p95 <html>502 Bad Gateway</html>ms` 를 찍고 exit 0
+- 800 → green · exit 0 / 1500 → red · exit 1
+
+빠진 것:
+- **명시 면제 갈래가 없습니다.** 사람이 「이번엔 재지 않는다」고 선언할 방법이 없습니다.
+- 그 자리를 무언(7–10)이 차지해 exit 0 으로 끝납니다. 종료 코드만 보면 green 과 구분되지 않습니다.
+- 값을 선언한 상태에서도 못 잰 경우가 두 곳에서 통과로 빠집니다.
+  - 12–16: 응답이 없을 때
+  - 18: 숫자가 아닐 때 `[` 오류가 거짓으로 처리돼 23행 green 으로 감
+- 원인은 세 가지입니다.
+  - `curl -s` 에 `-f` 가 없어 HTTP 오류 본문을 값으로 받습니다.
+  - `--max-time` 이 없어 요청이 무한정 걸릴 수 있습니다.
+  - 받은 값이 숫자인지 확인하지 않습니다.
+
+## 세 상태별 동작
+
+저장소의 기존 규칙을 따릅니다 (`gates/run.sh:510-516` frontend-visual 과 같은 형태). 미선언은 red(준비) · 78 · `cause=입력미선언`, 명시 면제는 측정하지 않은 사실을 드러낸 채 통과입니다.
+
+1. **선언** (`COLAB_RENDER_URL` 있음)
+   - `curl -sf --max-time N "$URL/metrics/p95"` 로 잰 뒤 값이 `^[0-9]+$` 인지 확인합니다.
+   - ≤ 1200 → green · exit 0
+   - \> 1200 → red(판정), `::error::` 출력 · exit 1
+   - 응답 없음, HTTP 오류, 시간 초과, 숫자 아님 → red(준비), `::gate-readiness-failure:: cause=측정불가` 출력 · exit 78. 값을 선언했는데 못 쟀으므로 통과가 아닙니다.
+2. **명시 면제** (예: `COLAB_RENDER_LATENCY_EXEMPT=<사유>`)
+   - curl 을 부르지 않습니다.
+   - 요약줄은 `green` 이 아니라 `render-latency 면제 — 미측정 · 사유: …` 로 찍고, 면제 건수로 따로 셉니다.
+   - 사유가 비어 있으면 면제로 인정하지 않고 무언으로 처리합니다.
+   - URL 과 면제가 함께 선언되면 모순으로 보고 red(준비) · 78 로 끝냅니다.
+   - 종료는 exit 0 입니다.
+3. **무언** (URL 도 면제도 없음)
+   - 재지 않습니다.
+   - red(준비), `::gate-readiness-failure:: cause=입력미선언 — COLAB_RENDER_URL 또는 COLAB_RENDER_LATENCY_EXEMPT 를 선언하라` 를 출력하고 exit 78 로 끝냅니다.
+
+- 판정: 결함 있음
+- 지금 빠진 갈래: 명시 면제 갈래가 없어 무언(7–10행)이 exit 0 통과로 흡수되고, 선언 상태의 측정 실패(12–16행 응답 없음 · 18행 숫자 아님)도 exit 0 으로 샌다
+- 상태1 선언: curl -sf --max-time 으로 재고 숫자인지 확인 → ≤1200 green / >1200 red(판정) / 못 잼 red(준비) · exit 0 / 1 / 78
+- 상태2 명시 면제: 측정하지 않고, 요약줄에 green 이 아닌 「면제 — 미측정 · 사유」와 면제 건수를 드러낸다(사유 없는 면제는 무언으로 처리) · exit 0
+- 상태3 무언: 측정하지 않고 red(준비) `::gate-readiness-failure:: cause=입력미선언` 으로 선언을 요구한다 · exit 78

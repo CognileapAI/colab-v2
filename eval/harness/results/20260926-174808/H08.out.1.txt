@@ -1,0 +1,18 @@
+I checked all 65 `font-size` declarations in the three files: detail.css has 24, upload.css has 24 and lineageGraph.css has 17. I blanked out comments while keeping line numbers, and cross-checked the count with `grep -ci`. No files were changed. This is a static check of the literal values in the CSS, not a computed-style or accessibility certification.
+
+**How the 65 declarations split**
+
+| Group | Count | Note |
+|---|---|---|
+| px literal under 13px | 34 | detail 7 · upload 14 · lineageGraph 13 |
+| px literal of 13px or more | 12 | e.g. upload.css:49 13px, detail.css:33 31px |
+| Can't be read | 19 | all are `var(--text-*)` (detail 16 · lineageGraph 3). No `rem` or `calc` values appear. |
+
+- The 34 flagged declarations are 10px, 10.5px, 11px, 12px or 12.5px. The decimal ones are lineageGraph.css:44 (10.5px) and :45 (12.5px).
+- `font: inherit` at detail.css:139 and 148 and upload.css:177 and 206 is not a `font-size` declaration, so it's not counted.
+- The error rules in detail.css (`.fl-err`, `.dlerr`, `.de-err`) all use `var(--text-body-sm)`. They count as "can't be read," so this check neither passes nor fails them.
+- The only error rule that's shared by several selectors and already at 13px is `.vizerr, .warn` (upload.css:138–145, `font-size` on line 144). It stays as is.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px
