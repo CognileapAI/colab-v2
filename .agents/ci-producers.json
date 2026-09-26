@@ -91,6 +91,26 @@
           "gates": [
             "generated-up-to-date"
           ]
+        },
+        "region-within-drift-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "region-within-drift-selftest"
+          ],
+          "gates": [
+            "region-within-drift-selftest"
+          ]
+        },
+        "region-within-drift": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "region-within-drift"
+          ],
+          "gates": [
+            "region-within-drift"
+          ]
         }
       }
     },

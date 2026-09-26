@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from ..kernel import errors
 from ..kernel.ids import Ulid
 
+from ..kernel.region_scope import region_match
 from ..kernel.search_semantics import SEMANTICS, SEMANTIC_VERSION
 
 SEOUL = ZoneInfo('Asia/Seoul')
@@ -202,7 +203,7 @@ def plan_query(query, *, now=None, context=None):
             'asOf':now.isoformat(), 'semanticVersion':SEMANTIC_VERSION,'referenceVariable':reference_variable}
 
 
-def _predicate(key, wanted, facts, metadata, row):
+def _predicate(key, wanted, facts, metadata, row, *, expand_region=True):
     if key == 'descriptionAll':
         return all(word.lower() in (metadata.get('summary') or '').lower() for word in wanted)
     if key == 'uploadedMonth':
@@ -241,8 +242,11 @@ def _predicate(key, wanted, facts, metadata, row):
     value = facts.get(key)
     if value is None:
         return None
-    if key in ('variable','region'):
-        return canonical(value, 'variables' if key=='variable' else 'regions') == wanted
+    if key == 'region':
+        # 직계 하위 한 단계까지(`kernel/region_scope.py` · SQL 후보와 같은 표). 부분 문자열로 넓히지 않는다.
+        return region_match(wanted, value, expand=expand_region)[0]
+    if key == 'variable':
+        return canonical(value, 'variables') == wanted
     return value == wanted
 
 
@@ -250,7 +254,10 @@ def evaluate(plan, metadata, evidence):
     verdicts = []
     for row in evidence or [{}]:
         facts = row.get('facts',{})
-        predicates = {key:_predicate(key,wanted,facts,metadata,row) for key,wanted in plan['conditions'].items()}
+        # reference_match 의 지역은 기준 파일의 지역 그대로다 — 「같은 지역」은 포함 관계가 아니다.
+        expand = plan.get('intent') != 'reference_match'
+        predicates = {key:_predicate(key,wanted,facts,metadata,row,expand_region=expand)
+                      for key,wanted in plan['conditions'].items()}
         status = 'contradicted' if False in predicates.values() else 'unknown' if None in predicates.values() else 'supported'
         verdicts.append({'status':status,'checks':{k:'unknown' if v is None else 'supported' if v else 'contradicted' for k,v in predicates.items()},
                          'fileId':row.get('file_id'),'fileName':row.get('file_name'),

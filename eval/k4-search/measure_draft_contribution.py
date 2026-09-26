@@ -121,8 +121,11 @@ def load_pure(name: str, path: pathlib.Path):
 
 
 def conditions_module():
-    return load_pure("k4_search_evidence_conditions",
-                     CORE_SRC / "colab_core" / "app" / "search_evidence_conditions.py")
+    """경로 2 순수 함수. 지역 포함 관계 도우미(`colab_core.kernel.region_scope`)를 상대 import 하므로
+    파일 경로 적재(`load_pure`)가 아니라 패키지로 싣는다 — 2026-09-26 지역 포함 관계 intent."""
+    if str(CORE_SRC) not in sys.path:
+        sys.path.insert(0, str(CORE_SRC))
+    return importlib.import_module("colab_core.app.search_evidence_conditions")
 
 
 def terms_module():
@@ -533,6 +536,10 @@ def load_cases() -> dict:
             if probe.get("mode") != "measure_only":
                 raise Refused(f"{case['id']} measureOnlyProbes[{index}] 의 mode 가 measure_only 가 아니다")
             probes.append(dict(probe, id=f"{case['id']}#m{index}"))
+        for probe in [*(case.get("probes") or []), *restored]:
+            spec = probe.get("pathB")
+            if spec and (spec["id"] not in interpret or interpret[spec["id"]]["query"] != spec["query"]):
+                raise Refused(f"경로 2 녹화 해석이 없거나 질의가 다르다: {spec['id']}")
         if not case.get("probes") and not restored:
             excluded.append({"id": case["id"], "path": "A",
                              "reason": f"probe 0건(mode {case['mode']}) — 판정할 것이 없다"})
@@ -635,9 +642,28 @@ class Evaluator:
 
     # ── 경로 2 (routes/catalog.py 경로 2 블록의 도메인 재현) ──
     def path_b_ids(self, query, interp, reviewed, body_cache) -> list[str]:
+        return self._path_b(query, interp, reviewed, body_cache)[1]
+
+    def path_b_probe(self, probe, reviewed, body_cache) -> dict:
+        """실무자 probe 의 경로 2 자연어 판(`pathB`) — 결정 5 계산에 들어가지 않는 곁가지 측정.
+
+        green(파일 근거) = `search_evidence_conditions.candidates` 가 올린 포함 집합이 expectSeq 를 모두 담고
+        forbidSeq 를 담지 않는다. 지역 조건이 바꾸는 것은 이 집합이다. 전체 검색 결과(낱말 일치 포함)
+        기준 green 은 참고 열이다(2026-09-26 지역 포함 관계 intent 결정 3).
+        """
+        spec = probe["pathB"]
+        include, ids = self._path_b(spec["query"], self.cases["interpret"][spec["id"]], reviewed, body_cache)
+        ev_seqs = sorted(self.seq_of[i] for i in include if i in self.seq_of)
+        all_seqs = [self.seq_of[i] for i in ids if i in self.seq_of]
+        return {"green": probe_green(probe, ev_seqs), "evidenceSeqs": ev_seqs,
+                "greenSearch": probe_green(probe, all_seqs), "searchSeqs": all_seqs,
+                # null = 조건은 섰지만 파서가 값으로 옮기지 못했다(예: 기간 범위 → period null → 기간 unknown).
+                "criteria": {k: v for k, v in self.sec.parse(spec["query"]).items() if v is not False}}
+
+    def _path_b(self, query, interp, reviewed, body_cache) -> tuple[list[str], list[str]]:
         terms = self.terms.candidate_terms(query, list(interp["terms"]))
         if not (interp["isDataQuery"] and terms):
-            return []
+            return [], []
         criteria = self.sec.parse(query)
         include_ids, exclude_ids = [], []
         if reviewed and criteria["topic"] and not criteria["unsupported"]:
@@ -661,7 +687,7 @@ class Evaluator:
         matches, _total = self.db.d3_catalog.search_datasets(
             self.s, terms=tuple(terms), topic=interp["topic"], limit=SEARCH_LIMIT, offset=0,
             evidence_ids=tuple(include_ids), excluded_ids=tuple(exclude_ids), include_ontology=True)
-        return [m.dataset_id for m in matches]
+        return list(include_ids), [m.dataset_id for m in matches]
 
     def _golden(self, case, ids) -> dict:
         judged = self.assess(case, [{"dataset_id": i} for i in ids], len(ids))

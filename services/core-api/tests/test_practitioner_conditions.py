@@ -155,8 +155,10 @@ def test_measure_only_probes_are_excluded_from_the_green_claim():
     restored = [(case["id"], probe) for case in ORACLE["cases"]
                 for probe in case.get("measureOnlyProbes", [])]
     # 11 = 1회차 복원(2026-09-26 「전부 권고대로」) · +5 = 2회차 지역 「한반도」 region probe
-    # (Ted 판정 2026-09-26 「자료 지역 확정」 — PC-1-3·1-4·2-3·2-4·2-7).
-    assert len(restored) == 16
+    # (Ted 판정 2026-09-26 「자료 지역 확정」 — PC-1-3·1-4·2-3·2-4·2-7) · −1 = 3회차 지역 포함 관계
+    # (intent `2026-09-26-region-containment-expansion.md`)로 reviewed 만으로 green 이 된 PC-1-4 「한반도 + 5분
+    # 주기」를 판정 probe 로 옮겼다. 나머지 4건은 seq 3·4·5 남한이 초안이라 measure_only 로 남는다.
+    assert len(restored) == 15
     assert "measure_only" in ORACLE["modes"]
     for case_id, probe in restored:
         case = CASES[case_id]

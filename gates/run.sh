@@ -12,7 +12,7 @@ GATE="${1:-}"
 # (2026-09-26 A4 — 아래 인자 검사가 host mutex·gate-start 앞에서 읽도록 이 자리로 올렸다.)
 ALL_GATES=(
   planning-freshness agent-bridge harness-contract adr-records intent-ref operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
-  seam-consistency generated-up-to-date import-boundary banned-import
+  seam-consistency generated-up-to-date region-within-drift import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
   frontend-typecheck frontend-test frontend-fixture-reach frontend-design-lint frontend-visual
@@ -22,7 +22,7 @@ ALL_GATES=(
   service-tests-viz-render service-tests-pipeline-worker
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
-  generated-selftest work-item-selftest stage2-markers-selftest
+  generated-selftest region-within-drift-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   seed-plan-drift-selftest dev-reseed-selftest product-release-selftest product-reseed-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
@@ -395,6 +395,19 @@ case "$GATE" in
     # 이면 명시 면제(미실행 사실을 요약에 드러낸 채 md→등재표 대조만) · 둘 다 없으면
     # red(준비 · 입력미선언 · 78). 침묵은 통과가 아니다.
     exec "$REPO_ROOT/gates/tools/seed-plan-drift.sh"
+    ;;
+  region-within-drift)
+    # 검색 계약의 지역 포함 표(`contracts/search/semantics.json` `regionWithin`) ↔ D9 그래프
+    # (`db/ai/seed/k2b-graph-standard.tsv` 지명 `안에 있다` 엣지·expandable · `db/ai/seed/*.sql` 의
+    # `d9_place_alias`). 그래프 사실을 계약에 한 번 더 적으므로(intent
+    # `2026-09-26-region-containment-expansion.md` 결정 1 ㈎) 둘이 갈라지면 red — 하향 · 깊이 1 ·
+    # 팬아웃 ≤ 6 · 별칭 일치. 입력 부재·`regionWithin` 미선언은 red(준비 · 78).
+    exec "$REPO_ROOT/gates/tools/region-within-drift.sh"
+    ;;
+  region-within-drift-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 엣지 삭제 · 그래프에만 있는 하위 ·
+    # 상향 하위 · 팬아웃 7 · 별칭 누락 = red(판정), 그래프 부재 = red(준비), 표 미선언 = 입력미선언.
+    exec "$REPO_ROOT/gates/tools/region-within-drift-selftest.sh"
     ;;
   seed-plan-drift-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 등재표 손수정 red(판정) ·
