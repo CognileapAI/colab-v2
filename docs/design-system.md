@@ -20,7 +20,7 @@
 | 층 | 파일 | 소유하는 것 | 금지(게이트) |
 |---|---|---|---|
 | tokens | `frontend/src/shell/tokens.css` | 저장소 유일의 `:root` — 라이트 한 블록 · 900px 분기 · 다크 `:root[data-theme="dark"]` 한 블록 · 640px 분기 | 정본 밖 `:root` 정의(a) · 정본 밖 `:root` 선택자·`@import`(d) |
-| base | `frontend/src/shell/base.css` | 원소 규칙 — `*` box-sizing · 폼 원소 글꼴 · `:focus-visible` 윤곽 · 640px 입력 글자 바닥 | 클래스 규칙(관례) · `!important`(e) |
+| base | `frontend/src/shell/base.css` | 원소 규칙 — `*` box-sizing · 폼 원소 글꼴 · `:focus-visible` 윤곽(입력 글자 16px 바닥은 강제 우선이 필요해 `shell.css` 의 「640px 이하 또는 터치 기기」 블록 한 곳에 둔다) | 클래스 규칙(관례) · `!important`(e) |
 | primitives | `frontend/src/shell/primitives.css` | 공통 부품 6계열의 **기본값** — btn · field · chip · card · table · modal | 화면 선택자(관례) · `!important`(e) · 이 파일 밖의 맨 정의(e) |
 | patterns | (파일 없음 · 이름만 선언) | 후보 — ④ | — |
 | screens | `frontend/src/components/**/*.css` · `frontend/src/auth/login.css` · `frontend/src/shell/shell.css` | 화면 배치와 화면 편차(범위 선택자) · 한 화면 전용 토큰(화면 루트 클래스 범위) | `:root`(a·d) · `@import`(d) · 색 리터럴(f) · 프리미티브 맨 정의(e) |
@@ -180,35 +180,35 @@
 <!-- generated:primitives -->
 입력(sha256):
 
-- `frontend/src/shell/primitives.css` `b3af79994a05b56e430c8bb3dae4031395b1f09ecdbd2c24d11aada259390aba`
+- `frontend/src/shell/primitives.css` `6bfff1f57a076c8af3c36f1de68754c012a26e95fc7a9c59721251edeb302fbe`
 - `gates/fixtures/frontend-design-lint/primitives.txt` `82e423d8d2ffd7e4e92cab80301bcbf15e6ea87437310a0f99568aab4c14253f`
 - `gates/fixtures/frontend-design-lint/primitives-exempt.txt` `25f7aa495f529320af9ae53c064479bac5a3c08f1b07ee8cf9b631dc3f001eda`
 - `gates/fixtures/frontend-design-lint/same-in-dark.txt` `d3c7cc75de6a409954ab2b6f85fda6d929882a19dc84922b5b79ae9428325c40`
 
-목록 클래스 22(계열 6) · `primitives.css` 규칙 37 · 선언 125
+목록 클래스 22(계열 6) · `primitives.css` 규칙 36 · 선언 124
 
 | 계열 | 목록 클래스 | 규칙 | 기본값 선언 |
 |---|---:|---:|---:|
 | btn | 6 | 11 | 31 |
-| field | 2 | 2 | 8 |
+| field | 2 | 1 | 7 |
 | chip | 2 | 7 | 25 |
 | card | 3 | 4 | 16 |
 | table | 3 | 6 | 18 |
 | modal | 6 | 7 | 27 |
-| **계** | 22 | 37 | 125 |
+| **계** | 22 | 36 | 124 |
 
 규칙 = 그 클래스가 `:not()`·`:has()` 인자 밖에 나오는 `primitives.css` 규칙(폭 분기 포함). 한 규칙이 두 클래스에 걸리면(`:is(.inp, .sel)`) 아래 표의 두 행에 모두 세고, 계열 합계는 한 번만 센다. 「정의 없음」 = 목록에는 있어 화면 파일의 맨 정의가 막히지만 기본값이 없다.
 
 | 계열 | 클래스 | 규칙 | 선언 | 선택자 |
 |---|---|---:|---:|---|
-| btn | `.btn` | 4 | 15 | `.btn`<br>`.btn:where(:not(.btn-primary, :disabled)):hover`<br>`.btn:where(:not(.btn-primary)):active`<br>`.btn:disabled` |
-| btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:where(:not(:disabled)):hover`<br>`.btn-primary:active` |
+| btn | `.btn` | 4 | 15 | `.btn`<br>`.btn:where(:not(.btn-primary, :disabled)):hover` · (hover: hover)<br>`.btn:where(:not(.btn-primary)):active`<br>`.btn:disabled` |
+| btn | `.btn-primary` | 3 | 5 | `.btn-primary`<br>`.btn-primary:where(:not(:disabled)):hover` · (hover: hover)<br>`.btn-primary:active` |
 | btn | `.btn-secondary` | 1 | 3 | `.btn-secondary` |
 | btn | `.btn-ghost` | 1 | 1 | `.btn-ghost` |
 | btn | `.btn-danger` | 정의 없음 | — |  |
 | btn | `.btn-sm` | 2 | 7 | `.btn-sm`<br>`.btn-sm` · (max-width: 640px), (pointer: coarse) |
-| field | `.inp` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
-| field | `.sel` | 2 | 8 | `:is(.inp, .sel)`<br>`:is(.inp, .sel)` · (max-width: 640px) |
+| field | `.inp` | 1 | 7 | `:is(.inp, .sel)` |
+| field | `.sel` | 1 | 7 | `:is(.inp, .sel)` |
 | chip | `.chip` | 2 | 16 | `.chip`<br>`.chip:where(:not([class*="chip--"]))` |
 | chip | `.chip--*` | 5 | 9 | `.chip--off`<br>`.chip--verified`<br>`.chip--lineage`<br>`.chip--neutral`<br>`.chip--warning` |
 | card | `.card` | 1 | 5 | `.card` |

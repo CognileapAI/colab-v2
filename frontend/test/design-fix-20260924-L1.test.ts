@@ -184,7 +184,7 @@ describe('WU-A1 · 버튼 누름(값 14)', () => {
 describe('#9 · 기본·보조 단추 hover(값 10)', () => {
   // F-css A2 · A5 · A13 — 비활성 단추는 hover 에서 제외(`:where()` 로 특이도 무변).
   it('`.btn-primary:where(:not(:disabled)):hover` = primary-700', () => {
-    expect(decls(body(PRIM, '.btn-primary:where(:not(:disabled)):hover'))).toContain('background: var(--color-primary-700)');
+    expect(decls(body(PRIM, '.btn-primary:where(:not(:disabled)):hover', '@media (hover: hover)'))).toContain('background: var(--color-primary-700)');
   });
   it('hover 제외 목록에 `.btn-secondary` 가 없다', () => {
     const hover = rules(PRIM).filter((r) => r.selectors.some((s) => /^\.btn:where\(:not\(.*\)\):hover$/.test(s)));
@@ -392,7 +392,7 @@ describe('WU-A2 · 셸 대화형 10종 누름(값 15)', () => {
   ];
   for (const [sel, d] of hovers) {
     it(`기존 hover 불변: ${sel}`, () => {
-      expect(decls(body(SHELL, sel))).toEqual(d);
+      expect(decls(body(SHELL, sel, '@media (hover: hover)'))).toEqual(d);
     });
   }
 });

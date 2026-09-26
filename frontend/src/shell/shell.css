@@ -7,8 +7,11 @@
 
 /* 셸 레이아웃 · GNB — 규칙과 치수의 정본은 목업 `mockups/제품_260817.html` 의 `.gnb` 블록이다.
    목업을 임의로 변형하지 않는다. 목업에 없는 요소를 여기서 발명하지 않는다. */
-/* P2b — `*` 리셋 · 원소(button·input·select·textarea) 글꼴 · `:where()` 초점 링 · 640px 입력 글자 16px 는
-   `base.css`(`@layer base`)로 옮겼다. 원소 규칙은 primitives 층(`.btn`·`.inp` …)에 져야 하므로 screens 층에 둘 수 없다. */
+/* P2b — `*` 리셋 · 원소(button·input·select·textarea) 글꼴 · `:where()` 초점 링은
+   `base.css`(`@layer base`)로 옮겼다. 원소 규칙은 primitives 층(`.btn`·`.inp` …)에 져야 하므로 screens 층에 둘 수 없다.
+   입력 글자 16px 바닥은 이 파일의 「640px 이하 또는 터치 기기」 블록 한 곳이다(강제 우선 · 기본 층 금지).
+   `:hover` 는 `@media (hover: hover)` 안에 둔다(spec S-DEVICE-WIDTH-INPUT-20260926 V10) — 제자리에서 감싸 층 · 순서 ·
+   명시도가 그대로다. */
 
 /* ===== 못 불러왔을 때의 한 자리 (`components/common/LoadFailure.tsx`) =====
    화면마다 다른 CSS 파일을 쓰므로 **전역인 여기**에 둔다 — 카탈로그·상세·프로젝트가
@@ -71,11 +74,13 @@
   text-decoration: none;
   transition: border-color var(--ease), background var(--ease), color var(--ease);
 }
-.detail-page .backlink:hover,
-.project-detail .backlink:hover {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text);
+@media (hover: hover) {
+  .detail-page .backlink:hover,
+  .project-detail .backlink:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
 }
 .detail-page .backlink:active,
 .project-detail .backlink:active { background: var(--color-gray-100); }
@@ -179,9 +184,11 @@ body {
   text-decoration: none;
   transition: color var(--ease), background var(--ease);
 }
-.mainnav a:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+@media (hover: hover) {
+  .mainnav a:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
 }
 /* 상단 메뉴 링크는 hover 가 surface-hover 라 누름은 surface-pressed(값 19 · 다크에서 gray-100 = hover 였다 · A3 · A10). */
 .mainnav a:active { background: var(--color-surface-pressed); }
@@ -221,9 +228,11 @@ body {
   white-space: nowrap;
   transition: background var(--ease), border-color var(--ease);
 }
-.gnb-settings:hover {
-  background: var(--color-gray-50);
-  border-color: var(--color-gray-400);
+@media (hover: hover) {
+  .gnb-settings:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-400);
+  }
 }
 .gnb-settings:active { background: var(--color-gray-100); }
 
@@ -245,7 +254,7 @@ body {
   white-space: nowrap;
   transition: background var(--ease);
 }
-.gnb-upload:hover { background: var(--color-primary-700); }
+@media (hover: hover) { .gnb-upload:hover { background: var(--color-primary-700); } }
 .gnb-upload:active { background: var(--color-primary-800); } /* 파란 채움 누름 = primary-800(design-fix 후속 20260925 Q3a) */
 
 .avatar-wrap { position: relative; }
@@ -296,9 +305,11 @@ body {
   cursor: pointer;
   transition: background var(--ease), border-color var(--ease);
 }
-.gnb-more:hover {
-  background: var(--color-gray-50);
-  border-color: var(--color-gray-400);
+@media (hover: hover) {
+  .gnb-more:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-400);
+  }
 }
 .gnb-more:active { background: var(--color-gray-100); }
 .gnb-more-list {
@@ -332,7 +343,7 @@ body {
   text-decoration: none;
   cursor: pointer;
 }
-.gnb-more-item:hover { background: var(--color-gray-50); }
+@media (hover: hover) { .gnb-more-item:hover { background: var(--color-gray-50); } }
 .gnb-more-item:active { background: var(--color-gray-100); }
 .gnb-more-item .lbl { white-space: nowrap; }
 
@@ -353,9 +364,11 @@ body {
   transition: color var(--ease), border-color var(--ease);
 }
 
-.gnb-logout:hover {
-  color: var(--color-text);
-  border-color: var(--color-border-shell);
+@media (hover: hover) {
+  .gnb-logout:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-shell);
+  }
 }
 .gnb-logout:active { background: var(--color-gray-100); }
 
@@ -425,6 +438,11 @@ body {
 
 
   .settings-page, .notfound { padding: 20px 16px 32px; }
+}
+/* 입력 글자 16px 바닥 — 저장소에 한 곳뿐이다(spec S-DEVICE-WIDTH-INPUT-20260926 V8 · 우려 3ⓐ). 640px 이하 또는 터치가
+   주 입력인 기기(`pointer: coarse`)에서 iOS 가 입력 칸에 초점을 줄 때 화면을 확대하지 않게 한다. 기본 · 프리미티브 층은
+   강제 우선이 금지라 이 화면 층에 둔다. */
+@media (max-width: 640px), (pointer: coarse) {
   /* Keep editable controls legible without mobile browser auto-zoom. */
   /* Component font shorthands must not undo the iOS input-size floor.
      Keep a larger inherited font where a parent intentionally uses one. */
@@ -470,4 +488,19 @@ body {
 }
 :is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
 :is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x:active { background: var(--color-gray-100); }
+/* 터치 누름 칸 44(spec S-DEVICE-WIDTH-INPUT-20260926 V7 · 부록 B 레인 L2a 1–7 · 21 · 22) — 터치가 주 입력인 기기에서
+   최소 높이와 최소 가로를 `--control-height`(터치 44px)로 둔다. 선택자는 같은 요소에 걸린 900px · 640px 규칙과 같은
+   명시도이고 파일 끝이라 뒤 순서로 이긴다. 로고는 메뉴 막대 높이 안에서 누름 칸만 키우고, 글자 링크는 글자 크기를
+   바꾸지 않고 inline-flex 누름 상자만 키운다. 미등록 미리보기 되돌아가기(`.preview-page .backlink`)는 미리보기 CSS 몫. */
+@media (pointer: coarse) {
+  .gnb a.brand,
+  .gnb .mainnav a,
+  .gnb :is(.gnb-settings, .gnb-upload, .gnb-more),
+  .gnb .gnb-logout,
+  .theme-switcher,
+  .notfound a,
+  .detail-page .backlink,
+  .project-detail .backlink { min-height: var(--control-height); min-width: var(--control-height); }
+  .notfound a { display: inline-flex; align-items: center; }
+}
 }
