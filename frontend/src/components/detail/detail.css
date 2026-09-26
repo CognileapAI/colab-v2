@@ -317,4 +317,7 @@
 :is(.dt-header, .dt-card) { border-radius: var(--radius-lg); box-shadow: none; }
 .dt-card h3 { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
 .detail-page .dsec-h h2 { font-size: 20px; }
+
+/* 휴대폰·패드 대응 20260926 (L1a · spec 「레인 확정」 허용 1규칙) — 긴 파일 경로가 머리 밖으로 흐르지 않는다. */
+.detail-page .dh-file { overflow-wrap: anywhere; }
 }

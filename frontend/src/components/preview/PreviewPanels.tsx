@@ -1,14 +1,17 @@
 // S-08 의 조각들. **화면 글자는 전부 정본 §8.1·§9 에서 그대로 온다** — 여기서 새 한국어를
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
 import { legendValue } from './format';
 import { resultImageSrc, tileUrl } from './tiles';
 import { baseLevel, levelFor, visibleTiles } from './tileGrid';
 import { centeredPanFor, type ZoomPan } from './useZoomPan';
 import { BoundsOutline, PreviewZoomControls } from './PreviewZoomControls';
-import { PreviewOverlay } from './PreviewOverlay';
+import { PreviewBelow, PreviewOverlay, type PreviewOverlayProps } from './PreviewOverlay';
+import { PreviewSlotBelow } from './PreviewSlot';
+import { useMapCellLayout } from './useMapCellWidth';
 import { BasemapLayer } from './BasemapLayer';
 import { lonAtFraction, latAtFraction } from './projection';
 
@@ -235,6 +238,10 @@ export function PreviewMap(props: {
   onDisplayed?: (() => void) | undefined;
 }) {
   const { result, zoom } = props;
+  /** ⭑ ⟨휴대폰·패드 대응 20260926 · V2⟩ 지도 칸 폭 — 810 미만이면 네 도구가 아래 블록으로 간다. */
+  const [cellRef, cellLayout] = useMapCellLayout();
+  /** 아래 자리(상세 틀 묶음 안). `undefined` 면 틀 밖이라 지도 구역의 형제로 그린다(미등록). */
+  const slotBelow = useContext(PreviewSlotBelow);
   /** 커서 위경도 HUD 의 상태. `null` = 아직 지도 위가 아니다 · `'밖'` = 경계 밖이다. */
   const [hud, setHud] = useState<{ lat: number; lon: number } | '밖' | null>(null);
   /**
@@ -254,8 +261,60 @@ export function PreviewMap(props: {
   // ⭑ ⟨2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도 화면이 타일 쪽이다.
   const tiled = Boolean(result.tileUrlTemplate && result.bounds && zoom);
   const src = tiled ? undefined : resultImageSrc(result);
+  /** 도구 네 자리. 어디(도구 층 · 아래 블록)에 설지는 `PreviewOverlay` 모듈 한 곳이 정한다. */
+  const tools: PreviewOverlayProps = {
+    below: cellLayout === 'below',
+    topRight: (
+      <dl className="pv-legend" aria-label="범례">
+        {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
+            화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
+            돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
+        {result.legend.variable ? (
+          <div className="pv-legend-row" data-testid="legend-variable">
+            <dt>변수</dt>
+            <dd>{result.legend.variable}</dd>
+          </div>
+        ) : null}
+        {result.legend.classes.map((c) => (
+          <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
+            <dt>
+              <span className="pv-swatch" style={{ '--pv-swatch-bg': c.color } as React.CSSProperties} />
+            </dt>
+            {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
+            <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
+          </div>
+        ))}
+      </dl>
+    ),
+    ...(zoom ? { bottomRight: <PreviewZoomControls zoom={zoom} /> } : {}),
+    ...(props.actions ? { shot: props.actions } : {}),
+    ...(result.bounds || props.valuePanel
+      ? {
+          bottomLeft: (
+            <>
+              {/* 커서 위경도 HUD — 값 조회 패널 **위**에 서고, 출처 라벨로 그것과 갈린다.
+                  `aria-live` 를 걸지 않는다: 커서를 따라 초당 수십 번 바뀌는 값을 읽어 주면
+                  보조기술 사용자가 다른 것을 못 듣는다. 그 사람의 길은 값 조회(클릭)다. */}
+              {result.bounds ? (
+                <p className="pv-hud" data-testid="preview-cursor-hud">
+                  {hud === null
+                    ? HUD_IDLE
+                    : hud === '밖'
+                      ? HUD_OUTSIDE
+                      : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
+                </p>
+              ) : null}
+              {props.valuePanel ?? null}
+            </>
+          ),
+        }
+      : {}),
+  };
+  const below = <PreviewBelow {...tools} />;
   return (
+    <>
     <section
+      ref={cellRef}
       className="pv-map"
       data-testid="preview-map"
       {...(result.tileUrlTemplate ? { 'data-tile-template': result.tileUrlTemplate } : {})}
@@ -372,64 +431,15 @@ export function PreviewMap(props: {
           {/* ⭑ ⟨#120⟩ **도구 층 — 뷰포트의 직계 자식이자 층 묶음의 형제.** 여기 들어온
               것은 그림을 옮기고 키워도 제자리에 남는다. 배치 규칙은 `PreviewOverlay` 한
               곳에 살고, `.pv-mapcol` 에는 뷰포트만 남아 틀 안에 넘칠 것이 없다. */}
-          <PreviewOverlay
-            topRight={
-              <dl className="pv-legend" aria-label="범례">
-                {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
-                    화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
-                    돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
-                {result.legend.variable ? (
-                  <div className="pv-legend-row" data-testid="legend-variable">
-                    <dt>변수</dt>
-                    <dd>{result.legend.variable}</dd>
-                  </div>
-                ) : null}
-                {result.legend.classes.map((c) => (
-                  <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
-                    <dt>
-                      <span className="pv-swatch" style={{ '--pv-swatch-bg': c.color } as React.CSSProperties} />
-                    </dt>
-                    {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
-                    <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
-                  </div>
-                ))}
-              </dl>
-            }
-            {...(zoom || props.actions
-              ? {
-                  bottomRight: (
-                    <>
-                      {zoom ? <PreviewZoomControls zoom={zoom} /> : null}
-                      {props.actions ?? null}
-                    </>
-                  ),
-                }
-              : {})}
-            {...(result.bounds || props.valuePanel
-              ? {
-                  bottomLeft: (
-                    <>
-                      {/* 커서 위경도 HUD — 값 조회 패널 **위**에 서고, 출처 라벨로 그것과 갈린다.
-                          `aria-live` 를 걸지 않는다: 커서를 따라 초당 수십 번 바뀌는 값을 읽어 주면
-                          보조기술 사용자가 다른 것을 못 듣는다. 그 사람의 길은 값 조회(클릭)다. */}
-                      {result.bounds ? (
-                        <p className="pv-hud" data-testid="preview-cursor-hud">
-                          {hud === null
-                            ? HUD_IDLE
-                            : hud === '밖'
-                              ? HUD_OUTSIDE
-                              : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
-                        </p>
-                      ) : null}
-                      {props.valuePanel ?? null}
-                    </>
-                  ),
-                }
-              : {})}
-          />
+          <PreviewOverlay {...tools} />
         </div>
       </div>
     </section>
+    {/* ⭑ ⟨휴대폰·패드 대응 20260926 · V2⟩ **아래 블록은 뷰포트 JSX 밖에서 만든다** — 그 안의 누름 ·
+        포인터 누름 · 마우스 이동이 뷰포트 핸들러로 전달되지 않는다(#120 「이벤트 정지는 도구 층 한 곳」
+        유지). 상세는 틀 묶음의 아래 자리로 portal, 미등록은 지도 구역 바로 뒤 형제다. */}
+    {slotBelow === undefined ? below : slotBelow ? createPortal(below, slotBelow) : null}
+    </>
   );
 }
 

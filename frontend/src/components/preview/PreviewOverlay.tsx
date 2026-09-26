@@ -15,17 +15,28 @@
  * ⚠ **문면을 만들지 않는다** — 이 파일에 한국어 화면 글자는 없다. 버튼 이름·HUD·값 조회·
  *   범례 문구는 호출부가 이미 갖고 있는 정본 문면 그대로다.
  */
+/*
+ * ⭑ ⟨휴대폰·패드 대응 20260926 · V2⟩ **좁은 지도 칸의 배치도 이 모듈 한 곳에 산다.**
+ *   지도 칸이 810 미만이면(`below`) 도구 층에는 확대 묶음(`bottomRight` · 터치 맞춤 단추 포함)만
+ *   남고, 좌표 표시 · 값 조회(`bottomLeft`) → 범례(`topRight`) → 스크린샷(`shot`) 이 이 순서로
+ *   아래 블록(`PreviewBelow`)에 선다(우려 5 ⓐ). 도구 층 요소 자체는 남기고 모서리 묶음만 비운다.
+ *   아래 블록은 뷰포트 밖에 그려지므로 뷰포트 핸들러가 그 안의 누름을 받지 않는다.
+ */
 import type { MouseEvent, ReactNode } from 'react';
 import './preview.css';
 
 export interface PreviewOverlayProps {
   /** 우상단 — 범례. */
   topRight?: ReactNode;
-  /** 우하단 — 확대·축소·기본 배율·스크린샷. */
+  /** 우하단 — 확대 묶음(확대·축소·기본 배율 · 터치 맞춤 단추). */
   bottomRight?: ReactNode;
+  /** 우하단 확대 묶음 뒤 — 스크린샷. 좁은 지도 칸에서는 아래 블록으로 간다. */
+  shot?: ReactNode;
   /** 좌하단 — 커서 위경도 표시와 값 조회 패널. */
   bottomLeft?: ReactNode;
   testId?: string;
+  /** 지도 칸이 810 미만인가(`useMapCellLayout`). 모르면 거짓 — 지금 배치(#120)다. */
+  below?: boolean;
 }
 
 /**
@@ -53,9 +64,26 @@ export function PreviewOverlay(props: PreviewOverlayProps) {
     >
       {/* 모서리 묶음은 **여백과 간격을 소유한다** — 도구 요소는 margin 을 지지 않는다.
           컨테이너의 `pointer-events: none` 덕에 빈 자리는 그림에 그대로 닿는다. */}
-      {props.topRight ? <div className="pv-overlay-tr">{props.topRight}</div> : null}
-      {props.bottomRight ? <div className="pv-overlay-br">{props.bottomRight}</div> : null}
-      {props.bottomLeft ? <div className="pv-overlay-bl">{props.bottomLeft}</div> : null}
+      {props.topRight && !props.below ? <div className="pv-overlay-tr">{props.topRight}</div> : null}
+      {props.bottomRight || (props.shot && !props.below) ? (
+        <div className="pv-overlay-br">
+          {props.bottomRight}
+          {props.below ? null : props.shot}
+        </div>
+      ) : null}
+      {props.bottomLeft && !props.below ? <div className="pv-overlay-bl">{props.bottomLeft}</div> : null}
+    </div>
+  );
+}
+
+/** 아래 블록 — 좁은 지도 칸에서 도구 층을 떠난 네 도구. 순서: 좌표 · 값 조회 → 범례 → 스크린샷. */
+export function PreviewBelow(props: PreviewOverlayProps) {
+  if (!props.below || !(props.bottomLeft || props.topRight || props.shot)) return null;
+  return (
+    <div className="pv-below" data-testid="preview-below">
+      {props.bottomLeft}
+      {props.topRight}
+      {props.shot}
     </div>
   );
 }

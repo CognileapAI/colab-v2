@@ -24,8 +24,17 @@
  *   않는다. 배치 규약은 `PreviewOverlay` 한 곳에 살며 네 화면이 순서를 복제하지 않는다.
  *   위 종전 문구는 지우지 않는다 — 「틀 위 줄」 규칙은 그대로 유효하다.
  */
-import type { ReactNode } from 'react';
+import { createContext, useState, type ReactNode } from 'react';
 import './preview.css';
+
+/**
+ * ⭑ ⟨휴대폰·패드 대응 20260926 · V2⟩ **아래 자리** — 틀 뒤, 같은 틀 묶음 안의 자리.
+ * 좁은 지도 칸에서 미리보기 지도 부품이 네 도구(좌표 · 값 조회 · 범례 · 스크린샷)를 portal 로
+ * 여기에 넣는다. 값: `undefined` = 틀 밖(자리 없음 · 부르는 쪽이 형제로 그린다) · `null` = 자리를
+ * 아직 못 잡음 · 요소 = 그 자리. 비어 있으면 CSS(`.pv-frame-below:empty`)가 그리지 않아 묶음
+ * 간격이 생기지 않는다. 틀 바깥 치수와 틀 묶음의 클래스 이름은 그대로다.
+ */
+export const PreviewSlotBelow = createContext<HTMLElement | null | undefined>(undefined);
 
 /**
  * 상태 네 값. **목록 길이 자체가 시험의 오라클이다**(green-by-skip 방지 — 상태가 줄면 red).
@@ -51,6 +60,7 @@ export interface PreviewSlotProps {
  * 시험은 이 표식과 클래스, 그리고 CSS 원문을 읽어 잰다.
  */
 export function PreviewSlot(props: PreviewSlotProps) {
+  const [below, setBelow] = useState<HTMLElement | null>(null);
   return (
     <div className="pv-frame-wrap">
       {props.controls}
@@ -60,8 +70,11 @@ export function PreviewSlot(props: PreviewSlotProps) {
         data-preview-slot="4x3"
         data-preview-slot-state={props.state}
       >
-        <div className="pv-frame-in">{props.children}</div>
+        <PreviewSlotBelow.Provider value={below}>
+          <div className="pv-frame-in">{props.children}</div>
+        </PreviewSlotBelow.Provider>
       </div>
+      <div className="pv-frame-below" ref={setBelow} />
     </div>
   );
 }
