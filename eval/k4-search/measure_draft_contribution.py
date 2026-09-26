@@ -90,7 +90,9 @@ PATH_B_FACT_KEYS = frozenset({"model", "variable", "cadence", "directObservation
                               "nativeResolutionM", "interpolated", "roles", "region", "period"})
 #: 경로 1 술어 → 그 술어가 읽는 사실 성분.
 A_CONDITION_READS = {"maxResolutionM": "nativeResolutionM", "coverageYear": "period",
-                     "exactPeriod": "period"}
+                     "exactPeriod": "period", "maxCadenceSeconds": "cadence"}
+#: 경로 2 조건 → 그 조건이 읽는 사실 성분(주기 상한은 cadence 를 읽는다 — intent 2026-09-26-cadence-range-predicate).
+B_CRITERIA_READS = {"maxCadenceSeconds": "cadence"}
 #: 근거 사실과 독립인 술어(`d3_dataset_variable` 을 읽는다) — 기여 측정에서 뺀다.
 EVIDENCE_INDEPENDENT = frozenset({"maxMissingRatePercent"})
 #: heldout 조건 문항의 condition → `search_evidence_conditions.assess` 의 라벨·성분.
@@ -193,7 +195,7 @@ def criteria_reads(criteria: dict) -> frozenset:
     """경로 2 는 topic 이 서고 unsupported 가 아닐 때만 사실을 읽는다(`candidates` 첫 줄)."""
     if not criteria.get("topic") or criteria.get("unsupported"):
         return frozenset()
-    return frozenset(k for k in criteria if k in PATH_B_FACT_KEYS)
+    return frozenset(B_CRITERIA_READS.get(k, k) for k in criteria if B_CRITERIA_READS.get(k, k) in PATH_B_FACT_KEYS)
 
 
 def compare(with_res: dict, without_res: dict) -> dict:
@@ -300,7 +302,10 @@ def measure(evaluate, facts: list[dict], rules: list[str], case_reads: dict) -> 
                for group in (*DECISION_GROUPS, *SIDE_GROUPS)}
     return {"summary": summary, "rules": rule_rows, "facts": fact_rows,
             "greenWithAllDrafts": {g: sorted(c for c, v in with_all[g].items() if v["green"])
-                                   for g in (*DECISION_GROUPS, *SIDE_GROUPS)}}
+                                   for g in (*DECISION_GROUPS, *SIDE_GROUPS)},
+            # reviewed 만(초안 전부 뺌)으로 green 인 케이스 — 오라클 재채점(measure_only → probe)의 근거 열.
+            "greenWithoutAnyDraft": {g: sorted(c for c, v in without_all[g].items() if v["green"])
+                                     for g in (*DECISION_GROUPS, *SIDE_GROUPS)}}
 
 
 def fingerprint_digest(rows: list[tuple]) -> dict:

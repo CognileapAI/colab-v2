@@ -6,6 +6,7 @@ parameters; a cap is reported by the application and never presented as a total.
 from sqlalchemy import text
 import json
 import re
+from ..kernel.cadence_scope import cadences_within
 from ..kernel.region_scope import region_scope
 from ..kernel.search_semantics import SEMANTICS
 
@@ -72,6 +73,12 @@ def candidates(session, conditions, *, verified_ids=None, expand_region=True):
             params.pop(arg)
         elif key == 'maxResolutionM':
             file_checks.append(f"CASE WHEN jsonb_typeof(e.facts->'nativeResolutionM')='number' THEN (e.facts->>'nativeResolutionM')::numeric <= :{arg} ELSE false END")
+        elif key == 'maxCadenceSeconds':
+            # 주기 상한 — 커널(`kernel/cadence_scope.py`)이 상한 이하의 주기 값 목록을 낸다. 표 밖 값·수·빈
+            # 값은 목록에 없어 맞지 않는다(unknown 은 supported 가 아니다). 상한은 양의 유한 초여야 한다.
+            params[arg] = json.dumps(cadences_within(value))
+            file_checks.append(f"jsonb_typeof(e.facts->'cadence')='string' AND e.facts->>'cadence' IN "
+                               f"(SELECT jsonb_array_elements_text(CAST(:{arg} AS jsonb)))")
         elif key == 'coverageYear':
             params[arg] = str(value)
             file_checks.append(f"e.facts->'period'->>'start' <= :{arg} || '-12-31' AND e.facts->'period'->>'end' >= :{arg} || '-01-01'")

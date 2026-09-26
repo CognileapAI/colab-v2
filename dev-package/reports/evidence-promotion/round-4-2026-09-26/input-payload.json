@@ -349,7 +349,9 @@
         "nativeResolutionM": 500.0,
         "provider": "기상청",
         "cadence": "5min",
-        "region": "남한"
+        "region": "남한",
+        "platform": "ground",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/1 · 기간 근거 축자 「10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시」",
@@ -357,19 +359,17 @@
         "nativeResolutionM": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「시/공간해상도 5분 / 0.5 km, 변량은 반사도」",
-        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 1 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 1"
       },
       "draftConflictsWithReviewed": [],
@@ -396,7 +396,9 @@
         "variable": "강수량",
         "cadence": "15min",
         "provider": "기상청",
-        "region": "남한"
+        "region": "남한",
+        "platform": "ground",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/2 · 기간 근거 축자 「같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시」",
@@ -404,19 +406,17 @@
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
         "cadence": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」 · 판정 2026-09-26 Ted 「전부 권고대로」 — 누적 기간 15분을 산출 간격 15분으로 읽는다",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지상 격자 15분 누적강수」",
-        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+        "region": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 2 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 2"
       },
       "draftConflictsWithReviewed": [],
@@ -444,31 +444,31 @@
         "provider": "기상청",
         "roles": [
           "model_input"
-        ]
+        ],
+        "platform": "ground",
+        "directObservation": true,
+        "nativeResolutionM": 500.0
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/3 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 3 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」"
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 3 축자 「WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "nativeResolutionM": "승격 · 규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true,
-        "nativeResolutionM": 500.0,
         "cadence": "5min",
         "region": "남한"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
-        "nativeResolutionM": "규칙 · rule:native-resolution-carried · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 3",
         "cadence": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 1(5min)",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한)"
       },
@@ -497,28 +497,28 @@
         "provider": "기상청",
         "roles": [
           "validation"
-        ]
+        ],
+        "platform": "ground",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/4 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 4 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
         "provider": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」"
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 4 축자 「WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true,
         "cadence": "15min",
         "region": "남한"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 4",
         "cadence": "규칙 · rule:cadence-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 부모 seq 2(15min)",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 2(남한)"
@@ -548,27 +548,27 @@
         "model": "U-Net",
         "roles": [
           "prediction"
-        ]
+        ],
+        "platform": "model",
+        "directObservation": false
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/5 · 기간 근거 축자 「메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시」",
         "format": "정본전재 · plan-manifest.yaml seq 5 format npy → 계약 enum npy",
         "variable": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
         "model": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
-        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」"
+        "roles": "정본전재 · 01.level-data/01.precipitation/DATASETS.md seq 5 축자 「U-Net 기반 모델의 예측 결과」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "model",
         "representation": "spatial_grid",
-        "directObservation": false,
         "interpolated": true,
         "region": "남한"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/01.precipitation/DATASETS.md seq 5",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 1(남한) · seq 2(남한)"
       },
@@ -597,7 +597,9 @@
         "cadence": "daily",
         "nativeResolutionM": 2000.0,
         "provider": "국가기상위성센터",
-        "region": "한반도"
+        "region": "한반도",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/6 · 기간 근거 축자 「파일명 전월 범위」",
@@ -606,19 +608,17 @@
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
         "provider": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「시/공간해상도는 1일 / 2 km」",
-        "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)」"
+        "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 6 축자 「지역: 한반도 (Ted 확정 2026-09-26 · 국가기상위성센터 GK-2A)」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 6"
       },
       "draftConflictsWithReviewed": [],
@@ -651,7 +651,9 @@
         "region": "경기남부충청",
         "roles": [
           "model_input"
-        ]
+        ],
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/7 · 기간 근거 축자 「파일명 월과 정본 설명」",
@@ -661,19 +663,17 @@
         "nativeResolutionM": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
         "region": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」"
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 7 축자 「2 km 를 100 m 로 균등 분할한 뒤 일 단위를 월 단위 평균으로 변환」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 7"
       },
       "draftConflictsWithReviewed": [],
@@ -704,7 +704,9 @@
         ],
         "roles": [
           "validation"
-        ]
+        ],
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/8 · 기간 근거 축자 「파일명 월과 정본 설명」",
@@ -712,20 +714,18 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
         "statistics": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」"
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 8 축자 「3~7일 간격 자료를 월평균 100 m 로 변환」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true,
         "region": "경기남부충청"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 8",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
@@ -848,27 +848,27 @@
         "roles": [
           "model_input"
         ],
-        "cadence": "yearly"
+        "cadence": "yearly",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/11 · 기간 근거 축자 「파일명 연도와 정본 설명」",
         "format": "정본전재 · plan-manifest.yaml seq 11 format GeoTIFF → 계약 enum tif",
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
         "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「Landsat-8 위성의 밴드를 이용해」",
-        "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」"
+        "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 11 축자 「연 단위 100 m 토지피복지도」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false,
         "region": "경기남부충청"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 11",
         "region": "규칙 · rule:region-from-lineage-sibling · 읽은 정본 = plan-manifest.yaml parents·grid_files · 자식 seq 12 의 공동 입력 seq 7(경기남부충청) 과 같은 기준 격자"
       },
@@ -898,7 +898,9 @@
         "model": "U-Net",
         "roles": [
           "prediction"
-        ]
+        ],
+        "platform": "model",
+        "directObservation": false
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/12 · 기간 근거 축자 「파일명 일 범위」",
@@ -906,20 +908,18 @@
         "variable": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "cadence": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
         "model": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
-        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」"
+        "roles": "정본전재 · 01.level-data/02.vegetation/DATASETS.md seq 12 축자 「Lv.0 처럼 일 단위 시간해상도를 갖고」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "model",
         "representation": "spatial_grid",
-        "directObservation": false,
         "interpolated": true,
         "region": "경기남부충청"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/02.vegetation/DATASETS.md seq 12",
         "region": "규칙 · rule:region-from-lineage-parent · 읽은 정본 = plan-manifest.yaml parents · 조상 seq 7(경기남부충청)"
       },
@@ -948,26 +948,26 @@
         "region": "대한민국시군구",
         "roles": [
           "index"
-        ]
+        ],
+        "platform": "ground",
+        "directObservation": false
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/13 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
         "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 13 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "table",
-        "directObservation": false,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 13"
       },
       "draftConflictsWithReviewed": [],
@@ -995,26 +995,26 @@
         "region": "대한민국시군구",
         "roles": [
           "index"
-        ]
+        ],
+        "platform": "ground",
+        "directObservation": false
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/14 · 기간 근거 축자 「실물 파일 시간 범위; 문서의 12-31보다 실물 우선」",
         "variable": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "cadence": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
         "region": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
-        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」"
+        "roles": "정본전재 · 01.level-data/03.drought/DATASETS.md seq 14 축자 「2000-01-01 ~ 2025-12-31 을 주 단위로 담는다」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "table",
-        "directObservation": false,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 01.level-data/03.drought/DATASETS.md seq 14"
       },
       "draftConflictsWithReviewed": [],
@@ -1036,22 +1036,22 @@
         "period": {
           "start": "2025-09-01",
           "end": "2025-09-01"
-        }
+        },
+        "platform": "model",
+        "directObservation": false
       },
       "provenance": {
-        "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」"
+        "period": "정본전재 · canonical-metadata.json#/datasets/15 · 기간 근거 축자 「GRIB 내부 valid_time」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "model",
         "representation": "spatial_grid",
-        "directObservation": false,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 15",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 15"
       },
       "draftConflictsWithReviewed": [],
@@ -1075,25 +1075,25 @@
           "end": "2025-09-01"
         },
         "format": "npy",
-        "cadence": "hourly"
+        "cadence": "hourly",
+        "platform": "model",
+        "directObservation": false
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/16 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 16 format npy → 계약 enum npy",
-        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」 · 판정 2026-09-26 Ted 「전부 권고대로」 — 「각 24시각」을 산출 간격 매시로 읽는다"
+        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 16 축자 「각 24시각이다」 · 판정 2026-09-26 Ted 「전부 권고대로」 — 「각 24시각」을 산출 간격 매시로 읽는다",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "model",
         "representation": "spatial_grid",
-        "directObservation": false,
         "interpolated": true,
         "region": "전지구"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 16",
         "region": "규칙 · rule:region-from-registration-note · 읽은 정본 = 02.File-format/DATASETS.md seq 16"
       },
@@ -1119,25 +1119,25 @@
         },
         "format": "netcdf",
         "variable": "지표온도",
-        "cadence": "10min"
+        "cadence": "10min",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/17 · 기간 근거 축자 「NetCDF 내부 관측시각」",
         "format": "정본전재 · plan-manifest.yaml seq 17 format NetCDF4 → 계약 enum netcdf",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
-        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」"
+        "cadence": "정본전재 · 02.File-format/DATASETS.md seq 17 축자 「GK-2A 지표온도(LST)를 10분 간격으로 담은 NetCDF4 원자료」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 17",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 17"
       },
       "draftConflictsWithReviewed": [],
@@ -1161,24 +1161,24 @@
           "end": "2020-05-01"
         },
         "format": "npy",
-        "variable": "지표온도"
+        "variable": "지표온도",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/18 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 18 format npy → 계약 enum npy",
-        "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」"
+        "variable": "정본전재 · 02.File-format/DATASETS.md seq 18 축자 「변수는 지표온도 하나이고」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 18",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 18"
       },
       "draftConflictsWithReviewed": [],
@@ -1203,25 +1203,25 @@
         },
         "variable": "반사도",
         "provider": "기상청",
-        "region": "남한"
+        "region": "남한",
+        "platform": "ground",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/19 · 기간 근거 축자 「12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
         "provider": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「기상청 HSR 합성 반사도 바이너리 원자료」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 19 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 19",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 19"
       },
       "draftConflictsWithReviewed": [],
@@ -1247,26 +1247,26 @@
         "format": "npy",
         "variable": "반사도",
         "provider": "기상청",
-        "region": "남한"
+        "region": "남한",
+        "platform": "ground",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/20 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 20 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
         "provider": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「bin 원자료를 시각별 합성 반사도 배열로 바꾼 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 20 축자 「지역: 남한 (Ted 확정 2026-09-26 · 기상청 관측망)」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "ground",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": true
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 20",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 20"
       },
       "draftConflictsWithReviewed": [],
@@ -1290,25 +1290,25 @@
           "end": "2025-12-25"
         },
         "format": "tif",
-        "region": "T51SYB"
+        "region": "T51SYB",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/21 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
         "format": "정본전재 · plan-manifest.yaml seq 21 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 21 축자 「HLS S30 T51SYB 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false,
         "region": "한반도"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 21",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/21/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
@@ -1340,25 +1340,25 @@
           "end": "2025-12-27"
         },
         "format": "tif",
-        "region": "T52SCE"
+        "region": "T52SCE",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/22 · 기간 근거 축자 「GeoTIFF SENSING_TIME」",
         "format": "정본전재 · plan-manifest.yaml seq 22 format GeoTIFF → 계약 enum tif",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 22 축자 「HLS S30 T52SCE 타일의 Blue·Green·Red 3밴드 GeoTIFF 원자료」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false,
         "region": "한반도"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 22",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/22/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
@@ -1390,25 +1390,25 @@
           "end": "2025-12-25"
         },
         "format": "npy",
-        "region": "T51SYB"
+        "region": "T51SYB",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/23 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 23 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 23 축자 「재격자 없이 원자료 격자 위에 그대로 있다」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false,
         "region": "한반도"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 23",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/23/bbox w/s/e/n 125.2458/36.907/126.523/37.9256"
       },
@@ -1440,25 +1440,25 @@
           "end": "2025-12-27"
         },
         "format": "npy",
-        "region": "T52SCE"
+        "region": "T52SCE",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/24 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 24 format npy → 계약 enum npy",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 24 축자 「형상·구성은 T51SYB 결과와 같다」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false,
         "region": "한반도"
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 24",
         "region": "규칙 · rule:bbox-korea-peninsula · 읽은 정본 = canonical-metadata.json#/datasets/24/bbox w/s/e/n 126.7776/35.1348/128.0097/36.1405"
       },
@@ -1490,24 +1490,24 @@
           "end": "2019-10-31"
         },
         "variable": "엽면적지수",
-        "region": "h27v05"
+        "region": "h27v05",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/25 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 25 축자 「MODIS MOD15A2H 엽면적지수·광합성유효복사흡수율 산출물의 h27v05 타일」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 25",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 25"
       },
       "draftConflictsWithReviewed": [],
@@ -1531,24 +1531,24 @@
           "end": "2019-10-31"
         },
         "variable": "엽면적지수",
-        "region": "h28v05"
+        "region": "h28v05",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/26 · 기간 근거 축자 「HDF4 내부 RANGEDATETIME」",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 26 축자 「MOD15A2H 의 h28v05 타일 4일치」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 26",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 26"
       },
       "draftConflictsWithReviewed": [],
@@ -1573,25 +1573,25 @@
         },
         "format": "npy",
         "variable": "엽면적지수",
-        "region": "h27v05"
+        "region": "h27v05",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/27 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 27 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 27 축자 「h27v05 타일의 HDF4 내부 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 27",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 27"
       },
       "draftConflictsWithReviewed": [],
@@ -1616,25 +1616,25 @@
         },
         "format": "npy",
         "variable": "엽면적지수",
-        "region": "h28v05"
+        "region": "h28v05",
+        "platform": "satellite",
+        "directObservation": true
       },
       "provenance": {
         "period": "정본전재 · canonical-metadata.json#/datasets/28 · 기간 근거 축자 「원자료 계보와 같은 파일 어간」",
         "format": "정본전재 · plan-manifest.yaml seq 28 format npy → 계약 enum npy",
         "variable": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
-        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」"
+        "region": "정본전재 · 02.File-format/DATASETS.md seq 28 축자 「h28v05 타일의 HDF4 서브데이터셋 6종을 날짜별로 배열로 뽑은 결과」",
+        "platform": "승격 · 규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+        "directObservation": "승격 · 규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28 · dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)"
       },
       "draftStatus": "draft",
       "draftFacts": {
-        "platform": "satellite",
         "representation": "spatial_grid",
-        "directObservation": true,
         "interpolated": false
       },
       "draftProvenance": {
-        "platform": "규칙 · rule:platform-from-instrument · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
         "representation": "규칙 · rule:representation-from-shape · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
-        "directObservation": "규칙 · rule:direct-observation-from-level · 읽은 정본 = 02.File-format/DATASETS.md seq 28",
         "interpolated": "규칙 · rule:interpolated-from-lineage · 읽은 정본 = 02.File-format/DATASETS.md seq 28"
       },
       "draftConflictsWithReviewed": [],
@@ -1645,5 +1645,16 @@
         "sha256": "eff60bffd65b3efbe1265afaef9df044d8c97d80b8cbad3a93dd7b4fc21979f1"
       }
     }
-  ]
+  ],
+  "promotion": {
+    "rules": [
+      "direct-observation-from-level",
+      "native-resolution-carried",
+      "platform-from-instrument"
+    ],
+    "movedFacts": 53,
+    "note": "dev-package/intent/2026-09-21-evidence-promotion.md 판정 결과 — 1회차(2026-09-26) · dev 반영 완료 2026-09-25T23:52Z · 4회차 측정 기준선(dev 와 같은 승격 상태)",
+    "allowReplace": [],
+    "replaced": []
+  }
 }

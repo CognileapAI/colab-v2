@@ -109,6 +109,9 @@ RULES = {
                                    "정본 지역을 가진 다른 입력과 **같은 기준 격자 파일**(grid_files)에 "
                                    "산출되면 그 입력의 지명을 잇는다 — 자식이 입력들의 공통 격자 위에 "
                                    "있다는 계보 추론. Ted 판정 2026-09-26 「자료 지역 확정」 4.",
+    "cadence-from-lineage-parent": "좌표변환·crop 만 한 산출물은 부모(계보 parents 하나)의 정본 주기(reviewed "
+                                   "cadence)를 잇는다 — 자기 정본 문장이 주기를 말하지 않을 때만. Ted 판정 "
+                                   "2026-09-26 「전부 권고대로」(intent 2026-09-26-cadence-range-predicate 질문 2·4).",
 }
 
 #: 보조 검증용 한반도 상자. 정본이 지명을 말하지 않는 자료의 **초안** region 에만 쓴다.
@@ -145,18 +148,21 @@ READINGS: dict[int, dict] = {
                   "directObservation": True, "interpolated": False}},
     2: {"quote": "지상 격자 15분 누적강수",
         "facts": {"variable": "강수량", "cadence": "15min", "provider": "기상청"},
+        "notes": {"cadence": "판정 2026-09-26 Ted 「전부 권고대로」 — 누적 기간 15분을 산출 간격 15분으로 읽는다"},
         "rules": {"platform": "ground", "representation": "spatial_grid",
                   "directObservation": True, "interpolated": False}},
     3: {"quote": "WGS84 로 좌표계 변환하고, 특정 연구대상지를 중심으로 crop",
         "facts": {"variable": "반사도", "provider": "기상청", "roles": ["model_input"]},
         "rules": {"platform": "ground", "representation": "spatial_grid",
                   "directObservation": True, "interpolated": True,
-                  "nativeResolutionM": 500.0}},
+                  "nativeResolutionM": 500.0, "cadence": "5min"}},
+    # 2026-09-26 Ted 「전부 권고대로」(질문 2) — 자기 정본 문장이 주기를 말하지 않는다(부모 이름
+    # 「rn15 15분 누적강수」뿐). reviewed 15min 을 거두고 계보 초안(cadence-from-lineage-parent)으로 내린다.
     4: {"quote": "WGS84 로 좌표계 변환하고 연구대상지를 중심으로 crop",
-        "facts": {"variable": "강수량", "cadence": "15min", "provider": "기상청",
+        "facts": {"variable": "강수량", "provider": "기상청",
                   "roles": ["validation"]},
         "rules": {"platform": "ground", "representation": "spatial_grid",
-                  "directObservation": True, "interpolated": True}},
+                  "directObservation": True, "interpolated": True, "cadence": "15min"}},
     5: {"quote": "U-Net 기반 모델의 예측 결과",
         "facts": {"variable": "강수량", "model": "U-Net", "roles": ["prediction"]},
         "rules": {"platform": "model", "representation": "spatial_grid",
@@ -211,6 +217,7 @@ READINGS: dict[int, dict] = {
                    "directObservation": False, "interpolated": False}},
     16: {"quote": "각 24시각이다",
          "facts": {"cadence": "hourly"},
+         "notes": {"cadence": "판정 2026-09-26 Ted 「전부 권고대로」 — 「각 24시각」을 산출 간격 매시로 읽는다"},
          "rules": {"platform": "model", "representation": "spatial_grid",
                    "directObservation": False, "interpolated": True,
                    "region": "전지구"}},
@@ -465,6 +472,8 @@ def build() -> dict:
             facts[key] = value
             quote = reading.get("quotes", {}).get(key, reading["quote"])
             provenance[key] = f"정본전재 · {source['document']} seq {seq} 축자 「{quote}」"
+            if reading.get("notes", {}).get(key):
+                provenance[key] += f" · {reading['notes'][key]}"
         if seq in reviewed:
             facts["region"] = reviewed[seq]["value"]
             provenance["region"] = reviewed[seq]["provenance"]
@@ -479,13 +488,22 @@ def build() -> dict:
                    "directObservation": "direct-observation-from-level",
                    "interpolated": "interpolated-from-lineage",
                    "nativeResolutionM": "native-resolution-carried",
-                   "region": "region-from-registration-note"}
+                   "region": "region-from-registration-note",
+                   "cadence": "cadence-from-lineage-parent"}
         for key, value in reading["rules"].items():
             draft_facts[key] = value
             rule = rule_of[key]
             rule_summary[rule] += 1
             draft_provenance[key] = (f"규칙 · rule:{rule} · 읽은 정본 = "
                                      f"{source['document']} seq {seq}")
+            if key == "cadence":
+                # 부모 하나의 정본 주기(reviewed)와 같아야 한다 — 아니면 판독표가 어긋난 것이다.
+                parents = parents_of[seq]
+                parent_cadence = [READINGS[p]["facts"].get("cadence") for p in parents]
+                if len(parents) != 1 or parent_cadence != [value]:
+                    raise SystemExit(f"seq {seq}: 계보 주기 초안 {value!r} 가 부모 정본 주기 {parent_cadence} 와 다르다")
+                draft_provenance[key] = (f"규칙 · rule:{rule} · 읽은 정본 = plan-manifest.yaml parents · "
+                                         f"부모 seq {parents[0]}({value})")
         # 지역 초안(2026-09-26 Ted 판정 「자료 지역 확정」 2·3·4) — 정본 지역이 없을 때만, 이 순서로
         # 하나만 선다: 등록 note(판독표) → 계보 조상 → 계보 공동 입력 → bbox 보조.
         lineage = sibling = None
