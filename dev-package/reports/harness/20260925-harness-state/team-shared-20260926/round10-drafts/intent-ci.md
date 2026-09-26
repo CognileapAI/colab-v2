@@ -1,0 +1,8 @@
+Written: `<repo>/.claude/worktrees/harness-improvement/dev-package/intent/2026-09-26-ci-harness-eval-run.md` — 83 lines · 11 sections (TEMPLATE 순서 · S-auth intent 와 같은 절 모양) · 설계트리 Q1–Q11 전부 「→ 〈판정 대기〉. ⓐ ⓑ ⓒ 권고 ⓧ — 이유」 · 미해결 5건.
+
+Decisions made where the source was silent (5):
+1. 트리거는 `workflow_dispatch` 하나로 권고(label 병행 안 함 · 진입점 1개) — 단 dispatch 는 워크플로가 GitHub 기본 브랜치에 있어야 뜨고 로컬 `origin/HEAD` 가 `codex/design-style-repair` 라 기본 브랜치 미확인 → 미해결1(`gh repo view --json defaultBranchRef`).
+2. 비용 상한 3중: 워크플로 env 고정값(`COLAB_EVAL_TIMEOUT=150` · `COLAB_EVAL_BUDGET=2.01` = 회차 3 실측값 · 산술 최대 80.4 USD) + `timeout-minutes: 90` + Anthropic Console 키 전용 workspace 월 한도(권고 100 USD ≈ 12 회차 · 값은 미해결2). dispatch input 으로 상한 입력은 `product.md:129` 「예산 질의 금지」 위반으로 기각.
+3. CLI 고정은 `eval/harness/cli-version.txt`(해시 집합 안 · 현재 `2.1.283`) + 로컬 `run.sh` 도 `claude --version` 대조 → 불일치 78 `cli-mismatch` — 「같은 판정」은 같은 CLI 에서만 성립. 도입은 커밋 2단(① 워크플로 + 문서 = 집합 밖 · 회차 0 → ② cli pin = 집합 안 · 첫 CI 회차로 자기 적용 증명).
+4. 해시 동일성: 잡은 merge ref 가 아니라 dispatch ref 의 head 를 checkout → `config-hash.json.head` = 실재 PR head sha(PR 2 「직전 = 조상」 규칙과 정합 · merge ref sha 는 병합 뒤 어느 커밋의 조상도 아님) · `results/**` 는 집합 밖(`config-paths.txt:17`)이라 사람의 결과 커밋이 해시를 안 바꿈 · base 가 집합 파일을 건드리면 78 → Update branch → 재dispatch(기존 `README.md:162-163` 규칙 그대로).
+5. 실행자 기록은 인가 계층 없이(`environment` required reviewers 미채택 · Ted 「다른 사람일 필요 없음」) 잡이 `results/<run>/ci-run.json`(actor · run_id · run_url · head_sha · workflow_sha)을 artifact 에 넣어 사람 커밋과 함께 저장소로 오게 함 · CI 실행 명령은 `COLAB_HARNESS_EVAL=1 bash gates/run.sh harness-eval`(게이트 경로 · `gates/run.sh:334-335` CI 는 시험 env 파일 없이 통과 · 요약줄 계수 대조 `harness-eval.sh:76-83` 포함) · Q10 은 「필수 check 승격 조건」으로 분리 유지(C-3 권고 원문) · 새 ADR 후보 번호 0014(0013 = S-auth 후보).
