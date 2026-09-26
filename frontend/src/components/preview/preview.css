@@ -195,12 +195,29 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface-alt);
-  /* 끌어 옮기는 자리다 — 그림을 드래그해 가져가는 기본 동작을 끈다 */
-  touch-action: none;
+  /* ⭑ ⟨휴대폰·패드 대응 20260926 · V5⟩ 기본은 페이지 스크롤이다. 지도가 가져갈 축은 끌기 축
+     속성(`data-drag-axis` · `useZoomPan`)이 아래 블록들에서 정한다. 미등록(속성 없음)은 늘 이 값이다. */
+  touch-action: pan-x pan-y;
   user-select: none;
   /* ⭑ ⟨#120⟩ **도구 층이 겹칠 기준 상자.** 이것이 없으면 뷰포트 안에 절대 배치로
      얹을 자리가 없어 도구가 문서 흐름에 쌓인다(3층 구조의 1층). */
   position: relative;
+}
+
+/* ⭑ ⟨휴대폰·패드 대응 20260926 · V5⟩ 끌기 축 → `touch-action`. 브라우저에 맡긴 축은 페이지가
+   스크롤하고(포인터 취소 → 기존 취소 경로), 맡기지 않은 축은 지도가 한 손가락 끌기로 옮긴다.
+   확대 상태 · 두 축 끌 범위 = 둘 다(지도). 기본 블록 뒤에 둔다 — 시험이 `.pv-viewport {` 첫 블록을 읽는다. */
+.pv-viewport[data-drag-axis='none'] {
+  touch-action: pan-x pan-y;
+}
+.pv-viewport[data-drag-axis='y'] {
+  touch-action: pan-x;
+}
+.pv-viewport[data-drag-axis='x'] {
+  touch-action: pan-y;
+}
+.pv-viewport[data-drag-axis='both'] {
+  touch-action: none;
 }
 
 /* ── 도구 층 (`#120` intent · `PreviewOverlay.tsx`) ───────────────────────────

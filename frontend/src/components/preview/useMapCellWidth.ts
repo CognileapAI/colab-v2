@@ -32,6 +32,7 @@ export function useMapCellLayout(): [(el: HTMLElement | null) => void, MapCellLa
       setLayout('unknown');
       return;
     }
+    // 첫 읽기는 border-box(`getBoundingClientRect`) · 관찰은 content-box(`contentRect`) — `.pv-map` 에 padding · border 가 없어 둘이 같다는 전제다.
     setLayout(layoutFor(el.getBoundingClientRect().width));
     const observer = new ResizeObserver((entries) => {
       const last = entries[entries.length - 1];

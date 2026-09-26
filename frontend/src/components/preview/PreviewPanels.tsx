@@ -12,6 +12,7 @@ import { BoundsOutline, PreviewZoomControls } from './PreviewZoomControls';
 import { PreviewBelow, PreviewOverlay, type PreviewOverlayProps } from './PreviewOverlay';
 import { PreviewSlotBelow } from './PreviewSlot';
 import { useMapCellLayout } from './useMapCellWidth';
+import { useInputMode } from '../common/useInputMode';
 import { BasemapLayer } from './BasemapLayer';
 import { lonAtFraction, latAtFraction } from './projection';
 
@@ -217,6 +218,8 @@ export function pointFromViewport(
  */
 /** 커서가 아직 지도 위에 없을 때. */
 export const HUD_IDLE = '커서를 지도 위로';
+/** ⭑ ⟨휴대폰·패드 대응 20260926 · V12⟩ 터치 기기의 대기 문구 — 커서가 없고 탭하면 좌표가 나온다(「새 문구안」 확정). */
+export const HUD_IDLE_TOUCH = '지도를 누르면 그 자리 좌표를 보여 줘요';
 /** 커서가 경계 밖일 때 — 좌표를 지어내지 않는다. */
 export const HUD_OUTSIDE = '지도 밖';
 /** HUD 가 내는 값의 출처. 값 조회의 `셀값` 과 **다른 낱말**이어야 한다. */
@@ -244,6 +247,8 @@ export function PreviewMap(props: {
   const slotBelow = useContext(PreviewSlotBelow);
   /** 커서 위경도 HUD 의 상태. `null` = 아직 지도 위가 아니다 · `'밖'` = 경계 밖이다. */
   const [hud, setHud] = useState<{ lat: number; lon: number } | '밖' | null>(null);
+  /** ⭑ ⟨휴대폰·패드 대응 20260926 · V11 · V12⟩ 터치면 대기 문구가 터치 문구이고, 탭한 점을 좌표 표시에 낸다. */
+  const touch = useInputMode() === 'touch';
   /**
    * ⭑ ⟨#120⟩ **역변환이 보는 두 상자를 핸들러 안에서 만든다.**
    * 뷰포트는 **종전대로 `getBoundingClientRect()`** 로 잰다 — 훅의 `box()`(`clientWidth`)는
@@ -298,7 +303,9 @@ export function PreviewMap(props: {
               {result.bounds ? (
                 <p className="pv-hud" data-testid="preview-cursor-hud">
                   {hud === null
-                    ? HUD_IDLE
+                    ? touch
+                      ? HUD_IDLE_TOUCH
+                      : HUD_IDLE
                     : hud === '밖'
                       ? HUD_OUTSIDE
                       : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
@@ -328,7 +335,7 @@ export function PreviewMap(props: {
           className="pv-viewport"
           data-testid="preview-viewport"
           ref={zoom?.viewportRef}
-          {...(props.onPickPoint && result.bounds
+          {...(result.bounds && (props.onPickPoint || touch)
             ? {
                 onClick: (e: import('react').MouseEvent<HTMLDivElement>) => {
                   // **상자는 뷰포트가 답한다** — `zoom.box` 는 같은 사각형을 재어 둔 값이고
@@ -346,9 +353,12 @@ export function PreviewMap(props: {
                     result.bounds as NonNullable<RenderResult['bounds']>,
                     zc,
                   );
+                  // ⭑ ⟨V11 · 우려 7ⓐ⟩ 터치에는 커서가 없다 — 탭한 점을 좌표 표시에 낸다(상세 · 미등록).
+                  //   마우스는 마우스 이동 표시 그대로다.
+                  if (touch) setHud(p ?? '밖');
                   if (p) props.onPickPoint?.(p);
                 },
-                'data-value-lookup': 'true',
+                ...(props.onPickPoint ? { 'data-value-lookup': 'true' } : {}),
               }
             : {})}
           {...(result.bounds
@@ -375,6 +385,7 @@ export function PreviewMap(props: {
                    기본 배율과 같은 자리라 아무 일도 하지 않는 것과 같다. */
                 onDoubleClick: zoom.fitToData,
                 'data-zoomable': 'true',
+                'data-drag-axis': zoom.dragAxis,
               }
             : {})}
         >

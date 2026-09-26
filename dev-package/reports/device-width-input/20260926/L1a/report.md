@@ -30,7 +30,7 @@
 - RED(시험 · 도우미만 · 구현 0): `Tests  23 failed | 4 passed (27)` — 예: `Cannot find module '/src/components/preview/useMapCellWidth'` · 폭 도우미 사례 `expected 0 to be greater than or equal to 1`(훅 없음 → 콜백 0) · `인라인 도구 층에 맞춤 단추가 없다: expected undefined to be truthy` · `expected [] to include '(pointer: coarse)'` · CSS `expected [] to have a length of 1 but got +0` · 16 하한 `expected '\n  .pv-control select { font-size: 1…' not to match /font-size:\s*16px/`. 처음부터 통과한 4사례는 음성 · 회귀 감시다(도우미 폭 목록 길이 · 도우미가 다른 대상에 알리지 않음 · 매체 질의 없음 = 맞춤 단추 없음 · 미등록 터치 = 맞춤 단추 없음).
 - GREEN: `Tests  27 passed (27)`. 추가 단언 1건(미등록 지도 구역 ↔ 아래 블록 여백 토큰 — 390 캡처에서 좌표 표시가 지도에 붙은 것을 보고 더함): RED `1 failed | 26 passed (27)` → GREEN `27 passed (27)`(기존 사례 안 단언 추가).
 - GREEN 단계에서 고친 이 레인 새 시험 3곳(기존 시험 아님): ⑴ 상세 자리 단언을 「아래 블록의 부모 = 틀 묶음」에서 「아래 블록 → 아래 자리(`.pv-frame-below`) → 틀 묶음 · 아래 자리 앞 = 틀」로(spec 용어의 아래 자리 · 아래 블록 구분) ⑵ 확대 누름 전에 뷰포트 상자 · 원본 해상도를 심는 준비(#120 시험과 같은 방식 · 재기 전에는 확대가 눌리지 않음) ⑶ 터치 44 선택자 비교를 평문 목록 대조로 단순화.
-- 전체: `frontend-test` 148파일 1999건 통과(B0 끝 1972 ＋ 27). #120 고정 시험(`preview-map-viewport-20260918.test.tsx`) · 세로로 긴 그림 기본 배율 터치 이동 시험(`design-fix-20260924-L3b.test.tsx`) · 틀 · 배치 시험(`preview-layout-20260912` · `preview-slot-4x3`) 수정 없이 green. 기존 시험 단언 삭제 0.
+- 전체: `frontend-test` 148파일 1999건 통과(B0 끝 1972 ＋ 27). #120 고정 시험(`preview-map-viewport-20260918.test.tsx`) · 세로로 긴 그림 기본 배율 터치 이동 시험(`design-fix-20260924-L3.test.tsx` · L1b 정정 — 종전 표기 `L3b` 는 같은 세로로 긴 내용을 쓰는 관성 시험) · 틀 · 배치 시험(`preview-layout-20260912` · `preview-slot-4x3`) 수정 없이 green. 기존 시험 단언 삭제 0.
 
 ## 3. RED 확인 목록(시험 결정 「L1 시험 작성 단계(RED) 확인 목록」)
 

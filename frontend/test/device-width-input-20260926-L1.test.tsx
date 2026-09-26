@@ -6,7 +6,9 @@
  * 새 seam = 지도 칸 폭 시험 도우미(`helpers/mapCellWidth.ts` · 가짜 `ResizeObserver`).
  * ⚠ jsdom 은 가림을 판정하지 못한다 — 여기서는 배치(어느 묶음 안에 무엇이 있나)와 누른 결과만
  *   잰다. 가림 0% 와 탭 도달의 근거는 캡처 수치와 실기기다(spec V4).
- * ⚠ L1b 몫(끌기 축 `touch-action` · 터치 탭 좌표 · 터치 좌표 문구)은 이 파일에 아직 없다.
+ * L1b 부분 = V5(끌기 축 속성 · CSS 대응) · V11(터치 탭 좌표 · 우려 7ⓐ) · V12 지도(입력 방식별 좌표 문구).
+ *   jsdom 은 CSS 파일을 적용하지 않는다 — 계산된 `touch-action` 은 캡처 수치 · 브라우저가 재고,
+ *   여기서는 끌기 축 속성 값과 원문 CSS 대응을 잰다.
  */
 // @ts-expect-error — 타입 선언 없이 런타임만 쓴다(`preview-map-viewport-20260918` 와 같은 규율).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -368,6 +370,8 @@ describe('V4 · V11 터치 — 도구 층에는 확대 묶음과 맞춤 단추�
     const corner = fit.closest('.pv-overlay-br');
     expect(corner?.contains(screen.getByTestId('preview-zoom'))).toBe(true);
     expect(new Set(childClasses(corner!))).toEqual(new Set(['pv-fit', 'pv-zoom']));
+    // 순서: 맞춤 단추가 확대 줄 앞(모서리 위쪽) — 좁은 지도에서 확대 줄이 지도 가운데까지 올라가지 않게(L1a 결정)
+    expect(childClasses(corner!)).toEqual(['pv-fit', 'pv-zoom']);
 
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
     expect(scaleOf('preview-layers')).toBe(2);
@@ -525,5 +529,221 @@ describe('CSS 원문 — L1a 새 규칙은 기존 고정 블록 뒤에 있다', 
     expect(dh).toHaveLength(2);
     expect(dh[0]!.body).not.toContain('overflow-wrap');
     expect(dh[1]!.body.trim()).toBe('overflow-wrap: anywhere;');
+  });
+});
+
+/* ═══ L1b · V5 끌기 축 — 끌 범위가 있는 축에서만 지도가 움직인다 ═══════════ */
+
+/** 작은 유역 경계 — 기본 배율이 1 보다 작아 「데이터에 맞춤」(배율 1)이 확대가 된다. */
+const SMALL = { west: 126, south: 36, east: 127, north: 37 };
+
+function detailSourceWith(bounds: typeof WIDE): DatasetPreviewSource {
+  const job = () =>
+    ({ ...doneJob(), result: { ...doneJob().result, bounds } }) as unknown as RenderJob;
+  return withDatasetPreviewFixture({
+    palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    create: vi.fn(async () => job()),
+    get: vi.fn(async () => job()),
+    probeTile: vi.fn(async () => 'ok' as const),
+    mapGeometry: vi.fn(async () => undefined),
+    screenshot: vi.fn(async () => new Blob()),
+    lookupValue: vi.fn(async () => HIT),
+  } as unknown as DatasetPreviewSource);
+}
+
+/** 내용 상자(층 묶음 배치 크기)를 심는다 — design-fix 20260924 L3 의 `sizeContent` 와 같은 방식. */
+function sizeContent(el: Element, w: number, h: number) {
+  Object.defineProperty(el, 'offsetWidth', { value: w, configurable: true });
+  Object.defineProperty(el, 'offsetHeight', { value: h, configurable: true });
+}
+
+/** 뷰포트 512 × 512 · 내용 w × h 를 심고 그림 적재로 한 번 다시 그리게 한다(창 크기 변화와 같은 경로). */
+function plant(viewport: HTMLElement, layers: HTMLElement, w: number, h: number) {
+  sizeViewport(viewport, 512, 512);
+  sizeContent(layers, w, h);
+  const img = viewport.querySelector('img') as HTMLImageElement;
+  Object.defineProperty(img, 'naturalWidth', { value: 4096, configurable: true });
+  fireEvent.load(img);
+}
+
+const axisOf = (el: HTMLElement) => el.getAttribute('data-drag-axis');
+
+describe('V5 끌기 축 — 상세 지도(기본 배율 · 끌 범위별 · 확대)', () => {
+  const cases: Array<[string, number, number, string]> = [
+    ['두 축 끌 범위 0', 512, 512, 'none'],
+    ['세로만 끌 범위(세로로 긴 그림)', 512, 1600, 'y'],
+    ['가로만 끌 범위', 1600, 512, 'x'],
+    ['두 축 끌 범위', 1600, 1600, 'both'],
+  ];
+  it('사례 목록은 네 개다(없음 · 세로 · 가로 · 둘 다)', () => {
+    expect(cases).toHaveLength(4);
+  });
+  for (const [name, w, h, want] of cases) {
+    it(`기본 배율 · ${name} → ${want}`, async () => {
+      const { viewport } = await mountDetail();
+      plant(viewport, screen.getByTestId('preview-layers'), w, h);
+      expect(scaleOf('preview-layers')).toBe(1);
+      await waitFor(() => expect(axisOf(viewport)).toBe(want), WAIT);
+    });
+  }
+
+  it('확대(배율 > 기본 배율) → 둘 다 · 기본 배율로 돌아오면 다시 없음', async () => {
+    const { viewport } = await mountDetail();
+    plant(viewport, screen.getByTestId('preview-layers'), 512, 512);
+    await waitFor(() => expect(axisOf(viewport)).toBe('none'), WAIT);
+    fireEvent.click(screen.getByRole('button', { name: '확대' }));
+    expect(scaleOf('preview-layers')).toBe(2);
+    expect(axisOf(viewport)).toBe('both');
+    fireEvent.click(screen.getByRole('button', { name: '기본 배율로' }));
+    expect(scaleOf('preview-layers')).toBe(1);
+    expect(axisOf(viewport)).toBe('none');
+  });
+
+  it('「데이터에 맞춤」이 확대일 때(기본 배율 < 1) → 둘 다', async () => {
+    stubPointer(true);
+    const { viewport } = await mountDetail(detailSourceWith(SMALL));
+    plant(viewport, screen.getByTestId('preview-layers'), 512, 512);
+    const base = Number(screen.getByTestId('preview-layers').getAttribute('data-zoom-base-scale'));
+    expect(base).toBeLessThan(1);
+    await waitFor(() => expect(axisOf(viewport)).toBe('none'), WAIT);
+    fireEvent.click(screen.getByRole('button', { name: '데이터에 맞춤' }));
+    expect(scaleOf('preview-layers')).toBe(1);
+    expect(axisOf(viewport)).toBe('both');
+  });
+});
+
+describe('V5 끌기 축 — 업로드 인라인 · 확장보기에도 같은 속성 · 미등록에는 없다', () => {
+  it('업로드 인라인 · 확장보기 — 세로로 긴 그림 기본 배율 → 세로', async () => {
+    const viewport = await mountUpload();
+    await screen.findByTestId('up-preview-zoom');
+    plant(viewport, screen.getByTestId('up-preview-layers'), 512, 1600);
+    await waitFor(() => expect(axisOf(viewport)).toBe('y'), WAIT);
+
+    fireEvent.click(screen.getByTestId('pv-expand'));
+    const expand = await screen.findByTestId('pv-expand-viewport');
+    plant(expand, screen.getByTestId('pv-expand-layers'), 512, 1600);
+    await waitFor(() => expect(axisOf(expand)).toBe('y'), WAIT);
+  });
+
+  it('미등록(확대 없는 지도) — 속성이 없다(페이지가 늘 스크롤)', async () => {
+    stubPointer(true);
+    const viewport = await mountUnregistered();
+    expect(viewport.hasAttribute('data-drag-axis')).toBe(false);
+  });
+});
+
+describe('V5 CSS 원문 — 뷰포트 기본값은 페이지 스크롤 · 축 속성마다 touch-action', () => {
+  it('`.pv-viewport {` 첫 블록은 `touch-action: pan-x pan-y` 이고 `position: relative` 가 그대로 있다', () => {
+    const first = rulesOf(PREVIEW_CSS, '.pv-viewport')[0];
+    expect(first, '.pv-viewport 블록이 없다').toBeTruthy();
+    expect(first!.body).toMatch(/touch-action:\s*pan-x pan-y;/);
+    expect(first!.body).not.toMatch(/touch-action:\s*none/);
+    expect(first!.body).toContain('position: relative');
+  });
+
+  const MAP: Array<[string, string]> = [
+    ['none', 'pan-x pan-y'],
+    ['y', 'pan-x'],
+    ['x', 'pan-y'],
+    ['both', 'none'],
+  ];
+  it('대응표는 네 줄이다(spec 「구현 결정」 끌기 축 표)', () => {
+    expect(MAP).toHaveLength(4);
+  });
+  for (const [axis, action] of MAP) {
+    it(`[data-drag-axis='${axis}'] → touch-action: ${action} · 기본 블록 뒤`, () => {
+      const rules = rulesOf(PREVIEW_CSS, `.pv-viewport[data-drag-axis='${axis}']`);
+      expect(rules).toHaveLength(1);
+      expect(rules[0]!.at).toBeGreaterThan(PREVIEW_CSS.indexOf('.pv-viewport {'));
+      expect(rules[0]!.body.trim()).toBe(`touch-action: ${action};`);
+    });
+  }
+});
+
+/* ═══ L1b · V11 터치 탭 좌표 · V12 지도 문구 ═══════════════════════════════ */
+
+const TOUCH_IDLE = '지도를 누르면 그 자리 좌표를 보여 줘요';
+
+/** 터치 탭 — 포인터 누름 · 놓기 ＋ click. 마우스 이동(`mousemove`)은 보내지 않는다. */
+function tap(viewport: HTMLElement, x: number, y: number) {
+  fireEvent.pointerDown(viewport, { pointerId: 7, pointerType: 'touch', clientX: x, clientY: y, button: 0 });
+  fireEvent.pointerUp(window, { pointerId: 7, pointerType: 'touch', clientX: x, clientY: y });
+  fireEvent.click(viewport, { clientX: x, clientY: y });
+}
+
+/** 512 × 512 뷰포트의 (128, 384) = 가로 1/4 · 세로 3/4 → WIDE 경계에서 경도 −45 · 위도 −5. */
+const TAPPED = '역산값 · 위도 -5.0000 · 경도 -45.0000';
+
+describe('V11 · 우려 7ⓐ 터치 탭 좌표 — 상세 · 미등록 둘 다', () => {
+  it('상세 터치 — 탭한 점의 위도 · 경도가 좌표 표시에 나오고 값 조회도 1회 일어난다', async () => {
+    stubPointer(true);
+    const { source, viewport } = await mountDetail();
+    sizeViewport(viewport, 512, 512);
+    const hud = screen.getByTestId('preview-cursor-hud');
+    expect(hud.textContent).toBe(TOUCH_IDLE);
+    tap(viewport, 128, 384);
+    expect(hud.textContent).toBe(TAPPED);
+    await waitFor(() => expect(source.lookupValue).toHaveBeenCalledTimes(1), WAIT);
+  });
+
+  it('미등록 터치 — 탭한 점의 위도 · 경도가 좌표 표시에 나온다(값 조회 없음)', async () => {
+    stubPointer(true);
+    const viewport = await mountUnregistered();
+    sizeViewport(viewport, 512, 512);
+    const hud = screen.getByTestId('preview-cursor-hud');
+    expect(hud.textContent).toBe(TOUCH_IDLE);
+    tap(viewport, 128, 384);
+    expect(hud.textContent).toBe(TAPPED);
+    expect(viewport.hasAttribute('data-value-lookup')).toBe(false);
+  });
+
+  it('미등록 터치 — 경계 밖 탭은 좌표를 지어내지 않는다(「지도 밖」)', async () => {
+    stubPointer(true);
+    const viewport = await mountUnregistered();
+    sizeViewport(viewport, 512, 512);
+    tap(viewport, 600, 384);
+    expect(screen.getByTestId('preview-cursor-hud').textContent).toBe('지도 밖');
+  });
+
+  it('마우스 — 누름만으로는 좌표 표시가 바뀌지 않는다(마우스 이동 표시 그대로)', async () => {
+    stubPointer(false);
+    const viewport = await mountUnregistered();
+    sizeViewport(viewport, 512, 512);
+    const hud = screen.getByTestId('preview-cursor-hud');
+    fireEvent.click(viewport, { clientX: 128, clientY: 384 });
+    expect(hud.textContent).toBe(HUD_IDLE);
+    fireEvent.mouseMove(viewport, { clientX: 128, clientY: 384 });
+    expect(hud.textContent).toBe(TAPPED);
+  });
+});
+
+describe('V12 지도 문구 — 입력 방식 스텁 두 갈래', () => {
+  it('터치 — 좌표 표시 대기 문구가 새 문구다(상세 · 미등록)', async () => {
+    stubPointer(true);
+    await mountDetail();
+    expect(screen.getByTestId('preview-cursor-hud').textContent).toBe(TOUCH_IDLE);
+  });
+
+  it('미등록 터치도 같은 새 문구다', async () => {
+    stubPointer(true);
+    await mountUnregistered();
+    expect(screen.getByTestId('preview-cursor-hud').textContent).toBe(TOUCH_IDLE);
+  });
+
+  it('마우스 · 판별 불가 — 기존 문구 그대로', async () => {
+    const pointer = stubPointer(false);
+    await mountDetail();
+    expect(pointer.queries).toContain('(pointer: coarse)');
+    expect(screen.getByTestId('preview-cursor-hud').textContent).toBe(HUD_IDLE);
+    expect(HUD_IDLE).toBe('커서를 지도 위로');
+  });
+
+  it('새 터치 문구는 마우스 문구 상수 바로 옆의 이름 붙은 상수다', () => {
+    const src = String(readFileSync(resolve(process.cwd(), 'src/components/preview/PreviewPanels.tsx'), 'utf8'));
+    const idle = src.indexOf("export const HUD_IDLE = '커서를 지도 위로';");
+    const touch = src.indexOf(`export const HUD_IDLE_TOUCH = '${TOUCH_IDLE}';`);
+    expect(idle).toBeGreaterThan(-1);
+    expect(touch).toBeGreaterThan(idle);
+    expect(src.slice(idle, touch).split('\n').length).toBeLessThanOrEqual(4);
   });
 });

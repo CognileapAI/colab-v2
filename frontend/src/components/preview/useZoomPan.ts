@@ -45,6 +45,12 @@ export interface UseZoomPanOptions {
   bounds?: GeoBounds | undefined;
 }
 
+/**
+ * ⭑ ⟨휴대폰·패드 대응 20260926 · V5⟩ **끌기 축** — 한 손가락 끌기가 지도를 옮길 축.
+ * 나머지 축의 끌기는 페이지 스크롤이다(뷰포트 `data-drag-axis` → `preview.css` 의 `touch-action`).
+ */
+export type DragAxis = 'none' | 'x' | 'y' | 'both';
+
 export interface ZoomPan {
   scale: number;
   x: number;
@@ -61,6 +67,11 @@ export interface ZoomPan {
   showBoundsOutline: boolean;
   /** 더블클릭 — **데이터 경계에 정확히 맞춘다**(여백 0). */
   fitToData: () => void;
+  /**
+   * 끌기 축(V5). 배율 > 기본 배율(「데이터에 맞춤」 포함 · `atLimit` 과 같은 비교)이면 둘 다,
+   * 기본 배율에서는 이동 범위(`clampView` 와 같은 계산)가 있는 축만. 상자를 못 재면 없음.
+   */
+  dragAxis: DragAxis;
   /** 데이터가 가진 해상도까지 들어왔는가. 재기 전에는 `false` — 모르는 것을 알린다고 하지 않는다. */
   atLimit: boolean;
   measured: boolean;
@@ -127,6 +138,17 @@ export interface ZoomPan {
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
+}
+
+/** 축마다 중앙에서 옮길 수 있는 반폭 — 내용이 뷰포트보다 작거나 같은 축은 0 이다. */
+function panHalf(
+  sizes: { viewport: { width: number; height: number }; content: { width: number; height: number } },
+  scale: number,
+): { x: number; y: number } {
+  return {
+    x: Math.max(0, (sizes.content.width * scale - sizes.viewport.width) / 2),
+    y: Math.max(0, (sizes.content.height * scale - sizes.viewport.height) / 2),
+  };
 }
 
 /**
@@ -256,12 +278,11 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
       //   큰 축은 ±(내용 × 배율 − 뷰포트)/2 까지 간다 — 그 끝이 그림의 가장자리다.
       //   ／ 종전 표기 ~~`x: clamp(next.x, size.width * (1 - next.scale), 0)`~~ — 뷰포트
       //   크기 하나로 두 축을 계산해 세로가 긴 그림의 아래로 갈 수 없었다.
-      const halfX = Math.max(0, (sizes.content.width * next.scale - sizes.viewport.width) / 2);
-      const halfY = Math.max(0, (sizes.content.height * next.scale - sizes.viewport.height) / 2);
+      const half = panHalf(sizes, next.scale);
       return {
         scale: next.scale,
-        x: clamp(next.x, -halfX, halfX),
-        y: clamp(next.y, -halfY, halfY),
+        x: clamp(next.x, -half.x, half.x),
+        y: clamp(next.y, -half.y, half.y),
       };
     },
     [boxes],
@@ -611,6 +632,14 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
   // **한가운데 놓기는 내보낼 때 한다** — 상태에 넣어 두면 화면 크기를 아직 못 잰 순간에
   // 0 으로 굳어 버리고, 그 뒤 크기를 알아도 다시 계산되지 않는다. 크기는 렌더마다 잰다.
   const pan = centeredPanFor(view, box(), contentSize());
+  // 끌기 축도 렌더마다 같은 상자로 센다(V5).
+  const dragAxis = ((): DragAxis => {
+    if (view.scale > baseScale) return 'both';
+    const sizes = boxes();
+    if (!sizes) return 'none';
+    const half = panHalf(sizes, view.scale);
+    return half.x > 0 ? (half.y > 0 ? 'both' : 'x') : half.y > 0 ? 'y' : 'none';
+  })();
 
   return {
     scale: view.scale,
@@ -621,6 +650,7 @@ export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
     rungKm,
     showBoundsOutline,
     fitToData,
+    dragAxis,
     measured,
     box: boxSize,
     // ⭑ ⟨버그 8⟩ **한계는 들어간 뒤에만 오는 것이 아니다.** 종전 조건은 `view.scale > 1 ||
