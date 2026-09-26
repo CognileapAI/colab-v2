@@ -1,0 +1,13 @@
+상세 화면 정보 격자의 바깥 선과 칸 구분선이 같은 토큰 `--color-border`를 쓰고 있어서, 디자인 정본이 요구하는 두 층이 생기지 않습니다.
+
+| 선 | 선언 위치 | 선언 | 토큰 값 |
+|---|---|---|---|
+| 컨테이너 선 | `detail.css:59` | `.detail-page .infogrid { border: 1px solid var(--color-border); … }` | `#e8ecf2` (`tokens.css:20`) |
+| 칸 구분선 | `detail.css:62` | `.detail-page .infogrid .ig { border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }` | `#e8ecf2` (`tokens.css:20`) |
+
+- **좁은 화면에서도 같음:** 폭 720px 이하에서 칸 구분선을 다시 정의하는 `detail.css:69`도 `--color-border`를 씁니다.
+- **다른 화면과의 비교:** `catalog.css`의 표는 헤더 쪽 선에 `--color-border-strong`(`:41`·`:45`), 행 구분선에 `--color-border`(`:46`)를 써서 선의 층을 나눕니다. 층을 나누는 데 쓸 수 있는 토큰으로는 `--color-border-strong`(`tokens.css:21`)과 `--color-border-shell`(`tokens.css:23`)이 이미 있습니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

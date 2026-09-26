@@ -1,0 +1,24 @@
+세 파일(`detail.css` 152행 · `upload.css` 230행 · `lineageGraph.css` 97행)의 `font-size` 선언은 모두 65개입니다. 주석은 같은 길이의 공백으로 바꿔 행 번호가 그대로 남게 한 뒤 스크립트로 뽑았습니다. 파일은 수정하지 않았습니다.
+
+**분류**
+| 구분 | 개수 |
+|---|---|
+| 13px 미만 px 리터럴 | 34 |
+| 13px 이상 px 리터럴 | 12 |
+| `var(...)` 값이라 판정하지 않음 | 19 |
+
+- **판정하지 않은 값:** `var(--text-body)` · `var(--text-body-sm)` · `var(--text-h2)` · `var(--text-h3)`입니다. 이 가운데 `--text-h2`(24px)와 `--text-h3`(18px)는 `detail.css`의 `:root`에 적혀 있습니다. 하지만 이 검사는 값 자체가 px 리터럴인 선언만 판정하므로 여기에 넣지 않았습니다. `--text-body`와 `--text-body-sm`은 세 파일 어디에도 정의가 없습니다.
+- **13px 미만 파일별 개수:**
+  - `detail.css` 7곳: 11px ×4 · 10px ×3
+  - `upload.css` 14곳: 12px ×12 · 11px ×1 · 10px ×1
+  - `lineageGraph.css` 13곳: 10px ×6 · 11px ×5 · 10.5px ×1 · 12.5px ×1 (소수값 포함)
+- **공유 선언:** `upload.css:82`의 `.dropzone .muted, .muted`는 선택자가 둘이지만 선언 하나로 셌습니다.
+- **오류 본문 규칙:**
+  - 이미 13px인 공유 규칙은 `upload.css:138`의 `.vizerr, .warn` 하나이고, `font-size`는 `upload.css:144`에 있습니다.
+  - `detail.css`의 `.fl-err` · `.dlerr` · `.de-err`는 모두 `var(--text-body-sm)`이라 판정하지 않았습니다.
+  - `.up-toast`(`upload.css:92`, 12px)는 경고 안내 규칙이고, 13px 미만 목록에 들어 있습니다.
+- **범위:** 제공된 CSS 파일에 적힌 값만 본 검사입니다. 브라우저가 계산한 스타일이나 배포 화면의 접근성은 확인하지 않았습니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

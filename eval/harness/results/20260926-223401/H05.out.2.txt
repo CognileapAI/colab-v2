@@ -1,0 +1,12 @@
+목업 검수가 지적한 흐림 처리는 `lineage.css` 에 없습니다. 이 파일 기준으로는 v2 코드에 해당하지 않습니다.
+
+- **후보 목록 규칙은 두 개입니다.**
+  - `lineage.css:105` 의 `.lin-picker`: 윗선(`border-top: 1px dashed`)과 `padding-top` 만 있습니다.
+  - `lineage.css:109` 의 `.lin-picker ul`: 목록 기호를 없애고, 여백을 0으로 두고, 세로 flex 로 배치합니다.
+- **흐림 선언은 없습니다.** 파일 전체에서 `opacity`·`blur`·`filter`·`grayscale`·`rgba`·`color-mix`·`disabled`·`:disabled`·`aria-disabled` 를 찾았지만 걸린 것이 없습니다.
+- **2.33:1 을 만들 선언도 없습니다.** 후보 목록 규칙에는 글자색이나 배경색 지정이 없습니다. 연결할 수 없는 상태를 구분하는 선택자(`li`·`button:disabled` 등)도 없습니다. 이 파일에서 나올 수 있는 값이 아닙니다.
+- **확인하지 못한 곳:** 이 픽스처 디렉터리에는 `lineage.css` 한 벌만 있습니다. 전역 `button:disabled` 나 `upload.css` 에서 흐림이 들어오는지는 여기서 판정할 수 없습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nE "lin-picker|opacity|blur|filter|disabled|grayscale|color-mix|rgba|:disabled|aria-disabled" lineage.css` 결과 `.lin-picker`(105행)·`.lin-picker ul`(109행) 두 줄만 나오고 흐림 선언은 0건

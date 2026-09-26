@@ -1,0 +1,42 @@
+## 결론
+
+`COLAB_MIN_CASES` 가 선언되지 않은 환경에서 이 검사가 보장하는 것은 **`cases.txt` 파일이 존재한다**는 것 하나입니다. 시험이 몇 건인지는 보장하지 않습니다. 시험이 0건이어도 green 이 나옵니다.
+
+## 근거 (줄 번호 기준)
+
+| 행 | 코드 | 합격선 변수가 없을 때 |
+|---|---|---|
+| 5 | `MIN_CASES="${COLAB_MIN_CASES:-1}"` | `1` 이 됩니다. 합격선이 없다는 사실이 사라지고, 가장 느슨한 합격선이 선언된 것처럼 동작합니다. |
+| 6 | `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"` | `9999` 가 됩니다. 이 값은 어디서도 검사하지 않고 15행에서 출력만 합니다. 그래서 "상한 9999s" 라는 없는 제약을 green 문구에 싣습니다. |
+| 8 | `grep -c ... \|\| echo 0` | `case` 가 0건이면 grep 이 `0` 을 출력하고 rc=1 로 끝납니다. 그러면 `echo 0` 이 한 번 더 실행되어 `N="0\n0"` 이 됩니다. |
+| 10 | `[ "$N" -lt "$MIN_CASES" ]` | N 이 두 줄 값이면 `integer expression expected` 로 rc=2 가 나고, `if` 는 이를 거짓으로 봅니다. `set -e` 가 없어서 스크립트는 멈추지 않고 green 까지 내려갑니다. |
+
+실측한 결과입니다(원본은 건드리지 않고 임시 디렉터리 사본으로 돌렸습니다).
+- 현 픽스처, 변수 없음 → `check-coverage green — 시험 2건 (최소 1 · 상한 9999s)`, exit 0
+- `case` 0건, 변수 없음 → green, exit 0
+- `case` 0건, `COLAB_MIN_CASES=5` → **green, exit 0**. 8행 결함은 선언된 환경에서도 검사를 무력화합니다.
+- `cases.txt` 없음 → `시험 0 건 < 최소 5 건`, exit 1. red 가 나오는 경우는 이것 하나입니다.
+
+결함은 두 겹입니다. 5행은 선언이 없는데도 통과를 만들어 냅니다. 8행과 10행은 입력이 비어 있을 때 통과를 만들어 냅니다. 세 상태로 고칠 때 8행도 함께 고쳐야 상태 1이 실제로 검사를 합니다.
+
+## 고칠 방향 (스케치)
+
+```bash
+N="$(grep -c '^case ' cases.txt)"; rc=$?
+[ "$rc" -le 1 ] || { echo "::error::cases.txt 를 읽지 못함 (grep rc=$rc)"; exit 1; }
+
+case "${COLAB_MIN_CASES-}" in
+  exempt)       echo "check-coverage 면제 — 시험 ${N}건 · 합격선 미적용 (COLAB_MIN_CASES=exempt)"; exit 0 ;;
+  ''|*[!0-9]*)  echo "::error::COLAB_MIN_CASES 미선언 — 정수로 선언하거나 exempt 를 명시한다"; exit 1 ;;
+esac
+[ "$N" -lt "$COLAB_MIN_CASES" ] && { echo "::error::시험 ${N}건 < 최소 ${COLAB_MIN_CASES}건"; exit 1; }
+```
+
+- `COLAB_CASE_TIMEOUT` 도 같은 세 상태로 맞춥니다. 아니면 실제로 시행하기 전까지 green 문구에서 빼는 편이 맞습니다.
+- `COLAB_MIN_CASES=0` 은 면제를 숫자로 숨기는 길입니다. `-ge 1` 로 막고 `exempt` 로만 면제하게 할지는 정하실 부분입니다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: `COLAB_MIN_CASES` 가 정수로 선언되면 grep 실패(rc≥2)를 red 로 막은 뒤 N 과 비교하고, N < 합격선이면 exit 1 입니다.
+- 상태2 명시 면제: `COLAB_MIN_CASES=exempt` 이면 "면제 — 시험 N건 · 합격선 미적용" 을 green 과 다른 문구로 출력하고 exit 0 입니다.
+- 상태3 무언: `COLAB_MIN_CASES` 가 미설정이거나 비어 있으면 "미선언 — 선언하거나 exempt 명시" 오류를 내고 exit 1 입니다.
