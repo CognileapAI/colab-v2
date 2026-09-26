@@ -1,0 +1,11 @@
+상세 화면 정보 격자의 컨테이너 선과 칸 구분선이 같은 토큰을 쓰고 있어서 보더가 두 층으로 갈리지 않습니다. 디자인 요구사항 위반입니다.
+
+- **컨테이너 선** (`.detail-page .infogrid`): `detail.css:59`에 `border: 1px solid var(--color-border);`로 선언돼 있습니다.
+- **칸 구분선** (`.detail-page .infogrid .ig`): `detail.css:62`에 `border-right`와 `border-bottom`이 둘 다 `1px solid var(--color-border)`로 선언돼 있습니다. 좁은 화면 규칙인 `detail.css:69`도 같은 토큰을 씁니다.
+- **토큰 값**: `tokens.css:20`에 `--color-border: #e8ecf2`로 정의돼 있습니다. `catalog.css`나 `tokens.css`에 `.infogrid` 규칙을 덮어쓰는 선언은 없습니다.
+
+`tokens.css`에는 `--color-border-strong`(:21)과 `--color-border-shell`(:23)도 정의돼 있습니다. 그런데 정보 격자의 두 선은 모두 `--color-border` 하나만 참조합니다. 그래서 바깥 테두리와 칸 구분선이 같은 색으로 그려집니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

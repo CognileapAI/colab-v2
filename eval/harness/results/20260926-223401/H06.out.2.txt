@@ -1,0 +1,9 @@
+카드 규칙에 `box-shadow` 선언이 있어요. 정본 위반입니다.
+
+- **고칠 곳:** `catalog.css:31`. `.catalog-page .card` 규칙(29–32행) 안에 `box-shadow: var(--shadow-sm);`가 있어요. 카드에 그림자를 두지 않는다는 정본에 어긋나니 이 선언만 지우면 됩니다. 테두리와 모서리 둥글기는 그대로 둬요. `--shadow-sm`은 이 파일에 정의가 없고 공유 파일 `shell/tokens.css`에서 오는 값이라, 토큰 쪽은 건드리지 않아도 돼요.
+- **남길 곳:** `catalog.css:80`. `.colmenu`의 `box-shadow: var(--shadow-lg);`는 팝오버라서 예외예요. 이 값을 쓰는 21행의 `--shadow-lg` 토큰 정의도 남겨야 해요.
+- **대상 아님:** `catalog.css:52`. 행 hover 때 첫 칸 왼쪽에 2px 선을 긋는 `inset` 효과로, 카드를 띄우는 그림자가 아니라서 지목하지 않았어요.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

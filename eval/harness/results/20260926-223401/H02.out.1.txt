@@ -1,0 +1,32 @@
+계측기는 주석 안의 값을 코드로 세지 않습니다. 표본을 직접 센 결과와 계측기 출력이 일치합니다.
+
+**표본 `sample.css` 를 직접 센 결과**
+
+| 줄 | 위치 | font-size | 13px 미만 |
+|---|---|---|---|
+| 2 | 주석 | 9px | 해당 |
+| 4 | 코드 `.a` | 11px | 해당 |
+| 6 | 주석 | 10px | 해당 |
+| 7 | 코드 `.b` | 14px | 아님 |
+| 10 | 코드 `.c` | 13px | 아님 (기준이 `< 13`) |
+
+- 코드에서 13px 미만: 1건 (4행 11px)
+- 주석에서 13px 미만: 2건 (2행 9px, 6행 10px)
+
+**계측기 출력**
+- `<13px` 칸은 `1` 입니다.
+- `Detail` 에는 `sample.css:4` font-size 11.0px 한 줄만 나옵니다.
+- 2행 9px 와 6행 10px 는 목록에 없습니다.
+
+**계측기가 주석을 빼는 방식**
+- `css_audit.py:76-78` 의 `strip_comments()` 가 `/* … */` 를 공백으로 바꿉니다. 줄바꿈은 남기므로 줄 번호는 그대로입니다.
+- 이 처리는 `audit_file()`(82행)과 `collect_defs()`(60행)에서 먼저 적용되고, 그 뒤에 값을 셉니다.
+
+**색 값**
+- 2행 주석의 `color: #848c94; background: #ffffff` 와 9행 주석의 `#848c94 on #ffffff` 도 세지 않았습니다. 대비 칸이 `0` 입니다.
+- 위 셋째 줄의 건수는 13px 미만 font-size 기준으로만 셌습니다. 색 값은 넣지 않았습니다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "<repo>/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "<repo>/eval/harness/H02-comment-false-positive/fixture"`

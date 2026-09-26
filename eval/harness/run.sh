@@ -7,7 +7,7 @@
 #   여기서는 **개정 전 red → 개정 후 green** 이 근거가 된다.
 #
 # 실행 (상한 변수는 **미선언이면 red(준비)** — 관대한 기본값을 두지 않는다):
-#   COLAB_EVAL_TIMEOUT=180 COLAB_EVAL_BUDGET=0.50 bash eval/harness/run.sh
+#   COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh   (권장값 정본 = README 「상한」)
 #   COLAB_EVAL_ONLY=H01 …                     한 과제만
 #
 # 판정 (과제당 2회 · intent Q8):
@@ -16,6 +16,10 @@
 #   `is_error:true` · `subtype != success` 도 red(준비) — rc 0 이고 본문이 기대와 맞아도 판정하지 않는다.
 #   판정기 exit 0은 green, 1은 판정 실패, 78 및 그 외 비정상 종료는 red(준비).
 #   과제 0건 → red(판정 · 1). 「대상이 없어 통과」를 만들지 않는다 (CLAUDE.md §4).
+#   비율 측정 과제 — 과제 디렉터리의 `mode` 파일 본문이 정확히 `rate` 면 2회를 그대로 돌리고 `rate x/2` 로
+#   적는다. green·불안정 계수와 판정 실패 관측에 넣지 않는다(회귀 집합 제외 · 15라운드 판정 H18-rate).
+#   `mode` 부재 = pass/fail(엄격이 기본) · 그 밖의 본문 = red(준비 · 「알 수 없는 mode」) ·
+#   비율 과제도 판정기 78·비정상 종료·상한 초과면 red(준비)다(비율이 준비 실패를 삼키지 않는다).
 #
 # exit — 0 green · 1 red(판정) · 78 red(준비).
 #   ⚠ 판정 red 와 준비 red 가 함께 나면 **1** 이다. 준비 red 도 병합 진입을 막는다(둘 다 0 이어야 한다).
@@ -47,7 +51,7 @@ judg_red() { echo "::error::harness-eval red(판정) — $*"; exit 1; }
 # ── ⑴ 상한 선언 — 미선언은 red(준비) ────────────────────────────────────────
 # `${VAR:-}` 는 **존재 여부를 묻기 위한 것**이지 기본값이 아니다. 값을 대신 채우지 않는다.
 [ -n "${COLAB_EVAL_TIMEOUT:-}" ] || ready_red "COLAB_EVAL_TIMEOUT" \
-  "과제 1회 실행의 초 단위 상한이다. 선언하는 법 = COLAB_EVAL_TIMEOUT=180 COLAB_EVAL_BUDGET=0.50 bash eval/harness/run.sh · 값의 근거는 README 「상한」 절(첫 실측 p95×2)."
+  "과제 1회 실행의 초 단위 상한이다. 선언하는 법 = COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash eval/harness/run.sh · 값의 근거는 README 「상한」 절."
 [ -n "${COLAB_EVAL_BUDGET:-}" ] || ready_red "COLAB_EVAL_BUDGET" \
   '과제 1회 실행의 달러 상한(--max-budget-usd)이다. 선언하는 법은 위와 같다.'
 command -v python3 >/dev/null 2>&1 || ready_red "python3" \
@@ -94,7 +98,7 @@ mkdir -p "$OUT" || ready_red "$OUT" "결과 자리를 만들지 못했다."
 printf '%s\n' "$CONFIG_HASH_JSON" > "$OUT/config-hash.json" || ready_red "$OUT/config-hash.json" "설정 해시를 쓰지 못했다."
 
 # ── ⑶ 실행 ──────────────────────────────────────────────────────────────────
-N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0
+N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0; N_RATE=0
 SECS_FILE="$OUT/.secs"; : > "$SECS_FILE"
 COST_FILE="$OUT/.usd"; : > "$COST_FILE"
 ROWS_FILE="$OUT/.rows"; : > "$ROWS_FILE"
@@ -103,6 +107,7 @@ COST_UNKNOWN=0
 for d in "${TASKS[@]}"; do
   name="$(basename "$d")"
   id="${name%%-*}"
+  mode=""  # per task — a previous task's mode must never leak into this one (검증 #2)
 
   miss=""
   [ -f "$d/task.md" ]   || miss="$miss task.md"
@@ -113,6 +118,17 @@ for d in "${TASKS[@]}"; do
     printf '%s|준비|—|—|세 파일 중 부재:%s\n' "$name" "$miss" >> "$ROWS_FILE"
     echo "  ─ $name red(준비) — 세 파일 중 부재:$miss"
     continue
+  fi
+
+  # 비율 측정 표지 — 본문 정확히 `rate` 만 인정한다. 부재 = pass/fail · 그 밖 = red(준비).
+  if [ -f "$d/mode" ]; then
+    mode="$(cat "$d/mode")"
+    if [ "$mode" != rate ]; then
+      N_READY=$((N_READY + 1))
+      printf '%s|준비|—|—|알 수 없는 mode — %s/mode 본문은 rate 한 줄만 인정한다\n' "$name" "$name" >> "$ROWS_FILE"
+      echo "  ─ $name red(준비) — 알 수 없는 mode(${name}/mode) — rate 만 인정한다."
+      continue
+    fi
   fi
 
   FIXABS="$(cd "$d/fixture" && pwd)"
@@ -163,9 +179,14 @@ for d in "${TASKS[@]}"; do
     #   `{"is_error":true,"result":"<기대와 맞는 문장>"}` 에 rc 0 이면 `expect.sh` 가 통과했다.
     #   `is_error`·`subtype` 을 함께 읽어 그 회차를 red(준비)로 돌린다(시험 ⓖ).
     # 출력 = `<USD>\t<오류 subtype 또는 빈 칸>` 한 줄.
-    meta="$(python3 - "$raw" "$txt" <<'PY'
+    # 증거 파일 `H??.out.*.txt`(커밋 대상)에는 러너 저장소의 절대경로(`$REPO_TOP` · 사용자 홈 포함)를
+    # `<repo>` 로, 그 밖의 사용자 홈(`$HOME`)은 `<home>` 으로 바꿔 쓴다(저장소가 홈 아래여도 `<repo>` 가 먼저다).
+    # 판정기 입력(`$JUDGE_IN`)은 원문 그대로다 — 판정 재료를 바꾸지 않는다(S-6a · audit C-9).
+    JUDGE_IN="$OUT/.judge-in"
+    meta="$(python3 - "$raw" "$txt" "$REPO_TOP" "$JUDGE_IN" "${HOME:-}" <<'PY'
 import json, sys
-raw_path, txt_path = sys.argv[1], sys.argv[2]
+raw_path, txt_path, repo_top, judge_path, home = sys.argv[1:6]
+home = home.rstrip('/')
 data = open(raw_path, encoding='utf-8', errors='replace').read()
 text, cost, err = data, '', ''
 try:
@@ -184,7 +205,11 @@ if isinstance(obj, dict):
         err = str(obj.get('subtype', '[미상]'))
     elif 'subtype' in obj and obj.get('subtype') != 'success':
         err = str(obj.get('subtype'))
-open(txt_path, 'w', encoding='utf-8').write(text)
+open(judge_path, 'w', encoding='utf-8').write(text)
+evidence = text.replace(repo_top, '<repo>') if repo_top else text
+if home:
+    evidence = evidence.replace(home, '<home>')
+open(txt_path, 'w', encoding='utf-8').write(evidence)
 print('%s\t%s' % (cost, err.replace('\t', ' ').replace('\n', ' ')))
 PY
 )"
@@ -206,13 +231,15 @@ PY
 
     # 판정 실패와 판정 불가를 구분한다. 원문 stderr와 실제 rc는 회차별로 보존한다.
     judge_err="$OUT/$id.expect.$n.err.txt"
-    bash "$d/expect.sh" < "$txt" > "$OUT/$id.expect.$n.txt" 2> "$judge_err"
+    bash "$d/expect.sh" < "$JUDGE_IN" > "$OUT/$id.expect.$n.txt" 2> "$judge_err"
     judge_rc=$?
+    rm -f "$JUDGE_IN"
     printf '%s\n' "$judge_rc" > "$OUT/$id.expect.$n.rc"
     case "$judge_rc" in
       0) pass=$((pass + 1)) ;;
       1)
-        task_judgments="${task_judgments:+$task_judgments, }${n}회차(rc=1)"
+        # 비율 과제의 오답은 판정 실패가 아니라 비율의 분자에서 빠지는 한 회차다(78·기타는 아래 그대로 준비).
+        [ "$mode" = rate ] || task_judgments="${task_judgments:+$task_judgments, }${n}회차(rc=1)"
         ;; # 후속 준비 실패가 앞선 판정 실패 관측을 지우지 않게 한다.
       78)
         task_ready="판정기 준비 실패(rc=$judge_rc · ${n}회차) — stderr: $judge_err"
@@ -236,6 +263,12 @@ PY
     N_READY=$((N_READY + 1))
     printf '%s|준비|%s|%s|%s\n' "$name" "${task_secs:--}" "${task_cost:--}" "$task_ready" >> "$ROWS_FILE"
     echo "  ─ $name red(준비) — $task_ready"
+  elif [ "$mode" = rate ]; then
+    # 2/2 여도 `rate 2/2` 다 — green 계수를 부풀리지 않는다.
+    N_RATE=$((N_RATE + 1))
+    printf '%s|rate %s/%s|%s|%s|%s/%s 통과 · mode=rate · 회귀 집합 제외\n' "$name" "$pass" "$RUNS_PER_TASK" \
+      "$task_secs" "$task_cost" "$pass" "$RUNS_PER_TASK" >> "$ROWS_FILE"
+    echo "  ~ $name rate — $pass/$RUNS_PER_TASK (mode=rate · 회귀 집합 제외)"
   elif [ "$pass" -eq "$RUNS_PER_TASK" ]; then
     N_GREEN=$((N_GREEN + 1))
     printf '%s|green|%s|%s|%s/%s 통과\n' "$name" "$task_secs" "$task_cost" "$pass" "$RUNS_PER_TASK" >> "$ROWS_FILE"
@@ -270,7 +303,7 @@ PY
 )"
 read -r P50 P95 USD <<< "$STATS"
 
-SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD · 판정실패 관측 과제 $N_JUDGMENT"
+SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD · 판정실패 관측 과제 $N_JUDGMENT · rate $N_RATE"
 
 {
   echo "# harness eval 실측 — $RUN_ID"
@@ -278,7 +311,7 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
   echo "- 요약 — $SUMMARY"
   echo "- 상한 — \`COLAB_EVAL_TIMEOUT=$COLAB_EVAL_TIMEOUT\` · \`COLAB_EVAL_BUDGET=$COLAB_EVAL_BUDGET\` · 과제당 ${RUNS_PER_TASK}회"
   echo "- 설정 해시 — $HASH_LINE"
-  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비)"
+  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비) · mode=rate 과제는 비율만 기록(rate x/2 · 회귀 집합 제외)"
   [ "$COST_UNKNOWN" -eq 1 ] && echo "- ⚠ USD \`[미상]\` — \`claude -p --output-format json\` 출력에서 비용 필드를 찾지 못한 회차가 있다. 지어내지 않는다."
   echo
   echo "| 과제 | 판정 | 초(1/2) | USD(1/2) | 사유 |"
@@ -286,7 +319,7 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
   awk -F'|' '{printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5}' "$ROWS_FILE"
 } > "$OUT/summary.md"
 
-rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE"
+rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE" "$OUT/.judge-in"
 
 # 허용 도구 정본 경로를 요약과 함께 낸다 — 정본이 바꿔치기되면 출력에서 보인다(advisor ② 권고).
 echo "허용 도구 정본: $ALLOWED_FILE"

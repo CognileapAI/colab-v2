@@ -123,6 +123,35 @@ def check_eval_freshness(root: Path, now: "dt.datetime | None" = None,
     return None, None
 
 
+# Rate-measuring eval tasks (15라운드 판정 H18-rate). A `mode`=rate task leaves the regression set, so two
+# warnings keep the marker from turning into an escape hatch (exit unchanged — signals, not verdicts):
+# the task must be listed in the README rate table, and a rate stuck at 0/2 for three rounds is reported.
+RATE_ROUNDS = 3
+RATE_ROW_RE = re.compile(r"^\| (H\d\d-[^ |]+) \| rate ([0-2])/2 \|", re.MULTILINE)
+
+
+def check_rate_tasks(root: Path) -> list[str]:
+    harness = root / "eval/harness"
+    try:
+        rate = sorted(p.parent.name for p in harness.glob("H[0-9][0-9]-*/mode")
+                      if p.read_text(encoding="utf-8", errors="replace").rstrip("\n") == "rate")
+        readme = (harness / "README.md").read_text(encoding="utf-8") if (harness / "README.md").is_file() else ""
+        runs = sorted(d for d in (harness / "results").glob("*/summary.md") if EVAL_RUN_ID_RE.match(d.parent.name))
+        seen: dict[str, list[str]] = {name: [] for name in rate}
+        for summary in reversed(runs):
+            rows = dict(RATE_ROW_RE.findall(summary.read_text(encoding="utf-8", errors="replace")))
+            for name in rate:
+                if name in rows and len(seen[name]) < RATE_ROUNDS:
+                    seen[name].append(rows[name])
+    except OSError as exc:
+        return [f"warning: eval mode=rate tasks could not be read: {exc}"]
+    warnings = [f"warning: eval task {name} is mode=rate but missing from the eval/harness/README.md rate table"
+                for name in rate if f"| `{name}` |" not in readme]
+    warnings += [f"warning: eval task {name} (mode=rate) was rate 0/2 in the last {RATE_ROUNDS} rounds"
+                 for name, got in seen.items() if got == ["0"] * RATE_ROUNDS]
+    return warnings
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -159,6 +188,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if freshness_warning:
         print(freshness_warning)
+    for warning in check_rate_tasks(root):
+        print(warning)
     newest_id, newest_stamp = newest_eval_result(root)
     print(
         "green: shared harness contract; "

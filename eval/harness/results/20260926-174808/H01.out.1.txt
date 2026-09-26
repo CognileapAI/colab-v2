@@ -1,0 +1,18 @@
+**답: 다음 단계는 그 줄과 다릅니다. 인계 문서가 낡았습니다.**
+
+**인계 문서가 말하는 다음 단계** (`03-HANDOFF-excerpt.md` 마지막 줄, 2026-09-08 R-B 마감 시점)
+- ⑵ 배포 창 (staging 예행 → dev, 마이그레이션 5건, 배포 전 실측 3건)
+- ⑶ R-C intent 작성
+- ⑷ `w9-dev-deploy-rebased` 처리
+- `SOURCE.md`에도 이 발췌는 `integration/r-d` tip `7a97259` 기준이고, 그 뒤 R-C와 R-D가 진행됐다고 적혀 있습니다.
+
+**이력이 보여 주는 현재 상태** (`git log`, 2026-09-26)
+- develop tip `5bb3d6f`: PR #176(E0 eval gate) 병합까지 끝났습니다.
+- 그 위에 S-red 레인 커밋 5개가 올라가 있습니다. 순서대로 ① `a99d364`, ② `955fa42`, ③ `d747a59`, ④ `2184be1`, ④′ `b6d8540`입니다.
+- 스펙 `dev-package/prd/specs/S-HARNESS-SRED-REDRUN-20260926.md`의 §7 커밋 단위는 ① ② ③ ④ ④′ ⑤입니다. 앞의 다섯 개는 커밋됐고, ⑤ `results/<run>/`(④′ 이후 해시로 잰 harness-eval 실측)만 남았습니다.
+- `git status`에 커밋되지 않은 `eval/harness/results/20260926-174808/`가 보입니다. 지금 이 회차가 바로 ⑤ 실측으로 보입니다.
+- 이력에는 배포 창도, R-C intent도 다음 작업으로 남아 있지 않습니다. 인계 문서 줄과 이력이 어긋나므로 이력을 따릅니다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -n 15` · b6d8540
+- 다음 단계: S-red 커밋 ⑤로 ④′(b6d8540) 이후 해시 기준 harness-eval 실측 결과 `eval/harness/results/<run>/`를 커밋한 뒤, S-red PR을 develop으로 엽니다(스펙 §9).

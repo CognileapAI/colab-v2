@@ -5,7 +5,7 @@
 #   임시 디렉터리의 스텁으로 갈아끼워 `PATH` 앞에 둔다. 과제 뿌리도 임시 자리다
 #   (`COLAB_EVAL_TASKS_DIR` — 러너가 `tests/run-selftest.sh` 를 위해 낸 자리 그대로).
 #
-# 케이스 18 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 22 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 면제 선언 ＋ 과제 0건        → red(판정 · 1)  「대상이 없어 통과」를 만들지 않는다
 #   ⓑ 면제 선언 ＋ 과제 3건 ＋ 해시 일치 전수 결과
 #                                  → green ＋ 출력에 `과제 3건`(건수 노출 · 조용한 건너뛰기 금지)
@@ -26,6 +26,13 @@
 #   ⓟ 일치 결과 준비 1              → red(준비 · 78)
 #   ⓠ fixture `gates/x.sh` 1바이트 변경 뒤 ⓜ → red(준비 · 78) 해시 불일치
 #   ⓡ 일치 결과 green 2/3 · 직전 없음 → green (첫 결과 · 회귀 기준 없음)
+#   ⓢ 일치 결과 green 2/3 · 그 앞에 행 2개뿐인 중단 회차 · 더 앞에 3/3 → red(판정 · 1)
+#      직전 = 과제 행 수 == 과제 N 인 전수 결과만(중단 회차로 「회귀 0」을 만들지 않는다 · spec S-HARNESS-SRED-REDRUN-20260926 §4.6 S-6b)
+#   비율 측정 과제(`mode`=rate · 15라운드 판정 H18-rate) — fixture 저장소 `cfg-rate` 에 `H03-gamma/mode` 를
+#   결과보다 **먼저** 만든다(verify 가 행의 rate 집합과 해시 집합 안 mode 표지 집합을 대조한다):
+#   ⓣ 직전 H03 green · R* H03 `rate 1/2` → green ＋ 출력 `rate 1(H03-gamma 1/2)` (rate 는 회귀 집합에서 빠진다)
+#   ⓤ R* H03 `rate 0/2` ＋ H02 실패 → red(판정 · 1) ＋ `H02-beta` (rate 가 이웃 과제의 회귀를 가리지 않는다)
+#   ⓥ 실행 모드 요약 `과제 3 · … green 2 … · rate 1` → green (통과 ＋ rate == 과제 · ⓘ 는 `rate 0` 이라 red 유지)
 #
 # ⓐ·ⓒ·ⓓ 가 통과해 버리면 이 게이트는 아무것도 막지 않는다 — 그 셋이 존재 이유다.
 # ⓑ 는 「면제인데 건수를 안 보인다」를 잡는다(면제가 조용해지는 순간 green-by-skip 이다).
@@ -91,21 +98,21 @@ printf '{}\n' > "$CFG/.claude/settings.json"
 printf 'echo x\n' > "$CFG/gates/x.sh"
 
 write_result() { # $1=결과 뿌리 $2=run id $3=selected $4=준비 수 $5..=<과제>:<판정>
-  local root="$1" id="$2" sel="$3" ready="$4" out rows="" row n=0 g=0 u=0
+  local root="$1" id="$2" sel="$3" ready="$4" out rows="" row n=0 g=0 u=0 r=0
   shift 4
   out="$root/$id"; mkdir -p "$out"
   for row in "$@"; do
     n=$((n + 1))
-    case "${row#*:}" in green) g=$((g + 1)) ;; 준비) ;; *) u=$((u + 1)) ;; esac
+    case "${row#*:}" in green) g=$((g + 1)) ;; 준비) ;; rate\ *) r=$((r + 1)) ;; *) u=$((u + 1)) ;; esac
     rows="$rows| ${row%%:*} | ${row#*:} | 1.0/1.0 | 0.1/0.1 | fixture |"$'\n'
   done
   {
     printf '# harness eval 실측 — %s\n\n' "$id"
-    printf -- '- 요약 — 과제 %s · 실행 %s · green %s · 불안정 %s · 준비 %s · 초 p50 1.0/p95 1.0 · USD 합 0.1000 · 판정실패 관측 과제 %s\n\n' \
-      "$n" "$((n * 2))" "$g" "$u" "$ready" "$u"
+    printf -- '- 요약 — 과제 %s · 실행 %s · green %s · 불안정 %s · 준비 %s · 초 p50 1.0/p95 1.0 · USD 합 0.1000 · 판정실패 관측 과제 %s · rate %s\n\n' \
+      "$n" "$((n * 2))" "$g" "$u" "$ready" "$u" "$r"
     printf '| 과제 | 판정 | 초(1/2) | USD(1/2) | 사유 |\n|---|---|---|---|---|\n%s' "$rows"
   } > "$out/summary.md"
-  python3 "$CONFIG_HASH" compute --root "$CFG" --selected "$sel" > "$out/config-hash.json"
+  python3 "$CONFIG_HASH" compute --root "${WR_CFG:-$CFG}" --selected "$sel" > "$out/config-hash.json"
 }
 ALL3=(H01-alpha:green H02-beta:green H03-gamma:green)
 TWO3=(H01-alpha:green H02-beta:green H03-gamma:실패)
@@ -116,6 +123,22 @@ write_result "$WORK/res-cfg_regress"  20260926-100000 all 0 "${TWO3[@]}"
 write_result "$WORK/res-cfg_selected" 20260926-100000 H02 0 H02-beta:green
 write_result "$WORK/res-cfg_ready"    20260926-100000 all 1 H01-alpha:green H02-beta:green H03-gamma:준비
 write_result "$WORK/res-cfg_first"    20260926-100000 all 0 "${TWO3[@]}"
+write_result "$WORK/res-cfg_partial"  20260912-211809 all 0 "${ALL3[@]}"
+write_result "$WORK/res-cfg_partial"  20260920-000000 all 0 H01-alpha:green H02-beta:green
+write_result "$WORK/res-cfg_partial"  20260926-100000 all 0 "${TWO3[@]}"
+
+# 비율 측정 fixture 저장소 — mode 표지가 해시 집합 안이라 위 cfg-repo 와 해시를 나눠 쓸 수 없다.
+CFG_RATE="$WORK/cfg-rate"
+mkdir -p "$CFG_RATE/eval/harness/results" "$CFG_RATE/eval/harness/H03-gamma" "$CFG_RATE/.claude" "$CFG_RATE/gates"
+git init -q "$CFG_RATE"
+cp "$REPO_ROOT/eval/harness/config-paths.txt" "$CFG_RATE/eval/harness/config-paths.txt"
+printf '{}\n' > "$CFG_RATE/.claude/settings.json"
+printf 'echo x\n' > "$CFG_RATE/gates/x.sh"
+printf 'rate\n' > "$CFG_RATE/eval/harness/H03-gamma/mode"   # 결과보다 먼저 — 해시에 포함된다
+WR_CFG="$CFG_RATE" write_result "$WORK/res-cfg_rate"     20260912-211809 all 0 "${ALL3[@]}"
+WR_CFG="$CFG_RATE" write_result "$WORK/res-cfg_rate"     20260926-100000 all 0 H01-alpha:green H02-beta:green "H03-gamma:rate 1/2"
+WR_CFG="$CFG_RATE" write_result "$WORK/res-cfg_rate_red" 20260912-211809 all 0 "${ALL3[@]}"
+WR_CFG="$CFG_RATE" write_result "$WORK/res-cfg_rate_red" 20260926-100000 all 0 H01-alpha:green H02-beta:실패 "H03-gamma:rate 0/2"
 
 expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
   local want="$1" label="$2" key="$3" out rc results
@@ -124,14 +147,15 @@ expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
     empty_exempt)
       out="$(COLAB_EVAL_TASKS_DIR="$T_EMPTY" COLAB_HARNESS_EVAL= COLAB_HARNESS_EVAL_EXEMPT=1 \
              "$GATE" 2>&1)"; rc=$? ;;
-    exempt3|cfg_none|cfg_match|cfg_regress|cfg_selected|cfg_ready|cfg_first|cfg_changed)
+    exempt3|cfg_none|cfg_match|cfg_regress|cfg_selected|cfg_ready|cfg_first|cfg_partial|cfg_changed|cfg_rate|cfg_rate_red)
       # 면제 판정 — REPO_ROOT seam 으로 fixture 저장소의 설정 해시를 결과 fixture 와 대조한다.
-      local res="$WORK/res-$key"
+      local res="$WORK/res-$key" cfg="$CFG"
       case "$key" in
         exempt3) res="$WORK/res-cfg_match" ;;
         cfg_changed) res="$WORK/res-cfg_match"; printf 'echo y\n' > "$CFG/gates/x.sh" ;;
+        cfg_rate|cfg_rate_red) cfg="$CFG_RATE" ;;
       esac
-      out="$(REPO_ROOT="$CFG" COLAB_EVAL_TASKS_DIR="$T_THREE" COLAB_EVAL_RESULTS_ROOT="$res" \
+      out="$(REPO_ROOT="$cfg" COLAB_EVAL_TASKS_DIR="$T_THREE" COLAB_EVAL_RESULTS_ROOT="$res" \
              COLAB_HARNESS_EVAL= COLAB_HARNESS_EVAL_EXEMPT=1 "$GATE" 2>&1)"; rc=$? ;;
     slow)
       out="$(PATH="$STUB_BIN:$PATH" COLAB_EVAL_TASKS_DIR="$T_SLOW" COLAB_EVAL_RESULTS_ROOT="$results" \
@@ -141,22 +165,25 @@ expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
       out="$(PATH="$STUB_BIN:$PATH" COLAB_EVAL_TASKS_DIR="$T_THREE" COLAB_EVAL_RESULTS_ROOT="$results" \
              COLAB_EVAL_ONLY="$(if [ "$key" = selected ]; then printf H02; fi)" COLAB_EVAL_TIMEOUT=5 COLAB_EVAL_BUDGET=0.50 STUB_SLEEP=0 \
              COLAB_HARNESS_EVAL=1 COLAB_HARNESS_EVAL_EXEMPT= "$GATE" 2>&1)"; rc=$? ;;
-    missing_summary|zero_summary|wrong_runs|wrong_green|wrong_tasks)
+    missing_summary|zero_summary|wrong_runs|wrong_green|wrong_tasks|rate_ok)
       # 기존 REPO_ROOT seam: 고정 경로의 러너가 exit 0만 반환하는 결함 fixture.
       local repo="$WORK/repo-$key"
       mkdir -p "$repo/eval/harness"
       printf '#!/usr/bin/env bash\n' > "$repo/eval/harness/run.sh"
       if [ "$key" = zero_summary ]; then
-        printf "echo '과제 0 · 실행 0 · green 0 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+        printf "echo '과제 0 · 실행 0 · green 0 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0 · rate 0'\n" >> "$repo/eval/harness/run.sh"
       fi
       if [ "$key" = wrong_tasks ]; then
-        printf "echo '과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+        printf "echo '과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0 · rate 0'\n" >> "$repo/eval/harness/run.sh"
       fi
       if [ "$key" = wrong_runs ]; then
-        printf "echo '과제 3 · 실행 5 · green 3 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+        printf "echo '과제 3 · 실행 5 · green 3 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0 · rate 0'\n" >> "$repo/eval/harness/run.sh"
       fi
       if [ "$key" = wrong_green ]; then
-        printf "echo '과제 3 · 실행 6 · green 2 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+        printf "echo '과제 3 · 실행 6 · green 2 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0 · rate 0'\n" >> "$repo/eval/harness/run.sh"
+      fi
+      if [ "$key" = rate_ok ]; then
+        printf "echo '과제 3 · 실행 6 · green 2 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0 · rate 1'\n" >> "$repo/eval/harness/run.sh"
       fi
       printf 'exit 0\n'  >> "$repo/eval/harness/run.sh"
       out="$(REPO_ROOT="$repo" COLAB_EVAL_TASKS_DIR="$T_THREE" \
@@ -195,10 +222,10 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
     red "$label — red 인데 「과제 0건」을 사유로 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
-  if [ "$key" = success ] && ! printf '%s\n' "$out" | grep -Eq '^과제 3 · 실행 6 · green 3 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0$'; then
+  if [ "$key" = success ] && ! printf '%s\n' "$out" | grep -Eq '^과제 3 · 실행 6 · green 3 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0 · rate 0$'; then
     red "$label — 성공 요약의 과제/실행/통과 계수가 다르다: $out"; return
   fi
-  if [ "$key" = selected ] && ! printf '%s\n' "$out" | grep -Eq '^과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0$'; then
+  if [ "$key" = selected ] && ! printf '%s\n' "$out" | grep -Eq '^과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0 · rate 0$'; then
     red "$label — 선택 과제의 성공 요약이 다르다: $out"; return
   fi
   # 일치 결과 green 은 **어느 결과와 어느 해시로** 통과했는지를 두 값으로 보여야 한다.
@@ -211,8 +238,24 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
     red "$label — 회귀 red 가 회귀 과제 이름을 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
+  if [ "$key" = cfg_partial ] && ! printf '%s' "$out" | grep -q '직전 20260912-211809 에서 green 이던 과제 1건.*H03-gamma'; then
+    red "$label — 직전이 행 수 == 과제 N 인 전수 결과(20260912-211809)가 아니다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
   if [ "$key" = cfg_first ] && ! printf '%s' "$out" | grep -q '직전 없음'; then
     red "$label — 첫 결과인데 「직전 없음」을 내지 않았다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  if [ "$key" = cfg_rate ] && ! printf '%s' "$out" | grep -q 'rate 1(H03-gamma 1/2)'; then
+    red "$label — rate 과제가 green 줄에 「rate 1(H03-gamma 1/2)」로 드러나지 않았다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  if [ "$key" = cfg_rate_red ] && ! printf '%s' "$out" | grep -q 'H02-beta'; then
+    red "$label — 회귀 red 가 이웃 과제 이름(H02-beta)을 내지 않았다:
+$(printf '%s\n' "$out" | sed 's/^/     /')"; return
+  fi
+  if [ "$key" = rate_ok ] && ! printf '%s' "$out" | grep -q 'rate 1건'; then
+    red "$label — 실행 모드 green 이 rate 건수(「rate 1건」)를 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
   echo "  ✓ $label ($want)"
@@ -243,6 +286,10 @@ expect red    "ⓝ 면제 ＋ 일치 결과 green 2/3 · 직전 3/3(회귀)" cfg
 expect 미선언 "ⓞ 면제 ＋ 일치 결과가 선택 실행(H02)뿐" cfg_selected
 expect 미선언 "ⓟ 면제 ＋ 일치 결과 준비 1" cfg_ready
 expect green  "ⓡ 면제 ＋ 일치 결과 green 2/3 · 직전 없음(첫 결과)" cfg_first
+expect red    "ⓢ 면제 ＋ 일치 결과 green 2/3 · 행 부족 중단 회차는 직전이 아니다(3/3 과 대조)" cfg_partial
+expect green  "ⓣ 면제 ＋ 직전 H03 green · R* H03 rate 1/2(회귀 집합 제외)" cfg_rate
+expect red    "ⓤ 면제 ＋ R* H03 rate 0/2 ＋ H02 실패(rate 가 이웃 회귀를 가리지 않음)" cfg_rate_red
+expect green  "ⓥ 종료 0 ＋ 요약 green 2 · rate 1 · 과제 3(통과 ＋ rate == 과제)" rate_ok
 # ⓠ 는 fixture 의 gates/x.sh 를 바꾸므로 마지막에 둔다.
 expect 미선언 "ⓠ 면제 ＋ 해시 집합 파일 1바이트 변경 뒤 ⓜ 결과(해시 불일치)" cfg_changed
 
@@ -278,4 +325,4 @@ if [ "$FAILED" -ne 0 ] || [ "${#FAILURES[@]}" -ne 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict harness-eval-selftest
-echo "harness-eval-selftest green — 검사 18건 전건 기대대로 (green 5 · red(판정) 7 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조 ＋ CI 정책 변이 시험 ${POLICY_RAN}건."
+echo "harness-eval-selftest green — 검사 22건 전건 기대대로 (green 7 · red(판정) 9 · red(준비) 1 · red(준비·입력미선언) 5 · 모델 호출 0회) ＋ CI 필터 대조 ＋ CI 정책 변이 시험 ${POLICY_RAN}건."

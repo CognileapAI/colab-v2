@@ -1,0 +1,29 @@
+`lineageGraph.css` 에는 13px 미만인 `font-size` 선언이 13건 있고, 가장 작은 값은 10px 입니다.
+
+두 가지 방법으로 셌고 결과가 같았습니다. 97행 전체를 읽으며 직접 셌고, 주석(`/* … */`)을 지운 뒤 `font-size: <숫자>px` 만 뽑아 다시 셌습니다. 주석 안에는 `font-size` 가 없어서 결과에 영향이 없었습니다.
+
+| 행 | 선택자 | 값 |
+|---|---|---|
+| 10 | `.dsec-h .hint` | 11px |
+| 14 | `.lin-stale .d` | 11px |
+| 31 | `.lin-way` | 10px |
+| 44 | `.ln .n-role` | 10.5px |
+| 45 | `.ln .n-name` | 12.5px |
+| 58 | `.lin-use` | 11px |
+| 72 | `.lrow .stg` | 10px |
+| 76 | `.lrow .ln-name` | 12px |
+| 81 | `.lrow .ln-sub` | 11px |
+| 82 | `.hist` | 10px |
+| 83 | `.aiflag` | 10px |
+| 85 | `.manflag` | 10px |
+| 95 | `.lin-empty .muted` | 11px |
+
+- 값별로 보면 10px 5건, 10.5px 1건, 11px 5건, 12px 1건, 12.5px 1건입니다.
+- 셈에서 뺀 것:
+  - 26행 `.lin-arw` 는 15px 라서 13px 이상입니다.
+  - 9·92·93행은 값이 `var(--text-h2)`·`var(--text-h3)`·`var(--text-body-sm)` 입니다. 이 파일만으로는 실제 px 을 알 수 없습니다.
+- `SOURCE.md` 에 적힌 기대값(13건, 최소 10px, 같은 13개 행)과도 일치합니다.
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

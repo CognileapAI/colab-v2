@@ -1,0 +1,11 @@
+v2 코드에는 이 지적이 해당하지 않습니다. `lineage.css` 전체 138행에 흐리게 만드는 선언이 한 건도 없습니다.
+
+- **후보 목록 규칙:** `.lin-picker`는 105~108행, `.lin-picker ul`은 109~117행입니다. 선언은 `border-top`, `padding-top`, `list-style`, `margin`, `padding`, `display`, `flex-direction`, `gap`, `align-items` 뿐입니다.
+- **흐림 선언 검색:** `grep -nE 'opacity|filter|blur|disabled|grayscale|:disabled|aria-disabled'`로 파일 전체를 찾았고 0건이었습니다(종료코드 1).
+- **연결 불가 행 규칙:** 연결할 수 없는 후보 행을 따로 다루는 규칙이 없습니다. `li` 상태 클래스도, disabled 변형도 없습니다. 그래서 2.33:1 대비를 만들 선언 자체가 이 파일에 없습니다.
+- **판정 범위:** 이 디렉터리에 있는 `lineage.css` 사본만 봤습니다. `upload.css` 토큰, 전역 `.muted`, `LineageStep.tsx`의 인라인 스타일은 이 디렉터리에 없어서 확인하지 않았습니다.
+- **정답 파일:** 같은 디렉터리의 `SOURCE.md`에 기대 정답이 적혀 있습니다. 판정은 그 파일이 아니라 위 grep 결과로 내렸습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nE 'opacity|filter|blur|disabled|grayscale' lineage.css` 결과 0건 · `.lin-picker` 규칙은 lineage.css:105~117에 있으며 흐림 선언이 없음

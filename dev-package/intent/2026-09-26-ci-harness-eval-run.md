@@ -113,3 +113,7 @@
 - 라운드 파일: `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`
 - 결정: 〈N〉 (병합 시 기입)
 - 12라운드 원문 판정: ~/.claude/reports/harness-state-20260925/team-shared-20260926/grill-intents/(ci-blind.md · ci-context.md · ci-verdict.md · cross.md)
+
+## 추가 기록 (승인 뒤 줄 추가만)
+- 2026-09-26 Ted 판정(원문 "claude apikey로 하는건 각자 로컬 구독모델 쓰면안되나? 클로드로 통일해서 쓸게") — **보류**: 팀 전원이 Claude 구독 CLI 로 통일하므로 회차는 각자 로컬 `claude -p`(구독)로 돌린다(product.md 「구독 CLI 전용」 유지). 이 intent 의 CI 경로(org API key · `harness-eval-run.yml`)는 구현하지 않는다 — PR ① spec `S-HARNESS-CI-EVAL-RUN-P1-20260926.md` 는 기록으로만 남고 레인은 착수하지 않는다. 회차 확보 절차(팀 공용) = 아무 write 권한자나 브랜치를 받아 `COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval` → `results/<run>/` 커밋 → push(트리 기준 해시라 머신 무관 · PR 3 온보딩 문서에 수록). 재개 조건 = 팀원 다수가 구독 접근이 없거나 · 주간 한도로 회차가 2주 이상 막히거나 · 비용 주체를 org 로 옮기기로 Ted 가 다시 판정할 때(그때 이 intent 의 판정 11건은 그대로 유효).
+

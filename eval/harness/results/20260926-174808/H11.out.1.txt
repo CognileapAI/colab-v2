@@ -1,0 +1,26 @@
+직접 센 결과, 답은 SOURCE.md 의 기대값과 같습니다. 다만 SOURCE.md 가 적은 토큰 가짓수 하나는 틀렸습니다.
+
+**덮인 선언**
+- `.detail-page .lin-way` 규칙에서 `lineageGraph.css:29` 의 `display: inline-flex` 가 `lineageGraph.css:33` 의 `display: inline-block` 에 덮입니다.
+- 이 규칙의 `align-items: center`(29행)도 inline-block 에서는 적용되지 않습니다.
+- 한 규칙에 `display` 가 두 번 들어간 곳은 이 한 자리뿐입니다.
+
+**미정의 토큰 참조 (11건, 7가지)**
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50`, `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200`, `--color-primary-800` |
+| 83 | `--color-accent-700`, `--color-accent-50` |
+| 84 | `--color-ai` |
+
+- 폴백을 둔 참조는 없어서 11건 모두 무효 선언입니다.
+- SOURCE.md 는 가짓수를 **8** 로 적었지만 실제는 **7** 입니다(accent-50·200·700, gray-300, primary-200·800, ai). 참조 건수 11 은 맞습니다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 주석을 줄 수를 보존한 채 지우고, `tokens.css`·`detail.css` 의 `:root` 에서 정의 집합을 뽑은 뒤, `lineageGraph.css` 의 폴백 없는 `var(--x)` 가운데 그 집합에 없는 참조를 행 단위로 셌다. 규칙 블록마다 `display:` 행도 함께 모았다(python 정규식).

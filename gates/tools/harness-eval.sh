@@ -15,8 +15,12 @@
 #   COLAB_HARNESS_EVAL_EXEMPT=1  이번 회차에 돌리지 않음을 **명시 선언**한다. **N=0 이면 red(판정)** —
 #                                대상 0건은 통과가 아니다. 설정 해시 일치 전수 결과(선택 실행 아님 · 준비 0 ·
 #                                과제 N) 없음·입력 손상 = red(준비 78 · missing=eval-result:<hash>) ·
-#                                직전 결과보다 green 축소 = red(판정 1) · 일치 ＋ 무회귀 = green(과제 N건 ·
+#                                직전 결과(과제 행 수 == N 인 전수 결과 · 중단 회차 제외)보다 green 축소
+#                                = red(판정 1) · 일치 ＋ 무회귀 = green(과제 N건 ·
 #                                run id · hash(head)=hash(회차) 출력). 판정 = eval/harness/config_hash.py verify.
+#                                비율 측정 과제(`mode`=rate · 15라운드 판정 H18-rate)는 회귀 집합에서 빠지고
+#                                green 줄에 `rate n(<과제> x/2)` 로 드러난다. 실행 모드는 요약 끝 `rate n` 을 읽어
+#                                통과 ＋ rate == 과제 로 대조하고 rate 건수를 출력한다.
 #   둘 다 없음                    → red(준비 · 입력미선언 · 78). 침묵은 통과가 아니다(`CLAUDE.md §4`).
 #   둘 다 =1                      → **실행이 이긴다.** 면제를 무시했다는 사실을 출력에 적는다 —
 #                                 면제는 「이번 회차에 재지 않았다」는 선언이라 실측보다 약하다.
@@ -57,6 +61,9 @@ count_tasks() { # stdout = `H??-*/` 디렉터리 실계수
   printf '%s' "$n"
 }
 
+# 안내문의 실행 명령 — 상한 권장값은 `eval/harness/README.md` 「실행」·「상한」 과 같은 한 가지다(값이 바뀌면 셋을 함께).
+RUN_HINT='COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=150 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval'
+
 DECL_RUN="${COLAB_HARNESS_EVAL:-}"
 DECL_EXEMPT="${COLAB_HARNESS_EVAL_EXEMPT:-}"
 
@@ -76,11 +83,14 @@ if [ "$DECL_RUN" = "1" ]; then
   if [ "$rc" -eq 0 ]; then
     # exit 0만으로는 실측 증거가 아니다. 러너의 단일 요약과 2회 통과 계수를 대조한다.
     summary="$(printf '%s\n' "$output" | grep '^과제 ')"
-    pattern='^과제 ([0-9]+) · 실행 ([0-9]+) · green ([0-9]+) · 불안정 0 · 준비 0 · 초 [^[:cntrl:]]+ · 판정실패 관측 과제 0$'
+    pattern='^과제 ([0-9]+) · 실행 ([0-9]+) · green ([0-9]+) · 불안정 0 · 준비 0 · 초 [^[:cntrl:]]+ · 판정실패 관측 과제 0 · rate ([0-9]+)$'
     [[ "$summary" =~ $pattern ]] || red "러너 종료 0인데 유효한 과제/실행/통과 요약이 없다."
-    tasks="${BASH_REMATCH[1]}"; runs="${BASH_REMATCH[2]}"; passed="${BASH_REMATCH[3]}"
-    (( tasks > 0 && tasks == expected_tasks && runs == tasks * 2 && passed == tasks )) || \
+    tasks="${BASH_REMATCH[1]}"; runs="${BASH_REMATCH[2]}"; passed="${BASH_REMATCH[3]}"; rate="${BASH_REMATCH[4]}"
+    (( tasks > 0 && tasks == expected_tasks && runs == tasks * 2 && passed + rate == tasks )) || \
       red "러너 종료 0인데 측정 0건 또는 계수가 맞지 않는다: $summary"
+    if (( rate > 0 )); then
+      echo "harness-eval — 비율 측정 과제(mode=rate) rate ${rate}건 — 비율만 기록 · 회귀 집합 제외(과제별 rate x/2 는 위 러너 출력 · results/<run>/summary.md)."
+    fi
   fi
   echo "harness-eval — 러너 종료코드 $rc 를 그대로 전달한다 (0 green · 1 red(판정) · 78 red(준비))."
   exit "$rc"
@@ -102,14 +112,14 @@ if [ "$DECL_EXEMPT" = "1" ]; then
   case "$vrc" in
     0) ;;
     1) red "면제 선언인데 설정 해시 일치 결과가 직전 결과보다 green 이 줄었다 — $detail" ;;
-    *) ready_red "eval-result:${cur_hash:-unknown}" "$detail (verify rc=$vrc) · 이 설정 해시로 잰 전수 결과가 results/ 에 없다 · 실행 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval → results/<run>/ 커밋" ;;
+    *) ready_red "eval-result:${cur_hash:-unknown}" "$detail (verify rc=$vrc) · 이 설정 해시로 잰 전수 결과가 results/ 에 없다 · 실행 = $RUN_HINT → results/<run>/ 커밋" ;;
   esac
   echo "harness-eval green — 면제 선언 · 과제 ${N}건(미실행) · $detail"
   echo "   ⚠ 면제는 「문제 없음」이 아니라 「이번 회차에 과제를 돌리지 않았다」는 선언이다."
-  echo "   실제로 재려면 COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (모델을 부른다)."
+  echo "   실제로 재려면 $RUN_HINT (모델을 부른다)."
   exit 0
 fi
 
 # ── ⑶ 침묵 — 통과가 아니다 ──────────────────────────────────────────────────
 ready_red "COLAB_HARNESS_EVAL" \
-  "과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다."
+  "과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = $RUN_HINT (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다."

@@ -1,0 +1,28 @@
+세 파일(`detail.css` · `upload.css` · `lineageGraph.css`)에서 주석을 걷어 낸 뒤 `font-size` 선언을 전부 확인했습니다. 파일은 수정하지 않았습니다.
+
+**선언 수**
+- 전체 65개입니다: detail 24 · upload 24 · lineageGraph 17. 주석 안에는 `font-size`가 없었습니다.
+- 숫자와 `px`로만 된 리터럴은 45개이고, 이 중 13px 미만이 34개입니다. 13px 이상이 11개입니다.
+- `var(--text-*)` 값 20개는 이 검사로 합격이나 불합격을 판단하지 않았습니다. 해당 행은 detail 36·37·66·78·79·82·100·102·103·106·107·113·114·117·140·150, lineageGraph 9·92·93입니다.
+- `upload.css:177`의 `.inp, .sel { font: inherit; }`은 `font-size` 선언이 아닌 `font` 단축 속성이라 대상에서 뺐습니다.
+
+**13px 미만 34곳**
+
+| 파일 | 개수 | 값 |
+|---|---|---|
+| detail.css | 7 | 10px ×3, 11px ×4 |
+| upload.css | 14 | 10px ×1, 11px ×1, 12px ×12 |
+| lineageGraph.css | 13 | 10px ×6, 10.5px, 11px ×4, 12px, 12.5px |
+
+- 소수 값도 셌습니다: `lineageGraph.css:44` 10.5px, `lineageGraph.css:45` 12.5px.
+- `upload.css:92`의 `.up-toast`는 경고색 토스트이고 12px입니다. 선택자가 하나뿐이라 무접촉 항목이 아니고 지목 목록에 들어갑니다.
+
+**이미 13px인 공유 오류 규칙**
+- `upload.css:138`의 `.vizerr, .warn` 규칙입니다. `font-size: 13px` 선언은 144행에 있습니다.
+- 13px 리터럴 규칙 7개 중 선택자가 여럿이면서 오류 본문인 규칙은 이것 하나뿐입니다.
+
+이 결과는 CSS 파일에 적힌 리터럴 값만 본 것입니다. 실제 계산된 스타일이나 배포 화면의 접근성을 인증하지는 않습니다.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

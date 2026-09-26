@@ -1,0 +1,11 @@
+v2 `lineage.css` 사본에는 이 지적이 해당하지 않습니다. 후보 목록 규칙에 행을 흐리게 만드는 선언이 하나도 없습니다.
+
+- **후보 목록 규칙**: `.lin-picker`(`lineage.css:105~108`)와 `.lin-picker ul`(`lineage.css:109~117`) 두 개입니다. 선언은 테두리·안쪽 여백·목록 표시·flex 배치뿐이고 `color`·`opacity`·`filter`가 없습니다.
+- **파일 전체 검색**: 138행 전체에서 `opacity|filter|blur|disabled|grayscale|aria-disabled`를 대소문자 구분 없이 찾았습니다. 일치하는 줄이 없었습니다(grep 종료코드 1).
+- **2.33:1 의 출처**: 이 파일에서 가장 옅은 글자색은 `--muted`의 기본값 `#5b6472`이고, 흰 배경에서 약 6:1입니다. 2.33:1에 해당하는 값은 이 파일에 없습니다. 그 수치는 목업 쪽 스타일에서 나온 것으로 보입니다.
+- **확인하지 않은 범위**: 이 디렉터리에 있는 CSS는 이 파일 하나뿐입니다. `upload.css`나 컴포넌트의 인라인 스타일이 후보 행을 흐리게 할 가능성은 확인하지 못했습니다.
+- `SOURCE.md`에 기대 답이 적혀 있지만, 판정은 그 문서가 아니라 위 파일 내용과 grep 결과로 했습니다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `lineage.css:105~117`(`.lin-picker` 규칙)에 흐림 선언이 없고, 파일 전체를 `grep -nEi 'opacity|filter|blur|disabled|grayscale|aria-disabled'`로 찾아도 0건

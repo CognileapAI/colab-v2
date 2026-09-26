@@ -1,0 +1,11 @@
+상세 화면 정보 격자의 컨테이너 선과 칸 구분선이 같은 토큰 `--color-border` 를 쓰고 있어서, 두 층이 갈리지 않습니다.
+
+- **컨테이너 선** `detail.css:59`: `.detail-page .infogrid { … border: 1px solid var(--color-border); … }`
+- **칸 구분선** `detail.css:62`: `.detail-page .infogrid .ig { … border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }`
+  - 좁은 화면용 칸 구분선 재정의(`detail.css:69`)도 같은 `var(--color-border)` 를 씁니다.
+- `detail.css` 머리의 `:root` 블록(6–24행)에는 `--color-border` 를 다시 정의하는 선언이 없습니다. 그래서 두 선 모두 `tokens.css:20` 의 `--color-border: #e8ecf2` 한 값으로 그려집니다.
+- 대조로 `catalog.css` 의 표는 층을 갈라 둡니다. 머리 행 아래 선(41·45행)은 `--color-border-strong`, 본문 칸 구분선(46행)은 `--color-border` 입니다. 상세 화면 정보 격자에는 이런 분리가 없습니다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border
